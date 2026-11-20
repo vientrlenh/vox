@@ -15,7 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionDetailsUseCase;
-import com.sep.vox.application.port.input.usecase.question.ViewQuestionsForExamPaperUseCase;
+import com.sep.vox.application.port.input.usecase.question.ViewQuestionsForAssessmentPaperUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionsUseCase;
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionStatusCountsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -35,7 +35,7 @@ class QuestionControllerTests {
     void setUp() {
         controller = new QuestionController(
             mock(ViewQuestionsUseCase.class),
-            mock(ViewQuestionsForExamPaperUseCase.class),
+            mock(ViewQuestionsForAssessmentPaperUseCase.class),
             mock(ViewQuestionDetailsUseCase.class),
             mock(ViewQuestionStatusCountsUseCase.class),
             mock(UserContextPort.class));

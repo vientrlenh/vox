@@ -149,11 +149,11 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
         // lượt THẬT tiếp theo. Đây vẫn nằm trong đúng khoảng trễ mà thiết kế đã chấp nhận -- phiên
         // vốn đóng SAU lượt làm cạn quỹ, không phải trước.
         if (turnWrite.created() && turn.getDurationSeconds() > 0) {
-            // Chi phí AI thật (USD) của turn này, Python tính đồng bộ từ realtimeCorrectionGraph
-            // ngay trong request submit_turn (không đợi được ai_usage_record qua Kafka như exam,
-            // vì PRACTICE trừ quota NGAY trong request này) -- xem
-            // PracticeAttemptConnection._flush_turn_usage bên Agentic AI,
-            // AI_USAGE_QUOTA_USD_MIGRATION.md mục 5/7. Fallback ZERO cho client Python cũ chưa gửi.
+            // The real AI cost (USD) of this turn, computed by Python synchronously from the realtimeCorrectionGraph
+            // right inside the submit_turn request (it cannot wait for ai_usage_record via Kafka like assessments,
+            // because PRACTICE deducts quota RIGHT in this request) -- see
+            // PracticeAttemptConnection._flush_turn_usage on the Agentic AI side,
+            // AI_USAGE_QUOTA_USD_MIGRATION.md sections 5/7. Falls back to ZERO for an old Python client that does not send it yet.
             BigDecimal costUsd = turn.getTurnCostUsd() != null ? turn.getTurnCostUsd() : BigDecimal.ZERO;
             // Quy sang VND NGAY tại đây vì hạn mức tính bằng VND. Khác đường thi: bên đó cộng
             // cost_vnd đã chốt sẵn từng dòng ai_usage_records, còn ở đây chi phí do Python gửi

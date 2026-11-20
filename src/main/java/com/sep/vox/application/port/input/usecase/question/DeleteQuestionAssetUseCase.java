@@ -73,7 +73,7 @@ public class DeleteQuestionAssetUseCase implements IUseCase<DeleteQuestionAssetC
 
         boolean immutable = question.getStatus() == QuestionStatus.PUBLISHED
             || question.isLocked()
-            || questionRepository.existsUsedInExam(question.getId());
+            || questionRepository.existsUsedInAssessment(question.getId());
         if (!systemAdminOnSystemBank
                 && owner
                 && !immutable

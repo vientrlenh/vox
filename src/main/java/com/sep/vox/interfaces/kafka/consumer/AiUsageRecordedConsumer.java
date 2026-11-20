@@ -64,13 +64,13 @@ public class AiUsageRecordedConsumer {
                 return;
             }
 
-            UUID examSessionId = parseUuid(event.examSessionId(), "examSessionId");
+            UUID assessmentSessionId = parseUuid(event.assessmentSessionId(), "assessmentSessionId");
             UUID turnId = parseUuid(event.turnId(), "turnId");
 
             for (AiUsageRecordedEventDto.AiUsageEventItemDto item : event.usageEvents()) {
                 AiUsageRecordedEventDto.AiUsageTokensDto usage = item.usage();
                 recordAiUsageUseCase.execute(new RecordAiUsageCommand(
-                    examSessionId,
+                    assessmentSessionId,
                     turnId,
                     parseUuid(item.usageEventId(), "usageEventId"),
                     parseUsageType(item.type()),

@@ -9,7 +9,7 @@ public record AppealSummaryInfo(
     UUID id,
     String studentName,
     String className,
-    String examName,
+    String assessmentName,
     /** Nhãn các phần thi được phúc khảo; FE tự quyết cách hiển thị (chip, "+2 more"…). */
     List<String> partLabels,
     BigDecimal originalScore,

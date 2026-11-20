@@ -26,12 +26,12 @@ public class JwtStreamTokenProvider implements StreamTokenProvider {
     private String secret;
 
     @Override
-    public String generateStreamToken(String userId, String candidateId, String scheduleId, String examId, String sessionId,
+    public String generateStreamToken(String userId, String candidateId, String scheduleId, String assessmentId, String sessionId,
             List<String> streamTypes, Instant windowStart, Instant windowEnd) {
         Map<String, Object> claims = new HashMap<String, Object>();
         claims.put("candidateId", candidateId);
         claims.put("scheduleId", scheduleId);
-        claims.put("examId", examId);
+        claims.put("assessmentId", assessmentId);
         claims.put("sessionId", sessionId);
         claims.put("streamTypes", streamTypes);
         claims.put("tokenUse", "stream");
@@ -46,9 +46,9 @@ public class JwtStreamTokenProvider implements StreamTokenProvider {
                 .compact();
     }
 
-    public String generateMonitorToken(String userId, String schoolId, String examId, String monitorScope, List<String> scheduleIds, List<String> roles, Instant windowStart, Instant windowEnd) {
+    public String generateMonitorToken(String userId, String schoolId, String assessmentId, String monitorScope, List<String> scheduleIds, List<String> roles, Instant windowStart, Instant windowEnd) {
 
-        // The exam shift's deadline, separate from the token's expiresAt.
+        // The assessment shift's deadline, separate from the token's expiresAt.
         // Helps answer "how long after can data already recorded still be pushed to the streaming service".
         // Used to set the expiry of the upload credentials. Helps extend the time available to rescue the upload record data.
         long scheduleEndAt = windowEnd.getEpochSecond();
@@ -57,7 +57,7 @@ public class JwtStreamTokenProvider implements StreamTokenProvider {
         Map<String, Object> claims = new HashMap<String, Object>();
         claims.put("userId", userId);
         claims.put("schoolId", schoolId);
-        claims.put("examId", examId);
+        claims.put("assessmentId", assessmentId);
         claims.put("monitorScope", monitorScope);
         claims.put("scheduleIds", scheduleIds);
         claims.put("roles", roles);

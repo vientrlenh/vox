@@ -20,7 +20,7 @@ public record GradingTaskDetailInfo(
     UUID assignmentId,
     UUID candidateResultId,
     String resultCode,
-    String examName,
+    String assessmentName,
     String roundType,
     String assignmentStatus,
     String resultStatus,

@@ -109,7 +109,7 @@ class SubscriptionPlanInitializerTests {
             List<SubscriptionPlanQuota> quotas = subscriptionPlanQuotaRepository.findBySubscriptionPlanId(plan.getId());
             assertThat(quotas).as("hạn mức gói %s", name).hasSize(2);
             assertThat(quotas).extracting(q -> q.getQuotaType())
-                .containsExactlyInAnyOrder(QuotaType.EXAM, QuotaType.PRACTICE);
+                .containsExactlyInAnyOrder(QuotaType.ASSESSMENT, QuotaType.PRACTICE);
             // The two kinds receive EQUAL amounts -- the two wallets cannot be spent across, so a
             // skewed ratio makes one wallet run out early while the other is untouched.
             for (SubscriptionPlanQuota quota : quotas) {

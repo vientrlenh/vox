@@ -100,16 +100,16 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
                 chosen.frameworkVersionId(), List.of())
             .orElseThrow(() -> new NotFoundException("Chủ đề chưa có câu luyện phù hợp."));
         PracticeQuestion question = selection.question();
-        // Ước lượng worst-case (giây x giá/giây calibrate) -- không phải chi phí thật, cùng tinh
-        // thần Công thức 1 của ClassTestTokenQuotaGuardService (xem AI_USAGE_QUOTA_USD_MIGRATION.md
-        // mục 5/6), nhưng dùng rate calibrate RIÊNG cho PRACTICE (currentEstimatedCostPerPracticeSecondUsd,
-        // xem QuotaPricingCalibrationService/QuotaPricingSource) vì pipeline AI khác hẳn exam. Cộng
-        // cả reservedSeconds (câu đang chờ nộp của các phiên khác) để không cho 2 phiên cùng lúc
-        // cùng vượt hạn mức trong lúc chưa phiên nào submit turn thật.
+        // Worst-case estimate (seconds x calibrated price/second) -- not the real cost, in the same
+        // spirit as Formula 1 of ClassTestTokenQuotaGuardService (see AI_USAGE_QUOTA_USD_MIGRATION.md
+        // sections 5/6), but using the SEPARATE calibrated rate for PRACTICE (currentEstimatedCostPerPracticeSecondUsd,
+        // see QuotaPricingCalibrationService/QuotaPricingSource) because the AI pipeline is very different from assessments. It also adds
+        // reservedSeconds (questions awaiting submission from other sessions) so two sessions at the same time cannot
+        // both exceed the quota while no session has submitted a real turn yet.
         //
-        // Quy sang VND ngay tại đây: giá/giây niêm yết bằng USD nhưng ví hạn mức lẫn ví tự nạp đều là
-        // cột VND, và đây đúng là con số ConsumeQuotaService sẽ trừ thật ở từng lượt nói. Lấy GIÁ VỐN,
-        // KHÔNG cộng phí dịch vụ -- phí đã thu một lần lúc trường đặt đơn, xem ServiceFeePort.
+        // Converted to VND right here: the listed price/second is in USD but both the quota wallet and the self-topped-up wallet are
+        // VND columns, and this is exactly the number ConsumeQuotaService will really deduct at each spoken turn. It uses the COST PRICE,
+        // does NOT add the service fee -- the fee was already charged once when the school placed the order, see ServiceFeePort.
         int reservedSeconds = paperRepository.sumReservedQuotaSeconds(studentId);
         BigDecimal estimatedCostVnd = BigDecimal.valueOf((long) reservedSeconds + question.spokenSeconds())
             .multiply(quotaPricingPort.currentEstimatedCostPerPracticeSecondUsd())

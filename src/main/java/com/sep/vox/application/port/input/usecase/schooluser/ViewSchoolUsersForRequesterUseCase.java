@@ -23,11 +23,11 @@ import com.sep.vox.domain.repository.UserRepository;
 import java.util.UUID;
 
 /**
- * Phục vụ query `schoolUsersBySchool` cho cả SCHOOL_ADMIN lẫn TEACHER (picker tìm đồng nghiệp ở Question
- * Share / Exam Member). Tách hoàn toàn khỏi {@link ViewSchoolUsersBySchoolUseCase} (không gọi/inject use
- * case đó) để 2 nhánh không ràng buộc lẫn nhau: SCHOOL_ADMIN/SYSTEM_ADMIN được lọc theo `role` truyền vào
- * như cũ; TEACHER luôn bị ép `role=TEACHER` ở tầng này, không phụ thuộc input, nên không thể duyệt danh
- * sách học sinh trong trường.
+ * Serves the `schoolUsersBySchool` query for both SCHOOL_ADMIN and TEACHER (the colleague-search picker in Question
+ * Share / Assessment Member). Fully separated from {@link ViewSchoolUsersBySchoolUseCase} (does not call/inject that use
+ * case) so the 2 branches do not constrain each other: SCHOOL_ADMIN/SYSTEM_ADMIN are filtered by the passed-in `role`
+ * as before; TEACHER is always forced to `role=TEACHER` at this layer, independent of the input, so they cannot browse the
+ * list of students in the school.
  */
 @Service
 public class ViewSchoolUsersForRequesterUseCase implements IUseCase<ViewSchoolUsersBySchoolQuery, PageResult<SchoolUserDto>> {

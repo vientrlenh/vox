@@ -5,19 +5,19 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Hàng đợi của giáo viên — MỘT danh sách cho cả bốn vòng, phân biệt bằng
+ * The teacher's queue -- ONE list for all four rounds, told apart by
  * {@code roundType}.
  *
- * <p><strong>Ẩn danh là luật của kỳ thi {@code CENTRALIZED}</strong>, không phải luật
- * chung: ở đó {@code studentName}/{@code className} luôn {@code null} để bảo đảm chấm
- * mù. Bài kiểm tra trên lớp thì ngược lại — người chấm chính là giáo viên dạy lớp đó,
- * họ cần biết đang chấm ai. Xem {@code JpaExamGradingQueryRepository}.
+ * <p><strong>Anonymity is a rule of {@code CENTRALIZED} assessments</strong>, not a general
+ * rule: there {@code studentName}/{@code className} are always {@code null} to guarantee blind
+ * grading. A class test is the opposite -- the grader is the very teacher who teaches that class,
+ * and they need to know whom they are grading. See {@code JpaAssessmentGradingQueryRepository}.
  */
 public record GradingTaskInfo(
     UUID assignmentId,
     UUID candidateResultId,
     String resultCode,
-    String examName,
+    String assessmentName,
     int partCount,
     String roundType,
     String status,

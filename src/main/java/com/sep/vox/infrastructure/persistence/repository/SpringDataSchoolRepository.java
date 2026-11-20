@@ -75,26 +75,26 @@ public interface SpringDataSchoolRepository extends JpaRepository<SchoolJpaEntit
     Page<SchoolJpaEntity> findAllBySearchAndIsActive(@Param("search") String search, @Param("isActive") boolean isActive, Pageable pageable);
 
     /**
-     * Trường đang có ca thi DIỄN RA: đã công bố, đã tới giờ, chưa hết giờ.
+     * Schools that currently have a session RUNNING: published, its time has come, not yet ended.
      *
-     * <p>Soi LỊCH THI chứ không soi phiên thi đang mở, vì đây phải là ĐÚNG vị từ mà
-     * {@code ForceSuspendSubscriptionUseCase} dùng để từ chối đình chỉ -- nó gọi
-     * {@code ExamSchedule.isOngoingAt}, tức trạng thái của LỊCH. Đếm theo phiên (status =
-     * 'IN_PROGRESS') sẽ bỏ sót đúng ca hay gặp nhất: cửa thi vừa mở mà chưa em nào bấm vào. Lúc đó
-     * BE vẫn chặn nhưng danh sách này rỗng, nên nút hiện bật, admin bấm, rồi mới nhận lỗi -- đúng
-     * thứ mà trạng thái chặn sinh ra để tránh.
+     * <p>It checks the SCHEDULE and not the open attempt sessions, because this must be EXACTLY the predicate that
+     * {@code ForceSuspendSubscriptionUseCase} uses to refuse a suspension -- it calls
+     * {@code AssessmentSchedule.isOngoingAt}, i.e. the status of the SCHEDULE. Counting by attempt session (status =
+     * 'IN_PROGRESS') would miss exactly the most common case: the assessment door has just opened but no student has clicked in yet. Then
+     * the BE still blocks but this list is empty, so the button shows enabled, the admin clicks, and only then gets an error -- exactly
+     * what the blocking state exists to avoid.
      *
-     * <p>Cùng biểu thức với {@code SpringDataExamScheduleRepository.findByExamIdAndInSchedule}, chỉ
-     * khác là gom theo trường thay vì theo một bài thi.
+     * <p>The same expression as {@code SpringDataAssessmentScheduleRepository.findByAssessmentIdAndInSchedule}, only
+     * grouped by school instead of by one assessment.
      */
     @Query("""
-        SELECT DISTINCT exam.schoolId
-        FROM ExamScheduleJpaEntity schedule
-        JOIN ExamJpaEntity exam
-            ON schedule.examId = exam.id
+        SELECT DISTINCT assessment.schoolId
+        FROM AssessmentScheduleJpaEntity schedule
+        JOIN AssessmentJpaEntity assessment
+            ON schedule.assessmentId = assessment.id
         WHERE schedule.status = 'PUBLISHED'
             AND schedule.startDate <= :now
             AND schedule.endDate > :now
         """)
-    List<UUID> findIdsWithOngoingExam(@Param("now") Instant now);
+    List<UUID> findIdsWithOngoingAssessment(@Param("now") Instant now);
 }

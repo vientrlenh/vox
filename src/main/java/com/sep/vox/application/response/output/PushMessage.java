@@ -3,11 +3,11 @@ package com.sep.vox.application.response.output;
 import java.util.Map;
 
 /**
- * Nội dung một thông báo đẩy, không phụ thuộc nhà cung cấp.
+ * The content of a push notification, independent of the provider.
  *
- * <p>{@code data} là payload để client điều hướng khi người dùng bấm vào thông báo
- * (ví dụ {@code screen}, {@code examId}). FCM chỉ nhận Map&lt;String, String&gt;,
- * nên mọi giá trị phải được stringify từ trước khi tới đây.
+ * <p>{@code data} is the payload the client uses to navigate when the user taps the notification
+ * (for example {@code screen}, {@code assessmentId}). FCM only accepts Map&lt;String, String&gt;,
+ * so every value must be stringified before it gets here.
  */
 public record PushMessage(
     String title,

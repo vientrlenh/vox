@@ -43,8 +43,8 @@ public class ViewSchoolGradingFailuresUseCase
         UUID schoolId = userContextPort.getCurrentSchoolId();
 
         PageResult<SchoolGradingFailureDto> page = schoolWorkloadQueryRepository.findUnhandledAiFailures(
-            schoolId, input.examId(), input.retryLeft(), input.page(), input.size());
-        int[] counts = schoolWorkloadQueryRepository.countAiFailuresByAllowance(schoolId, input.examId());
+            schoolId, input.assessmentId(), input.retryLeft(), input.page(), input.size());
+        int[] counts = schoolWorkloadQueryRepository.countAiFailuresByAllowance(schoolId, input.assessmentId());
 
         return new SchoolGradingFailurePageResponse(
             page.content().stream().map(SchoolGradingFailureResponse::of).toList(),

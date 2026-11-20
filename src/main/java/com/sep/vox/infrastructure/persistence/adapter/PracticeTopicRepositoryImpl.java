@@ -53,7 +53,7 @@ public class PracticeTopicRepositoryImpl implements PracticeTopicRepository {
 
     @Override
     public long countOfferablePool() {
-        return repository.countByActiveTrueAndSourceNot("EXAM_QUESTION_BANK");
+        return repository.countByActiveTrueAndSourceNot("ASSESSMENT_QUESTION_BANK");
     }
 
     @Override

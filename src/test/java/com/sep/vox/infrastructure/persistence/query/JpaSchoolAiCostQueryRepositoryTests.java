@@ -50,7 +50,7 @@ class JpaSchoolAiCostQueryRepositoryTests {
     @Test
     void shouldBucketByVietnameseCalendarDayNotUtc() {
         UUID school = insertSchool();
-        insertExamSpend(school, Instant.parse("2026-08-27T18:00:00Z"), "40000", null);
+        insertAssessmentSpend(school, Instant.parse("2026-08-27T18:00:00Z"), "40000", null);
 
         List<AiCostBucketDto> buckets = repository.findBucketedCost(school, FROM, TO, "day");
 
@@ -68,14 +68,14 @@ class JpaSchoolAiCostQueryRepositoryTests {
     void shouldKeepEachQuotaTypeAsItsOwnSeries() {
         UUID school = insertSchool();
         Instant sameDay = Instant.parse("2026-08-20T03:00:00Z");
-        insertExamSpend(school, sameDay, "100000", null);
+        insertAssessmentSpend(school, sameDay, "100000", null);
         insertPracticeSpend(school, sameDay, "7000", insertUser("Nguyễn Minh Anh"));
 
         List<AiCostBucketDto> buckets = repository.findBucketedCost(school, FROM, TO, "day");
 
         assertThat(buckets).hasSize(2);
         assertThat(buckets).anySatisfy(bucket -> {
-            assertThat(bucket.quotaType()).isEqualTo("EXAM");
+            assertThat(bucket.quotaType()).isEqualTo("ASSESSMENT");
             assertThat(bucket.costVnd()).isEqualByComparingTo("100000");
         });
         assertThat(buckets).anySatisfy(bucket -> {
@@ -91,9 +91,9 @@ class JpaSchoolAiCostQueryRepositoryTests {
     @Test
     void shouldUseAHalfOpenWindow() {
         UUID school = insertSchool();
-        insertExamSpend(school, FROM.minusSeconds(1), "1000", null);
-        insertExamSpend(school, FROM, "2000", null);
-        insertExamSpend(school, TO, "4000", null);
+        insertAssessmentSpend(school, FROM.minusSeconds(1), "1000", null);
+        insertAssessmentSpend(school, FROM, "2000", null);
+        insertAssessmentSpend(school, TO, "4000", null);
 
         List<AiCostBucketDto> buckets = repository.findBucketedCost(school, FROM, TO, "day");
 
@@ -106,9 +106,9 @@ class JpaSchoolAiCostQueryRepositoryTests {
         UUID school = insertSchool();
         UUID heavy = insertUser("Phạm Thu Hằng");
         UUID light = insertUser("Lê Quang Vinh");
-        insertExamSpend(school, Instant.parse("2026-08-10T03:00:00Z"), "900000", heavy);
-        insertExamSpend(school, Instant.parse("2026-08-12T03:00:00Z"), "1010000", heavy);
-        insertExamSpend(school, Instant.parse("2026-08-11T03:00:00Z"), "840000", light);
+        insertAssessmentSpend(school, Instant.parse("2026-08-10T03:00:00Z"), "900000", heavy);
+        insertAssessmentSpend(school, Instant.parse("2026-08-12T03:00:00Z"), "1010000", heavy);
+        insertAssessmentSpend(school, Instant.parse("2026-08-11T03:00:00Z"), "840000", light);
 
         PageResult<UserAiSpendDto> page = repository.findSpendByUser(school, FROM, TO, null, 1, 20);
 
@@ -119,7 +119,7 @@ class JpaSchoolAiCostQueryRepositoryTests {
     }
 
     /**
-     * A charge from a centralized exam carries a null user_id and must stay OUTSIDE the ranking --
+     * A charge from a centralized assessment carries a null user_id and must stay OUTSIDE the ranking --
      * in almost every school it is the largest item and would take the top of the table, hiding
      * exactly what this table exists to show.
      */
@@ -127,8 +127,8 @@ class JpaSchoolAiCostQueryRepositoryTests {
     void shouldKeepSchoolWideSpendingOutOfTheUserRanking() {
         UUID school = insertSchool();
         UUID teacher = insertUser("Phạm Thu Hằng");
-        insertExamSpend(school, Instant.parse("2026-08-10T03:00:00Z"), "5000000", null);
-        insertExamSpend(school, Instant.parse("2026-08-10T03:00:00Z"), "300000", teacher);
+        insertAssessmentSpend(school, Instant.parse("2026-08-10T03:00:00Z"), "5000000", null);
+        insertAssessmentSpend(school, Instant.parse("2026-08-10T03:00:00Z"), "300000", teacher);
 
         PageResult<UserAiSpendDto> page = repository.findSpendByUser(school, FROM, TO, null, 1, 20);
 
@@ -154,9 +154,9 @@ class JpaSchoolAiCostQueryRepositoryTests {
         UUID school = insertSchool();
         UUID teacher = insertUser("Phạm Thu Hằng");
         UUID subscriptionId = UUID.randomUUID();
-        insertExamSpend(school, subscriptionId, Instant.parse("2026-08-10T03:00:00Z"), "700000", teacher);
-        insertExamSpend(school, subscriptionId, Instant.parse("2026-08-11T03:00:00Z"), "500000", teacher);
-        insertAllocation(subscriptionId, "EXAM", teacher, "2000000");
+        insertAssessmentSpend(school, subscriptionId, Instant.parse("2026-08-10T03:00:00Z"), "700000", teacher);
+        insertAssessmentSpend(school, subscriptionId, Instant.parse("2026-08-11T03:00:00Z"), "500000", teacher);
+        insertAllocation(subscriptionId, "ASSESSMENT", teacher, "2000000");
 
         UserAiSpendDto row = repository.findSpendByUser(school, FROM, TO, null, 1, 20).content().get(0);
 
@@ -171,7 +171,7 @@ class JpaSchoolAiCostQueryRepositoryTests {
     @Test
     void shouldListAUserWhoHasNoPersonalCap() {
         UUID school = insertSchool();
-        insertExamSpend(school, Instant.parse("2026-08-10T03:00:00Z"), "700000", insertUser("Lê Quang Vinh"));
+        insertAssessmentSpend(school, Instant.parse("2026-08-10T03:00:00Z"), "700000", insertUser("Lê Quang Vinh"));
 
         UserAiSpendDto row = repository.findSpendByUser(school, FROM, TO, null, 1, 20).content().get(0);
 
@@ -187,7 +187,7 @@ class JpaSchoolAiCostQueryRepositoryTests {
     void shouldSplitOneUserAcrossBothQuotaTypes() {
         UUID school = insertSchool();
         UUID user = insertUser("Nguyễn Minh Anh");
-        insertExamSpend(school, Instant.parse("2026-08-10T03:00:00Z"), "700000", user);
+        insertAssessmentSpend(school, Instant.parse("2026-08-10T03:00:00Z"), "700000", user);
         insertPracticeSpend(school, Instant.parse("2026-08-10T03:00:00Z"), "50000", user);
 
         assertThat(repository.findSpendByUser(school, FROM, TO, null, 1, 20).totalElements()).isEqualTo(2L);
@@ -197,8 +197,8 @@ class JpaSchoolAiCostQueryRepositoryTests {
     @Test
     void shouldReportWhenTheLedgerStartedForThisSchool() {
         UUID school = insertSchool();
-        insertExamSpend(school, Instant.parse("2026-08-19T03:00:00Z"), "1000", null);
-        insertExamSpend(school, Instant.parse("2026-08-04T03:00:00Z"), "1000", null);
+        insertAssessmentSpend(school, Instant.parse("2026-08-19T03:00:00Z"), "1000", null);
+        insertAssessmentSpend(school, Instant.parse("2026-08-04T03:00:00Z"), "1000", null);
 
         assertThat(repository.findFirstRecordedAt(school)).isEqualTo(Instant.parse("2026-08-04T03:00:00Z"));
         assertThat(repository.findFirstRecordedAt(insertSchool())).isNull();
@@ -207,8 +207,8 @@ class JpaSchoolAiCostQueryRepositoryTests {
     @Test
     void shouldNotLeakSpendingFromAnotherSchool() {
         UUID school = insertSchool();
-        insertExamSpend(school, Instant.parse("2026-08-10T03:00:00Z"), "1000", null);
-        insertExamSpend(insertSchool(), Instant.parse("2026-08-10T03:00:00Z"), "9000", null);
+        insertAssessmentSpend(school, Instant.parse("2026-08-10T03:00:00Z"), "1000", null);
+        insertAssessmentSpend(insertSchool(), Instant.parse("2026-08-10T03:00:00Z"), "9000", null);
 
         assertThat(repository.findBucketedCost(school, FROM, TO, "day").get(0).costVnd())
             .isEqualByComparingTo("1000");
@@ -249,13 +249,13 @@ class JpaSchoolAiCostQueryRepositoryTests {
         return id;
     }
 
-    private void insertExamSpend(UUID schoolId, Instant occurredAt, String amountVnd, UUID userId) {
-        insertExamSpend(schoolId, UUID.randomUUID(), occurredAt, amountVnd, userId);
+    private void insertAssessmentSpend(UUID schoolId, Instant occurredAt, String amountVnd, UUID userId) {
+        insertAssessmentSpend(schoolId, UUID.randomUUID(), occurredAt, amountVnd, userId);
     }
 
-    private void insertExamSpend(UUID schoolId, UUID subscriptionId, Instant occurredAt,
+    private void insertAssessmentSpend(UUID schoolId, UUID subscriptionId, Instant occurredAt,
             String amountVnd, UUID userId) {
-        insertSpend(schoolId, subscriptionId, "EXAM", occurredAt, amountVnd, userId,
+        insertSpend(schoolId, subscriptionId, "ASSESSMENT", occurredAt, amountVnd, userId,
             UUID.randomUUID(), null);
     }
 
@@ -265,19 +265,19 @@ class JpaSchoolAiCostQueryRepositoryTests {
     }
 
     private void insertSpend(UUID schoolId, UUID subscriptionId, String quotaType, Instant occurredAt,
-            String amountVnd, UUID userId, UUID examSessionId, UUID practiceSessionId) {
+            String amountVnd, UUID userId, UUID assessmentSessionId, UUID practiceSessionId) {
         em.createNativeQuery("""
             INSERT INTO school_ai_spend_entries (id, school_id, subscription_id, quota_type, user_id,
-                                                 exam_session_id, practice_session_id, amount_vnd, occurred_at)
+                                                 assessment_session_id, practice_session_id, amount_vnd, occurred_at)
             VALUES (:id, :schoolId, :subscriptionId, :quotaType, :userId,
-                    :examSessionId, :practiceSessionId, :amountVnd, :occurredAt)
+                    :assessmentSessionId, :practiceSessionId, :amountVnd, :occurredAt)
             """)
             .setParameter("id", UUID.randomUUID())
             .setParameter("schoolId", schoolId)
             .setParameter("subscriptionId", subscriptionId)
             .setParameter("quotaType", quotaType)
             .setParameter("userId", userId)
-            .setParameter("examSessionId", examSessionId)
+            .setParameter("assessmentSessionId", assessmentSessionId)
             .setParameter("practiceSessionId", practiceSessionId)
             .setParameter("amountVnd", new BigDecimal(amountVnd))
             .setParameter("occurredAt", occurredAt)

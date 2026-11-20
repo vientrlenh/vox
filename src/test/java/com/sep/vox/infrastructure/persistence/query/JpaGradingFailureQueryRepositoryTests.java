@@ -51,9 +51,9 @@ class JpaGradingFailureQueryRepositoryTests {
     @Test
     void shouldGroupTheSameIncidentTogetherDespiteDifferentIdsAndNumbers() {
         UUID school = insertSchool("THPT A");
-        UUID exam = insertExam(school, "Giữa kỳ I", "DRAFT");
-        insertFailedSession(exam, Instant.parse("2026-08-23T02:14:00Z"), TIMEOUT_A, 3);
-        insertFailedSession(exam, Instant.parse("2026-08-23T03:48:00Z"), TIMEOUT_B, 3);
+        UUID assessment = insertAssessment(school, "Giữa kỳ I", "DRAFT");
+        insertFailedSession(assessment, Instant.parse("2026-08-23T02:14:00Z"), TIMEOUT_A, 3);
+        insertFailedSession(assessment, Instant.parse("2026-08-23T03:48:00Z"), TIMEOUT_B, 3);
 
         List<GradingFailureGroupDto> groups = repository.findGroups(WINDOW_FROM, WINDOW_TO, 10);
 
@@ -77,10 +77,10 @@ class JpaGradingFailureQueryRepositoryTests {
     @Test
     void shouldKeepSessionsWithoutAReasonAsTheirOwnGroup() {
         UUID school = insertSchool("THPT A");
-        UUID exam = insertExam(school, "Giữa kỳ I", "DRAFT");
-        insertFailedSession(exam, Instant.parse("2026-08-23T02:14:00Z"), TIMEOUT_A, 3);
-        insertFailedSession(exam, Instant.parse("2026-08-24T02:14:00Z"), null, null);
-        insertFailedSession(exam, Instant.parse("2026-08-25T02:14:00Z"), null, null);
+        UUID assessment = insertAssessment(school, "Giữa kỳ I", "DRAFT");
+        insertFailedSession(assessment, Instant.parse("2026-08-23T02:14:00Z"), TIMEOUT_A, 3);
+        insertFailedSession(assessment, Instant.parse("2026-08-24T02:14:00Z"), null, null);
+        insertFailedSession(assessment, Instant.parse("2026-08-25T02:14:00Z"), null, null);
 
         List<GradingFailureGroupDto> groups = repository.findGroups(WINDOW_FROM, WINDOW_TO, 10);
 
@@ -100,9 +100,9 @@ class JpaGradingFailureQueryRepositoryTests {
     @Test
     void shouldCountTheUnknownCauseGroupAsACause() {
         UUID school = insertSchool("THPT A");
-        UUID exam = insertExam(school, "Giữa kỳ I", "DRAFT");
-        insertFailedSession(exam, Instant.parse("2026-08-24T02:14:00Z"), null, null);
-        insertFailedSession(exam, Instant.parse("2026-08-25T02:14:00Z"), null, null);
+        UUID assessment = insertAssessment(school, "Giữa kỳ I", "DRAFT");
+        insertFailedSession(assessment, Instant.parse("2026-08-24T02:14:00Z"), null, null);
+        insertFailedSession(assessment, Instant.parse("2026-08-25T02:14:00Z"), null, null);
 
         GradingFailureTotalsDto totals = repository.countTotals(WINDOW_FROM, WINDOW_TO);
 
@@ -112,15 +112,15 @@ class JpaGradingFailureQueryRepositoryTests {
 
     /**
      * A period whose scores are already published is refused by
-     * {@code RetryGradingExamSessionUseCase}, so it does not count as regradable.
+     * {@code RetryGradingAssessmentSessionUseCase}, so it does not count as regradable.
      */
     @Test
-    void shouldNotCountSessionsOfPublishedExamsAsRetryable() {
+    void shouldNotCountSessionsOfPublishedAssessmentsAsRetryable() {
         UUID school = insertSchool("THPT A");
-        UUID openExam = insertExam(school, "Giữa kỳ I", "CLOSED");
-        UUID publishedExam = insertExam(school, "Thi thử", "RESULTS_PUBLISHED");
-        insertFailedSession(openExam, Instant.parse("2026-08-23T02:14:00Z"), TIMEOUT_A, 3);
-        insertFailedSession(publishedExam, Instant.parse("2026-08-23T02:20:00Z"), TIMEOUT_B, 3);
+        UUID openAssessment = insertAssessment(school, "Giữa kỳ I", "CLOSED");
+        UUID publishedAssessment = insertAssessment(school, "Thi thử", "RESULTS_PUBLISHED");
+        insertFailedSession(openAssessment, Instant.parse("2026-08-23T02:14:00Z"), TIMEOUT_A, 3);
+        insertFailedSession(publishedAssessment, Instant.parse("2026-08-23T02:20:00Z"), TIMEOUT_B, 3);
 
         GradingFailureTotalsDto totals = repository.countTotals(WINDOW_FROM, WINDOW_TO);
 
@@ -134,12 +134,12 @@ class JpaGradingFailureQueryRepositoryTests {
     void shouldCountEachAffectedSchoolOnce() {
         UUID schoolA = insertSchool("THPT A");
         UUID schoolB = insertSchool("THPT B");
-        UUID examA1 = insertExam(schoolA, "Giữa kỳ I", "DRAFT");
-        UUID examA2 = insertExam(schoolA, "Cuối kỳ", "DRAFT");
-        UUID examB = insertExam(schoolB, "Khảo sát", "DRAFT");
-        insertFailedSession(examA1, Instant.parse("2026-08-23T02:14:00Z"), TIMEOUT_A, 3);
-        insertFailedSession(examA2, Instant.parse("2026-08-24T02:14:00Z"), null, null);
-        insertFailedSession(examB, Instant.parse("2026-08-25T02:14:00Z"), TIMEOUT_B, 3);
+        UUID assessmentA1 = insertAssessment(schoolA, "Giữa kỳ I", "DRAFT");
+        UUID assessmentA2 = insertAssessment(schoolA, "Cuối kỳ", "DRAFT");
+        UUID assessmentB = insertAssessment(schoolB, "Khảo sát", "DRAFT");
+        insertFailedSession(assessmentA1, Instant.parse("2026-08-23T02:14:00Z"), TIMEOUT_A, 3);
+        insertFailedSession(assessmentA2, Instant.parse("2026-08-24T02:14:00Z"), null, null);
+        insertFailedSession(assessmentB, Instant.parse("2026-08-25T02:14:00Z"), TIMEOUT_B, 3);
 
         GradingFailureTotalsDto totals = repository.countTotals(WINDOW_FROM, WINDOW_TO);
 
@@ -155,9 +155,9 @@ class JpaGradingFailureQueryRepositoryTests {
     @Test
     void shouldOpenTheUnknownCauseGroupWithANullSignature() {
         UUID school = insertSchool("THPT A");
-        UUID exam = insertExam(school, "Giữa kỳ I", "DRAFT");
-        insertFailedSession(exam, Instant.parse("2026-08-23T02:14:00Z"), TIMEOUT_A, 3);
-        insertFailedSession(exam, Instant.parse("2026-08-24T02:14:00Z"), null, null);
+        UUID assessment = insertAssessment(school, "Giữa kỳ I", "DRAFT");
+        insertFailedSession(assessment, Instant.parse("2026-08-23T02:14:00Z"), TIMEOUT_A, 3);
+        insertFailedSession(assessment, Instant.parse("2026-08-24T02:14:00Z"), null, null);
 
         PageResult<GradingFailureSessionDto> page = repository.findSessions(WINDOW_FROM, WINDOW_TO, null, 1, 20);
 
@@ -167,10 +167,10 @@ class JpaGradingFailureQueryRepositoryTests {
     }
 
     @Test
-    void shouldListSessionsOfOneGroupWithSchoolExamAndCandidate() {
+    void shouldListSessionsOfOneGroupWithSchoolAssessmentAndCandidate() {
         UUID school = insertSchool("THPT Nguyễn Huệ");
-        UUID exam = insertExam(school, "Giữa kỳ I", "CLOSED");
-        UUID sessionId = insertFailedSession(exam, Instant.parse("2026-08-23T02:14:00Z"), TIMEOUT_A, 3);
+        UUID assessment = insertAssessment(school, "Giữa kỳ I", "CLOSED");
+        UUID sessionId = insertFailedSession(assessment, Instant.parse("2026-08-23T02:14:00Z"), TIMEOUT_A, 3);
 
         String signature = repository.findGroups(WINDOW_FROM, WINDOW_TO, 10).get(0).signature();
         PageResult<GradingFailureSessionDto> page = repository.findSessions(WINDOW_FROM, WINDOW_TO, signature, 1, 20);
@@ -179,7 +179,7 @@ class JpaGradingFailureQueryRepositoryTests {
         GradingFailureSessionDto row = page.content().get(0);
         assertThat(row.sessionId()).isEqualTo(sessionId);
         assertThat(row.schoolName()).isEqualTo("THPT Nguyễn Huệ");
-        assertThat(row.examName()).isEqualTo("Giữa kỳ I");
+        assertThat(row.assessmentName()).isEqualTo("Giữa kỳ I");
         assertThat(row.candidateName()).isEqualTo("Trần Minh Anh");
         assertThat(row.retryCount()).isEqualTo(3);
         assertThat(row.retryable()).isTrue();
@@ -196,9 +196,9 @@ class JpaGradingFailureQueryRepositoryTests {
     @Test
     void shouldFlagSessionsAlreadyHandedOffToAHumanGrader() {
         UUID school = insertSchool("THPT A");
-        UUID exam = insertExam(school, "Giữa kỳ I", "CLOSED");
-        UUID sessionId = insertFailedSession(exam, Instant.parse("2026-08-23T02:14:00Z"), TIMEOUT_A, 3);
-        insertCandidateResult(exam, sessionId);
+        UUID assessment = insertAssessment(school, "Giữa kỳ I", "CLOSED");
+        UUID sessionId = insertFailedSession(assessment, Instant.parse("2026-08-23T02:14:00Z"), TIMEOUT_A, 3);
+        insertCandidateResult(assessment, sessionId);
 
         String signature = repository.findGroups(WINDOW_FROM, WINDOW_TO, 10).get(0).signature();
         PageResult<GradingFailureSessionDto> page = repository.findSessions(WINDOW_FROM, WINDOW_TO, signature, 1, 20);
@@ -213,10 +213,10 @@ class JpaGradingFailureQueryRepositoryTests {
     @Test
     void shouldExcludeSessionsOutsideTheWindow() {
         UUID school = insertSchool("THPT A");
-        UUID exam = insertExam(school, "Giữa kỳ I", "DRAFT");
-        insertFailedSession(exam, WINDOW_FROM.minusSeconds(1), TIMEOUT_A, 3);
-        insertFailedSession(exam, WINDOW_TO, TIMEOUT_A, 3);
-        insertFailedSession(exam, WINDOW_FROM, TIMEOUT_A, 3);
+        UUID assessment = insertAssessment(school, "Giữa kỳ I", "DRAFT");
+        insertFailedSession(assessment, WINDOW_FROM.minusSeconds(1), TIMEOUT_A, 3);
+        insertFailedSession(assessment, WINDOW_TO, TIMEOUT_A, 3);
+        insertFailedSession(assessment, WINDOW_FROM, TIMEOUT_A, 3);
 
         assertThat(repository.countTotals(WINDOW_FROM, WINDOW_TO).sessionCount()).isEqualTo(1L);
     }
@@ -225,9 +225,9 @@ class JpaGradingFailureQueryRepositoryTests {
     @Test
     void shouldIgnoreSessionsThatAreNotFailed() {
         UUID school = insertSchool("THPT A");
-        UUID exam = insertExam(school, "Giữa kỳ I", "DRAFT");
-        insertSession(exam, Instant.parse("2026-08-23T02:14:00Z"), "GRADED", null, null);
-        insertFailedSession(exam, Instant.parse("2026-08-23T02:15:00Z"), TIMEOUT_A, 3);
+        UUID assessment = insertAssessment(school, "Giữa kỳ I", "DRAFT");
+        insertSession(assessment, Instant.parse("2026-08-23T02:14:00Z"), "GRADED", null, null);
+        insertFailedSession(assessment, Instant.parse("2026-08-23T02:15:00Z"), TIMEOUT_A, 3);
 
         assertThat(repository.countTotals(WINDOW_FROM, WINDOW_TO).sessionCount()).isEqualTo(1L);
     }
@@ -253,11 +253,11 @@ class JpaGradingFailureQueryRepositoryTests {
         return id;
     }
 
-    private UUID insertExam(UUID schoolId, String name, String status) {
+    private UUID insertAssessment(UUID schoolId, String name, String status) {
         UUID id = UUID.randomUUID();
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         em.createNativeQuery("""
-            INSERT INTO exams (id, school_id, language_id, code, name, kind, status, requires_otp,
+            INSERT INTO assessments (id, school_id, language_id, code, name, kind, status, requires_otp,
                                created_at, updated_at)
             VALUES (:id, :schoolId, :languageId, :code, :name, 'CENTRALIZED', :status, TRUE, :now, :now)
             """)
@@ -272,7 +272,7 @@ class JpaGradingFailureQueryRepositoryTests {
         return id;
     }
 
-    private UUID insertCandidate(UUID examId) {
+    private UUID insertCandidate(UUID assessmentId) {
         UUID studentId = UUID.randomUUID();
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         em.createNativeQuery("""
@@ -286,32 +286,32 @@ class JpaGradingFailureQueryRepositoryTests {
 
         UUID candidateId = UUID.randomUUID();
         em.createNativeQuery("""
-            INSERT INTO exam_candidates (id, exam_id, student_id, status, assigned_at, updated_at)
-            VALUES (:id, :examId, :studentId, 'ATTENDED', :now, :now)
+            INSERT INTO assessment_candidates (id, assessment_id, student_id, status, assigned_at, updated_at)
+            VALUES (:id, :assessmentId, :studentId, 'ATTENDED', :now, :now)
             """)
             .setParameter("id", candidateId)
-            .setParameter("examId", examId)
+            .setParameter("assessmentId", assessmentId)
             .setParameter("studentId", studentId)
             .setParameter("now", now)
             .executeUpdate();
         return candidateId;
     }
 
-    private UUID insertFailedSession(UUID examId, Instant submittedAt, String error, Integer retryCount) {
-        return insertSession(examId, submittedAt, "GRADING_FAILED", error, retryCount);
+    private UUID insertFailedSession(UUID assessmentId, Instant submittedAt, String error, Integer retryCount) {
+        return insertSession(assessmentId, submittedAt, "GRADING_FAILED", error, retryCount);
     }
 
-    private UUID insertSession(UUID examId, Instant submittedAt, String status, String error, Integer retryCount) {
+    private UUID insertSession(UUID assessmentId, Instant submittedAt, String status, String error, Integer retryCount) {
         UUID id = UUID.randomUUID();
         em.createNativeQuery("""
-            INSERT INTO exam_sessions (id, exam_id, candidate_id, paper_id, started_at, submitted_at,
+            INSERT INTO assessment_sessions (id, assessment_id, candidate_id, paper_id, started_at, submitted_at,
                                        status, flagged, grading_error, grading_retry_count)
-            VALUES (:id, :examId, :candidateId, :paperId, :startedAt, :submittedAt,
+            VALUES (:id, :assessmentId, :candidateId, :paperId, :startedAt, :submittedAt,
                     :status, FALSE, :error, :retryCount)
             """)
             .setParameter("id", id)
-            .setParameter("examId", examId)
-            .setParameter("candidateId", insertCandidate(examId))
+            .setParameter("assessmentId", assessmentId)
+            .setParameter("candidateId", insertCandidate(assessmentId))
             .setParameter("paperId", UUID.randomUUID())
             .setParameter("startedAt", submittedAt.minusSeconds(1800))
             .setParameter("submittedAt", submittedAt)
@@ -326,17 +326,17 @@ class JpaGradingFailureQueryRepositoryTests {
      * The PENDING_REVIEW result row that HandOffGradingToHumanUseCase creates when it gives the
      * submission to a grader.
      */
-    private void insertCandidateResult(UUID examId, UUID sessionId) {
+    private void insertCandidateResult(UUID assessmentId, UUID sessionId) {
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         em.createNativeQuery("""
-            INSERT INTO exam_candidate_results (id, exam_id, session_id, candidate_id, assessment_policy_id,
+            INSERT INTO assessment_candidate_results (id, assessment_id, session_id, candidate_id, assessment_policy_id,
                                                 framework_version_id, rubric_version_id, target_framework_band_id,
                                                 policy_version, status, created_at, updated_at)
-            VALUES (:id, :examId, :sessionId, :candidateId, :policyId, :frameworkVersionId, :rubricVersionId,
+            VALUES (:id, :assessmentId, :sessionId, :candidateId, :policyId, :frameworkVersionId, :rubricVersionId,
                     :bandId, 1, 'PENDING_REVIEW', :now, :now)
             """)
             .setParameter("id", UUID.randomUUID())
-            .setParameter("examId", examId)
+            .setParameter("assessmentId", assessmentId)
             .setParameter("sessionId", sessionId)
             .setParameter("candidateId", UUID.randomUUID())
             .setParameter("policyId", UUID.randomUUID())

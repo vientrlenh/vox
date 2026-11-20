@@ -24,16 +24,16 @@ public record GradingTaskItemInfo(
     UUID sectionId,
     int orderInSection,
     /**
-     * Đề bài của câu, lấy thẳng từ {@code questions.question_text} qua
-     * {@code exam_paper_items.question_id} -- cùng nguồn với màn Xem kết quả
-     * ({@code ViewExamSessionResultUseCase#itemResponses}).
+     * The prompt of the question, taken straight from {@code questions.question_text} through
+     * {@code assessment_paper_items.question_id} -- the same source as the Result screen
+     * ({@code ViewAssessmentSessionResultUseCase#itemResponses}).
      *
-     * <p>Trước đây màn chấm KHÔNG có trường này: giáo viên chỉ thấy "Phần 1, câu 2" và phải
-     * đoán đề bài qua {@code promptText} của lượt nói. Mà lời dẫn đó là câu AI đọc lúc vào lượt
-     * ("You have 5 seconds to get ready…") chứ không phải đề, nên chấm mà không biết câu hỏi là
-     * gì -- không đánh giá nổi câu trả lời có đúng trọng tâm hay không.
+     * <p>Previously the grading screen did NOT have this field: the teacher only saw "Part 1, question 2" and had to
+     * guess the prompt through the {@code promptText} of the spoken turn. But that text is the line the AI reads when entering the turn
+     * ("You have 5 seconds to get ready...") and not the prompt, so grading without knowing what the question
+     * is -- one cannot judge whether the answer is on target.
      *
-     * <p>{@code null} khi paper item không trỏ tới câu hỏi nào hoặc câu hỏi đã bị xoá.
+     * <p>{@code null} when the paper item does not point to any question or the question has been deleted.
      */
     String questionText,
     /**

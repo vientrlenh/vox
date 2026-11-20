@@ -1,8 +1,8 @@
 package com.sep.vox.infrastructure.worker;
 
-import com.sep.vox.domain.model.exam.Exam;
-import com.sep.vox.domain.model.exam.ExamCandidateResult;
-import com.sep.vox.domain.model.exam.ExamGradingAssignment;
+import com.sep.vox.domain.model.assessment.Assessment;
+import com.sep.vox.domain.model.assessment.AssessmentCandidateResult;
+import com.sep.vox.domain.model.assessment.AssessmentGradingAssignment;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -18,9 +18,9 @@ import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.common.AggregateTypeConstant;
 import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.outbox.Outbox;
-import com.sep.vox.domain.repository.ExamCandidateResultRepository;
-import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
-import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.AssessmentCandidateResultRepository;
+import com.sep.vox.domain.repository.AssessmentGradingAssignmentRepository;
+import com.sep.vox.domain.repository.AssessmentRepository;
 import com.sep.vox.domain.repository.OutboxRepository;
 
 /**
@@ -40,21 +40,21 @@ import com.sep.vox.domain.repository.OutboxRepository;
 @Component
 public class GradingDeadlineReminderBatch {
 
-    private final ExamGradingAssignmentRepository examGradingAssignmentRepository;
-    private final ExamCandidateResultRepository examCandidateResultRepository;
-    private final ExamRepository examRepository;
+    private final AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository;
+    private final AssessmentCandidateResultRepository assessmentCandidateResultRepository;
+    private final AssessmentRepository assessmentRepository;
     private final OutboxRepository outboxRepository;
     private final JsonSerializationPort jsonSerializationPort;
 
     public GradingDeadlineReminderBatch(
-            ExamGradingAssignmentRepository examGradingAssignmentRepository,
-            ExamCandidateResultRepository examCandidateResultRepository,
-            ExamRepository examRepository,
+            AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository,
+            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
+            AssessmentRepository assessmentRepository,
             OutboxRepository outboxRepository,
             JsonSerializationPort jsonSerializationPort) {
-        this.examGradingAssignmentRepository = examGradingAssignmentRepository;
-        this.examCandidateResultRepository = examCandidateResultRepository;
-        this.examRepository = examRepository;
+        this.assessmentGradingAssignmentRepository = assessmentGradingAssignmentRepository;
+        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
+        this.assessmentRepository = assessmentRepository;
         this.outboxRepository = outboxRepository;
         this.jsonSerializationPort = jsonSerializationPort;
     }
@@ -69,42 +69,42 @@ public class GradingDeadlineReminderBatch {
      */
     @Transactional
     public int remindOnce(Instant threshold) {
-        List<ExamGradingAssignment> due = examGradingAssignmentRepository.findDueForReminder(threshold);
+        List<AssessmentGradingAssignment> due = assessmentGradingAssignmentRepository.findDueForReminder(threshold);
         if (due.isEmpty()) {
             return 0;
         }
         Instant now = Instant.now();
 
-        // Load results + exams in bulk: one batch can reach several hundred rows, and calling one
+        // Load results + assessments in bulk: one batch can reach several hundred rows, and calling one
         // row at a time is an N+1 right inside the background job.
-        Map<UUID, ExamCandidateResult> resultsById = examCandidateResultRepository.findByIdIn(
+        Map<UUID, AssessmentCandidateResult> resultsById = assessmentCandidateResultRepository.findByIdIn(
                 due.stream().map(assignment -> assignment.getCandidateResultId()).distinct().toList()).stream()
             .collect(Collectors.toMap(
                 result -> result.getId(), Function.identity(), (left, right) -> left));
-        // Keep the Exam as is instead of extracting only its name: the notification also needs the id and the exam kind to open
-        // the right grading screen, and this batch is the only place in the flow still holding the Exam in hand.
-        Map<UUID, Exam> examsById = examRepository.findByIdIn(
-                resultsById.values().stream().map(result -> result.getExamId()).distinct().toList()).stream()
+        // Keep the Assessment as is instead of extracting only its name: the notification also needs the id and the assessment kind to open
+        // the right grading screen, and this batch is the only place in the flow still holding the Assessment in hand.
+        Map<UUID, Assessment> assessmentsById = assessmentRepository.findByIdIn(
+                resultsById.values().stream().map(result -> result.getAssessmentId()).distinct().toList()).stream()
             .collect(Collectors.toMap(
-                exam -> exam.getId(), Function.identity(), (left, right) -> left));
+                assessment -> assessment.getId(), Function.identity(), (left, right) -> left));
 
-        for (ExamGradingAssignment assignment : due) {
+        for (AssessmentGradingAssignment assignment : due) {
             assignment.setRemindedAt(now);
-            examGradingAssignmentRepository.save(assignment);
+            assessmentGradingAssignmentRepository.save(assignment);
 
-            ExamCandidateResult result = resultsById.get(assignment.getCandidateResultId());
-            Exam exam = result == null ? null : examsById.get(result.getExamId());
+            AssessmentCandidateResult result = resultsById.get(assignment.getCandidateResultId());
+            Assessment assessment = result == null ? null : assessmentsById.get(result.getAssessmentId());
             GradingDeadlineReminderPayloadV1 payload = new GradingDeadlineReminderPayloadV1(
                 assignment.getId(),
                 assignment.getTeacherId(),
-                exam == null ? null : exam.getName(),
+                assessment == null ? null : assessment.getName(),
                 assignment.getRoundType() == null ? null : assignment.getRoundType().name(),
                 assignment.getDeadlineAt(),
-                result == null ? null : result.getExamId(),
-                exam == null ? null : exam.getKind()
+                result == null ? null : result.getAssessmentId(),
+                assessment == null ? null : assessment.getKind()
             );
             outboxRepository.save(Outbox.create(
-                AggregateTypeConstant.EXAM_GRADING_ASSIGNMENT,
+                AggregateTypeConstant.ASSESSMENT_GRADING_ASSIGNMENT,
                 assignment.getId(),
                 EventTypeConstant.GRADING_DEADLINE_REMINDER,
                 jsonSerializationPort.toJson(payload),

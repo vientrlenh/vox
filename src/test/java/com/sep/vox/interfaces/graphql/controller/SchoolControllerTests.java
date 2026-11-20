@@ -26,7 +26,7 @@ import com.sep.vox.application.port.input.query.ViewSchoolStudentsBySchoolQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolTeachersBySchoolQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolUserDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolUsersBySchoolQuery;
-import com.sep.vox.application.port.input.usecase.school.ListSchoolsWithOnGoingExamUseCase;
+import com.sep.vox.application.port.input.usecase.school.ListSchoolsWithOnGoingAssessmentUseCase;
 import com.sep.vox.application.port.input.usecase.school.UpdateSchoolUseCase;
 import com.sep.vox.application.port.input.usecase.school.ViewSchoolsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.UpdateSchoolClassUseCase;
@@ -92,7 +92,7 @@ class SchoolControllerTests {
     private ViewSchoolDirectoryCursorPageUseCase viewSchoolDirectoryCursorPageUseCase;
     private ViewSchoolDirectoryPageUseCase viewSchoolDirectoryPageUseCase;
     private ViewSchoolDirectoryDetailsUseCase viewSchoolDirectoryDetailsUseCase;
-    private ListSchoolsWithOnGoingExamUseCase listSchoolsWithOnGoingExamUseCase;
+    private ListSchoolsWithOnGoingAssessmentUseCase listSchoolsWithOnGoingAssessmentUseCase;
     private SchoolController controller;
 
     private final UUID schoolId = UUID.randomUUID();
@@ -126,7 +126,7 @@ class SchoolControllerTests {
         viewSchoolDirectoryCursorPageUseCase = mock(ViewSchoolDirectoryCursorPageUseCase.class);
         viewSchoolDirectoryPageUseCase = mock(ViewSchoolDirectoryPageUseCase.class);
         viewSchoolDirectoryDetailsUseCase = mock(ViewSchoolDirectoryDetailsUseCase.class);
-        listSchoolsWithOnGoingExamUseCase = mock(ListSchoolsWithOnGoingExamUseCase.class);
+        listSchoolsWithOnGoingAssessmentUseCase = mock(ListSchoolsWithOnGoingAssessmentUseCase.class);
 
         controller = new SchoolController(
             viewSchoolsUseCase,
@@ -155,7 +155,7 @@ class SchoolControllerTests {
             viewSchoolDirectoryCursorPageUseCase,
             viewSchoolDirectoryPageUseCase, 
             viewSchoolDirectoryDetailsUseCase,
-            listSchoolsWithOnGoingExamUseCase
+            listSchoolsWithOnGoingAssessmentUseCase
         );
     }
 

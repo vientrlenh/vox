@@ -66,9 +66,9 @@ public class DeleteQuestionUseCase implements IUseCase<DeleteQuestionCommand, De
             && schoolAdmin
             && currentSchoolId != null
             && currentSchoolId.equals(bank.getSchoolId());
-        boolean usedInExam = questionRepository.existsUsedInExam(question.getId());
+        boolean usedInAssessment = questionRepository.existsUsedInAssessment(question.getId());
 
-        if (owner && question.getStatus() == QuestionStatus.DRAFT && !usedInExam) {
+        if (owner && question.getStatus() == QuestionStatus.DRAFT && !usedInAssessment) {
             questionRepository.deleteById(question.getId());
             return new DeleteQuestionResponse(true, false);
         }
@@ -77,7 +77,7 @@ public class DeleteQuestionUseCase implements IUseCase<DeleteQuestionCommand, De
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        if (usedInExam) {
+        if (usedInAssessment) {
             question.setStatus(QuestionStatus.ARCHIVED);
             question.setUpdatedAt(Instant.now());
             question.setUpdatedBy(currentUserId);

@@ -21,7 +21,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import com.sep.vox.application.port.input.usecase.gradelevel.UpdateGradeLevelUseCase;
 import com.sep.vox.application.port.input.usecase.gradelevel.ViewGradeLevelDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.gradelevel.ViewGradeLevelsUseCase;
-import com.sep.vox.application.port.input.usecase.school.ListSchoolsWithOnGoingExamUseCase;
+import com.sep.vox.application.port.input.usecase.school.ListSchoolsWithOnGoingAssessmentUseCase;
 import com.sep.vox.application.port.input.usecase.school.UpdateSchoolUseCase;
 import com.sep.vox.application.port.input.usecase.school.ViewSchoolsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.UpdateSchoolClassUseCase;
@@ -73,7 +73,7 @@ class SchoolAuthorizationGraphQlTests {
         "{ schoolUsersBySchool(schoolId: \"%s\") { totalElements } }".formatted(ID);
     private static final String SCHOOL_USERS_FOR_REQUESTER_QUERY =
         "{ schoolUsersForRequester(schoolId: \"%s\") { totalElements } }".formatted(ID);
-    private static final String SCHOOLS_WITH_ONGOING_EXAM_QUERY = "{ schoolsWithOngoingExam }";
+    private static final String SCHOOLS_WITH_ONGOING_ASSESSMENT_QUERY = "{ schoolsWithOngoingAssessment }";
     private static final String SCHOOL_DIRECTORY_PAGE_QUERY = "{ schoolDirectoryPage { totalElements } }";
     private static final String UPDATE_SCHOOL_MUTATION =
         "mutation { updateSchool(id: \"%s\", input: { name: \"Vox High School\" }) }".formatted(ID);
@@ -94,7 +94,7 @@ class SchoolAuthorizationGraphQlTests {
     @MockitoBean
     private UpdateGradeLevelUseCase updateGradeLevelUseCase;
     @MockitoBean
-    private ListSchoolsWithOnGoingExamUseCase listSchoolsWithOnGoingExamUseCase;
+    private ListSchoolsWithOnGoingAssessmentUseCase listSchoolsWithOnGoingAssessmentUseCase;
     @MockitoBean
     private ViewSchoolDirectoryPageUseCase viewSchoolDirectoryPageUseCase;
 
@@ -115,7 +115,7 @@ class SchoolAuthorizationGraphQlTests {
 
     private static Stream<String> protectedOperations() {
         return Stream.of(SCHOOLS_QUERY, SCHOOL_USERS_BY_SCHOOL_QUERY, SCHOOL_USERS_FOR_REQUESTER_QUERY,
-            SCHOOLS_WITH_ONGOING_EXAM_QUERY, UPDATE_SCHOOL_MUTATION, UPDATE_GRADE_LEVEL_MUTATION);
+            SCHOOLS_WITH_ONGOING_ASSESSMENT_QUERY, UPDATE_SCHOOL_MUTATION, UPDATE_GRADE_LEVEL_MUTATION);
     }
 
     @ParameterizedTest
@@ -126,7 +126,7 @@ class SchoolAuthorizationGraphQlTests {
 
         verifyNoInteractions(viewSchoolsUseCase, viewSchoolUsersBySchoolUseCase,
             viewSchoolUsersForRequesterUseCase, updateSchoolUseCase, updateGradeLevelUseCase,
-            listSchoolsWithOnGoingExamUseCase);
+            listSchoolsWithOnGoingAssessmentUseCase);
     }
 
     @Test
@@ -225,20 +225,20 @@ class SchoolAuthorizationGraphQlTests {
 
     @Test
     @WithMockUser(roles = "SYSTEM_ADMIN")
-    void schools_with_ongoing_exam_should_return_ids_for_system_admin() {
-        when(listSchoolsWithOnGoingExamUseCase.execute(any())).thenReturn(List.of(ID));
+    void schools_with_ongoing_assessment_should_return_ids_for_system_admin() {
+        when(listSchoolsWithOnGoingAssessmentUseCase.execute(any())).thenReturn(List.of(ID));
 
-        graphQlTester.document(SCHOOLS_WITH_ONGOING_EXAM_QUERY).execute()
+        graphQlTester.document(SCHOOLS_WITH_ONGOING_ASSESSMENT_QUERY).execute()
             .errors().verify()
-            .path("schoolsWithOngoingExam").entityList(String.class).containsExactly(ID.toString());
+            .path("schoolsWithOngoingAssessment").entityList(String.class).containsExactly(ID.toString());
     }
 
     @Test
     @WithMockUser(roles = "SCHOOL_ADMIN")
-    void schools_with_ongoing_exam_should_be_forbidden_for_school_admin() {
-        assertErrorType(SCHOOLS_WITH_ONGOING_EXAM_QUERY, ErrorType.FORBIDDEN);
+    void schools_with_ongoing_assessment_should_be_forbidden_for_school_admin() {
+        assertErrorType(SCHOOLS_WITH_ONGOING_ASSESSMENT_QUERY, ErrorType.FORBIDDEN);
 
-        verifyNoInteractions(listSchoolsWithOnGoingExamUseCase);
+        verifyNoInteractions(listSchoolsWithOnGoingAssessmentUseCase);
     }
 
     @Test

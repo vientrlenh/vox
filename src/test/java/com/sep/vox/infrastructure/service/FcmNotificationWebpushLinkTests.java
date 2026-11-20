@@ -31,7 +31,7 @@ class FcmNotificationWebpushLinkTests {
     }
 
     private PushMessage messageWithId() {
-        return message(Map.of("notificationId", NOTIFICATION_ID, "target", "EXAM_RESULT_DETAIL"));
+        return message(Map.of("notificationId", NOTIFICATION_ID, "target", "ASSESSMENT_RESULT_DETAIL"));
     }
 
     @Test
@@ -70,6 +70,6 @@ class FcmNotificationWebpushLinkTests {
     @Test
     void should_skip_the_link_when_the_push_carries_no_notification_id() {
         assertThat(service("https://app.vox.edu.vn/n")
-            .webpushLink(message(Map.of("target", "EXAM_RESULT_DETAIL")))).isNull();
+            .webpushLink(message(Map.of("target", "ASSESSMENT_RESULT_DETAIL")))).isNull();
     }
 }

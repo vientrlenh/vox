@@ -61,7 +61,7 @@ class RoleRepositoryTests {
 
     @Test
     void whenFindByName_thenReturnsMatchingRoles() {
-        roleRepository.save(newRole("EXAM_REVIEWER", "Reviewer"));
+        roleRepository.save(newRole("ASSESSMENT_REVIEWER", "Reviewer"));
         roleRepository.save(newRole("CONTENT_REVIEWER", "Reviewer"));
         roleRepository.save(newRole("SCHOOL_MANAGER", "Manager"));
 
@@ -70,7 +70,7 @@ class RoleRepositoryTests {
         assertThat(found).hasSize(2);
         assertThat(found)
             .extracting(role -> role.getCode().value())
-            .containsExactlyInAnyOrder("EXAM_REVIEWER", "CONTENT_REVIEWER");
+            .containsExactlyInAnyOrder("ASSESSMENT_REVIEWER", "CONTENT_REVIEWER");
     }
 
     @Test

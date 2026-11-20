@@ -19,17 +19,17 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
 /**
- * Câu đọc của màn điểm danh giám thị, chạy trên Postgres thật.
+ * The read for the proctor attendance screen, running on real Postgres.
  *
- * <p>Dựng bằng {@code em.createQuery} nên chỉ được phân tích lúc GỌI: sai ở đây lọt qua compile, lọt
- * qua cả context load, và chỉ nổ khi giám thị bấm vào màn hình -- cùng lý do
- * {@link MonitoredExamQuerySmokeTests} phải tồn tại.
+ * <p>Built with {@code em.createQuery} so it is only parsed at CALL time: a mistake here passes compilation, passes
+ * even the context load, and only blows up when a proctor clicks into the screen -- the same reason
+ * {@link MonitoredAssessmentQuerySmokeTests} has to exist.
  *
- * <p>Trọng tâm là bộ lọc trạng thái, vì đây là chỗ đã sai một lần: màn điểm danh từng hiện cả kỳ thi
- * còn DRAFT. {@code exams.status} và {@code exam_schedules.status} là hai máy trạng thái ĐỘC LẬP --
- * luồng chuẩn bắt người xếp lịch publish từng ca TRƯỚC rồi mới đẩy kỳ thi sang SCHEDULED -- nên một
- * ca PUBLISHED nằm dưới kỳ thi DRAFT là dữ liệu hợp lệ, không phải rác. Lọc theo ca thôi thì không
- * đủ.
+ * <p>The focus is the status filter, because this is the place that was wrong once: the attendance screen once showed even assessments
+ * still in DRAFT. {@code assessments.status} and {@code assessment_schedules.status} are two INDEPENDENT state machines --
+ * the standard flow requires the scheduler to publish each session FIRST and only then push the assessment to SCHEDULED -- so a
+ * PUBLISHED session under a DRAFT assessment is valid data, not junk. Filtering by session alone is not
+ * enough.
  */
 @IntegrationTest
 @AutoConfigureTestGrpcTransport
@@ -44,24 +44,24 @@ class JpaProctorScheduleQuerySmokeTests {
 
     private UUID schoolId;
     private UUID teacherId;
-    private UUID examId;
+    private UUID assessmentId;
     private Instant now;
 
     @BeforeEach
     void setUp() {
         schoolId = UUID.randomUUID();
         teacherId = UUID.randomUUID();
-        examId = UUID.randomUUID();
+        assessmentId = UUID.randomUUID();
         now = Instant.parse("2026-07-29T02:00:00Z");
     }
 
     @Test
-    void should_list_a_published_schedule_of_a_scheduled_exam() {
+    void should_list_a_published_schedule_of_a_scheduled_assessment() {
         seed("SCHEDULED", "PUBLISHED");
 
         assertThat(repository.findByTeacherId(teacherId)).singleElement().satisfies(schedule -> {
-            assertThat(schedule.examId()).isEqualTo(examId);
-            assertThat(schedule.examName()).isEqualTo("Kỳ thi khói");
+            assertThat(schedule.assessmentId()).isEqualTo(assessmentId);
+            assertThat(schedule.assessmentName()).isEqualTo("Kỳ thi khói");
             assertThat(schedule.status()).isEqualTo("PUBLISHED");
             // LEFT JOIN phòng thi: ca chưa xếp phòng vẫn phải ra dòng, không bị join nuốt mất.
             assertThat(schedule.roomName()).isNull();
@@ -75,7 +75,7 @@ class JpaProctorScheduleQuerySmokeTests {
      * Đây là ca tái hiện đúng lỗi đã báo.
      */
     @Test
-    void should_hide_a_schedule_of_an_exam_still_in_draft() {
+    void should_hide_a_schedule_of_an_assessment_still_in_draft() {
         seed("DRAFT", "PUBLISHED");
 
         assertThat(repository.findByTeacherId(teacherId)).isEmpty();
@@ -93,7 +93,7 @@ class JpaProctorScheduleQuerySmokeTests {
 
     /** Chỉ ẩn DRAFT: kỳ thi bị huỷ vẫn hiện kèm trạng thái để giám thị biết mà không tới phòng. */
     @Test
-    void should_still_list_a_cancelled_exam() {
+    void should_still_list_a_cancelled_assessment() {
         seed("CANCELLED", "CANCELLED");
 
         assertThat(repository.findByTeacherId(teacherId)).singleElement()
@@ -127,35 +127,35 @@ class JpaProctorScheduleQuerySmokeTests {
 
     // Chèn thẳng bằng SQL: entity ở đây có constructor rất dài, và test này chỉ cần đúng những cột mà
     // câu truy vấn đọc. Baseline không khai foreign key nào nên id trường/giáo viên tự do.
-    private void seed(String examStatus, String scheduleStatus) {
+    private void seed(String assessmentStatus, String scheduleStatus) {
         UUID scheduleId = UUID.randomUUID();
         em.createNativeQuery("""
-            INSERT INTO exams (id, code, name, kind, status, language_id, school_id, requires_otp,
+            INSERT INTO assessments (id, code, name, kind, status, language_id, school_id, requires_otp,
                                created_at, updated_at)
             VALUES (:id, :code, 'Kỳ thi khói', 'CENTRALIZED', :status, :languageId, :schoolId,
                     true, :now, :now)
             ON CONFLICT (id) DO NOTHING
             """)
-            .setParameter("id", examId)
-            .setParameter("code", "SMOKE-" + examId)
-            .setParameter("status", examStatus)
+            .setParameter("id", assessmentId)
+            .setParameter("code", "SMOKE-" + assessmentId)
+            .setParameter("status", assessmentStatus)
             .setParameter("languageId", UUID.randomUUID())
             .setParameter("schoolId", schoolId)
             .setParameter("now", now)
             .executeUpdate();
         em.createNativeQuery("""
-            INSERT INTO exam_schedules (id, exam_id, start_date, end_date, status, created_at, updated_at)
-            VALUES (:id, :examId, :start, :end, :status, :now, :now)
+            INSERT INTO assessment_schedules (id, assessment_id, start_date, end_date, status, created_at, updated_at)
+            VALUES (:id, :assessmentId, :start, :end, :status, :now, :now)
             """)
             .setParameter("id", scheduleId)
-            .setParameter("examId", examId)
+            .setParameter("assessmentId", assessmentId)
             .setParameter("start", now.minus(Duration.ofMinutes(10)))
             .setParameter("end", now.plus(Duration.ofHours(1)))
             .setParameter("status", scheduleStatus)
             .setParameter("now", now)
             .executeUpdate();
         em.createNativeQuery("""
-            INSERT INTO exam_schedule_proctors (id, schedule_id, teacher_id)
+            INSERT INTO assessment_schedule_proctors (id, schedule_id, teacher_id)
             VALUES (:id, :scheduleId, :teacherId)
             """)
             .setParameter("id", UUID.randomUUID())

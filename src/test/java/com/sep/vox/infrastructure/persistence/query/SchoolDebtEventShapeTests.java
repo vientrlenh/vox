@@ -60,7 +60,7 @@ class SchoolDebtEventShapeTests {
             null, null, null, null, null, null, BigDecimal.ZERO, now));
 
         assertThat(saved.getQuotaType()).isNull();
-        assertThat(saved.getTriggerExamSessionId()).isNull();
+        assertThat(saved.getTriggerAssessmentSessionId()).isNull();
         assertThat(saved.getTriggerPracticeSessionId()).isNull();
         assertThat(saved.getOverageVnd()).isEqualByComparingTo(BigDecimal.ZERO);
     }
@@ -75,23 +75,23 @@ class SchoolDebtEventShapeTests {
             new BigDecimal("2400000"), new BigDecimal("2906310"), new BigDecimal("506310"), now));
 
         assertThat(saved.getTriggerPracticeSessionId()).isNotNull();
-        assertThat(saved.getTriggerExamSessionId()).isNull();
+        assertThat(saved.getTriggerAssessmentSessionId()).isNull();
     }
 
     @Test
     void should_reject_a_cleared_row_that_claims_a_quota_bucket() {
         assertThatThrownBy(() -> schoolDebtEventRepository.save(new SchoolDebtEvent(
             schoolId, subscriptionId, SchoolDebtEventType.CLEARED,
-            QuotaType.EXAM, null, null, null,
+            QuotaType.ASSESSMENT, null, null, null,
             new BigDecimal("8000000"), new BigDecimal("8000000"), BigDecimal.ZERO, now)))
             .hasMessageContaining(SHAPE_CONSTRAINT);
     }
 
     @Test
     void should_reject_a_debt_row_with_no_trigger_session_at_all() {
-        // Đây CHÍNH LÀ dòng mà bản trước V4 vẫn ghi được: CAP_EXCEEDED do luyện nói gây ra, nhưng
-        // trigger_exam_session_id = NULL vì practiceSessionId không được truyền xuống. Sổ biết
-        // trường vượt trần mà không biết vì khoản nào.
+        // This is EXACTLY the row that the pre-V4 version could still write: a CAP_EXCEEDED caused by speaking practice, but
+        // trigger_assessment_session_id = NULL because practiceSessionId was not passed down. The ledger knew the
+        // school exceeded the ceiling but not because of which expense.
         assertThatThrownBy(() -> schoolDebtEventRepository.save(new SchoolDebtEvent(
             schoolId, subscriptionId, SchoolDebtEventType.CAP_EXCEEDED,
             QuotaType.PRACTICE, null, null, new BigDecimal("18402.60"),
@@ -103,7 +103,7 @@ class SchoolDebtEventShapeTests {
     void should_reject_a_debt_row_naming_both_trigger_sessions() {
         assertThatThrownBy(() -> schoolDebtEventRepository.save(new SchoolDebtEvent(
             schoolId, subscriptionId, SchoolDebtEventType.LOCKED,
-            QuotaType.EXAM, UUID.randomUUID(), UUID.randomUUID(), new BigDecimal("96320.40"),
+            QuotaType.ASSESSMENT, UUID.randomUUID(), UUID.randomUUID(), new BigDecimal("96320.40"),
             new BigDecimal("8000000"), new BigDecimal("8045180"), new BigDecimal("45180"), now)))
             .hasMessageContaining(SHAPE_CONSTRAINT);
     }

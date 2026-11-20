@@ -77,8 +77,8 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Up
                 || command.minResponseSeconds() != null || command.maxResponseSeconds() != null;
 
         if (hasContentUpdate) {
-            boolean usedInExam = questionRepository.existsUsedInExam(question.getId());
-            boolean immutable = question.getStatus() == QuestionStatus.PUBLISHED || question.isLocked() || usedInExam;
+            boolean usedInAssessment = questionRepository.existsUsedInAssessment(question.getId());
+            boolean immutable = question.getStatus() == QuestionStatus.PUBLISHED || question.isLocked() || usedInAssessment;
             if (immutable) {
                 throw new IllegalStateException(
                     "Câu hỏi đã publish hoặc đã dùng trong bài kiểm tra, không thể sửa trực tiếp — dùng nút Nhân bản để tạo bản có thể sửa");

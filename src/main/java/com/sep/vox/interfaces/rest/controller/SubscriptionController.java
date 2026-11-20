@@ -22,7 +22,7 @@ import com.sep.vox.application.port.input.command.ForceSuspendSubscriptionComman
 import com.sep.vox.application.port.input.command.UnsuspendSubscriptionCommand;
 import com.sep.vox.application.port.input.command.DeleteDraftSubscriptionPlanCommand;
 import com.sep.vox.application.port.input.command.PublishSubscriptionPlanCommand;
-import com.sep.vox.application.port.input.usecase.subscription.AllocateExamQuotaToTeachersUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.AllocateAssessmentQuotaToTeachersUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.AllocatePracticeQuotaToStudentsUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ArchiveSubscriptionPlanUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.CreateSubscriptionPlanReplacementUseCase;
@@ -66,7 +66,7 @@ public class SubscriptionController {
     private final CancelSchoolSubscriptionUseCase cancelSchoolSubscriptionUseCase;
     private final ForceSuspendSubscriptionUseCase forceSuspendSubscriptionUseCase;
     private final UnsuspendSubscriptionUseCase unsuspendSubscriptionUseCase;
-    private final AllocateExamQuotaToTeachersUseCase allocateExamQuotaToTeachersUseCase;
+    private final AllocateAssessmentQuotaToTeachersUseCase allocateAssessmentQuotaToTeachersUseCase;
     private final AllocatePracticeQuotaToStudentsUseCase allocatePracticeQuotaToStudentsUseCase;
     private final SetQuotaDistributionPolicyUseCase setQuotaDistributionPolicyUseCase;
     private final FundQuotaFromBalanceUseCase fundQuotaFromBalanceUseCase;
@@ -81,7 +81,7 @@ public class SubscriptionController {
             CancelSchoolSubscriptionUseCase cancelSchoolSubscriptionUseCase,
             ForceSuspendSubscriptionUseCase forceSuspendSubscriptionUseCase,
             UnsuspendSubscriptionUseCase unsuspendSubscriptionUseCase,
-            AllocateExamQuotaToTeachersUseCase allocateExamQuotaToTeachersUseCase,
+            AllocateAssessmentQuotaToTeachersUseCase allocateAssessmentQuotaToTeachersUseCase,
             AllocatePracticeQuotaToStudentsUseCase allocatePracticeQuotaToStudentsUseCase,
             SetQuotaDistributionPolicyUseCase setQuotaDistributionPolicyUseCase,
             FundQuotaFromBalanceUseCase fundQuotaFromBalanceUseCase) {
@@ -94,7 +94,7 @@ public class SubscriptionController {
         this.cancelSchoolSubscriptionUseCase = cancelSchoolSubscriptionUseCase;
         this.forceSuspendSubscriptionUseCase = forceSuspendSubscriptionUseCase;
         this.unsuspendSubscriptionUseCase = unsuspendSubscriptionUseCase;
-        this.allocateExamQuotaToTeachersUseCase = allocateExamQuotaToTeachersUseCase;
+        this.allocateAssessmentQuotaToTeachersUseCase = allocateAssessmentQuotaToTeachersUseCase;
         this.allocatePracticeQuotaToStudentsUseCase = allocatePracticeQuotaToStudentsUseCase;
         this.setQuotaDistributionPolicyUseCase = setQuotaDistributionPolicyUseCase;
         this.fundQuotaFromBalanceUseCase = fundQuotaFromBalanceUseCase;
@@ -203,18 +203,18 @@ public class SubscriptionController {
         return ResponseEntity.ok(ApiResponse.success("Gỡ đình chỉ gói đăng ký thành công", data));
     }
 
-    // Hai đường ĐỌC hạn mức đã chia (GET .../teachers/exam-quota và GET .../students/practice-quota)
-    // đã bỏ: chúng chuyển sang GraphQL thành schoolExamQuotaUserAllocations /
-    // schoolPracticeQuotaUserAllocations, nơi có phân trang và nối được tên người dùng qua data
-    // loader. Đường GHI ở lại REST theo đúng quy ước "đọc GraphQL, ghi REST".
+    // The two READ paths for allocated quota (GET .../teachers/assessment-quota and GET .../students/practice-quota)
+    // have been removed: they moved to GraphQL as schoolAssessmentQuotaUserAllocations /
+    // schoolPracticeQuotaUserAllocations, which have paging and can join user names through a data
+    // loader. The WRITE path stays on REST following the convention "read through GraphQL, write through REST".
 
-    @PutMapping("/schools/{schoolId}/teachers/exam-quota")
+    @PutMapping("/schools/{schoolId}/teachers/assessment-quota")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
-    public ResponseEntity<ApiResponse<QuotaUserAllocationSummaryResponse>> allocateExamQuotaToTeachers(
+    public ResponseEntity<ApiResponse<QuotaUserAllocationSummaryResponse>> allocateAssessmentQuotaToTeachers(
             @PathVariable(name = "schoolId") UUID schoolId,
             @Valid @RequestBody AllocateQuotaRequest request) {
-        QuotaUserAllocationSummaryResponse data = allocateExamQuotaToTeachersUseCase.execute(
-            AllocateQuotaCommandMapper.toExamCommand(schoolId, request));
+        QuotaUserAllocationSummaryResponse data = allocateAssessmentQuotaToTeachersUseCase.execute(
+            AllocateQuotaCommandMapper.toAssessmentCommand(schoolId, request));
         return ResponseEntity.ok(ApiResponse.success("Phân bổ hạn mức thi cho giáo viên thành công", data));
     }
 

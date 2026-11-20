@@ -40,7 +40,7 @@ import com.sep.vox.application.port.input.query.ViewSchoolUsersBySchoolQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolsQuery;
 import com.sep.vox.application.port.input.query.key.SchoolClassesKey;
 import com.sep.vox.application.port.input.query.key.SchoolUsersKey;
-import com.sep.vox.application.port.input.usecase.school.ListSchoolsWithOnGoingExamUseCase;
+import com.sep.vox.application.port.input.usecase.school.ListSchoolsWithOnGoingAssessmentUseCase;
 import com.sep.vox.application.port.input.usecase.school.UpdateSchoolUseCase;
 import com.sep.vox.application.port.input.usecase.school.ViewSchoolsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.UpdateSchoolClassUseCase;
@@ -123,7 +123,7 @@ public class SchoolController {
     private final ViewSchoolDirectoryCursorPageUseCase viewSchoolDirectoryCursorPageUseCase;
     private final ViewSchoolDirectoryPageUseCase viewSchoolDirectoryPageUseCase;
     private final ViewSchoolDirectoryDetailsUseCase viewSchoolDirectoryDetailsUseCase;
-    private final ListSchoolsWithOnGoingExamUseCase listSchoolsWithOnGoingExamUseCase;
+    private final ListSchoolsWithOnGoingAssessmentUseCase listSchoolsWithOnGoingAssessmentUseCase;
 
     public SchoolController(ViewSchoolsUseCase viewSchoolsUseCase,
                             ViewSchoolClassesUseCase viewSchoolClassesUseCase,
@@ -151,7 +151,7 @@ public class SchoolController {
                             ViewSchoolDirectoryCursorPageUseCase viewSchoolDirectoryCursorPageUseCase,
                             ViewSchoolDirectoryPageUseCase viewSchoolDirectoryPageUseCase,
                             ViewSchoolDirectoryDetailsUseCase viewSchoolDirectoryDetailsUseCase,
-            ListSchoolsWithOnGoingExamUseCase listSchoolsWithOnGoingExamUseCase) {
+            ListSchoolsWithOnGoingAssessmentUseCase listSchoolsWithOnGoingAssessmentUseCase) {
         this.viewSchoolsUseCase = viewSchoolsUseCase;
         this.viewSchoolClassesUseCase = viewSchoolClassesUseCase;
         this.viewSchoolClassesByUserUseCase = viewSchoolClassesByUserUseCase;
@@ -178,7 +178,7 @@ public class SchoolController {
         this.viewSchoolDirectoryCursorPageUseCase = viewSchoolDirectoryCursorPageUseCase;
         this.viewSchoolDirectoryPageUseCase = viewSchoolDirectoryPageUseCase;
         this.viewSchoolDirectoryDetailsUseCase = viewSchoolDirectoryDetailsUseCase;
-        this.listSchoolsWithOnGoingExamUseCase = listSchoolsWithOnGoingExamUseCase;
+        this.listSchoolsWithOnGoingAssessmentUseCase = listSchoolsWithOnGoingAssessmentUseCase;
     }
 
 
@@ -547,9 +547,9 @@ public class SchoolController {
         return viewSchoolDirectoryDetailsUseCase.execute(query);
     }
 
-    @QueryMapping(name = "schoolsWithOngoingExam")
+    @QueryMapping(name = "schoolsWithOngoingAssessment")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
-    public List<UUID> schoolsWithOngoingExam() {
-        return listSchoolsWithOnGoingExamUseCase.execute(null);
+    public List<UUID> schoolsWithOngoingAssessment() {
+        return listSchoolsWithOnGoingAssessmentUseCase.execute(null);
     }
 }

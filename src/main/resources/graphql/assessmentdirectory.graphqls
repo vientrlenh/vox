@@ -1,0 +1,75 @@
+# ==================================================================
+# The directory of candidate / proctor sources of an assessment (read-only)
+#
+# The types below are only produced from the four root queries at the end of the file, and no other
+# type points to them. That way they do not inherit the field resolvers of `SchoolClass`
+# / `SchoolUser` / `SchoolGrade` (which are gated to SCHOOL_ADMIN and reachable from many other
+# branches of the graph). The same reason is written in `myclass.graphqls`.
+#
+# Every field is a scalar -- deliberately kept as a leaf branch, opening no extra edge
+# in the graph for the TEACHER role.
+#
+# The real permission lives in `AssessmentDirectoryAccessService`, not in @PreAuthorize:
+# the school admin of the same school OR the chair (CHAIR) of the assessment. The chair of a class test
+# only sees their own classes/students and has no school-year path.
+# ==================================================================
+
+type AssessmentDirectoryClass {
+    id: ID!
+    schoolId: ID!
+    languageId: ID!
+    schoolGradeId: ID!
+    code: String!
+    name: String!
+    description: String
+    status: String!
+}
+
+type AssessmentDirectoryGrade {
+    id: ID!
+    code: String!
+    name: String!
+    status: String!
+}
+
+type AssessmentDirectoryUser {
+    userId: ID!
+    fullName: String
+    email: String
+    status: String!
+}
+
+type AssessmentDirectoryClassPage {
+    content: [AssessmentDirectoryClass!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+type AssessmentDirectoryGradePage {
+    content: [AssessmentDirectoryGrade!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+type AssessmentDirectoryUserPage {
+    content: [AssessmentDirectoryUser!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+extend type Query {
+    assessmentDirectoryClasses(assessmentId: ID!, search: String, page: Int! = 1, size: Int! = 20): AssessmentDirectoryClassPage!
+    assessmentDirectoryGrades(assessmentId: ID!, search: String, page: Int! = 1, size: Int! = 20): AssessmentDirectoryGradePage!
+    """
+    `excludeUserIds`: những người phía gọi ĐÃ CÓ rồi (thí sinh của kỳ thi, giám thị của ca) —
+    loại ngay trong SQL để `content`, `totalElements` và `totalPages` cùng nói một chuyện.
+    """
+    assessmentDirectoryStudents(assessmentId: ID!, search: String, page: Int! = 1, size: Int! = 20, excludeUserIds: [ID!]): AssessmentDirectoryUserPage!
+    assessmentDirectoryProctors(assessmentId: ID!, search: String, page: Int! = 1, size: Int! = 20, excludeUserIds: [ID!]): AssessmentDirectoryUserPage!
+}

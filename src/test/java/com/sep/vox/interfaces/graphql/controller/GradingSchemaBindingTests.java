@@ -24,7 +24,7 @@ import com.sep.vox.application.query.dto.AssignableTeacherInfo;
 import com.sep.vox.application.query.dto.GradingAssignmentRowInfo;
 import com.sep.vox.application.query.dto.GradingCriterionMetaInfo;
 import com.sep.vox.application.query.dto.GradingCriterionScoreInfo;
-import com.sep.vox.application.query.dto.GradingExamOptionInfo;
+import com.sep.vox.application.query.dto.GradingAssessmentOptionInfo;
 import com.sep.vox.application.query.dto.GradingStatsInfo;
 import com.sep.vox.application.query.dto.GradingTaskDetailInfo;
 import com.sep.vox.application.query.dto.GradingTaskInfo;
@@ -40,7 +40,7 @@ import com.sep.vox.application.query.dto.ResultStatusHistoryInfo;
 class GradingSchemaBindingTests {
 
     private static final Path SCHEMA =
-        Path.of("src", "main", "resources", "graphql", "exam-grading.graphqls");
+        Path.of("src", "main", "resources", "graphql", "assessment-grading.graphqls");
 
     /** Neo vào đầu dòng để {@code extend type Query} không bị nhận là một object type. */
     private static final Pattern TYPE_BLOCK = Pattern.compile(
@@ -61,7 +61,7 @@ class GradingSchemaBindingTests {
             Arguments.of("GradingTask", GradingTaskInfo.class),
             Arguments.of("GradingAssignmentRow", GradingAssignmentRowInfo.class),
             Arguments.of("AssignableTeacher", AssignableTeacherInfo.class),
-            Arguments.of("GradingExamOption", GradingExamOptionInfo.class),
+            Arguments.of("GradingAssessmentOption", GradingAssessmentOptionInfo.class),
             Arguments.of("ResultStatusHistoryEntry", ResultStatusHistoryInfo.class),
             Arguments.of("AiQualityReport", AiQualityReportInfo.class),
             Arguments.of("AiQualityByTeacher", AiQualityReportInfo.ByTeacher.class)

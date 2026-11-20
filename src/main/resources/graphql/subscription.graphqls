@@ -27,16 +27,16 @@ enum SchoolSubscriptionStatus {
 }
 
 """
-Hai VÍ hạn mức cấp trường, đều tính bằng VND. Mỗi hoạt động chỉ trừ vào ĐÚNG MỘT ví, và tiêu hết ví
-này không đụng tới ví kia -- để một tuần luyện nói nhiều bất thường không ăn mất ngân sách kỳ thi.
+Two school-level quota WALLETS, both in VND. Each activity is deducted from EXACTLY ONE wallet, and spending one
+wallet does not touch the other -- so an unusually heavy week of speaking practice does not eat the assessment budget.
 
-CLASS_TEST đã bị bỏ: nó là TRẦN CHI nằm trong ví EXAM chứ không phải ví thứ ba, và bị trừ trùng
-cùng một khoản với EXAM cho mỗi bài kiểm tra trên lớp. Trần theo từng giáo viên vẫn còn, ở
-SchoolSubscriptionQuotaUserAllocation với quotaType = EXAM.
+CLASS_TEST was removed: it is a SPENDING CEILING inside the ASSESSMENT wallet, not a third wallet, and it was charged the same amount
+twice as ASSESSMENT for every class test. The ceiling per teacher still exists, in
+SchoolSubscriptionQuotaUserAllocation with quotaType = ASSESSMENT.
 """
 enum QuotaType {
     "Chấm thi -- cả kỳ thi tập trung lẫn bài kiểm tra trên lớp đều trừ vào đây"
-    EXAM
+    ASSESSMENT
     "Học sinh tự luyện nói"
     PRACTICE
 }
@@ -177,12 +177,12 @@ type SchoolSubscriptionRenewalPreview {
 }
 
 """
-Hạn mức CÁ NHÂN của một người dùng trong một ví cấp trường -- trần chi nhà trường đặt lên phần ví
-người này được tiêu, KHÔNG phải một ví riêng: tiền vẫn nằm ở ví cấp trường.
+The PERSONAL quota of a user within a school-level wallet -- the spending ceiling the school places on the part of the wallet
+this person may spend, NOT a separate wallet: the money still sits in the school-level wallet.
 
-quotaType = EXAM chỉ có ở giáo viên (trần cho bài kiểm tra trên lớp họ ra đề), PRACTICE chỉ có ở học
-sinh. Thay cho cặp MyClassTestQuotaAllocation/MyPracticeQuotaAllocation cũ -- cùng một khái niệm thì
-một kiểu là đủ.
+quotaType = ASSESSMENT only exists for teachers (the ceiling for the class tests they author), PRACTICE only exists for
+students. Replaces the old pair MyClassTestQuotaAllocation/MyPracticeQuotaAllocation -- the same concept
+needs only one type.
 """
 type SchoolSubscriptionQuotaUserAllocation {
     id: ID!
@@ -194,7 +194,7 @@ type SchoolSubscriptionQuotaUserAllocation {
 }
 
 type QuotaPricing {
-    estimatedCostPerExamSecondUsd: Float!
+    estimatedCostPerAssessmentSecondUsd: Float!
     estimatedCostPerPracticeSecondUsd: Float!
     usdToVndRate: Float!
 }
@@ -230,8 +230,8 @@ extend type Query {
     schoolSubscriptionHistory(schoolId: ID!): [SchoolSubscription!]!
 
     subscriptionUsage(schoolId: ID!): [SchoolSubscriptionQuotaRecord!]!
-    "null = giáo viên không có hạn mức cá nhân riêng, tức chỉ ví EXAM của trường áp dụng"
-    myExamQuotaAllocation: SchoolSubscriptionQuotaUserAllocation
+    "null = the teacher has no separate personal quota, i.e. only the school's ASSESSMENT wallet applies"
+    myAssessmentQuotaAllocation: SchoolSubscriptionQuotaUserAllocation
     "null = trường CHƯA phân hạn mức PRACTICE riêng cho học sinh này, tức bị chặn hoàn toàn"
     myPracticeQuotaAllocation: SchoolSubscriptionQuotaUserAllocation
 
@@ -288,7 +288,7 @@ distributedAmountVnd phải do máy chủ tính trên TOÀN BỘ tập: giao di�
 cột phân bổ của trang đó ra số sai ngay từ trang thứ hai.
 """
 type SchoolQuotaUserAllocationPage {
-    "Ví hạn mức cấp trường -- EXAM khi chia cho giáo viên, PRACTICE khi chia cho học sinh."
+    "The school-level quota wallet -- ASSESSMENT when distributing to teachers, PRACTICE when distributing to students."
     pool: SchoolSubscriptionQuotaRecord!
     """
     Tổng đã chia cho những người CÒN đủ điều kiện, trên toàn bộ tập chứ không phải chỉ trang này.
@@ -322,9 +322,9 @@ type SchoolQuotaUserAllocationPage {
     """
     spendableFundsVnd: Float!
     """
-    Phần ví TỰ NẠP của trường (school_balances) CÓ THỂ ăn thêm ngoài distributableAmountVnd khi nới
-    trần cá nhân của MỘT người -- không phải một túi tiền dành riêng, và dùng CHUNG cho cả EXAM lẫn
-    PRACTICE. Đã kẹp về 0, âm là nợ của trường (không phải phần chia được thêm).
+    The part of the school's SELF-TOPPED-UP wallet (school_balances) that CAN be eaten into beyond distributableAmountVnd when loosening the
+    personal ceiling of ONE person -- not a reserved pocket of money, and SHARED by both ASSESSMENT and
+    PRACTICE. Clamped to 0, negative is the school's debt (not an additional distributable part).
     """
     walletBalanceVnd: Float!
     content: [SchoolQuotaUserAllocation!]!
@@ -336,12 +336,12 @@ type SchoolQuotaUserAllocationPage {
 
 extend type Query {
     """
-    Hạn mức thi đã chia cho từng GIÁO VIÊN, có phân trang.
+    The assessment quota distributed to each TEACHER, with paging.
 
-    Thay cho GET /v1/schools/{schoolId}/teachers/exam-quota: đường REST đó trả về mọi giáo viên
-    trong một lượt và không mang tên người dùng, nên cột "Họ tên" ở client luôn rỗng.
+    Replaces GET /v1/schools/{schoolId}/teachers/assessment-quota: that REST path returned every teacher
+    in one go and did not carry the user's name, so the "Full name" column on the client was always empty.
     """
-    schoolExamQuotaUserAllocations(
+    schoolAssessmentQuotaUserAllocations(
         schoolId: ID!,
         "Lọc theo TÊN. Bỏ trống thì không lọc."
         search: String,

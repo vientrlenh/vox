@@ -42,13 +42,13 @@ class JpaPlatformOperationalHealthQueryRepositoryTests {
     private static final Instant WINDOW_FROM = Instant.parse("2026-08-01T00:00:00Z");
     private static final Instant WINDOW_TO = Instant.parse("2026-08-20T00:00:00Z");
 
-    private void insertSession(UUID examId, String status, Instant startedAt, Instant submittedAt) {
+    private void insertSession(UUID assessmentId, String status, Instant startedAt, Instant submittedAt) {
         em.createNativeQuery("""
-            INSERT INTO exam_sessions (id, exam_id, candidate_id, paper_id, started_at, submitted_at, status, flagged)
-            VALUES (:id, :examId, :candidateId, :paperId, :startedAt, :submittedAt, :status, FALSE)
+            INSERT INTO assessment_sessions (id, assessment_id, candidate_id, paper_id, started_at, submitted_at, status, flagged)
+            VALUES (:id, :assessmentId, :candidateId, :paperId, :startedAt, :submittedAt, :status, FALSE)
             """)
             .setParameter("id", UUID.randomUUID())
-            .setParameter("examId", examId)
+            .setParameter("assessmentId", assessmentId)
             .setParameter("candidateId", UUID.randomUUID())
             .setParameter("paperId", UUID.randomUUID())
             .setParameter("startedAt", OffsetDateTime.ofInstant(startedAt, ZoneOffset.UTC))
@@ -68,7 +68,7 @@ class JpaPlatformOperationalHealthQueryRepositoryTests {
     void submittedAtIsTimestampWithTimeZone() {
         Object dataType = em.createNativeQuery("""
             SELECT data_type FROM information_schema.columns
-            WHERE table_name = 'exam_sessions' AND column_name = 'submitted_at'
+            WHERE table_name = 'assessment_sessions' AND column_name = 'submitted_at'
             """)
             .getSingleResult();
 
@@ -76,27 +76,27 @@ class JpaPlatformOperationalHealthQueryRepositoryTests {
     }
 
     @Test
-    void countsLiveSessionsByStatusAndDistinctExams() {
-        UUID examA = UUID.randomUUID();
-        UUID examB = UUID.randomUUID();
+    void countsLiveSessionsByStatusAndDistinctAssessments() {
+        UUID assessmentA = UUID.randomUUID();
+        UUID assessmentB = UUID.randomUUID();
         Instant now = Instant.parse("2026-08-15T03:00:00Z");
 
-        insertSession(examA, "IN_PROGRESS", now, null);
-        insertSession(examA, "IN_PROGRESS", now, null);
-        insertSession(examB, "IN_PROGRESS", now, null);
-        insertSession(examA, "SUBMITTED", now, now);
-        insertSession(examB, "GRADING", now, now);
+        insertSession(assessmentA, "IN_PROGRESS", now, null);
+        insertSession(assessmentA, "IN_PROGRESS", now, null);
+        insertSession(assessmentB, "IN_PROGRESS", now, null);
+        insertSession(assessmentA, "SUBMITTED", now, now);
+        insertSession(assessmentB, "GRADING", now, now);
         // Noise: already finished, must not fall into any cell above.
-        insertSession(examA, "GRADED", now, now);
-        insertSession(examA, "GRADING_FAILED", now, now);
-        insertSession(examB, "EXPIRED", now, null);
-        insertSession(examB, "INTERRUPTED", now, null);
+        insertSession(assessmentA, "GRADED", now, now);
+        insertSession(assessmentA, "GRADING_FAILED", now, now);
+        insertSession(assessmentB, "EXPIRED", now, null);
+        insertSession(assessmentB, "INTERRUPTED", now, null);
 
         LiveSessionCountsDto live = repository.countLiveSessions();
 
         assertThat(live.sessionsInProgress()).isEqualTo(3L);
-        // Three sessions in progress but they belong to only TWO exams.
-        assertThat(live.examsInProgress()).isEqualTo(2L);
+        // Three sessions in progress but they belong to only TWO assessments.
+        assertThat(live.assessmentsInProgress()).isEqualTo(2L);
         assertThat(live.gradingQueueDepth()).isEqualTo(2L);
     }
 
@@ -105,27 +105,27 @@ class JpaPlatformOperationalHealthQueryRepositoryTests {
         LiveSessionCountsDto live = repository.countLiveSessions();
 
         assertThat(live.sessionsInProgress()).isZero();
-        assertThat(live.examsInProgress()).isZero();
+        assertThat(live.assessmentsInProgress()).isZero();
         assertThat(live.gradingQueueDepth()).isZero();
     }
 
     /**
      * The MOST IMPORTANT check of this file. Vietnam is UTC+7, so every session submitted after
      * 17:00 UTC belongs to the NEXT day on the Vietnam calendar. Cutting by UTC would push them
-     * back a day -- i.e. early-morning exam sessions land in the wrong column of the chart.
+     * back a day -- i.e. early-morning assessment sessions land in the wrong column of the chart.
      */
     @Test
     void bucketsByVietnamCalendarDayNotUtcDay() {
-        UUID exam = UUID.randomUUID();
+        UUID assessment = UUID.randomUUID();
         Instant started = Instant.parse("2026-08-10T01:00:00Z");
 
         // 23:00 Vietnam time on 10/08 -> still the 10th.
-        insertSession(exam, "GRADED", started, Instant.parse("2026-08-10T16:00:00Z"));
+        insertSession(assessment, "GRADED", started, Instant.parse("2026-08-10T16:00:00Z"));
         // Exactly 00:00 Vietnam time on 11/08 -> already the 11th, even though in UTC it is still
         // the 10th.
-        insertSession(exam, "GRADED", started, Instant.parse("2026-08-10T17:00:00Z"));
+        insertSession(assessment, "GRADED", started, Instant.parse("2026-08-10T17:00:00Z"));
         // 06:30 Vietnam time on 11/08 -> the 11th.
-        insertSession(exam, "GRADED", started, Instant.parse("2026-08-10T23:30:00Z"));
+        insertSession(assessment, "GRADED", started, Instant.parse("2026-08-10T23:30:00Z"));
 
         List<GradingOutcomeBucketDto> buckets = repository.findGradingOutcomeByDay(WINDOW_FROM, WINDOW_TO, ZoneConstant.BUSINESS_ZONE);
 
@@ -137,17 +137,17 @@ class JpaPlatformOperationalHealthQueryRepositoryTests {
 
     @Test
     void separatesGradedFromFailedAndIgnoresOtherStatuses() {
-        UUID exam = UUID.randomUUID();
+        UUID assessment = UUID.randomUUID();
         Instant started = Instant.parse("2026-08-05T01:00:00Z");
         Instant submitted = Instant.parse("2026-08-05T04:00:00Z");
 
-        insertSession(exam, "GRADED", started, submitted);
-        insertSession(exam, "GRADED", started, submitted);
-        insertSession(exam, "GRADING_FAILED", started, submitted);
+        insertSession(assessment, "GRADED", started, submitted);
+        insertSession(assessment, "GRADED", started, submitted);
+        insertSession(assessment, "GRADING_FAILED", started, submitted);
         // Grading not finished: not part of the denominator of the success rate.
-        insertSession(exam, "SUBMITTED", started, submitted);
-        insertSession(exam, "GRADING", started, submitted);
-        insertSession(exam, "EXPIRED", started, submitted);
+        insertSession(assessment, "SUBMITTED", started, submitted);
+        insertSession(assessment, "GRADING", started, submitted);
+        insertSession(assessment, "EXPIRED", started, submitted);
 
         List<GradingOutcomeBucketDto> buckets = repository.findGradingOutcomeByDay(WINDOW_FROM, WINDOW_TO, ZoneConstant.BUSINESS_ZONE);
 
@@ -163,12 +163,12 @@ class JpaPlatformOperationalHealthQueryRepositoryTests {
      */
     @Test
     void windowIsHalfOpen() {
-        UUID exam = UUID.randomUUID();
+        UUID assessment = UUID.randomUUID();
         Instant started = Instant.parse("2026-07-01T00:00:00Z");
 
-        insertSession(exam, "GRADED", started, WINDOW_FROM);
-        insertSession(exam, "GRADED", started, WINDOW_TO);
-        insertSession(exam, "GRADED", started, WINDOW_FROM.minusMillis(1));
+        insertSession(assessment, "GRADED", started, WINDOW_FROM);
+        insertSession(assessment, "GRADED", started, WINDOW_TO);
+        insertSession(assessment, "GRADED", started, WINDOW_FROM.minusMillis(1));
 
         List<GradingOutcomeBucketDto> buckets = repository.findGradingOutcomeByDay(WINDOW_FROM, WINDOW_TO, ZoneConstant.BUSINESS_ZONE);
 

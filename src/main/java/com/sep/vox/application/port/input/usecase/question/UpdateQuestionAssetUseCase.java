@@ -79,7 +79,7 @@ public class UpdateQuestionAssetUseCase implements IUseCase<UpdateQuestionAssetC
 
         boolean immutable = question.getStatus() == QuestionStatus.PUBLISHED
             || question.isLocked()
-            || questionRepository.existsUsedInExam(question.getId());
+            || questionRepository.existsUsedInAssessment(question.getId());
         if (!systemAdminOnSystemBank
                 && owner
                 && !immutable

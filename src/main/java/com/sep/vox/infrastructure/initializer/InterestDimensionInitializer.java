@@ -41,16 +41,16 @@ public class InterestDimensionInitializer implements ApplicationRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(InterestDimensionInitializer.class);
 
     /**
-     * Sáu chiều đem ra hỏi trong quiz, cộng ACADEMIC_EXAM.
+     * The six dimensions put to the student in the quiz, plus ACADEMIC_ASSESSMENT.
      *
-     * <p>Sáu mã đầu KHÔNG phải chọn tuỳ ý: chúng là đúng tập mã mà {@code dimensions_json} của các
-     * câu quiz do AI sinh ra đang tham chiếu (đối chiếu trên dữ liệu thật). Đổi mã ở đây mà không
-     * sinh lại câu quiz là quiz mất điểm ở chiều tương ứng, lại theo kiểu im lặng.
+     * <p>The first six codes are NOT chosen arbitrarily: they are exactly the set of codes that the {@code dimensions_json} of
+     * the AI-generated quiz questions references (cross-checked against real data). Changing a code here without
+     * regenerating the quiz questions makes the quiz lose points on the corresponding dimension, again silently.
      *
-     * <p>ACADEMIC_EXAM khác hẳn nhóm còn lại: {@code quizEligible = false}. Đây là chiều hệ thống
-     * TỰ gán cho chủ đề lấy từ ngân hàng đề ({@code ViewPracticeTopicOffersUseCase}), dùng để xếp
-     * hạng chủ đề nhưng không phải sở thích nên không hỏi học sinh. Thiếu nó thì chủ đề từ ngân
-     * hàng đề không xếp hạng được.
+     * <p>ACADEMIC_ASSESSMENT is completely different from the rest: {@code quizEligible = false}. It is a system dimension
+     * assigned AUTOMATICALLY to topics taken from the question bank ({@code ViewPracticeTopicOffersUseCase}), used to rank
+     * topics but not an interest, so students are not asked about it. Without it, topics from the question
+     * bank could not be ranked.
      */
     private static final List<InterestDimension> SEED = List.of(
         dimension("TECH_GAMING", "Công nghệ & trò chơi",
@@ -65,7 +65,7 @@ public class InterestDimensionInitializer implements ApplicationRunner {
             "Quan hệ, cộng đồng, vấn đề xã hội, giáo dục", true, 5),
         dimension("FUTURE_SCIENCE", "Khoa học & tương lai",
             "Khám phá khoa học, môi trường, xu hướng tương lai", true, 6),
-        dimension("ACADEMIC_EXAM", "Học thuật & luyện đề",
+        dimension("ACADEMIC_ASSESSMENT", "Học thuật & luyện đề",
             "Chủ đề lấy từ ngân hàng đề -- hệ thống tự gán, không hỏi học sinh", false, 7)
     );
 

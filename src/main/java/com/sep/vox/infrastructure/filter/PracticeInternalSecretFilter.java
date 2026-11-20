@@ -28,7 +28,7 @@ public class PracticeInternalSecretFilter extends OncePerRequestFilter {
         "/internal/practice-sessions/",
         // Đường thi cũng chuyển sang cho Python tự upload audio của lượt, thay vì WPF upload rồi
         // gọi POST /turns/archive. Cùng cơ chế bí mật dùng chung, vì bên gọi vẫn là Python.
-        "/internal/exam-turns/",
+        "/internal/assessment-turns/",
     };
 
     private final String expectedSecret;

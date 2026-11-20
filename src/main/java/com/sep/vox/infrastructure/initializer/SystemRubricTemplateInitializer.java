@@ -40,43 +40,43 @@ import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.domain.service.rubric.RubricScoringConsistencyValidator;
 
 /**
- * Dựng sẵn ba bộ tiêu chí MẪU của hệ thống (khối 10, 11, 12) để trường có cái mà sao về ngay từ lần
- * khởi động đầu.
+ * Builds the system's three SAMPLE criteria sets (grades 10, 11, 12) up front so schools have something to copy from the
+ * very first startup.
  *
- * <p>Khác {@link FrameworkInitializer} ở chỗ đây KHÔNG phải dữ liệu bắt buộc: thiếu nó hệ thống vẫn
- * chạy, trường vẫn tự soạn bộ tiêu chí từ đầu được. Nó tồn tại để chức năng sao chép có nội dung, và
- * để trường mới có một điểm khởi đầu hợp lý thay vì một trang trắng.
+ * <p>Different from {@link FrameworkInitializer} in that this is NOT mandatory data: without it the system still
+ * runs and schools can still author a criteria set from scratch. It exists so the copy feature has content, and
+ * so a new school has a reasonable starting point instead of a blank page.
  *
- * <h2>Ba bản mẫu, không phải ba bản × hai cách tính</h2>
+ * <h2>Three templates, not three templates x two scoring methods</h2>
  *
- * <p>Cả ba đều khai ở dạng PHÂN BỔ ({@code SUM}). Không dựng thêm bản Trung bình song song, vì Trung
- * bình suy được từ Phân bổ lúc sao chép -- {@code RubricCloneService} san mọi trọng số về 1 khi
- * trường chọn cách tính đó -- còn chiều ngược lại thì không: từ trạng thái mọi tiêu chí bằng nhau
- * không có cách nào tái tạo tỉ lệ mà bản mẫu định ra. Bản Phân bổ mang nhiều thông tin hơn, nên nó
- * là dạng đáng lưu.
+ * <p>All three are declared in the DISTRIBUTED form ({@code SUM}). A parallel Average version is not built, because Average
+ * can be derived from Distributed at copy time -- {@code RubricCloneService} flattens every weight to 1 when the
+ * school chooses that method -- while the opposite direction cannot: from the state where every criterion is equal
+ * there is no way to recreate the ratios the template defined. The Distributed version carries more information, so it
+ * is the form worth storing.
  *
- * <h2>Chính sách đánh giá đi kèm nằm ở initializer khác</h2>
+ * <h2>The accompanying assessment policy lives in another initializer</h2>
  *
- * <p>{@link SystemAssessmentPolicyInitializer} chạy sau ({@code @Order(9)}) và dựng cho mỗi khối một
- * chính sách mẫu trỏ vào đúng bản mẫu cùng khối ở đây. Hai bên nối với nhau bằng MÃ PHIÊN BẢN
- * ({@code SYS-ENG-K10-V1}...), tức là quy ước {@code code + "-V1"} bên dưới là thứ đi ra ngoài file
- * này -- đổi nó thì phải đổi cả bảng tra bên đó.
+ * <p>{@link SystemAssessmentPolicyInitializer} runs later ({@code @Order(9)}) and builds for each grade one
+ * sample policy pointing at the template of the same grade here. The two are tied together by the VERSION CODE
+ * ({@code SYS-ENG-K10-V1}...), i.e. the convention {@code code + "-V1"} below is something that leaves this
+ * file -- change it and the lookup table over there has to change too.
  *
- * <p>Ghi chú lịch sử: trước đây chỗ này giải thích là cố ý KHÔNG dựng chính sách hệ thống, vì
- * {@code findCandidatePolicies} lọc {@code WHERE p.schoolId = :schoolId} nên chính sách không thuộc
- * trường nào sẽ không bao giờ được chọn. Lý do đó không còn mô tả đúng hệ thống đang chạy: hai hàm
- * phân giải phạm vi ấy nay là mã chết (đường chấm thật đọc {@code exams.assessment_policy_id}), và
- * quan trọng hơn, chính sách mẫu của hệ thống không tồn tại để chấm -- nó tồn tại để trường SAO VỀ
- * kèm bộ tiêu chí qua {@code CloneSystemRubricToSchoolUseCase}. Bản sao mới là bản đi chấm.
+ * <p>Historical note: this place used to explain that it deliberately did NOT build system policies, because
+ * {@code findCandidatePolicies} filters {@code WHERE p.schoolId = :schoolId} so a policy belonging to
+ * no school would never be chosen. That reason no longer describes the running system: those two scope
+ * resolution functions are now dead code (the real grading path reads {@code assessments.assessment_policy_id}), and
+ * more importantly, the system's sample policy does not exist for grading -- it exists for schools to COPY
+ * together with the criteria set through {@code CloneSystemRubricToSchoolUseCase}. The copy is the one that does the grading.
  *
- * <h2>Ghi thẳng qua repository</h2>
+ * <h2>Written straight through the repository</h2>
  *
- * <p>Đi vòng qua {@code CreateSystemRubricUseCase} và {@code ChangeSystemRubricVersionStatusUseCase}
- * vì lúc khởi động chưa có người dùng nào đăng nhập để các use case đó lấy danh tính. Đổi lại, các
- * bất biến mà đường publish bắt buộc phải được giữ bằng tay ở đây: khung gốc còn hoạt động, phiên
- * bản có tiêu chí, và trọng số/thang điểm nhất quán. Điều kiện cuối được kiểm bằng chính
- * {@link RubricScoringConsistencyValidator} của đường publish thật, nên sai số liệu trong file này
- * làm hỏng lúc khởi động chứ không âm thầm sinh ra bản mẫu không ban hành lại được.
+ * <p>Goes around {@code CreateSystemRubricUseCase} and {@code ChangeSystemRubricVersionStatusUseCase}
+ * because at startup no user is logged in for those use cases to take an identity from. In return, the
+ * invariants that the publish path requires have to be kept by hand here: the root framework is still active, the version
+ * has criteria, and the weights/scoring scale are consistent. The last condition is checked with the very
+ * {@link RubricScoringConsistencyValidator} of the real publish path, so wrong numbers in this file
+ * break startup instead of silently producing a template that can never be republished.
  */
 @Component
 @Order(6)
@@ -330,7 +330,7 @@ public class SystemRubricTemplateInitializer implements ApplicationRunner {
                 seed.frameworkCriterionCode(),
                 seed.name(),
                 seed.description(),
-                // No sample examples: an example is tied to each school's own exam and grading style, and putting one in here
+                // No sample examples: an example is tied to each school's own assessment and grading style, and putting one in here
                 // would make every copy carry an example that is not its own.
                 null,
                 template.weights().get(seed.frameworkCriterionCode()),

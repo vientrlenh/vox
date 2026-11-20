@@ -40,16 +40,16 @@ class AiUsageRecordChargeWaiverTests {
     void shouldNotChargeTheFailedRoundWhenALaterRetrySucceeds() {
         UUID sessionId = UUID.randomUUID();
         insertUsage(sessionId, "40000");  // failed attempt
-        repository.markWaivedByExamSessionId(sessionId, Instant.now());
+        repository.markWaivedByAssessmentSessionId(sessionId, Instant.now());
 
         insertUsage(sessionId, "100000"); // regrade attempt
         Instant chargedAt = Instant.now();
-        int claimed = repository.markChargedByExamSessionId(sessionId, chargedAt);
+        int claimed = repository.markChargedByAssessmentSessionId(sessionId, chargedAt);
 
         assertThat(claimed).isEqualTo(1);
-        assertThat(repository.sumCostVndByExamSessionIdAndChargedAt(sessionId, chargedAt))
+        assertThat(repository.sumCostVndByAssessmentSessionIdAndChargedAt(sessionId, chargedAt))
             .isEqualByComparingTo("100000");
-        assertThat(repository.sumWaivedCostVndByExamSessionId(sessionId)).isEqualByComparingTo("40000");
+        assertThat(repository.sumWaivedCostVndByAssessmentSessionId(sessionId)).isEqualByComparingTo("40000");
     }
 
     /**
@@ -62,15 +62,15 @@ class AiUsageRecordChargeWaiverTests {
         UUID sessionId = UUID.randomUUID();
         insertUsage(sessionId, "100000");
         Instant chargedAt = Instant.now();
-        repository.markChargedByExamSessionId(sessionId, chargedAt);
+        repository.markChargedByAssessmentSessionId(sessionId, chargedAt);
 
         insertUsage(sessionId, "40000");
-        int waived = repository.markWaivedByExamSessionId(sessionId, Instant.now());
+        int waived = repository.markWaivedByAssessmentSessionId(sessionId, Instant.now());
 
         assertThat(waived).isEqualTo(1);
-        assertThat(repository.sumCostVndByExamSessionIdAndChargedAt(sessionId, chargedAt))
+        assertThat(repository.sumCostVndByAssessmentSessionIdAndChargedAt(sessionId, chargedAt))
             .isEqualByComparingTo("100000");
-        assertThat(repository.sumWaivedCostVndByExamSessionId(sessionId)).isEqualByComparingTo("40000");
+        assertThat(repository.sumWaivedCostVndByAssessmentSessionId(sessionId)).isEqualByComparingTo("40000");
     }
 
     /**
@@ -81,9 +81,9 @@ class AiUsageRecordChargeWaiverTests {
         UUID sessionId = UUID.randomUUID();
         insertUsage(sessionId, "40000");
 
-        assertThat(repository.markWaivedByExamSessionId(sessionId, Instant.now())).isEqualTo(1);
-        assertThat(repository.markWaivedByExamSessionId(sessionId, Instant.now())).isZero();
-        assertThat(repository.sumWaivedCostVndByExamSessionId(sessionId)).isEqualByComparingTo("40000");
+        assertThat(repository.markWaivedByAssessmentSessionId(sessionId, Instant.now())).isEqualTo(1);
+        assertThat(repository.markWaivedByAssessmentSessionId(sessionId, Instant.now())).isZero();
+        assertThat(repository.sumWaivedCostVndByAssessmentSessionId(sessionId)).isEqualByComparingTo("40000");
     }
 
     /**
@@ -95,20 +95,20 @@ class AiUsageRecordChargeWaiverTests {
     void shouldWaiveEvenWhenNobodyEverRetries() {
         UUID sessionId = UUID.randomUUID();
         insertUsage(sessionId, "40000");
-        repository.markWaivedByExamSessionId(sessionId, Instant.now());
+        repository.markWaivedByAssessmentSessionId(sessionId, Instant.now());
 
-        assertThat(repository.markChargedByExamSessionId(sessionId, Instant.now())).isZero();
+        assertThat(repository.markChargedByAssessmentSessionId(sessionId, Instant.now())).isZero();
     }
 
-    private void insertUsage(UUID examSessionId, String costVnd) {
+    private void insertUsage(UUID assessmentSessionId, String costVnd) {
         em.createNativeQuery("""
-            INSERT INTO ai_usage_records (id, exam_session_id, turn_id, usage_event_id, usage_type, provider,
+            INSERT INTO ai_usage_records (id, assessment_session_id, turn_id, usage_event_id, usage_type, provider,
                                           unit_price_json, cost_usd, cost_vnd, fx_rate_used, occurred_at)
             VALUES (:id, :sessionId, :turnId, :eventId, 'LLM_TOKEN', 'openai',
                     '{}', 1.0, :costVnd, 25000, :now)
             """)
             .setParameter("id", UUID.randomUUID())
-            .setParameter("sessionId", examSessionId)
+            .setParameter("sessionId", assessmentSessionId)
             .setParameter("turnId", UUID.randomUUID())
             .setParameter("eventId", UUID.randomUUID())
             .setParameter("costVnd", new BigDecimal(costVnd))

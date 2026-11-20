@@ -11,9 +11,9 @@ import org.springframework.stereotype.Service;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.RecordRecordingPartChangedCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.model.exam.ExamRecording;
-import com.sep.vox.domain.repository.ExamRecordingRepository;
-import com.sep.vox.domain.repository.ExamSessionRepository;
+import com.sep.vox.domain.model.assessment.AssessmentRecording;
+import com.sep.vox.domain.repository.AssessmentRecordingRepository;
+import com.sep.vox.domain.repository.AssessmentSessionRepository;
 import com.sep.vox.domain.service.recording.RecordingPrecedence;
 
 @Service
@@ -21,45 +21,45 @@ public class RecordRecordingPartChangedUseCase implements IUseCase<RecordRecordi
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RecordRecordingPartChangedUseCase.class);
 
-    private final ExamSessionRepository examSessionRepository;
-    private final ExamRecordingRepository examRecordingRepository;
+    private final AssessmentSessionRepository assessmentSessionRepository;
+    private final AssessmentRecordingRepository assessmentRecordingRepository;
     private final String recordingBucket;
 
     public RecordRecordingPartChangedUseCase(
-        ExamSessionRepository examSessionRepository,
-        ExamRecordingRepository examRecordingRepository,
+        AssessmentSessionRepository assessmentSessionRepository,
+        AssessmentRecordingRepository assessmentRecordingRepository,
         @Value("${app.recording.bucket:}") String recordingBucket
     ) {
-        this.examSessionRepository = examSessionRepository;
-        this.examRecordingRepository = examRecordingRepository;
+        this.assessmentSessionRepository = assessmentSessionRepository;
+        this.assessmentRecordingRepository = assessmentRecordingRepository;
         this.recordingBucket = recordingBucket;
     }
 
     @Override
     public Void execute(RecordRecordingPartChangedCommand input) {
-        examSessionRepository.findById(input.examSessionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi cho recording event: " + input.examSessionId()));
+        assessmentSessionRepository.findById(input.assessmentSessionId())
+            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi cho recording event: " + input.assessmentSessionId()));
 
         Instant now = Instant.now();
-        // Tra cứu kèm source: mỗi nguồn ingest chỉ cập nhật hàng của chính nó, nên hai đường
-        // ingest của cùng một phiên thi cùng tồn tại thay vì đường về sau ghi đè đường về trước.
-        // Việc chọn bản nào là bản chuẩn diễn ra ở đường đọc (GetExamRecordsUseCase).
-        Optional<ExamRecording> existing = examRecordingRepository.findByExamSessionIdAndStreamTypeAndSource(
-            input.examSessionId(), input.streamType(), input.source());
+        // Lookup with the source included: each ingest source only updates its own row, so the two ingest
+        // paths of the same assessment session coexist instead of the later one overwriting the earlier one.
+        // Choosing which one is canonical happens on the read path (GetAssessmentRecordsUseCase).
+        Optional<AssessmentRecording> existing = assessmentRecordingRepository.findByAssessmentSessionIdAndStreamTypeAndSource(
+            input.assessmentSessionId(), input.streamType(), input.source());
 
         if (existing.isPresent()
             && RecordingPrecedence.shouldKeepExisting(existing.get().getStatus(), input.status())) {
             LOGGER.info(
-                "Giữ bản ghi hiện có examSessionId={} streamType={} source={} status={}; bỏ qua event status={} objectKey={}",
-                input.examSessionId(), input.streamType(),
+                "Giữ bản ghi hiện có assessmentSessionId={} streamType={} source={} status={}; bỏ qua event status={} objectKey={}",
+                input.assessmentSessionId(), input.streamType(),
                 existing.get().getSource(), existing.get().getStatus(),
                 input.status(), input.objectKey()
             );
             return null;
         }
 
-        ExamRecording recording = existing.orElseGet(() -> new ExamRecording(
-            input.examSessionId(),
+        AssessmentRecording recording = existing.orElseGet(() -> new AssessmentRecording(
+            input.assessmentSessionId(),
             input.candidateId(),
             input.streamType(),
             "",
@@ -88,7 +88,7 @@ public class RecordRecordingPartChangedUseCase implements IUseCase<RecordRecordi
             recording.setAssembledAt(input.occurredAt());
         }
 
-        examRecordingRepository.save(recording);
+        assessmentRecordingRepository.save(recording);
         return null;
     }
 

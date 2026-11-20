@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.port.input.service.GradingSampleSelector;
 import com.sep.vox.application.query.dto.GradingRiskInfo;
-import com.sep.vox.domain.model.exam.GradingSampleSelectionMode;
+import com.sep.vox.domain.model.assessment.GradingSampleSelectionMode;
 
 /**
  * Bốn chế độ chọn bài. Bốc ngẫu nhiên được test bằng seed cố định — nếu không thì

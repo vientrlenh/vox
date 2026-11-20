@@ -24,7 +24,7 @@ import com.sep.vox.application.event.GradingDeadlineReminderPayloadV1;
 import com.sep.vox.application.port.output.MailSendingPort;
 import com.sep.vox.application.port.output.MailTemplatePort;
 import com.sep.vox.domain.common.EventTypeConstant;
-import com.sep.vox.domain.model.exam.GradingRoundType;
+import com.sep.vox.domain.model.assessment.GradingRoundType;
 import com.sep.vox.domain.model.outbox.ProcessedEvent;
 import com.sep.vox.domain.repository.ProcessedEventRepository;
 import com.sep.vox.domain.repository.UserRepository;
@@ -32,11 +32,11 @@ import com.sep.vox.domain.repository.UserRepository;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Mail cho phía <em>vận hành</em>: nhắc giáo viên sắp tới hạn, và báo admin khi có
- * người trả lại phân công.
+ * Email for the <em>operations</em> side: reminding a teacher whose grading is about to be due, and telling the admin when
+ * someone gives an assignment back.
  *
- * <p>Tách khỏi {@link ExamResultLifecycleEmailConsumer} vì người nhận khác hẳn — ở đây
- * là nhân sự của trường, không phải học sinh; trộn chung dễ dẫn tới gửi nhầm nhóm.
+ * <p>Kept apart from {@link AssessmentResultLifecycleEmailConsumer} because the recipients are completely different --
+ * here they are school staff, not students; mixing them easily leads to sending to the wrong group.
  */
 @Component
 public class GradingAssignmentEmailConsumer {
@@ -130,7 +130,7 @@ public class GradingAssignmentEmailConsumer {
                 GradingDeadlineReminderPayloadV1 payload = parse(value, GradingDeadlineReminderPayloadV1.class, eventType, eventId);
                 yield mail(payload.teacherId(), SUBJECT_DEADLINE_REMINDER,
                     () -> mailTemplatePort.renderGradingDeadlineReminderEmail(
-                        orPlaceholder(payload.examName()),
+                        orPlaceholder(payload.assessmentName()),
                         roundLabel(payload.roundType()),
                         formatDeadline(payload.deadlineAt())));
             }
@@ -139,7 +139,7 @@ public class GradingAssignmentEmailConsumer {
                 GradingAssignmentDeclinedPayloadV1 payload = parse(value, GradingAssignmentDeclinedPayloadV1.class, eventType, eventId);
                 yield mail(payload.assignedBy(), SUBJECT_DECLINED,
                     () -> mailTemplatePort.renderGradingDeclinedEmail(
-                        orPlaceholder(payload.examName()),
+                        orPlaceholder(payload.assessmentName()),
                         teacherName(payload.teacherId()),
                         orPlaceholder(payload.reason())));
             }

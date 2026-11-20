@@ -512,53 +512,53 @@ public class OrderSettlementService {
     }
 
     /**
-     * Chép trần chi CÁ NHÂN của kỳ cũ sang kỳ mới.
+     * Copies the PERSONAL spending ceilings of the old period to the new period.
      *
-     * <p>Bản ghi phân bổ gắn với {@code school_subscription_id}, mà mỗi kỳ là một dòng subscription
-     * mới, nên nếu không chép thì mọi trần cá nhân BIẾN MẤT đúng lúc kỳ mới bắt đầu -- và hai ví hỏng
-     * theo hai chiều ngược nhau, cùng im lặng như nhau:
-     *
-     * <ul>
-     *   <li>PRACTICE: {@code findPracticeSpendableFundsVnd} lấy LEAST với COALESCE(...,0), nên không
-     *       có dòng nghĩa là 0 -- CẢ TRƯỜNG mất quyền luyện nói cho tới khi có người vào chia lại,
-     *       ngay sau khi trường vừa trả tiền gia hạn.</li>
-     *   <li>EXAM: {@code ClassTestTokenQuotaGuardService.remainingUserAllocation} trả null khi không
-     *       có dòng, và cửa chặn bỏ qua null -- mọi giáo viên thành không còn trần chi nào.</li>
-     * </ul>
-     *
-     * <p>Chép TRẦN, KHÔNG chép phần đã tiêu: {@code upsertAllocation} dựng dòng mới với
-     * {@code used = 0}, đúng bằng cách {@link #seedQuotaRecords} cho ví cấp trường bắt đầu lại từ 0.
-     * Kỳ mới là một ngân sách mới, ở cả hai cấp.
-     *
-     * <p><b>Ảnh chụp lấy tại thời điểm TRẢ TIỀN, không phải lúc kỳ mới chạy.</b> Với gia hạn sớm, hai
-     * mốc đó cách nhau và mọi thay đổi phân bổ trong quãng giữa sẽ không theo sang. Chấp nhận có ý:
-     * bám đúng mốc bắt đầu thì phải có thêm một job quét kỳ tới hạn, trong khi cái giá của việc lệch
-     * chỉ là vài con số cũ mà quản trị trường sửa lại được bất cứ lúc nào -- còn cái giá của việc
-     * không chép gì cả là cả trường đứng hình.
-     *
-     * <p><b>Chép có LỌC và có KẸP</b>, không chép nguyên xi. Ba điều kiện, mỗi cái đóng một lỗi mà
-     * bản chép nguyên xi đầu tiên để hở:
+     * <p>The allocation record is attached to {@code school_subscription_id}, and every period is a new subscription
+     * row, so without copying, every personal ceiling DISAPPEARS exactly when the new period starts -- and the two wallets break
+     * in two opposite directions, equally silently:
      *
      * <ul>
-     *   <li>Chỉ những loại ví kỳ MỚI thật sự có -- duyệt {@code QuotaType.values()} rồi upsert vô
-     *       điều kiện sẽ để trường đổi sang gói không kèm PRACTICE nhận một loạt dòng trần trỏ vào
-     *       một ví không tồn tại, trong khi {@link #seedQuotaRecords} đã xử đúng ca đối xứng ở phía
-     *       TIỀN bằng một dòng WARN.</li>
-     *   <li>Chỉ người CÒN đủ điều kiện -- dòng phân bổ không bị xoá khi giáo viên nghỉ việc hay học
-     *       sinh ra trường, nên chép tất là mỗi kỳ lại dựng lại toàn bộ lịch sử nhân sự cộng thêm
-     *       người mới nghỉ. Không có đường xoá, nên bảng chỉ có phình và {@code orphanedAmountVnd}
-     *       trên màn hình chỉ có tăng. Cùng phép lọc với {@code sumAllocatedForEligibleUsers}: hai
-     *       bên đếm lệch tập là quay lại đúng lỗi Q-5.</li>
-     *   <li>Tổng chép sang không vượt ví của kỳ mới -- hạ gói (hoặc hết khuyến mãi) thì tổng trần cũ
-     *       có thể lớn hơn cả ví mới, và trường mở kỳ trong trạng thái đã vượt trần của chính mình:
-     *       mọi lần sửa tay sau đó bị từ chối bằng "vượt quá phần được phép chia" dù không ai hạ
-     *       trần. Thu nhỏ theo TỈ LỆ để giữ tương quan giữa các cá nhân.</li>
+     *   <li>PRACTICE: {@code findPracticeSpendableFundsVnd} takes LEAST with COALESCE(...,0), so a missing
+     *       row means 0 -- THE WHOLE SCHOOL loses the right to practice speaking until someone goes in to redistribute,
+     *       right after the school has just paid for the renewal.</li>
+     *   <li>ASSESSMENT: {@code ClassTestTokenQuotaGuardService.remainingUserAllocation} returns null when there is no
+     *       row, and the guard skips null -- every teacher ends up with no spending ceiling at all.</li>
      * </ul>
      *
-     * <p>Mức kẹp ở đây là trần của ví ({@code total_allocated}), không phải phần được phép chia
-     * ({@code SchoolQuotaPolicy.distributableAmountOf}, chặt hơn vì còn nhân tỉ lệ của trường).
-     * Chính sách đó nằm ở một repository service này chưa cầm; kẹp theo ví đã đủ để kỳ mới không mở
-     * ra trong trạng thái hỏng, phần còn lại quản trị trường sửa được trên màn hình.
+     * <p>Copies the CEILING, NOT what has been spent: {@code upsertAllocation} builds the new row with
+     * {@code used = 0}, exactly the way {@link #seedQuotaRecords} restarts the school-level wallet from 0.
+     * A new period is a new budget, at both levels.
+     *
+     * <p><b>The snapshot is taken at PAYMENT time, not when the new period starts running.</b> With an early renewal the two
+     * moments are far apart and any allocation change in between will not carry over. This is accepted on purpose:
+     * following the start moment exactly would need another job that sweeps periods coming due, while the cost of the mismatch
+     * is only a few stale numbers that the school administrator can fix at any time -- whereas the cost of
+     * copying nothing is the whole school freezing.
+     *
+     * <p><b>The copy is FILTERED and CLAMPED</b>, not copied verbatim. Three conditions, each closing a bug that the
+     * first verbatim copy left open:
+     *
+     * <ul>
+     *   <li>Only wallet types that the NEW period really has -- iterating {@code QuotaType.values()} and upserting
+     *       unconditionally would give a school that switched to a plan without PRACTICE a batch of ceiling rows pointing at
+     *       a wallet that does not exist, whereas {@link #seedQuotaRecords} already handles the symmetric case on the
+     *       MONEY side with a WARN line.</li>
+     *   <li>Only people who are STILL eligible -- allocation rows are not deleted when a teacher leaves or a
+     *       student graduates, so copying everything would rebuild the whole staffing history every period plus the newly departed.
+     *       With no way to delete, the table only bloats and {@code orphanedAmountVnd}
+     *       on the screen only grows. Same filter as {@code sumAllocatedForEligibleUsers}: if the two
+     *       sides count different sets we are back to exactly bug Q-5.</li>
+     *   <li>The copied total does not exceed the new period's wallet -- after a downgrade (or the end of a promotion) the total of the old ceilings
+     *       may be larger than the whole new wallet, and the school would open the period already over its own ceiling:
+     *       every manual edit afterwards is rejected with "exceeds the distributable part" even though nobody lowered the
+     *       ceiling. Scale down PROPORTIONALLY to keep the ratios between individuals.</li>
+     * </ul>
+     *
+     * <p>The clamp here is the wallet ceiling ({@code total_allocated}), not the distributable part
+     * ({@code SchoolQuotaPolicy.distributableAmountOf}, which is stricter because it also multiplies by the school's ratio).
+     * That policy sits in a repository this service does not hold; clamping to the wallet is enough so that the new period does not open
+     * in a broken state, and the school administrator can fix the rest on the screen.
      */
     private void carryForwardUserAllocations(UUID previousSubscriptionId, UUID newSubscriptionId,
             UUID schoolId, Map<QuotaType, BigDecimal> seededPoolTotals) {

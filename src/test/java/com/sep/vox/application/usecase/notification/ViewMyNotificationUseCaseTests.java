@@ -47,10 +47,10 @@ class ViewMyNotificationUseCaseTests {
 
     @Test
     void should_return_the_notification_with_its_navigation_payload() {
-        String payload = "{\"eventType\":\"ExamResultReleased\",\"target\":\"EXAM_RESULT_DETAIL\"}";
+        String payload = "{\"eventType\":\"AssessmentResultReleased\",\"target\":\"ASSESSMENT_RESULT_DETAIL\"}";
         when(notificationRepository.findByIdAndUserId(notificationId, userId))
             .thenReturn(Optional.of(new Notification(
-                notificationId, userId, UUID.randomUUID(), "ExamResultReleased",
+                notificationId, userId, UUID.randomUUID(), "AssessmentResultReleased",
                 "Điểm thi của bạn đã có", "Kỳ thi giữa kỳ: 8.5 điểm", payload,
                 null, Instant.parse("2026-09-01T03:00:00Z"))));
 

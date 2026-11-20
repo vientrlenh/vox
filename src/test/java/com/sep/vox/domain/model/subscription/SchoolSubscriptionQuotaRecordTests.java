@@ -73,7 +73,7 @@ class SchoolSubscriptionQuotaRecordTests {
     @Test
     void seeding_without_carried_funding_leaves_the_pool_purely_plan_funded() {
         SchoolSubscriptionQuotaRecord seeded = SchoolSubscriptionQuotaRecord.seeded(
-            subscriptionId, QuotaType.EXAM, BigDecimal.valueOf(10_000_000), BigDecimal.ZERO);
+            subscriptionId, QuotaType.ASSESSMENT, BigDecimal.valueOf(10_000_000), BigDecimal.ZERO);
 
         assertThat(seeded.getTotalAllocatedAmountVnd()).isEqualByComparingTo("10000000");
         assertThat(seeded.getFundedFromBalanceVnd()).isEqualByComparingTo("0");

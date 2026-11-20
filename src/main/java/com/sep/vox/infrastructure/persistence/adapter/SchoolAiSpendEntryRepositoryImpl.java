@@ -28,7 +28,7 @@ public class SchoolAiSpendEntryRepositoryImpl implements SchoolAiSpendEntryRepos
             entry.getSubscriptionId(),
             entry.getQuotaType().name(),
             entry.getUserId(),
-            entry.getExamSessionId(),
+            entry.getAssessmentSessionId(),
             entry.getPracticeSessionId(),
             entry.getAmountVnd(),
             entry.getOccurredAt()

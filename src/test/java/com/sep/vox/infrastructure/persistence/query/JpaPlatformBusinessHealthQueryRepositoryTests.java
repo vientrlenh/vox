@@ -100,7 +100,7 @@ class JpaPlatformBusinessHealthQueryRepositoryTests {
 
     private void insertAiUsage(Instant occurredAt, String costVnd) {
         em.createNativeQuery("""
-            INSERT INTO ai_usage_records (id, exam_session_id, turn_id, usage_event_id, usage_type,
+            INSERT INTO ai_usage_records (id, assessment_session_id, turn_id, usage_event_id, usage_type,
                                           provider, unit_price_json, cost_usd, cost_vnd, fx_rate_used, occurred_at)
             VALUES (:id, :sessionId, :turnId, :eventId, 'LLM_TOKEN', 'anthropic', '{}', 1.5,
                     CAST(:costVnd AS numeric), 26000, :occurredAt)

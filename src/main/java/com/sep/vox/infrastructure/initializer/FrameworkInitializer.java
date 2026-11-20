@@ -89,14 +89,14 @@ public class FrameworkInitializer implements ApplicationRunner {
     private static final String FRAMEWORK_VERSION_BAND_CODE_6 = "BAC_6";
 
     /**
-     * Số dấu hiệu đầu danh sách được đánh HIGH. Danh sách trong {@link BandContent} viết theo
-     * thứ tự giảm dần độ quyết định, nên hai cái đầu là thứ một mình nó đã đủ xếp bậc, phần
-     * còn lại là dấu hiệu hỗ trợ.
+     * The number of signals at the top of the list that are marked HIGH. The list in {@link BandContent} is written in
+     * descending order of how decisive each signal is, so the first two are enough on their own to rank a level, and the
+     * rest are supporting signals.
      *
-     * <p>Lưu ý: {@code importance} KHÔNG đi ra tới model chấm -- cả hai đường gửi yêu cầu chấm
-     * (SubmitExamSessionUseCase và PracticeEvaluationRequestFactory) chỉ lấy
-     * {@code signal.description()}. Trường này phục vụ màn hình quản trị khung và chỗ dựa nếu
-     * sau này prompt có xếp hạng dấu hiệu.
+     * <p>Note: {@code importance} does NOT reach the grading model -- both paths that send a grading request
+     * (SubmitAssessmentSessionUseCase and PracticeEvaluationRequestFactory) only take
+     * {@code signal.description()}. This field serves the framework admin screen and is something to lean on if
+     * the prompt later ranks signals.
      */
     private static final int HIGH_IMPORTANCE_SIGNAL_COUNT = 2;
 

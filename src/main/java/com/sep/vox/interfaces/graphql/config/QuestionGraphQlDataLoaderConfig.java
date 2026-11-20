@@ -140,7 +140,7 @@ public class QuestionGraphQlDataLoaderConfig {
             );
 
         // Does NOT check permissions -- only use it where view permission has already been confirmed through
-        // the parent (e.g. ExamBlueprintSlot.fixedQuestion, after ViewExamBlueprintDetailsUseCase.hasAccess has
+        // the parent (e.g. AssessmentBlueprintSlot.fixedQuestion, after ViewAssessmentBlueprintDetailsUseCase.hasAccess has
         // already passed). This avoids repeating the permission OR-tree of questionByIdAccessible.
         registry.<UUID, QuestionDto>forName("questionByIdBasic")
             .registerMappedBatchLoader((Set<UUID> ids, BatchLoaderEnvironment env) ->

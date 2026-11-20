@@ -12,7 +12,7 @@ import java.util.UUID;
  * @param search         khớp tên học sinh hoặc mã bài
  */
 public record ViewClassTestGradingResultsQuery(
-    UUID examId,
+    UUID assessmentId,
     String resultStatus,
     boolean unassignedOnly,
     String search,

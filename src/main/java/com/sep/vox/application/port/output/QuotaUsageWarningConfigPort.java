@@ -10,9 +10,9 @@ import java.math.BigDecimal;
 public interface QuotaUsageWarningConfigPort {
 
     /**
-     * Bắn cảnh báo khi {@code usedAmountVnd} vừa vượt {@code totalAllocatedAmountVnd * warningRatio}
-     * của đúng ví hạn mức (EXAM hoặc PRACTICE) vừa bị trừ. Lấy theo TỶ LỆ trên hạn mức, cùng lý do với
-     * {@link QuotaDebtConfigPort#capRatio()}: trường mua gói lớn/nhỏ cần cùng một mốc cảnh báo tương đối.
+     * Fires a warning when {@code usedAmountVnd} has just crossed {@code totalAllocatedAmountVnd * warningRatio}
+     * of exactly the quota wallet (ASSESSMENT or PRACTICE) that was just debited. It is taken as a RATIO of the quota, for the same reason as
+     * {@link QuotaDebtConfigPort#capRatio()}: schools that buy a large/small plan need the same relative warning threshold.
      */
     BigDecimal warningRatio();
 }

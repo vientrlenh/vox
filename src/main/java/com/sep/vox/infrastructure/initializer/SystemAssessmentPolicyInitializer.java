@@ -35,63 +35,63 @@ import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
 
 /**
- * Dựng sẵn sáu chính sách chấm MẪU của hệ thống: mỗi bộ tiêu chí mẫu THPT do
- * {@link SystemRubricTemplateInitializer} tạo ra có một bản chuẩn (Bậc 3, khai theo Khối) và một bản
- * cho lớp chuyên (Bậc 4, không khai phạm vi).
+ * Builds the system's six SAMPLE grading policies up front: for each sample high-school criteria set created by
+ * {@link SystemRubricTemplateInitializer} there is a standard version (Level 3, declared by Grade) and a version
+ * for specialized classes (Level 4, no scope declared).
  *
- * <p>Đây là thứ làm cho {@code CloneSystemRubricToSchoolUseCase} có chính sách để sao kèm bộ tiêu
- * chí. Trước khi có file này, trường muốn dùng bản mẫu phải sao rubric rồi tự gõ lại toàn bộ thông
- * số chính sách -- chính là bước thủ công mà đường sao chép sinh ra để bỏ đi.
+ * <p>This is what gives {@code CloneSystemRubricToSchoolUseCase} a policy to copy along with the criteria
+ * set. Before this file existed, a school that wanted to use a template had to copy the rubric and then retype all the policy
+ * parameters itself -- exactly the manual step that the copy path was created to remove.
  *
- * <h2>PUBLISHED ngay, và vì sao phải đi vòng qua use case</h2>
+ * <h2>PUBLISHED right away, and why it goes around the use case</h2>
  *
- * <p>{@code CloneSystemRubricToSchoolUseCase} từ chối mọi bản mẫu chưa ban hành, nên chính sách mẫu
- * ở trạng thái nháp là chính sách không ai sao được.
+ * <p>{@code CloneSystemRubricToSchoolUseCase} rejects every template that has not been published, so a sample policy
+ * in the draft state is a policy nobody can copy.
  *
- * <p>Không gọi {@code CreateSystemAssessmentPolicyUseCase} được vì hai lẽ. Một, lúc khởi động chưa có
- * phiên đăng nhập nào để use case đó lấy danh tính system admin. Hai, use case đó bắt phiên bản rubric
- * phải còn DRAFT ("Chỉ được gán Policy khi Phiên bản Rubric còn ở trạng thái DRAFT") vì luồng thật là
- * tạo chính sách nháp trên rubric nháp rồi ban hành cả hai cùng lúc; còn bộ tiêu chí mẫu ở đây do
- * {@link SystemRubricTemplateInitializer} dựng thẳng ở trạng thái PUBLISHED. Trạng thái cuối mà file
- * này ghi ra -- chính sách PUBLISHED trỏ vào rubric PUBLISHED -- đúng bằng kết quả của luồng thật, chỉ
- * bỏ qua bước trung gian.
+ * <p>{@code CreateSystemAssessmentPolicyUseCase} cannot be called, for two reasons. One, at startup there is no
+ * login session yet from which that use case takes the system admin identity. Two, that use case requires the rubric version
+ * to still be DRAFT ("A Policy may only be attached while the Rubric Version is DRAFT") because the real flow is to
+ * create a draft policy on a draft rubric and publish both at the same time; while the sample criteria set here is built by
+ * {@link SystemRubricTemplateInitializer} directly in the PUBLISHED state. The final state this file
+ * writes -- a PUBLISHED policy pointing at a PUBLISHED rubric -- equals the result of the real flow, it only
+ * skips the intermediate step.
  *
- * <p>Đổi lại, các bất biến của đường tạo thật phải giữ bằng tay ở đây: khung còn PUBLISHED, bậc mục
- * tiêu thuộc đúng phiên bản khung, rubric thuộc sở hữu SYSTEM và cùng khung với chính sách.
+ * <p>In return, the invariants of the real creation path have to be kept by hand here: the framework is still PUBLISHED, the
+ * target level belongs to the right framework version, the rubric is owned by SYSTEM and has the same framework as the policy.
  *
- * <h2>Bản chuẩn khai theo Khối, bản chuyên để trống phạm vi</h2>
+ * <h2>The standard version declares a Grade, the specialized version leaves the scope empty</h2>
  *
- * <p>Khối lớp là catalog toàn cục và không gắn với niên khóa nào, nên chính sách mẫu khai theo Khối
- * vẫn đúng khi trường mở niên khóa năm sau -- không phải khai lại hằng năm. Đó cũng là lý do
- * {@code resolveScope} của use case sao chép bắt bản sao GIỮ NGUYÊN khối của bản mẫu: đổi khối là
- * giữ nguyên thông số soạn cho Khối 10 rồi dán nhãn Khối 12.
+ * <p>Grade levels are a global catalog and are not tied to any school year, so a sample policy declared by Grade
+ * stays correct when the school opens next year's school year -- it does not have to be declared again every year. That is also why
+ * the use case that copies resolves scope ({@code resolveScope}) requires the copy to KEEP the grade of the template: changing the grade is
+ * keeping the parameters written for Grade 10 and pasting a Grade 12 label on them.
  *
- * <p>Chính điều đó khiến bản CHUYÊN không được khai Khối: bản sao sẽ bị ghim vào cả khối, trong khi
- * thứ trường cần là áp riêng cho lớp chuyên. Thêm nữa mỗi phạm vi chỉ được một chính sách còn hiệu
- * lực, nên bản chuẩn và bản chuyên không cùng tồn tại ở phạm vi Khối được. Để trống phạm vi là cách
- * duy nhất để trường sao bản chuẩn cho Khối/Niên khóa và bản chuyên cho đúng lớp chuyên.
+ * <p>That is exactly why the SPECIALIZED version must not declare a Grade: the copy would be pinned to a whole grade, while
+ * what the school needs is to apply it only to the specialized class. In addition each scope may only have one policy in
+ * effect, so the standard version and the specialized version cannot coexist at Grade scope. Leaving the scope empty is the
+ * only way for a school to copy the standard version for a Grade/School Year and the specialized version for exactly the specialized class.
  *
- * <h2>Hai bậc mục tiêu, không phải ba khối ba bậc</h2>
+ * <h2>Two target levels, not three grades x three levels</h2>
  *
- * <p>Bản chuẩn của cả ba khối cùng {@code BAC_3}. Theo Thông tư 32/2018/TT-BGDĐT thì chuẩn đầu ra là
- * hết THPT đạt Bậc 3, không phân theo từng lớp. Xem {@link GradeLevelBandScopeInitializer} để biết vì
- * sao khung 6 bậc nguyên không diễn đạt được khác biệt 3.1/3.2/3.3 giữa ba khối.
+ * <p>The standard version of all three grades uses the same {@code BAC_3}. According to Circular 32/2018/TT-BGDĐT the output standard is
+ * Level 3 by the end of high school, not split by grade. See {@link GradeLevelBandScopeInitializer} for why
+ * the original 6-level framework cannot express the 3.1/3.2/3.3 difference between the three grades.
  *
- * <p>Bản chuyên nhắm {@code BAC_4} (CEFR B2) -- đúng bằng TRẦN CỨNG mà bảng trần đặt cho cả ba khối,
- * nên bản sao luôn lọt {@code GradeLevelBandScopeGuardService}. B2 là thông lệ của trường chuyên chứ
- * không phải quy định (Thông tư 05/2023/TT-BGDĐT không đặt chuẩn ngoại ngữ nào cho lớp chuyên), nên
- * nó ở đây dưới dạng bản mẫu tuỳ chọn: trường nào không có lớp chuyên thì không sao bản này.
+ * <p>The specialized version targets {@code BAC_4} (CEFR B2) -- exactly the HARD CEILING that the ceiling table sets for all three grades,
+ * so the copy always passes {@code GradeLevelBandScopeGuardService}. B2 is the practice of specialized schools, not
+ * a regulation (Circular 05/2023/TT-BGDĐT sets no foreign-language standard for specialized classes), so
+ * it is here as an optional template: a school without specialized classes does not copy this one.
  *
- * <p>Bậc mục tiêu quyết định bộ mô tả nào được gửi sang AI chấm
- * ({@code SubmitExamSessionUseCase.buildCriteriaFrameworks}), nên hai bậc nghĩa là hai thước đo khác
- * nhau -- điểm thô của lớp chuyên và lớp thường không so trực tiếp được. Đó là chủ đích: đây là hai
- * nhóm học sinh có đích cần đạt khác nhau.
+ * <p>The target level decides which descriptor set is sent to the AI for grading
+ * ({@code SubmitAssessmentSessionUseCase.buildCriteriaFrameworks}), so two levels mean two different yardsticks --
+ * the raw scores of a specialized class and a regular class cannot be compared directly. That is intended: these are two
+ * groups of students with different targets to reach.
  *
- * <h2>Không đặt điểm đạt</h2>
+ * <h2>No passing score is set</h2>
  *
- * <p>{@code passingScore} để null (nghĩa là không kiểm điểm đạt). Văn bản chính thức quy định BẬC cần
- * đạt chứ không quy định ngưỡng điểm; đặt sẵn một con số ở đây là phần duy nhất của bộ seed không có
- * căn cứ nào đứng sau. Trường tự đặt sau khi sao về.
+ * <p>{@code passingScore} is left null (meaning the pass score is not checked). The official documents specify the LEVEL to be
+ * reached, not a score threshold; setting a number here would be the only part of the seed with no
+ * basis behind it. The school sets it itself after copying.
  */
 @Component
 @Order(9)
@@ -267,7 +267,7 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
         // specialized templates (none of which declares a grade) would also overwrite each other because they share the same empty scope.
         //
         // Dropping that rule here affects NOTHING: a system policy does not grade attempts (the grading path reads
-        // exams.assessment_policy_id), findActivePolicy has no remaining callers, and idx_assessment_policies
+        // assessments.assessment_policy_id), findActivePolicy has no remaining callers, and idx_assessment_policies
         // _scope_version does not catch any row that has NULL in its key. The manual creation path of the system admin
         // (CreateSystemAssessmentPolicyUseCase) keeps the old rule.
         boolean alreadySeeded = assessmentPolicyRepository

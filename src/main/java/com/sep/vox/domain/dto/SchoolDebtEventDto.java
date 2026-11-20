@@ -19,7 +19,7 @@ public record SchoolDebtEventDto(
     UUID subscriptionId,
     String eventType,
     String quotaType,
-    UUID triggerExamSessionId,
+    UUID triggerAssessmentSessionId,
     UUID triggerPracticeSessionId,
     String triggerAmountVnd,
     String totalAllocatedVnd,
@@ -35,7 +35,7 @@ public record SchoolDebtEventDto(
             event.getSubscriptionId(),
             event.getEventType() == null ? null : event.getEventType().name(),
             event.getQuotaType() == null ? null : event.getQuotaType().name(),
-            event.getTriggerExamSessionId(),
+            event.getTriggerAssessmentSessionId(),
             event.getTriggerPracticeSessionId(),
             // null với dòng CLEARED: hết nợ không do một khoản trừ nào gây ra.
             DecimalText.of(event.getTriggerAmountVnd()),

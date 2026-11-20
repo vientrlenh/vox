@@ -96,7 +96,7 @@ type SchoolBalanceEntry {
     "TOP_UP, REFUND."
     orderId: ID
     "OVERAGE_CHARGE. Đúng MỘT trong hai field session có giá trị."
-    examSessionId: ID
+    assessmentSessionId: ID
     "OVERAGE_CHARGE. Đúng MỘT trong hai field session có giá trị."
     practiceSessionId: ID
     """
@@ -120,7 +120,7 @@ type SchoolBalanceEntry {
     mọi loại còn lại -- chúng do hệ thống ghi, không do ai bấm. Hai vai khác nhau nên client phải rẽ
     theo entryType để đặt nhãn, đừng đọc mỗi actorId != null.
 
-    Id thô chứ không phải tên, cùng cách SchoolDebtEvent trả triggerExamSessionId: hiện tên đòi một
+    Id thô chứ không phải tên, cùng cách SchoolDebtEvent trả triggerAssessmentSessionId: hiện tên đòi một
     LEFT JOIN sang users, và khi đó DTO không còn dựng được từ một mình domain model. Đáng làm khi có
     màn hình thật sự cần, không phải làm sẵn.
     """
@@ -205,7 +205,7 @@ type SchoolDebtEvent {
     """
     quotaType: QuotaType
     "LOCKED/CAP_EXCEEDED: ĐÚNG MỘT trong hai field session có giá trị. CLEARED: cả hai null."
-    triggerExamSessionId: ID
+    triggerAssessmentSessionId: ID
     triggerPracticeSessionId: ID
     # Bốn cột dưới đây đổi từ ...Usd sang VND cùng lúc với school_debt_events (V2 mục 15) và
     # SchoolDebtEventDto: mọi con số đi vào đây đã là VND từ ConsumeQuotaService, giữ hậu tố Usd chỉ

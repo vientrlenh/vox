@@ -3,15 +3,15 @@ package com.sep.vox.application.response.input.dashboard;
 import java.math.BigDecimal;
 
 /**
- * Sức khỏe kinh doanh nền tảng cho dashboard system admin.
+ * The business health of the platform for the system admin dashboard.
  *
- * <p>Cố ý KHÔNG gộp vào {@code SystemAdminDashboardSummaryResponse}: bản tóm tắt đó đã mang 13 trường
- * trộn nhiều mối quan tâm, và dự án vốn đã tách {@code nearestCentralizedExam} / {@code questionBankStats}
- * ra khỏi {@code schoolAdminDashboard} theo đúng cách này. Tách riêng cũng có nghĩa màn hình cũ không
- * phải trả giá cho các phép gộp mới, và một query hỏng không kéo cả dashboard xuống.
+ * <p>Deliberately NOT merged into {@code SystemAdminDashboardSummaryResponse}: that summary already carries 13 fields
+ * mixing many concerns, and the project has already split {@code nearestCentralizedAssessment} / {@code questionBankStats}
+ * out of {@code schoolAdminDashboard} in exactly this way. Keeping it separate also means the old screen
+ * does not pay for the new aggregations, and one broken query does not bring down the whole dashboard.
  *
- * <p>Số trường phân loại tại THỜI ĐIỂM GỌI, không theo cửa sổ: "bao nhiêu trường đang còn gói" mà đổi
- * khi bấm sang tháng trước thì vô nghĩa. Tiền thì theo cửa sổ.
+ * <p>The number of schools is classified AT THE TIME OF THE CALL, not by window: "how many schools still have a plan" changing
+ * when you click to last month is meaningless. Money follows the window.
  */
 public record PlatformBusinessHealthResponse(
     long subscribedSchools,

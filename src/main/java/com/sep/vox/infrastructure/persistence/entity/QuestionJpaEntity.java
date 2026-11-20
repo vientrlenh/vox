@@ -104,10 +104,10 @@ public class QuestionJpaEntity {
     @Column(name = "locked", nullable = false)
     private boolean locked;
 
-    @Column(name = "confidentiality", nullable = false, length = 20, check = {
+    @Column(name = "confidentiality", nullable = false, length = 32, check = {
         @CheckConstraint(
             name = "chk_questions_confidentiality_valid", 
-            constraint = "confidentiality IN ('OPEN', 'EXAM_RESTRICTED', 'RELEASED')"
+            constraint = "confidentiality IN ('OPEN', 'ASSESSMENT_RESTRICTED', 'RELEASED')"
         )
     })
     private String confidentiality;

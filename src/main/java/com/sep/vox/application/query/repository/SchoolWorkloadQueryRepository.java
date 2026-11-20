@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import com.sep.vox.application.query.dto.ExamAwaitingPublishDto;
+import com.sep.vox.application.query.dto.AssessmentAwaitingPublishDto;
 import com.sep.vox.application.query.dto.SchoolGradingFailureDto;
 import com.sep.vox.application.query.dto.SchoolUnscoredWorkloadDto;
 import com.sep.vox.domain.common.PageResult;
@@ -30,23 +30,23 @@ public interface SchoolWorkloadQueryRepository {
     SchoolUnscoredWorkloadDto countUnscored(UUID schoolId, Instant now);
 
     /** Kỳ nào còn nhiều bài trống nhất xếp trước — đó là kỳ dễ gây thiệt hại nhất khi bấm công bố. */
-    List<ExamAwaitingPublishDto> findExamsAwaitingPublish(UUID schoolId, Instant now, int limit);
+    List<AssessmentAwaitingPublishDto> findAssessmentsAwaitingPublish(UUID schoolId, Instant now, int limit);
 
     /**
-     * Danh sách bài AI chấm lỗi mà chưa ai xử lý — chỗ đáp của dòng cùng tên trên trang tổng quan.
+     * The list of AI-failed attempts that nobody has handled yet -- the landing place of the line of the same name on the overview page.
      *
-     * <p>Chạy trên ĐÚNG hai nhóm AI của {@link #countUnscored}, nên số trên thẻ và số dòng ở đây luôn
-     * khớp. Không nhận {@code now}: hai nhóm AI không phụ thuộc vào mốc thời gian nào (chỉ nhóm phân
-     * công mới xét quá hạn), nên thêm tham số vào đây chỉ ngụ ý sai rằng nó có ảnh hưởng.
+     * <p>Runs on EXACTLY the two AI groups of {@link #countUnscored}, so the number on the card and the number of rows here always
+     * match. It does not take {@code now}: the two AI groups do not depend on any moment in time (only the assignment
+     * group considers overdue), so adding a parameter here would wrongly imply that it has an effect.
      *
-     * @param examId       thu hẹp về một kỳ; null là mọi kỳ.
-     * @param retryLeft    true = chỉ bài còn lượt AI, false = chỉ bài đã hết lượt, null = không lọc.
-     *                     Đây là bộ lọc đáng giá nhất trên màn này: hai nhóm dẫn tới hai hành động
-     *                     khác hẳn nhau, và trộn chúng lại thì mỗi dòng phải đọc riêng mới biết bấm
-     *                     được nút nào.
+     * @param assessmentId narrows to one assessment; null is every assessment.
+     * @param retryLeft    true = only attempts with AI retries left, false = only attempts that have run out, null = no filter.
+     *                     This is the most valuable filter on this screen: the two groups lead to two very different
+     *                     actions, and mixing them means every row has to be read separately to know which
+     *                     button can be pressed.
      */
     PageResult<SchoolGradingFailureDto> findUnhandledAiFailures(
-        UUID schoolId, UUID examId, Boolean retryLeft, int page, int size);
+        UUID schoolId, UUID assessmentId, Boolean retryLeft, int page, int size);
 
     /**
      * Số bài của hai nhóm định mức, ĐÃ áp bộ lọc kỳ thi nhưng CHƯA áp bộ lọc định mức.
@@ -57,5 +57,5 @@ public interface SchoolWorkloadQueryRepository {
      *
      * @return {@code [số bài còn lượt AI, số bài hết lượt AI]}
      */
-    int[] countAiFailuresByAllowance(UUID schoolId, UUID examId);
+    int[] countAiFailuresByAllowance(UUID schoolId, UUID assessmentId);
 }

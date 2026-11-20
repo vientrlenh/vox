@@ -10,9 +10,9 @@ public final class UpdateClassTestSectionCommandMapper {
     private UpdateClassTestSectionCommandMapper() {
     }
 
-    public static UpdateClassTestSectionCommand fromRequest(UUID examId, UUID sectionId, UpdateClassTestSectionRequest request) {
+    public static UpdateClassTestSectionCommand fromRequest(UUID assessmentId, UUID sectionId, UpdateClassTestSectionRequest request) {
         return new UpdateClassTestSectionCommand(
-            examId,
+            assessmentId,
             sectionId,
             request.title(),
             request.instruction(),

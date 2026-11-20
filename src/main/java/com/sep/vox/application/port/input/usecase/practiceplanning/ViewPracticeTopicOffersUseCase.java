@@ -32,8 +32,8 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 @Service
 public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopicOffersQuery, List<PracticeTopicOffer>> {
 
-    private static final String EXAM_TOPIC_INTEREST_DIMENSION = "ACADEMIC_EXAM";
-    private static final String EXAM_TOPIC_CURRICULUM_GROUP = "EXAM_BANK";
+    private static final String ASSESSMENT_TOPIC_INTEREST_DIMENSION = "ACADEMIC_ASSESSMENT";
+    private static final String ASSESSMENT_TOPIC_CURRICULUM_GROUP = "ASSESSMENT_BANK";
 
     private final PracticeTopicQueryRepository practiceTopicQueryRepository;
     private final LearnerProfileRepository learnerProfileRepository;
@@ -75,8 +75,8 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
         );
         String goal = currentGoal(studentId);
         // `bucket` không còn phân nhánh gì: enum chỉ còn FOR_YOU (xem practice-planning.graphqls).
-        List<RankedTopic> ranked = ("EXAM_PREP".equals(goal)
-                ? examTopicRanked(studentId)
+        List<RankedTopic> ranked = ("ASSESSMENT_PREP".equals(goal)
+                ? assessmentTopicRanked(studentId)
                 : classicRanked(studentId, goal))
             .stream()
             .filter(topic -> !excluded.contains(topic.id()))
@@ -134,8 +134,8 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
     @Transactional(readOnly = true)
     public boolean isOutsideTopRanked(UUID studentId, UUID topicId) {
         String goal = currentGoal(studentId);
-        if ("EXAM_PREP".equals(goal)) {
-            // Đường EXAM_PREP không chạy ε-greedy (chỉ bucket FOR_YOU của pool AI-sinh mới có).
+        if ("ASSESSMENT_PREP".equals(goal)) {
+            // The ASSESSMENT_PREP path does not run epsilon-greedy (only the FOR_YOU bucket of the AI-generated pool has it).
             return false;
         }
         List<RankedTopic> ranked = classicRanked(studentId, goal).stream()
@@ -165,7 +165,7 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
 
     
     private static double scoreFor(String goal, double interest, double curriculum) {
-        return "EXAM_PREP".equals(goal)
+        return "ASSESSMENT_PREP".equals(goal)
             ? 0.50 * interest + 0.50 * curriculum
             : 0.80 * interest + 0.20 * curriculum;
     }
@@ -192,11 +192,13 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
             .toList();
     }
 
-    /** Nguồn topic cho EXAM_PREP: ngân hàng câu hỏi (question_bank/question_topic) đã PUBLISHED
-     * của đúng trường + khối hiện tại của học sinh -- không dùng pool AI-sinh cho ABILITY_IMPROVEMENT.
-     * Mỗi topic được vật chất hoá lazy thành 1 dòng practice_topics (nếu chưa có) để toàn bộ pipeline
-     * chọn câu hỏi / theo dõi điểm yếu / vector sở thích phía sau chạy nguyên vẹn không cần sửa. */
-    private List<RankedTopic> examTopicRanked(UUID studentId) {
+    /**
+     * Topic source for ASSESSMENT_PREP: the PUBLISHED question bank (question_bank/question_topic)
+     * of exactly the student's current school + grade -- the AI-generated pool for ABILITY_IMPROVEMENT is not used.
+     * Each topic is lazily materialized into 1 practice_topics row (if it does not exist yet) so that the whole downstream pipeline of
+     * question selection / weakness tracking / interest vector runs intact without changes.
+     */
+    private List<RankedTopic> assessmentTopicRanked(UUID studentId) {
         UUID schoolId = schoolUserRepository.findSchoolIdByUserId(studentId).orElse(null);
         if (schoolId == null) {
             return List.of();
@@ -205,16 +207,16 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
         if (gradeId == null) {
             return List.of();
         }
-        return practiceTopicQueryRepository.findPublishedExamTopics(schoolId, gradeId).stream()
+        return practiceTopicQueryRepository.findPublishedAssessmentTopics(schoolId, gradeId).stream()
             .map(row -> {
-                UUID topicId = materializeExamTopic(row);
+                UUID topicId = materializeAssessmentTopic(row);
                 double interest = 0.5;
                 double curriculum = 1.0;
-                double base = scoreFor("EXAM_PREP", interest, curriculum);
+                double base = scoreFor("ASSESSMENT_PREP", interest, curriculum);
                 return new RankedTopic(
                     topicId,
                     row.getName(),
-                    EXAM_TOPIC_INTEREST_DIMENSION,
+                    ASSESSMENT_TOPIC_INTEREST_DIMENSION,
                     false,
                     base,
                     interest,
@@ -225,7 +227,7 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
             .toList();
     }
 
-    private UUID materializeExamTopic(QuestionTopicInfo row) {
+    private UUID materializeAssessmentTopic(QuestionTopicInfo row) {
         return practiceTopicRepository.findBySourceQuestionTopicId(row.getId())
             .map(existing -> existing.getId())
             .orElseGet(() -> practiceTopicRepository.save(new PracticeTopic(
@@ -233,9 +235,9 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
                 row.getName(),
                 TopicSuggestionService.normalize(row.getName()),
                 row.getDescription(),
-                "EXAM_QUESTION_BANK",
-                EXAM_TOPIC_INTEREST_DIMENSION,
-                EXAM_TOPIC_CURRICULUM_GROUP,
+                "ASSESSMENT_QUESTION_BANK",
+                ASSESSMENT_TOPIC_INTEREST_DIMENSION,
+                ASSESSMENT_TOPIC_CURRICULUM_GROUP,
                 true,
                 Instant.now(),
                 row.getId(),

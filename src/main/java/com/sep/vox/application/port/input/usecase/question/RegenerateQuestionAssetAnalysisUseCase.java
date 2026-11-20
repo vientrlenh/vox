@@ -78,7 +78,7 @@ public class RegenerateQuestionAssetAnalysisUseCase implements IUseCase<Regenera
 
         boolean immutable = question.getStatus() == QuestionStatus.PUBLISHED
             || question.isLocked()
-            || questionRepository.existsUsedInExam(question.getId());
+            || questionRepository.existsUsedInAssessment(question.getId());
         Question targetQuestion = immutable
             ? questionCloneService.cloneAsDraftWithDetails(question, currentUserId)
             : question;

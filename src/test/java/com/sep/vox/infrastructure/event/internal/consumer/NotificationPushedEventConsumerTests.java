@@ -34,16 +34,16 @@ import org.springframework.kafka.support.Acknowledgment;
 
 import com.sep.vox.application.response.output.PushDispatchResult;
 import com.sep.vox.application.response.output.PushMessage;
-import com.sep.vox.application.event.ExamAppealApprovedPayloadV1;
-import com.sep.vox.application.event.ExamAppealPublishedPayloadV1;
-import com.sep.vox.application.event.ExamAppealRejectedPayloadV1;
-import com.sep.vox.application.event.ExamBlueprintVersionPublishedEvent;
-import com.sep.vox.application.event.ExamHumanGradingRequiredPayloadV1;
-import com.sep.vox.application.event.ExamResultInvalidClearedPayloadV1;
-import com.sep.vox.application.event.ExamResultInvalidatedPayloadV1;
-import com.sep.vox.application.event.ExamResultOutcomeDecidedPayloadV1;
-import com.sep.vox.application.event.ExamResultRegradedPayloadV1;
-import com.sep.vox.application.event.ExamResultReleasedPayloadV1;
+import com.sep.vox.application.event.AssessmentAppealApprovedPayloadV1;
+import com.sep.vox.application.event.AssessmentAppealPublishedPayloadV1;
+import com.sep.vox.application.event.AssessmentAppealRejectedPayloadV1;
+import com.sep.vox.application.event.AssessmentBlueprintVersionPublishedEvent;
+import com.sep.vox.application.event.AssessmentHumanGradingRequiredPayloadV1;
+import com.sep.vox.application.event.AssessmentResultInvalidClearedPayloadV1;
+import com.sep.vox.application.event.AssessmentResultInvalidatedPayloadV1;
+import com.sep.vox.application.event.AssessmentResultOutcomeDecidedPayloadV1;
+import com.sep.vox.application.event.AssessmentResultRegradedPayloadV1;
+import com.sep.vox.application.event.AssessmentResultReleasedPayloadV1;
 import com.sep.vox.application.event.GradingAssignmentDeclinedPayloadV1;
 import com.sep.vox.application.event.GradingAssignmentOpenedPayloadV1;
 import com.sep.vox.application.event.GradingDeadlineReminderPayloadV1;
@@ -56,7 +56,7 @@ import com.sep.vox.application.event.SchoolSubscriptionSuspendedPayloadV1;
 import com.sep.vox.application.event.SchoolSubscriptionUnsuspendedPayloadV1;
 import com.sep.vox.application.port.output.PushNotificationPort;
 import com.sep.vox.domain.common.EventTypeConstant;
-import com.sep.vox.domain.model.exam.ExamKind;
+import com.sep.vox.domain.model.assessment.AssessmentKind;
 import com.sep.vox.domain.model.invoice.InvoiceSourceType;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.notification.Notification;
@@ -96,7 +96,7 @@ class NotificationPushedEventConsumerTests {
 
     /** Hai khoá điều hướng mà màn hình đích cần ngoài id của chính thực thể. */
     private UUID sessionId;
-    private UUID examId;
+    private UUID assessmentId;
     private UUID blueprintId;
     private UUID versionId;
 
@@ -122,7 +122,7 @@ class NotificationPushedEventConsumerTests {
 
         userId = UUID.randomUUID();
         sessionId = UUID.randomUUID();
-        examId = UUID.randomUUID();
+        assessmentId = UUID.randomUUID();
         blueprintId = UUID.randomUUID();
         versionId = UUID.randomUUID();
 
@@ -188,8 +188,8 @@ class NotificationPushedEventConsumerTests {
         UUID admin2 = UUID.randomUUID();
         UUID admin3 = UUID.randomUUID();
 
-        consumer.consume(record(EventTypeConstant.EXAM_BLUEPRINT_VERSION_PUBLISHED,
-            new ExamBlueprintVersionPublishedEvent(
+        consumer.consume(record(EventTypeConstant.ASSESSMENT_BLUEPRINT_VERSION_PUBLISHED,
+            new AssessmentBlueprintVersionPublishedEvent(
                 List.of(admin1, admin2, admin3), "BP-01", "Blueprint Toán 12", blueprintId, versionId)), ack);
 
         ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
@@ -208,8 +208,8 @@ class NotificationPushedEventConsumerTests {
     void should_ignore_duplicate_and_null_recipients_in_fan_out_payload() {
         UUID admin = UUID.randomUUID();
 
-        consumer.consume(record(EventTypeConstant.EXAM_BLUEPRINT_VERSION_PUBLISHED,
-            new ExamBlueprintVersionPublishedEvent(
+        consumer.consume(record(EventTypeConstant.ASSESSMENT_BLUEPRINT_VERSION_PUBLISHED,
+            new AssessmentBlueprintVersionPublishedEvent(
                 Arrays.asList(admin, admin, null), "BP-01", "Blueprint Toán 12", blueprintId, versionId)), ack);
 
         verify(notificationRepository, times(1)).saveIfAbsent(any());
@@ -234,8 +234,8 @@ class NotificationPushedEventConsumerTests {
             return existing.equals(notification.getUserId()) ? Optional.empty() : Optional.of(withId(notification));
         }).when(notificationRepository).saveIfAbsent(any());
 
-        consumer.consume(record(EventTypeConstant.EXAM_BLUEPRINT_VERSION_PUBLISHED,
-            new ExamBlueprintVersionPublishedEvent(
+        consumer.consume(record(EventTypeConstant.ASSESSMENT_BLUEPRINT_VERSION_PUBLISHED,
+            new AssessmentBlueprintVersionPublishedEvent(
                 List.of(existing, fresh), "BP-01", "Blueprint Toán 12", blueprintId, versionId)), ack);
 
         verify(notificationDeviceRepository, times(1)).findByUserId(fresh);
@@ -246,8 +246,8 @@ class NotificationPushedEventConsumerTests {
     /** Trường không còn admin nào đang hoạt động: bỏ qua, không đẩy vào vòng retry. */
     @Test
     void should_skip_event_without_recipients_instead_of_failing() {
-        consumer.consume(record(EventTypeConstant.EXAM_BLUEPRINT_VERSION_PUBLISHED,
-            new ExamBlueprintVersionPublishedEvent(
+        consumer.consume(record(EventTypeConstant.ASSESSMENT_BLUEPRINT_VERSION_PUBLISHED,
+            new AssessmentBlueprintVersionPublishedEvent(
                 List.of(), "BP-01", "Blueprint Toán 12", blueprintId, versionId)), ack);
 
         verify(notificationRepository, never()).saveIfAbsent(any());
@@ -265,7 +265,7 @@ class NotificationPushedEventConsumerTests {
     /** The DB row is the durable record, so it must be written before touching FCM. */
     @Test
     void should_persist_notification_before_pushing() {
-        consumer.consume(record(EventTypeConstant.EXAM_RESULT_RELEASED, releasedPayload()), ack);
+        consumer.consume(record(EventTypeConstant.ASSESSMENT_RESULT_RELEASED, releasedPayload()), ack);
 
         InOrder order = inOrder(notificationRepository, pushNotificationPort);
         order.verify(notificationRepository).saveIfAbsent(any());
@@ -276,7 +276,7 @@ class NotificationPushedEventConsumerTests {
     void should_still_persist_when_user_has_no_device() {
         when(notificationDeviceRepository.findByUserId(any())).thenReturn(List.of());
 
-        consumer.consume(record(EventTypeConstant.EXAM_RESULT_RELEASED, releasedPayload()), ack);
+        consumer.consume(record(EventTypeConstant.ASSESSMENT_RESULT_RELEASED, releasedPayload()), ack);
 
         verify(notificationRepository).saveIfAbsent(any());
         verify(pushNotificationPort, never()).send(any(), anyList());
@@ -288,9 +288,9 @@ class NotificationPushedEventConsumerTests {
     void should_skip_push_when_preference_disabled() {
         when(notificationPreferenceRepository.findByUserIdAndCategory(any(), any()))
             .thenReturn(Optional.of(new NotificationPreference(
-                userId, NotificationCategory.EXAM_RESULT, false, true, Instant.now())));
+                userId, NotificationCategory.ASSESSMENT_RESULT, false, true, Instant.now())));
 
-        consumer.consume(record(EventTypeConstant.EXAM_RESULT_RELEASED, releasedPayload()), ack);
+        consumer.consume(record(EventTypeConstant.ASSESSMENT_RESULT_RELEASED, releasedPayload()), ack);
 
         verify(notificationRepository).saveIfAbsent(any());
         verify(pushNotificationPort, never()).send(any(), anyList());
@@ -298,7 +298,7 @@ class NotificationPushedEventConsumerTests {
 
     @Test
     void should_push_by_default_when_preference_row_is_absent() {
-        consumer.consume(record(EventTypeConstant.EXAM_RESULT_RELEASED, releasedPayload()), ack);
+        consumer.consume(record(EventTypeConstant.ASSESSMENT_RESULT_RELEASED, releasedPayload()), ack);
 
         verify(pushNotificationPort).send(any(), anyList());
     }
@@ -309,7 +309,7 @@ class NotificationPushedEventConsumerTests {
         when(pushNotificationPort.send(any(), anyList()))
             .thenReturn(new PushDispatchResult(0, List.of("fid-dead"), List.of("fid-flaky")));
 
-        consumer.consume(record(EventTypeConstant.EXAM_RESULT_RELEASED, releasedPayload()), ack);
+        consumer.consume(record(EventTypeConstant.ASSESSMENT_RESULT_RELEASED, releasedPayload()), ack);
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<Collection<String>> captor = ArgumentCaptor.forClass(Collection.class);
@@ -323,7 +323,7 @@ class NotificationPushedEventConsumerTests {
         // when(mock.saveIfAbsent(any())) sẽ thực sự gọi answer cũ với đối số null.
         doReturn(Optional.empty()).when(notificationRepository).saveIfAbsent(any());
 
-        consumer.consume(record(EventTypeConstant.EXAM_RESULT_RELEASED, releasedPayload()), ack);
+        consumer.consume(record(EventTypeConstant.ASSESSMENT_RESULT_RELEASED, releasedPayload()), ack);
 
         verify(pushNotificationPort, never()).send(any(), anyList());
         verify(processedEventRepository).save(any());
@@ -339,7 +339,7 @@ class NotificationPushedEventConsumerTests {
             task.run();
         });
 
-        consumer.consume(record(EventTypeConstant.EXAM_RESULT_RELEASED, releasedPayload()), ack);
+        consumer.consume(record(EventTypeConstant.ASSESSMENT_RESULT_RELEASED, releasedPayload()), ack);
 
         assertThat(submitted.get()).isEqualTo(1);
         verify(pushNotificationPort).send(any(), anyList());
@@ -356,7 +356,7 @@ class NotificationPushedEventConsumerTests {
             throw new RejectedExecutionException("queue full");
         });
 
-        consumer.consume(record(EventTypeConstant.EXAM_RESULT_RELEASED, releasedPayload()), ack);
+        consumer.consume(record(EventTypeConstant.ASSESSMENT_RESULT_RELEASED, releasedPayload()), ack);
 
         verify(notificationRepository).saveIfAbsent(any());
         verify(processedEventRepository).save(any());
@@ -369,7 +369,7 @@ class NotificationPushedEventConsumerTests {
         when(notificationDeviceRepository.findByUserId(any()))
             .thenThrow(new IllegalStateException("mất kết nối DB"));
 
-        consumer.consume(record(EventTypeConstant.EXAM_RESULT_RELEASED, releasedPayload()), ack);
+        consumer.consume(record(EventTypeConstant.ASSESSMENT_RESULT_RELEASED, releasedPayload()), ack);
 
         verify(processedEventRepository).save(any());
         verify(ack).acknowledge();
@@ -379,7 +379,7 @@ class NotificationPushedEventConsumerTests {
     void should_skip_already_processed_event() {
         when(processedEventRepository.existsByEventIdAndConsumerGroup(any(), any())).thenReturn(true);
 
-        consumer.consume(record(EventTypeConstant.EXAM_RESULT_RELEASED, releasedPayload()), ack);
+        consumer.consume(record(EventTypeConstant.ASSESSMENT_RESULT_RELEASED, releasedPayload()), ack);
 
         verifyNoInteractions(notificationRepository);
         verifyNoInteractions(pushNotificationPort);
@@ -388,50 +388,50 @@ class NotificationPushedEventConsumerTests {
 
     @Test
     void should_carry_event_type_into_push_data_for_deep_linking() {
-        consumer.consume(record(EventTypeConstant.EXAM_RESULT_RELEASED, releasedPayload()), ack);
+        consumer.consume(record(EventTypeConstant.ASSESSMENT_RESULT_RELEASED, releasedPayload()), ack);
 
         ArgumentCaptor<PushMessage> captor = ArgumentCaptor.forClass(PushMessage.class);
         verify(pushNotificationPort).send(captor.capture(), anyList());
         assertThat(captor.getValue().data())
-            .containsEntry("eventType", EventTypeConstant.EXAM_RESULT_RELEASED)
-            .containsEntry("target", NotificationTarget.EXAM_RESULT_DETAIL.name())
+            .containsEntry("eventType", EventTypeConstant.ASSESSMENT_RESULT_RELEASED)
+            .containsEntry("target", NotificationTarget.ASSESSMENT_RESULT_DETAIL.name())
             .containsKey("candidateResultId");
     }
 
     /**
      * The student's result screen receives sessionId, not candidateResultId. Before the event
-     * carried this extra field, the score notification could only open the exam list.
+     * carried this extra field, the score notification could only open the assessment list.
      */
     @Test
-    void should_carry_session_id_and_exam_kind_for_result_notifications() {
-        consumer.consume(record(EventTypeConstant.EXAM_RESULT_RELEASED, releasedPayload()), ack);
+    void should_carry_session_id_and_assessment_kind_for_result_notifications() {
+        consumer.consume(record(EventTypeConstant.ASSESSMENT_RESULT_RELEASED, releasedPayload()), ack);
 
         ArgumentCaptor<PushMessage> captor = ArgumentCaptor.forClass(PushMessage.class);
         verify(pushNotificationPort).send(captor.capture(), anyList());
         assertThat(captor.getValue().data())
-            .containsEntry("target", NotificationTarget.EXAM_RESULT_DETAIL.name())
+            .containsEntry("target", NotificationTarget.ASSESSMENT_RESULT_DETAIL.name())
             .containsEntry("sessionId", sessionId.toString())
-            .containsEntry("examKind", ExamKind.CENTRALIZED.name())
-            // The result screen on the Flutter side receives examName to build the title: it loads
-            // the score by sessionId itself but has no other source for the exam name.
-            .containsEntry("examName", "Kỳ thi giữa kỳ");
+            .containsEntry("assessmentKind", AssessmentKind.CENTRALIZED.name())
+            // The result screen on the Flutter side receives assessmentName to build the title: it loads
+            // the score by sessionId itself but has no other source for the assessment name.
+            .containsEntry("assessmentName", "Kỳ thi giữa kỳ");
     }
 
     /**
-     * The grading screen of a class test sits under examId, so the deadline reminder must carry it.
+     * The grading screen of a class test sits under assessmentId, so the deadline reminder must carry it.
      */
     @Test
-    void should_carry_exam_id_and_kind_for_grading_notifications() {
+    void should_carry_assessment_id_and_kind_for_grading_notifications() {
         consumer.consume(record(EventTypeConstant.GRADING_DEADLINE_REMINDER,
             new GradingDeadlineReminderPayloadV1(UUID.randomUUID(), userId, "Kỳ thi giữa kỳ", "FIRST",
-                Instant.parse("2026-09-01T03:00:00Z"), examId, ExamKind.CLASS_TEST)), ack);
+                Instant.parse("2026-09-01T03:00:00Z"), assessmentId, AssessmentKind.CLASS_TEST)), ack);
 
         ArgumentCaptor<PushMessage> captor = ArgumentCaptor.forClass(PushMessage.class);
         verify(pushNotificationPort).send(captor.capture(), anyList());
         assertThat(captor.getValue().data())
             .containsEntry("target", NotificationTarget.TEACHER_GRADING_TASK.name())
-            .containsEntry("examId", examId.toString())
-            .containsEntry("examKind", ExamKind.CLASS_TEST.name());
+            .containsEntry("assessmentId", assessmentId.toString())
+            .containsEntry("assessmentKind", AssessmentKind.CLASS_TEST.name());
     }
 
     /**
@@ -443,7 +443,7 @@ class NotificationPushedEventConsumerTests {
     void should_route_a_new_assignment_to_the_teacher_grading_task() {
         consumer.consume(record(EventTypeConstant.GRADING_ASSIGNMENT_OPENED,
             new GradingAssignmentOpenedPayloadV1(
-                UUID.randomUUID(), userId, examId, "Kiểm tra 15 phút", ExamKind.CLASS_TEST,
+                UUID.randomUUID(), userId, assessmentId, "Kiểm tra 15 phút", AssessmentKind.CLASS_TEST,
                 "INITIAL", "Trần Quang Thiên", null)), ack);
 
         ArgumentCaptor<PushMessage> captor = ArgumentCaptor.forClass(PushMessage.class);
@@ -451,19 +451,19 @@ class NotificationPushedEventConsumerTests {
         assertThat(captor.getValue().data())
             .containsEntry("target", NotificationTarget.TEACHER_GRADING_TASK.name())
             .containsKey("assignmentId")
-            .containsEntry("examId", examId.toString());
+            .containsEntry("assessmentId", assessmentId.toString());
     }
 
     /**
      * The submission label was chosen by the anonymity rule AT PUBLISH TIME; the consumer only
-     * displays it again. For a centralized exam it is the submission code, and the consumer must
-     * not derive it again from examKind.
+     * displays it again. For a centralized assessment it is the submission code, and the consumer must
+     * not derive it again from assessmentKind.
      */
     @Test
     void should_show_the_candidate_label_verbatim_in_the_body() {
         consumer.consume(record(EventTypeConstant.GRADING_ASSIGNMENT_OPENED,
             new GradingAssignmentOpenedPayloadV1(
-                UUID.randomUUID(), userId, examId, "Kỳ thi giữa kỳ", ExamKind.CENTRALIZED,
+                UUID.randomUUID(), userId, assessmentId, "Kỳ thi giữa kỳ", AssessmentKind.CENTRALIZED,
                 "SPOT_CHECK", "A2041F3C", null)), ack);
 
         ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
@@ -475,22 +475,22 @@ class NotificationPushedEventConsumerTests {
     }
 
     /**
-     * A manual-grading reminder leads to the grading queue of the WHOLE exam, so it only needs
-     * examId + kind -- there is no single submission id here, and there should not be: one exam is
+     * A manual-grading reminder leads to the grading queue of the WHOLE assessment, so it only needs
+     * assessmentId + kind -- there is no single submission id here, and there should not be: one assessment is
      * hundreds of submissions.
      */
     @Test
-    void should_carry_exam_id_and_kind_for_human_grading_reminders() {
-        consumer.consume(record(EventTypeConstant.EXAM_HUMAN_GRADING_REQUIRED,
-            new ExamHumanGradingRequiredPayloadV1(
-                List.of(userId), examId, "Kỳ thi giữa kỳ", ExamKind.CLASS_TEST, 7)), ack);
+    void should_carry_assessment_id_and_kind_for_human_grading_reminders() {
+        consumer.consume(record(EventTypeConstant.ASSESSMENT_HUMAN_GRADING_REQUIRED,
+            new AssessmentHumanGradingRequiredPayloadV1(
+                List.of(userId), assessmentId, "Kỳ thi giữa kỳ", AssessmentKind.CLASS_TEST, 7)), ack);
 
         ArgumentCaptor<PushMessage> captor = ArgumentCaptor.forClass(PushMessage.class);
         verify(pushNotificationPort).send(captor.capture(), anyList());
         assertThat(captor.getValue().data())
-            .containsEntry("target", NotificationTarget.EXAM_HUMAN_GRADING_REQUIRED.name())
-            .containsEntry("examId", examId.toString())
-            .containsEntry("examKind", ExamKind.CLASS_TEST.name());
+            .containsEntry("target", NotificationTarget.ASSESSMENT_HUMAN_GRADING_REQUIRED.name())
+            .containsEntry("assessmentId", assessmentId.toString())
+            .containsEntry("assessmentKind", AssessmentKind.CLASS_TEST.name());
     }
 
     /**
@@ -499,9 +499,9 @@ class NotificationPushedEventConsumerTests {
      */
     @Test
     void should_put_the_pending_count_in_the_notification_body() {
-        consumer.consume(record(EventTypeConstant.EXAM_HUMAN_GRADING_REQUIRED,
-            new ExamHumanGradingRequiredPayloadV1(
-                List.of(userId), examId, "Kỳ thi giữa kỳ", ExamKind.CENTRALIZED, 7)), ack);
+        consumer.consume(record(EventTypeConstant.ASSESSMENT_HUMAN_GRADING_REQUIRED,
+            new AssessmentHumanGradingRequiredPayloadV1(
+                List.of(userId), assessmentId, "Kỳ thi giữa kỳ", AssessmentKind.CENTRALIZED, 7)), ack);
 
         ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
         verify(notificationRepository).saveIfAbsent(captor.capture());
@@ -515,8 +515,8 @@ class NotificationPushedEventConsumerTests {
      */
     @Test
     void should_navigate_blueprint_notifications_by_id_not_by_code() {
-        consumer.consume(record(EventTypeConstant.EXAM_BLUEPRINT_VERSION_PUBLISHED,
-            new ExamBlueprintVersionPublishedEvent(
+        consumer.consume(record(EventTypeConstant.ASSESSMENT_BLUEPRINT_VERSION_PUBLISHED,
+            new AssessmentBlueprintVersionPublishedEvent(
                 List.of(userId), "BP-01", "Blueprint Toán 12", blueprintId, versionId)), ack);
 
         ArgumentCaptor<PushMessage> captor = ArgumentCaptor.forClass(PushMessage.class);
@@ -535,16 +535,16 @@ class NotificationPushedEventConsumerTests {
      */
     @Test
     void should_omit_navigation_keys_that_the_event_does_not_carry() {
-        consumer.consume(record(EventTypeConstant.EXAM_RESULT_RELEASED,
-            new ExamResultReleasedPayloadV1(
+        consumer.consume(record(EventTypeConstant.ASSESSMENT_RESULT_RELEASED,
+            new AssessmentResultReleasedPayloadV1(
                 UUID.randomUUID(), userId, "Kỳ thi giữa kỳ", new BigDecimal("8.5"), null, null)), ack);
 
         ArgumentCaptor<PushMessage> captor = ArgumentCaptor.forClass(PushMessage.class);
         verify(pushNotificationPort).send(captor.capture(), anyList());
         assertThat(captor.getValue().data())
             .doesNotContainKey("sessionId")
-            .doesNotContainKey("examKind")
-            .containsEntry("target", NotificationTarget.EXAM_RESULT_DETAIL.name());
+            .doesNotContainKey("assessmentKind")
+            .containsEntry("target", NotificationTarget.ASSESSMENT_RESULT_DETAIL.name());
         assertThat(captor.getValue().data().values()).doesNotContain("null");
     }
 
@@ -561,7 +561,7 @@ class NotificationPushedEventConsumerTests {
             return Optional.of(notification);
         }).when(notificationRepository).saveIfAbsent(any());
 
-        consumer.consume(record(EventTypeConstant.EXAM_RESULT_RELEASED, releasedPayload()), ack);
+        consumer.consume(record(EventTypeConstant.ASSESSMENT_RESULT_RELEASED, releasedPayload()), ack);
 
         ArgumentCaptor<PushMessage> captor = ArgumentCaptor.forClass(PushMessage.class);
         verify(pushNotificationPort).send(captor.capture(), anyList());
@@ -575,7 +575,7 @@ class NotificationPushedEventConsumerTests {
      */
     @Test
     void should_not_persist_notification_id_into_the_payload_column() {
-        consumer.consume(record(EventTypeConstant.EXAM_RESULT_RELEASED, releasedPayload()), ack);
+        consumer.consume(record(EventTypeConstant.ASSESSMENT_RESULT_RELEASED, releasedPayload()), ack);
 
         ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
         verify(notificationRepository).saveIfAbsent(captor.capture());
@@ -591,13 +591,13 @@ class NotificationPushedEventConsumerTests {
         doAnswer(invocation -> Optional.of(invocation.getArgument(0)))
             .when(notificationRepository).saveIfAbsent(any());
 
-        consumer.consume(record(EventTypeConstant.EXAM_RESULT_RELEASED, releasedPayload()), ack);
+        consumer.consume(record(EventTypeConstant.ASSESSMENT_RESULT_RELEASED, releasedPayload()), ack);
 
         ArgumentCaptor<PushMessage> captor = ArgumentCaptor.forClass(PushMessage.class);
         verify(pushNotificationPort).send(captor.capture(), anyList());
         assertThat(captor.getValue().data())
             .doesNotContainKey("notificationId")
-            .containsEntry("target", NotificationTarget.EXAM_RESULT_DETAIL.name());
+            .containsEntry("target", NotificationTarget.ASSESSMENT_RESULT_DETAIL.name());
         verify(ack).acknowledge();
     }
 
@@ -646,48 +646,48 @@ class NotificationPushedEventConsumerTests {
     private record TestCase(String eventType, Object payload) {}
 
     private List<TestCase> allEventTypes() {
-        String examName = "Kỳ thi giữa kỳ";
+        String assessmentName = "Kỳ thi giữa kỳ";
         UUID id = UUID.randomUUID();
         return List.of(
-            new TestCase(EventTypeConstant.EXAM_RESULT_RELEASED, releasedPayload()),
-            new TestCase(EventTypeConstant.EXAM_RESULT_REGRADED, new ExamResultRegradedPayloadV1(
-                id, userId, examName, "FIRST", new BigDecimal("7.0"), new BigDecimal("8.0"),
-                sessionId, ExamKind.CENTRALIZED)),
-            new TestCase(EventTypeConstant.EXAM_RESULT_INVALIDATED, new ExamResultInvalidatedPayloadV1(
-                id, userId, examName, "Gian lận", sessionId, ExamKind.CENTRALIZED)),
-            new TestCase(EventTypeConstant.EXAM_RESULT_INVALID_CLEARED, new ExamResultInvalidClearedPayloadV1(
-                id, userId, examName, "Đã xác minh lại", sessionId, ExamKind.CENTRALIZED)),
-            new TestCase(EventTypeConstant.EXAM_RESULT_OUTCOME_DECIDED, new ExamResultOutcomeDecidedPayloadV1(
-                id, userId, examName, "PASSED", new BigDecimal("8.0"), sessionId, ExamKind.CENTRALIZED)),
+            new TestCase(EventTypeConstant.ASSESSMENT_RESULT_RELEASED, releasedPayload()),
+            new TestCase(EventTypeConstant.ASSESSMENT_RESULT_REGRADED, new AssessmentResultRegradedPayloadV1(
+                id, userId, assessmentName, "FIRST", new BigDecimal("7.0"), new BigDecimal("8.0"),
+                sessionId, AssessmentKind.CENTRALIZED)),
+            new TestCase(EventTypeConstant.ASSESSMENT_RESULT_INVALIDATED, new AssessmentResultInvalidatedPayloadV1(
+                id, userId, assessmentName, "Gian lận", sessionId, AssessmentKind.CENTRALIZED)),
+            new TestCase(EventTypeConstant.ASSESSMENT_RESULT_INVALID_CLEARED, new AssessmentResultInvalidClearedPayloadV1(
+                id, userId, assessmentName, "Đã xác minh lại", sessionId, AssessmentKind.CENTRALIZED)),
+            new TestCase(EventTypeConstant.ASSESSMENT_RESULT_OUTCOME_DECIDED, new AssessmentResultOutcomeDecidedPayloadV1(
+                id, userId, assessmentName, "PASSED", new BigDecimal("8.0"), sessionId, AssessmentKind.CENTRALIZED)),
 
-            new TestCase(EventTypeConstant.EXAM_APPEAL_PUBLISHED, new ExamAppealPublishedPayloadV1(
-                id, userId, examName, new BigDecimal("6.0"), new BigDecimal("7.5"))),
-            new TestCase(EventTypeConstant.EXAM_APPEAL_REJECTED, new ExamAppealRejectedPayloadV1(
-                id, userId, examName, "Không đủ căn cứ")),
-            new TestCase(EventTypeConstant.EXAM_APPEAL_APPROVED, new ExamAppealApprovedPayloadV1(
-                id, userId, examName, Instant.parse("2026-09-01T03:00:00Z"))),
+            new TestCase(EventTypeConstant.ASSESSMENT_APPEAL_PUBLISHED, new AssessmentAppealPublishedPayloadV1(
+                id, userId, assessmentName, new BigDecimal("6.0"), new BigDecimal("7.5"))),
+            new TestCase(EventTypeConstant.ASSESSMENT_APPEAL_REJECTED, new AssessmentAppealRejectedPayloadV1(
+                id, userId, assessmentName, "Không đủ căn cứ")),
+            new TestCase(EventTypeConstant.ASSESSMENT_APPEAL_APPROVED, new AssessmentAppealApprovedPayloadV1(
+                id, userId, assessmentName, Instant.parse("2026-09-01T03:00:00Z"))),
 
             new TestCase(EventTypeConstant.GRADING_DEADLINE_REMINDER, new GradingDeadlineReminderPayloadV1(
-                id, userId, examName, "FIRST", Instant.parse("2026-09-01T03:00:00Z"),
-                examId, ExamKind.CENTRALIZED)),
+                id, userId, assessmentName, "FIRST", Instant.parse("2026-09-01T03:00:00Z"),
+                assessmentId, AssessmentKind.CENTRALIZED)),
             // The recipient is assignedBy (the admin who assigned the work), not teacherId.
             new TestCase(EventTypeConstant.GRADING_ASSIGNMENT_DECLINED, new GradingAssignmentDeclinedPayloadV1(
-                id, id, UUID.randomUUID(), userId, examName, "Bận lịch coi thi",
-                examId, ExamKind.CENTRALIZED)),
+                id, id, UUID.randomUUID(), userId, assessmentName, "Bận lịch coi thi",
+                assessmentId, AssessmentKind.CENTRALIZED)),
 
             new TestCase(EventTypeConstant.GRADING_ASSIGNMENT_OPENED,
                 new GradingAssignmentOpenedPayloadV1(
-                    id, userId, examId, examName, ExamKind.CLASS_TEST, "INITIAL",
+                    id, userId, assessmentId, assessmentName, AssessmentKind.CLASS_TEST, "INITIAL",
                     "Trần Quang Thiên", Instant.parse("2026-09-01T03:00:00Z"))),
 
-            new TestCase(EventTypeConstant.EXAM_HUMAN_GRADING_REQUIRED,
-                new ExamHumanGradingRequiredPayloadV1(
-                    List.of(userId), examId, examName, ExamKind.CENTRALIZED, 3)),
+            new TestCase(EventTypeConstant.ASSESSMENT_HUMAN_GRADING_REQUIRED,
+                new AssessmentHumanGradingRequiredPayloadV1(
+                    List.of(userId), assessmentId, assessmentName, AssessmentKind.CENTRALIZED, 3)),
 
             // Two fan-out events: only one recipient on purpose here so the assertion loop above
             // can be shared. The multi-recipient behavior has its own test below.
-            new TestCase(EventTypeConstant.EXAM_BLUEPRINT_VERSION_PUBLISHED,
-                new ExamBlueprintVersionPublishedEvent(
+            new TestCase(EventTypeConstant.ASSESSMENT_BLUEPRINT_VERSION_PUBLISHED,
+                new AssessmentBlueprintVersionPublishedEvent(
                     List.of(userId), "BP-01", "Blueprint Toán 12", blueprintId, versionId)),
             new TestCase(EventTypeConstant.INVOICE_PAID, new InvoicePaidPayloadV1(
                 List.of(userId), id, id, id, "INV-001", new BigDecimal("500000"),
@@ -696,12 +696,12 @@ class NotificationPushedEventConsumerTests {
             // Three new fan-out events, also with only one recipient on purpose for the assertion
             // loop above.
             new TestCase(EventTypeConstant.SCHOOL_DEBT_CAP_EXCEEDED, new SchoolDebtCapExceededPayloadV1(
-                List.of(userId), id, id, QuotaType.EXAM, new BigDecimal("30"), new BigDecimal("20"),
+                List.of(userId), id, id, QuotaType.ASSESSMENT, new BigDecimal("30"), new BigDecimal("20"),
                 Instant.parse("2026-09-01T03:00:00Z"))),
             new TestCase(EventTypeConstant.SCHOOL_LOCKED_DUE_TO_DEBT, new SchoolLockedDueToDebtPayloadV1(
                 List.of(userId), id, id, Instant.parse("2026-09-01T03:00:00Z"))),
             new TestCase(EventTypeConstant.SCHOOL_QUOTA_USAGE_WARNING, new SchoolQuotaUsageWarningPayloadV1(
-                List.of(userId), id, id, QuotaType.EXAM, new BigDecimal("100"), new BigDecimal("75"),
+                List.of(userId), id, id, QuotaType.ASSESSMENT, new BigDecimal("100"), new BigDecimal("75"),
                 Instant.parse("2026-09-01T03:00:00Z"))),
             new TestCase(EventTypeConstant.SCHOOL_DEBT_CLEARED, new SchoolDebtClearedPayloadV1(
                 List.of(userId), id, id, Instant.parse("2026-09-01T03:00:00Z"))),
@@ -723,10 +723,10 @@ class NotificationPushedEventConsumerTests {
         return notification;
     }
 
-    private ExamResultReleasedPayloadV1 releasedPayload() {
-        return new ExamResultReleasedPayloadV1(
+    private AssessmentResultReleasedPayloadV1 releasedPayload() {
+        return new AssessmentResultReleasedPayloadV1(
             UUID.randomUUID(), userId, "Kỳ thi giữa kỳ", new BigDecimal("8.5"),
-            sessionId, ExamKind.CENTRALIZED);
+            sessionId, AssessmentKind.CENTRALIZED);
     }
 
     private NotificationDevice device(String installationId) {
@@ -736,7 +736,7 @@ class NotificationPushedEventConsumerTests {
 
     private ConsumerRecord<String, String> record(String eventType, Object payload) {
         String value = jsonMapper.writeValueAsString(payload);
-        ConsumerRecord<String, String> record = new ConsumerRecord<>("vox.exam-result-lifecycle.v1", 0, 0L, "key", value);
+        ConsumerRecord<String, String> record = new ConsumerRecord<>("vox.assessment-result-lifecycle.v1", 0, 0L, "key", value);
         record.headers().add("eventId", UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8));
         record.headers().add("eventType", eventType.getBytes(StandardCharsets.UTF_8));
         return record;

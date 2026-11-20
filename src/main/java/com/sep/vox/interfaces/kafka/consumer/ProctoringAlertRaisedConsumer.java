@@ -19,11 +19,11 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Đầu đọc của topic {@code exam.alert.raised}.
+ * The reader of the topic {@code assessment.alert.raised}.
  *
- * <p>vox-streaming đã phát topic này từ trước mà không ai tiêu thụ, nên mọi cảnh báo giám sát chỉ
- * tồn tại trong bộ nhớ tab trình duyệt của giám thị đang mở. Consumer này là chỗ chúng trở thành bản
- * ghi: phát lại được cho giám thị vào ca muộn, và tra lại được khi chấm bài sau thi.
+ * <p>vox-streaming has published this topic for a long time without anyone consuming it, so every proctoring alert only
+ * existed in the memory of the open proctor's browser tab. This consumer is where they become a
+ * record: replayable for a proctor who joins a session late, and searchable when grading after the assessment.
  */
 @Component
 public class ProctoringAlertRaisedConsumer {

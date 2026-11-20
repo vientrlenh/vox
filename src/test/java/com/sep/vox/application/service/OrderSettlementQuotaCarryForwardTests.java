@@ -184,7 +184,7 @@ class OrderSettlementQuotaCarryForwardTests {
         when(schoolSubscriptionRepository.findUnfinishedBySchoolId(eq(schoolId), any()))
             .thenReturn(List.of());
 
-        givenNewPlanQuotas(Map.of(QuotaType.EXAM, 10_000_000L, QuotaType.PRACTICE, 10_000_000L));
+        givenNewPlanQuotas(Map.of(QuotaType.ASSESSMENT, 10_000_000L, QuotaType.PRACTICE, 10_000_000L));
     }
 
     // =====================================================================
@@ -222,15 +222,15 @@ class OrderSettlementQuotaCarryForwardTests {
     @Test
     void renewal_carries_personal_ceilings_so_the_school_does_not_stall() {
         // Q-2. If it is not copied, PRACTICE drops to 0 for the WHOLE SCHOOL (LEAST + COALESCE),
-        // while for EXAM every teacher ends up with no ceiling -- two failures in opposite
+        // while for ASSESSMENT every teacher ends up with no ceiling -- two failures in opposite
         // directions, equally silent.
         UUID teacher = UUID.randomUUID();
-        givenPreviousAllocations(QuotaType.EXAM, Map.of(teacher, 2_000_000L));
+        givenPreviousAllocations(QuotaType.ASSESSMENT, Map.of(teacher, 2_000_000L));
 
         settle();
 
         verify(quotaUserAllocationRepository).upsertAllocation(
-            eq(newSubscriptionId), eq(QuotaType.EXAM), eq(teacher), eq(BigDecimal.valueOf(2_000_000)));
+            eq(newSubscriptionId), eq(QuotaType.ASSESSMENT), eq(teacher), eq(BigDecimal.valueOf(2_000_000)));
     }
 
     @Test
@@ -345,13 +345,13 @@ class OrderSettlementQuotaCarryForwardTests {
     void allocations_of_users_who_have_left_the_school_are_not_carried_forward() {
         UUID stillHere = UUID.randomUUID();
         UUID departed = UUID.randomUUID();
-        givenPreviousAllocations(QuotaType.EXAM, Map.of(stillHere, 2_000_000L, departed, 3_000_000L));
+        givenPreviousAllocations(QuotaType.ASSESSMENT, Map.of(stillHere, 2_000_000L, departed, 3_000_000L));
         givenEligible(SchoolRoleCodes.TEACHER, stillHere);
 
         settle();
 
         verify(quotaUserAllocationRepository, never()).upsertAllocation(
-            eq(newSubscriptionId), eq(QuotaType.EXAM), eq(departed), any());
+            eq(newSubscriptionId), eq(QuotaType.ASSESSMENT), eq(departed), any());
     }
 
     /**
@@ -368,13 +368,13 @@ class OrderSettlementQuotaCarryForwardTests {
      */
     @Test
     void carried_allocations_are_clamped_to_the_new_periods_pool() {
-        givenNewPlanQuotas(Map.of(QuotaType.EXAM, 10_000_000L));
-        givenPreviousAllocations(QuotaType.EXAM,
+        givenNewPlanQuotas(Map.of(QuotaType.ASSESSMENT, 10_000_000L));
+        givenPreviousAllocations(QuotaType.ASSESSMENT,
             Map.of(UUID.randomUUID(), 9_000_000L, UUID.randomUUID(), 9_000_000L));
 
         settle();
 
-        assertThat(carriedAmounts(QuotaType.EXAM).stream().reduce(BigDecimal.ZERO, (a, b) -> a.add(b)))
+        assertThat(carriedAmounts(QuotaType.ASSESSMENT).stream().reduce(BigDecimal.ZERO, (a, b) -> a.add(b)))
             .as("chép sang 18tr trần cá nhân vào một ví chỉ có 10tr")
             .isLessThanOrEqualTo(BigDecimal.valueOf(10_000_000));
     }
@@ -392,7 +392,7 @@ class OrderSettlementQuotaCarryForwardTests {
      */
     @Test
     void allocations_are_not_carried_for_quota_types_the_new_plan_dropped() {
-        givenNewPlanQuotas(Map.of(QuotaType.EXAM, 10_000_000L));
+        givenNewPlanQuotas(Map.of(QuotaType.ASSESSMENT, 10_000_000L));
         givenPreviousAllocations(QuotaType.PRACTICE, Map.of(UUID.randomUUID(), 1_000_000L));
 
         settle();

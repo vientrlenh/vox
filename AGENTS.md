@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Vox is the backend for evaluating oral assessments of high school students (exams, class tests, practice
+Vox is the backend for evaluating oral assessments of high school students (centralized assessments, class tests, practice
 sessions, AI grading, appeals, school subscriptions/quota/billing). Spring Boot 4.1, Java 25, Gradle, PostgreSQL,
 Kafka, Redis, gRPC, GraphQL + REST. Package root: `com.sep.vox`.
 
@@ -67,8 +67,8 @@ Hard rules (`src/test/.../architecture/LayeredArchitectureTests.java` fails the 
    (`interfaces/graphql`, `src/main/resources/graphql/*.graphqls`).
 6. Schema change -> a new Flyway migration (see Database).
 
-Look at an existing feature end to end before writing a new one (e.g. `CreateExamUseCase`, `ExamController`,
-`ExamBlueprintRepositoryImpl`), and follow the rules in Scope when the pattern is unclear.
+Look at an existing feature end to end before writing a new one (e.g. `CreateAssessmentUseCase`, `AssessmentController`,
+`AssessmentBlueprintRepositoryImpl`), and follow the rules in Scope when the pattern is unclear.
 
 ## Conventions that are easy to get wrong
 

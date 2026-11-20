@@ -101,8 +101,8 @@ public class QuestionRepositoryImpl implements QuestionRepository {
     }
 
     @Override
-    public boolean existsUsedInExam(UUID id) {
-        return springDataQuestionRepository.existsUsedInExam(id);
+    public boolean existsUsedInAssessment(UUID id) {
+        return springDataQuestionRepository.existsUsedInAssessment(id);
     }
 
     @Override
@@ -170,12 +170,12 @@ public class QuestionRepositoryImpl implements QuestionRepository {
     }
 
     @Override
-    public PageResult<Question> findAccessibleForExamPaper(UUID currentUserId, UUID currentSchoolId, boolean systemAdmin,
+    public PageResult<Question> findAccessibleForAssessmentPaper(UUID currentUserId, UUID currentSchoolId, boolean systemAdmin,
             boolean schoolAdmin, UUID questionBankId, UUID questionTopicId, String topicName, QuestionStatus status,
             QuestionType type, QuestionSharing sharing, String assetType, String scope, String keyword,
             int pageNumber, int size) {
         PageRequest pageable = PageRequest.of(pageNumber - 1, size);
-        Page<QuestionJpaEntity> page = springDataQuestionRepository.findAccessibleForExamPaper(
+        Page<QuestionJpaEntity> page = springDataQuestionRepository.findAccessibleForAssessmentPaper(
             currentUserId,
             currentSchoolId,
             systemAdmin,

@@ -43,7 +43,7 @@ public class NotificationPreferenceJpaEntity {
     @Column(name = "category", nullable = false, length = 50, updatable = false, check = {
         @CheckConstraint(
             name = "chk_notification_preferences_category_valid",
-            constraint = "category IN ('EXAM_RESULT', 'EXAM_APPEAL', 'GRADING', 'EXAM_SCHEDULE', 'SYSTEM')"
+            constraint = "category IN ('ASSESSMENT_RESULT', 'ASSESSMENT_APPEAL', 'GRADING', 'ASSESSMENT_SCHEDULE', 'SYSTEM')"
         )
     })
     private String category;

@@ -116,7 +116,7 @@ class DistributeQuotaToUsersServiceTests {
             .thenReturn(Optional.of(new Role(roleId, null, null, null, null, null, null)));
 
         when(schoolQuotaPolicyRepository.findBySchoolIdAndQuotaType(eq(schoolId), any()))
-            .thenReturn(SchoolQuotaPolicy.fullyDistributable(schoolId, QuotaType.EXAM));
+            .thenReturn(SchoolQuotaPolicy.fullyDistributable(schoolId, QuotaType.ASSESSMENT));
 
         when(schoolBalanceRepository.findBySchoolId(schoolId)).thenReturn(Optional.empty());
 
@@ -140,7 +140,7 @@ class DistributeQuotaToUsersServiceTests {
         assertThatCode(() -> allocateManually(teacherA, 8_000_000)).doesNotThrowAnyException();
 
         verify(allocationRepository).upsertAllocation(
-            subscriptionId, QuotaType.EXAM, teacherA, BigDecimal.valueOf(8_000_000));
+            subscriptionId, QuotaType.ASSESSMENT, teacherA, BigDecimal.valueOf(8_000_000));
     }
 
     @Test
@@ -162,7 +162,7 @@ class DistributeQuotaToUsersServiceTests {
         // actually need it.
         givenAllocationSums(4_000_000, 6_500_000);
 
-        QuotaUserAllocationPageResponse page = service.viewPage(schoolId, QuotaType.EXAM, SchoolRoleCodes.TEACHER, null, 1, 20);
+        QuotaUserAllocationPageResponse page = service.viewPage(schoolId, QuotaType.ASSESSMENT, SchoolRoleCodes.TEACHER, null, 1, 20);
 
         assertThat(page.distributedAmountVnd()).isEqualByComparingTo("4000000");
         assertThat(page.orphanedAmountVnd()).isEqualByComparingTo("2500000");
@@ -211,7 +211,7 @@ class DistributeQuotaToUsersServiceTests {
         // spending ceiling at all -- see the javadoc of QuotaUserAllocationPageResponse.Row.
         givenExistingAllocations(allocation(teacherB, 0, 0));
 
-        QuotaUserAllocationPageResponse page = service.viewPage(schoolId, QuotaType.EXAM, SchoolRoleCodes.TEACHER, null, 1, 20);
+        QuotaUserAllocationPageResponse page = service.viewPage(schoolId, QuotaType.ASSESSMENT, SchoolRoleCodes.TEACHER, null, 1, 20);
 
         QuotaUserAllocationPageResponse.Row rowA = page.content().stream().filter(row -> row.userId().equals(teacherA)).findFirst().orElseThrow();
         QuotaUserAllocationPageResponse.Row rowB = page.content().stream().filter(row -> row.userId().equals(teacherB)).findFirst().orElseThrow();
@@ -234,7 +234,7 @@ class DistributeQuotaToUsersServiceTests {
         // warn about.
         givenPool(10_000_000, 7_000_000);
 
-        QuotaUserAllocationPageResponse page = service.viewPage(schoolId, QuotaType.EXAM, SchoolRoleCodes.TEACHER, null, 1, 20);
+        QuotaUserAllocationPageResponse page = service.viewPage(schoolId, QuotaType.ASSESSMENT, SchoolRoleCodes.TEACHER, null, 1, 20);
 
         assertThat(page.distributableAmountVnd()).isEqualByComparingTo("10000000");
         assertThat(page.spendableFundsVnd()).isEqualByComparingTo("3000000");
@@ -248,7 +248,7 @@ class DistributeQuotaToUsersServiceTests {
         givenPool(10_000_000, 7_000_000);
         givenWallet(-5_000_000);
 
-        QuotaUserAllocationPageResponse page = service.viewPage(schoolId, QuotaType.EXAM, SchoolRoleCodes.TEACHER, null, 1, 20);
+        QuotaUserAllocationPageResponse page = service.viewPage(schoolId, QuotaType.ASSESSMENT, SchoolRoleCodes.TEACHER, null, 1, 20);
 
         assertThat(page.spendableFundsVnd()).isEqualByComparingTo("3000000");
         assertThat(page.walletBalanceVnd()).isEqualByComparingTo("0");
@@ -266,7 +266,7 @@ class DistributeQuotaToUsersServiceTests {
             .isInstanceOf(WalletDrawConfirmationRequiredException.class);
 
         assertThatCode(() -> service.distribute(
-                schoolId, QuotaType.EXAM, SchoolRoleCodes.TEACHER, DistributionMode.MANUAL,
+                schoolId, QuotaType.ASSESSMENT, SchoolRoleCodes.TEACHER, DistributionMode.MANUAL,
                 List.of(new AllocateUserQuotaAmountCommand(teacherA, BigDecimal.valueOf(12_000_000))), true))
             .doesNotThrowAnyException();
     }
@@ -277,7 +277,7 @@ class DistributeQuotaToUsersServiceTests {
         givenWallet(1_000_000);
 
         assertThatThrownBy(() -> service.distribute(
-                schoolId, QuotaType.EXAM, SchoolRoleCodes.TEACHER, DistributionMode.MANUAL,
+                schoolId, QuotaType.ASSESSMENT, SchoolRoleCodes.TEACHER, DistributionMode.MANUAL,
                 List.of(new AllocateUserQuotaAmountCommand(teacherA, BigDecimal.valueOf(12_000_000))), true))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("số dư ví tự nạp");
@@ -298,7 +298,7 @@ class DistributeQuotaToUsersServiceTests {
 
     private void allocateManually(UUID userId, long amountVnd) {
         service.distribute(
-            schoolId, QuotaType.EXAM, SchoolRoleCodes.TEACHER, DistributionMode.MANUAL,
+            schoolId, QuotaType.ASSESSMENT, SchoolRoleCodes.TEACHER, DistributionMode.MANUAL,
             List.of(new AllocateUserQuotaAmountCommand(userId, BigDecimal.valueOf(amountVnd))), false);
     }
 
@@ -307,19 +307,19 @@ class DistributeQuotaToUsersServiceTests {
      * up and check against the ceiling.
      */
     private List<BigDecimal> captureAutoSplitAmounts(int expectedUsers) {
-        service.distribute(schoolId, QuotaType.EXAM, SchoolRoleCodes.TEACHER, DistributionMode.AUTO, null, false);
+        service.distribute(schoolId, QuotaType.ASSESSMENT, SchoolRoleCodes.TEACHER, DistributionMode.AUTO, null, false);
 
         ArgumentCaptor<BigDecimal> amountCaptor = ArgumentCaptor.forClass(BigDecimal.class);
         verify(allocationRepository, times(expectedUsers)).upsertAllocation(
-            eq(subscriptionId), eq(QuotaType.EXAM), any(), amountCaptor.capture());
+            eq(subscriptionId), eq(QuotaType.ASSESSMENT), any(), amountCaptor.capture());
         return amountCaptor.getAllValues();
     }
 
     private void givenPool(long totalVnd, long usedVnd) {
         SchoolSubscriptionQuotaRecord pool = new SchoolSubscriptionQuotaRecord(
-            subscriptionId, QuotaType.EXAM, BigDecimal.valueOf(totalVnd), BigDecimal.valueOf(usedVnd));
+            subscriptionId, QuotaType.ASSESSMENT, BigDecimal.valueOf(totalVnd), BigDecimal.valueOf(usedVnd));
         pool.setId(UUID.randomUUID());
-        when(subscriptionQuotaRepository.findBySchoolSubscriptionIdAndQuotaType(subscriptionId, QuotaType.EXAM))
+        when(subscriptionQuotaRepository.findBySchoolSubscriptionIdAndQuotaType(subscriptionId, QuotaType.ASSESSMENT))
             .thenReturn(Optional.of(pool));
     }
 
@@ -333,7 +333,7 @@ class DistributeQuotaToUsersServiceTests {
     }
 
     private void givenExistingAllocations(SchoolSubscriptionQuotaUserAllocation... allocations) {
-        when(allocationRepository.findBySchoolSubscriptionIdAndQuotaType(subscriptionId, QuotaType.EXAM))
+        when(allocationRepository.findBySchoolSubscriptionIdAndQuotaType(subscriptionId, QuotaType.ASSESSMENT))
             .thenReturn(List.of(allocations));
     }
 
@@ -350,7 +350,7 @@ class DistributeQuotaToUsersServiceTests {
 
     private SchoolSubscriptionQuotaUserAllocation allocation(UUID userId, long allocatedVnd, long usedVnd) {
         return new SchoolSubscriptionQuotaUserAllocation(
-            subscriptionId, QuotaType.EXAM, userId,
+            subscriptionId, QuotaType.ASSESSMENT, userId,
             BigDecimal.valueOf(allocatedVnd), BigDecimal.valueOf(usedVnd));
     }
 }

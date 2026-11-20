@@ -15,9 +15,9 @@ package com.sep.vox.interfaces.shared;
 public final class PageArguments {
 
     /**
-     * Trần số dòng mỗi trang. Không phải con số nghiệp vụ mà là chặn trên an toàn: thiếu nó, một
-     * yêu cầu {@code size=1000000} kéo cả bảng vào bộ nhớ. Đặt 200 vì client desktop cố ý xin một
-     * trang 200 dòng cho màn chọn bài thi ({@code GET /api/v1/exams}).
+     * The ceiling on rows per page. Not a business number but a safe upper bound: without it, a
+     * request with {@code size=1000000} pulls the whole table into memory. Set to 200 because the desktop client deliberately asks for a
+     * page of 200 rows for the assessment picking screen ({@code GET /api/v1/assessments}).
      */
     public static final int MAX_PAGE_SIZE = 200;
 

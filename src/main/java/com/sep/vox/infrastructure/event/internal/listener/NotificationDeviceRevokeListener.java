@@ -12,14 +12,14 @@ import com.sep.vox.application.event.DeviceSessionRevokedEvent;
 import com.sep.vox.domain.repository.NotificationDeviceRepository;
 
 /**
- * Token FCM / FID không đổi khi người dùng đăng xuất -- nó gắn với bản cài đặt app chứ
- * không gắn với tài khoản. Trên máy phòng lab dùng chung (ExamDeliveryMode.LAB), nếu
- * không gỡ ở đây thì giữa lúc học sinh A rời máy và lúc học sinh B đăng nhập, thiết bị
- * vẫn thuộc về A và thông báo điểm thi của A sẽ hiện lên màn hình A đã rời đi.
+ * The FCM / FID token does not change when the user logs out -- it is tied to the app installation and
+ * not to the account. On a shared lab machine (AssessmentDeliveryMode.LAB), if it is not removed here then
+ * between the moment student A leaves the machine and student B logs in, the device
+ * still belongs to A and A's assessment score notification will show up on the screen A has left.
  *
- * <p>Chạy AFTER_COMMIT: thu hồi phiên là việc bắt buộc phải thành công, còn dọn thiết bị
- * chỉ là hệ quả. Nếu chạy đồng bộ trong cùng transaction, một lỗi ở đây sẽ cuộn ngược
- * việc thu hồi phiên -- đánh đổi sai hoàn toàn về mặt bảo mật.
+ * <p>Runs AFTER_COMMIT: revoking the session is something that must succeed, while cleaning up the device
+ * is only a consequence. If it ran synchronously in the same transaction, an error here would roll back
+ * the session revocation -- a completely wrong trade-off in terms of security.
  */
 @Component
 public class NotificationDeviceRevokeListener {

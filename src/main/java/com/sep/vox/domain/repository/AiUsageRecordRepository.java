@@ -11,51 +11,51 @@ import com.sep.vox.domain.model.metering.AiUsageRecord;
 public interface AiUsageRecordRepository {
     Optional<AiUsageRecord> findById(UUID id);
     AiUsageRecord save(AiUsageRecord record);
-    List<AiUsageRecord> findByExamSessionId(UUID examSessionId);
+    List<AiUsageRecord> findByAssessmentSessionId(UUID assessmentSessionId);
     boolean existsByUsageEventId(UUID usageEventId);
 
     /**
-     * GIÀNH mọi dòng chi phí CHƯA THU của phiên bằng cách đóng chung một mốc {@code chargedAt}, trả về
-     * số dòng đã giành. Mốc đó là thẻ định danh của lượt thu này -- đọc lại bằng
-     * {@link #sumCostVndByExamSessionIdAndChargedAt}.
+     * CLAIMS every UNCHARGED cost row of the session by stamping them all with one shared {@code chargedAt}, returning
+     * the number of rows claimed. That stamp is the identity tag of this charge -- read back with
+     * {@link #sumCostVndByAssessmentSessionIdAndChargedAt}.
      *
-     * <p>Tồn tại vì một phiên được phép chấm LẠI (UpdateExamSessionStatusUseCase cho GRADED ->
-     * GRADING): lần chấm sau sinh chi phí thật mới và phải được thu, nhưng nếu cứ cộng cả phiên thì
-     * phần của lần chấm trước bị thu tiền lần thứ hai. Đơn vị "chỉ được thu một lần" là TỪNG DÒNG chi
-     * phí, không phải phiên thi.
+     * <p>It exists because a session is allowed to be regraded (UpdateAssessmentSessionStatusUseCase permits GRADED ->
+     * GRADING): the later grading produces new real cost that must be charged, but if the whole session were summed again the
+     * share of the earlier grading would be charged a second time. The unit of "may only be charged once" is the INDIVIDUAL cost
+     * ROW, not the assessment session.
      *
-     * <p>Giành trước rồi cộng sau: theo chiều ngược lại, một dòng usage do Kafka chèn vào giữa hai
-     * bước sẽ bị đóng dấu đã thu mà chưa từng được cộng vào khoản trừ -- mất trắng khoản đó.
+     * <p>Claim first, sum afterwards: in the opposite direction, a usage row inserted by Kafka between the two
+     * steps would be stamped as charged without ever being added to the deduction -- that amount would be lost entirely.
      */
-    int markChargedByExamSessionId(UUID examSessionId, Instant chargedAt);
+    int markChargedByAssessmentSessionId(UUID assessmentSessionId, Instant chargedAt);
 
     /**
-     * MIỄN mọi dòng chi phí chưa ngã ngũ của phiên — chúng thuộc lượt chấm vừa hỏng.
+     * WAIVES every unsettled cost row of the session -- they belong to the grading attempt that just failed.
      *
-     * <p>Quy tắc là "thu cho phần việc TẠO RA KẾT QUẢ DÙNG ĐƯỢC", không phải "hỏng thì miễn": một
-     * lượt chấm hỏng không để lại dòng {@code exam_candidate_results} nào nên trường không nhận được
-     * gì. Đừng suy diễn quy tắc này sang đường luyện nói, nơi tiền được thu ngay trong request theo
-     * chi phí đã phát sinh vì lượt nói đó ĐÃ trả kết quả cho học sinh — xem
+     * <p>The rule is "charge for the work that PRODUCES A USABLE RESULT", not "forgive what fails": a
+     * failed grading attempt leaves no {@code assessment_candidate_results} row so the school received
+     * nothing. Do not extend this rule to the speaking practice path, where the money is charged right in the request according to
+     * the cost already incurred because that speaking turn HAS delivered a result to the student -- see
      * {@code SubmitPracticeTurnUseCase}.
      *
-     * @return số dòng vừa được miễn
+     * @return the number of rows just waived
      */
-    int markWaivedByExamSessionId(UUID examSessionId, Instant waivedAt);
+    int markWaivedByAssessmentSessionId(UUID assessmentSessionId, Instant waivedAt);
 
     /**
-     * Tổng cost_vnd của những dòng vừa được {@link #markChargedByExamSessionId} giành ở mốc này --
-     * nguồn thật để trừ SchoolSubscriptionQuotaRecord.
+     * The sum of cost_vnd of the rows just claimed by {@link #markChargedByAssessmentSessionId} at this stamp --
+     * the real source for deducting from SchoolSubscriptionQuotaRecord.
      *
-     * <p>Cộng cost_vnd đã chốt sẵn từng dòng chứ KHÔNG quy đổi tổng USD theo tỷ giá hôm nay: mỗi dòng
-     * đã ghi tỷ giá đúng lúc chi phí phát sinh (fx_rate_used), nên một phiên thi vắt qua ngày đổi tỷ
-     * giá vẫn ra đúng số tiền thật, và cộng lại lần nữa cũng không cho ra con số khác.
+     * <p>It sums the cost_vnd already fixed on each row and does NOT convert the USD total at today's rate: each row
+     * recorded the exchange rate at the moment the cost was incurred (fx_rate_used), so an assessment session spanning a day when the rate changes
+     * still yields the correct real money, and summing again does not produce a different number.
      */
-    BigDecimal sumCostVndByExamSessionIdAndChargedAt(UUID examSessionId, Instant chargedAt);
+    BigDecimal sumCostVndByAssessmentSessionIdAndChargedAt(UUID assessmentSessionId, Instant chargedAt);
 
     /**
      * Như trên nhưng giữ nguyên tệ gốc, để ghi vào school_balance_entries.cost_usd cho việc đối soát
      * ngược với hóa đơn nhà cung cấp. Phải soi CÙNG mốc chargedAt với bản VND, nếu không hai cột của
      * cùng một bút toán sẽ mô tả hai tập dòng khác nhau.
      */
-    BigDecimal sumCostUsdByExamSessionIdAndChargedAt(UUID examSessionId, Instant chargedAt);
+    BigDecimal sumCostUsdByAssessmentSessionIdAndChargedAt(UUID assessmentSessionId, Instant chargedAt);
 }

@@ -9,7 +9,7 @@ public record AppealDetailInfo(
     UUID id,
     String studentName,
     String className,
-    String examName,
+    String assessmentName,
     BigDecimal originalScore,
     String status,
     Instant requestedAt,

@@ -105,6 +105,6 @@ class GoogleTokenLoginUseCaseTests {
     }
 
     private static GoogleTokenLoginCommand command(String idToken) {
-        return new GoogleTokenLoginCommand(idToken, "1.2.3.4", "VoxOralExam/1.0", DEVICE);
+        return new GoogleTokenLoginCommand(idToken, "1.2.3.4", "VoxOralAssessment/1.0", DEVICE);
     }
 }

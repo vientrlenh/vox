@@ -40,7 +40,7 @@ enum QuestionStatus {
 
 enum QuestionConfidentiality {
     OPEN
-    EXAM_RESTRICTED
+    ASSESSMENT_RESTRICTED
     RELEASED
 }
 
@@ -187,7 +187,7 @@ type Question {
     assets: [QuestionAsset!]!
     evaluationGuide: QuestionEvaluationGuide
     collaborators: [QuestionCollaborator!]!
-    usableInExam: Boolean!
+    usableInAssessment: Boolean!
 }
 
 type QuestionPage {
@@ -242,7 +242,7 @@ extend type Query {
         page: Int! = 1,
         size: Int! = 20
     ): QuestionPage!
-    questionsForExamPaper(
+    questionsForAssessmentPaper(
         questionBankId: ID,
         questionTopicId: ID,
         topicName: String,

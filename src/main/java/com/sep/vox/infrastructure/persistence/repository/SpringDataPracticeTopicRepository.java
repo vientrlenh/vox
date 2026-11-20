@@ -21,13 +21,13 @@ public interface SpringDataPracticeTopicRepository
 
 
     /**
-     * Cỡ kho chủ đề NUÔI LÔ CHÀO -- dùng để quyết định sinh thêm nhiều hay ít mỗi phiên.
+     * The size of the topic pool that FEEDS the greeting batch -- used to decide whether to generate more or fewer each session.
      *
-     * <p>Phải trừ {@code EXAM_QUESTION_BANK}: đó là chủ đề vật chất hoá lazy từ ngân hàng đề
-     * của trường cho học sinh EXAM_PREP, và {@code findRankedTopics} đã loại chúng bằng
-     * {@code source IS DISTINCT FROM 'EXAM_QUESTION_BANK'}. Đếm cả vào thì một trường có
-     * 200 chủ đề ngân hàng đề sẽ vượt ngưỡng ngay, và học sinh luyện tự do bị siết sinh chủ đề
-     * vì một kho họ không bao giờ thấy.
+     * <p>{@code ASSESSMENT_QUESTION_BANK} must be subtracted: those are topics lazily materialized from the school's
+     * question bank for ASSESSMENT_PREP students, and {@code findRankedTopics} already excludes them with
+     * {@code source IS DISTINCT FROM 'ASSESSMENT_QUESTION_BANK'}. Counting them too would make a school with
+     * 200 question-bank topics exceed the threshold immediately, and students practicing freely would be throttled from generating topics
+     * because of a pool they never see.
      */
     long countByActiveTrueAndSourceNot(String source);
 
@@ -54,16 +54,16 @@ public interface SpringDataPracticeTopicRepository
     List<TopicDimensionInfo> findDimensionsByIds(@Param("topicIds") Collection<UUID> topicIds);
 
     /**
-     * Danh thiếp tên chủ đề đang hoạt động -- dùng cho phép chống trùng theo tên ở
+     * A name card of the active topics -- used for the duplicate check by name in
      * {@code TopicSuggestionService.findNearExistingTopic}.
      *
-     * <p>Thay {@code findByActiveTrue()} vốn trả entity đầy đủ. Phép so chỉ đụng tới {@code name},
-     * và kết quả chỉ đọc {@code id}/{@code name}/{@code interestDimension}.
+     * <p>Replaces {@code findByActiveTrue()}, which returned full entities. The comparison only touches {@code name},
+     * and the result only reads {@code id}/{@code name}/{@code interestDimension}.
      *
-     * <p>KHÔNG lọc {@code source}: chủ đề vật chất hoá từ ngân hàng đề ({@code EXAM_QUESTION_BANK})
-     * cũng phải nằm trong tập ứng viên, đúng như {@code findByActiveTrue()} cũ. Chúng KHÔNG có
-     * trong Chroma (đường vật chất hoá không gọi {@code generationClient.index}), nên đây là chỗ
-     * duy nhất chặn được trùng với chúng.
+     * <p>It does NOT filter {@code source}: topics materialized from the question bank ({@code ASSESSMENT_QUESTION_BANK})
+     * must also be in the candidate set, exactly like the old {@code findByActiveTrue()}. They are NOT
+     * in Chroma (the materialization path does not call {@code generationClient.index}), so this is the
+     * only place that can block duplicates against them.
      */
     @Query(value = """
         SELECT topic.id AS id, topic.name AS name,
@@ -113,7 +113,7 @@ public interface SpringDataPracticeTopicRepository
           ON dimension_score.learner_profile_id = profile.id
          AND dimension_score.dimension = topic.interest_dimensions
         WHERE topic.active = true
-          AND topic.source IS DISTINCT FROM 'EXAM_QUESTION_BANK'
+          AND topic.source IS DISTINCT FROM 'ASSESSMENT_QUESTION_BANK'
         """, nativeQuery = true)
     List<RankedTopicInfo> findRankedTopics(
         @Param("studentId") UUID studentId,
@@ -239,7 +239,7 @@ public interface SpringDataPracticeTopicRepository
           )
         ORDER BY qt.name
         """, nativeQuery = true)
-    List<com.sep.vox.application.query.dto.QuestionTopicInfo> findPublishedExamTopics(
+    List<com.sep.vox.application.query.dto.QuestionTopicInfo> findPublishedAssessmentTopics(
         @Param("schoolId") UUID schoolId,
         @Param("gradeId") UUID gradeId
     );

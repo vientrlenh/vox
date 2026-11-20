@@ -301,10 +301,10 @@ public class DistributeQuotaToUsersService {
             .map(e -> orZero(e.getValue().getAllocatedAmountVnd()))
             .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
 
-        // Vượt distributableVnd không còn bị từ chối thẳng nữa: phần vượt có thể ăn vào ví tự nạp của
-        // trường (school_balances) -- CHỈ nới TRẦN, không giữ tiền, y hệt cách ConsumeQuotaService đã
-        // tự động rút ví khi tiêu thật vượt pool. Đòi confirmWalletDraw vì ví đó dùng chung cho cả
-        // EXAM lẫn PRACTICE, quản trị viên phải biết mình đang ăn vào phần chung đó.
+        // Exceeding distributableVnd is no longer rejected outright: the excess may eat into the school's self-topped-up wallet (school_balances) --
+        // it only loosens the CEILING and holds no money, exactly like ConsumeQuotaService already
+        // draws from the wallet automatically when real spending exceeds the pool. confirmWalletDraw is required because that wallet is shared by both
+        // ASSESSMENT and PRACTICE, and the administrator must know they are eating into that shared part.
         BigDecimal overDistributableVnd = sumInRequest.add(sumOthers).subtract(distributableVnd);
         if (overDistributableVnd.signum() > 0) {
             if (overDistributableVnd.compareTo(walletHeadroomVnd) > 0) {

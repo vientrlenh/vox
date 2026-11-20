@@ -22,7 +22,7 @@ import org.mockito.ArgumentCaptor;
 import com.sep.vox.application.port.input.service.QuotaPricingCalibrationService;
 import com.sep.vox.domain.model.metering.QuotaPricingCalibration;
 import com.sep.vox.domain.model.metering.QuotaPricingSource;
-import com.sep.vox.domain.repository.ExamItemResponseRepository;
+import com.sep.vox.domain.repository.AssessmentItemResponseRepository;
 import com.sep.vox.domain.repository.PracticeResponseTurnRepository;
 import com.sep.vox.domain.repository.QuotaPricingCalibrationRepository;
 import com.sep.vox.application.query.dto.SessionCostDto;
@@ -32,17 +32,17 @@ import com.sep.vox.infrastructure.properties.QuotaPricingCalibrationProperties;
 import com.sep.vox.infrastructure.properties.QuotaPricingProperties;
 
 /**
- * recalibrateExam()/recalibratePractice() phải: bỏ qua khi mẫu quá nhỏ (không insert row), làm
- * mượt khi rawRate nhảy quá maxChangeRatio so với applied lần trước, và chặn biên an toàn
- * (min/max bound) -- 3 hành vi này là lý do tồn tại của service, khác với việc tự tay sửa .env
- * trực tiếp. 2 method dùng CHUNG thuật toán (recalibrate() private) nhưng đọc/ghi rate theo
- * QuotaPricingSource riêng và join nguồn duration khác nhau (exam_item_responses vs
- * practice_response_turn) -- xem thêm should_use_practice_duration_source_and_tag_pricing_source.
+ * recalibrateAssessment()/recalibratePractice() must: skip when the sample is too small (no row inserted), smooth
+ * when rawRate jumps by more than maxChangeRatio compared with the last applied one, and enforce the safe bounds
+ * (min/max bound) -- these 3 behaviors are the reason the service exists, as opposed to editing .env
+ * by hand. The 2 methods SHARE the same algorithm (the private recalibrate()) but read/write the rate by their own
+ * QuotaPricingSource and join a different duration source (assessment_item_responses vs
+ * practice_response_turn) -- see also should_use_practice_duration_source_and_tag_pricing_source.
  */
 class QuotaPricingCalibrationServiceTests {
 
     private SessionCostQueryRepository sessionCostQueryRepository;
-    private ExamItemResponseRepository examItemResponseRepository;
+    private AssessmentItemResponseRepository assessmentItemResponseRepository;
     private PracticeResponseTurnRepository practiceResponseTurnRepository;
     private QuotaPricingCalibrationRepository quotaPricingCalibrationRepository;
     private QuotaPricingCalibrationService service;
@@ -50,7 +50,7 @@ class QuotaPricingCalibrationServiceTests {
     @BeforeEach
     void setUp() {
         sessionCostQueryRepository = mock(SessionCostQueryRepository.class);
-        examItemResponseRepository = mock(ExamItemResponseRepository.class);
+        assessmentItemResponseRepository = mock(AssessmentItemResponseRepository.class);
         practiceResponseTurnRepository = mock(PracticeResponseTurnRepository.class);
         quotaPricingCalibrationRepository = mock(QuotaPricingCalibrationRepository.class);
         QuotaPricingCalibrationProperties calibrationProperties = new QuotaPricingCalibrationProperties(90, 2, new BigDecimal("0.20"),
@@ -59,7 +59,7 @@ class QuotaPricingCalibrationServiceTests {
 
         service = new QuotaPricingCalibrationService(
             sessionCostQueryRepository,
-            examItemResponseRepository,
+            assessmentItemResponseRepository,
             practiceResponseTurnRepository,
             quotaPricingCalibrationRepository,
             calibrationProperties,
@@ -71,7 +71,7 @@ class QuotaPricingCalibrationServiceTests {
         when(sessionCostQueryRepository.sumCostUsdGroupedBySessionSince(any()))
             .thenReturn(List.of(new SessionCostDto(UUID.randomUUID(), BigDecimal.ONE)));
 
-        service.recalibrateExam();
+        service.recalibrateAssessment();
 
         verify(quotaPricingCalibrationRepository, never()).save(any());
     }
@@ -86,10 +86,10 @@ class QuotaPricingCalibrationServiceTests {
         ));
         // Only 1 session has a matching duration -- below minSampleSessions=2, so it must still be
         // skipped.
-        when(examItemResponseRepository.sumDurationSecondsGroupedBySessionIds(anyCollection()))
+        when(assessmentItemResponseRepository.sumDurationSecondsGroupedBySessionIds(anyCollection()))
             .thenReturn(List.of(new SessionDurationAggregate(sessionA, 100L)));
 
-        service.recalibrateExam();
+        service.recalibrateAssessment();
 
         verify(quotaPricingCalibrationRepository, never()).save(any());
     }
@@ -102,15 +102,15 @@ class QuotaPricingCalibrationServiceTests {
             new SessionCostDto(sessionA, new BigDecimal("1.00")),
             new SessionCostDto(sessionB, new BigDecimal("1.00"))
         ));
-        when(examItemResponseRepository.sumDurationSecondsGroupedBySessionIds(anyCollection())).thenReturn(List.of(
+        when(assessmentItemResponseRepository.sumDurationSecondsGroupedBySessionIds(anyCollection())).thenReturn(List.of(
             new SessionDurationAggregate(sessionA, 100L),
             new SessionDurationAggregate(sessionB, 100L)
         ));
         // previousApplied = 0.01 (default .env), rawRate = 2.00/200 = 0.01 -- unchanged, no
         // smoothing needed.
-        when(quotaPricingCalibrationRepository.findLatest(QuotaPricingSource.EXAM)).thenReturn(Optional.empty());
+        when(quotaPricingCalibrationRepository.findLatest(QuotaPricingSource.ASSESSMENT)).thenReturn(Optional.empty());
 
-        service.recalibrateExam();
+        service.recalibrateAssessment();
 
         ArgumentCaptor<QuotaPricingCalibration> captor = ArgumentCaptor.forClass(QuotaPricingCalibration.class);
         verify(quotaPricingCalibrationRepository).save(captor.capture());
@@ -119,7 +119,7 @@ class QuotaPricingCalibrationServiceTests {
         assertThat(saved.getRawRateUsdPerSecond()).isEqualByComparingTo("0.01");
         assertThat(saved.getAppliedRateUsdPerSecond()).isEqualByComparingTo("0.01");
         assertThat(saved.getNote()).isNull();
-        assertThat(saved.getPricingSource()).isEqualTo(QuotaPricingSource.EXAM);
+        assertThat(saved.getPricingSource()).isEqualTo(QuotaPricingSource.ASSESSMENT);
     }
 
     @Test
@@ -132,15 +132,15 @@ class QuotaPricingCalibrationServiceTests {
             new SessionCostDto(sessionA, new BigDecimal("10.00")),
             new SessionCostDto(sessionB, new BigDecimal("10.00"))
         ));
-        when(examItemResponseRepository.sumDurationSecondsGroupedBySessionIds(anyCollection())).thenReturn(List.of(
+        when(assessmentItemResponseRepository.sumDurationSecondsGroupedBySessionIds(anyCollection())).thenReturn(List.of(
             new SessionDurationAggregate(sessionA, 100L),
             new SessionDurationAggregate(sessionB, 100L)
         ));
         QuotaPricingCalibration previous = new QuotaPricingCalibration(Instant.now(), 90, 10, BigDecimal.ONE, 100L,
-            new BigDecimal("0.01"), new BigDecimal("0.01"), null, QuotaPricingSource.EXAM);
-        when(quotaPricingCalibrationRepository.findLatest(QuotaPricingSource.EXAM)).thenReturn(Optional.of(previous));
+            new BigDecimal("0.01"), new BigDecimal("0.01"), null, QuotaPricingSource.ASSESSMENT);
+        when(quotaPricingCalibrationRepository.findLatest(QuotaPricingSource.ASSESSMENT)).thenReturn(Optional.of(previous));
 
-        service.recalibrateExam();
+        service.recalibrateAssessment();
 
         ArgumentCaptor<QuotaPricingCalibration> captor = ArgumentCaptor.forClass(QuotaPricingCalibration.class);
         verify(quotaPricingCalibrationRepository).save(captor.capture());
@@ -160,17 +160,17 @@ class QuotaPricingCalibrationServiceTests {
             new SessionCostDto(sessionA, new BigDecimal("500.00")),
             new SessionCostDto(sessionB, new BigDecimal("500.00"))
         ));
-        when(examItemResponseRepository.sumDurationSecondsGroupedBySessionIds(anyCollection())).thenReturn(List.of(
+        when(assessmentItemResponseRepository.sumDurationSecondsGroupedBySessionIds(anyCollection())).thenReturn(List.of(
             new SessionDurationAggregate(sessionA, 100L),
             new SessionDurationAggregate(sessionB, 100L)
         ));
         // previousApplied is already at the maxRateBound=1.0 ceiling -- even after smoothing it
         // must still be clamped to exactly 1.0.
         QuotaPricingCalibration previous = new QuotaPricingCalibration(Instant.now(), 90, 10, BigDecimal.ONE, 100L,
-            new BigDecimal("0.99"), new BigDecimal("0.99"), null, QuotaPricingSource.EXAM);
-        when(quotaPricingCalibrationRepository.findLatest(QuotaPricingSource.EXAM)).thenReturn(Optional.of(previous));
+            new BigDecimal("0.99"), new BigDecimal("0.99"), null, QuotaPricingSource.ASSESSMENT);
+        when(quotaPricingCalibrationRepository.findLatest(QuotaPricingSource.ASSESSMENT)).thenReturn(Optional.of(previous));
 
-        service.recalibrateExam();
+        service.recalibrateAssessment();
 
         ArgumentCaptor<QuotaPricingCalibration> captor = ArgumentCaptor.forClass(QuotaPricingCalibration.class);
         verify(quotaPricingCalibrationRepository).save(captor.capture());
@@ -193,8 +193,8 @@ class QuotaPricingCalibrationServiceTests {
 
         service.recalibratePractice();
 
-        // Calibrating PRACTICE must not touch the EXAM duration source at all.
-        verifyNoInteractions(examItemResponseRepository);
+        // Calibrating PRACTICE must not touch the ASSESSMENT duration source at all.
+        verifyNoInteractions(assessmentItemResponseRepository);
         ArgumentCaptor<QuotaPricingCalibration> captor = ArgumentCaptor.forClass(QuotaPricingCalibration.class);
         verify(quotaPricingCalibrationRepository).save(captor.capture());
         QuotaPricingCalibration saved = captor.getValue();
@@ -203,12 +203,12 @@ class QuotaPricingCalibrationServiceTests {
     }
 
     @Test
-    void should_skip_practice_when_only_exam_side_has_matching_duration() {
-        UUID examOnlySession = UUID.randomUUID();
+    void should_skip_practice_when_only_assessment_side_has_matching_duration() {
+        UUID assessmentOnlySession = UUID.randomUUID();
         when(sessionCostQueryRepository.sumCostUsdGroupedBySessionSince(any())).thenReturn(List.of(
-            new SessionCostDto(examOnlySession, BigDecimal.TEN)
+            new SessionCostDto(assessmentOnlySession, BigDecimal.TEN)
         ));
-        // practiceResponseTurnRepository returns nothing for this session (it is an EXAM session,
+        // practiceResponseTurnRepository returns nothing for this session (it is an ASSESSMENT session,
         // so it has no practice_response_turn rows) -- this is the real behavior of the join, not a
         // simplistic mock.
         when(practiceResponseTurnRepository.sumDurationSecondsGroupedBySessionIds(anyCollection()))

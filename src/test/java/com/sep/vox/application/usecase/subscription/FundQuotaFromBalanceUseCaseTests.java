@@ -156,7 +156,7 @@ class FundQuotaFromBalanceUseCaseTests {
         SchoolBalanceEntry entry = captureEntry();
         assertThat(entry.getCostUsd()).isNull();
         assertThat(entry.getFxRateUsed()).isNull();
-        assertThat(entry.getExamSessionId()).isNull();
+        assertThat(entry.getAssessmentSessionId()).isNull();
         assertThat(entry.getPracticeSessionId()).isNull();
         assertThat(entry.getOrderId()).isNull();
     }

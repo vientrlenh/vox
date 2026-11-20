@@ -109,7 +109,7 @@ class ViewPlatformOperationalHealthUseCaseTests {
         PlatformOperationalHealthResponse result = useCase.execute(new ViewPlatformOperationalHealthQuery(FROM, TO));
 
         assertThat(result.sessionsInProgress()).isEqualTo(6L);
-        assertThat(result.examsInProgress()).isEqualTo(2L);
+        assertThat(result.assessmentsInProgress()).isEqualTo(2L);
         assertThat(result.gradingQueueDepth()).isEqualTo(41L);
     }
 

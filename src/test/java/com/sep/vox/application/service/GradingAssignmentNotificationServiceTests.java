@@ -19,17 +19,17 @@ import org.mockito.ArgumentCaptor;
 import com.sep.vox.application.event.GradingAssignmentOpenedPayloadV1;
 import com.sep.vox.application.port.input.service.GradingAssignmentNotificationService;
 import com.sep.vox.application.port.output.JsonSerializationPort;
-import com.sep.vox.domain.model.exam.Exam;
-import com.sep.vox.domain.model.exam.ExamCandidate;
-import com.sep.vox.domain.model.exam.ExamCandidateResult;
-import com.sep.vox.domain.model.exam.ExamGradingAssignment;
-import com.sep.vox.domain.model.exam.ExamKind;
-import com.sep.vox.domain.model.exam.GradingRoundType;
+import com.sep.vox.domain.model.assessment.Assessment;
+import com.sep.vox.domain.model.assessment.AssessmentCandidate;
+import com.sep.vox.domain.model.assessment.AssessmentCandidateResult;
+import com.sep.vox.domain.model.assessment.AssessmentGradingAssignment;
+import com.sep.vox.domain.model.assessment.AssessmentKind;
+import com.sep.vox.domain.model.assessment.GradingRoundType;
 import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.model.user.User;
-import com.sep.vox.domain.repository.ExamCandidateRepository;
-import com.sep.vox.domain.repository.ExamCandidateResultRepository;
-import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.AssessmentCandidateRepository;
+import com.sep.vox.domain.repository.AssessmentCandidateResultRepository;
+import com.sep.vox.domain.repository.AssessmentRepository;
 import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.valueobject.FullName;
@@ -44,9 +44,9 @@ import tools.jackson.databind.json.JsonMapper;
  */
 class GradingAssignmentNotificationServiceTests {
 
-    private ExamCandidateResultRepository examCandidateResultRepository;
-    private ExamCandidateRepository examCandidateRepository;
-    private ExamRepository examRepository;
+    private AssessmentCandidateResultRepository assessmentCandidateResultRepository;
+    private AssessmentCandidateRepository assessmentCandidateRepository;
+    private AssessmentRepository assessmentRepository;
     private UserRepository userRepository;
     private OutboxRepository outboxRepository;
     private GradingAssignmentNotificationService service;
@@ -54,7 +54,7 @@ class GradingAssignmentNotificationServiceTests {
     private final Instant now = Instant.parse("2026-09-01T03:00:00Z");
     private final JsonMapper jsonMapper = JsonMapper.builder().build();
 
-    private UUID examId;
+    private UUID assessmentId;
     private UUID candidateResultId;
     private UUID candidateId;
     private UUID studentId;
@@ -62,9 +62,9 @@ class GradingAssignmentNotificationServiceTests {
 
     @BeforeEach
     void setUp() {
-        examCandidateResultRepository = mock(ExamCandidateResultRepository.class);
-        examCandidateRepository = mock(ExamCandidateRepository.class);
-        examRepository = mock(ExamRepository.class);
+        assessmentCandidateResultRepository = mock(AssessmentCandidateResultRepository.class);
+        assessmentCandidateRepository = mock(AssessmentCandidateRepository.class);
+        assessmentRepository = mock(AssessmentRepository.class);
         userRepository = mock(UserRepository.class);
         outboxRepository = mock(OutboxRepository.class);
 
@@ -73,10 +73,10 @@ class GradingAssignmentNotificationServiceTests {
             .thenAnswer(call -> jsonMapper.writeValueAsString(call.getArgument(0)));
 
         service = new GradingAssignmentNotificationService(
-            examCandidateResultRepository, examCandidateRepository, examRepository,
+            assessmentCandidateResultRepository, assessmentCandidateRepository, assessmentRepository,
             userRepository, outboxRepository, jsonSerializationPort);
 
-        examId = UUID.randomUUID();
+        assessmentId = UUID.randomUUID();
         candidateResultId = UUID.randomUUID();
         candidateId = UUID.randomUUID();
         studentId = UUID.randomUUID();
@@ -84,22 +84,22 @@ class GradingAssignmentNotificationServiceTests {
     }
 
     @Test
-    void should_notify_the_assigned_teacher_with_the_round_and_exam() {
-        given(ExamKind.CLASS_TEST, "Trần Quang Thiên");
+    void should_notify_the_assigned_teacher_with_the_round_and_assessment() {
+        given(AssessmentKind.CLASS_TEST, "Trần Quang Thiên");
 
         service.publishAssigned(List.of(assignment(GradingRoundType.SPOT_CHECK)), now);
 
         GradingAssignmentOpenedPayloadV1 payload = capturePayload();
         assertThat(payload.teacherId()).isEqualTo(teacherId);
-        assertThat(payload.examId()).isEqualTo(examId);
+        assertThat(payload.assessmentId()).isEqualTo(assessmentId);
         assertThat(payload.roundType()).isEqualTo("SPOT_CHECK");
-        assertThat(payload.examName()).isEqualTo("Kiểm tra 15 phút");
+        assertThat(payload.assessmentName()).isEqualTo("Kiểm tra 15 phút");
     }
 
     /** Bài kiểm tra trên lớp không chấm mù: giáo viên vốn đã thấy tên ở hàng đợi chấm. */
     @Test
     void should_name_the_candidate_for_a_class_test() {
-        given(ExamKind.CLASS_TEST, "Trần Quang Thiên");
+        given(AssessmentKind.CLASS_TEST, "Trần Quang Thiên");
 
         service.publishAssigned(List.of(assignment(GradingRoundType.INITIAL)), now);
 
@@ -107,14 +107,14 @@ class GradingAssignmentNotificationServiceTests {
     }
 
     /**
-     * The most important case of this class. A centralized exam is graded BLIND -- see
+     * The most important case of this class. A centralized assessment is graded BLIND -- see
      * GradingStudentIdentityQueryTests, where studentName must be null. The notification goes to
      * exactly the person grading, so leaking the name here breaks that mechanism outright, and the
      * payload is stored permanently.
      */
     @Test
-    void should_never_leak_the_candidate_name_for_a_centralized_exam() {
-        given(ExamKind.CENTRALIZED, "Trần Quang Thiên");
+    void should_never_leak_the_candidate_name_for_a_centralized_assessment() {
+        given(AssessmentKind.CENTRALIZED, "Trần Quang Thiên");
 
         service.publishAssigned(List.of(assignment(GradingRoundType.SPOT_CHECK)), now);
 
@@ -132,19 +132,19 @@ class GradingAssignmentNotificationServiceTests {
 
     /** Không tra tên cho kỳ thi tập trung: thứ không nạp lên thì không lọt vào payload được. */
     @Test
-    void should_not_even_look_up_names_for_a_centralized_exam() {
-        given(ExamKind.CENTRALIZED, "Trần Quang Thiên");
+    void should_not_even_look_up_names_for_a_centralized_assessment() {
+        given(AssessmentKind.CENTRALIZED, "Trần Quang Thiên");
 
         service.publishAssigned(List.of(assignment(GradingRoundType.INITIAL)), now);
 
-        verify(examCandidateRepository, never()).findByIdIn(any());
+        verify(assessmentCandidateRepository, never()).findByIdIn(any());
         verify(userRepository, never()).findByIdIn(any());
     }
 
     /** Học sinh không tra được tên vẫn phải nhận diện được bài -- lui về mã bài. */
     @Test
     void should_fall_back_to_the_result_code_when_the_name_is_missing() {
-        given(ExamKind.CLASS_TEST, null);
+        given(AssessmentKind.CLASS_TEST, null);
 
         service.publishAssigned(List.of(assignment(GradingRoundType.INITIAL)), now);
 
@@ -158,9 +158,9 @@ class GradingAssignmentNotificationServiceTests {
      */
     @Test
     void should_publish_one_event_per_assignment() {
-        given(ExamKind.CLASS_TEST, "Trần Quang Thiên");
+        given(AssessmentKind.CLASS_TEST, "Trần Quang Thiên");
         UUID second = UUID.randomUUID();
-        when(examCandidateResultRepository.findByIdIn(any()))
+        when(assessmentCandidateResultRepository.findByIdIn(any()))
             .thenReturn(List.of(result(candidateResultId), result(second)));
 
         service.publishAssigned(
@@ -179,20 +179,20 @@ class GradingAssignmentNotificationServiceTests {
 
     // --- helpers ---------------------------------------------------------------
 
-    private void given(ExamKind kind, String studentName) {
-        Exam exam = new Exam();
-        exam.setId(examId);
-        exam.setKind(kind);
-        exam.setName(kind == ExamKind.CLASS_TEST ? "Kiểm tra 15 phút" : "Kỳ thi giữa kỳ");
+    private void given(AssessmentKind kind, String studentName) {
+        Assessment assessment = new Assessment();
+        assessment.setId(assessmentId);
+        assessment.setKind(kind);
+        assessment.setName(kind == AssessmentKind.CLASS_TEST ? "Kiểm tra 15 phút" : "Kỳ thi giữa kỳ");
 
-        when(examCandidateResultRepository.findByIdIn(any()))
+        when(assessmentCandidateResultRepository.findByIdIn(any()))
             .thenReturn(List.of(result(candidateResultId)));
-        when(examRepository.findByIdIn(any())).thenReturn(List.of(exam));
+        when(assessmentRepository.findByIdIn(any())).thenReturn(List.of(assessment));
 
-        ExamCandidate candidate = new ExamCandidate();
+        AssessmentCandidate candidate = new AssessmentCandidate();
         candidate.setId(candidateId);
         candidate.setStudentId(studentId);
-        when(examCandidateRepository.findByIdIn(any())).thenReturn(List.of(candidate));
+        when(assessmentCandidateRepository.findByIdIn(any())).thenReturn(List.of(candidate));
 
         if (studentName != null) {
             User user = new User();
@@ -204,22 +204,22 @@ class GradingAssignmentNotificationServiceTests {
         }
     }
 
-    private ExamCandidateResult result(UUID id) {
-        ExamCandidateResult result = new ExamCandidateResult();
+    private AssessmentCandidateResult result(UUID id) {
+        AssessmentCandidateResult result = new AssessmentCandidateResult();
         result.setId(id);
-        result.setExamId(examId);
+        result.setAssessmentId(assessmentId);
         result.setCandidateId(candidateId);
         return result;
     }
 
-    private ExamGradingAssignment assignment(GradingRoundType roundType) {
-        return ExamGradingAssignment.open(
+    private AssessmentGradingAssignment assignment(GradingRoundType roundType) {
+        return AssessmentGradingAssignment.open(
             candidateResultId, teacherId, roundType, null, BigDecimal.ZERO,
             now, UUID.randomUUID(), null);
     }
 
-    private ExamGradingAssignment assignmentFor(UUID resultId) {
-        return ExamGradingAssignment.open(
+    private AssessmentGradingAssignment assignmentFor(UUID resultId) {
+        return AssessmentGradingAssignment.open(
             resultId, teacherId, GradingRoundType.INITIAL, null, BigDecimal.ZERO,
             now, UUID.randomUUID(), null);
     }

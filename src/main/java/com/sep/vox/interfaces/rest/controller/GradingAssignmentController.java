@@ -22,21 +22,21 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.sep.vox.application.port.input.usecase.examgrading.AssignGradingUseCase;
-import com.sep.vox.application.port.input.usecase.examgrading.AutoAssignGradingUseCase;
-import com.sep.vox.application.port.input.usecase.examgrading.ClearInvalidResultUseCase;
-import com.sep.vox.application.port.input.usecase.examgrading.DeclineGradingAssignmentUseCase;
-import com.sep.vox.application.port.input.usecase.examgrading.InvalidateResultUseCase;
-import com.sep.vox.application.port.input.usecase.examgrading.PreviewGradingUseCase;
-import com.sep.vox.application.port.input.usecase.examgrading.ReassignGradingUseCase;
-import com.sep.vox.application.port.input.usecase.examgrading.RegradeResultUseCase;
-import com.sep.vox.application.port.input.usecase.examgrading.ReclaimOverdueAssignmentsUseCase;
-import com.sep.vox.application.port.input.usecase.examgrading.RemoveGradingAssignmentUseCase;
-import com.sep.vox.application.port.input.usecase.examgrading.SetGradingDeadlineUseCase;
-import com.sep.vox.application.port.input.usecase.examgrading.UpholdResultUseCase;
-import com.sep.vox.application.response.input.examgrading.GradingActionResponse;
-import com.sep.vox.application.response.input.examgrading.GradingPreviewResponse;
-import com.sep.vox.application.response.input.examgrading.ReclaimOverdueResponse;
+import com.sep.vox.application.port.input.usecase.assessmentgrading.AssignGradingUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentgrading.AutoAssignGradingUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentgrading.ClearInvalidResultUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentgrading.DeclineGradingAssignmentUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentgrading.InvalidateResultUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentgrading.PreviewGradingUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentgrading.ReassignGradingUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentgrading.RegradeResultUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentgrading.ReclaimOverdueAssignmentsUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentgrading.RemoveGradingAssignmentUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentgrading.SetGradingDeadlineUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentgrading.UpholdResultUseCase;
+import com.sep.vox.application.response.input.assessmentgrading.GradingActionResponse;
+import com.sep.vox.application.response.input.assessmentgrading.GradingPreviewResponse;
+import com.sep.vox.application.response.input.assessmentgrading.ReclaimOverdueResponse;
 import com.sep.vox.interfaces.rest.dto.request.AssignGradingRequest;
 import com.sep.vox.interfaces.rest.dto.request.AutoAssignGradingRequest;
 import com.sep.vox.interfaces.rest.dto.request.GradingDecisionRequest;
@@ -45,7 +45,7 @@ import com.sep.vox.interfaces.rest.dto.request.SetGradingDeadlineRequest;
 import com.sep.vox.interfaces.rest.dto.request.ReassignGradingRequest;
 import com.sep.vox.interfaces.rest.dto.request.SubmitGradingRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
-import com.sep.vox.interfaces.rest.mapper.ExamGradingCommandMapper;
+import com.sep.vox.interfaces.rest.mapper.AssessmentGradingCommandMapper;
 
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -105,7 +105,7 @@ public class GradingAssignmentController {
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<List<UUID>>> assign(
             @Valid @RequestBody AssignGradingRequest request) {
-        AssignGradingCommand command = ExamGradingCommandMapper.fromRequest(request);
+        AssignGradingCommand command = AssessmentGradingCommandMapper.fromRequest(request);
         List<UUID> assignmentIds = assignGradingUseCase.execute(command);
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Phân công chấm bài thành công!", assignmentIds));
@@ -117,7 +117,7 @@ public class GradingAssignmentController {
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<List<UUID>>> autoAssign(
             @Valid @RequestBody AutoAssignGradingRequest request) {
-        AutoAssignGradingCommand command = ExamGradingCommandMapper.fromRequest(request);
+        AutoAssignGradingCommand command = AssessmentGradingCommandMapper.fromRequest(request);
         List<UUID> assignmentIds = autoAssignGradingUseCase.execute(command);
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success("Phân công tự động thành công!", assignmentIds));
@@ -129,7 +129,7 @@ public class GradingAssignmentController {
     public ResponseEntity<ApiResponse<UUID>> reassign(
             @PathVariable("assignmentId") UUID assignmentId,
             @Valid @RequestBody ReassignGradingRequest request) {
-        ReassignGradingCommand command = ExamGradingCommandMapper.fromRequest(assignmentId, request);
+        ReassignGradingCommand command = AssessmentGradingCommandMapper.fromRequest(assignmentId, request);
         return ResponseEntity.ok(
             ApiResponse.success("Đổi giáo viên chấm bài thành công!", reassignGradingUseCase.execute(command)));
     }
@@ -138,7 +138,7 @@ public class GradingAssignmentController {
     @DeleteMapping("/{assignmentId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> remove(@PathVariable("assignmentId") UUID assignmentId) {
-        RemoveGradingAssignmentCommand command = ExamGradingCommandMapper.toRemoveCommand(assignmentId);
+        RemoveGradingAssignmentCommand command = AssessmentGradingCommandMapper.toRemoveCommand(assignmentId);
         return ResponseEntity.ok(
             ApiResponse.success("Gỡ phân công thành công!", removeGradingAssignmentUseCase.execute(command)));
     }
@@ -149,7 +149,7 @@ public class GradingAssignmentController {
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<List<UUID>>> setDeadline(
             @Valid @RequestBody SetGradingDeadlineRequest request) {
-        SetGradingDeadlineCommand command = ExamGradingCommandMapper.fromRequest(request);
+        SetGradingDeadlineCommand command = AssessmentGradingCommandMapper.fromRequest(request);
         return ResponseEntity.ok(
             ApiResponse.success("Đặt hạn chấm thành công!", setGradingDeadlineUseCase.execute(command)));
     }
@@ -164,7 +164,7 @@ public class GradingAssignmentController {
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<ReclaimOverdueResponse>> reclaimOverdue(
             @Valid @RequestBody ReclaimOverdueAssignmentsRequest request) {
-        ReclaimOverdueAssignmentsCommand command = ExamGradingCommandMapper.fromRequest(request);
+        ReclaimOverdueAssignmentsCommand command = AssessmentGradingCommandMapper.fromRequest(request);
         return ResponseEntity.ok(
             ApiResponse.success("Thu hồi phân công quá hạn thành công!",
                 reclaimOverdueAssignmentsUseCase.execute(command)));
@@ -177,7 +177,7 @@ public class GradingAssignmentController {
     public ResponseEntity<ApiResponse<GradingActionResponse>> uphold(
             @PathVariable("assignmentId") UUID assignmentId,
             @Valid @RequestBody(required = false) GradingDecisionRequest request) {
-        GradingDecisionCommand command = ExamGradingCommandMapper.toDecisionCommand(assignmentId, request);
+        GradingDecisionCommand command = AssessmentGradingCommandMapper.toDecisionCommand(assignmentId, request);
         return ResponseEntity.ok(
             ApiResponse.success("Đã giữ nguyên điểm bài thi!", upholdResultUseCase.execute(command)));
     }
@@ -189,7 +189,7 @@ public class GradingAssignmentController {
     public ResponseEntity<ApiResponse<GradingActionResponse>> regrade(
             @PathVariable("assignmentId") UUID assignmentId,
             @Valid @RequestBody SubmitGradingRequest request) {
-        SubmitGradingCommand command = ExamGradingCommandMapper.fromRequest(assignmentId, request);
+        SubmitGradingCommand command = AssessmentGradingCommandMapper.fromRequest(assignmentId, request);
         return ResponseEntity.ok(
             ApiResponse.success("Nộp điểm chấm bài thành công!", regradeResultUseCase.execute(command)));
     }
@@ -201,7 +201,7 @@ public class GradingAssignmentController {
     public ResponseEntity<ApiResponse<GradingPreviewResponse>> previewRegrade(
             @PathVariable("assignmentId") UUID assignmentId,
             @Valid @RequestBody SubmitGradingRequest request) {
-        SubmitGradingCommand command = ExamGradingCommandMapper.fromRequest(assignmentId, request);
+        SubmitGradingCommand command = AssessmentGradingCommandMapper.fromRequest(assignmentId, request);
         return ResponseEntity.ok(
             ApiResponse.success("Tính thử điểm thành công!", previewGradingUseCase.execute(command)));
     }
@@ -212,7 +212,7 @@ public class GradingAssignmentController {
     public ResponseEntity<ApiResponse<GradingActionResponse>> invalidate(
             @PathVariable("assignmentId") UUID assignmentId,
             @Valid @RequestBody GradingDecisionRequest request) {
-        GradingDecisionCommand command = ExamGradingCommandMapper.toDecisionCommand(assignmentId, request);
+        GradingDecisionCommand command = AssessmentGradingCommandMapper.toDecisionCommand(assignmentId, request);
         return ResponseEntity.ok(
             ApiResponse.success("Vô hiệu bài thi thành công!", invalidateResultUseCase.execute(command)));
     }
@@ -224,7 +224,7 @@ public class GradingAssignmentController {
     public ResponseEntity<ApiResponse<GradingActionResponse>> clearInvalid(
             @PathVariable("assignmentId") UUID assignmentId,
             @Valid @RequestBody GradingDecisionRequest request) {
-        GradingDecisionCommand command = ExamGradingCommandMapper.toDecisionCommand(assignmentId, request);
+        GradingDecisionCommand command = AssessmentGradingCommandMapper.toDecisionCommand(assignmentId, request);
         return ResponseEntity.ok(
             ApiResponse.success("Đã gỡ vô hiệu bài thi!", clearInvalidResultUseCase.execute(command)));
     }
@@ -236,7 +236,7 @@ public class GradingAssignmentController {
     public ResponseEntity<ApiResponse<GradingActionResponse>> decline(
             @PathVariable("assignmentId") UUID assignmentId,
             @Valid @RequestBody GradingDecisionRequest request) {
-        GradingDecisionCommand command = ExamGradingCommandMapper.toDecisionCommand(assignmentId, request);
+        GradingDecisionCommand command = AssessmentGradingCommandMapper.toDecisionCommand(assignmentId, request);
         return ResponseEntity.ok(
             ApiResponse.success("Đã trả lại phân công!", declineGradingAssignmentUseCase.execute(command)));
     }

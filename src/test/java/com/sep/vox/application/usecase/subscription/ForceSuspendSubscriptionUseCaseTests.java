@@ -24,11 +24,11 @@ import com.sep.vox.application.port.input.command.ForceSuspendSubscriptionComman
 import com.sep.vox.application.port.input.service.SchoolSubscriptionSuspensionNotificationService;
 import com.sep.vox.application.port.input.usecase.subscription.ForceSuspendSubscriptionUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.model.exam.ExamSchedule;
+import com.sep.vox.domain.model.assessment.AssessmentSchedule;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionEventType;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionStatus;
-import com.sep.vox.domain.repository.ExamScheduleRepository;
+import com.sep.vox.domain.repository.AssessmentScheduleRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionEventRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
@@ -49,7 +49,7 @@ class ForceSuspendSubscriptionUseCaseTests {
     private SchoolSubscriptionRepository schoolSubscriptionRepository;
     private SchoolSubscriptionEventRepository schoolSubscriptionEventRepository;
     private SchoolSubscriptionSuspensionNotificationService suspensionNotificationService;
-    private ExamScheduleRepository examScheduleRepository;
+    private AssessmentScheduleRepository assessmentScheduleRepository;
     private ForceSuspendSubscriptionUseCase useCase;
 
     @BeforeEach
@@ -57,17 +57,17 @@ class ForceSuspendSubscriptionUseCaseTests {
         schoolSubscriptionRepository = mock(SchoolSubscriptionRepository.class);
         schoolSubscriptionEventRepository = mock(SchoolSubscriptionEventRepository.class);
         suspensionNotificationService = mock(SchoolSubscriptionSuspensionNotificationService.class);
-        examScheduleRepository = mock(ExamScheduleRepository.class);
+        assessmentScheduleRepository = mock(AssessmentScheduleRepository.class);
         UserContextPort userContextPort = mock(UserContextPort.class);
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(ADMIN_ID);
-        when(examScheduleRepository.findBySchoolId(SCHOOL_ID)).thenReturn(List.of());
+        when(assessmentScheduleRepository.findBySchoolId(SCHOOL_ID)).thenReturn(List.of());
         when(schoolSubscriptionRepository.save(any())).thenAnswer(call -> call.getArgument(0));
 
         useCase = new ForceSuspendSubscriptionUseCase(
             schoolSubscriptionRepository,
             schoolSubscriptionEventRepository,
             suspensionNotificationService,
-            examScheduleRepository,
+            assessmentScheduleRepository,
             userContextPort);
     }
 
@@ -115,15 +115,15 @@ class ForceSuspendSubscriptionUseCaseTests {
     }
 
     /**
-     * Cutting access in the middle of an exam session ruins the work of students who are sitting in
+     * Cutting access in the middle of an assessment session ruins the work of students who are sitting in
      * the room -- a fault that is not theirs. The suspension must wait until the session ends.
      */
     @Test
-    void should_refuse_to_cut_access_while_an_exam_is_running() {
+    void should_refuse_to_cut_access_while_an_assessment_is_running() {
         givenSubscription(SchoolSubscriptionStatus.ACTIVE);
-        ExamSchedule ongoing = mock(ExamSchedule.class);
+        AssessmentSchedule ongoing = mock(AssessmentSchedule.class);
         when(ongoing.isOngoingAt(any())).thenReturn(true);
-        when(examScheduleRepository.findBySchoolId(SCHOOL_ID)).thenReturn(List.of(ongoing));
+        when(assessmentScheduleRepository.findBySchoolId(SCHOOL_ID)).thenReturn(List.of(ongoing));
 
         assertThatThrownBy(() -> useCase.execute(new ForceSuspendSubscriptionCommand(SUBSCRIPTION_ID, REASON)))
             .isInstanceOf(IllegalStateException.class)

@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.service;
 
-import com.sep.vox.domain.model.exam.ExamGradingAssignment;
-import com.sep.vox.domain.model.exam.ExamResultAppeal;
+import com.sep.vox.domain.model.assessment.AssessmentGradingAssignment;
+import com.sep.vox.domain.model.assessment.AssessmentResultAppeal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -9,26 +9,26 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.event.ExamAppealPublishedPayloadV1;
-import com.sep.vox.application.event.ExamResultRegradedPayloadV1;
-import com.sep.vox.application.event.ExamResultReleasedPayloadV1;
+import com.sep.vox.application.event.AssessmentAppealPublishedPayloadV1;
+import com.sep.vox.application.event.AssessmentResultRegradedPayloadV1;
+import com.sep.vox.application.event.AssessmentResultReleasedPayloadV1;
 import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.port.input.service.ExamGradingAccessService.GradingContext;
+import com.sep.vox.application.port.input.service.AssessmentGradingAccessService.GradingContext;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.common.AggregateTypeConstant;
 import com.sep.vox.domain.common.EventTypeConstant;
-import com.sep.vox.domain.model.exam.ExamAppealStatus;
-import com.sep.vox.domain.model.exam.ExamCandidateResult;
-import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
-import com.sep.vox.domain.model.exam.GradingOutcome;
-import com.sep.vox.domain.model.exam.GradingRoundPolicy;
-import com.sep.vox.domain.model.exam.GradingRoundType;
-import com.sep.vox.domain.model.exam.ResultStatusChangeSource;
-import com.sep.vox.domain.repository.ExamCandidateRepository;
-import com.sep.vox.domain.repository.ExamCandidateResultRepository;
+import com.sep.vox.domain.model.assessment.AssessmentAppealStatus;
+import com.sep.vox.domain.model.assessment.AssessmentCandidateResult;
+import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
+import com.sep.vox.domain.model.assessment.GradingOutcome;
+import com.sep.vox.domain.model.assessment.GradingRoundPolicy;
+import com.sep.vox.domain.model.assessment.GradingRoundType;
+import com.sep.vox.domain.model.assessment.ResultStatusChangeSource;
+import com.sep.vox.domain.repository.AssessmentCandidateRepository;
+import com.sep.vox.domain.repository.AssessmentCandidateResultRepository;
 import com.sep.vox.domain.model.outbox.Outbox;
-import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
-import com.sep.vox.domain.repository.ExamResultAppealRepository;
+import com.sep.vox.domain.repository.AssessmentGradingAssignmentRepository;
+import com.sep.vox.domain.repository.AssessmentResultAppealRepository;
 import com.sep.vox.domain.repository.OutboxRepository;
 
 /**
@@ -42,29 +42,29 @@ import com.sep.vox.domain.repository.OutboxRepository;
 @Service
 public class GradingActionSupport {
 
-    private final ExamGradingAccessService examGradingAccessService;
-    private final ExamCandidateResultRepository examCandidateResultRepository;
-    private final ExamCandidateRepository examCandidateRepository;
-    private final ExamGradingAssignmentRepository examGradingAssignmentRepository;
-    private final ExamResultAppealRepository examResultAppealRepository;
+    private final AssessmentGradingAccessService assessmentGradingAccessService;
+    private final AssessmentCandidateResultRepository assessmentCandidateResultRepository;
+    private final AssessmentCandidateRepository assessmentCandidateRepository;
+    private final AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository;
+    private final AssessmentResultAppealRepository assessmentResultAppealRepository;
     private final ResultStatusHistoryRecorder resultStatusHistoryRecorder;
     private final OutboxRepository outboxRepository;
     private final JsonSerializationPort jsonSerializationPort;
 
     public GradingActionSupport(
-            ExamGradingAccessService examGradingAccessService,
-            ExamCandidateResultRepository examCandidateResultRepository,
-            ExamCandidateRepository examCandidateRepository,
-            ExamGradingAssignmentRepository examGradingAssignmentRepository,
-            ExamResultAppealRepository examResultAppealRepository,
+            AssessmentGradingAccessService assessmentGradingAccessService,
+            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
+            AssessmentCandidateRepository assessmentCandidateRepository,
+            AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository,
+            AssessmentResultAppealRepository assessmentResultAppealRepository,
             ResultStatusHistoryRecorder resultStatusHistoryRecorder,
             OutboxRepository outboxRepository,
             JsonSerializationPort jsonSerializationPort) {
-        this.examGradingAccessService = examGradingAccessService;
-        this.examCandidateResultRepository = examCandidateResultRepository;
-        this.examCandidateRepository = examCandidateRepository;
-        this.examGradingAssignmentRepository = examGradingAssignmentRepository;
-        this.examResultAppealRepository = examResultAppealRepository;
+        this.assessmentGradingAccessService = assessmentGradingAccessService;
+        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
+        this.assessmentCandidateRepository = assessmentCandidateRepository;
+        this.assessmentGradingAssignmentRepository = assessmentGradingAssignmentRepository;
+        this.assessmentResultAppealRepository = assessmentResultAppealRepository;
         this.resultStatusHistoryRecorder = resultStatusHistoryRecorder;
         this.outboxRepository = outboxRepository;
         this.jsonSerializationPort = jsonSerializationPort;
@@ -89,13 +89,13 @@ public class GradingActionSupport {
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public PreparedAction prepare(UUID assignmentId, GradingOutcome outcome, String reason) {
-        UUID currentUserId = examGradingAccessService.requireActiveUserId();
+        UUID currentUserId = assessmentGradingAccessService.requireActiveUserId();
         // Khoá ngay từ đây: mọi kiểm tra bên dưới đều đọc-rồi-quyết-định, nên chúng chỉ
         // đúng nếu không ai chen vào giữa lúc đọc và lúc finish() ghi.
-        ExamGradingAccessService.GradingContext context = examGradingAccessService.loadForUpdate(assignmentId);
-        examGradingAccessService.authorizeAssignedTeacher(context, currentUserId);
+        AssessmentGradingAccessService.GradingContext context = assessmentGradingAccessService.loadForUpdate(assignmentId);
+        assessmentGradingAccessService.authorizeAssignedTeacher(context, currentUserId);
 
-        ExamGradingAssignment assignment = context.assignment();
+        AssessmentGradingAssignment assignment = context.assignment();
         if (assignment.isCompleted()) {
             throw new IllegalStateException("Bạn đã chốt kết quả cho bài thi này.");
         }
@@ -134,27 +134,27 @@ public class GradingActionSupport {
      *               chính {@code context.candidateResult()} khi hành động không đổi điểm
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    public void finish(PreparedAction prepared, ExamCandidateResult result) {
+    public void finish(PreparedAction prepared, AssessmentCandidateResult result) {
         Instant now = Instant.now();
-        ExamCandidateResultStatus targetStatus = GradingRoundPolicy.resultStatusAfter(prepared.roundType(), prepared.outcome());
+        AssessmentCandidateResultStatus targetStatus = GradingRoundPolicy.resultStatusAfter(prepared.roundType(), prepared.outcome());
 
         if (targetStatus != null && result.getStatus() != targetStatus) {
             result.setStatus(targetStatus);
-            if (targetStatus == ExamCandidateResultStatus.RELEASED && result.getReleasedAt() == null) {
+            if (targetStatus == AssessmentCandidateResultStatus.RELEASED && result.getReleasedAt() == null) {
                 result.setReleasedAt(now);
             }
-            if (targetStatus == ExamCandidateResultStatus.INVALID) {
+            if (targetStatus == AssessmentCandidateResultStatus.INVALID) {
                 result.setFinalizedAt(now);
             }
             // Gỡ vô hiệu kéo bài về PENDING_REVIEW: mốc "đã chốt" của lần vô hiệu
             // trước không còn đúng nữa. Để lại thì tồn tại bài PENDING_REVIEW mang
             // finalized_at — một cái bẫy cho người đọc sau.
-            if (targetStatus == ExamCandidateResultStatus.PENDING_REVIEW) {
+            if (targetStatus == AssessmentCandidateResultStatus.PENDING_REVIEW) {
                 result.setFinalizedAt(null);
             }
             result.setUpdatedAt(now);
             result.setUpdatedBy(prepared.currentUserId());
-            examCandidateResultRepository.save(result);
+            assessmentCandidateResultRepository.save(result);
         }
 
         // Quyết định "giữ nguyên" ở REMEDIATION (xác nhận vi phạm) và việc trả lại
@@ -168,9 +168,9 @@ public class GradingActionSupport {
                 prepared.before(), result, source, prepared.currentUserId(), prepared.reason());
         }
 
-        ExamGradingAssignment assignment = prepared.context().assignment();
+        AssessmentGradingAssignment assignment = prepared.context().assignment();
         assignment.complete(prepared.outcome(), prepared.reason(), now);
-        examGradingAssignmentRepository.save(assignment);
+        assessmentGradingAssignmentRepository.save(assignment);
 
         if (prepared.roundType() == GradingRoundType.APPEAL) {
             publishAppeal(prepared, result, now);
@@ -186,37 +186,37 @@ public class GradingActionSupport {
      * <p>{@code DECLINED} không công bố gì: giáo viên trả bài lại thì đơn vẫn đang chờ
      * người khác, chỉ lùi về {@code APPROVED} để admin giao lại.
      */
-    private void publishAppeal(PreparedAction prepared, ExamCandidateResult result, Instant now) {
+    private void publishAppeal(PreparedAction prepared, AssessmentCandidateResult result, Instant now) {
         UUID appealId = prepared.context().assignment().getAppealId();
         if (appealId == null) {
             return;
         }
-        ExamResultAppeal appeal = examResultAppealRepository.findById(appealId).orElse(null);
+        AssessmentResultAppeal appeal = assessmentResultAppealRepository.findById(appealId).orElse(null);
         if (appeal == null) {
             return;
         }
         if (prepared.outcome() == GradingOutcome.DECLINED) {
-            appeal.setStatus(ExamAppealStatus.APPROVED);
-            examResultAppealRepository.save(appeal);
+            appeal.setStatus(AssessmentAppealStatus.APPROVED);
+            assessmentResultAppealRepository.save(appeal);
             return;
         }
-        appeal.setStatus(ExamAppealStatus.PUBLISHED);
+        appeal.setStatus(AssessmentAppealStatus.PUBLISHED);
         appeal.setScoreAfter(result.getTotalScore());
         appeal.setResolvedBy(prepared.currentUserId());
         appeal.setResolvedAt(now);
         appeal.setDecisionNote(prepared.reason());
-        examResultAppealRepository.save(appeal);
+        assessmentResultAppealRepository.save(appeal);
 
         UUID studentId = resolveStudentId(result);
         if (studentId != null) {
             saveOutbox(
-                AggregateTypeConstant.EXAM_RESULT_APPEAL,
+                AggregateTypeConstant.ASSESSMENT_RESULT_APPEAL,
                 appeal.getId(),
-                EventTypeConstant.EXAM_APPEAL_PUBLISHED,
-                new ExamAppealPublishedPayloadV1(
+                EventTypeConstant.ASSESSMENT_APPEAL_PUBLISHED,
+                new AssessmentAppealPublishedPayloadV1(
                     appeal.getId(),
                     studentId,
-                    prepared.context().examName(),
+                    prepared.context().assessmentName(),
                     appeal.getScoreBefore(),
                     result.getTotalScore()
                 ),
@@ -230,23 +230,23 @@ public class GradingActionSupport {
      * công bố nay đổi. Hậu kiểm giữ nguyên điểm thì KHÔNG phát gì — làm phiền học sinh
      * bằng thông báo "điểm vừa thay đổi" trong khi nó không đổi là sai.
      */
-    private void publishScoreEvents(PreparedAction prepared, ExamCandidateResult result, Instant now) {
+    private void publishScoreEvents(PreparedAction prepared, AssessmentCandidateResult result, Instant now) {
         UUID studentId = resolveStudentId(result);
         if (studentId == null) {
             return;
         }
-        String examName = prepared.context().examName();
-        boolean wasPublished = prepared.before().status() != ExamCandidateResultStatus.PENDING_REVIEW;
-        boolean nowPublished = result.getStatus() == ExamCandidateResultStatus.RELEASED;
+        String assessmentName = prepared.context().assessmentName();
+        boolean wasPublished = prepared.before().status() != AssessmentCandidateResultStatus.PENDING_REVIEW;
+        boolean nowPublished = result.getStatus() == AssessmentCandidateResultStatus.RELEASED;
 
         if (nowPublished && !wasPublished) {
             saveOutbox(
-                AggregateTypeConstant.EXAM_CANDIDATE_RESULT,
+                AggregateTypeConstant.ASSESSMENT_CANDIDATE_RESULT,
                 result.getId(),
-                EventTypeConstant.EXAM_RESULT_RELEASED,
-                new ExamResultReleasedPayloadV1(
-                    result.getId(), studentId, examName, result.getTotalScore(),
-                    result.getSessionId(), prepared.context().examKind()),
+                EventTypeConstant.ASSESSMENT_RESULT_RELEASED,
+                new AssessmentResultReleasedPayloadV1(
+                    result.getId(), studentId, assessmentName, result.getTotalScore(),
+                    result.getSessionId(), prepared.context().assessmentKind()),
                 now
             );
             return;
@@ -257,18 +257,18 @@ public class GradingActionSupport {
                 && prepared.before().totalScore().compareTo(result.getTotalScore()) != 0;
         if (wasPublished && scoreChanged) {
             saveOutbox(
-                AggregateTypeConstant.EXAM_CANDIDATE_RESULT,
+                AggregateTypeConstant.ASSESSMENT_CANDIDATE_RESULT,
                 result.getId(),
-                EventTypeConstant.EXAM_RESULT_REGRADED,
-                new ExamResultRegradedPayloadV1(
+                EventTypeConstant.ASSESSMENT_RESULT_REGRADED,
+                new AssessmentResultRegradedPayloadV1(
                     result.getId(),
                     studentId,
-                    examName,
+                    assessmentName,
                     prepared.roundType().name(),
                     prepared.before().totalScore(),
                     result.getTotalScore(),
                     result.getSessionId(),
-                    prepared.context().examKind()
+                    prepared.context().assessmentKind()
                 ),
                 now
             );
@@ -289,18 +289,18 @@ public class GradingActionSupport {
         ));
     }
 
-    /** Học sinh nhận mail là {@code ExamCandidate.studentId}, không phải candidateId. */
-    public UUID resolveStudentId(ExamCandidateResult result) {
+    /** The student who receives the email is {@code AssessmentCandidate.studentId}, not the candidateId. */
+    public UUID resolveStudentId(AssessmentCandidateResult result) {
         if (result.getCandidateId() == null) {
             return null;
         }
-        return examCandidateRepository.findById(result.getCandidateId())
+        return assessmentCandidateRepository.findById(result.getCandidateId())
             .map(candidate -> candidate.getStudentId())
             .orElse(null);
     }
 
     /** Bắt buộc phải có, dùng khi thiếu học sinh là lỗi dữ liệu chứ không phải ca biên. */
-    public UUID requireStudentId(ExamCandidateResult result) {
+    public UUID requireStudentId(AssessmentCandidateResult result) {
         UUID studentId = resolveStudentId(result);
         if (studentId == null) {
             throw new NotFoundException("Không tìm thấy thí sinh của bài thi.");

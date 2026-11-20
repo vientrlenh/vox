@@ -5,8 +5,8 @@ import java.util.UUID;
 
 public record ProctorScheduleSummary(
     UUID scheduleId,
-    UUID examId,
-    String examName,
+    UUID assessmentId,
+    String assessmentName,
     UUID schoolRoomId,
     String roomName,
     Instant startDate,

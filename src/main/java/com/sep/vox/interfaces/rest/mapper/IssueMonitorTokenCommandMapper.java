@@ -7,7 +7,7 @@ public final class IssueMonitorTokenCommandMapper {
     
     public static IssueMonitorTokenCommand fromRequest(IssueMonitorTokenRequest request) {
         return new IssueMonitorTokenCommand(
-            request.examId(), 
+            request.assessmentId(), 
             request.scheduleIds()
         );
     }

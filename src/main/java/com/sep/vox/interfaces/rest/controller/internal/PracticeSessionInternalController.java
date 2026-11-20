@@ -19,7 +19,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.usecase.practicesession.GetPracticeTurnUploadUrlUseCase;
 import com.sep.vox.application.port.input.usecase.practicesession.ResolveNextPracticeQuestionUseCase;
 import com.sep.vox.application.port.input.usecase.practicesession.SubmitPracticeTurnUseCase;
-import com.sep.vox.application.response.input.examturn.TurnUploadUrlResponse;
+import com.sep.vox.application.response.input.assessmentturn.TurnUploadUrlResponse;
 import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.SubmitTurnResult;
 import com.sep.vox.domain.model.personalization.SubmitPracticeTurn;
 import com.sep.vox.domain.model.personalization.TurnCorrectionSubmission;

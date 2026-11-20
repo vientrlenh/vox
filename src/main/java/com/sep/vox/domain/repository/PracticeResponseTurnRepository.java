@@ -58,9 +58,9 @@ public interface PracticeResponseTurnRepository {
     List<TurnRecord> findBySessionIdOrderByTurnOrder(UUID sessionId);
 
     /**
-     * Tổng duration_seconds (giây trả lời thật) theo TỪNG practice_session_id trong sessionIds --
-     * dùng cho QuotaPricingCalibrationService (nguồn PRACTICE), mirror
-     * ExamItemResponseRepository.sumDurationSecondsGroupedBySessionIds.
+     * The sum of duration_seconds (the real answer seconds) PER practice_session_id in sessionIds --
+     * used by QuotaPricingCalibrationService (the PRACTICE source), mirroring
+     * AssessmentItemResponseRepository.sumDurationSecondsGroupedBySessionIds.
      */
     List<SessionDurationAggregate> sumDurationSecondsGroupedBySessionIds(Collection<UUID> sessionIds);
 }

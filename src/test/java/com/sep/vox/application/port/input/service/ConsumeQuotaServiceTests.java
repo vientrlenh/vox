@@ -48,7 +48,7 @@ class ConsumeQuotaServiceTests {
 
     private final UUID subscriptionId = UUID.randomUUID();
     private final UUID schoolId = UUID.randomUUID();
-    private final UUID examSessionId = UUID.randomUUID();
+    private final UUID assessmentSessionId = UUID.randomUUID();
     private final UUID quotaId = UUID.randomUUID();
 
     @BeforeEach
@@ -90,11 +90,11 @@ class ConsumeQuotaServiceTests {
     void should_publish_usage_warning_once_when_charge_crosses_threshold() {
         givenQuota(BigDecimal.valueOf(100_000), BigDecimal.valueOf(69_000));
 
-        service.consumeExamAllowingDebt(subscriptionId, examSessionId, BigDecimal.valueOf(2_000),
+        service.consumeAssessmentAllowingDebt(subscriptionId, assessmentSessionId, BigDecimal.valueOf(2_000),
             BigDecimal.ONE, BigDecimal.TEN, null);
 
         verify(schoolQuotaUsageNotificationService).publishQuotaUsageWarning(
-            eq(subscriptionId), eq(schoolId), eq(QuotaType.EXAM),
+            eq(subscriptionId), eq(schoolId), eq(QuotaType.ASSESSMENT),
             eq(BigDecimal.valueOf(100_000)), eq(BigDecimal.valueOf(71_000)), any());
     }
 
@@ -102,7 +102,7 @@ class ConsumeQuotaServiceTests {
     void should_not_publish_again_when_usage_was_already_past_threshold() {
         givenQuota(BigDecimal.valueOf(100_000), BigDecimal.valueOf(71_000));
 
-        service.consumeExamAllowingDebt(subscriptionId, examSessionId, BigDecimal.valueOf(2_000),
+        service.consumeAssessmentAllowingDebt(subscriptionId, assessmentSessionId, BigDecimal.valueOf(2_000),
             BigDecimal.ONE, BigDecimal.TEN, null);
 
         verify(schoolQuotaUsageNotificationService, never()).publishQuotaUsageWarning(
@@ -113,7 +113,7 @@ class ConsumeQuotaServiceTests {
     void should_not_publish_when_charge_stays_below_threshold() {
         givenQuota(BigDecimal.valueOf(100_000), BigDecimal.valueOf(50_000));
 
-        service.consumeExamAllowingDebt(subscriptionId, examSessionId, BigDecimal.valueOf(2_000),
+        service.consumeAssessmentAllowingDebt(subscriptionId, assessmentSessionId, BigDecimal.valueOf(2_000),
             BigDecimal.ONE, BigDecimal.TEN, null);
 
         verify(schoolQuotaUsageNotificationService, never()).publishQuotaUsageWarning(
@@ -130,26 +130,26 @@ class ConsumeQuotaServiceTests {
     void should_record_the_full_amount_even_when_it_fits_inside_the_quota() {
         givenQuota(BigDecimal.valueOf(100_000), BigDecimal.valueOf(10_000));
 
-        service.consumeExamAllowingDebt(subscriptionId, examSessionId, BigDecimal.valueOf(2_000),
+        service.consumeAssessmentAllowingDebt(subscriptionId, assessmentSessionId, BigDecimal.valueOf(2_000),
             BigDecimal.ONE, BigDecimal.TEN, null);
 
         SchoolAiSpendEntry entry = captureSpendEntry();
         assertThat(entry.getAmountVnd()).isEqualByComparingTo(BigDecimal.valueOf(2_000));
         assertThat(entry.getSchoolId()).isEqualTo(schoolId);
-        assertThat(entry.getExamSessionId()).isEqualTo(examSessionId);
-        assertThat(entry.getQuotaType()).isEqualTo(QuotaType.EXAM);
+        assertThat(entry.getAssessmentSessionId()).isEqualTo(assessmentSessionId);
+        assertThat(entry.getQuotaType()).isEqualTo(QuotaType.ASSESSMENT);
     }
 
     /**
-     * Kỳ thi tập trung không thuộc trần chi của ai — {@code CompleteExamSessionGradingUseCase} cố ý
-     * truyền null. null ở cột người dùng là một CÂU TRẢ LỜI, và bảng "ai đang tiêu" dựa vào đúng nó
-     * để tách khoản của cả trường ra khỏi bảng xếp hạng.
+     * A centralized assessment belongs to nobody's spending ceiling -- {@code CompleteAssessmentSessionGradingUseCase} deliberately
+     * passes null. null in the user column is an ANSWER, and the "who is spending" table relies on exactly that
+     * to separate the whole school's expenses from the ranking.
      */
     @Test
     void should_keep_a_school_wide_charge_unattributed() {
         givenQuota(BigDecimal.valueOf(100_000), BigDecimal.valueOf(10_000));
 
-        service.consumeExamAllowingDebt(subscriptionId, examSessionId, BigDecimal.valueOf(2_000),
+        service.consumeAssessmentAllowingDebt(subscriptionId, assessmentSessionId, BigDecimal.valueOf(2_000),
             BigDecimal.ONE, BigDecimal.TEN, null);
 
         assertThat(captureSpendEntry().getUserId()).isNull();
@@ -160,14 +160,14 @@ class ConsumeQuotaServiceTests {
         givenQuota(BigDecimal.valueOf(100_000), BigDecimal.valueOf(10_000));
         UUID teacherId = UUID.randomUUID();
 
-        service.consumeExamAllowingDebt(subscriptionId, examSessionId, BigDecimal.valueOf(2_000),
+        service.consumeAssessmentAllowingDebt(subscriptionId, assessmentSessionId, BigDecimal.valueOf(2_000),
             BigDecimal.ONE, BigDecimal.TEN, teacherId);
 
         assertThat(captureSpendEntry().getUserId()).isEqualTo(teacherId);
     }
 
     /**
-     * The practice path must leave a trace just like the exam path. Before V10 it left nothing with
+     * The practice path must leave a trace just like the assessment path. Before V10 it left nothing with
      * a timestamp, so "how much did practice cost last month" was a question nobody could answer,
      * not even by querying by hand.
      */
@@ -188,7 +188,7 @@ class ConsumeQuotaServiceTests {
         SchoolAiSpendEntry entry = captureSpendEntry();
         assertThat(entry.getQuotaType()).isEqualTo(QuotaType.PRACTICE);
         assertThat(entry.getPracticeSessionId()).isEqualTo(practiceSessionId);
-        assertThat(entry.getExamSessionId()).isNull();
+        assertThat(entry.getAssessmentSessionId()).isNull();
         assertThat(entry.getUserId()).isEqualTo(studentId);
     }
 
@@ -197,7 +197,7 @@ class ConsumeQuotaServiceTests {
     void should_not_record_a_zero_charge() {
         givenQuota(BigDecimal.valueOf(100_000), BigDecimal.valueOf(10_000));
 
-        service.consumeExamAllowingDebt(subscriptionId, examSessionId, BigDecimal.ZERO,
+        service.consumeAssessmentAllowingDebt(subscriptionId, assessmentSessionId, BigDecimal.ZERO,
             BigDecimal.ZERO, BigDecimal.TEN, null);
 
         verify(schoolAiSpendEntryRepository, never()).save(any());
@@ -211,8 +211,8 @@ class ConsumeQuotaServiceTests {
 
     private void givenQuota(BigDecimal totalAllocatedVnd, BigDecimal usedVnd) {
         SchoolSubscriptionQuotaRecord quota = new SchoolSubscriptionQuotaRecord(
-            quotaId, subscriptionId, QuotaType.EXAM, totalAllocatedVnd, usedVnd);
-        when(quotaRecordRepository.findBySchoolSubscriptionIdAndQuotaType(subscriptionId, QuotaType.EXAM))
+            quotaId, subscriptionId, QuotaType.ASSESSMENT, totalAllocatedVnd, usedVnd);
+        when(quotaRecordRepository.findBySchoolSubscriptionIdAndQuotaType(subscriptionId, QuotaType.ASSESSMENT))
             .thenReturn(Optional.of(quota));
         when(quotaRecordRepository.findById(quotaId)).thenReturn(Optional.of(quota));
         when(quotaRecordRepository.tryConsume(eq(quotaId), any())).thenReturn(true);

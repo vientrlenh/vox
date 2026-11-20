@@ -1,12 +1,12 @@
 package com.sep.vox.domain.model.metering;
 
 /**
- * Nguồn dữ liệu dùng để calibrate estimatedCostPerSecondUsd (xem QuotaPricingCalibrationService).
- * KHÔNG phải QuotaType (EXAM/PRACTICE) -- trước đây QuotaType có 3 giá trị và GRADING/CLASS_TEST cùng dùng
- * chung 1 rate EXAM (công thức guard giống hệt nhau cho cả 2 kind), chỉ PRACTICE tách riêng vì
- * pipeline AI khác hẳn (realtimeCorrectionGraph nhẹ hơn evalGraph).
+ * The data source used to calibrate estimatedCostPerSecondUsd (see QuotaPricingCalibrationService).
+ * NOT QuotaType (ASSESSMENT/PRACTICE) -- QuotaType used to have 3 values and GRADING/CLASS_TEST shared
+ * 1 ASSESSMENT rate (the guard formula is identical for both kinds), and only PRACTICE was separate because its
+ * AI pipeline is very different (realtimeCorrectionGraph is lighter than evalGraph).
  */
 public enum QuotaPricingSource {
-    EXAM,
+    ASSESSMENT,
     PRACTICE
 }

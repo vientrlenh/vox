@@ -50,7 +50,7 @@ class PublishSubscriptionPlanUseCaseTests {
         UserContextPort userContextPort = mock(UserContextPort.class);
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(ADMIN_ID);
         when(subscriptionPlanQuotaRepository.findBySubscriptionPlanId(PLAN_ID))
-            .thenReturn(List.of(quota(QuotaType.EXAM, BigDecimal.valueOf(1_000_000))));
+            .thenReturn(List.of(quota(QuotaType.ASSESSMENT, BigDecimal.valueOf(1_000_000))));
         when(subscriptionPlanRepository.save(any())).thenAnswer(call -> call.getArgument(0));
 
         useCase = new PublishSubscriptionPlanUseCase(
@@ -85,10 +85,10 @@ class PublishSubscriptionPlanUseCaseTests {
     void should_block_publish_when_quota_is_lower_than_the_plan_it_replaces() {
         givenDraftPlan(BigDecimal.valueOf(100_000));
         when(subscriptionPlanQuotaRepository.findBySubscriptionPlanId(PLAN_ID))
-            .thenReturn(List.of(quota(QuotaType.EXAM, BigDecimal.valueOf(500_000))));
+            .thenReturn(List.of(quota(QuotaType.ASSESSMENT, BigDecimal.valueOf(500_000))));
         SubscriptionPlan replacedPlan = activePlan(BigDecimal.valueOf(100_000));
         when(subscriptionPlanQuotaRepository.findBySubscriptionPlanId(REPLACED_PLAN_ID))
-            .thenReturn(List.of(quota(QuotaType.EXAM, BigDecimal.valueOf(1_000_000))));
+            .thenReturn(List.of(quota(QuotaType.ASSESSMENT, BigDecimal.valueOf(1_000_000))));
         when(subscriptionPlanRepository.findByReplacedByPlanId(PLAN_ID)).thenReturn(List.of(replacedPlan));
 
         assertThatThrownBy(() -> useCase.execute(new PublishSubscriptionPlanCommand(PLAN_ID)))
@@ -101,7 +101,7 @@ class PublishSubscriptionPlanUseCaseTests {
         givenDraftPlan(BigDecimal.valueOf(100_000));
         SubscriptionPlan replacedPlan = activePlan(BigDecimal.valueOf(100_000));
         when(subscriptionPlanQuotaRepository.findBySubscriptionPlanId(REPLACED_PLAN_ID))
-            .thenReturn(List.of(quota(QuotaType.EXAM, BigDecimal.valueOf(1_000_000))));
+            .thenReturn(List.of(quota(QuotaType.ASSESSMENT, BigDecimal.valueOf(1_000_000))));
         when(subscriptionPlanRepository.findByReplacedByPlanId(PLAN_ID)).thenReturn(List.of(replacedPlan));
 
         UUID result = useCase.execute(new PublishSubscriptionPlanCommand(PLAN_ID));

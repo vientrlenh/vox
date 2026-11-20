@@ -10,9 +10,9 @@ public final class ClaimClassTestGradingCommandMapper {
     private ClaimClassTestGradingCommandMapper() {
     }
 
-    public static ClaimClassTestGradingCommand fromRequest(UUID examId, ClaimClassTestGradingRequest request) {
+    public static ClaimClassTestGradingCommand fromRequest(UUID assessmentId, ClaimClassTestGradingRequest request) {
         return new ClaimClassTestGradingCommand(
-            examId,
+            assessmentId,
             request.roundType(),
             request.candidateResultIds()
         );

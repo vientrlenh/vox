@@ -22,13 +22,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.kafka.support.Acknowledgment;
 
-import com.sep.vox.domain.model.exam.ExamKind;
+import com.sep.vox.domain.model.assessment.AssessmentKind;
 import com.sep.vox.application.event.GradingAssignmentDeclinedPayloadV1;
 import com.sep.vox.application.event.GradingDeadlineReminderPayloadV1;
 import com.sep.vox.application.port.output.MailSendingPort;
 import com.sep.vox.application.port.output.MailTemplatePort;
 import com.sep.vox.domain.common.EventTypeConstant;
-import com.sep.vox.domain.model.exam.GradingRoundType;
+import com.sep.vox.domain.model.assessment.GradingRoundType;
 import com.sep.vox.domain.model.outbox.ProcessedEvent;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
@@ -69,7 +69,7 @@ class GradingAssignmentEmailConsumerTests {
             .thenReturn("<html></html>");
         GradingDeadlineReminderPayloadV1 payload = new GradingDeadlineReminderPayloadV1(
             UUID.randomUUID(), teacherId, "Kỳ thi giữa kỳ",
-            GradingRoundType.INITIAL.name(), Instant.parse("2026-08-01T03:00:00Z"), UUID.randomUUID(), ExamKind.CENTRALIZED);
+            GradingRoundType.INITIAL.name(), Instant.parse("2026-08-01T03:00:00Z"), UUID.randomUUID(), AssessmentKind.CENTRALIZED);
 
         consumer.consume(record(EventTypeConstant.GRADING_DEADLINE_REMINDER, payload), ack);
 
@@ -91,7 +91,7 @@ class GradingAssignmentEmailConsumerTests {
             .when(mailSendingPort).sendHtml(anyString(), anyString(), anyString());
         GradingDeadlineReminderPayloadV1 payload = new GradingDeadlineReminderPayloadV1(
             UUID.randomUUID(), teacherId, "Kỳ thi giữa kỳ",
-            GradingRoundType.INITIAL.name(), Instant.parse("2026-08-01T03:00:00Z"), UUID.randomUUID(), ExamKind.CENTRALIZED);
+            GradingRoundType.INITIAL.name(), Instant.parse("2026-08-01T03:00:00Z"), UUID.randomUUID(), AssessmentKind.CENTRALIZED);
 
         // Unlike the old listener: there the error had to be swallowed because reminded_at was
         // already committed and nothing would resend. Now the outbox keeps the message, so throwing
@@ -109,7 +109,7 @@ class GradingAssignmentEmailConsumerTests {
         when(mailTemplatePort.renderGradingDeadlineReminderEmail(anyString(), anyString(), anyString()))
             .thenReturn("<html></html>");
         GradingDeadlineReminderPayloadV1 payload = new GradingDeadlineReminderPayloadV1(
-            UUID.randomUUID(), teacherId, null, null, null, UUID.randomUUID(), ExamKind.CENTRALIZED);
+            UUID.randomUUID(), teacherId, null, null, null, UUID.randomUUID(), AssessmentKind.CENTRALIZED);
 
         consumer.consume(record(EventTypeConstant.GRADING_DEADLINE_REMINDER, payload), ack);
 
@@ -125,7 +125,7 @@ class GradingAssignmentEmailConsumerTests {
         when(mailTemplatePort.renderGradingDeclinedEmail(anyString(), anyString(), anyString()))
             .thenReturn("<html></html>");
         GradingAssignmentDeclinedPayloadV1 payload = new GradingAssignmentDeclinedPayloadV1(
-            UUID.randomUUID(), UUID.randomUUID(), teacherId, assignedBy, "Kỳ thi giữa kỳ", "Bận công tác", UUID.randomUUID(), ExamKind.CENTRALIZED);
+            UUID.randomUUID(), UUID.randomUUID(), teacherId, assignedBy, "Kỳ thi giữa kỳ", "Bận công tác", UUID.randomUUID(), AssessmentKind.CENTRALIZED);
 
         consumer.consume(record(EventTypeConstant.GRADING_ASSIGNMENT_DECLINED, payload), ack);
 
@@ -144,7 +144,7 @@ class GradingAssignmentEmailConsumerTests {
         when(mailTemplatePort.renderGradingDeclinedEmail(anyString(), anyString(), anyString()))
             .thenReturn("<html></html>");
         GradingAssignmentDeclinedPayloadV1 payload = new GradingAssignmentDeclinedPayloadV1(
-            UUID.randomUUID(), UUID.randomUUID(), teacherId, assignedBy, null, null, UUID.randomUUID(), ExamKind.CENTRALIZED);
+            UUID.randomUUID(), UUID.randomUUID(), teacherId, assignedBy, null, null, UUID.randomUUID(), AssessmentKind.CENTRALIZED);
 
         consumer.consume(record(EventTypeConstant.GRADING_ASSIGNMENT_DECLINED, payload), ack);
 
@@ -156,7 +156,7 @@ class GradingAssignmentEmailConsumerTests {
         when(processedEventRepository.existsByEventIdAndConsumerGroup(any(UUID.class), anyString()))
             .thenReturn(true);
         GradingDeadlineReminderPayloadV1 payload = new GradingDeadlineReminderPayloadV1(
-            UUID.randomUUID(), UUID.randomUUID(), "Kỳ thi giữa kỳ", null, null, UUID.randomUUID(), ExamKind.CENTRALIZED);
+            UUID.randomUUID(), UUID.randomUUID(), "Kỳ thi giữa kỳ", null, null, UUID.randomUUID(), AssessmentKind.CENTRALIZED);
 
         consumer.consume(record(EventTypeConstant.GRADING_DEADLINE_REMINDER, payload), ack);
 
@@ -170,7 +170,7 @@ class GradingAssignmentEmailConsumerTests {
         UUID assignedBy = UUID.randomUUID();
         when(userRepository.findById(assignedBy)).thenReturn(Optional.empty());
         GradingAssignmentDeclinedPayloadV1 payload = new GradingAssignmentDeclinedPayloadV1(
-            UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), assignedBy, "Kỳ thi giữa kỳ", "Bận", UUID.randomUUID(), ExamKind.CENTRALIZED);
+            UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), assignedBy, "Kỳ thi giữa kỳ", "Bận", UUID.randomUUID(), AssessmentKind.CENTRALIZED);
 
         assertThatCode(() -> consumer.consume(record(EventTypeConstant.GRADING_ASSIGNMENT_DECLINED, payload), ack))
             .doesNotThrowAnyException();
@@ -182,7 +182,7 @@ class GradingAssignmentEmailConsumerTests {
     @Test
     void should_throw_when_event_type_is_unknown() {
         GradingDeadlineReminderPayloadV1 payload = new GradingDeadlineReminderPayloadV1(
-            UUID.randomUUID(), UUID.randomUUID(), "Kỳ thi giữa kỳ", null, null, UUID.randomUUID(), ExamKind.CENTRALIZED);
+            UUID.randomUUID(), UUID.randomUUID(), "Kỳ thi giữa kỳ", null, null, UUID.randomUUID(), AssessmentKind.CENTRALIZED);
 
         assertThatThrownBy(() -> consumer.consume(record("KhongTonTai", payload), ack))
             .isInstanceOf(IllegalStateException.class)

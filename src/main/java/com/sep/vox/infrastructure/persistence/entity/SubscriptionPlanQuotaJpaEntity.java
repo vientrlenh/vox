@@ -33,7 +33,7 @@ public class SubscriptionPlanQuotaJpaEntity {
     @Column(name = "quota_type", nullable = false, length = 20, check = {
         @CheckConstraint(
             name = "chk_subscription_plan_quotas_quota_type_valid",
-            constraint = "quota_type IN ('EXAM', 'PRACTICE')"
+            constraint = "quota_type IN ('ASSESSMENT', 'PRACTICE')"
         )
     })
     private String quotaType;

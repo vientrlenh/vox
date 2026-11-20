@@ -6,8 +6,8 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.domain.model.exam.ExamPaper;
-import com.sep.vox.domain.repository.ExamPaperRepository;
+import com.sep.vox.domain.model.assessment.AssessmentPaper;
+import com.sep.vox.domain.repository.AssessmentPaperRepository;
 
 /**
  * Chọn mã đề để thao tác trên bài kiểm tra trên lớp.
@@ -19,14 +19,14 @@ import com.sep.vox.domain.repository.ExamPaperRepository;
 @Service
 public class ClassTestPaperResolver {
 
-    private final ExamPaperRepository examPaperRepository;
+    private final AssessmentPaperRepository assessmentPaperRepository;
 
-    public ClassTestPaperResolver(ExamPaperRepository examPaperRepository) {
-        this.examPaperRepository = examPaperRepository;
+    public ClassTestPaperResolver(AssessmentPaperRepository assessmentPaperRepository) {
+        this.assessmentPaperRepository = assessmentPaperRepository;
     }
 
-    public ExamPaper resolve(UUID examId, UUID requestedPaperId) {
-        List<ExamPaper> papers = examPaperRepository.findByExamId(examId);
+    public AssessmentPaper resolve(UUID assessmentId, UUID requestedPaperId) {
+        List<AssessmentPaper> papers = assessmentPaperRepository.findByAssessmentId(assessmentId);
         if (papers.isEmpty()) {
             throw new NotFoundException("Bài kiểm tra chưa có mã đề nào");
         }

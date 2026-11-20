@@ -22,7 +22,7 @@ import com.sep.vox.application.port.input.query.ViewSchoolSubscriptionsQuery;
 import com.sep.vox.application.port.input.query.ViewSubscriptionPlansQuery;
 import com.sep.vox.application.port.input.usecase.subscription.UpdateSubscriptionPlanUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.PreviewSchoolSubscriptionRenewalUseCase;
-import com.sep.vox.application.port.input.usecase.subscription.ViewMyExamQuotaAllocationUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.ViewMyAssessmentQuotaAllocationUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewMyPracticeQuotaAllocationUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewSubscriptionPlanDetailUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewSubscriptionPlansUseCase;
@@ -44,7 +44,7 @@ import com.sep.vox.domain.dto.SchoolSubscriptionQuotaRecordDto;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionStatus;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateSubscriptionPlanInput;
 import com.sep.vox.application.port.input.query.ViewQuotaUserAllocationsQuery;
-import com.sep.vox.application.port.input.usecase.subscription.ViewExamQuotaUserAllocationsUseCase;
+import com.sep.vox.application.port.input.usecase.subscription.ViewAssessmentQuotaUserAllocationsUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewPracticeQuotaUserAllocationsUseCase;
 import com.sep.vox.application.response.input.subscription.QuotaUserAllocationPageResponse;
 import com.sep.vox.domain.dto.UserDto;
@@ -58,12 +58,12 @@ public class SubscriptionController {
     private final UpdateSubscriptionPlanUseCase updateSubscriptionPlanUseCase;
     private final ViewSchoolSubscriptionsUseCase viewSchoolSubscriptionsUseCase;
     private final ViewSchoolSubscriptionQuotaRecordsUseCase viewSchoolSubscriptionQuotaRecordsUseCase;
-    private final ViewMyExamQuotaAllocationUseCase viewMyExamQuotaAllocationUseCase;
+    private final ViewMyAssessmentQuotaAllocationUseCase viewMyAssessmentQuotaAllocationUseCase;
     private final PreviewSchoolSubscriptionRenewalUseCase previewSchoolSubscriptionRenewalUseCase;
     private final ViewMyPracticeQuotaAllocationUseCase viewMyPracticeQuotaAllocationUseCase;
     private final ViewSchoolSubscriptionUseCase viewSchoolSubscriptionUseCase;
     private final ViewSchoolSubscriptionHistoryUseCase viewSchoolSubscriptionHistoryUseCase;
-    private final ViewExamQuotaUserAllocationsUseCase viewExamQuotaUserAllocationsUseCase;
+    private final ViewAssessmentQuotaUserAllocationsUseCase viewAssessmentQuotaUserAllocationsUseCase;
     private final ViewPracticeQuotaUserAllocationsUseCase viewPracticeQuotaUserAllocationsUseCase;
     private final QuotaPricingPort quotaPricingPort;
 
@@ -73,12 +73,12 @@ public class SubscriptionController {
             UpdateSubscriptionPlanUseCase updateSubscriptionPlanUseCase,
             ViewSchoolSubscriptionsUseCase viewSchoolSubscriptionsUseCase,
             ViewSchoolSubscriptionQuotaRecordsUseCase viewSchoolSubscriptionQuotaRecordsUseCase,
-            ViewMyExamQuotaAllocationUseCase viewMyExamQuotaAllocationUseCase,
+            ViewMyAssessmentQuotaAllocationUseCase viewMyAssessmentQuotaAllocationUseCase,
             PreviewSchoolSubscriptionRenewalUseCase previewSchoolSubscriptionRenewalUseCase,
             ViewMyPracticeQuotaAllocationUseCase viewMyPracticeQuotaAllocationUseCase,
             ViewSchoolSubscriptionUseCase viewSchoolSubscriptionUseCase,
             ViewSchoolSubscriptionHistoryUseCase viewSchoolSubscriptionHistoryUseCase,
-            ViewExamQuotaUserAllocationsUseCase viewExamQuotaUserAllocationsUseCase,
+            ViewAssessmentQuotaUserAllocationsUseCase viewAssessmentQuotaUserAllocationsUseCase,
             ViewPracticeQuotaUserAllocationsUseCase viewPracticeQuotaUserAllocationsUseCase,
             QuotaPricingPort quotaPricingPort) {
         this.viewSubscriptionPlansUseCase = viewSubscriptionPlansUseCase;
@@ -86,12 +86,12 @@ public class SubscriptionController {
         this.updateSubscriptionPlanUseCase = updateSubscriptionPlanUseCase;
         this.viewSchoolSubscriptionsUseCase = viewSchoolSubscriptionsUseCase;
         this.viewSchoolSubscriptionQuotaRecordsUseCase = viewSchoolSubscriptionQuotaRecordsUseCase;
-        this.viewMyExamQuotaAllocationUseCase = viewMyExamQuotaAllocationUseCase;
+        this.viewMyAssessmentQuotaAllocationUseCase = viewMyAssessmentQuotaAllocationUseCase;
         this.previewSchoolSubscriptionRenewalUseCase = previewSchoolSubscriptionRenewalUseCase;
         this.viewMyPracticeQuotaAllocationUseCase = viewMyPracticeQuotaAllocationUseCase;
         this.viewSchoolSubscriptionUseCase = viewSchoolSubscriptionUseCase;
         this.viewSchoolSubscriptionHistoryUseCase = viewSchoolSubscriptionHistoryUseCase;
-        this.viewExamQuotaUserAllocationsUseCase = viewExamQuotaUserAllocationsUseCase;
+        this.viewAssessmentQuotaUserAllocationsUseCase = viewAssessmentQuotaUserAllocationsUseCase;
         this.viewPracticeQuotaUserAllocationsUseCase = viewPracticeQuotaUserAllocationsUseCase;
         this.quotaPricingPort = quotaPricingPort;
     }
@@ -137,7 +137,7 @@ public class SubscriptionController {
     @QueryMapping(name = "quotaPricing")
     public QuotaPricingResponse quotaPricing() {
         return new QuotaPricingResponse(
-            quotaPricingPort.currentEstimatedCostPerExamSecondUsd(),
+            quotaPricingPort.currentEstimatedCostPerAssessmentSecondUsd(),
             quotaPricingPort.currentEstimatedCostPerPracticeSecondUsd(),
             quotaPricingPort.usdToVndRate()
         );
@@ -155,9 +155,9 @@ public class SubscriptionController {
         return previewSchoolSubscriptionRenewalUseCase.execute(null);
     }
 
-    @QueryMapping(name = "myExamQuotaAllocation")
-    public SchoolSubscriptionQuotaUserAllocationDto myExamQuotaAllocation() {
-        return viewMyExamQuotaAllocationUseCase.execute(null);
+    @QueryMapping(name = "myAssessmentQuotaAllocation")
+    public SchoolSubscriptionQuotaUserAllocationDto myAssessmentQuotaAllocation() {
+        return viewMyAssessmentQuotaAllocationUseCase.execute(null);
     }
 
     @QueryMapping(name = "myPracticeQuotaAllocation")
@@ -209,15 +209,15 @@ public class SubscriptionController {
         }
     }
 
-    @QueryMapping(name = "schoolExamQuotaUserAllocations")
+    @QueryMapping(name = "schoolAssessmentQuotaUserAllocations")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
-    public QuotaUserAllocationPageResponse schoolExamQuotaUserAllocations(
+    public QuotaUserAllocationPageResponse schoolAssessmentQuotaUserAllocations(
             @Argument(name = "schoolId") UUID schoolId,
             @Argument(name = "search") String search,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
         validatePaging(page, size);
-        return viewExamQuotaUserAllocationsUseCase.execute(
+        return viewAssessmentQuotaUserAllocationsUseCase.execute(
             new ViewQuotaUserAllocationsQuery(schoolId, search, page, size));
     }
 

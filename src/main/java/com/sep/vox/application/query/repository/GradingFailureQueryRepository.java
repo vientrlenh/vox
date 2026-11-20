@@ -9,20 +9,20 @@ import com.sep.vox.application.query.dto.GradingFailureTotalsDto;
 import com.sep.vox.domain.common.PageResult;
 
 /**
- * Đọc phiên thi AI chấm lỗi, XUYÊN kỳ thi và XUYÊN trường.
+ * Reads the AI-failed assessment sessions, ACROSS assessments and ACROSS schools.
  *
- * <p>Không có đường nào sẵn để hỏi câu này: màn kết quả hiện tại đi từ MỘT kỳ thi
- * ({@code ExamResultsListPage} đọc {@code examId} trên URL rồi lọc phía client), nên nó không trả
- * lời được "toàn hệ thống đang có bao nhiêu phiên hỏng, vì những nguyên nhân nào".
+ * <p>There is no existing path to ask this question: the current results screen starts from ONE assessment
+ * ({@code AssessmentResultsListPage} reads {@code assessmentId} from the URL and then filters on the client), so it cannot
+ * answer "how many sessions are broken across the whole system, and for what causes".
  *
- * <p>Là một BÁO CÁO, cùng khuôn với {@link PlatformOperationalHealthQueryRepository} — gộp ở đây
- * thay vì thêm hàng loạt {@code findBy...} vào {@code ExamSessionRepository}, vốn là cổng nghiệp vụ
- * của phiên thi chứ không phải chỗ phục vụ một cái bảng.
+ * <p>It is a REPORT, in the same mold as {@link PlatformOperationalHealthQueryRepository} -- gathered here
+ * instead of adding a pile of {@code findBy...} to {@code AssessmentSessionRepository}, which is the business gateway
+ * of the assessment session and not a place to serve a table.
  *
- * <p>MỌI hàm ở đây dùng CHUNG một vị từ: {@code status = 'GRADING_FAILED'} và {@code submitted_at}
- * trong khoảng nửa mở {@code [from, to)} — đúng vị từ mà
- * {@link PlatformOperationalHealthQueryRepository#findGradingOutcomeByDay} đếm cho thẻ trên trang
- * tổng quan. Lệch một chi tiết là hai màn hình cạnh nhau nói hai con số khác nhau.
+ * <p>EVERY function here uses ONE SHARED predicate: {@code status = 'GRADING_FAILED'} and {@code submitted_at}
+ * in the half-open range {@code [from, to)} -- exactly the predicate that
+ * {@link PlatformOperationalHealthQueryRepository#findGradingOutcomeByDay} counts for the card on the
+ * overview page. Differ in one detail and two screens side by side show two different numbers.
  */
 public interface GradingFailureQueryRepository {
 

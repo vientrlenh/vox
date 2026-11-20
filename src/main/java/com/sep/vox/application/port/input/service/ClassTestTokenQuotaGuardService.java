@@ -11,46 +11,46 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.PlanLimitExceededException;
 import com.sep.vox.application.port.output.QuotaPricingPort;
-import com.sep.vox.application.response.input.exam.ExamTokenEstimateResponse;
-import com.sep.vox.domain.model.exam.Exam;
-import com.sep.vox.domain.model.exam.ExamKind;
+import com.sep.vox.application.response.input.assessment.AssessmentTokenEstimateResponse;
+import com.sep.vox.domain.model.assessment.Assessment;
+import com.sep.vox.domain.model.assessment.AssessmentKind;
 import com.sep.vox.domain.model.metering.QuotaType;
-import com.sep.vox.domain.repository.ExamCandidateRepository;
+import com.sep.vox.domain.repository.AssessmentCandidateRepository;
 import com.sep.vox.domain.repository.SchoolBalanceRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionQuotaUserAllocationRepository;
 
 /**
- * Ước lượng worst-case chi phí AI (duration × số thí sinh × maxAttempt × estimatedCostPerExamSecondUsd)
- * và chặn khi vượt khả năng chi trả của trường, và với bài trên lớp thì thêm (nếu có) hạn mức cá nhân
- * của giáo viên chủ bài -- vì CompleteExamSessionGradingUseCase trừ thật vào đúng 2 chỗ này khi chấm
- * xong, nên publish/sửa bài phải soi trước cả 2.
+ * Estimates the worst-case AI cost (duration x number of candidates x maxAttempt x estimatedCostPerAssessmentSecondUsd)
+ * and blocks when it exceeds what the school can afford, and for a class test also (if present) the personal quota
+ * of the teacher who owns the test -- because CompleteAssessmentSessionGradingUseCase really deducts from exactly these 2 places when grading
+ * finishes, so publishing/editing an assessment must check both beforehand.
  *
- * <p>Mọi phép so ở đây tính bằng VND. Ước lượng sinh ra bằng USD (giá vốn nhà cung cấp niêm yết theo
- * USD) nên được quy đổi NGAY tại {@link #computeEstimatedCostVnd}, không mang xuống dưới: hạn mức và
- * số dư đều là cột VND, và so thẳng một con số USD với một con số VND thì vế trái nhỏ hơn vế phải
- * khoảng 26.000 lần -- cửa chặn vẫn đứng đó nhưng không bao giờ đóng.
+ * <p>Every comparison here is in VND. The estimate is produced in USD (the provider's list cost price is in
+ * USD), so it is converted RIGHT in {@link #computeEstimatedCostVnd} and not carried further down: quota and
+ * balance are both VND columns, and comparing a USD number directly with a VND number makes the left side smaller than the right side
+ * by about 26,000 times -- the gate is still standing there but never closes.
  *
- * <p>"Trường còn chi được bao nhiêu" = hạn mức kèm gói còn lại + số dư ví tự nạp, KHÔNG chỉ hạn mức.
- * Từ khi ConsumeQuotaService trừ phần vượt hạn mức sang ví tự nạp (bút toán OVERAGE_CHARGE), một
- * trường cạn hạn mức nhưng đã nạp tiền vẫn chi trả được -- soi mỗi hạn mức ở đây là từ chối đúng cái
- * khoản mà lúc chấm xong mình sẽ vui vẻ thu tiền.
+ * <p>"How much the school can still spend" = remaining plan quota + the balance of the self-topped-up wallet, NOT only the quota.
+ * Since ConsumeQuotaService charges the part above the quota to the self-topped-up wallet (OVERAGE_CHARGE entry), a
+ * school that has run out of quota but has topped up can still pay -- checking only the quota here would refuse exactly the
+ * amount that we will gladly charge when grading finishes.
  *
- * <p>Trước đây soi 3 chỗ, trong đó có ví CLASS_TEST cấp trường. Ví đó đã bị bỏ: nó là trần chi nằm
- * trong ví thi chứ không phải túi tiền thứ ba, và soi nó ở đây tức là bắt cùng một khoản chi phải
- * lọt qua hai lần kiểm tra trên cùng một số dư. Trần chi theo GIÁO VIÊN thì vẫn còn -- xem
- * requireWithinUserAllocation và QuotaType.
+ * <p>Previously 3 places were checked, including the school-level CLASS_TEST wallet. That wallet was removed: it is a spending ceiling that sits
+ * inside the assessment wallet, not a third pocket of money, and checking it here would make the same expense
+ * pass two checks against the same balance. The ceiling per TEACHER still exists -- see
+ * requireWithinUserAllocation and QuotaType.
  *
- * <p>estimatedCostPerExamSecondUsd lấy qua QuotaPricingPort -- ưu tiên giá đã tự calibrate từ
- * dữ liệu thật (QuotaPricingCalibrationJob), fallback về hằng số tĩnh .env
- * (QuotaPricingProperties) khi chưa đủ dữ liệu. Đây vẫn chỉ là số ƯỚC TÍNH, KHÔNG phải chi phí
- * thật -- chi phí thật trừ vào quota lấy từ tổng cost_vnd trong ai_usage_records của session,
- * không nhân theo công thức này.
+ * <p>estimatedCostPerAssessmentSecondUsd is obtained through QuotaPricingPort -- preferring the price calibrated automatically from
+ * real data (QuotaPricingCalibrationJob), falling back to the static .env constant
+ * (QuotaPricingProperties) when there is not enough data. It is still only an ESTIMATE, NOT the real
+ * cost -- the real cost deducted from the quota is the sum of cost_vnd in the ai_usage_records of the session,
+ * not multiplied by this formula.
  *
- * <p>Dùng chung cho lúc publish (UpdateExamStatusUseCase), sửa bài đã publish (UpdateExamUseCase),
- * và thêm thí sinh (AddExamCandidateUseCase/ImportExamCandidatesFromClassUseCase) để không lệch
- * logic giữa các nơi.
+ * <p>Shared by publishing (UpdateAssessmentStatusUseCase), editing a published assessment (UpdateAssessmentUseCase),
+ * and adding candidates (AddAssessmentCandidateUseCase/ImportAssessmentCandidatesFromClassUseCase) so that the
+ * logic does not diverge between places.
  */
 @Service
 public class ClassTestTokenQuotaGuardService {
@@ -67,7 +67,7 @@ public class ClassTestTokenQuotaGuardService {
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository;
     private final SchoolSubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository;
-    private final ExamCandidateRepository examCandidateRepository;
+    private final AssessmentCandidateRepository assessmentCandidateRepository;
     private final SchoolBalanceRepository schoolBalanceRepository;
     private final QuotaPricingPort quotaPricingPort;
     private final SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService;
@@ -76,30 +76,30 @@ public class ClassTestTokenQuotaGuardService {
             SchoolSubscriptionRepository schoolSubscriptionRepository,
             SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository,
             SchoolSubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository,
-            ExamCandidateRepository examCandidateRepository,
+            AssessmentCandidateRepository assessmentCandidateRepository,
             SchoolBalanceRepository schoolBalanceRepository,
             QuotaPricingPort quotaPricingPort,
             SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService) {
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.subscriptionQuotaRepository = subscriptionQuotaRepository;
         this.subscriptionQuotaUserAllocationRepository = subscriptionQuotaUserAllocationRepository;
-        this.examCandidateRepository = examCandidateRepository;
+        this.assessmentCandidateRepository = assessmentCandidateRepository;
         this.schoolBalanceRepository = schoolBalanceRepository;
         this.quotaPricingPort = quotaPricingPort;
         this.schoolSubscriptionDebtGuardService = schoolSubscriptionDebtGuardService;
     }
 
-    public void requireWithinTokenQuota(Exam exam) {
-        // Chưa tính được thời gian làm bài (chưa có mã đề/câu hỏi) thì ước tính ra 0 token, không có
-        // gì để soi. Chấp cả null lẫn 0 vì hai giá trị này cùng một nghĩa -- cùng idiom với
-        // Exam.isScheduleWindowShorterThanExamTime và ExamTimeQuotaGuardService. Bỏ nhánh 0 thì kỳ
-        // thi chưa có mã đề bị chặn lên lịch chỉ vì trường chưa cấu hình hạn mức, cho một con số 0.
-        if (exam.getExamTimeDurationSecond() == null || exam.getExamTimeDurationSecond() <= 0) {
+    public void requireWithinTokenQuota(Assessment assessment) {
+        // If the attempt duration cannot be computed yet (no paper variant/questions yet), the estimate is 0 tokens and there is nothing
+        // to check. Both null and 0 are accepted because they mean the same thing -- same idiom as
+        // Assessment.isScheduleWindowShorterThanAssessmentTime and AssessmentTimeQuotaGuardService. Dropping the 0 branch would make an
+        // assessment without a paper variant blocked from scheduling just because the school has not configured a quota, over a number that is 0.
+        if (assessment.getAssessmentTimeDurationSecond() == null || assessment.getAssessmentTimeDurationSecond() <= 0) {
             return;
         }
-        BigDecimal estimatedCostVnd = computeEstimatedCostVnd(exam);
+        BigDecimal estimatedCostVnd = computeEstimatedCostVnd(assessment);
 
-        SchoolSubscription subscription = schoolSubscriptionRepository.findActiveBySchoolId(exam.getSchoolId())
+        SchoolSubscription subscription = schoolSubscriptionRepository.findActiveBySchoolId(assessment.getSchoolId())
             .orElseThrow(() -> new PlanLimitExceededException(
                 "Trường chưa có gói subscription đang hoạt động, không thể lên lịch kỳ thi"));
 
@@ -107,12 +107,12 @@ public class ClassTestTokenQuotaGuardService {
         // worst-case -- xem SchoolSubscriptionDebtGuardService.
         schoolSubscriptionDebtGuardService.requireSchoolNotLocked(subscription.getSchoolId());
 
-        requireSchoolFunds(subscription.getId(), exam.getSchoolId(), QuotaType.EXAM, estimatedCostVnd);
+        requireSchoolFunds(subscription.getId(), assessment.getSchoolId(), QuotaType.ASSESSMENT, estimatedCostVnd);
 
         // Kỳ thi tập trung do nhà trường tổ chức nên không tính vào túi riêng của ai; chỉ bài kiểm
         // tra trên lớp mới đụng tới hạn mức cá nhân mà trường cấp cho giáo viên ra đề.
-        if (exam.getKind() == ExamKind.CLASS_TEST) {
-            requireWithinUserAllocation(subscription.getId(), exam.getCreatedBy(), estimatedCostVnd);
+        if (assessment.getKind() == AssessmentKind.CLASS_TEST) {
+            requireWithinUserAllocation(subscription.getId(), assessment.getCreatedBy(), estimatedCostVnd);
         }
     }
 
@@ -124,14 +124,14 @@ public class ClassTestTokenQuotaGuardService {
      * mọi thứ mà con số này sẽ được đem so (hạn mức, số dư, và cả khoản sẽ bị trừ thật lúc chấm xong)
      * đều là VND. Để phép nhân tỷ giá cho từng chỗ gọi tự làm là chừa sẵn chỗ để quên đúng một chỗ.
      */
-    public BigDecimal computeEstimatedCostVnd(Exam exam) {
-        if (exam.getExamTimeDurationSecond() == null || exam.getExamTimeDurationSecond() <= 0) {
+    public BigDecimal computeEstimatedCostVnd(Assessment assessment) {
+        if (assessment.getAssessmentTimeDurationSecond() == null || assessment.getAssessmentTimeDurationSecond() <= 0) {
             return BigDecimal.ZERO;
         }
-        long candidateCount = examCandidateRepository.countByExamId(exam.getId());
-        BigDecimal estimatedSeconds = BigDecimal.valueOf((long) exam.getExamTimeDurationSecond() * candidateCount * exam.getMaxAttempt());
+        long candidateCount = assessmentCandidateRepository.countByAssessmentId(assessment.getId());
+        BigDecimal estimatedSeconds = BigDecimal.valueOf((long) assessment.getAssessmentTimeDurationSecond() * candidateCount * assessment.getMaxAttempt());
         return estimatedSeconds
-            .multiply(quotaPricingPort.currentEstimatedCostPerExamSecondUsd())
+            .multiply(quotaPricingPort.currentEstimatedCostPerAssessmentSecondUsd())
             .multiply(quotaPricingPort.usdToVndRate())
             .setScale(COST_VND_SCALE, RoundingMode.HALF_UP);
     }
@@ -145,17 +145,17 @@ public class ClassTestTokenQuotaGuardService {
      * {@link #spendableSchoolFundsVnd}) chứ không tự tính lại: cảnh báo mà lệch khỏi cửa chặn thì
      * hoặc dọa người dùng về một khoản vẫn publish được, hoặc để họ bấm publish rồi mới ăn lỗi.
      */
-    public ExamTokenEstimateResponse estimateTokenQuota(Exam exam) {
-        BigDecimal estimatedCostVnd = computeEstimatedCostVnd(exam);
-        boolean schoolLocked = schoolSubscriptionDebtGuardService.isSchoolLocked(exam.getSchoolId());
-        Optional<SchoolSubscription> subscription = schoolSubscriptionRepository.findActiveBySchoolId(exam.getSchoolId());
+    public AssessmentTokenEstimateResponse estimateTokenQuota(Assessment assessment) {
+        BigDecimal estimatedCostVnd = computeEstimatedCostVnd(assessment);
+        boolean schoolLocked = schoolSubscriptionDebtGuardService.isSchoolLocked(assessment.getSchoolId());
+        Optional<SchoolSubscription> subscription = schoolSubscriptionRepository.findActiveBySchoolId(assessment.getSchoolId());
         if (subscription.isEmpty()) {
-            return new ExamTokenEstimateResponse(estimatedCostVnd, null, null, false, false, schoolLocked, null, null);
+            return new AssessmentTokenEstimateResponse(estimatedCostVnd, null, null, false, false, schoolLocked, null, null);
         }
 
         UUID subscriptionId = subscription.get().getId();
-        BigDecimal remainingExam = spendableSchoolFundsVnd(subscriptionId, exam.getSchoolId(), QuotaType.EXAM);
-        boolean wouldExceedExam = remainingExam != null && estimatedCostVnd.compareTo(remainingExam) > 0;
+        BigDecimal remainingAssessment = spendableSchoolFundsVnd(subscriptionId, assessment.getSchoolId(), QuotaType.ASSESSMENT);
+        boolean wouldExceedAssessment = remainingAssessment != null && estimatedCostVnd.compareTo(remainingAssessment) > 0;
 
         // Cặp thứ hai giờ là hạn mức CÁ NHÂN của giáo viên chủ bài, không còn là ví CLASS_TEST cấp
         // trường. Vẫn giữ hai cảnh báo riêng vì hai bên chặn vì hai lý do khác nhau và cách xử lý
@@ -163,8 +163,8 @@ public class ClassTestTokenQuotaGuardService {
         // cần xin quản trị trường cấp thêm.
         BigDecimal remainingMyClassTest = null;
         boolean wouldExceedMyClassTest = false;
-        if (exam.getKind() == ExamKind.CLASS_TEST) {
-            remainingMyClassTest = remainingUserAllocation(subscriptionId, exam.getCreatedBy());
+        if (assessment.getKind() == AssessmentKind.CLASS_TEST) {
+            remainingMyClassTest = remainingUserAllocation(subscriptionId, assessment.getCreatedBy());
             wouldExceedMyClassTest = remainingMyClassTest != null
                 && estimatedCostVnd.compareTo(remainingMyClassTest) > 0;
         }
@@ -173,12 +173,12 @@ public class ClassTestTokenQuotaGuardService {
         // ví chung -- ngược lại với CLASS_TEST, người bấm lên lịch (SCHOOL_ADMIN/CHAIR) không tự thấy
         // hệ quả lên các giáo viên khác đang có hạn mức cá nhân riêng. Chỉ tính cho CENTRALIZED, đúng
         // phạm vi vấn đề -- xem computeSharedPoolInsight.
-        SharedPoolInsight sharedPoolInsight = exam.getKind() == ExamKind.CENTRALIZED
+        SharedPoolInsight sharedPoolInsight = assessment.getKind() == AssessmentKind.CENTRALIZED
             ? computeSharedPoolInsight(subscriptionId, estimatedCostVnd)
             : SharedPoolInsight.NOT_APPLICABLE;
 
-        return new ExamTokenEstimateResponse(
-            estimatedCostVnd, remainingExam, remainingMyClassTest, wouldExceedExam, wouldExceedMyClassTest,
+        return new AssessmentTokenEstimateResponse(
+            estimatedCostVnd, remainingAssessment, remainingMyClassTest, wouldExceedAssessment, wouldExceedMyClassTest,
             schoolLocked, sharedPoolInsight.usageRatio(), sharedPoolInsight.teachersWithUnusedAllocation());
     }
 
@@ -187,25 +187,25 @@ public class ClassTestTokenQuotaGuardService {
     }
 
     /**
-     * Chỉ có ý nghĩa cho CENTRALIZED -- xem lời gọi ở estimateTokenQuota. % tính trên ĐÚNG phần hạn
-     * mức GÓI còn lại (không cộng số dư ví tự nạp): câu hỏi ở đây là "bài này ăn bao nhiêu % ngân
-     * sách được cấp", khác câu "trường còn chi được bao nhiêu tổng cộng" mà remainingExamVnd/
-     * wouldExceedExam đã trả lời rồi.
+     * Only meaningful for CENTRALIZED -- see the call in estimateTokenQuota. The % is computed on EXACTLY the remaining PLAN
+     * quota (without adding the self-topped-up wallet balance): the question here is "what % of the allotted budget does this assessment eat", which differs from
+     * the question "how much can the school still spend in total" that remainingAssessmentVnd/
+     * wouldExceedAssessment already answer.
      */
     private SharedPoolInsight computeSharedPoolInsight(UUID subscriptionId, BigDecimal estimatedCostVnd) {
-        Optional<SchoolSubscriptionQuotaRecord> pool = subscriptionQuotaRepository.findBySchoolSubscriptionIdAndQuotaType(subscriptionId, QuotaType.EXAM);
+        Optional<SchoolSubscriptionQuotaRecord> pool = subscriptionQuotaRepository.findBySchoolSubscriptionIdAndQuotaType(subscriptionId, QuotaType.ASSESSMENT);
         if (pool.isEmpty()) {
             return SharedPoolInsight.NOT_APPLICABLE;
         }
         BigDecimal quotaOnlyRemaining = pool.get().getTotalAllocatedAmountVnd().subtract(pool.get().getUsedAmountVnd());
-        // Ví gói đã cạn/âm sẵn thì tỉ lệ vô nghĩa (mẫu số <= 0) -- wouldExceedExam/schoolLocked ở
-        // banner khác đã đủ nói rồi, thêm % ở đây chỉ gây rối.
+        // If the plan wallet is already exhausted/negative the ratio is meaningless (denominator <= 0) -- wouldExceedAssessment/schoolLocked in
+        // the other banner already say it, and adding a % here only causes confusion.
         if (quotaOnlyRemaining.signum() <= 0) {
             return SharedPoolInsight.NOT_APPLICABLE;
         }
         BigDecimal ratio = estimatedCostVnd.divide(quotaOnlyRemaining, RATIO_SCALE, RoundingMode.HALF_UP);
         int teacherCount = (int) subscriptionQuotaUserAllocationRepository
-            .findBySchoolSubscriptionIdAndQuotaType(subscriptionId, QuotaType.EXAM).stream()
+            .findBySchoolSubscriptionIdAndQuotaType(subscriptionId, QuotaType.ASSESSMENT).stream()
             .filter(allocation -> allocation.getAllocatedAmountVnd().compareTo(allocation.getUsedAmountVnd()) > 0)
             .count();
         return new SharedPoolInsight(ratio, teacherCount);
@@ -238,7 +238,7 @@ public class ClassTestTokenQuotaGuardService {
     /** null = giáo viên không có hạn mức cá nhân riêng, tức chỉ tiền của trường áp dụng. */
     private BigDecimal remainingUserAllocation(UUID subscriptionId, UUID teacherId) {
         return subscriptionQuotaUserAllocationRepository
-            .findBySchoolSubscriptionIdAndQuotaTypeAndUserId(subscriptionId, QuotaType.EXAM, teacherId)
+            .findBySchoolSubscriptionIdAndQuotaTypeAndUserId(subscriptionId, QuotaType.ASSESSMENT, teacherId)
             .map(allocation -> allocation.getAllocatedAmountVnd().subtract(allocation.getUsedAmountVnd()))
             .orElse(null);
     }

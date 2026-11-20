@@ -12,7 +12,7 @@ public final class UpdateClassTestQuestionsCommandMapper {
     private UpdateClassTestQuestionsCommandMapper() {
     }
 
-    public static UpdateClassTestQuestionsCommand fromRequest(UUID examId, UpdateClassTestQuestionsRequest request) {
+    public static UpdateClassTestQuestionsCommand fromRequest(UUID assessmentId, UpdateClassTestQuestionsRequest request) {
         List<ClassTestSectionCommand> sections = request.sections().stream()
             .map(section -> new ClassTestSectionCommand(
                 section.title(),
@@ -21,6 +21,6 @@ public final class UpdateClassTestQuestionsCommandMapper {
                 ClassTestQuestionCommandMapper.fromRequests(section.questions())
             ))
             .toList();
-        return new UpdateClassTestQuestionsCommand(examId, request.paperId(), sections);
+        return new UpdateClassTestQuestionsCommand(assessmentId, request.paperId(), sections);
     }
 }

@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 
-import com.sep.vox.application.query.dto.ExamAwaitingPublishDto;
+import com.sep.vox.application.query.dto.AssessmentAwaitingPublishDto;
 import com.sep.vox.application.query.dto.SchoolGradingFailureDto;
 import com.sep.vox.application.query.dto.SchoolUnscoredWorkloadDto;
 import com.sep.vox.application.query.repository.SchoolWorkloadQueryRepository;
@@ -51,14 +51,14 @@ class JpaSchoolWorkloadQueryRepositoryTests {
     @Test
     void shouldPartitionUnscoredWorkIntoFiveExclusiveBuckets() {
         UUID school = insertSchool();
-        UUID exam = insertExam(school, "Giữa kỳ I", "CLOSED");
+        UUID assessment = insertAssessment(school, "Giữa kỳ I", "CLOSED");
 
-        insertFailedSession(exam, SUBMITTED, 0);
-        insertFailedSession(exam, SUBMITTED, 1);
-        insertPendingReviewResult(exam, insertSession(exam, SUBMITTED, "GRADED"));
-        insertAssignment(insertPendingReviewResult(exam, insertSession(exam, SUBMITTED, "GRADED")),
+        insertFailedSession(assessment, SUBMITTED, 0);
+        insertFailedSession(assessment, SUBMITTED, 1);
+        insertPendingReviewResult(assessment, insertSession(assessment, SUBMITTED, "GRADED"));
+        insertAssignment(insertPendingReviewResult(assessment, insertSession(assessment, SUBMITTED, "GRADED")),
             NOW.minusSeconds(3600));
-        insertAssignment(insertPendingReviewResult(exam, insertSession(exam, SUBMITTED, "GRADED")),
+        insertAssignment(insertPendingReviewResult(assessment, insertSession(assessment, SUBMITTED, "GRADED")),
             NOW.plusSeconds(86400));
 
         SchoolUnscoredWorkloadDto counts = repository.countUnscored(school, NOW);
@@ -69,7 +69,7 @@ class JpaSchoolWorkloadQueryRepositoryTests {
         assertThat(counts.assignedOverdue()).isEqualTo(1);
         assertThat(counts.assignedInProgress()).isEqualTo(1);
         assertThat(counts.total()).isEqualTo(5);
-        assertThat(counts.examCount()).isEqualTo(1);
+        assertThat(counts.assessmentCount()).isEqualTo(1);
     }
 
     /**
@@ -80,9 +80,9 @@ class JpaSchoolWorkloadQueryRepositoryTests {
     @Test
     void shouldMoveAHandedOffPaperOutOfTheUntouchedAiBucket() {
         UUID school = insertSchool();
-        UUID exam = insertExam(school, "Giữa kỳ I", "CLOSED");
-        UUID sessionId = insertFailedSession(exam, SUBMITTED, 0);
-        insertPendingReviewResult(exam, sessionId);
+        UUID assessment = insertAssessment(school, "Giữa kỳ I", "CLOSED");
+        UUID sessionId = insertFailedSession(assessment, SUBMITTED, 0);
+        insertPendingReviewResult(assessment, sessionId);
 
         SchoolUnscoredWorkloadDto counts = repository.countUnscored(school, NOW);
 
@@ -99,10 +99,10 @@ class JpaSchoolWorkloadQueryRepositoryTests {
     @Test
     void shouldSplitFailedPapersByRemainingAiRetryAllowance() {
         UUID school = insertSchool();
-        UUID exam = insertExam(school, "Giữa kỳ I", "CLOSED");
-        insertFailedSession(exam, SUBMITTED, 0);
-        insertFailedSession(exam, SUBMITTED, 0);
-        insertFailedSession(exam, SUBMITTED, 1);
+        UUID assessment = insertAssessment(school, "Giữa kỳ I", "CLOSED");
+        insertFailedSession(assessment, SUBMITTED, 0);
+        insertFailedSession(assessment, SUBMITTED, 0);
+        insertFailedSession(assessment, SUBMITTED, 1);
 
         SchoolUnscoredWorkloadDto counts = repository.countUnscored(school, NOW);
 
@@ -117,14 +117,14 @@ class JpaSchoolWorkloadQueryRepositoryTests {
      * queue would give the number a floor that never reaches 0.
      */
     @Test
-    void shouldExcludePapersOfExamsWhoseResultsAreAlreadyPublished() {
+    void shouldExcludePapersOfAssessmentsWhoseResultsAreAlreadyPublished() {
         UUID school = insertSchool();
-        UUID openExam = insertExam(school, "Giữa kỳ I", "CLOSED");
-        UUID publishedExam = insertExam(school, "Thi thử", "RESULTS_PUBLISHED");
-        UUID cancelledExam = insertExam(school, "Kỳ đã hủy", "CANCELLED");
-        insertFailedSession(openExam, SUBMITTED, 0);
-        insertFailedSession(publishedExam, SUBMITTED, 0);
-        insertFailedSession(cancelledExam, SUBMITTED, 0);
+        UUID openAssessment = insertAssessment(school, "Giữa kỳ I", "CLOSED");
+        UUID publishedAssessment = insertAssessment(school, "Thi thử", "RESULTS_PUBLISHED");
+        UUID cancelledAssessment = insertAssessment(school, "Kỳ đã hủy", "CANCELLED");
+        insertFailedSession(openAssessment, SUBMITTED, 0);
+        insertFailedSession(publishedAssessment, SUBMITTED, 0);
+        insertFailedSession(cancelledAssessment, SUBMITTED, 0);
 
         assertThat(repository.countUnscored(school, NOW).total()).isEqualTo(1);
     }
@@ -136,7 +136,7 @@ class JpaSchoolWorkloadQueryRepositoryTests {
     @Test
     void shouldIgnoreClassTests() {
         UUID school = insertSchool();
-        UUID classTest = insertExam(school, "KT 15 phút", "CLOSED", "CLASS_TEST");
+        UUID classTest = insertAssessment(school, "KT 15 phút", "CLOSED", "CLASS_TEST");
         insertFailedSession(classTest, SUBMITTED, 0);
 
         assertThat(repository.countUnscored(school, NOW).total()).isZero();
@@ -145,9 +145,9 @@ class JpaSchoolWorkloadQueryRepositoryTests {
     @Test
     void shouldReportTheOldestWaitingPaper() {
         UUID school = insertSchool();
-        UUID exam = insertExam(school, "Giữa kỳ I", "CLOSED");
-        insertFailedSession(exam, Instant.parse("2026-08-27T02:14:00Z"), 0);
-        insertFailedSession(exam, Instant.parse("2026-08-20T01:00:00Z"), 0);
+        UUID assessment = insertAssessment(school, "Giữa kỳ I", "CLOSED");
+        insertFailedSession(assessment, Instant.parse("2026-08-27T02:14:00Z"), 0);
+        insertFailedSession(assessment, Instant.parse("2026-08-20T01:00:00Z"), 0);
 
         assertThat(repository.countUnscored(school, NOW).oldestSubmittedAt())
             .isEqualTo(Instant.parse("2026-08-20T01:00:00Z"));
@@ -160,7 +160,7 @@ class JpaSchoolWorkloadQueryRepositoryTests {
     @Test
     void shouldReturnNoOldestPaperWhenNothingIsWaiting() {
         UUID school = insertSchool();
-        insertExam(school, "Giữa kỳ I", "CLOSED");
+        insertAssessment(school, "Giữa kỳ I", "CLOSED");
 
         SchoolUnscoredWorkloadDto counts = repository.countUnscored(school, NOW);
 
@@ -173,19 +173,19 @@ class JpaSchoolWorkloadQueryRepositoryTests {
      * be clicked.
      */
     @Test
-    void shouldListOnlyClosedExamsThatStillHaveUnscoredPapers() {
+    void shouldListOnlyClosedAssessmentsThatStillHaveUnscoredPapers() {
         UUID school = insertSchool();
-        UUID closedExam = insertExam(school, "Giữa kỳ I", "CLOSED");
-        UUID runningExam = insertExam(school, "Đang thi", "IN_PROGRESS");
-        insertFailedSession(closedExam, SUBMITTED, 0);
-        insertFailedSession(runningExam, SUBMITTED, 0);
+        UUID closedAssessment = insertAssessment(school, "Giữa kỳ I", "CLOSED");
+        UUID runningAssessment = insertAssessment(school, "Đang thi", "IN_PROGRESS");
+        insertFailedSession(closedAssessment, SUBMITTED, 0);
+        insertFailedSession(runningAssessment, SUBMITTED, 0);
 
-        List<ExamAwaitingPublishDto> exams = repository.findExamsAwaitingPublish(school, NOW, 5);
+        List<AssessmentAwaitingPublishDto> assessments = repository.findAssessmentsAwaitingPublish(school, NOW, 5);
 
-        assertThat(exams).hasSize(1);
-        assertThat(exams.get(0).examId()).isEqualTo(closedExam);
-        assertThat(exams.get(0).name()).isEqualTo("Giữa kỳ I");
-        assertThat(exams.get(0).unscoredCount()).isEqualTo(1);
+        assertThat(assessments).hasSize(1);
+        assertThat(assessments.get(0).assessmentId()).isEqualTo(closedAssessment);
+        assertThat(assessments.get(0).name()).isEqualTo("Giữa kỳ I");
+        assertThat(assessments.get(0).unscoredCount()).isEqualTo(1);
     }
 
     /**
@@ -193,24 +193,24 @@ class JpaSchoolWorkloadQueryRepositoryTests {
      * if published by mistake.
      */
     @Test
-    void shouldRankExamsByHowMuchWouldBeLostOnPublish() {
+    void shouldRankAssessmentsByHowMuchWouldBeLostOnPublish() {
         UUID school = insertSchool();
-        UUID small = insertExam(school, "Ít bài", "CLOSED");
-        UUID big = insertExam(school, "Nhiều bài", "CLOSED");
+        UUID small = insertAssessment(school, "Ít bài", "CLOSED");
+        UUID big = insertAssessment(school, "Nhiều bài", "CLOSED");
         insertFailedSession(small, SUBMITTED, 0);
         insertFailedSession(big, SUBMITTED, 0);
         insertFailedSession(big, SUBMITTED, 1);
         insertAssignment(insertPendingReviewResult(big, insertSession(big, SUBMITTED, "GRADED")), null);
 
-        List<ExamAwaitingPublishDto> exams = repository.findExamsAwaitingPublish(school, NOW, 5);
+        List<AssessmentAwaitingPublishDto> assessments = repository.findAssessmentsAwaitingPublish(school, NOW, 5);
 
-        assertThat(exams).hasSize(2);
-        assertThat(exams.get(0).name()).isEqualTo("Nhiều bài");
-        assertThat(exams.get(0).unscoredCount()).isEqualTo(3);
-        assertThat(exams.get(0).aiFailedRetryLeft()).isEqualTo(1);
-        assertThat(exams.get(0).aiFailedNoRetryLeft()).isEqualTo(1);
-        assertThat(exams.get(0).awaitingHumanGrading()).isEqualTo(1);
-        assertThat(exams.get(1).unscoredCount()).isEqualTo(1);
+        assertThat(assessments).hasSize(2);
+        assertThat(assessments.get(0).name()).isEqualTo("Nhiều bài");
+        assertThat(assessments.get(0).unscoredCount()).isEqualTo(3);
+        assertThat(assessments.get(0).aiFailedRetryLeft()).isEqualTo(1);
+        assertThat(assessments.get(0).aiFailedNoRetryLeft()).isEqualTo(1);
+        assertThat(assessments.get(0).awaitingHumanGrading()).isEqualTo(1);
+        assertThat(assessments.get(1).unscoredCount()).isEqualTo(1);
     }
 
     /** Another school must not be mixed in -- every query here is scoped to ONE school. */
@@ -218,11 +218,11 @@ class JpaSchoolWorkloadQueryRepositoryTests {
     void shouldNotLeakPapersFromAnotherSchool() {
         UUID school = insertSchool();
         UUID otherSchool = insertSchool();
-        insertFailedSession(insertExam(school, "Giữa kỳ I", "CLOSED"), SUBMITTED, 0);
-        insertFailedSession(insertExam(otherSchool, "Giữa kỳ I", "CLOSED"), SUBMITTED, 0);
+        insertFailedSession(insertAssessment(school, "Giữa kỳ I", "CLOSED"), SUBMITTED, 0);
+        insertFailedSession(insertAssessment(otherSchool, "Giữa kỳ I", "CLOSED"), SUBMITTED, 0);
 
         assertThat(repository.countUnscored(school, NOW).total()).isEqualTo(1);
-        assertThat(repository.findExamsAwaitingPublish(school, NOW, 5)).hasSize(1);
+        assertThat(repository.findAssessmentsAwaitingPublish(school, NOW, 5)).hasSize(1);
     }
 
     /**
@@ -233,11 +233,11 @@ class JpaSchoolWorkloadQueryRepositoryTests {
     @Test
     void shouldListExactlyThePapersTheDashboardCardCounts() {
         UUID school = insertSchool();
-        UUID exam = insertExam(school, "Giữa kỳ I", "CLOSED");
-        insertFailedSession(exam, SUBMITTED, 0);
-        insertFailedSession(exam, SUBMITTED, 1);
+        UUID assessment = insertAssessment(school, "Giữa kỳ I", "CLOSED");
+        insertFailedSession(assessment, SUBMITTED, 0);
+        insertFailedSession(assessment, SUBMITTED, 1);
         // Already handed to a grader: leaves the AI group on BOTH sides.
-        insertPendingReviewResult(exam, insertFailedSession(exam, SUBMITTED, 0));
+        insertPendingReviewResult(assessment, insertFailedSession(assessment, SUBMITTED, 0));
 
         int counted = repository.countUnscored(school, NOW).aiFailed();
         PageResult<SchoolGradingFailureDto> listed = repository.findUnhandledAiFailures(school, null, null, 1, 20);
@@ -254,10 +254,10 @@ class JpaSchoolWorkloadQueryRepositoryTests {
     @Test
     void shouldFilterByRemainingAiRetryAllowance() {
         UUID school = insertSchool();
-        UUID exam = insertExam(school, "Giữa kỳ I", "CLOSED");
-        insertFailedSession(exam, SUBMITTED, 0);
-        insertFailedSession(exam, SUBMITTED, 1);
-        insertFailedSession(exam, SUBMITTED, 1);
+        UUID assessment = insertAssessment(school, "Giữa kỳ I", "CLOSED");
+        insertFailedSession(assessment, SUBMITTED, 0);
+        insertFailedSession(assessment, SUBMITTED, 1);
+        insertFailedSession(assessment, SUBMITTED, 1);
 
         assertThat(repository.findUnhandledAiFailures(school, null, true, 1, 20).totalElements()).isEqualTo(1L);
         assertThat(repository.findUnhandledAiFailures(school, null, false, 1, 20).totalElements()).isEqualTo(2L);
@@ -267,21 +267,21 @@ class JpaSchoolWorkloadQueryRepositoryTests {
     }
 
     /**
-     * The two counts sit on the two filter buttons themselves, so they must follow the exam filter
+     * The two counts sit on the two filter buttons themselves, so they must follow the assessment filter
      * -- if the school-wide total were used, a button saying 3 would show only 1 row when clicked.
      */
     @Test
-    void shouldCountAllowanceGroupsWithinTheSelectedExam() {
+    void shouldCountAllowanceGroupsWithinTheSelectedAssessment() {
         UUID school = insertSchool();
-        UUID examA = insertExam(school, "Giữa kỳ I", "CLOSED");
-        UUID examB = insertExam(school, "Cuối kỳ", "CLOSED");
-        insertFailedSession(examA, SUBMITTED, 0);
-        insertFailedSession(examB, SUBMITTED, 0);
-        insertFailedSession(examB, SUBMITTED, 1);
+        UUID assessmentA = insertAssessment(school, "Giữa kỳ I", "CLOSED");
+        UUID assessmentB = insertAssessment(school, "Cuối kỳ", "CLOSED");
+        insertFailedSession(assessmentA, SUBMITTED, 0);
+        insertFailedSession(assessmentB, SUBMITTED, 0);
+        insertFailedSession(assessmentB, SUBMITTED, 1);
 
         assertThat(repository.countAiFailuresByAllowance(school, null)).containsExactly(2, 1);
-        assertThat(repository.countAiFailuresByAllowance(school, examA)).containsExactly(1, 0);
-        assertThat(repository.countAiFailuresByAllowance(school, examB)).containsExactly(1, 1);
+        assertThat(repository.countAiFailuresByAllowance(school, assessmentA)).containsExactly(1, 0);
+        assertThat(repository.countAiFailuresByAllowance(school, assessmentB)).containsExactly(1, 1);
     }
 
     /**
@@ -291,9 +291,9 @@ class JpaSchoolWorkloadQueryRepositoryTests {
     @Test
     void shouldListTheLongestWaitingPaperFirst() {
         UUID school = insertSchool();
-        UUID exam = insertExam(school, "Giữa kỳ I", "CLOSED");
-        insertFailedSession(exam, Instant.parse("2026-08-27T02:14:00Z"), 0);
-        UUID oldest = insertFailedSession(exam, Instant.parse("2026-08-20T01:00:00Z"), 0);
+        UUID assessment = insertAssessment(school, "Giữa kỳ I", "CLOSED");
+        insertFailedSession(assessment, Instant.parse("2026-08-27T02:14:00Z"), 0);
+        UUID oldest = insertFailedSession(assessment, Instant.parse("2026-08-20T01:00:00Z"), 0);
 
         PageResult<SchoolGradingFailureDto> page = repository.findUnhandledAiFailures(school, null, null, 1, 20);
 
@@ -303,10 +303,10 @@ class JpaSchoolWorkloadQueryRepositoryTests {
     @Test
     void shouldCarryTheDetailsNeededToTriageAPaper() {
         UUID school = insertSchool();
-        UUID exam = insertExam(school, "Giữa kỳ I", "CLOSED");
-        UUID sessionId = insertFailedSession(exam, SUBMITTED, 0);
+        UUID assessment = insertAssessment(school, "Giữa kỳ I", "CLOSED");
+        UUID sessionId = insertFailedSession(assessment, SUBMITTED, 0);
         em.createNativeQuery("""
-            UPDATE exam_sessions SET grading_error = :error, grading_retry_count = 3 WHERE id = :id
+            UPDATE assessment_sessions SET grading_error = :error, grading_retry_count = 3 WHERE id = :id
             """)
             .setParameter("error", "upstream timeout after 120s")
             .setParameter("id", sessionId)
@@ -314,7 +314,7 @@ class JpaSchoolWorkloadQueryRepositoryTests {
 
         SchoolGradingFailureDto row = repository.findUnhandledAiFailures(school, null, null, 1, 20).content().get(0);
 
-        assertThat(row.examName()).isEqualTo("Giữa kỳ I");
+        assertThat(row.assessmentName()).isEqualTo("Giữa kỳ I");
         assertThat(row.candidateName()).isEqualTo("Trần Minh Anh");
         assertThat(row.failedAt()).isEqualTo(SUBMITTED);
         assertThat(row.error()).isEqualTo("upstream timeout after 120s");
@@ -329,7 +329,7 @@ class JpaSchoolWorkloadQueryRepositoryTests {
     @Test
     void shouldKeepPapersThatFailedWithoutAReason() {
         UUID school = insertSchool();
-        insertFailedSession(insertExam(school, "Giữa kỳ I", "CLOSED"), SUBMITTED, 0);
+        insertFailedSession(insertAssessment(school, "Giữa kỳ I", "CLOSED"), SUBMITTED, 0);
 
         SchoolGradingFailureDto row = repository.findUnhandledAiFailures(school, null, null, 1, 20).content().get(0);
 
@@ -342,8 +342,8 @@ class JpaSchoolWorkloadQueryRepositoryTests {
     void shouldNotListPapersFromAnotherSchool() {
         UUID school = insertSchool();
         UUID otherSchool = insertSchool();
-        insertFailedSession(insertExam(school, "Giữa kỳ I", "CLOSED"), SUBMITTED, 0);
-        insertFailedSession(insertExam(otherSchool, "Giữa kỳ I", "CLOSED"), SUBMITTED, 0);
+        insertFailedSession(insertAssessment(school, "Giữa kỳ I", "CLOSED"), SUBMITTED, 0);
+        insertFailedSession(insertAssessment(otherSchool, "Giữa kỳ I", "CLOSED"), SUBMITTED, 0);
 
         assertThat(repository.findUnhandledAiFailures(school, null, null, 1, 20).totalElements()).isEqualTo(1L);
         assertThat(repository.countAiFailuresByAllowance(otherSchool, null)).containsExactly(1, 0);
@@ -369,15 +369,15 @@ class JpaSchoolWorkloadQueryRepositoryTests {
         return id;
     }
 
-    private UUID insertExam(UUID schoolId, String name, String status) {
-        return insertExam(schoolId, name, status, "CENTRALIZED");
+    private UUID insertAssessment(UUID schoolId, String name, String status) {
+        return insertAssessment(schoolId, name, status, "CENTRALIZED");
     }
 
-    private UUID insertExam(UUID schoolId, String name, String status, String kind) {
+    private UUID insertAssessment(UUID schoolId, String name, String status, String kind) {
         UUID id = UUID.randomUUID();
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         em.createNativeQuery("""
-            INSERT INTO exams (id, school_id, language_id, code, name, kind, status, requires_otp,
+            INSERT INTO assessments (id, school_id, language_id, code, name, kind, status, requires_otp,
                                close_at, created_at, updated_at)
             VALUES (:id, :schoolId, :languageId, :code, :name, :kind, :status, TRUE, :closeAt, :now, :now)
             """)
@@ -394,7 +394,7 @@ class JpaSchoolWorkloadQueryRepositoryTests {
         return id;
     }
 
-    private UUID insertCandidate(UUID examId) {
+    private UUID insertCandidate(UUID assessmentId) {
         UUID studentId = UUID.randomUUID();
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         em.createNativeQuery("""
@@ -408,37 +408,37 @@ class JpaSchoolWorkloadQueryRepositoryTests {
 
         UUID candidateId = UUID.randomUUID();
         em.createNativeQuery("""
-            INSERT INTO exam_candidates (id, exam_id, student_id, status, assigned_at, updated_at)
-            VALUES (:id, :examId, :studentId, 'ATTENDED', :now, :now)
+            INSERT INTO assessment_candidates (id, assessment_id, student_id, status, assigned_at, updated_at)
+            VALUES (:id, :assessmentId, :studentId, 'ATTENDED', :now, :now)
             """)
             .setParameter("id", candidateId)
-            .setParameter("examId", examId)
+            .setParameter("assessmentId", assessmentId)
             .setParameter("studentId", studentId)
             .setParameter("now", now)
             .executeUpdate();
         return candidateId;
     }
 
-    private UUID insertFailedSession(UUID examId, Instant submittedAt, int schoolRegradeCount) {
-        UUID id = insertSession(examId, submittedAt, "GRADING_FAILED");
+    private UUID insertFailedSession(UUID assessmentId, Instant submittedAt, int schoolRegradeCount) {
+        UUID id = insertSession(assessmentId, submittedAt, "GRADING_FAILED");
         em.createNativeQuery(
-            "UPDATE exam_sessions SET school_regrade_count = :count WHERE id = :id")
+            "UPDATE assessment_sessions SET school_regrade_count = :count WHERE id = :id")
             .setParameter("count", schoolRegradeCount)
             .setParameter("id", id)
             .executeUpdate();
         return id;
     }
 
-    private UUID insertSession(UUID examId, Instant submittedAt, String status) {
+    private UUID insertSession(UUID assessmentId, Instant submittedAt, String status) {
         UUID id = UUID.randomUUID();
         em.createNativeQuery("""
-            INSERT INTO exam_sessions (id, exam_id, candidate_id, paper_id, started_at, submitted_at,
+            INSERT INTO assessment_sessions (id, assessment_id, candidate_id, paper_id, started_at, submitted_at,
                                        status, flagged)
-            VALUES (:id, :examId, :candidateId, :paperId, :startedAt, :submittedAt, :status, FALSE)
+            VALUES (:id, :assessmentId, :candidateId, :paperId, :startedAt, :submittedAt, :status, FALSE)
             """)
             .setParameter("id", id)
-            .setParameter("examId", examId)
-            .setParameter("candidateId", insertCandidate(examId))
+            .setParameter("assessmentId", assessmentId)
+            .setParameter("candidateId", insertCandidate(assessmentId))
             .setParameter("paperId", UUID.randomUUID())
             .setParameter("startedAt", submittedAt.minusSeconds(1800))
             .setParameter("submittedAt", submittedAt)
@@ -447,18 +447,18 @@ class JpaSchoolWorkloadQueryRepositoryTests {
         return id;
     }
 
-    private UUID insertPendingReviewResult(UUID examId, UUID sessionId) {
+    private UUID insertPendingReviewResult(UUID assessmentId, UUID sessionId) {
         UUID id = UUID.randomUUID();
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         em.createNativeQuery("""
-            INSERT INTO exam_candidate_results (id, exam_id, session_id, candidate_id, assessment_policy_id,
+            INSERT INTO assessment_candidate_results (id, assessment_id, session_id, candidate_id, assessment_policy_id,
                                                 framework_version_id, rubric_version_id, target_framework_band_id,
                                                 policy_version, status, created_at, updated_at)
-            VALUES (:id, :examId, :sessionId, :candidateId, :policyId, :frameworkVersionId, :rubricVersionId,
+            VALUES (:id, :assessmentId, :sessionId, :candidateId, :policyId, :frameworkVersionId, :rubricVersionId,
                     :bandId, 1, 'PENDING_REVIEW', :now, :now)
             """)
             .setParameter("id", id)
-            .setParameter("examId", examId)
+            .setParameter("assessmentId", assessmentId)
             .setParameter("sessionId", sessionId)
             .setParameter("candidateId", UUID.randomUUID())
             .setParameter("policyId", UUID.randomUUID())
@@ -477,7 +477,7 @@ class JpaSchoolWorkloadQueryRepositoryTests {
     private void insertAssignment(UUID candidateResultId, Instant deadlineAt) {
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         em.createNativeQuery("""
-            INSERT INTO exam_grading_assignments (id, candidate_result_id, active_result_id, teacher_id,
+            INSERT INTO assessment_grading_assignments (id, candidate_result_id, active_result_id, teacher_id,
                                                   round_type, status, assigned_at, deadline_at)
             VALUES (:id, :resultId, :resultId, :teacherId, 'INITIAL', 'ASSIGNED', :now, :deadlineAt)
             """)

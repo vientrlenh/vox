@@ -1,6 +1,6 @@
 # Vox
 
-Vox is the backend for evaluating oral assessments of high school students. It runs exams and class tests,
+Vox is the backend for evaluating oral assessments of high school students. It runs centralized assessments and class tests,
 practice sessions, AI-assisted grading, appeals, and the school subscription, quota and billing system behind them.
 
 It is a Spring Boot 4.1 / Java 25 service that exposes REST, GraphQL and gRPC APIs, stores data in PostgreSQL,
@@ -8,7 +8,7 @@ and exchanges events with the AI grading and streaming services over Kafka and g
 
 ## What it does
 
-- **Assessments**: blueprints, papers, schedules, candidates, sessions and turns for exams and class tests.
+- **Assessments**: blueprints, papers, schedules, candidates, sessions and turns for centralized assessments and class tests.
 - **Practice**: practice planning, practice sessions and per-attempt evaluation.
 - **Grading**: AI evaluation results arrive as events; teachers review and assign grading, and students can file appeals.
 - **Question bank and rubrics**: questions, topics, frameworks, scoring rules, rubrics and assessment policies at system, school and teacher level.
@@ -50,7 +50,7 @@ infrastructure (persistence, security...) -/
 Other pieces worth knowing:
 
 - **Events**: outgoing events are written to an outbox table and relayed to Kafka by `OutboxEventScheduler`. Event payloads are versioned (`...PayloadV1`).
-- **Background jobs**: `infrastructure/worker` holds scheduled work such as exam status transitions, deferred grading, grading deadline reminders, subscription expiry, pending order reconciliation, and quota price calibration.
+- **Background jobs**: `infrastructure/worker` holds scheduled work such as assessment status transitions, deferred grading, grading deadline reminders, subscription expiry, pending order reconciliation, and quota price calibration.
 - **Companion services**: Vox calls a separate `vox-streaming` service over gRPC and consumes events produced by the AI grading service.
 
 Contributor rules (naming, layering, testing and what needs approval) are in [AGENTS.md](AGENTS.md).

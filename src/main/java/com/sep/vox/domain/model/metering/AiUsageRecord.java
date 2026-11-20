@@ -6,7 +6,7 @@ import java.util.UUID;
 
 public class AiUsageRecord {
     private UUID id;
-    private UUID examSessionId;
+    private UUID assessmentSessionId;
     private UUID turnId;
     private UUID usageEventId;
     private AiUsageType usageType;
@@ -25,12 +25,12 @@ public class AiUsageRecord {
 
     public AiUsageRecord() {}
 
-    public AiUsageRecord(UUID id, UUID examSessionId, UUID turnId, UUID usageEventId, AiUsageType usageType,
+    public AiUsageRecord(UUID id, UUID assessmentSessionId, UUID turnId, UUID usageEventId, AiUsageType usageType,
             String provider, String modelName, Integer inputTokens, Integer outputTokens,
             Integer cacheCreationInputTokens, Integer cacheReadInputTokens, Long durationMs, String unitPriceJson,
             BigDecimal costUsd, BigDecimal costVnd, BigDecimal fxRateUsed, Instant occurredAt) {
         this.id = id;
-        this.examSessionId = examSessionId;
+        this.assessmentSessionId = assessmentSessionId;
         this.turnId = turnId;
         this.usageEventId = usageEventId;
         this.usageType = usageType;
@@ -48,11 +48,11 @@ public class AiUsageRecord {
         this.occurredAt = occurredAt;
     }
 
-    public AiUsageRecord(UUID examSessionId, UUID turnId, UUID usageEventId, AiUsageType usageType, String provider,
+    public AiUsageRecord(UUID assessmentSessionId, UUID turnId, UUID usageEventId, AiUsageType usageType, String provider,
             String modelName, Integer inputTokens, Integer outputTokens, Integer cacheCreationInputTokens,
             Integer cacheReadInputTokens, Long durationMs, String unitPriceJson, BigDecimal costUsd, BigDecimal costVnd, BigDecimal fxRateUsed, 
             Instant occurredAt) {
-        this.examSessionId = examSessionId;
+        this.assessmentSessionId = assessmentSessionId;
         this.turnId = turnId;
         this.usageEventId = usageEventId;
         this.usageType = usageType;
@@ -78,12 +78,12 @@ public class AiUsageRecord {
         this.id = id;
     }
 
-    public UUID getExamSessionId() {
-        return examSessionId;
+    public UUID getAssessmentSessionId() {
+        return assessmentSessionId;
     }
 
-    public void setExamSessionId(UUID examSessionId) {
-        this.examSessionId = examSessionId;
+    public void setAssessmentSessionId(UUID assessmentSessionId) {
+        this.assessmentSessionId = assessmentSessionId;
     }
 
     public UUID getTurnId() {

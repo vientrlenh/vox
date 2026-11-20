@@ -26,23 +26,23 @@ import com.sep.vox.application.port.output.QuotaPricingCalibrationConfigPort;
 import com.sep.vox.application.port.output.QuotaPricingConfigPort;
 
 /**
- * Tự tính lại estimatedCostPer{Exam,Practice}SecondUsd (xem QuotaPricingProperties) từ chi phí AI
- * THẬT đã ghi nhận (ai_usage_record) và giây trả lời THẬT trong cửa sổ trailing gần nhất -- thay
- * cho việc phải tự tay đoán/sửa .env mỗi lần muốn calibrate lại (xem AI_COST_CALIBRATION_LOG.md --
- * đây chính là câu SQL trong file đó, viết lại bằng code, chạy định kỳ qua QuotaPricingCalibrationJob).
+ * Recomputes estimatedCostPer{Assessment,Practice}SecondUsd (see QuotaPricingProperties) from the REAL AI cost
+ * already recorded (ai_usage_record) and the REAL answer seconds in the most recent trailing window -- replacing
+ * having to guess/edit .env by hand every time we want to recalibrate (see AI_COST_CALIBRATION_LOG.md --
+ * this is exactly the SQL in that file, rewritten as code and run periodically through QuotaPricingCalibrationJob).
  *
- * <p>EXAM và PRACTICE tách 2 rate riêng (xem QuotaPricingSource) vì pipeline AI khác hẳn nhau
- * (evalGraph chấm exam nặng hơn hẳn realtimeCorrectionGraph của PRACTICE) -- gộp chung sẽ làm lệch
- * rate của cả 2 bên tùy khối lượng dữ liệu bên nào nhiều hơn. 2 nguồn dùng CHUNG 1 bộ ngưỡng tuning
- * (windowDays/minSampleSessions/maxChangeRatio/min-maxRateBound) -- chỉ khác bảng JOIN để lấy giây
- * trả lời thật (exam_item_responses vs practice_response_turns) và rate mặc định fallback.
+ * <p>ASSESSMENT and PRACTICE keep 2 separate rates (see QuotaPricingSource) because their AI pipelines are very different
+ * (evalGraph grading an assessment is much heavier than PRACTICE's realtimeCorrectionGraph) -- merging them would skew
+ * the rate of both sides depending on which side has more data. The 2 sources SHARE 1 set of tuning thresholds
+ * (windowDays/minSampleSessions/maxChangeRatio/min-maxRateBound) -- they differ only in the joined table used to get the real
+ * answer seconds (assessment_item_responses vs practice_response_turns) and in the default fallback rate.
  *
- * <p>Dùng giây TRẢ LỜI THẬT làm mẫu số (không phải examTimeDurationSecond cấu hình) -- quyết
- * định nghiệp vụ đã chốt: cho margin an toàn lớn hơn vì học sinh luôn dùng ít hơn thời gian được
- * cấp, khớp cách đã calibrate tay 2 lần trước đó.
+ * <p>Uses the REAL ANSWER seconds as the denominator (not the configured assessmentTimeDurationSecond) -- a business
+ * decision that is already settled: it gives a larger safety margin because students always use less than the time
+ * they were given, matching the way it was calibrated by hand the 2 previous times.
  *
- * <p>Không insert row nếu mẫu quá nhỏ (dưới minSampleSessions) -- phía đọc (QuotaPricingService)
- * luôn chỉ cần lấy row mới nhất theo nguồn, không phải lọc "có đủ tin cậy không".
+ * <p>Does not insert a row if the sample is too small (below minSampleSessions) -- the read side (QuotaPricingService)
+ * only ever needs to take the latest row per source, without having to filter on "is it reliable enough".
  */
 @Service
 public class QuotaPricingCalibrationService {
@@ -50,7 +50,7 @@ public class QuotaPricingCalibrationService {
     private static final Logger LOGGER = LoggerFactory.getLogger(QuotaPricingCalibrationService.class);
 
     private final SessionCostQueryRepository sessionCostQueryRepository;
-    private final ExamItemResponseRepository examItemResponseRepository;
+    private final AssessmentItemResponseRepository assessmentItemResponseRepository;
     private final PracticeResponseTurnRepository practiceResponseTurnRepository;
     private final QuotaPricingCalibrationRepository quotaPricingCalibrationRepository;
     private final QuotaPricingCalibrationConfigPort calibrationConfig;
@@ -58,26 +58,26 @@ public class QuotaPricingCalibrationService {
 
     public QuotaPricingCalibrationService(
             SessionCostQueryRepository sessionCostQueryRepository,
-            ExamItemResponseRepository examItemResponseRepository,
+            AssessmentItemResponseRepository assessmentItemResponseRepository,
             PracticeResponseTurnRepository practiceResponseTurnRepository,
             QuotaPricingCalibrationRepository quotaPricingCalibrationRepository,
             QuotaPricingCalibrationConfigPort calibrationConfig,
             QuotaPricingConfigPort quotaPricingConfig) {
         this.sessionCostQueryRepository = sessionCostQueryRepository;
-        this.examItemResponseRepository = examItemResponseRepository;
+        this.assessmentItemResponseRepository = assessmentItemResponseRepository;
         this.practiceResponseTurnRepository = practiceResponseTurnRepository;
         this.quotaPricingCalibrationRepository = quotaPricingCalibrationRepository;
         this.calibrationConfig = calibrationConfig;
         this.quotaPricingConfig = quotaPricingConfig;
     }
 
-    /** Calibrate estimatedCostPerExamSecondUsd -- giây trả lời thật lấy từ exam_item_responses. */
+    /** Calibrates estimatedCostPerAssessmentSecondUsd -- the real answer seconds come from assessment_item_responses. */
     @Transactional
-    public void recalibrateExam() {
+    public void recalibrateAssessment() {
         recalibrate(
-            QuotaPricingSource.EXAM,
-            examItemResponseRepository::sumDurationSecondsGroupedBySessionIds,
-            quotaPricingConfig::estimatedCostPerExamSecondUsd
+            QuotaPricingSource.ASSESSMENT,
+            assessmentItemResponseRepository::sumDurationSecondsGroupedBySessionIds,
+            quotaPricingConfig::estimatedCostPerAssessmentSecondUsd
         );
     }
 
@@ -119,9 +119,9 @@ public class QuotaPricingCalibrationService {
         for (SessionCostDto cost : costs) {
             Long duration = durationsBySession.get(cost.sessionId());
             if (duration == null || duration <= 0) {
-                // Session có usage AI nhưng không khớp được giây trả lời thật ở nguồn này (vd
-                // session thuộc nguồn kia -- exam session không có row practice_response_turns và
-                // ngược lại, hoặc lỗi transcribe) -- loại khỏi mẫu, không thể tính rate cho session này.
+                // A session that has AI usage but whose real answer seconds cannot be matched in this source (e.g. the
+                // session belongs to the other source -- an assessment session has no practice_response_turns row and
+                // vice versa, or a transcribe error) -- excluded from the sample, the rate cannot be computed for this session.
                 continue;
             }
             totalCost = totalCost.add(cost.totalCostUsd());

@@ -17,7 +17,7 @@ public final class CreateClassTestCommandMapper {
             request.closeAt(),
             request.assessmentPolicyId(),
             request.maxAttempt(),
-            request.examTimeDurationSecond(),
+            request.assessmentTimeDurationSecond(),
             request.resultDecisionMethod(),
             request.requiredStreamTypes(),
             request.streamTypePermission(),

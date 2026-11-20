@@ -202,24 +202,24 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
             if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !schoolId.equals(rubric.getSchoolId())) {
                 throw new ForbiddenException("Phiên bản Rubric không thuộc trường học của bạn.");
             }
-            // Chặn ARCHIVED, KHÔNG chặn PUBLISHED.
+            // Blocks ARCHIVED, does NOT block PUBLISHED.
             //
-            // Nới 2026-08-23. Luật cũ ("chỉ gán được khi còn DRAFT") ép mọi chính sách của một phiên
-            // bản Rubric phải khai xong TRƯỚC lúc ban hành phiên bản đó -- mà ban hành lại là điều
-            // kiện để phiên bản dùng được cho kỳ thi (màn tạo kỳ thi chỉ liệt kê phiên bản PUBLISHED).
-            // Nghĩa là trường chỉ có đúng một lần để khai hết mọi lớp sẽ dùng bộ tiêu chí này; thêm
-            // một lớp chuyên vào năm sau thì phải sao lại toàn bộ Rubric. Đó là mâu thuẫn trực tiếp
-            // với V44 (nhiều chính sách dùng chung một phiên bản Rubric).
+            // Loosened 2026-08-23. The old rule ("can only be attached while DRAFT") forced every policy of a Rubric
+            // version to be declared BEFORE that version was published -- yet publishing is the
+            // condition for the version to be usable for an assessment (the assessment creation screen only lists PUBLISHED versions).
+            // That means a school had exactly one chance to declare every class that would use this criteria set; adding
+            // one specialized class next year would require copying the whole Rubric. That is a direct contradiction of
+            // V44 (several policies sharing one Rubric version).
             //
-            // Bỏ chặn PUBLISHED không phá gì: PublishSchoolAssessmentPolicyUseCase cố ý không xét
-            // trạng thái phiên bản Rubric, existsPublishedByRubricVersionId chỉ là cửa chặn cho việc
-            // ban hành PHIÊN BẢN (đã ban hành rồi thì vô nghĩa), và đường chấm đọc thẳng
-            // exams.assessment_policy_id nên chính sách mới không hồi tố vào bài đã chấm. Ngược lại,
-            // phiên bản PUBLISHED đã bị đóng băng -- gắn chính sách vào nó AN TOÀN HƠN gắn vào bản
-            // DRAFT còn sửa được tiêu chí bên dưới.
+            // Removing the PUBLISHED block breaks nothing: PublishSchoolAssessmentPolicyUseCase deliberately does not look at the
+            // status of the Rubric version, existsPublishedByRubricVersionId is only a gate for publishing a VERSION (meaningless once
+            // it is already published), and the grading path reads
+            // assessments.assessment_policy_id directly so a new policy does not apply retroactively to attempts already graded. Conversely,
+            // a PUBLISHED version is frozen -- attaching a policy to it is SAFER than attaching to a
+            // DRAFT whose criteria underneath can still be edited.
             //
-            // ARCHIVED thì vẫn phải chặn (trước đây lọt): phiên bản đã thu hồi mà vẫn gắn được chính
-            // sách nghĩa là chấm học sinh bằng thang trường đã bỏ.
+            // ARCHIVED still has to be blocked (it used to slip through): attaching a policy to a revoked version
+            // means grading students on a scale the school has abandoned.
             if (rubricVersion.getStatus() == RubricStatus.ARCHIVED) {
                 throw new IllegalStateException(
                         "Không gán được Policy vào Phiên bản Rubric đã lưu trữ (ARCHIVED).");

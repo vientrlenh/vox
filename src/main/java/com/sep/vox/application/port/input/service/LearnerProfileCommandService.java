@@ -84,7 +84,7 @@ public class LearnerProfileCommandService {
     // ánh xạ (cột trong DB giữ nguyên, xem chú thích ở LearnerProfileJpaEntity).
 
     public void setGoal(UUID studentId, String goalType) {
-        if (!"EXAM_PREP".equals(goalType)
+        if (!"ASSESSMENT_PREP".equals(goalType)
                 && !"ABILITY_IMPROVEMENT".equals(goalType)) {
             throw new IllegalArgumentException(
                 "Mục tiêu luyện tập không hợp lệ"

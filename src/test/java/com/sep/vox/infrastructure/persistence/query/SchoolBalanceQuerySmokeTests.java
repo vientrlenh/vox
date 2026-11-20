@@ -122,7 +122,7 @@ class SchoolBalanceQuerySmokeTests {
 
     @Test
     void should_order_entries_sharing_one_instant_deterministically() {
-        // One exam session produces several entries at the SAME Instant. Without a secondary key by
+        // One assessment session produces several entries at the SAME Instant. Without a secondary key by
         // id, the order among them is undefined, and pagination would repeat a row on this page and
         // then drop a row on the other. The id is a uuidv7, so it increases with write time.
         Instant sameInstant = now.truncatedTo(ChronoUnit.MICROS);
@@ -159,7 +159,7 @@ class SchoolBalanceQuerySmokeTests {
     private SchoolBalanceEntry overageCharge(BigDecimal amountVnd, Instant occurredAt) {
         return new SchoolBalanceEntry(
             schoolId, null, SchoolBalanceEntryType.OVERAGE_CHARGE,
-            amountVnd, amountVnd, null, UUID.randomUUID(), null, QuotaType.EXAM,
+            amountVnd, amountVnd, null, UUID.randomUUID(), null, QuotaType.ASSESSMENT,
             new BigDecimal("0.001000"), new BigDecimal("26647.5000"), null, null, occurredAt);
     }
 }

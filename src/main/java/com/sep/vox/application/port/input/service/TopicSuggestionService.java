@@ -94,28 +94,28 @@ public class TopicSuggestionService {
                 "MATCHED_EXISTING"
             );
         }
-        // GỠ hạn mức 3 lượt/tuần (2026-08-07). Điều kiện cũ là
+        // REMOVED the quota of 3 requests/week (2026-08-07). The old condition was
         // `weeklyRequestCount(studentId) >= 3 || unsuitable(normalized)`.
         //
-        // Nó đếm MỌI dòng có keyword trong tuần lịch, không lọc kết quả -- mà
-        // recordKeywordRequest ghi dòng ở cả bốn nhánh, nên ba nhánh KHÔNG tốn lượt LLM nào
-        // (MATCHED_EXISTING, REJECTED_UNSUITABLE, OUT_OF_EXAM_SCOPE) vẫn bị trừ lượt. Học sinh
-        // gõ một từ khoá trỏ đúng vào chủ đề đã có sẵn cũng mất một lượt trong ba.
+        // It counted EVERY row that has a keyword in the calendar week, without filtering by result -- but
+        // recordKeywordRequest writes a row in all four branches, so the three branches that cost NO LLM call
+        // (MATCHED_EXISTING, REJECTED_UNSUITABLE, OUT_OF_ASSESSMENT_SCOPE) were still charged against the quota. A student
+        // who typed a keyword pointing exactly at an existing topic also lost one of the three requests.
         //
-        // Chi phí thật đã có nơi kiểm soát đúng chỗ của nó: quota PRACTICE tính theo giây nói
-        // (SubmitPracticeTurnUseCase -> ConsumeQuotaService). Chặn thêm ở đây là siết hai lần
-        // vào cùng một túi tiền, bằng một đơn vị không liên quan.
+        // The real cost already has its proper place of control: the PRACTICE quota is computed by speaking seconds
+        // (SubmitPracticeTurnUseCase -> ConsumeQuotaService). Blocking here as well tightens the same
+        // pocket of money twice, by an unrelated unit.
         if (unsuitable(normalized)) {
             recordKeywordRequest(studentId, keyword, "REJECTED_UNSUITABLE");
             return new TopicFromKeywordResult(null, "REJECTED_UNSUITABLE");
         }
         String goal = currentGoal(studentId);
-        if ("EXAM_PREP".equals(goal)) {
-            // EXAM_PREP chỉ luyện trên topic lấy từ ngân hàng câu hỏi (question_bank/
-            // question_topic) của đúng trường + khối -- không cho AI tự sinh topic mới từ
-            // từ khoá tự do, giữ nguyên mã kết quả OUT_OF_EXAM_SCOPE (ý nghĩa vẫn đúng).
-            recordKeywordRequest(studentId, keyword, "OUT_OF_EXAM_SCOPE");
-            return new TopicFromKeywordResult(null, "OUT_OF_EXAM_SCOPE");
+        if ("ASSESSMENT_PREP".equals(goal)) {
+            // ASSESSMENT_PREP only practices on topics taken from the question bank (question_bank/
+            // question_topic) of exactly the school + grade -- it does not let the AI generate new topics from
+            // free keywords, and keeps the result code OUT_OF_ASSESSMENT_SCOPE (the meaning is still correct).
+            recordKeywordRequest(studentId, keyword, "OUT_OF_ASSESSMENT_SCOPE");
+            return new TopicFromKeywordResult(null, "OUT_OF_ASSESSMENT_SCOPE");
         }
         List<TopicGenerationPort.TopicProposal> proposals = topicGenerationPort.propose(
             studentId,
@@ -191,7 +191,7 @@ public class TopicSuggestionService {
     // ổn định). Xem chú thích tại lời gọi propose().
 
     public List<PracticeTopicOffer> synchronousOffers(UUID studentId, int requestedCount) {
-        if (requestedCount <= 0 || "EXAM_PREP".equals(currentGoal(studentId))) {
+        if (requestedCount <= 0 || "ASSESSMENT_PREP".equals(currentGoal(studentId))) {
             return List.of();
         }
         List<TopicGenerationPort.TopicProposal> proposals = topicGenerationPort.propose(
@@ -273,9 +273,11 @@ public class TopicSuggestionService {
         return result;
     }
 
-    /** Danh mục chiều sở thích hiện hành, gửi xuống Python để ràng buộc đầu ra của LLM.
-     * Gồm CẢ chiều hệ thống (ACADEMIC_EXAM) vì đây là gán nhãn cho chủ đề, không phải hỏi
-     * học sinh -- khác với quiz, nơi chỉ dùng chiều quiz_eligible. */
+    /**
+     * The catalog of current interest dimensions, sent down to Python to constrain the LLM output.
+     * It includes the system dimension (ACADEMIC_ASSESSMENT) as well because this labels a topic, it is not a question to
+     * the student -- unlike the quiz, which only uses the quiz_eligible dimensions.
+     */
     private List<String> dimensionCodes() {
         return interestDimensionRepository.findActive().stream()
             .map(dimension -> dimension.getCode())

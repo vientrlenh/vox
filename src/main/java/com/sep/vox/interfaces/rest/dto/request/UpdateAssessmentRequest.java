@@ -2,9 +2,11 @@ package com.sep.vox.interfaces.rest.dto.request;
 
 import java.math.BigDecimal;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import com.sep.vox.domain.model.assessment.AssessmentStreamTypePermission;
 import com.sep.vox.domain.model.assessment.ResultDecisionMethod;
 
 import jakarta.validation.constraints.Digits;
@@ -15,8 +17,8 @@ import jakarta.validation.constraints.Min;
 public record UpdateAssessmentRequest(
     String name,
     String description,
-    String openAt,
-    String closeAt,
+    Instant openAt,
+    Instant closeAt,
     UUID assessmentPolicyId,
 
     @Min(value = 1, message = "Số lượt thi tối đa phải lớn hơn 0")
@@ -38,7 +40,7 @@ public record UpdateAssessmentRequest(
      */
     List<String> requiredStreamTypes,
 
-    String streamTypePermission,
+    AssessmentStreamTypePermission streamTypePermission,
 
     /**
      * Ngưỡng tin cậy AI theo PHẦN TRĂM (0-100). Bỏ trống = GIỮ NGUYÊN giá trị đang có, giống mọi

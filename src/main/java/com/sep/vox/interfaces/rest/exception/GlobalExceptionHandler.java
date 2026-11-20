@@ -1,19 +1,33 @@
 package com.sep.vox.interfaces.rest.exception;
 
 import java.time.format.DateTimeParseException;
+import java.time.temporal.Temporal;
+import java.util.Arrays;
 import java.util.HashMap;
-
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.validation.FieldError;
+import org.springframework.validation.ObjectError;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.exc.MismatchedInputException;
 
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
@@ -54,6 +68,10 @@ public class GlobalExceptionHandler {
     private static final String PLAN_LIMIT_EXCEEDED_ERROR = "PLAN_LIMIT_EXCEEDED";
     private static final String SERVICE_UNAVAILABLE_ERROR = "SERVICE_UNAVAILABLE";
     private static final String WALLET_DRAW_CONFIRMATION_REQUIRED_ERROR = "WALLET_DRAW_CONFIRMATION_REQUIRED";
+
+    private static final String UNSUPPORTED_MEDIA_TYPE_ERROR = "UNSUPPORTED_MEDIA_TYPE";
+    private static final String REQUEST_BODY_KEY = "body";
+    private static final String ACCEPTED_VALUES_PREFIX = "Giá trị không hợp lệ. Các giá trị chấp nhận: ";
 
     private static final String AUTHENTICATION_ERROR = "BAD_CREDENTIALS";
     private static final String AUTHORIZATION_ERROR = "ACCESS_DENIED";
@@ -109,9 +127,89 @@ public class GlobalExceptionHandler {
         e.getBindingResult()
             .getAllErrors()
             .forEach(err -> errors
-                .put(err.getObjectName(), err.getDefaultMessage()));
+                .putIfAbsent(fieldNameOf(err), err.getDefaultMessage()));
         ValidationErrorResponse error = new ValidationErrorResponse(errors, VALIDATION_ERROR);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    private static String fieldNameOf(ObjectError error) {
+        return error instanceof FieldError fieldError ? fieldError.getField() : error.getObjectName();
+    }
+
+    /**
+     * Covers broken JSON, an unknown enum constant, a value of the wrong type and an unparsable date. The
+     * response never repeats the framework message, because it contains internal class names.
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Object> handleUnreadableBody(HttpMessageNotReadableException e) {
+        LOGGER.warn("Unreadable request body: {}", e.getCause() == null ? e.getClass() : e.getCause().getClass());
+        if (e.getCause() instanceof MismatchedInputException mismatch && !mismatch.getPath().isEmpty()) {
+            Map<String, String> errors = Map.of(jsonPathOf(mismatch), describeInvalidValue(mismatch));
+            return ResponseEntity.badRequest().body(new ValidationErrorResponse(errors, VALIDATION_ERROR));
+        }
+        ErrorResponse error = new ErrorResponse(VALIDATION_ERROR, "Nội dung yêu cầu không phải JSON hợp lệ");
+        return ResponseEntity.badRequest().body(error);
+    }
+
+    private static String jsonPathOf(JacksonException exception) {
+        StringBuilder path = new StringBuilder();
+        for (JacksonException.Reference reference : exception.getPath()) {
+            if (reference.getPropertyName() != null) {
+                path.append(path.isEmpty() ? "" : ".").append(reference.getPropertyName());
+            } else {
+                path.append('[').append(reference.getIndex()).append(']');
+            }
+        }
+        return path.isEmpty() ? REQUEST_BODY_KEY : path.toString();
+    }
+
+    private static String describeInvalidValue(MismatchedInputException mismatch) {
+        Class<?> targetType = mismatch.getTargetType();
+        if (targetType != null && targetType.isEnum()) {
+            return ACCEPTED_VALUES_PREFIX + acceptedConstants(targetType);
+        }
+        if (targetType != null && Temporal.class.isAssignableFrom(targetType)) {
+            return "Giá trị thời gian không đúng định dạng ISO-8601";
+        }
+        return "Giá trị không đúng kiểu dữ liệu yêu cầu";
+    }
+
+    private static String acceptedConstants(Class<?> enumType) {
+        return Arrays.stream(enumType.getEnumConstants()).map(Object::toString).collect(Collectors.joining(", "));
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ValidationErrorResponse> handleArgumentTypeMismatch(MethodArgumentTypeMismatchException e) {
+        Class<?> requiredType = e.getRequiredType();
+        String message = requiredType != null && requiredType.isEnum()
+            ? ACCEPTED_VALUES_PREFIX + acceptedConstants(requiredType)
+            : "Giá trị không đúng định dạng yêu cầu";
+        ValidationErrorResponse error = new ValidationErrorResponse(Map.of(e.getName(), message), VALIDATION_ERROR);
+        return ResponseEntity.badRequest().body(error);
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ValidationErrorResponse> handleMissingParameter(MissingServletRequestParameterException e) {
+        Map<String, String> errors = Map.of(e.getParameterName(), "Tham số bắt buộc không được để trống");
+        return ResponseEntity.badRequest().body(new ValidationErrorResponse(errors, VALIDATION_ERROR));
+    }
+
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<ValidationErrorResponse> handleMethodValidation(HandlerMethodValidationException e) {
+        Map<String, String> errors = new HashMap<String, String>();
+        e.getParameterValidationResults().forEach(result -> result.getResolvableErrors().forEach(
+            resolvable -> errors.putIfAbsent(result.getMethodParameter().getParameterName(),
+                resolvable.getDefaultMessage())));
+        return ResponseEntity.badRequest().body(new ValidationErrorResponse(errors, VALIDATION_ERROR));
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleUnsupportedMediaType(HttpMediaTypeNotSupportedException e) {
+        List<MediaType> supported = e.getSupportedMediaTypes();
+        String message = "Content-Type không được hỗ trợ. Các loại chấp nhận: "
+            + supported.stream().map(MediaType::toString).collect(Collectors.joining(", "));
+        ErrorResponse error = new ErrorResponse(UNSUPPORTED_MEDIA_TYPE_ERROR, message);
+        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body(error);
     }
 
 
@@ -170,7 +268,7 @@ public class GlobalExceptionHandler {
 
 
     @ExceptionHandler(DisabledException.class)
-    private ResponseEntity<ErrorResponse> handleDisabled(DisabledException e) {
+    public ResponseEntity<ErrorResponse> handleDisabled(DisabledException e) {
         ErrorResponse error = new ErrorResponse(USER_DISABLED_ERROR, e.getMessage());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }

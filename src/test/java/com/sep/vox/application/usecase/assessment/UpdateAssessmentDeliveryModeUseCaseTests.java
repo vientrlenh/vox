@@ -2,7 +2,6 @@ package com.sep.vox.application.usecase.assessment;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -83,7 +82,7 @@ class UpdateAssessmentDeliveryModeUseCaseTests {
         when(lockedPaper.getStatus()).thenReturn(AssessmentPaperStatus.LOCKED);
         when(assessmentPaperRepository.findByAssessmentId(assessmentId)).thenReturn(List.of(lockedPaper));
 
-        AssessmentDto result = useCase.execute(new UpdateAssessmentDeliveryModeCommand(assessmentId, "STUDENT_DEVICE"));
+        AssessmentDto result = useCase.execute(new UpdateAssessmentDeliveryModeCommand(assessmentId, AssessmentDeliveryMode.STUDENT_DEVICE));
 
         assertThat(assessment.getDeliveryMode()).isEqualTo(AssessmentDeliveryMode.STUDENT_DEVICE);
         assertThat(result.deliveryMode()).isEqualTo(AssessmentDeliveryMode.STUDENT_DEVICE);
@@ -105,7 +104,7 @@ class UpdateAssessmentDeliveryModeUseCaseTests {
         when(lockedPaper.getStatus()).thenReturn(AssessmentPaperStatus.LOCKED);
         when(assessmentPaperRepository.findByAssessmentId(assessmentId)).thenReturn(List.of(lockedPaper));
 
-        AssessmentDto result = useCase.execute(new UpdateAssessmentDeliveryModeCommand(assessmentId, "LAB"));
+        AssessmentDto result = useCase.execute(new UpdateAssessmentDeliveryModeCommand(assessmentId, AssessmentDeliveryMode.LAB));
 
         assertThat(assessment.getDeliveryMode()).isEqualTo(AssessmentDeliveryMode.LAB);
         assertThat(result.deliveryMode()).isEqualTo(AssessmentDeliveryMode.LAB);
@@ -120,7 +119,7 @@ class UpdateAssessmentDeliveryModeUseCaseTests {
             .thenReturn(true);
         when(assessmentCandidateRepository.existsByAssessmentIdAndScheduleIdIsNotNull(assessmentId)).thenReturn(true);
 
-        assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentDeliveryModeCommand(assessmentId, "LAB")))
+        assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentDeliveryModeCommand(assessmentId, AssessmentDeliveryMode.LAB)))
             .isInstanceOf(IllegalStateException.class);
         verify(assessmentRepository, never()).save(assessment);
     }
@@ -132,7 +131,7 @@ class UpdateAssessmentDeliveryModeUseCaseTests {
         when(assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessmentId, userId, AssessmentMemberRole.CHAIR))
             .thenReturn(true);
 
-        assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentDeliveryModeCommand(assessmentId, "STUDENT_DEVICE")))
+        assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentDeliveryModeCommand(assessmentId, AssessmentDeliveryMode.STUDENT_DEVICE)))
             .isInstanceOf(IllegalStateException.class);
         verify(assessmentRepository, never()).save(assessment);
     }
@@ -144,15 +143,8 @@ class UpdateAssessmentDeliveryModeUseCaseTests {
         when(assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessmentId, userId, AssessmentMemberRole.CHAIR))
             .thenReturn(false);
 
-        assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentDeliveryModeCommand(assessmentId, "LAB")))
+        assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentDeliveryModeCommand(assessmentId, AssessmentDeliveryMode.LAB)))
             .isInstanceOf(ForbiddenException.class);
-    }
-
-    @Test
-    void should_reject_invalid_delivery_mode() {
-        assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentDeliveryModeCommand(assessmentId, "INVALID")))
-            .isInstanceOf(IllegalArgumentException.class);
-        verify(assessmentRepository, never()).findById(eq(assessmentId));
     }
 
     private Assessment assessment(AssessmentKind kind, AssessmentStatus status) {

@@ -9,7 +9,6 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.rubric.RubricStatus;
-import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
 import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
@@ -84,12 +83,6 @@ public class AddSchoolRubricVersionsUseCase implements IUseCase<AddSchoolRubricV
                 throw new IllegalArgumentException("Version " + vCmd.version() + ": Điểm sàn không được lớn hơn điểm trần.");
             }
 
-            RubricTotalScoreMethod method;
-            try {
-                method = RubricTotalScoreMethod.valueOf(vCmd.totalScoreMethod().trim().toUpperCase());
-            } catch (Exception e) {
-                throw new IllegalArgumentException("Version " + vCmd.version() + ": Phương pháp tính điểm không hợp lệ (Chỉ nhận SUM hoặc WEIGHTED_AVERAGE).");
-            }
 
             Instant validFrom = vCmd.effectiveFrom() != null ? vCmd.effectiveFrom() : now;
             if (vCmd.effectiveTo() != null && vCmd.effectiveTo().isBefore(validFrom)) {
@@ -104,7 +97,7 @@ public class AddSchoolRubricVersionsUseCase implements IUseCase<AddSchoolRubricV
             return new RubricVersion(
                     command.rubricId(), vCmd.version(), safeCode, safeName, rubric.getDescription(),
                     RubricStatus.DRAFT, validFrom, vCmd.effectiveTo(), vCmd.scoringScaleMin(), vCmd.scoringScaleMax(),
-                    method, now, now, currentUserId, currentUserId
+                    vCmd.totalScoreMethod(), now, now, currentUserId, currentUserId
             );
         }).toList();
 

@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,8 @@ import com.sep.vox.application.port.input.command.AcceptSchoolClassUserImportCom
 import com.sep.vox.application.port.input.command.AcceptSchoolUserImportCommand;
 import com.sep.vox.application.port.input.command.CreateSchoolClassCommand;
 import com.sep.vox.application.port.input.command.CreateSchoolClassUserCommand;
+import com.sep.vox.application.port.input.command.CreateSchoolCommand;
+import com.sep.vox.application.port.input.command.CreateSchoolGradeCommand;
 import com.sep.vox.application.port.input.command.CreateSchoolUserCommand;
 import com.sep.vox.application.port.input.command.DeleteSchoolClassCommand;
 import com.sep.vox.application.port.input.command.DeleteSchoolClassUserCommand;
@@ -139,6 +142,10 @@ class SchoolControllerTests {
     private CreateSchoolDirectoryUseCase createSchoolDirectoryUseCase;
     @Autowired
     private DeleteSchoolUseCase deleteSchoolUseCase;
+    @Autowired
+    private CreateSchoolUseCase createSchoolUseCase;
+    @Autowired
+    private CreateSchoolGradeUseCase createSchoolGradeUseCase;
 
     private MockMvcTester.MockMvcRequestBuilder postJson(String uri, String body, Object... uriVariables) {
         return mvc.post().uri(uri, uriVariables).contentType(MediaType.APPLICATION_JSON).content(body);
@@ -400,5 +407,98 @@ class SchoolControllerTests {
 
         assertThat(result).hasStatus(401);
         verifyNoInteractions(deleteSchoolUseCase);
+    }
+
+    @Test
+    void create_user_should_pass_iso_dates_to_the_command() {
+        postJson(SCHOOLS_URI + "/{schoolId}/users", """
+            {"email": "student@school.edu.vn", "phone": "0987654321", "fullName": "John Cena",
+             "dateOfBirth": "2005-01-15", "roleCode": "STUDENT", "startDate": "2025-09-05", "endDate": "2026-05-31"}""",
+            schoolId).exchange();
+
+        verify(createSchoolUserUseCase).execute(new CreateSchoolUserCommand(schoolId, "student@school.edu.vn",
+            "0987654321", "John Cena", LocalDate.of(2005, 1, 15), null, "STUDENT",
+            LocalDate.of(2025, 9, 5), LocalDate.of(2026, 5, 31)));
+    }
+
+    @Test
+    void create_user_should_return_400_naming_the_field_for_a_non_iso_date_of_birth() {
+        MvcTestResult result = postJson(SCHOOLS_URI + "/{schoolId}/users", """
+            {"email": "student@school.edu.vn", "phone": "0987654321", "fullName": "John Cena",
+             "dateOfBirth": "15/01/2005", "roleCode": "STUDENT"}""", schoolId).exchange();
+
+        assertThat(result).hasStatus(400).bodyJson().extractingPath("$.errors.dateOfBirth").isNotNull();
+        verifyNoInteractions(createSchoolUserUseCase);
+    }
+
+    @Test
+    void create_user_should_return_400_when_date_of_birth_is_missing() {
+        MvcTestResult result = postJson(SCHOOLS_URI + "/{schoolId}/users", """
+            {"email": "student@school.edu.vn", "phone": "0987654321", "fullName": "John Cena",
+             "roleCode": "STUDENT"}""", schoolId).exchange();
+
+        assertThat(result).hasStatus(400).bodyJson().extractingPath("$.errors.dateOfBirth").isNotNull();
+        verifyNoInteractions(createSchoolUserUseCase);
+    }
+
+    @Test
+    void create_school_grade_should_pass_iso_dates_to_the_command() {
+        UUID newGradeId = UUID.randomUUID();
+        CreateSchoolGradeCommand expected = new CreateSchoolGradeCommand(schoolId, gradeId, "G10", "Grade 10", null,
+            LocalDate.of(2026, 9, 5), LocalDate.of(2027, 5, 31));
+        when(createSchoolGradeUseCase.execute(expected)).thenReturn(newGradeId);
+
+        MvcTestResult result = postJson(SCHOOLS_URI + "/{schoolId}/grade-levels/{gradeLevelId}/grades", """
+            {"code": "G10", "name": "Grade 10", "startDate": "2026-09-05", "endDate": "2027-05-31"}""",
+            schoolId, gradeId).exchange();
+
+        assertThat(result).hasStatusOk();
+        verify(createSchoolGradeUseCase).execute(expected);
+    }
+
+    @Test
+    void create_school_grade_should_return_400_naming_the_field_for_an_impossible_date() {
+        MvcTestResult result = postJson(SCHOOLS_URI + "/{schoolId}/grade-levels/{gradeLevelId}/grades", """
+            {"code": "G10", "name": "Grade 10", "startDate": "31/02/2026", "endDate": "2027-05-31"}""",
+            schoolId, gradeId).exchange();
+
+        assertThat(result).hasStatus(400).bodyJson().extractingPath("$.errors.startDate").isNotNull();
+        verifyNoInteractions(createSchoolGradeUseCase);
+    }
+
+    @Test
+    void create_school_grade_should_return_400_when_end_date_is_missing() {
+        MvcTestResult result = postJson(SCHOOLS_URI + "/{schoolId}/grade-levels/{gradeLevelId}/grades", """
+            {"code": "G10", "name": "Grade 10", "startDate": "2026-09-05"}""", schoolId, gradeId).exchange();
+
+        assertThat(result).hasStatus(400).bodyJson().extractingPath("$.errors.endDate").isNotNull();
+        verifyNoInteractions(createSchoolGradeUseCase);
+    }
+
+    @Test
+    @WithMockUser(roles = "SYSTEM_ADMIN")
+    void create_school_should_pass_admin_date_of_birth_to_the_command() {
+        UUID newSchoolId = UUID.randomUUID();
+        CreateSchoolCommand expected = new CreateSchoolCommand(null, "S1", "School 1", null, null, 100,
+            "admin@school.edu.vn", null, "Admin", LocalDate.of(1980, 5, 20), null, null);
+        when(createSchoolUseCase.execute(expected)).thenReturn(newSchoolId);
+
+        MvcTestResult result = postJson(SCHOOLS_URI, """
+            {"schoolCode": "S1", "schoolName": "School 1", "studentCount": 100, "adminEmail": "admin@school.edu.vn",
+             "adminFullName": "Admin", "adminDateOfBirth": "1980-05-20"}""").exchange();
+
+        assertThat(result).hasStatus(201);
+        verify(createSchoolUseCase).execute(expected);
+    }
+
+    @Test
+    @WithMockUser(roles = "SYSTEM_ADMIN")
+    void create_school_should_return_400_naming_the_field_for_a_non_iso_admin_date_of_birth() {
+        MvcTestResult result = postJson(SCHOOLS_URI, """
+            {"schoolCode": "S1", "schoolName": "School 1", "studentCount": 100, "adminEmail": "admin@school.edu.vn",
+             "adminFullName": "Admin", "adminDateOfBirth": "20/05/1980"}""").exchange();
+
+        assertThat(result).hasStatus(400).bodyJson().extractingPath("$.errors.adminDateOfBirth").isNotNull();
+        verifyNoInteractions(createSchoolUseCase);
     }
 }

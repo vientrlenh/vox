@@ -6,6 +6,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.sep.vox.domain.model.assessment.AssessmentKind;
+import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
+import com.sep.vox.domain.model.assessment.GradingRoundType;
+import com.sep.vox.domain.model.assessment.GradingAssignmentStatus;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -84,7 +88,8 @@ class AssessmentResultControllerTests {
 
         assertThat(result).hasStatusOk();
         verify(exportAssessmentScoresExcelUseCase).execute(new ExportAssessmentScoresQuery(assessmentId, scheduleId, teacherId,
-            "RELEASED", "APPEAL", "COMPLETED", true, true, Boolean.TRUE, "nguyen", "CLASS_TEST"));
+            AssessmentCandidateResultStatus.RELEASED, GradingRoundType.APPEAL, GradingAssignmentStatus.COMPLETED,
+            true, true, Boolean.TRUE, "nguyen", AssessmentKind.CLASS_TEST));
     }
 
     /** {@code null} means no filter, which is different from {@code false}: only assessments WITHOUT an open appeal. */
@@ -114,7 +119,7 @@ class AssessmentResultControllerTests {
     void should_name_the_file_after_the_requested_kind() {
         mvc.get().uri(EXCEL_URI).param("assessmentId", assessmentId.toString()).param("kind", "CLASS_TEST").exchange();
 
-        verify(exportAssessmentScoresExcelUseCase).exportFileName("CLASS_TEST");
+        verify(exportAssessmentScoresExcelUseCase).exportFileName(AssessmentKind.CLASS_TEST);
     }
 
     @Test
@@ -132,8 +137,9 @@ class AssessmentResultControllerTests {
             .param("kind", "CENTRALIZED")
             .exchange();
 
-        verify(exportAssessmentScoresUseCase).execute(new ExportAssessmentScoresQuery(assessmentId, null, teacherId, "RELEASED",
-            "APPEAL", "COMPLETED", true, true, Boolean.FALSE, "nguyen", "CENTRALIZED"));
+        verify(exportAssessmentScoresUseCase).execute(new ExportAssessmentScoresQuery(assessmentId, null, teacherId,
+            AssessmentCandidateResultStatus.RELEASED, GradingRoundType.APPEAL, GradingAssignmentStatus.COMPLETED,
+            true, true, Boolean.FALSE, "nguyen", AssessmentKind.CENTRALIZED));
     }
 
     @Test
@@ -188,5 +194,54 @@ class AssessmentResultControllerTests {
 
         assertThat(result).hasStatus(403);
         verifyNoInteractions(previewBulkFinalizeUseCase);
+    }
+
+    @Test
+    void export_should_bind_filter_values_in_any_letter_case() {
+        mvc.get().uri(CSV_URI)
+            .param("assessmentId", assessmentId.toString())
+            .param("resultStatus", "released")
+            .param("roundType", "spot_check")
+            .param("assignmentStatus", "completed")
+            .param("kind", "class_test")
+            .exchange();
+
+        verify(exportAssessmentScoresUseCase).execute(new ExportAssessmentScoresQuery(assessmentId, null, null,
+            AssessmentCandidateResultStatus.RELEASED, GradingRoundType.SPOT_CHECK, GradingAssignmentStatus.COMPLETED,
+            false, false, null, null, AssessmentKind.CLASS_TEST));
+    }
+
+    @Test
+    void export_should_treat_blank_enum_filters_as_no_filter() {
+        mvc.get().uri(CSV_URI)
+            .param("assessmentId", assessmentId.toString())
+            .param("resultStatus", "")
+            .param("roundType", "")
+            .param("assignmentStatus", "")
+            .param("kind", "")
+            .exchange();
+
+        verify(exportAssessmentScoresUseCase).execute(ExportAssessmentScoresQuery.scopedTo(assessmentId, null, null));
+    }
+
+    @Test
+    void export_should_answer_400_naming_each_unknown_filter_on_both_routes() {
+        for (String uri : new String[] {CSV_URI, EXCEL_URI}) {
+            assertUnknownFilterAnswers400(uri, "resultStatus", "RELEASED");
+            assertUnknownFilterAnswers400(uri, "roundType", "SPOT_CHECK");
+            assertUnknownFilterAnswers400(uri, "assignmentStatus", "COMPLETED");
+            assertUnknownFilterAnswers400(uri, "kind", "CLASS_TEST");
+        }
+        verifyNoInteractions(exportAssessmentScoresUseCase, exportAssessmentScoresExcelUseCase);
+    }
+
+    private void assertUnknownFilterAnswers400(String uri, String parameter, String acceptedConstant) {
+        MvcTestResult result = mvc.get().uri(uri)
+            .param("assessmentId", assessmentId.toString())
+            .param(parameter, "NOPE")
+            .exchange();
+
+        assertThat(result).hasStatus(400).bodyJson().extractingPath("$.errors." + parameter).asString()
+            .contains(acceptedConstant);
     }
 }

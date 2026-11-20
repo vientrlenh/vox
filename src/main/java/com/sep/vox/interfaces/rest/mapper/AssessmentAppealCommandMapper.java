@@ -2,7 +2,6 @@ package com.sep.vox.interfaces.rest.mapper;
 
 import java.util.UUID;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.command.ApproveAssessmentAppealCommand;
 import com.sep.vox.application.port.input.command.AssignAssessmentAppealReviewerCommand;
 import com.sep.vox.application.port.input.command.CreateAssessmentAppealCommand;
@@ -26,10 +25,7 @@ public final class AssessmentAppealCommandMapper {
     }
 
     public static ApproveAssessmentAppealCommand fromRequest(UUID appealId, ApproveAssessmentAppealRequest request) {
-        return new ApproveAssessmentAppealCommand(
-            appealId, 
-            DateMapper.toInstant(request.deadline())
-        );
+        return new ApproveAssessmentAppealCommand(appealId, request.deadline());
     }
 
     public static RejectAssessmentAppealCommand fromRequest(UUID appealId, RejectAssessmentAppealRequest request) {

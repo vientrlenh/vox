@@ -21,15 +21,11 @@ public final class UpdateSubscriptionPlanCommandMapper {
             input.maxTimePerAttemptMin(),
             // null (không sửa hạn mức) khác hẳn danh sách rỗng (xóa sạch hạn mức) nên phải giữ
             // nguyên null xuống tới use case thay vì quy về List.of().
-            //
-            // quotaType đổi về String vì command mang chuỗi thô giống CreateSubscriptionPlanCommand:
-            // use case tự parse và tự báo lỗi để còn dùng được từ lối vào khác (REST, job) mà không
-            // dựa vào việc graphql-java đã kiểm hộ.
             input.quotas() == null
                 ? null
                 : input.quotas().stream()
                     .map(item -> new UpdateSubscriptionPlanQuotaCommand(
-                        item.quotaType() == null ? null : item.quotaType().name(),
+                        item.quotaType(),
                         item.includedAmountVnd()
                     ))
                     .toList()

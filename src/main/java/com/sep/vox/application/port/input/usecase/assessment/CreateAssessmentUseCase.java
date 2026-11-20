@@ -8,7 +8,6 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -29,7 +28,6 @@ import com.sep.vox.domain.model.assessment.ResultDecisionMethod;
 import com.sep.vox.domain.repository.AssessmentBlueprintRepository;
 import com.sep.vox.domain.repository.AssessmentRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
-import com.sep.vox.domain.service.assessment.AssessmentDeliveryModeSupport;
 
 @Service
 public class CreateAssessmentUseCase implements IUseCase<CreateAssessmentCommand, AssessmentDto> {
@@ -107,13 +105,13 @@ public class CreateAssessmentUseCase implements IUseCase<CreateAssessmentCommand
             AssessmentKind.CENTRALIZED,
             // Kỳ thi tập trung mặc định thi trên thiết bị nhà trường; trường nào cho thí sinh
             // mang máy riêng vào phòng thì chọn STUDENT_DEVICE ngay lúc tạo.
-            AssessmentDeliveryModeSupport.parseOrDefault(command.deliveryMode(), AssessmentDeliveryMode.LAB),
+            Objects.requireNonNullElse(command.deliveryMode(), AssessmentDeliveryMode.LAB),
             AssessmentStatus.DRAFT,
             Objects.requireNonNullElse(command.maxAttempt(), 1),
             command.assessmentTimeDurationSecond(),
             Objects.requireNonNullElse(command.resultDecisionMethod(), ResultDecisionMethod.HIGHEST),
-            DateMapper.toInstant(command.openAt()),
-            DateMapper.toInstant(command.closeAt()),
+            command.openAt(),
+            command.closeAt(),
             command.assessmentPolicyId(),
             command.requiresOtp() == null || command.requiresOtp(),
             now,
@@ -145,8 +143,8 @@ public class CreateAssessmentUseCase implements IUseCase<CreateAssessmentCommand
             input.requiredStreamTypes() == null ? null : input.requiredStreamTypes().stream()
                 .map(StringNormalization::normalizeCode)
                 .toList(),
-            input.streamTypePermission() == null ? null : StringNormalization.normalizeCode(input.streamTypePermission()),
-            input.deliveryMode() == null ? null : StringNormalization.normalizeCode(input.deliveryMode()),
+            input.streamTypePermission(),
+            input.deliveryMode(),
             input.aiConfidenceThresholdPercent()
         );
     }
@@ -156,9 +154,7 @@ public class CreateAssessmentUseCase implements IUseCase<CreateAssessmentCommand
      * ({@code isScheduleWindowOutsideAssessmentWindow}), so leaving it empty means a session is not blocked by
      * any milestone at all -- including the plan deadline that {@code SubscriptionPeriodGuardService} has just applied.
      */
-    private void validateOpenClose(String openAt, String closeAt, UUID schoolId) {
-        Instant open = DateMapper.toInstant(openAt);
-        Instant close = DateMapper.toInstant(closeAt);
+    private void validateOpenClose(Instant open, Instant close, UUID schoolId) {
         if (open == null || close == null) {
             throw new IllegalStateException("Kỳ thi phải có thời gian mở bài và đóng bài");
         }

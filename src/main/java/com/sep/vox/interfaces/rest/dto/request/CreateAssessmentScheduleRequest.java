@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import jakarta.validation.constraints.NotNull;
@@ -9,9 +10,9 @@ public record CreateAssessmentScheduleRequest(
     UUID schoolRoomId,
 
     @NotNull(message = "Thời gian bắt đầu là bắt buộc")
-    String startDate,
+    Instant startDate,
 
     @NotNull(message = "Thời gian kết thúc là bắt buộc")
-    String endDate
+    Instant endDate
 ) {
 }

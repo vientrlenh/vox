@@ -108,8 +108,8 @@ public class ExportAssessmentScoresExcelUseCase implements IUseCase<ExportAssess
     }
 
     /** Tên file ASCII thuần — tránh phải encode {@code Content-Disposition} theo RFC 5987. */
-    public String exportFileName(String assessmentKind) {
-        String scope = AssessmentKind.CLASS_TEST.name().equals(assessmentKind) ? "lop" : "tap-trung";
+    public String exportFileName(AssessmentKind assessmentKind) {
+        String scope = assessmentKind == AssessmentKind.CLASS_TEST ? "lop" : "tap-trung";
         return "bang-diem-" + scope + "-" + FILE_STAMP_FORMAT.format(Instant.now()) + ".xlsx";
     }
 

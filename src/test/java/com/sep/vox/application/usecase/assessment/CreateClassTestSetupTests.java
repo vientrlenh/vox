@@ -234,7 +234,7 @@ class CreateClassTestSetupTests {
 
     @Test
     void should_store_requested_stream_config() {
-        useCase.execute(command(List.of("CAMERA", "SCREEN"), "ALL", null, null));
+        useCase.execute(command(List.of("CAMERA", "SCREEN"), AssessmentStreamTypePermission.ALL, null, null));
 
         Assessment assessment = savedAssessment();
         assertThat(assessment.getRequiredStreamType()).isEqualTo(AssessmentRequiredStreamType.CAMERA_AND_SCREEN);
@@ -252,7 +252,7 @@ class CreateClassTestSetupTests {
 
     @Test
     void should_reject_stream_permission_without_stream_types() {
-        assertThatThrownBy(() -> useCase.execute(command(null, "ALL", null, null)))
+        assertThatThrownBy(() -> useCase.execute(command(null, AssessmentStreamTypePermission.ALL, null, null)))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Không thể đặt quyền stream khi không yêu cầu stream nào");
     }
@@ -266,7 +266,7 @@ class CreateClassTestSetupTests {
 
     @Test
     void should_accept_school_device_delivery_mode() {
-        useCase.execute(command(null, null, "LAB", null));
+        useCase.execute(command(null, null, AssessmentDeliveryMode.LAB, null));
 
         assertThat(savedAssessment().getDeliveryMode()).isEqualTo(AssessmentDeliveryMode.LAB);
     }
@@ -332,15 +332,15 @@ class CreateClassTestSetupTests {
 
     private CreateClassTestCommand command(
             List<String> requiredStreamTypes,
-            String streamTypePermission,
-            String deliveryMode,
+            AssessmentStreamTypePermission streamTypePermission,
+            AssessmentDeliveryMode deliveryMode,
             Boolean requiresOtp) {
         return new CreateClassTestCommand(
             CLASS_ID,
             "Kiểm tra 15 phút",
             null,
-            "2026-08-10T08:00:00Z",
-            "2026-08-10T09:00:00Z",
+            Instant.parse("2026-08-10T08:00:00Z"),
+            Instant.parse("2026-08-10T09:00:00Z"),
             POLICY_ID,
             1,
             600,

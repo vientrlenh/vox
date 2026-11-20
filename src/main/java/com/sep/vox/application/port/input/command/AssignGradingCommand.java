@@ -4,6 +4,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import com.sep.vox.domain.model.assessment.GradingRoundType;
+
 /**
  * Gán tay nhiều bài trong một lần. Batch là cố ý: admin tick nhiều dòng trên bảng
  * rồi gán một phát, và ràng buộc "một phân công mở / bài" được kiểm trọn trong một
@@ -15,7 +17,7 @@ import java.util.UUID;
  * @param deadlineAt hạn chấm chung, có thể null
  */
 public record AssignGradingCommand(
-    String roundType,
+    GradingRoundType roundType,
     Instant deadlineAt,
     List<AssignmentItem> assignments
 ) {

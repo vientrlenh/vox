@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 import jakarta.validation.constraints.Min;
@@ -37,8 +38,8 @@ public record CreateSchoolRequest(
     @Size(max = 255, message = "Tên đầy đủ của quản trị viên nhà trường không được vượt quá 255 ký tự")
     String adminFullName, 
 
-    @NotBlank(message = "Ngày tháng năm sinh của quản trị viên nhà trường không được để trống")
-    String adminDateOfBirth, 
+    @NotNull(message = "Ngày tháng năm sinh của quản trị viên nhà trường không được để trống")
+    LocalDate adminDateOfBirth, 
 
     @Size(max = 255, message = "Địa chỉ của quản trị viên nhà trường không được vượt quá 255 ký tự")
     String adminAddress, 

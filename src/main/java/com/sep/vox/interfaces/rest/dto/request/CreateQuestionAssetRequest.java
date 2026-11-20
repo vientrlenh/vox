@@ -1,9 +1,9 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
+import com.sep.vox.domain.model.question.QuestionAssetType;
+
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record CreateQuestionAssetRequest(
@@ -16,12 +16,8 @@ public record CreateQuestionAssetRequest(
     @Size(max = 255, message = "Văn bản thay thế không được vượt quá 255 ký tự")
     String altText,
 
-    @NotBlank(message = "Loại tài nguyên không được để trống")
-    @Pattern(
-        regexp = "AUDIO|IMAGE|VIDEO|TEXT_PASSAGE",
-        message = "Loại tài nguyên không hợp lệ"
-    )
-    String type,
+    @NotNull(message = "Loại tài nguyên không được để trống")
+    QuestionAssetType type,
 
     @Size(max = 4096, message = "URL tài nguyên không được vượt quá 4096 ký tự")
     String url,

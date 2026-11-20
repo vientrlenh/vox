@@ -105,7 +105,7 @@ public class UpdateQuestionAssetUseCase implements IUseCase<UpdateQuestionAssetC
             targetAsset.setAltText(command.altText());
         }
         if (command.type() != null) {
-            targetAsset.setType(QuestionAssetType.valueOf(command.type()));
+            targetAsset.setType(command.type());
         }
         if (command.url() != null) {
             targetAsset.setUrl(command.url());
@@ -161,7 +161,7 @@ public class UpdateQuestionAssetUseCase implements IUseCase<UpdateQuestionAssetC
             StringNormalization.trimAndCollapseSpaces(input.title()),
             input.durationSeconds(),
             StringNormalization.trimAndCollapseSpaces(input.altText()),
-            input.type() == null ? null : StringNormalization.normalizeCode(input.type()),
+            input.type(),
             StringNormalization.trimAndCollapseSpaces(input.url()),
             StringNormalization.trimAndCollapseSpaces(input.transcript()),
             StringNormalization.trimAndCollapseSpaces(input.description()),

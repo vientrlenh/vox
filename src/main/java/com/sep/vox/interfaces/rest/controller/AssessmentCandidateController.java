@@ -31,7 +31,6 @@ import com.sep.vox.application.port.input.usecase.assessmentcandidate.UnblockAss
 import com.sep.vox.application.port.input.usecase.assessmentcandidate.UpdateAssessmentCandidateStatusUseCase;
 import com.sep.vox.application.response.input.assessmentcandidate.AssignAssessmentPapersResponse;
 import com.sep.vox.domain.dto.AssessmentCandidateDto;
-import com.sep.vox.domain.model.assessment.AssessmentCandidateStatus;
 import com.sep.vox.interfaces.rest.dto.request.AddAssessmentCandidateRequest;
 import com.sep.vox.interfaces.rest.dto.request.AssignAssessmentCandidateScheduleRequest;
 import com.sep.vox.interfaces.rest.dto.request.AssignAssessmentPapersRequest;
@@ -175,7 +174,7 @@ public class AssessmentCandidateController {
             @Valid @RequestBody UpdateAssessmentCandidateStatusRequest request) {
         AssessmentCandidateDto data = updateAssessmentCandidateStatusUseCase.execute(new UpdateAssessmentCandidateStatusCommand(
             candidateId,
-            AssessmentCandidateStatus.valueOf(request.status().trim().toUpperCase())
+            request.status()
         ));
         return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái thí sinh thành công", data));
     }

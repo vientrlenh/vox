@@ -224,7 +224,7 @@ public class QuestionController {
     @GetMapping("/import/template")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")
     public ResponseEntity<byte[]> downloadTemplate(
-            @RequestParam(name = "type", required = false) String type) {
+            @RequestParam(name = "type", required = false) QuestionType type) {
         byte[] file = questionSpreadsheetService.downloadTemplate(type);
         return ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + questionSpreadsheetService.templateFileName() + "\"")

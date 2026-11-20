@@ -2,6 +2,11 @@ package com.sep.vox.application.port.input.query;
 
 import java.util.UUID;
 
+import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
+import com.sep.vox.domain.model.assessment.AssessmentKind;
+import com.sep.vox.domain.model.assessment.GradingAssignmentStatus;
+import com.sep.vox.domain.model.assessment.GradingRoundType;
+
 /**
  * Exports the score sheet; the scope is always locked to the caller's school.
  *
@@ -18,18 +23,18 @@ public record ExportAssessmentScoresQuery(
     UUID assessmentId,
     UUID scheduleId,
     UUID teacherId,
-    String resultStatus,
-    String roundType,
-    String assignmentStatus,
+    AssessmentCandidateResultStatus resultStatus,
+    GradingRoundType roundType,
+    GradingAssignmentStatus assignmentStatus,
     boolean unassignedOnly,
     boolean overdueOnly,
     Boolean hasOpenAppeal,
     String keyword,
-    String assessmentKind
+    AssessmentKind assessmentKind
 ) {
 
     /** Chỉ có phạm vi, không lọc gì thêm — dùng cho test và cho lời gọi đơn giản. */
-    public static ExportAssessmentScoresQuery scopedTo(UUID assessmentId, UUID scheduleId, String assessmentKind) {
+    public static ExportAssessmentScoresQuery scopedTo(UUID assessmentId, UUID scheduleId, AssessmentKind assessmentKind) {
         return new ExportAssessmentScoresQuery(
             assessmentId, scheduleId, null, null, null, null, false, false, null, null, assessmentKind);
     }

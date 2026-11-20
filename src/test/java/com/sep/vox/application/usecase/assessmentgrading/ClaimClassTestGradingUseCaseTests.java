@@ -112,14 +112,6 @@ class ClaimClassTestGradingUseCaseTests {
         verify(assessmentGradingAssignmentRepository, never()).saveAll(anyList());
     }
 
-    @Test
-    void should_reject_unknown_round_type() {
-        assertThatThrownBy(() -> useCase.execute(
-                new ClaimClassTestGradingCommand(ASSESSMENT_ID, "KHONG_CO_THAT", List.of(RESULT_ID))))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Vòng chấm không hợp lệ");
-    }
-
     /** The assessmentId in the URL is the thing that has passed the permission check -- an attempt of another test must be blocked. */
     @Test
     void should_reject_result_belonging_to_another_assessment() {
@@ -157,14 +149,14 @@ class ClaimClassTestGradingUseCaseTests {
     void should_reject_duplicated_results_in_one_batch() {
         assertThatThrownBy(() -> useCase.execute(
                 new ClaimClassTestGradingCommand(
-                    ASSESSMENT_ID, GradingRoundType.SPOT_CHECK.name(), List.of(RESULT_ID, RESULT_ID))))
+                    ASSESSMENT_ID, GradingRoundType.SPOT_CHECK, List.of(RESULT_ID, RESULT_ID))))
             .isInstanceOf(DuplicatedException.class);
     }
 
     @Test
     void should_reject_an_empty_batch() {
         assertThatThrownBy(() -> useCase.execute(
-                new ClaimClassTestGradingCommand(ASSESSMENT_ID, GradingRoundType.SPOT_CHECK.name(), List.of())))
+                new ClaimClassTestGradingCommand(ASSESSMENT_ID, GradingRoundType.SPOT_CHECK, List.of())))
             .isInstanceOf(IllegalArgumentException.class);
 
         verify(assessmentGradingAssignmentRepository, never()).saveAll(any());
@@ -178,7 +170,7 @@ class ClaimClassTestGradingUseCaseTests {
     }
 
     private ClaimClassTestGradingCommand command(GradingRoundType roundType, UUID... resultIds) {
-        return new ClaimClassTestGradingCommand(ASSESSMENT_ID, roundType.name(), List.of(resultIds));
+        return new ClaimClassTestGradingCommand(ASSESSMENT_ID, roundType, List.of(resultIds));
     }
 
     private AssessmentCandidateResult result(UUID id, UUID assessmentId, AssessmentCandidateResultStatus status) {

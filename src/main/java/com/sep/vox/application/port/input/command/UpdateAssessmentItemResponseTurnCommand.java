@@ -3,10 +3,12 @@ package com.sep.vox.application.port.input.command;
 import java.time.Instant;
 import java.util.UUID;
 
+import com.sep.vox.domain.model.assessment.TurnType;
+
 public record UpdateAssessmentItemResponseTurnCommand(
     UUID answerId,
     int turnOrder,
-    String turnType,
+    TurnType turnType,
     String promptText,
     String audioUrl,
     String transcript,

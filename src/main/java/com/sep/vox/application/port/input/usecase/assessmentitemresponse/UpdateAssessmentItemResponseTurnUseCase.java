@@ -1,9 +1,6 @@
 package com.sep.vox.application.port.input.usecase.assessmentitemresponse;
 
 import com.sep.vox.domain.model.assessment.AssessmentItemResponseTurn;
-import java.time.Instant;
-import java.time.format.DateTimeParseException;
-import java.util.Locale;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,7 +10,6 @@ import com.sep.vox.application.mapper.assessmentitemresponse.AssessmentItemRespo
 import com.sep.vox.application.port.input.command.UpdateAssessmentItemResponseTurnCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.assessmentitemresponse.AssessmentItemResponseTurnResponse;
-import com.sep.vox.domain.model.assessment.TurnType;
 import com.sep.vox.domain.repository.AssessmentItemResponseRepository;
 import com.sep.vox.domain.repository.AssessmentItemResponseTurnRepository;
 
@@ -42,7 +38,7 @@ public class UpdateAssessmentItemResponseTurnUseCase
             .orElseThrow(() -> new NotFoundException("Không tìm thấy turn cần cập nhật"));
 
         if (input.turnType() != null) {
-            turn.setTurnType(normalizeTurnType(input.turnType()));
+            turn.setTurnType(input.turnType());
         }
         if (input.promptText() != null) {
             turn.setPromptText(input.promptText());
@@ -67,31 +63,4 @@ public class UpdateAssessmentItemResponseTurnUseCase
         return AssessmentItemResponseResponseMapper.toTurnResponse(saved);
     }
 
-    public static Instant parseAnsweredAt(String answeredAt) {
-        if (answeredAt == null) {
-            return null;
-        }
-        if (answeredAt.isBlank()) {
-            return null;
-        }
-
-        try {
-            return Instant.parse(answeredAt.trim());
-        } catch (DateTimeParseException ex) {
-            throw new IllegalArgumentException("answeredAt không đúng định dạng ISO-8601");
-        }
-    }
-
-    private TurnType normalizeTurnType(String turnType) {
-        if (turnType == null || turnType.isBlank()) {
-            throw new IllegalArgumentException("turnType không được để trống");
-        }
-
-        String normalized = turnType.trim().toUpperCase(Locale.ROOT);
-        try {
-            return TurnType.valueOf(normalized);
-        } catch (IllegalArgumentException ex) {
-            throw new IllegalArgumentException("turnType không hợp lệ");
-        }
-    }
 }

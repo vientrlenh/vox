@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
+import java.time.LocalDate;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -14,8 +15,8 @@ public record CreateSchoolGradeRequest(
         String description,
 
         @NotNull(message = "Ngày bắt đầu không được để trống")
-        String startDate,
+        LocalDate startDate,
 
         @NotNull(message = "Ngày kết thúc không được để trống")
-        String endDate
+        LocalDate endDate
 ) {}

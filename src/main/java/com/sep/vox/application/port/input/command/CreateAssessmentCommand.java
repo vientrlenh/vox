@@ -1,8 +1,11 @@
 package com.sep.vox.application.port.input.command;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import com.sep.vox.domain.model.assessment.AssessmentDeliveryMode;
+import com.sep.vox.domain.model.assessment.AssessmentStreamTypePermission;
 import com.sep.vox.domain.model.assessment.ResultDecisionMethod;
 
 public record CreateAssessmentCommand(
@@ -11,16 +14,16 @@ public record CreateAssessmentCommand(
     String description,
     UUID languageId,
     UUID blueprintId,
-    String openAt,
-    String closeAt,
+    Instant openAt,
+    Instant closeAt,
     UUID assessmentPolicyId,
     Integer maxAttempt,
     Integer assessmentTimeDurationSecond,
     ResultDecisionMethod resultDecisionMethod,
     Boolean requiresOtp,
     List<String> requiredStreamTypes,
-    String streamTypePermission,
-    String deliveryMode,
+    AssessmentStreamTypePermission streamTypePermission,
+    AssessmentDeliveryMode deliveryMode,
 
     /**
      * AI confidence threshold (0.00-1.00). NULL = not set, the system uses the hard rules as before.

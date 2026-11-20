@@ -85,8 +85,10 @@ public class AutoAssignGradingUseCase implements IUseCase<AutoAssignGradingComma
         if (assessmentGradingAccessService.isClassTestAssessment(command.assessmentId())) {
             throw new ForbiddenException(AssessmentGradingAccessService.CLASS_TEST_COORDINATION_REJECTION);
         }
-        GradingRoundType roundType = parseRoundType(command.roundType());
-        GradingSampleSelectionMode selectionMode = parseSelectionMode(command.selectionMode());
+        GradingRoundType roundType = requireNotAppealRound(command.roundType());
+        GradingSampleSelectionMode selectionMode = command.selectionMode() == null
+            ? GradingSampleSelectionMode.ALL
+            : command.selectionMode();
         Instant deadlineAt = validateDeadline(command.deadlineAt());
 
         List<UUID> teacherIds = command.teacherIds() == null ? List.<UUID>of() : command.teacherIds();
@@ -157,32 +159,12 @@ public class AutoAssignGradingUseCase implements IUseCase<AutoAssignGradingComma
             .toList();
     }
 
-    private GradingRoundType parseRoundType(String value) {
-        if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException("Phải chọn vòng chấm.");
-        }
-        GradingRoundType roundType;
-        try {
-            roundType = GradingRoundType.valueOf(value);
-        } catch (IllegalArgumentException ignored) {
-            throw new IllegalArgumentException("Vòng chấm không hợp lệ.");
-        }
+    private GradingRoundType requireNotAppealRound(GradingRoundType roundType) {
         if (roundType == GradingRoundType.APPEAL) {
             throw new IllegalArgumentException(
                 "Vòng phúc khảo được phân công từ màn đơn phúc khảo, không phân công ở đây.");
         }
         return roundType;
-    }
-
-    private GradingSampleSelectionMode parseSelectionMode(String value) {
-        if (value == null || value.isBlank()) {
-            return GradingSampleSelectionMode.ALL;
-        }
-        try {
-            return GradingSampleSelectionMode.valueOf(value);
-        } catch (IllegalArgumentException ignored) {
-            throw new IllegalArgumentException("Cách chọn bài không hợp lệ.");
-        }
     }
 
     private Instant validateDeadline(Instant deadlineAt) {

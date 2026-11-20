@@ -24,9 +24,7 @@ import com.sep.vox.domain.dto.AssessmentBlueprintSlotDto;
 import com.sep.vox.domain.mapper.AssessmentBlueprintSlotDtoMapper;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlotType;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersionStatus;
-import com.sep.vox.domain.model.question.QuestionDifficulty;
 import com.sep.vox.domain.model.question.QuestionStatus;
-import com.sep.vox.domain.model.question.QuestionType;
 import com.sep.vox.domain.repository.AssessmentBlueprintRepository;
 import com.sep.vox.domain.repository.AssessmentBlueprintSlotRepository;
 import com.sep.vox.domain.repository.AssessmentBlueprintVersionRepository;
@@ -97,7 +95,7 @@ public class UpdateAssessmentBlueprintSlotUseCase implements IUseCase<UpdateAsse
         slot.setWeight(command.weight() == null ? BigDecimal.ONE : command.weight());
         slot.setPrepTimeSecondsOverride(command.prepTimeSecondsOverride());
         slot.setResponseTimeSecondsOverride(command.responseTimeSecondsOverride());
-        slot.setSlotType(AssessmentBlueprintSlotType.valueOf(command.slotType()));
+        slot.setSlotType(command.slotType());
         slot.setFixedQuestionId(command.fixedQuestionId());
         slot.setSelectionSpec(selectionSpecOf(command.selectionSpec()));
         slot.setUpdatedAt(Instant.now());
@@ -109,7 +107,7 @@ public class UpdateAssessmentBlueprintSlotUseCase implements IUseCase<UpdateAsse
     }
 
     private void validateSlot(UpdateAssessmentBlueprintSlotCommand command) {
-        AssessmentBlueprintSlotType slotType = AssessmentBlueprintSlotType.valueOf(command.slotType());
+        AssessmentBlueprintSlotType slotType = command.slotType();
         if (slotType == AssessmentBlueprintSlotType.FIXED) {
             if (command.fixedQuestionId() == null) {
                 throw new IllegalStateException("Slot FIXED bắt buộc phải có fixedQuestionId");
@@ -139,7 +137,7 @@ public class UpdateAssessmentBlueprintSlotUseCase implements IUseCase<UpdateAsse
             input.weight(),
             input.prepTimeSecondsOverride(),
             input.responseTimeSecondsOverride(),
-            StringNormalization.normalizeCode(input.slotType()),
+            input.slotType(),
             input.fixedQuestionId(),
             normalizeSelectionSpec(input.selectionSpec())
         );
@@ -150,8 +148,8 @@ public class UpdateAssessmentBlueprintSlotUseCase implements IUseCase<UpdateAsse
             return null;
         }
         return new CreateQuestionSelectionSpecCommand(
-            StringNormalization.normalizeCode(input.questionType()),
-            StringNormalization.normalizeCode(input.difficulty()),
+            input.questionType(),
+            input.difficulty(),
             StringNormalization.trimAndCollapseSpaces(input.targetBandLevel()),
             StringNormalization.trimAndCollapseSpaces(input.skillCode()),
             input.topicId()
@@ -163,8 +161,8 @@ public class UpdateAssessmentBlueprintSlotUseCase implements IUseCase<UpdateAsse
             return null;
         }
         return new QuestionSelectionSpec(
-            input.questionType() == null ? null : QuestionType.valueOf(input.questionType()),
-            input.difficulty() == null ? null : QuestionDifficulty.valueOf(input.difficulty()),
+            input.questionType(),
+            input.difficulty(),
             input.targetBandLevel(),
             input.skillCode(),
             input.topicId()

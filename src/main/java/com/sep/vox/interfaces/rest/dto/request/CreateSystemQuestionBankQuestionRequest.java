@@ -3,12 +3,14 @@ package com.sep.vox.interfaces.rest.dto.request;
 import java.util.List;
 import java.util.UUID;
 
+import com.sep.vox.domain.model.question.QuestionSharing;
+import com.sep.vox.domain.model.question.QuestionType;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record CreateSystemQuestionBankQuestionRequest(
@@ -43,12 +45,8 @@ public record CreateSystemQuestionBankQuestionRequest(
 
     String commonMistakes,
 
-    @NotBlank(message = "Loại câu hỏi không được để trống")
-    @Pattern(
-        regexp = "READ_ALOUD|SHORT_ANSWER|LONG_ANSWER|OPINION|DESCRIPTION",
-        message = "Loại câu hỏi không hợp lệ"
-    )
-    String type,
+    @NotNull(message = "Loại câu hỏi không được để trống")
+    QuestionType type,
 
     @NotNull(message = "Thời gian chuẩn bị không được để trống")
     @Min(value = 0, message = "Thời gian chuẩn bị không được dưới 0")
@@ -62,11 +60,7 @@ public record CreateSystemQuestionBankQuestionRequest(
     @Min(value = 0, message = "Thoi gian tra loi toi da phai lon hon hoac bang 0")
     Integer maxResponseSeconds,
 
-    @Pattern(
-        regexp = "PRIVATE|SCHOOL_SHARED",
-        message = "Chế độ chia sẻ không hợp lệ"
-    )
-    String sharing,
+    QuestionSharing sharing,
 
     @Valid
     List<CreateQuestionAssetRequest> assets

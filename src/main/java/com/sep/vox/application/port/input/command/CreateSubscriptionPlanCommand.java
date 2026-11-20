@@ -3,6 +3,8 @@ package com.sep.vox.application.port.input.command;
 import java.math.BigDecimal;
 import java.util.List;
 
+import com.sep.vox.domain.model.subscription.SubscriptionPlanPeriod;
+
 /**
  * Không còn serviceFeeRatio: phí dịch vụ đã thành config TOÀN HỆ THỐNG
  * (vox.quota.selling-price.service-fee-ratio) và được cộng thành một dòng riêng trên ĐƠN HÀNG, chứ
@@ -15,7 +17,7 @@ public record CreateSubscriptionPlanCommand(
     String name,
     String tagline,
     BigDecimal priceVnd,
-    String periodType,
+    SubscriptionPlanPeriod periodType,
     Integer periodCount,
     Integer maxTimePerAttemptMin,
     List<CreateSubscriptionPlanQuotaCommand> quotas

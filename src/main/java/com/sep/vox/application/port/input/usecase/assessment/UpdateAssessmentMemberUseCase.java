@@ -5,7 +5,6 @@ import com.sep.vox.domain.model.assessment.AssessmentMember;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateAssessmentMemberCommand;
@@ -36,14 +35,9 @@ public class UpdateAssessmentMemberUseCase implements IUseCase<UpdateAssessmentM
     @Override
     @Transactional
     public AssessmentMemberDto execute(UpdateAssessmentMemberCommand input) {
-        UpdateAssessmentMemberCommand command = new UpdateAssessmentMemberCommand(
-            input.assessmentId(),
-            input.memberId(),
-            StringNormalization.normalizeCode(input.role())
-        );
-        Assessment assessment = assessmentRepository.findById(command.assessmentId())
+        Assessment assessment = assessmentRepository.findById(input.assessmentId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
-        AssessmentMember member = assessmentMemberRepository.findById(command.memberId())
+        AssessmentMember member = assessmentMemberRepository.findById(input.memberId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên bài kiểm tra"));
 
         if (!member.getAssessmentId().equals(assessment.getId())) {
@@ -53,7 +47,7 @@ public class UpdateAssessmentMemberUseCase implements IUseCase<UpdateAssessmentM
         AssessmentMemberManageAccessService.AssessmentMemberActor actor = assessmentMemberManageAccessService.requireCanManage(assessment);
         // Đổi vai trò chạm tới hai vai: vai cũ bị gỡ và vai mới được gán. Kiểm cả hai, nếu không thì
         // chủ tịch hội đồng hạ cấp được chủ tịch khác xuống AUTHOR chỉ vì vai đích không phải CHAIR.
-        AssessmentMemberRole newRole = AssessmentMemberRole.valueOf(command.role());
+        AssessmentMemberRole newRole = input.role();
         assessmentMemberManageAccessService.requireCanTouchRole(actor, member.getRole());
         assessmentMemberManageAccessService.requireCanTouchRole(actor, newRole);
 

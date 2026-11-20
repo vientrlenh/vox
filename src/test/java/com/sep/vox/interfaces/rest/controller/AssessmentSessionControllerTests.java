@@ -86,4 +86,27 @@ class AssessmentSessionControllerTests {
                 "submittedAt", SUBMITTED_AT
             ));
     }
+
+    @Test
+    @WithMockUser(roles = "STUDENT")
+    void updateStatus_should_answer_400_listing_statuses_for_unknown_value() {
+        MvcTestResult result = mvc.patch().uri("/api/v1/assessment-sessions/{id}", UUID.randomUUID())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"status\": \"NOPE\"}")
+            .exchange();
+
+        assertThat(result).hasStatus(400).bodyJson().extractingPath("$.errors.status").asString()
+            .contains("IN_PROGRESS", "SUBMITTED");
+    }
+
+    @Test
+    @WithMockUser(roles = "STUDENT")
+    void updateStatus_should_answer_400_when_status_is_missing() {
+        MvcTestResult result = mvc.patch().uri("/api/v1/assessment-sessions/{id}", UUID.randomUUID())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{}")
+            .exchange();
+
+        assertThat(result).hasStatus(400).bodyJson().extractingPath("$.errors.status").isNotNull();
+    }
 }

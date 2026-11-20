@@ -1,7 +1,9 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
+import java.time.LocalDate;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record CreateSchoolUserRequest(
@@ -18,8 +20,8 @@ public record CreateSchoolUserRequest(
     @Size(max = 255, message = "Họ và tên không được vượt quá 255 ký tự")
     String fullName,
 
-    @NotBlank(message = "Ngày sinh không được để trống")
-    String dateOfBirth,
+    @NotNull(message = "Ngày sinh không được để trống")
+    LocalDate dateOfBirth,
 
     @Size(max = 255, message = "Địa chỉ không được vượt quá 255 ký tự")
     String address,
@@ -27,9 +29,9 @@ public record CreateSchoolUserRequest(
     @NotBlank(message = "Vai trò không được để trống")
     String roleCode,
 
-    String startDate,
+    LocalDate startDate,
 
-    String endDate
+    LocalDate endDate
 ) {
 
 }

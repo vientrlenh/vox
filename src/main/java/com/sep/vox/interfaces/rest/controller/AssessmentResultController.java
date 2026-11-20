@@ -21,6 +21,10 @@ import com.sep.vox.application.port.input.usecase.assessmentgrading.ExportAssess
 import com.sep.vox.application.port.input.usecase.assessmentgrading.ExportAssessmentScoresUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentgrading.PreviewBulkFinalizeUseCase;
 import com.sep.vox.application.query.dto.BulkFinalizePreviewInfo;
+import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
+import com.sep.vox.domain.model.assessment.AssessmentKind;
+import com.sep.vox.domain.model.assessment.GradingAssignmentStatus;
+import com.sep.vox.domain.model.assessment.GradingRoundType;
 import com.sep.vox.interfaces.rest.dto.request.BulkFinalizeAssessmentResultsRequest;
 import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 
@@ -93,14 +97,14 @@ public class AssessmentResultController {
             @RequestParam(name = "assessmentId", required = false) UUID assessmentId,
             @RequestParam(name = "scheduleId", required = false) UUID scheduleId,
             @RequestParam(name = "teacherId", required = false) UUID teacherId,
-            @RequestParam(name = "resultStatus", required = false) String resultStatus,
-            @RequestParam(name = "roundType", required = false) String roundType,
-            @RequestParam(name = "assignmentStatus", required = false) String assignmentStatus,
+            @RequestParam(name = "resultStatus", required = false) AssessmentCandidateResultStatus resultStatus,
+            @RequestParam(name = "roundType", required = false) GradingRoundType roundType,
+            @RequestParam(name = "assignmentStatus", required = false) GradingAssignmentStatus assignmentStatus,
             @RequestParam(name = "unassignedOnly", required = false, defaultValue = "false") boolean unassignedOnly,
             @RequestParam(name = "overdueOnly", required = false, defaultValue = "false") boolean overdueOnly,
             @RequestParam(name = "hasOpenAppeal", required = false) Boolean hasOpenAppeal,
             @RequestParam(name = "keyword", required = false) String keyword,
-            @RequestParam(name = "kind", required = false) String kind) {
+            @RequestParam(name = "kind", required = false) AssessmentKind kind) {
         ExportAssessmentScoresQuery query = toQuery(assessmentId, scheduleId, teacherId, resultStatus, roundType, assignmentStatus,
             unassignedOnly, overdueOnly, hasOpenAppeal, keyword, kind);
         String csv = exportAssessmentScoresUseCase.execute(query);
@@ -120,14 +124,14 @@ public class AssessmentResultController {
             @RequestParam(name = "assessmentId", required = false) UUID assessmentId,
             @RequestParam(name = "scheduleId", required = false) UUID scheduleId,
             @RequestParam(name = "teacherId", required = false) UUID teacherId,
-            @RequestParam(name = "resultStatus", required = false) String resultStatus,
-            @RequestParam(name = "roundType", required = false) String roundType,
-            @RequestParam(name = "assignmentStatus", required = false) String assignmentStatus,
+            @RequestParam(name = "resultStatus", required = false) AssessmentCandidateResultStatus resultStatus,
+            @RequestParam(name = "roundType", required = false) GradingRoundType roundType,
+            @RequestParam(name = "assignmentStatus", required = false) GradingAssignmentStatus assignmentStatus,
             @RequestParam(name = "unassignedOnly", required = false, defaultValue = "false") boolean unassignedOnly,
             @RequestParam(name = "overdueOnly", required = false, defaultValue = "false") boolean overdueOnly,
             @RequestParam(name = "hasOpenAppeal", required = false) Boolean hasOpenAppeal,
             @RequestParam(name = "keyword", required = false) String keyword,
-            @RequestParam(name = "kind", required = false) String kind) {
+            @RequestParam(name = "kind", required = false) AssessmentKind kind) {
         ExportAssessmentScoresQuery query = toQuery(assessmentId, scheduleId, teacherId, resultStatus, roundType, assignmentStatus,
             unassignedOnly, overdueOnly, hasOpenAppeal, keyword, kind);
         byte[] workbook = exportAssessmentScoresExcelUseCase.execute(query);
@@ -143,9 +147,9 @@ public class AssessmentResultController {
      * viết hai lần là mở đường cho CSV và Excel cùng một màn hình trả về hai tập dòng khác nhau.
      */
     private ExportAssessmentScoresQuery toQuery(
-            UUID assessmentId, UUID scheduleId, UUID teacherId, String resultStatus, String roundType,
-            String assignmentStatus, boolean unassignedOnly, boolean overdueOnly,
-            Boolean hasOpenAppeal, String keyword, String kind) {
+            UUID assessmentId, UUID scheduleId, UUID teacherId, AssessmentCandidateResultStatus resultStatus,
+            GradingRoundType roundType, GradingAssignmentStatus assignmentStatus, boolean unassignedOnly, boolean overdueOnly,
+            Boolean hasOpenAppeal, String keyword, AssessmentKind kind) {
         return new ExportAssessmentScoresQuery(assessmentId, scheduleId, teacherId, resultStatus, roundType,
             assignmentStatus, unassignedOnly, overdueOnly, hasOpenAppeal, keyword, kind);
     }

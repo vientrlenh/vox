@@ -29,9 +29,7 @@ import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlot;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlotType;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersion;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersionStatus;
-import com.sep.vox.domain.model.question.QuestionDifficulty;
 import com.sep.vox.domain.model.question.QuestionStatus;
-import com.sep.vox.domain.model.question.QuestionType;
 import com.sep.vox.domain.repository.AssessmentBlueprintRepository;
 import com.sep.vox.domain.repository.AssessmentBlueprintSectionRepository;
 import com.sep.vox.domain.repository.AssessmentBlueprintSlotRepository;
@@ -100,8 +98,8 @@ public class CreateAssessmentBlueprintVersionUseCase implements IUseCase<CreateA
             null,
             AssessmentBlueprintVersionStatus.DRAFT,
             null,
-            effectiveFromOf(command.effectiveFrom(), now),
-            parseDateTime(command.effectiveTo()),
+            command.effectiveFrom() == null ? now : command.effectiveFrom(),
+            command.effectiveTo(),
             now,
             now,
             currentUserId,
@@ -130,7 +128,7 @@ public class CreateAssessmentBlueprintVersionUseCase implements IUseCase<CreateA
                     defaultWeight(slotCommand.weight()),
                     slotCommand.prepTimeSecondsOverride(),
                     slotCommand.responseTimeSecondsOverride(),
-                    AssessmentBlueprintSlotType.valueOf(slotCommand.slotType()),
+                    slotCommand.slotType(),
                     slotCommand.fixedQuestionId(),
                     selectionSpecOf(slotCommand.selectionSpec()),
                     now,
@@ -183,7 +181,7 @@ public class CreateAssessmentBlueprintVersionUseCase implements IUseCase<CreateA
             input.weight(),
             input.prepTimeSecondsOverride(),
             input.responseTimeSecondsOverride(),
-            StringNormalization.normalizeCode(input.slotType()),
+            input.slotType(),
             input.fixedQuestionId(),
             normalizeSelectionSpec(input.selectionSpec())
         );
@@ -194,8 +192,8 @@ public class CreateAssessmentBlueprintVersionUseCase implements IUseCase<CreateA
             return null;
         }
         return new CreateQuestionSelectionSpecCommand(
-            StringNormalization.normalizeCode(input.questionType()),
-            StringNormalization.normalizeCode(input.difficulty()),
+            input.questionType(),
+            input.difficulty(),
             StringNormalization.trimAndCollapseSpaces(input.targetBandLevel()),
             StringNormalization.trimAndCollapseSpaces(input.skillCode()),
             input.topicId()
@@ -238,7 +236,7 @@ public class CreateAssessmentBlueprintVersionUseCase implements IUseCase<CreateA
     }
 
     private void validateSlot(CreateAssessmentBlueprintSlotCommand slot) {
-        AssessmentBlueprintSlotType slotType = AssessmentBlueprintSlotType.valueOf(slot.slotType());
+        AssessmentBlueprintSlotType slotType = slot.slotType();
         if (slotType == AssessmentBlueprintSlotType.FIXED) {
             if (slot.fixedQuestionId() == null) {
                 throw new IllegalStateException("Slot FIXED bắt buộc phải có fixedQuestionId");
@@ -269,21 +267,13 @@ public class CreateAssessmentBlueprintVersionUseCase implements IUseCase<CreateA
         return value == null ? BigDecimal.ONE : value;
     }
 
-    private Instant effectiveFromOf(String value, Instant defaultValue) {
-        return value == null ? defaultValue : Instant.parse(value);
-    }
-
-    private Instant parseDateTime(String value) {
-        return value == null ? null : Instant.parse(value);
-    }
-
     private QuestionSelectionSpec selectionSpecOf(CreateQuestionSelectionSpecCommand input) {
         if (input == null) {
             return null;
         }
         return new QuestionSelectionSpec(
-            input.questionType() == null ? null : QuestionType.valueOf(input.questionType()),
-            input.difficulty() == null ? null : QuestionDifficulty.valueOf(input.difficulty()),
+            input.questionType(),
+            input.difficulty(),
             input.targetBandLevel(),
             input.skillCode(),
             input.topicId()

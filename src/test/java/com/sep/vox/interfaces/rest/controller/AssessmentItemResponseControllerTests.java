@@ -56,4 +56,27 @@ class AssessmentItemResponseControllerTests {
                 "createdAt", CREATED_AT
             ));
     }
+
+    @Test
+    @WithMockUser(roles = "STUDENT")
+    void updateTurn_should_answer_400_listing_turn_types_for_unknown_value() {
+        MvcTestResult result = mvc.patch().uri("/api/v1/assessment-item-responses/{answerId}/turns/{turnOrder}", UUID.randomUUID(), 1)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"turnType\": \"NOPE\"}")
+            .exchange();
+
+        assertThat(result).hasStatus(400).bodyJson().extractingPath("$.errors.turnType").asString()
+            .contains("MAIN", "FOLLOWUP");
+    }
+
+    @Test
+    @WithMockUser(roles = "STUDENT")
+    void updateTurn_should_answer_400_naming_answered_at_for_unparsable_date() {
+        MvcTestResult result = mvc.patch().uri("/api/v1/assessment-item-responses/{answerId}/turns/{turnOrder}", UUID.randomUUID(), 1)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"answeredAt\": \"2026-13-45\"}")
+            .exchange();
+
+        assertThat(result).hasStatus(400).bodyJson().extractingPath("$.errors.answeredAt").isNotNull();
+    }
 }

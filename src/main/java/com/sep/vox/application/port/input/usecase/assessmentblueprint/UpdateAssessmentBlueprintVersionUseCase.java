@@ -32,9 +32,7 @@ import com.sep.vox.domain.model.assessment.AssessmentBlueprintSection;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlot;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlotType;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersionStatus;
-import com.sep.vox.domain.model.question.QuestionDifficulty;
 import com.sep.vox.domain.model.question.QuestionStatus;
-import com.sep.vox.domain.model.question.QuestionType;
 import com.sep.vox.domain.repository.AssessmentBlueprintRepository;
 import com.sep.vox.domain.repository.AssessmentBlueprintSectionRepository;
 import com.sep.vox.domain.repository.AssessmentBlueprintSlotRepository;
@@ -102,8 +100,8 @@ public class UpdateAssessmentBlueprintVersionUseCase implements IUseCase<UpdateA
         if (command.description() != null) {
             version.setDescription(command.description());
         }
-        version.setEffectiveFrom(command.effectiveFrom() == null ? version.getEffectiveFrom() : Instant.parse(command.effectiveFrom()));
-        version.setEffectiveTo(parseDateTime(command.effectiveTo()));
+        version.setEffectiveFrom(command.effectiveFrom() == null ? version.getEffectiveFrom() : command.effectiveFrom());
+        version.setEffectiveTo(command.effectiveTo());
         version.setUpdatedAt(Instant.now());
         version.setUpdatedBy(currentUserId);
         AssessmentBlueprintVersion savedVersion = assessmentBlueprintVersionRepository.save(version);
@@ -182,7 +180,7 @@ public class UpdateAssessmentBlueprintVersionUseCase implements IUseCase<UpdateA
             input.weight(),
             input.prepTimeSecondsOverride(),
             input.responseTimeSecondsOverride(),
-            StringNormalization.normalizeCode(input.slotType()),
+            input.slotType(),
             input.fixedQuestionId(),
             normalizeSelectionSpec(input.selectionSpec())
         );
@@ -193,8 +191,8 @@ public class UpdateAssessmentBlueprintVersionUseCase implements IUseCase<UpdateA
             return null;
         }
         return new CreateQuestionSelectionSpecCommand(
-            StringNormalization.normalizeCode(input.questionType()),
-            StringNormalization.normalizeCode(input.difficulty()),
+            input.questionType(),
+            input.difficulty(),
             StringNormalization.trimAndCollapseSpaces(input.targetBandLevel()),
             StringNormalization.trimAndCollapseSpaces(input.skillCode()),
             input.topicId()
@@ -237,7 +235,7 @@ public class UpdateAssessmentBlueprintVersionUseCase implements IUseCase<UpdateA
     }
 
     private void validateSlot(CreateAssessmentBlueprintSlotCommand slot) {
-        AssessmentBlueprintSlotType slotType = AssessmentBlueprintSlotType.valueOf(slot.slotType());
+        AssessmentBlueprintSlotType slotType = slot.slotType();
         if (slotType == AssessmentBlueprintSlotType.FIXED) {
             if (slot.fixedQuestionId() == null) {
                 throw new IllegalStateException("Slot FIXED bắt buộc phải có fixedQuestionId");
@@ -314,7 +312,7 @@ public class UpdateAssessmentBlueprintVersionUseCase implements IUseCase<UpdateA
                 defaultWeight(command.weight()),
                 command.prepTimeSecondsOverride(),
                 command.responseTimeSecondsOverride(),
-                AssessmentBlueprintSlotType.valueOf(command.slotType()),
+                command.slotType(),
                 command.fixedQuestionId(),
                 selectionSpecOf(command.selectionSpec()),
                 now,
@@ -338,7 +336,7 @@ public class UpdateAssessmentBlueprintVersionUseCase implements IUseCase<UpdateA
             defaultWeight(command.weight()),
             command.prepTimeSecondsOverride(),
             command.responseTimeSecondsOverride(),
-            AssessmentBlueprintSlotType.valueOf(command.slotType()),
+            command.slotType(),
             command.fixedQuestionId(),
             selectionSpecOf(command.selectionSpec()),
             existing.getCreatedAt(),
@@ -374,17 +372,13 @@ public class UpdateAssessmentBlueprintVersionUseCase implements IUseCase<UpdateA
         return value == null ? BigDecimal.ONE : value;
     }
 
-    private Instant parseDateTime(String value) {
-        return value == null ? null : Instant.parse(value);
-    }
-
     private QuestionSelectionSpec selectionSpecOf(CreateQuestionSelectionSpecCommand input) {
         if (input == null) {
             return null;
         }
         return new QuestionSelectionSpec(
-            input.questionType() == null ? null : QuestionType.valueOf(input.questionType()),
-            input.difficulty() == null ? null : QuestionDifficulty.valueOf(input.difficulty()),
+            input.questionType(),
+            input.difficulty(),
             input.targetBandLevel(),
             input.skillCode(),
             input.topicId()

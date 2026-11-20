@@ -88,7 +88,7 @@ public class FundQuotaFromBalanceUseCase implements IUseCase<FundQuotaFromBalanc
     public QuotaFundingResponse execute(FundQuotaFromBalanceCommand input) {
         requireSchoolAdminAccess(input.schoolId());
 
-        QuotaType quotaType = parseQuotaType(input.quotaType());
+        QuotaType quotaType = input.quotaType();
         BigDecimal amountVnd = requirePositiveAmount(input.amountVnd());
         UUID actorId = userContextPort.getCurrentAuthenticatedUserId();
 
@@ -161,14 +161,6 @@ public class FundQuotaFromBalanceUseCase implements IUseCase<FundQuotaFromBalanc
             throw new IllegalArgumentException("Số tiền nạp vào hạn mức phải lớn hơn 0");
         }
         return amountVnd;
-    }
-
-    private static QuotaType parseQuotaType(String quotaType) {
-        try {
-            return QuotaType.valueOf(quotaType);
-        } catch (IllegalArgumentException | NullPointerException e) {
-            throw new IllegalArgumentException("Loại hạn mức không hợp lệ: " + quotaType);
-        }
     }
 
     private static String blankToNull(String value) {

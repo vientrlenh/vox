@@ -1,23 +1,26 @@
 package com.sep.vox.application.port.input.command;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import com.sep.vox.domain.model.assessment.AssessmentDeliveryMode;
+import com.sep.vox.domain.model.assessment.AssessmentStreamTypePermission;
 import com.sep.vox.domain.model.assessment.ResultDecisionMethod;
 
 public record CreateClassTestCommand(
     UUID schoolClassId,
     String name,
     String description,
-    String openAt,
-    String closeAt,
+    Instant openAt,
+    Instant closeAt,
     UUID assessmentPolicyId,
     Integer maxAttempt,
     Integer assessmentTimeDurationSecond,
     ResultDecisionMethod resultDecisionMethod,
     List<String> requiredStreamTypes,
-    String streamTypePermission,
-    String deliveryMode,
+    AssessmentStreamTypePermission streamTypePermission,
+    AssessmentDeliveryMode deliveryMode,
     Boolean requiresOtp,
     UUID schoolRoomId,
 

@@ -8,7 +8,6 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateQuestionCollaboratorCommand;
@@ -19,7 +18,6 @@ import com.sep.vox.domain.dto.QuestionCollaboratorDto;
 import com.sep.vox.domain.mapper.QuestionCollaboratorDtoMapper;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.model.question.QuestionCollaborator;
-import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
 import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
@@ -53,8 +51,7 @@ public class CreateQuestionCollaboratorUseCase implements IUseCase<CreateQuestio
 
     @Override
     @Transactional
-    public QuestionCollaboratorDto execute(CreateQuestionCollaboratorCommand input) {
-        CreateQuestionCollaboratorCommand command = normalize(input);
+    public QuestionCollaboratorDto execute(CreateQuestionCollaboratorCommand command) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         Question question = questionRepository.findById(command.questionId())
@@ -92,7 +89,7 @@ public class CreateQuestionCollaboratorUseCase implements IUseCase<CreateQuestio
         QuestionCollaborator collaborator = new QuestionCollaborator();
         collaborator.setQuestionId(question.getId());
         collaborator.setUserId(command.userId());
-        collaborator.setPermission(QuestionCollaboratorPermission.valueOf(command.permission()));
+        collaborator.setPermission(command.permission());
         collaborator.setAssignedAt(Instant.now());
 
         QuestionCollaborator saved = questionCollaboratorRepository.save(collaborator);
@@ -109,13 +106,5 @@ public class CreateQuestionCollaboratorUseCase implements IUseCase<CreateQuestio
         if (ownerType != QuestionBankOwnerType.SCHOOL) {
             throw new IllegalStateException("Chỉ question thuộc school bank mới dùng collaborator");
         }
-    }
-
-    private CreateQuestionCollaboratorCommand normalize(CreateQuestionCollaboratorCommand input) {
-        return new CreateQuestionCollaboratorCommand(
-            input.questionId(),
-            input.userId(),
-            StringNormalization.normalizeCode(input.permission())
-        );
     }
 }

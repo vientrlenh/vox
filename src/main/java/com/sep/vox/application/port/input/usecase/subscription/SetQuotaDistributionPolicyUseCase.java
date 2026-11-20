@@ -9,7 +9,6 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.command.SetQuotaDistributionPolicyCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.repository.SchoolQuotaPolicyRepository;
 
 /**
@@ -46,17 +45,8 @@ public class SetQuotaDistributionPolicyUseCase implements IUseCase<SetQuotaDistr
             throw new IllegalArgumentException("Trần phân phối phải nằm trong khoảng 0% tới 100%");
         }
 
-        QuotaType quotaType = parseQuotaType(input.quotaType());
         return schoolQuotaPolicyRepository
-            .upsertRatio(input.schoolId(), quotaType, ratio)
+            .upsertRatio(input.schoolId(), input.quotaType(), ratio)
             .getDistributableRatio();
-    }
-
-    private static QuotaType parseQuotaType(String quotaType) {
-        try {
-            return QuotaType.valueOf(quotaType);
-        } catch (IllegalArgumentException | NullPointerException e) {
-            throw new IllegalArgumentException("Loại hạn mức không hợp lệ: " + quotaType);
-        }
     }
 }

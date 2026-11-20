@@ -1,12 +1,9 @@
 package com.sep.vox.interfaces.rest.mapper;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.command.CloneSystemRubricToSchoolCommand;
-import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
 import com.sep.vox.interfaces.rest.dto.request.CloneSystemRubricRequest;
 
 public class CloneSystemRubricCommandMapper {
@@ -18,7 +15,7 @@ public class CloneSystemRubricCommandMapper {
                 request.code(),
                 request.name(),
                 request.description(),
-                toTotalScoreMethod(request.totalScoreMethod()),
+                request.totalScoreMethod(),
                 toPolicies(request.policies())
         );
     }
@@ -35,21 +32,8 @@ public class CloneSystemRubricCommandMapper {
                         choice.gradeLevelId(),
                         choice.schoolGradeId(),
                         choice.schoolClassId(),
-                        DateMapper.toInstant(choice.effectiveFrom()),
-                        DateMapper.toInstant(choice.effectiveTo())))
+                        choice.effectiveFrom(),
+                        choice.effectiveTo()))
                 .toList();
-    }
-
-    /**
-     * Trả về null khi client không chọn -- use case hiểu null là "giữ nguyên như bản mẫu".
-     *
-     * <p>Giá trị lạ đã bị {@code @Pattern} trên request chặn từ trước, nên tới đây chỉ còn hai giá
-     * trị hợp lệ hoặc rỗng.
-     */
-    private static RubricTotalScoreMethod toTotalScoreMethod(String raw) {
-        if (raw == null || raw.isBlank()) {
-            return null;
-        }
-        return RubricTotalScoreMethod.valueOf(raw.trim().toUpperCase(Locale.ROOT));
     }
 }

@@ -89,8 +89,8 @@ public class AutoAssignGradingUseCaseTests {
     }
 
     private AutoAssignGradingCommand command(UUID... teacherIds) {
-        return new AutoAssignGradingCommand(assessmentId, null, GradingRoundType.INITIAL.name(),
-            GradingSampleSelectionMode.ALL.name(), null, null, null, List.of(teacherIds));
+        return new AutoAssignGradingCommand(assessmentId, null, GradingRoundType.INITIAL,
+            GradingSampleSelectionMode.ALL, null, null, null, List.of(teacherIds));
     }
 
     @SuppressWarnings("unchecked")
@@ -173,8 +173,8 @@ public class AutoAssignGradingUseCaseTests {
     @Test
     void should_reject_when_neither_assessment_nor_schedule_is_given() {
         assertThatThrownBy(() ->
-            useCase.execute(new AutoAssignGradingCommand(null, null, GradingRoundType.INITIAL.name(),
-                GradingSampleSelectionMode.ALL.name(), null, null, null, List.of(anh))))
+            useCase.execute(new AutoAssignGradingCommand(null, null, GradingRoundType.INITIAL,
+                GradingSampleSelectionMode.ALL, null, null, null, List.of(anh))))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("kỳ thi hoặc ca thi");
 
@@ -212,8 +212,8 @@ public class AutoAssignGradingUseCaseTests {
     void should_only_take_a_percentage_of_the_pool_when_sampling_randomly() {
         givenUnassignedResults(10);
 
-        useCase.execute(new AutoAssignGradingCommand(assessmentId, null, GradingRoundType.SPOT_CHECK.name(),
-            GradingSampleSelectionMode.RANDOM_PERCENT.name(), 30, null, null, List.of(anh, binh)));
+        useCase.execute(new AutoAssignGradingCommand(assessmentId, null, GradingRoundType.SPOT_CHECK,
+            GradingSampleSelectionMode.RANDOM_PERCENT, 30, null, null, List.of(anh, binh)));
 
         // Hậu kiểm không ai soi 100% bài; 30% của 10 là 3.
         assertThat(captureSaved()).hasSize(3);
@@ -224,8 +224,8 @@ public class AutoAssignGradingUseCaseTests {
         givenUnassignedResults(10);
 
         assertThatThrownBy(() -> useCase.execute(new AutoAssignGradingCommand(
-            assessmentId, null, GradingRoundType.SPOT_CHECK.name(),
-            GradingSampleSelectionMode.RANDOM_PERCENT.name(), null, null, null, List.of(anh))))
+            assessmentId, null, GradingRoundType.SPOT_CHECK,
+            GradingSampleSelectionMode.RANDOM_PERCENT, null, null, null, List.of(anh))))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("1 - 100");
 
@@ -236,7 +236,7 @@ public class AutoAssignGradingUseCaseTests {
     void should_stamp_the_round_type_on_every_assignment() {
         givenUnassignedResults(2);
 
-        useCase.execute(new AutoAssignGradingCommand(assessmentId, null, GradingRoundType.SPOT_CHECK.name(),
+        useCase.execute(new AutoAssignGradingCommand(assessmentId, null, GradingRoundType.SPOT_CHECK,
             null, null, null, null, List.of(anh)));
 
         assertThat(captureSaved()).allSatisfy(assignment ->

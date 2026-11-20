@@ -1,6 +1,5 @@
 package com.sep.vox.interfaces.rest.mapper;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.command.CreateSchoolGradeCommand;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolGradeRequest;
 
@@ -8,16 +7,16 @@ import java.util.UUID;
 
 public class CreateSchoolGradeCommandMapper {
 
-    // Thêm UUID gradeLevelId vào tham số của hàm
+    // Takes the grade level id as an extra parameter
     public static CreateSchoolGradeCommand fromRequest(UUID schoolId, UUID gradeLevelId, CreateSchoolGradeRequest request) {
         return new CreateSchoolGradeCommand(
                 schoolId,
-                gradeLevelId, // Truyền thêm thằng này vào đây!
+                gradeLevelId, // Pass the grade level id through
                 request.code(),
                 request.name(),
                 request.description(),
-                DateMapper.toLocalDate(request.startDate()),
-                DateMapper.toLocalDate(request.endDate())
+                request.startDate(),
+                request.endDate()
         );
     }
 }

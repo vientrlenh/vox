@@ -91,7 +91,7 @@ public class CreateQuestionAssetUseCase implements IUseCase<CreateQuestionAssetM
 
         validateAssetOrder(targetQuestion.getId(), command.order(), null);
 
-        QuestionAssetType assetType = QuestionAssetType.valueOf(command.type());
+        QuestionAssetType assetType = command.type();
         QuestionAssetContentValidator.validate(
             assetType,
             command.url(),
@@ -134,7 +134,7 @@ public class CreateQuestionAssetUseCase implements IUseCase<CreateQuestionAssetM
             StringNormalization.trimAndCollapseSpaces(input.title()),
             input.durationSeconds(),
             StringNormalization.trimAndCollapseSpaces(input.altText()),
-            StringNormalization.normalizeCode(input.type()),
+            input.type(),
             StringNormalization.trimAndCollapseSpaces(input.url()),
             StringNormalization.trimAndCollapseSpaces(input.transcript()),
             StringNormalization.trimAndCollapseSpaces(input.description()),

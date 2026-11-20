@@ -7,7 +7,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +23,8 @@ import com.sep.vox.application.port.input.command.ClientDeviceCommand;
 import com.sep.vox.application.port.input.command.LoginCommand;
 import com.sep.vox.application.port.input.command.LogoutCommand;
 import com.sep.vox.application.port.input.command.RefreshCommand;
+import com.sep.vox.application.port.input.command.RegisterBySelfDeclaredCommand;
+import com.sep.vox.application.port.input.command.RegisterFromSchoolDirectoryCommand;
 import com.sep.vox.application.port.input.command.ResetPasswordCommand;
 import com.sep.vox.application.port.input.command.SendResetPasswordOtpCommand;
 import com.sep.vox.application.port.input.usecase.auth.GoogleTokenLoginUseCase;
@@ -36,6 +40,7 @@ import com.sep.vox.application.port.input.usecase.registration.VerifyRegisterFor
 import com.sep.vox.application.port.output.CookieManagerPort;
 import com.sep.vox.application.response.input.auth.LoginResponse;
 import com.sep.vox.application.response.input.auth.RefreshResponse;
+import com.sep.vox.application.response.input.registration.RegisterFromSchoolDirectoryResponse;
 import com.sep.vox.support.RestControllerTest;
 
 import jakarta.servlet.http.Cookie;
@@ -65,13 +70,14 @@ class AuthControllerTests {
     @MockitoBean
     private CookieManagerPort cookieManagerPort;
 
-    // Required by the AuthController constructor; no test in this class calls them.
     @MockitoBean
     private RegisterFromSchoolDirectoryUseCase registerFromSchoolDirectoryUseCase;
     @MockitoBean
-    private SetUpPasswordUseCase setUpPasswordUseCase;
-    @MockitoBean
     private RegisterBySelfDeclaredUseCase registerBySelfDeclaredUseCase;
+
+    // Required by the AuthController constructor; no test in this class calls them.
+    @MockitoBean
+    private SetUpPasswordUseCase setUpPasswordUseCase;
     @MockitoBean
     private VerifyRegisterFormOtpUseCase verifyRegisterFormOtpUseCase;
     @MockitoBean
@@ -208,5 +214,81 @@ class AuthControllerTests {
             .extractingPath("$.message").isEqualTo("Mật khẩu đã thay đổi thành công");
         verify(resetPasswordUseCase)
             .execute(new ResetPasswordCommand("admin@example.com", "new-password", "1234567"));
+    }
+
+    private static final String DIRECTORY_REGISTRATION_JSON = """
+        {"schoolDirectoryId": "11111111-1111-1111-1111-111111111111", "contactFullName": "Nguyen Van A",
+         "identityNumber": "079123456789", "contactPhone": "0987654321", "contactEmail": "a@school.edu.vn",
+         "contactAddress": "1 Street", "postalCode": "70000", "position": "Principal", "studentCount": 100%s}""";
+
+    private static final String SELF_DECLARED_REGISTRATION_JSON = """
+        {"schoolName": "School 1", "schoolDistrict": "District 1", "schoolProvince": "HCM",
+         "schoolAddress": "1 Street", "contactFullName": "Nguyen Van A", "identityNumber": "079123456789",
+         "contactPhone": "0987654321", "contactEmail": "a@school.edu.vn", "contactAddress": "1 Street",
+         "postalCode": "70000", "position": "Principal", "studentCount": 100, "documentUrls": []%s}""";
+
+    private MvcTestResult register(String path, String template, String dateOfBirthJson) {
+        return mvc.post().uri("/api/v1/auth/" + path).contentType(MediaType.APPLICATION_JSON)
+            .content(template.formatted(dateOfBirthJson)).exchange();
+    }
+
+    @Test
+    void register_school_directory_should_pass_iso_date_of_birth_to_the_command() {
+        RegisterFromSchoolDirectoryResponse expected = new RegisterFromSchoolDirectoryResponse("sent");
+        when(registerFromSchoolDirectoryUseCase.execute(any(RegisterFromSchoolDirectoryCommand.class)))
+            .thenReturn(expected);
+
+        MvcTestResult result = register("register-school-directory", DIRECTORY_REGISTRATION_JSON,
+            ", \"dateOfBirth\": \"1980-05-20\"");
+
+        assertThat(result).hasStatus(201);
+        verify(registerFromSchoolDirectoryUseCase).execute(new RegisterFromSchoolDirectoryCommand(
+            UUID.fromString("11111111-1111-1111-1111-111111111111"), "Nguyen Van A", "079123456789",
+            "0987654321", "a@school.edu.vn", LocalDate.of(1980, 5, 20), "1 Street", "70000", "Principal", 100, null));
+    }
+
+    @Test
+    void register_school_directory_should_return_400_naming_the_field_for_a_bad_date_of_birth() {
+        MvcTestResult result = register("register-school-directory", DIRECTORY_REGISTRATION_JSON,
+            ", \"dateOfBirth\": \"20/05/1980\"");
+
+        assertThat(result).hasStatus(400).bodyJson().extractingPath("$.errors.dateOfBirth").isNotNull();
+        verifyNoInteractions(registerFromSchoolDirectoryUseCase);
+    }
+
+    @Test
+    void register_school_directory_should_return_400_when_date_of_birth_is_missing() {
+        MvcTestResult result = register("register-school-directory", DIRECTORY_REGISTRATION_JSON, "");
+
+        assertThat(result).hasStatus(400).bodyJson().extractingPath("$.errors.dateOfBirth").isNotNull();
+        verifyNoInteractions(registerFromSchoolDirectoryUseCase);
+    }
+
+    @Test
+    void register_self_declared_should_pass_iso_date_of_birth_to_the_command() {
+        MvcTestResult result = register("register-self-declared", SELF_DECLARED_REGISTRATION_JSON,
+            ", \"dateOfBirth\": \"1980-05-20\"");
+
+        assertThat(result).hasStatus(201);
+        verify(registerBySelfDeclaredUseCase).execute(new RegisterBySelfDeclaredCommand("School 1", null,
+            "District 1", "HCM", "1 Street", "Nguyen Van A", "079123456789", "0987654321", "a@school.edu.vn",
+            LocalDate.of(1980, 5, 20), "1 Street", "70000", "Principal", 100, List.of()));
+    }
+
+    @Test
+    void register_self_declared_should_return_400_naming_the_field_for_a_bad_date_of_birth() {
+        MvcTestResult result = register("register-self-declared", SELF_DECLARED_REGISTRATION_JSON,
+            ", \"dateOfBirth\": \"31/02/1980\"");
+
+        assertThat(result).hasStatus(400).bodyJson().extractingPath("$.errors.dateOfBirth").isNotNull();
+        verifyNoInteractions(registerBySelfDeclaredUseCase);
+    }
+
+    @Test
+    void register_self_declared_should_return_400_when_date_of_birth_is_missing() {
+        MvcTestResult result = register("register-self-declared", SELF_DECLARED_REGISTRATION_JSON, "");
+
+        assertThat(result).hasStatus(400).bodyJson().extractingPath("$.errors.dateOfBirth").isNotNull();
+        verifyNoInteractions(registerBySelfDeclaredUseCase);
     }
 }

@@ -79,7 +79,7 @@
 <h1>REST typed request inputs and malformed-request handling plan</h1>
 <div class="meta">
   Repository: <code>vox</code> &middot; Branch: <code>refactor/rewritten</code> &middot; Written 2026-11-20 &middot;
-  Plan status: <span class="status approved" id="plan-status" data-plan-status="approved">Approved</span>
+  Plan status: <span class="status progress" id="plan-status" data-plan-status="in-progress">In progress</span>
 </div>
 
 <p>REST controllers and the command records behind them still take enum-like and date-like values as <code>String</code>.
@@ -285,6 +285,12 @@ already covered by the in-progress <code>graphql-typed-scalars-plan</code> and a
   <div class="answer"><strong>Answer (2026-11-20):</strong> Add the guard &ndash; one new test file <code>RestRequestTypesTests</code> (job 11.1) with an allow-list limited to the D5 leftovers.</div>
 </div>
 
+<div class="decision" id="a1" data-decision-state="answered" data-scope="plan" data-topic="pilot-recipe">
+  <h3>A1. Do phases 3&ndash;10 repeat the pilot recipe from job 2.1? <span class="status answered">Answered</span></h3>
+  <p class="meta">Asked at job 2.2. Scope: whole plan. Reused by: 8.1, 8.2.</p>
+  <div class="answer"><strong>Answer (2026-11-20):</strong> Confirm recipe &ndash; phases 3&ndash;10 repeat the pilot exactly (see Implementation notes, "Pilot recipe").</div>
+</div>
+
 <h2 id="phases">3. Phases</h2>
 <p>Each phase is independently reviewable and leaves the build green. Rules every job in phases 2&ndash;10 follows, so they are not repeated:</p>
 <ul>
@@ -299,301 +305,301 @@ already covered by the in-progress <code>graphql-typed-scalars-plan</code> and a
 </ul>
 
 <!-- ===================== PHASE 1 ===================== -->
-<div class="phase" id="phase-1" data-status="todo">
+<div class="phase" id="phase-1" data-status="done">
   <h3><span class="title">Phase 1 &ndash; Handle malformed requests in GlobalExceptionHandler</span>
     <span class="tag">medium &middot; needs D2, D4</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> every malformed REST request answers a documented 4xx, never a 500, and enum values bind case-insensitively, using only fields that are already typed (so this phase needs no field migration).
      <strong>Depends on:</strong> D2, D4.</p>
   <ul class="jobs">
-    <li class="job" id="job-1-1" data-status="todo">
-      <span class="title">1.1 Probe today's behaviour and read the docs</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-1-1" data-status="done">
+      <span class="title">1.1 Probe today's behaviour and read the docs</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> the implementation notes hold a table of status code, error code and body for each of: broken JSON, unknown enum constant, wrong JSON value type, unparsable
          <code>Instant</code>, non-UUID path value, missing required <code>@RequestParam</code>, wrong <code>Content-Type</code>, and one violated constraint on a <code>@RequestParam</code>; plus the
          exception class each produces, and what the Spring Framework 7 / Boot 4.1 / Jackson 3 pages say about them. Uses a probe test on an existing REST controller whose request already has an enum
          (<code>ScoringRuleController</code>) or an <code>Instant</code> (<code>GradingAssignmentController</code>). No source change is kept.
          <strong>Files:</strong> none kept (probe test is deleted or becomes job 1.2's test).</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; CHANGED: probe ran, but the Spring Framework 7 / Boot 4.1 reference pages were not read (not fetched this session); handler APIs were checked by compiling and by the tests instead. Probe test deleted. Every malformed case answered 500 / INTERNAL_SERVER_ERROR / "Có lỗi xảy ra". See Implementation notes.</li></ul>
     </li>
-    <li class="job" id="job-1-2" data-status="todo">
-      <span class="title">1.2 Add handlers for malformed body, parameter, path and media type</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-1-2" data-status="done">
+      <span class="title">1.2 Add handlers for malformed body, parameter, path and media type</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>POST</code> with broken JSON, an unknown enum constant, a wrong-typed value or a bad <code>Instant</code> returns 400; a non-UUID path value or bad query value returns 400;
          a missing required <code>@RequestParam</code> returns 400; a wrong <code>Content-Type</code> returns 415; each body follows D4, names the field, lists the accepted constants for enums, and contains no
          class name or stack text; each case is logged at WARN or lower, not ERROR. Exceptions covered: <code>HttpMessageNotReadableException</code>,
          <code>MethodArgumentTypeMismatchException</code>, <code>MissingServletRequestParameterException</code>, <code>HandlerMethodValidationException</code>,
          <code>HttpMediaTypeNotSupportedException</code>. Unknown routes (404) and wrong methods (405) are not changed.
          <strong>Files:</strong> <code>interfaces/rest/exception/GlobalExceptionHandler.java</code>, new <code>src/test/java/com/sep/vox/interfaces/rest/exception/GlobalExceptionHandlerTests.java</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; 5 handlers added in GlobalExceptionHandler.java; GlobalExceptionHandlerTests: broken JSON, unknown enum, wrong type, non-UUID path, 415 pass; missing-parameter and media-type handlers covered by direct-call tests.</li></ul>
     </li>
-    <li class="job" id="job-1-3" data-status="todo">
-      <span class="title">1.3 Report every invalid field, keyed by field name (D4 = A only)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-1-3" data-status="done">
+      <span class="title">1.3 Report every invalid field, keyed by field name (D4 = A only)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> a request body with two invalid fields returns a <code>ValidationErrorResponse</code> whose <code>errors</code> map has two entries keyed by the two field names; the regression test fails
          on the current <code>getObjectName()</code> code. If D4 is B or C, this job is marked skipped and the reason is logged.
          <strong>Files:</strong> <code>GlobalExceptionHandler.java</code>, <code>GlobalExceptionHandlerTests.java</code>, <code>AuthControllerTests.java</code> only if its assertion on the body changes.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; D4 = A applies. handleValidation now keys by field name (putIfAbsent). GlobalExceptionHandlerTests.twoInvalidFieldsAreBothReportedByFieldName passes; it fails on the old getObjectName() code (it asserts $.errors.code and $.errors.priority). The old-code run itself was not executed.</li></ul>
     </li>
-    <li class="job" id="job-1-4" data-status="todo">
-      <span class="title">1.4 Bind enum values case-insensitively (D2)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-1-4" data-status="done">
+      <span class="title">1.4 Bind enum values case-insensitively (D2)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> on an endpoint whose request already has an enum (<code>CreateScoringRuleRequest.conditionType</code>) a JSON body value in lower or mixed case binds to the constant, and a query or path
          value in lower case binds on an existing enum parameter; an unknown value still returns the 400 from job 1.2 with the accepted constants listed (written in upper case). Start from the least code:
          try the Boot property <code>spring.jackson.mapper.accept-case-insensitive-enums</code> for bodies and check whether Boot's MVC conversion already accepts any case for query/path enums (job 1.1 measures it);
          add a configuration class under <code>infrastructure/config</code> only for the part the properties cannot cover. GraphQL enums stay exact (graphql-java requires the declared constant).
          <strong>Files:</strong> <code>application.yaml</code> and/or one new config class, <code>GlobalExceptionHandlerTests.java</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; CHANGED: JSON bodies use spring.jackson.mapper.accept-case-insensitive-enums in application.yaml; query/path enums did NOT bind in lower case with Boot defaults (measured: 400), so the new config class CaseInsensitiveEnumWebConfig was added (approved by D2). Tests: GlobalExceptionHandlerTests.enumConstantInLowerCaseBindsInJsonBody, AssessmentControllerTests getMyAssessments_should_bind_lower_case_kind_query_value and ..._answer_400_listing_kinds_for_unknown_value.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*GlobalExceptionHandlerTests'</code>, <code>./gradlew test --tests '*AuthControllerTests'</code>,
      <code>./gradlew test --tests '*LayeredArchitectureTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-20 &middot; Done &middot; compileJava passes; GlobalExceptionHandlerTests, AuthControllerTests, AssessmentControllerTests and LayeredArchitectureTests pass.</li></ul>
 </div>
 
 <!-- ===================== PHASE 2 ===================== -->
-<div class="phase" id="phase-2" data-status="todo">
+<div class="phase" id="phase-2" data-status="done">
   <h3><span class="title">Phase 2 &ndash; Pilot: notification device platform</span>
     <span class="tag">small &middot; needs D5, D7</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> prove the pattern on one small, non-sensitive slice before repeating it. <strong>Depends on:</strong> phase 1, D5, D7.</p>
   <ul class="jobs">
-    <li class="job" id="job-2-1" data-status="todo">
-      <span class="title">2.1 Type <code>platform</code> end to end</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-2-1" data-status="done">
+      <span class="title">2.1 Type <code>platform</code> end to end</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>POST</code> on the notification-device endpoint with <code>"platform":"ANDROID"</code> (a valid constant) succeeds, an unknown platform returns 400 naming <code>platform</code> and
          the accepted values, and <code>CreateNotificationDeviceUseCase</code> no longer calls <code>NotificationDevicePlatform.valueOf</code>. Before editing, re-measure the command records against the tree as it is then
          (D7) and record the counts in the notes. <strong>Files:</strong> <code>CreateNotificationDeviceRequest</code>, <code>CreateNotificationDeviceCommand</code>,
          <code>CreateNotificationDeviceCommandMapper</code>, <code>CreateNotificationDeviceUseCase</code>, its GraphQL caller if one exists, a new <code>NotificationControllerTests</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; CreateNotificationDeviceRequest.platform, CreateNotificationDeviceCommand.platform are NotificationDevicePlatform; the valueOf try/catch and normalizeCode call are gone from CreateNotificationDeviceUseCase; no GraphQL caller exists. NotificationControllerTests (5 tests: valid, lower case, unknown value 400 listing WEB/ANDROID/IOS, missing 400, anonymous 401) pass; compileJava, GlobalExceptionHandlerTests, LayeredArchitectureTests pass.</li></ul>
     </li>
-    <li class="job" id="job-2-2" data-status="todo">
-      <span class="title">2.2 Pilot checkpoint</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-2-2" data-status="done">
+      <span class="title">2.2 Pilot checkpoint</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> the implementation notes describe the exact steps and annotation changes used in 2.1 as the recipe for phases 3&ndash;10, and the user confirmed in chat that phases 3&ndash;10
          repeat it (the answer is recorded as an implementation answer). <strong>Files:</strong> this plan only.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; Recipe written in Implementation notes; user confirmed phases 3&ndash;10 repeat it (recorded as A1).</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*Notification*'</code>, <code>./gradlew test --tests '*LayeredArchitectureTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-20 &middot; Done &middot; compileJava, NotificationControllerTests (5), GlobalExceptionHandlerTests and LayeredArchitectureTests pass.</li></ul>
 </div>
 
 <!-- ===================== PHASE 3 ===================== -->
-<div class="phase" id="phase-3" data-status="todo">
+<div class="phase" id="phase-3" data-status="done">
   <h3><span class="title">Phase 3 &ndash; Assessment core: times, delivery mode, members, status, schedules</span>
     <span class="tag">large &middot; needs D3, D5</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> assessment and class-test requests use real types. <strong>Depends on:</strong> phase 2.</p>
   <ul class="jobs">
-    <li class="job" id="job-3-1" data-status="todo">
-      <span class="title">3.1 Assessment and class-test times and delivery mode</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-3-1" data-status="done">
+      <span class="title">3.1 Assessment and class-test times and delivery mode</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>openAt</code>/<code>closeAt</code> are <code>Instant</code> and <code>deliveryMode</code> is its enum (if one with exactly <code>STUDENT_DEVICE|LAB</code> exists) in
          <code>CreateAssessmentRequest</code>, <code>UpdateAssessmentRequest</code>, <code>CreateClassTestRequest</code> and <code>UpdateAssessmentDeliveryModeRequest</code>; <code>"openAt":"2026-13-45"</code>
          returns 400 naming <code>openAt</code>. <code>streamTypePermission</code> and <code>requiredStreamTypes</code> become enums only if their constants match
          <code>AssessmentStreamTypePermission</code>/<code>AssessmentRequiredStreamType</code> (parsed today in <code>AssessmentStreamConfigResolver</code>); otherwise they are listed under D5.
          <strong>Files:</strong> the four request records, their commands and mappers, <code>CreateAssessmentUseCase</code>, <code>UpdateAssessmentUseCase</code>, <code>CreateClassTestUseCase</code>,
          <code>UpdateAssessmentDeliveryModeUseCase</code>, <code>AssessmentStreamConfigResolver</code>, <code>AssessmentControllerTests</code>, <code>ClassTestControllerTests</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; applies A1. CHANGED: <code>requiredStreamTypes</code> stays <code>List&lt;String&gt;</code> (D5: input values are CAMERA/SCREEN, the enum <code>AssessmentRequiredStreamType</code> also has CAMERA_AND_SCREEN); <code>streamTypePermission</code> (ANY|ALL = <code>AssessmentStreamTypePermission</code>) is typed in the 3 requests/commands and <code>AssessmentStreamConfigResolver.resolve</code> now takes the enum. Request/command: <code>openAt/closeAt</code> are <code>Instant</code>, <code>deliveryMode</code> is <code>AssessmentDeliveryMode</code>. <code>DateMapper</code>/<code>valueOf</code> glue removed from the 4 use cases; the now-unused <code>AssessmentDeliveryModeSupport</code> was deleted. Use-case tests that fed malformed date or invalid delivery-mode strings were removed (that input is now rejected at the REST boundary); AssessmentControllerTests (+5) and ClassTestControllerTests (+2) cover valid, lower case, unknown, unparsable date, missing. compileJava, compileTestJava, AssessmentControllerTests, ClassTestControllerTests, Create/UpdateAssessment*, CreateClassTest* and LayeredArchitectureTests pass.</li></ul>
     </li>
-    <li class="job" id="job-3-2" data-status="todo">
-      <span class="title">3.2 Members, candidate status, session status, answer turns</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-3-2" data-status="done">
+      <span class="title">3.2 Members, candidate status, session status, answer turns</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>role</code> is <code>AssessmentMemberRole</code> in <code>CreateAssessmentMemberRequest</code> and <code>UpdateAssessmentMemberRequest</code>;
          <code>UpdateAssessmentCandidateStatusRequest.status</code>, <code>UpdateAssessmentSessionRequest.status</code> and <code>UpdateAssessmentItemResponseTurnRequest.turnType</code> use their
          enums and <code>answeredAt</code> is <code>Instant</code>; the use cases lose <code>AssessmentMemberRole.valueOf</code> (2 sites) and the <code>TurnType.valueOf</code> parsing in
          <code>RecordAnswerTurnUseCase</code> and <code>UpdateAssessmentItemResponseTurnUseCase</code>. An invalid role returns 400. <strong>Files:</strong> the request records above, their commands,
          mappers and use cases, <code>AssessmentCandidateControllerTests</code>, <code>AssessmentSessionControllerTests</code>, <code>AssessmentItemResponseControllerTests</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; applies A1. CHANGED: <code>RecordAnswerTurnUseCase</code> keeps its <code>TurnType.valueOf</code> parsing: its command is fed only by <code>AnswerTurnsRecordedConsumer</code> (Kafka payload, not a REST input), so typing it would move lenient parsing into the consumer; reported, not changed. Typed: <code>role</code> (<code>AssessmentMemberRole</code>, now <code>@NotNull</code> on create too, which had no null guard) in the 2 member requests/commands; <code>status</code> of <code>UpdateAssessmentCandidateStatusRequest</code> and <code>UpdateAssessmentSessionRequest</code> (their commands were already typed; the controllers' <code>valueOf(trim().toUpperCase())</code> is gone); <code>turnType</code> (<code>TurnType</code>) and <code>answeredAt</code> (<code>Instant</code>) in the turn request/command, <code>UpdateAssessmentItemResponseTurnUseCase</code> lost <code>normalizeTurnType</code> and <code>parseAnsweredAt</code>; <code>CreateAssessmentMemberUseCase</code>/<code>UpdateAssessmentMemberUseCase</code> lost the <code>normalizeCode</code> + <code>valueOf</code> glue. Tests: 9 new 400 cases in AssessmentControllerTests, AssessmentCandidateControllerTests, AssessmentSessionControllerTests, AssessmentItemResponseControllerTests; AssessmentMemberManagementTests updated to enum roles. All pass.</li></ul>
     </li>
-    <li class="job" id="job-3-3" data-status="todo">
-      <span class="title">3.3 Schedule dates and the assessment list <code>status</code> filter</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-3-3" data-status="done">
+      <span class="title">3.3 Schedule dates and the assessment list <code>status</code> filter</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>CreateAssessmentScheduleRequest.startDate/endDate</code> are <code>LocalDate</code> and <code>CreateAssessmentScheduleCommandMapper</code> no longer calls
          <code>DateMapper</code>; <code>GET</code> assessments with <code>status=NOPE</code> returns 400 and with a valid <code>AssessmentStatus</code> filters as before (<code>AssessmentController:124</code>).
          The free-form <code>sort</code> parameter (<code>AssessmentController:127</code>) is left as is and reported. <strong>Files:</strong> <code>CreateAssessmentScheduleRequest</code>,
          its command, mapper and use case, <code>AssessmentController</code>, <code>AssessmentScheduleControllerTests</code>, <code>AssessmentControllerTests</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; applies A1. CHANGED (two plan gaps, no behavior change): (1) <code>CreateAssessmentScheduleRequest.startDate/endDate</code> are <code>Instant</code>, not <code>LocalDate</code>, because <code>CreateAssessmentScheduleCommand</code> and the use case already use <code>Instant</code> and <code>DateMapper.toInstant</code> was the only glue; <code>DateMapper</code> is gone from the mapper. (2) The list <code>status</code> filter is not <code>AssessmentStatus</code>: it is the derived display value <code>upcoming|in_progress|completed</code> (<code>ViewMyAssessmentsQuery</code> javadoc, <code>ViewMyAssessmentsQueryMapper.ALLOWED_STATUSES</code>), no enum has those constants, so under D5 it stays <code>String</code> and the mapper already answers 400 for unknown values. Tests: AssessmentScheduleControllerTests (+3: valid, unparsable startDate, missing endDate), AssessmentControllerTests (+2: <code>status=NOPE</code> 400, <code>status=upcoming</code> passes through). All pass.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*Assessment*ControllerTests' --tests '*ClassTestControllerTests'</code>,
      <code>./gradlew test --tests '*CreateAssessment*' --tests '*UpdateAssessment*'</code>, <code>./gradlew test --tests '*LayeredArchitectureTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-20 &middot; Done &middot; compileJava, compileTestJava and the full <code>./gradlew test</code> (unit suite) pass; focused runs of Assessment*ControllerTests, ClassTestControllerTests, CreateAssessment*, UpdateAssessment*, AssessmentMember*, LayeredArchitectureTests and PagingConventionTests pass. integrationTest not run (needs Docker).</li></ul>
 </div>
 
 <!-- ===================== PHASE 4 ===================== -->
-<div class="phase" id="phase-4" data-status="todo">
+<div class="phase" id="phase-4" data-status="done">
   <h3><span class="title">Phase 4 &ndash; Blueprints: slot type, question selection, version dates</span>
     <span class="tag">medium &middot; needs D3, D5</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> blueprint requests use real types. <strong>Depends on:</strong> phase 2.</p>
   <ul class="jobs">
-    <li class="job" id="job-4-1" data-status="todo">
-      <span class="title">4.1 <code>slotType</code> and question selection spec</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-4-1" data-status="done">
+      <span class="title">4.1 <code>slotType</code> and question selection spec</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>slotType</code> is <code>AssessmentBlueprintSlotType</code> in <code>AssessmentBlueprintSlotRequest</code>,
          <code>CreateAssessmentBlueprintSlotItemRequest</code> and <code>UpdateAssessmentBlueprintSlotRequest</code>; <code>QuestionSelectionSpecRequest.questionType</code> is <code>QuestionType</code>
          (and <code>difficulty</code> is <code>QuestionDifficulty</code> if the field is in the record); the 9 <code>AssessmentBlueprintSlotType.valueOf</code> and the <code>QuestionType.valueOf</code> /
          <code>QuestionDifficulty.valueOf</code> sites in the create/update slot and version use cases are gone; <code>slotType":"X"</code> returns 400. <code>targetBandLevel</code> has no enum and stays String (D5).
          <strong>Files:</strong> the three slot requests, <code>QuestionSelectionSpecRequest</code>, their commands and mappers, <code>CreateAssessmentBlueprintSlotUseCase</code>,
          <code>UpdateAssessmentBlueprintSlotUseCase</code>, <code>CreateAssessmentBlueprintVersionUseCase</code>, <code>UpdateAssessmentBlueprintVersionUseCase</code>, <code>AssessmentBlueprintControllerTests</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; applies A1. Typed: <code>slotType</code> (<code>AssessmentBlueprintSlotType</code>, constants FIXED/SELECTION equal the old <code>@Pattern</code>) in the 3 slot requests and the 3 slot commands; <code>QuestionSelectionSpecRequest</code> and <code>CreateQuestionSelectionSpecCommand</code> <code>questionType</code> (<code>QuestionType</code>) and <code>difficulty</code> (<code>QuestionDifficulty</code>). The 9 <code>AssessmentBlueprintSlotType.valueOf</code>, the <code>QuestionType/QuestionDifficulty.valueOf</code> and the <code>normalizeCode</code> calls on those fields are gone from the 4 create/update slot and version use cases; <code>DuplicateAssessmentBlueprintVersionUseCase</code> passes the enums without <code>.name()</code>. <code>targetBandLevel</code> stays String (D5). No mapper change needed. AssessmentBlueprintControllerTests +5 (lower case, unknown slotType, missing slotType, unknown questionType keyed <code>selectionSpec.questionType</code>, update unknown slotType); compileJava and the run of <code>*AssessmentBlueprint*</code> pass.</li></ul>
     </li>
-    <li class="job" id="job-4-2" data-status="todo">
-      <span class="title">4.2 Blueprint version <code>effectiveFrom/effectiveTo</code></span> <span class="status todo">Not started</span>
+    <li class="job" id="job-4-2" data-status="done">
+      <span class="title">4.2 Blueprint version <code>effectiveFrom/effectiveTo</code></span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> both fields are typed in <code>CreateAssessmentBlueprintVersionRequest</code> and <code>UpdateAssessmentBlueprintVersionRequest</code> (type matched to the domain field) and
          a non-ISO value returns 400 naming the field. <strong>Files:</strong> the two requests, their commands, mappers and use cases, <code>AssessmentBlueprintControllerTests</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; applies A1. <code>effectiveFrom/effectiveTo</code> are <code>Instant</code> in the 2 requests and 2 commands (the domain field is <code>Instant</code>, parsed with <code>Instant.parse</code> before); the <code>Instant.parse</code>, <code>effectiveFromOf</code> and <code>parseDateTime</code> glue was removed from the create and update version use cases. Date-only and unparsable values now answer 400 naming the field. AssessmentBlueprintControllerTests +3 (offset value binds, date-only 400, unparsable <code>effectiveTo</code> 400).</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*AssessmentBlueprint*'</code>, <code>./gradlew test --tests '*LayeredArchitectureTests'</code></p>
-  <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; compileJava, compileTestJava, <code>*AssessmentBlueprint*</code> (12 tests in AssessmentBlueprintControllerTests) and LayeredArchitectureTests pass; full unit suite result below in the report.</li></ul>
 </div>
 
 <!-- ===================== PHASE 5 ===================== -->
-<div class="phase" id="phase-5" data-status="todo">
+<div class="phase" id="phase-5" data-status="done">
   <h3><span class="title">Phase 5 &ndash; Grading, results and appeals</span>
     <span class="tag">medium &middot; needs D2, D3, D5</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> grading requests and result filters use real types. <strong>Depends on:</strong> phase 2.</p>
   <ul class="jobs">
-    <li class="job" id="job-5-1" data-status="todo">
-      <span class="title">5.1 Round type and selection mode in grading requests</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-5-1" data-status="done">
+      <span class="title">5.1 Round type and selection mode in grading requests</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>roundType</code> is <code>GradingRoundType</code> in <code>AssignGradingRequest</code>, <code>AutoAssignGradingRequest</code> and
          <code>ClaimClassTestGradingRequest</code>, and <code>selectionMode</code> is <code>GradingSampleSelectionMode</code>; the three <code>GradingRoundType.valueOf</code> sites and the
          <code>GradingSampleSelectionMode.valueOf</code> site are gone; an unknown <code>roundType</code> returns 400. <strong>Files:</strong> the three requests, commands, mappers,
          <code>AssignGradingUseCase</code>, <code>AutoAssignGradingUseCase</code>, <code>ClaimClassTestGradingUseCase</code>, a new <code>GradingAssignmentControllerTests</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; applies A1. <code>roundType</code> is <code>GradingRoundType</code> in <code>AssignGradingRequest</code>, <code>AutoAssignGradingRequest</code>, <code>ClaimClassTestGradingRequest</code> and the 3 commands; <code>selectionMode</code> is <code>GradingSampleSelectionMode</code> (null still means ALL, now defaulted in <code>AutoAssignGradingUseCase</code>). The 3 <code>GradingRoundType.valueOf</code> and the <code>GradingSampleSelectionMode.valueOf</code> sites are gone; the APPEAL rejection stays (business rule, <code>requireNotAppealRound</code>). New <code>GradingAssignmentControllerTests</code> (9) and 3 claim tests in <code>ClassTestControllerTests</code>; use-case tests drop <code>.name()</code> and the unknown-round test. <code>./gradlew test --tests '*Grading*' --tests '*ClassTestControllerTests'</code> passes.</li></ul>
     </li>
-    <li class="job" id="job-5-2" data-status="todo">
-      <span class="title">5.2 Result list filters in <code>AssessmentResultController</code></span> <span class="status todo">Not started</span>
+    <li class="job" id="job-5-2" data-status="done">
+      <span class="title">5.2 Result list filters in <code>AssessmentResultController</code></span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>resultStatus</code>, <code>roundType</code>, <code>assignmentStatus</code> and <code>kind</code> are typed (where an exact enum exists) on both endpoints
          (<code>AssessmentResultController:96&ndash;103</code> and <code>:123&ndash;130</code>); <code>?roundType=NOPE</code> returns 400 and valid values filter as before; the query records and use cases stop parsing strings.
          <code>keyword</code> stays String. <strong>Files:</strong> <code>AssessmentResultController</code>, the matching query records and use cases, <code>AssessmentResultControllerTests</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; applies A1. <code>resultStatus</code> (<code>AssessmentCandidateResultStatus</code>), <code>roundType</code> (<code>GradingRoundType</code>), <code>assignmentStatus</code> (<code>GradingAssignmentStatus</code>) and <code>kind</code> (<code>AssessmentKind</code>) are typed on both export endpoints, in <code>ExportAssessmentScoresQuery</code> and in <code>exportFileName</code>; <code>AssessmentScoreExportSupport</code> converts with <code>.name()</code> and the string trimming of those fields is gone (<code>keyword</code> stays String). CHANGED vs plan: the shared <code>GradingAssignmentFilter</code> and the GraphQL <code>SearchGradingAssignmentsQuery</code> keep String fields (shared with the JPA query repository and GraphQL, outside this REST job); a blank enum parameter now binds to null through Spring. <code>AssessmentResultControllerTests</code> +3 (any letter case, blank = no filter, unknown value 400 for each parameter on both routes); the Export use-case tests use the enums.</li></ul>
     </li>
-    <li class="job" id="job-5-3" data-status="todo">
-      <span class="title">5.3 Appeal deadline</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-5-3" data-status="done">
+      <span class="title">5.3 Appeal deadline</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>ApproveAssessmentAppealRequest.deadline</code> is <code>Instant</code>, <code>AssessmentAppealCommandMapper</code> no longer calls <code>DateMapper</code>, and a bad
          deadline returns 400 naming <code>deadline</code>. <strong>Files:</strong> <code>ApproveAssessmentAppealRequest</code>, <code>AssessmentAppealCommandMapper</code>, the approve command and use case, a new
          <code>AssessmentAppealControllerTests</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; applies A1. <code>ApproveAssessmentAppealRequest.deadline</code> is <code>Instant</code>; <code>AssessmentAppealCommandMapper</code> passes it through and no longer imports <code>DateMapper</code> (the command was already <code>Instant</code>, so no use-case change). New <code>AssessmentAppealControllerTests</code> (5): ISO instant with offset binds, <code>01/08/2030</code> and date-only answer 400 keyed <code>deadline</code>, missing deadline 400, anonymous 401, student 403. <code>ApproveAndClaimAssessmentAppealUseCase</code> keeps its <code>DateMapper.DEFAULT_INPUT_ZONE</code> use (time-zone arithmetic, not parsing).</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*Grading*' --tests '*AssessmentResult*' --tests '*AssessmentAppeal*'</code>,
      <code>./gradlew test --tests '*LayeredArchitectureTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-20 &middot; Done &middot; all 3 jobs done. <code>./gradlew compileJava</code> and <code>test --tests '*Grading*' --tests '*AssessmentResult*' --tests '*AssessmentAppeal*' --tests '*ExportAssessmentScores*' --tests '*ClassTestControllerTests' --tests '*LayeredArchitectureTests'</code> pass.</li></ul>
 </div>
 
 <!-- ===================== PHASE 6 ===================== -->
-<div class="phase" id="phase-6" data-status="todo">
+<div class="phase" id="phase-6" data-status="done">
   <h3><span class="title">Phase 6 &ndash; Questions and question assets</span>
     <span class="tag">medium &middot; needs D5</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> question requests and filters use real types. <strong>Depends on:</strong> phase 2.</p>
   <ul class="jobs">
-    <li class="job" id="job-6-1" data-status="todo">
-      <span class="title">6.1 Question <code>type</code> and <code>sharing</code></span> <span class="status todo">Not started</span>
+    <li class="job" id="job-6-1" data-status="done">
+      <span class="title">6.1 Question <code>type</code> and <code>sharing</code></span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>type</code> is <code>QuestionType</code> and <code>sharing</code> is <code>QuestionSharing</code> in <code>CreateQuestionRequest</code>,
          <code>UpdateQuestionRequest</code> and <code>CreateSystemQuestionBankQuestionRequest</code>; the <code>QuestionType.valueOf</code>/<code>QuestionSharing.valueOf</code> sites in
          <code>CreateSystemQuestionBankQuestionUseCase</code> and <code>UpdateQuestionUseCase</code> are gone; <code>"type":"X"</code> returns 400 listing the five question types.
          <strong>Files:</strong> the three requests, commands, mappers, use cases, <code>QuestionControllerTests</code>, <code>QuestionBankControllerTests</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; applies A1. <code>type</code> (<code>QuestionType</code>) and <code>sharing</code> (<code>QuestionSharing</code>) are typed in <code>CreateQuestionRequest</code>, <code>UpdateQuestionRequest</code>, <code>CreateSystemQuestionBankQuestionRequest</code> (no controller uses the last one; typed anyway), <code>UpdateQuestionCommand</code> and <code>CreateSystemQuestionBankQuestionCommand</code>. The <code>valueOf</code> and <code>normalizeCode</code>/trim glue is gone from <code>CreateSystemQuestionBankQuestionUseCase</code> and <code>UpdateQuestionUseCase</code>. <code>type</code> is now <code>@NotNull</code> on create. <code>QuestionControllerTests</code> +7: lower case binds, unknown type/sharing 400 listing constants, missing type 400, update optional. No change in <code>QuestionBankControllerTests</code> (no question-type input there).</li></ul>
     </li>
-    <li class="job" id="job-6-2" data-status="todo">
-      <span class="title">6.2 Asset <code>type</code> and collaborator <code>permission</code></span> <span class="status todo">Not started</span>
+    <li class="job" id="job-6-2" data-status="done">
+      <span class="title">6.2 Asset <code>type</code> and collaborator <code>permission</code></span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>type</code> is <code>QuestionAssetType</code> in <code>CreateQuestionAssetRequest</code> and <code>UpdateQuestionAssetRequest</code>, the collaborator requests use
          <code>QuestionCollaboratorPermission</code>, and the matching <code>valueOf</code> sites in the four use cases are gone. <strong>Files:</strong> the four requests, commands, mappers, use cases
          (<code>CreateQuestionAssetUseCase</code>, <code>UpdateQuestionAssetUseCase</code>, <code>CreateQuestionCollaboratorUseCase</code>, <code>UpdateQuestionCollaboratorUseCase</code>), <code>QuestionControllerTests</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; applies A1. <code>QuestionAssetType type</code> in the 2 asset requests and in <code>CreateQuestionAssetCommand</code>, <code>CreateQuestionAssetMutationCommand</code>, <code>UpdateQuestionAssetCommand</code>; <code>QuestionCollaboratorPermission permission</code> in the 2 collaborator requests and commands. The <code>valueOf</code> calls in the 4 use cases and in the asset mapping of <code>CreateSystemQuestionBankQuestionUseCase</code> are gone; the two collaborator use cases lost their now-empty <code>normalize</code> method. <code>QuestionControllerTests</code> +6 (lower case, unknown and missing values, create and update).</li></ul>
     </li>
-    <li class="job" id="job-6-3" data-status="todo">
-      <span class="title">6.3 Question list filters <code>scope</code> and <code>type</code></span> <span class="status todo">Not started</span>
+    <li class="job" id="job-6-3" data-status="done">
+      <span class="title">6.3 Question list filters <code>scope</code> and <code>type</code></span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>QuestionController</code> parameters <code>scope</code> (line 206) and <code>type</code> (line 227) are typed where an exact enum exists and an unknown value returns 400. A filter that accepts a sentinel such as <code>NONE</code> (the asset-type filter in <code>ViewQuestionsQuery</code> does) stays String under D5.
          <code>topicName</code>, <code>keyword</code> and <code>contentType</code> (a MIME string) stay String. <strong>Files:</strong> <code>QuestionController</code>, the matching queries and use cases,
          <code>QuestionControllerTests</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; applies A1. CHANGED: <code>scope</code> stays <code>String</code> under D5 (values ALL/MINE/COLLABORATING/REVIEWING/NONE-style sentinels, no Java enum with those constants, handled in the JPQL query). The import-template <code>type</code> parameter is <code>QuestionType</code> (null means READ_ALOUD); <code>QuestionSpreadsheetService.downloadTemplate</code> takes the enum and <code>normalizeQuestionType</code> is deleted. An unknown value used to fall back to READ_ALOUD silently and now answers 400. Test: <code>downloadTemplate_should_bind_type_and_answer_400_listing_types_for_unknown_type</code>. The export endpoint's <code>type</code> was already <code>QuestionType</code>.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*Question*'</code>, <code>./gradlew test --tests '*LayeredArchitectureTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-20 &middot; Done &middot; all 3 jobs done. <code>./gradlew compileJava</code> and <code>test --tests '*Question*' --tests '*LayeredArchitectureTests'</code> pass.</li></ul>
 </div>
 
 <!-- ===================== PHASE 7 ===================== -->
-<div class="phase" id="phase-7" data-status="todo">
+<div class="phase" id="phase-7" data-status="done">
   <h3><span class="title">Phase 7 &ndash; Rubrics, frameworks and assessment policies</span>
     <span class="tag">medium &middot; needs D2, D3</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> effective dates and scoring method are typed. <strong>Depends on:</strong> phase 2.</p>
   <ul class="jobs">
-    <li class="job" id="job-7-1" data-status="todo">
-      <span class="title">7.1 Rubric <code>totalScoreMethod</code> and version dates</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-7-1" data-status="done">
+      <span class="title">7.1 Rubric <code>totalScoreMethod</code> and version dates</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>totalScoreMethod</code> is <code>RubricTotalScoreMethod</code> and <code>effectiveFrom/effectiveTo</code> are typed in <code>AddRubricVersionsRequest</code> and
          <code>CloneSystemRubricRequest</code>; <code>AddSchoolRubricVersionsUseCase</code> and <code>AddSystemRubricVersionsUseCase</code> lose their <code>toUpperCase()</code> parsing; the mappers
          <code>AddRubricVersionsCommandMapper</code> and <code>CloneSystemRubricCommandMapper</code> no longer call <code>DateMapper</code>; <code>"totalScoreMethod":"sum"</code> binds to <code>SUM</code> (D2 = case-insensitive).
          <strong>Files:</strong> the two requests, commands, mappers, use cases, a new rubric controller test.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; applies A1, D2, D3. Typed <code>totalScoreMethod</code> (<code>RubricTotalScoreMethod</code>, now <code>@NotNull</code> in <code>AddRubricVersionsRequest</code>; optional in <code>CloneSystemRubricRequest</code>, its <code>@Pattern</code> removed) and <code>Instant</code> effective dates (item and <code>ClonePolicyChoice</code>); both commands, <code>AddRubricVersionsCommandMapper</code>, <code>CloneSystemRubricCommandMapper</code> (its <code>toTotalScoreMethod</code> deleted) and both Add use cases (valueOf/toUpperCase block deleted) updated. Test: <code>RubricControllerTests</code> (12 passed, with 401/403, lower-case <code>sum</code>, unknown method 400, date without offset 400); <code>CloneSystemRubricToSchoolUseCaseTests</code> still passes.</li></ul>
     </li>
-    <li class="job" id="job-7-2" data-status="todo">
-      <span class="title">7.2 Policy and framework version dates</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-7-2" data-status="done">
+      <span class="title">7.2 Policy and framework version dates</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>effectiveFrom/effectiveTo</code> are typed in <code>CreateSchoolAssessmentPolicyRequest</code>, <code>CreateSystemAssessmentPolicyRequest</code> and
          <code>CreateFrameworkVersionRequest</code>, <code>CreateAssessmentPolicyCommandMapper</code> and <code>CreateFrameworkVersionCommandMapper</code> no longer call <code>DateMapper</code>, and
          <code>"effectiveFrom":"2026-07-28"</code> follows D3 (accepted or rejected with a 400 that names the field). <strong>Files:</strong> the three requests, commands, mappers, use cases,
          new policy and framework controller tests.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; applies A1, D3. CHANGED: the three requests now hold <code>Instant</code> (<code>@NotBlank</code> replaced by <code>@NotNull</code> with the same message); the commands and use cases were already <code>Instant</code>-typed, so only the requests and <code>CreateAssessmentPolicyCommandMapper</code> / <code>CreateFrameworkVersionCommandMapper</code> (no more <code>DateMapper</code>) changed. <code>"effectiveFrom":"2026-07-28"</code> and <code>28/07/2026</code> answer 400 naming <code>effectiveFrom</code>. Tests: new <code>AssessmentPolicyControllerTests</code> (8) and <code>FrameworkControllerTests</code> (5), with 401/403.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*Rubric*' --tests '*AssessmentPolicy*' --tests '*Framework*'</code>, <code>./gradlew test --tests '*LayeredArchitectureTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-20 &middot; Done &middot; jobs 7.1 and 7.2 done. Verify: rubric, assessment-policy, framework and LayeredArchitectureTests filters -&gt; 158 passed; <code>compileJava</code> pass.</li></ul>
 </div>
 
 <!-- ===================== PHASE 8 ===================== -->
-<div class="phase" id="phase-8" data-status="todo">
+<div class="phase" id="phase-8" data-status="done">
   <h3><span class="title">Phase 8 &ndash; Schools, school users and registration dates</span>
     <span class="tag">medium &middot; needs D3</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> the remaining <code>DateMapper</code> calls in REST mappers are replaced by typed dates. <strong>Depends on:</strong> phase 2.</p>
   <ul class="jobs">
-    <li class="job" id="job-8-1" data-status="todo">
-      <span class="title">8.1 School, grade and school-user dates (including dates of birth)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-8-1" data-status="done">
+      <span class="title">8.1 School, grade and school-user dates (including dates of birth)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>CreateSchoolGradeRequest.startDate/endDate</code>, <code>CreateSchoolUserRequest.startDate/endDate/dateOfBirth</code> and <code>CreateSchoolRequest.adminDateOfBirth</code> are
          <code>LocalDate</code>; <code>CreateSchoolGradeCommandMapper</code>, <code>CreateSchoolUserCommandMapper</code> and
          <code>CreateSchoolCommandMapper</code> no longer call <code>DateMapper</code>; <code>"startDate":"31/02/2026"</code> returns 400 naming the field. <strong>Files:</strong> the three requests, commands,
          mappers, use cases, <code>SchoolControllerTests</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; applies A1. The three requests now use LocalDate (startDate/endDate/dateOfBirth/adminDateOfBirth); the three mappers no longer call DateMapper; commands and use cases were already LocalDate, so nothing changed there. Evidence: 7 new SchoolControllerTests cases (ISO dates reach the command, 31/02/2026 and dd/MM/yyyy answer 400 keyed by field, missing date answers 400); <code>./gradlew test --tests '*SchoolControllerTests'</code> passes.</li></ul>
     </li>
-    <li class="job" id="job-8-2" data-status="todo">
-      <span class="title">8.2 Registration date inputs</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-8-2" data-status="done">
+      <span class="title">8.2 Registration date inputs</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>dateOfBirth</code> in <code>RegisterBySelfDeclaredRequest</code> and <code>RegisterFromSchoolDirectoryRequest</code> is <code>LocalDate</code>, their two mappers no longer call
          <code>DateMapper</code>, and a bad date returns 400. <strong>Files:</strong> the two requests, commands, mappers, use cases, <code>RegisterFormControllerTests</code>.
          This is a public registration flow: keep the endpoint's existing permit rules untouched.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; CHANGED: tests are in AuthControllerTests, not RegisterFormControllerTests, because both registration endpoints live on AuthController (/api/v1/auth/register-*). applies A1. Both requests use LocalDate dateOfBirth, mappers no longer call DateMapper, security permit rules untouched. Evidence: 6 new AuthControllerTests cases (valid, bad date, missing date per endpoint) pass.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*SchoolControllerTests' --tests '*RegisterFormControllerTests'</code>, <code>./gradlew test --tests '*LayeredArchitectureTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-20 &middot; Done &middot; Phase verify: compileJava pass; SchoolControllerTests, AuthControllerTests and LayeredArchitectureTests pass.</li></ul>
 </div>
 
 <!-- ===================== PHASE 9 ===================== -->
-<div class="phase" id="phase-9" data-status="todo">
+<div class="phase" id="phase-9" data-status="done">
   <h3><span class="title">Phase 9 &ndash; Subscription, quota and payment types (money)</span>
     <span class="tag">medium &middot; needs D6</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> quota, plan-period and payment-method inputs are typed with no change to money logic. <strong>Depends on:</strong> phase 2, D6 = A. Skipped entirely if D6 = B.</p>
   <ul class="jobs">
-    <li class="job" id="job-9-1" data-status="todo">
-      <span class="title">9.1 <code>quotaType</code> and <code>periodType</code></span> <span class="status todo">Not started</span>
+    <li class="job" id="job-9-1" data-status="done">
+      <span class="title">9.1 <code>quotaType</code> and <code>periodType</code></span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>quotaType</code> is <code>QuotaType</code> in <code>CreateSubscriptionPlanQuotaRequest</code> and as the <code>@PathVariable</code> in
          <code>SubscriptionController:253</code> and <code>:264</code>; <code>periodType</code> is <code>SubscriptionPlanPeriod</code> in <code>CreateSubscriptionPlanRequest</code>; the
          <code>QuotaType.valueOf</code> and <code>SubscriptionPlanPeriod.valueOf</code> sites in <code>CreateSubscriptionPlanUseCase</code>, <code>FundQuotaFromBalanceUseCase</code>,
          <code>SetQuotaDistributionPolicyUseCase</code> and <code>UpdateSubscriptionPlanUseCase</code> are gone; <code>.../quota/NOPE/...</code> returns 400. Only types, annotations and the parsing glue
          change; no use-case arithmetic. <strong>Files:</strong> the two requests, <code>SubscriptionController</code>, commands, mappers, the four use cases, new subscription controller tests.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; applies A1, D6 (types only). <code>CreateSubscriptionPlanQuotaRequest.quotaType</code> is <code>QuotaType</code>, <code>CreateSubscriptionPlanRequest.periodType</code> is <code>SubscriptionPlanPeriod</code>, the two <code>SubscriptionController</code> path variables are <code>QuotaType</code>; the create/update-plan quota commands, the create-plan command, fund and set-policy commands are typed; the <code>valueOf</code> helpers and <code>normalizeCode</code> in the four use cases are gone; the GraphQL update mapper passes the enum through. No arithmetic changed. Tests: new <code>SubscriptionControllerTests</code> (15, with 401/403); <code>FundQuotaFromBalanceUseCaseTests</code> lost its unknown-quota-type case (now unreachable, covered by the controller test). <code>./gradlew test --tests '*Subscription*' --tests '*Quota*'</code> passes.</li></ul>
     </li>
-    <li class="job" id="job-9-2" data-status="todo">
-      <span class="title">9.2 Distribution <code>mode</code>, payment method and provider</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-9-2" data-status="done">
+      <span class="title">9.2 Distribution <code>mode</code>, payment method and provider</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>AllocateQuotaRequest.mode</code> is <code>DistributionMode</code>; <code>BuyTokensRequest.paymentMethod</code>, <code>PaymentMethodRequest.paymentMethod</code> and the
          provider field of <code>CreatePaymentCheckoutUrlRequest</code> (guarded today by <code>^(PAYOS|SEPAY)$</code>) are typed if an enum with exactly those constants exists
          (<code>PaymentProvider</code> is parsed in <code>CreatePaymentCheckoutUrlUseCase:378</code>); the <code>DistributionMode.valueOf</code> sites in the two allocate use cases are gone. Payment
          callbacks (<code>CallbackController</code>) are not touched. <strong>Files:</strong> the four requests, commands, mappers, <code>AllocateAssessmentQuotaToTeachersUseCase</code>,
          <code>AllocatePracticeQuotaToStudentsUseCase</code>, <code>CreatePaymentCheckoutUrlUseCase</code>, new order/payment controller tests.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; applies A1, D5, D6 (types only). CHANGED: <code>AllocateQuotaRequest.mode</code> is <code>DistributionMode</code> and <code>CreatePaymentCheckoutUrlRequest.provider</code> is <code>PaymentProvider</code> (exact PAYOS/SEPAY); both commands are typed and the <code>fromString</code>/<code>providerOf</code> glue in the three use cases is gone. NOT converted (D5): <code>BuyTokensRequest.paymentMethod</code> (MANUAL/PAYOS/SEPAY, no enum with those constants; <code>PaymentMethod</code> is E_BANKING/CARD) and <code>PaymentMethodRequest.paymentMethod</code> (PAYOS/SEPAY, but no controller uses this record). <code>CallbackController</code> untouched. Tests: new <code>PaymentControllerTests</code> (6) and 6 allocate cases added to <code>SubscriptionControllerTests</code>, both with 401/403; <code>CreatePaymentCheckoutUrlUseCaseTests</code> now passes the enum.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*Subscription*' --tests '*Quota*' --tests '*Payment*' --tests '*Order*'</code>,
      <code>./gradlew test --tests '*LayeredArchitectureTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-20 &middot; Done &middot; jobs 9.1 and 9.2 done. Verify: <code>compileJava</code> pass; <code>*Subscription*</code>, <code>*Quota*</code>, <code>*Payment*</code>, <code>*Order*</code> and <code>LayeredArchitectureTests</code> filters -&gt; 189 passed.</li></ul>
 </div>
 
 <!-- ===================== PHASE 10 ===================== -->
@@ -699,13 +705,33 @@ Run the <code>verify-plan</code> skill after the last phase.</p>
     <tr><td>2026-11-20</td><td>D1&ndash;D4 answered; job 1.4 added (case-insensitive enum binding); phase 1 now needs D2</td><td>D2 = case-insensitive needs binding configuration before the migration phases</td></tr>
     <tr><td>2026-11-20</td><td>Risks: removed stale "exact enum names (D2 = A)" wording</td><td>D2 was answered case-insensitive; the risk text still described the recommended option</td></tr>
     <tr><td>2026-11-20</td><td>Approved</td><td>The user asked to approve the plan with all nine decisions answered. Phase 1 may start now; phases 2&ndash;11 wait for <code>graphql-typed-scalars-plan</code> (D7)</td></tr>
+      <tr><td>2026-11-20</td><td>Phase 1 implemented</td><td>Jobs 1.1&ndash;1.4 done; see Implementation notes</td></tr>
   </tbody>
 </table></div>
 
 <h2 id="notes">8. Implementation notes</h2>
 <p>Filled in by <code>implement-plan</code>: deviations from the plan, results of <code>verify-plan</code>, and
 problems noticed but not fixed.</p>
-<ul id="notes-list"></ul>
+<ul id="notes-list">
+  <li><strong>Job 1.1 probe (2026-11-20, ScoringRuleController slice).</strong> Every case answered <code>500</code>, error <code>INTERNAL_SERVER_ERROR</code>, message "Có lỗi xảy ra", and logged at ERROR:
+    broken JSON &rarr; <code>HttpMessageNotReadableException</code>; unknown enum constant (also lower case) &rarr; <code>HttpMessageNotReadableException</code>;
+    JSON null into a primitive <code>boolean</code> &rarr; <code>HttpMessageNotReadableException</code> (Jackson 3 fails on null for primitives by default);
+    non-UUID path value &rarr; <code>MethodArgumentTypeMismatchException</code>; wrong <code>Content-Type</code> &rarr; <code>HttpMediaTypeNotSupportedException</code>.
+    Not probed: a missing required <code>@RequestParam</code> and a violated constraint on a <code>@RequestParam</code> (no controller declares one; none uses <code>@Validated</code>). The missing-parameter handler is covered by a direct-call test.
+    The reference pages were not read (see job 1.1 log).</li>
+  <li><strong>Query/path enums.</strong> With Boot 4.1 defaults, <code>?kind=class_test</code> is rejected with 400, so Boot's lenient enum conversion does not apply to MVC here. <code>CaseInsensitiveEnumWebConfig</code> (<code>infrastructure/config</code>) fixes it. Unknown constants still answer 400 listing the accepted values.</li>
+  <li><strong>Contract changes for the frontend list (job 11.2).</strong> Malformed body, path, query and media type now answer 400/415 instead of 500. Validation errors are keyed by field name instead of by request object name. Enum values are accepted in any letter case.</li>
+  <li><strong>Problem noticed, not fixed.</strong> <code>GlobalExceptionHandler.handleDisabled</code> is <code>private</code> (it works through Spring's reflection but is inconsistent with the other handlers).</li>
+  <li><strong>CHANGED file list.</strong> Job 1.4 also edited <code>AssessmentControllerTests</code> (the only REST controller with an existing enum query parameter and a slice test) and added <code>CaseInsensitiveEnumWebConfig</code>.</li>
+  <li><strong>Job 2.1 re-measure (D7, 2026-11-20, GraphQL plan done).</strong> Command/query records under <code>application/port/input</code> with an enum- or date-named <code>String</code> component: 23 files (name-based grep, heuristic). <code>X.valueOf(...)</code> calls under <code>application/port/input</code>: 87 (includes non-request parsing). <code>DateMapper.to*</code>: 18 in <code>application</code>, 21 in <code>interfaces/rest/mapper</code>.</li>
+  <li><strong>Pilot recipe (job 2.1).</strong> (1) Check the enum's constants equal the old input set. (2) Request record: change the type to the enum, replace <code>@NotBlank</code> by <code>@NotNull</code> with the same Vietnamese message, delete any constant-list <code>@Pattern</code>. (3) Command record: same type. (4) REST mapper needs no change (it passes the value through). (5) Use case: delete the <code>valueOf</code> try/catch and any <code>normalizeCode</code>/<code>toUpperCase</code> on that field, use <code>command.x()</code> directly. (6) Search for GraphQL callers of the command and adjust them. (7) Add <code>XxxControllerTests</code> with <code>@RestControllerTest</code>: valid value, lower-case value, unknown value (400, <code>$.errors.&lt;field&gt;</code> lists constants, no class name), missing value (400), anonymous (401). Invalid input now answers from <code>GlobalExceptionHandler</code>, so the use case's own Vietnamese "not supported" message for that field no longer exists.</li>
+  <li><strong>Phase 3 leftovers and frontend list (jobs 3.1&ndash;3.3).</strong> D5 leftovers kept as <code>String</code>: <code>requiredStreamTypes</code> (values CAMERA/SCREEN; enum <code>AssessmentRequiredStreamType</code> also has CAMERA_AND_SCREEN), the list <code>status</code> filter (upcoming|in_progress|completed) and <code>sort</code>. <code>RecordAnswerTurnUseCase.TurnType.valueOf</code> kept: its command comes from Kafka, not REST. Frontend: <code>openAt/closeAt</code> (assessment, class test, update) and schedule <code>startDate/endDate</code> need an ISO-8601 instant with offset; <code>streamTypePermission</code>, <code>deliveryMode</code>, member <code>role</code>, candidate/session <code>status</code>, turn <code>turnType</code> are enum constants (any letter case); the member create request now requires <code>role</code>; unknown values answer 400 listing the constants. Removed code: <code>AssessmentDeliveryModeSupport</code> (orphaned) and use-case tests of malformed date or invalid delivery-mode strings (now rejected at the REST boundary).</li>
+  <li><strong>Phase 5 leftovers and frontend list (jobs 5.1&ndash;5.3).</strong> Frontend: grading <code>roundType</code> and <code>selectionMode</code> are enum constants (any letter case), unknown values answer 400 listing them, a missing <code>roundType</code> answers 400 keyed <code>roundType</code>; export filters <code>resultStatus</code>, <code>roundType</code>, <code>assignmentStatus</code> and <code>kind</code> are enum constants (blank = no filter, unknown = 400); appeal approve <code>deadline</code> needs an ISO-8601 instant with offset (<code>dd/MM/yyyy</code> and date-only are rejected). The use cases no longer answer their own Vietnamese &ldquo;invalid round / selection mode&rdquo; messages. Kept as String: <code>GradingAssignmentFilter</code> fields and the GraphQL <code>SearchGradingAssignmentsQuery</code> (read model shared with the JPA query repository and GraphQL).</li>
+  <li><strong>Phase 6 leftovers and frontend list (jobs 6.1&ndash;6.3).</strong> D5 leftover kept as <code>String</code>: the question list/export <code>scope</code> filter (no matching enum). Frontend: question <code>type</code>, <code>sharing</code>, asset <code>type</code> and collaborator <code>permission</code> are enum constants (any letter case), unknown or missing value answers 400 keyed by field; create-question <code>type</code> is now required by <code>@NotNull</code>; <code>GET /api/v1/questions/import/template?type=</code> answers 400 for an unknown type instead of silently using READ_ALOUD. Problem noticed, not fixed: <code>CreateSystemQuestionBankQuestionRequest</code> is not used by any controller.</li>
+  <li><strong>Phase 7 leftovers and frontend list (jobs 7.1&ndash;7.2).</strong> Frontend: rubric version <code>totalScoreMethod</code> is an enum constant (SUM / WEIGHTED_AVERAGE, any letter case) and is now required by <code>@NotNull</code>; rubric version, clone-policy, assessment-policy and framework-version <code>effectiveFrom/effectiveTo</code> need an ISO-8601 instant with offset (date-only and dd/MM/yyyy answer 400). The Add-version use cases no longer answer their own Vietnamese &ldquo;invalid method&rdquo; message. Problem noticed, not fixed: validation errors on the assessment-policy list bodies (<code>List&lt;@Valid ...&gt;</code>) are keyed by the parameter name <code>requests</code>, not by the field, so a missing <code>effectiveFrom</code> there is reported as <code>errors.requests</code> (the message text is still correct).</li>
+  <li><strong>Phase 8 leftovers and frontend list (jobs 8.1&ndash;8.2).</strong> Frontend: school grade startDate/endDate, school user dateOfBirth/startDate/endDate, school creation adminDateOfBirth and both registration dateOfBirth values must be yyyy-MM-dd; dd/MM/yyyy and impossible dates such as 31/02/2026 answer 400 keyed by field, and a missing required date answers 400. The old trimming and DateMapper format tolerance is gone. Registration tests live in AuthControllerTests. Not in this phase: the CSV import handlers still parse date text with DateMapper because those values come from files.</li>
+  <li><strong>Phase 9 leftovers and frontend list (jobs 9.1&ndash;9.2).</strong> D5 leftovers kept as <code>String</code>: <code>BuyTokensRequest.paymentMethod</code> (MANUAL/PAYOS/SEPAY, no matching enum) and <code>PaymentMethodRequest.paymentMethod</code> (no controller uses it). Frontend: plan <code>periodType</code> (DAY/MONTH/YEAR), plan quota <code>quotaType</code> and the <code>{quotaType}</code> path segment of quota-funding and quota-policies (ASSESSMENT/PRACTICE), allocate <code>mode</code> (AUTO/MANUAL) and checkout <code>provider</code> (PAYOS/SEPAY) are enum constants in any letter case; unknown or missing values answer 400 keyed by field (for plan quotas the key is <code>quotas[0].quotaType</code>). The use cases no longer answer their own Vietnamese &ldquo;invalid quota type / period / mode / provider&rdquo; messages. Problem noticed, not fixed: the <code>PaymentMethodRequest</code> comment mentions <code>PaymentMethod.resolveOnlineGateway()</code>, which does not exist.</li>
+</ul>
 
 </div>
 <script>

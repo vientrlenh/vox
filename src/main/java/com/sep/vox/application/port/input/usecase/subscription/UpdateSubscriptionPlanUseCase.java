@@ -204,7 +204,7 @@ public class UpdateSubscriptionPlanUseCase implements IUseCase<UpdateSubscriptio
 
         LinkedHashMap<QuotaType, BigDecimal> includedAmountByQuotaType = new LinkedHashMap<QuotaType, BigDecimal>();
         for (UpdateSubscriptionPlanQuotaCommand quota : input.quotas()) {
-            QuotaType quotaType = quotaTypeOf(quota.quotaType());
+            QuotaType quotaType = quota.quotaType();
             // subscription_plan_quotas CHƯA có unique (subscription_plan_id, quota_type), nên DB
             // không chặn giúp: gửi hai dòng GRADING sẽ lưu cả hai và mọi chỗ đọc hạn mức về sau lấy
             // trúng dòng nào là tùy thứ tự trả về của Postgres.
@@ -225,19 +225,5 @@ public class UpdateSubscriptionPlanUseCase implements IUseCase<UpdateSubscriptio
             includedAmountByQuotaType.put(quotaType, quota.includedAmountVnd());
         }
         return includedAmountByQuotaType;
-    }
-
-    // Command nhận chuỗi thô để giữ nguyên hình dạng payload; schema GraphQL khai QuotaType! nên trên
-    // đường GraphQL giá trị lạ đã bị chặn từ khâu parse, nhưng use case vẫn tự kiểm để còn dùng được
-    // từ lối vào khác (REST, job) mà không phụ thuộc vào tầng interface.
-    private static QuotaType quotaTypeOf(String quotaType) {
-        if (quotaType == null) {
-            throw new IllegalArgumentException("Loại hạn mức không được để trống");
-        }
-        try {
-            return QuotaType.valueOf(quotaType);
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Loại hạn mức không hợp lệ: " + quotaType);
-        }
     }
 }

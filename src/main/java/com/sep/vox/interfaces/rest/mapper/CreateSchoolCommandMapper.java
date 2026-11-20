@@ -1,14 +1,11 @@
 package com.sep.vox.interfaces.rest.mapper;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.command.CreateSchoolCommand;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolRequest;
-import java.time.LocalDate;
 
 public final class CreateSchoolCommandMapper {
     
     public static CreateSchoolCommand fromRequest(CreateSchoolRequest request) {
-        LocalDate adminDateOfBirth = DateMapper.toLocalDate(request.adminDateOfBirth());
         return new CreateSchoolCommand(
             request.schoolDirectoryId(), 
             request.schoolCode(), 
@@ -19,7 +16,7 @@ public final class CreateSchoolCommandMapper {
             request.adminEmail(),
             request.adminPhone(),
             request.adminFullName(),
-            adminDateOfBirth,
+            request.adminDateOfBirth(),
             request.adminAddress(), 
             request.adminAvatarUrl()
         );

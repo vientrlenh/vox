@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
+import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
@@ -8,6 +9,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 
 public record AddRubricVersionsRequest(
@@ -31,11 +33,11 @@ public record AddRubricVersionsRequest(
             @DecimalMin(value = "0.0", inclusive = false, message = "Điểm trần phải lớn hơn 0")
             BigDecimal scoringScaleMax,
 
-            @NotBlank(message = "Phương pháp tính điểm tổng không được để trống (SUM/WEIGHTED_AVERAGE)")
-            String totalScoreMethod,
+            @NotNull(message = "Phương pháp tính điểm tổng không được để trống (SUM/WEIGHTED_AVERAGE)")
+            RubricTotalScoreMethod totalScoreMethod,
 
-            String effectiveFrom,
+            Instant effectiveFrom,
 
-            String effectiveTo
+            Instant effectiveTo
     ) {}
 }

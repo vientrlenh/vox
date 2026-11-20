@@ -6,18 +6,18 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
 
+import com.sep.vox.application.query.dto.GradingOutcomeBucketDto;
+import com.sep.vox.application.query.dto.LiveSessionCountsDto;
 import com.sep.vox.application.query.repository.PlatformOperationalHealthQueryRepository;
-import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.common.ZoneConstant;
+import com.sep.vox.support.RepositoryTest;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -29,11 +29,9 @@ import jakarta.persistence.PersistenceContext;
  * chỉ lộ ra khi có DB thật — đúng loại bẫy đã gây ClassCastException ở
  * {@code JpaTokenUsageTimeseriesQueryRepository}.
  */
-@DataJpaTest
-@ActiveProfiles("test")
+@RepositoryTest
 @Import(JpaPlatformOperationalHealthQueryRepository.class)
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class JpaPlatformOperationalHealthQueryRepositoryTests extends ContainerTestConfig {
+class JpaPlatformOperationalHealthQueryRepositoryTests {
 
     @Autowired
     private PlatformOperationalHealthQueryRepository repository;
@@ -44,13 +42,13 @@ class JpaPlatformOperationalHealthQueryRepositoryTests extends ContainerTestConf
     private static final Instant WINDOW_FROM = Instant.parse("2026-08-01T00:00:00Z");
     private static final Instant WINDOW_TO = Instant.parse("2026-08-20T00:00:00Z");
 
-    private void insertSession(UUID examId, String status, Instant startedAt, Instant submittedAt) {
+    private void insertSession(UUID assessmentId, String status, Instant startedAt, Instant submittedAt) {
         em.createNativeQuery("""
-            INSERT INTO exam_sessions (id, exam_id, candidate_id, paper_id, started_at, submitted_at, status, flagged)
-            VALUES (:id, :examId, :candidateId, :paperId, :startedAt, :submittedAt, :status, FALSE)
+            INSERT INTO assessment_sessions (id, assessment_id, candidate_id, paper_id, started_at, submitted_at, status, flagged)
+            VALUES (:id, :assessmentId, :candidateId, :paperId, :startedAt, :submittedAt, :status, FALSE)
             """)
             .setParameter("id", UUID.randomUUID())
-            .setParameter("examId", examId)
+            .setParameter("assessmentId", assessmentId)
             .setParameter("candidateId", UUID.randomUUID())
             .setParameter("paperId", UUID.randomUUID())
             .setParameter("startedAt", OffsetDateTime.ofInstant(startedAt, ZoneOffset.UTC))
@@ -60,16 +58,17 @@ class JpaPlatformOperationalHealthQueryRepositoryTests extends ContainerTestConf
     }
 
     /**
-     * Điều kiện tiên quyết của mọi phép cắt ngày bên dưới. {@code timestamptz AT TIME ZONE 'zone'}
-     * đổi sang giờ địa phương của zone — đúng thứ ta cần; nhưng nếu cột là {@code timestamp} TRẦN
-     * thì cùng cú pháp đó làm điều NGƯỢC LẠI (coi giá trị đang ở zone rồi quy về UTC). Ghim kiểu cột
-     * ở đây để nếu ai đổi nó, test đỏ kèm lý do thay vì kết quả lệch âm thầm.
+     * The precondition of every day-cut below. {@code timestamptz AT TIME ZONE 'zone'} converts to
+     * the zone's local time -- exactly what we need; but if the column is a BARE {@code timestamp},
+     * the same syntax does the OPPOSITE (it treats the value as already being in the zone and
+     * converts it to UTC). The column type is pinned here so that if someone changes it, the test
+     * turns red with a reason instead of the results drifting silently.
      */
     @Test
     void submittedAtIsTimestampWithTimeZone() {
-        var dataType = em.createNativeQuery("""
+        Object dataType = em.createNativeQuery("""
             SELECT data_type FROM information_schema.columns
-            WHERE table_name = 'exam_sessions' AND column_name = 'submitted_at'
+            WHERE table_name = 'assessment_sessions' AND column_name = 'submitted_at'
             """)
             .getSingleResult();
 
@@ -77,57 +76,58 @@ class JpaPlatformOperationalHealthQueryRepositoryTests extends ContainerTestConf
     }
 
     @Test
-    void countsLiveSessionsByStatusAndDistinctExams() {
-        var examA = UUID.randomUUID();
-        var examB = UUID.randomUUID();
-        var now = Instant.parse("2026-08-15T03:00:00Z");
+    void countsLiveSessionsByStatusAndDistinctAssessments() {
+        UUID assessmentA = UUID.randomUUID();
+        UUID assessmentB = UUID.randomUUID();
+        Instant now = Instant.parse("2026-08-15T03:00:00Z");
 
-        insertSession(examA, "IN_PROGRESS", now, null);
-        insertSession(examA, "IN_PROGRESS", now, null);
-        insertSession(examB, "IN_PROGRESS", now, null);
-        insertSession(examA, "SUBMITTED", now, now);
-        insertSession(examB, "GRADING", now, now);
-        // Nhiễu: đã kết thúc, không được rơi vào ô nào ở trên.
-        insertSession(examA, "GRADED", now, now);
-        insertSession(examA, "GRADING_FAILED", now, now);
-        insertSession(examB, "EXPIRED", now, null);
-        insertSession(examB, "INTERRUPTED", now, null);
+        insertSession(assessmentA, "IN_PROGRESS", now, null);
+        insertSession(assessmentA, "IN_PROGRESS", now, null);
+        insertSession(assessmentB, "IN_PROGRESS", now, null);
+        insertSession(assessmentA, "SUBMITTED", now, now);
+        insertSession(assessmentB, "GRADING", now, now);
+        // Noise: already finished, must not fall into any cell above.
+        insertSession(assessmentA, "GRADED", now, now);
+        insertSession(assessmentA, "GRADING_FAILED", now, now);
+        insertSession(assessmentB, "EXPIRED", now, null);
+        insertSession(assessmentB, "INTERRUPTED", now, null);
 
-        var live = repository.countLiveSessions();
+        LiveSessionCountsDto live = repository.countLiveSessions();
 
         assertThat(live.sessionsInProgress()).isEqualTo(3L);
-        // Ba phiên đang thi nhưng chỉ thuộc HAI kỳ thi.
-        assertThat(live.examsInProgress()).isEqualTo(2L);
+        // Three sessions in progress but they belong to only TWO assessments.
+        assertThat(live.assessmentsInProgress()).isEqualTo(2L);
         assertThat(live.gradingQueueDepth()).isEqualTo(2L);
     }
 
     @Test
     void liveCountsAreZeroOnEmptyTable() {
-        var live = repository.countLiveSessions();
+        LiveSessionCountsDto live = repository.countLiveSessions();
 
         assertThat(live.sessionsInProgress()).isZero();
-        assertThat(live.examsInProgress()).isZero();
+        assertThat(live.assessmentsInProgress()).isZero();
         assertThat(live.gradingQueueDepth()).isZero();
     }
 
     /**
-     * Phép kiểm QUAN TRỌNG NHẤT của file này. Việt Nam là UTC+7, nên mọi phiên nộp sau 17:00 UTC
-     * thuộc về ngày HÔM SAU theo lịch VN. Cắt theo UTC sẽ đẩy chúng lùi một ngày — tức các ca thi
-     * buổi sáng sớm rơi nhầm cột trên biểu đồ.
+     * The MOST IMPORTANT check of this file. Vietnam is UTC+7, so every session submitted after
+     * 17:00 UTC belongs to the NEXT day on the Vietnam calendar. Cutting by UTC would push them
+     * back a day -- i.e. early-morning assessment sessions land in the wrong column of the chart.
      */
     @Test
     void bucketsByVietnamCalendarDayNotUtcDay() {
-        var exam = UUID.randomUUID();
-        var started = Instant.parse("2026-08-10T01:00:00Z");
+        UUID assessment = UUID.randomUUID();
+        Instant started = Instant.parse("2026-08-10T01:00:00Z");
 
-        // 23:00 giờ VN ngày 10/08 -> vẫn là ngày 10.
-        insertSession(exam, "GRADED", started, Instant.parse("2026-08-10T16:00:00Z"));
-        // Đúng 00:00 giờ VN ngày 11/08 -> đã sang ngày 11, dù UTC vẫn là ngày 10.
-        insertSession(exam, "GRADED", started, Instant.parse("2026-08-10T17:00:00Z"));
-        // 06:30 giờ VN ngày 11/08 -> ngày 11.
-        insertSession(exam, "GRADED", started, Instant.parse("2026-08-10T23:30:00Z"));
+        // 23:00 Vietnam time on 10/08 -> still the 10th.
+        insertSession(assessment, "GRADED", started, Instant.parse("2026-08-10T16:00:00Z"));
+        // Exactly 00:00 Vietnam time on 11/08 -> already the 11th, even though in UTC it is still
+        // the 10th.
+        insertSession(assessment, "GRADED", started, Instant.parse("2026-08-10T17:00:00Z"));
+        // 06:30 Vietnam time on 11/08 -> the 11th.
+        insertSession(assessment, "GRADED", started, Instant.parse("2026-08-10T23:30:00Z"));
 
-        var buckets = repository.findGradingOutcomeByDay(WINDOW_FROM, WINDOW_TO, ZoneConstant.BUSINESS_ZONE);
+        List<GradingOutcomeBucketDto> buckets = repository.findGradingOutcomeByDay(WINDOW_FROM, WINDOW_TO, ZoneConstant.BUSINESS_ZONE);
 
         assertThat(buckets).extracting(bucket -> bucket.day())
             .containsExactly(LocalDate.of(2026, 8, 10), LocalDate.of(2026, 8, 11));
@@ -137,19 +137,19 @@ class JpaPlatformOperationalHealthQueryRepositoryTests extends ContainerTestConf
 
     @Test
     void separatesGradedFromFailedAndIgnoresOtherStatuses() {
-        var exam = UUID.randomUUID();
-        var started = Instant.parse("2026-08-05T01:00:00Z");
-        var submitted = Instant.parse("2026-08-05T04:00:00Z");
+        UUID assessment = UUID.randomUUID();
+        Instant started = Instant.parse("2026-08-05T01:00:00Z");
+        Instant submitted = Instant.parse("2026-08-05T04:00:00Z");
 
-        insertSession(exam, "GRADED", started, submitted);
-        insertSession(exam, "GRADED", started, submitted);
-        insertSession(exam, "GRADING_FAILED", started, submitted);
-        // Chưa chấm xong: không thuộc mẫu số của tỷ lệ thành công.
-        insertSession(exam, "SUBMITTED", started, submitted);
-        insertSession(exam, "GRADING", started, submitted);
-        insertSession(exam, "EXPIRED", started, submitted);
+        insertSession(assessment, "GRADED", started, submitted);
+        insertSession(assessment, "GRADED", started, submitted);
+        insertSession(assessment, "GRADING_FAILED", started, submitted);
+        // Grading not finished: not part of the denominator of the success rate.
+        insertSession(assessment, "SUBMITTED", started, submitted);
+        insertSession(assessment, "GRADING", started, submitted);
+        insertSession(assessment, "EXPIRED", started, submitted);
 
-        var buckets = repository.findGradingOutcomeByDay(WINDOW_FROM, WINDOW_TO, ZoneConstant.BUSINESS_ZONE);
+        List<GradingOutcomeBucketDto> buckets = repository.findGradingOutcomeByDay(WINDOW_FROM, WINDOW_TO, ZoneConstant.BUSINESS_ZONE);
 
         assertThat(buckets).hasSize(1);
         assertThat(buckets.get(0).day()).isEqualTo(LocalDate.of(2026, 8, 5));
@@ -157,19 +157,22 @@ class JpaPlatformOperationalHealthQueryRepositoryTests extends ContainerTestConf
         assertThat(buckets.get(0).failed()).isEqualTo(1L);
     }
 
-    /** {@code from} BAO GỒM, {@code to} KHÔNG bao gồm — nếu không, hai dải liền nhau đếm trùng. */
+    /**
+     * {@code from} is INCLUSIVE, {@code to} is NOT inclusive -- otherwise two adjacent ranges would
+     * count twice.
+     */
     @Test
     void windowIsHalfOpen() {
-        var exam = UUID.randomUUID();
-        var started = Instant.parse("2026-07-01T00:00:00Z");
+        UUID assessment = UUID.randomUUID();
+        Instant started = Instant.parse("2026-07-01T00:00:00Z");
 
-        insertSession(exam, "GRADED", started, WINDOW_FROM);
-        insertSession(exam, "GRADED", started, WINDOW_TO);
-        insertSession(exam, "GRADED", started, WINDOW_FROM.minusMillis(1));
+        insertSession(assessment, "GRADED", started, WINDOW_FROM);
+        insertSession(assessment, "GRADED", started, WINDOW_TO);
+        insertSession(assessment, "GRADED", started, WINDOW_FROM.minusMillis(1));
 
-        var buckets = repository.findGradingOutcomeByDay(WINDOW_FROM, WINDOW_TO, ZoneConstant.BUSINESS_ZONE);
+        List<GradingOutcomeBucketDto> buckets = repository.findGradingOutcomeByDay(WINDOW_FROM, WINDOW_TO, ZoneConstant.BUSINESS_ZONE);
 
-        var total = buckets.stream().mapToLong(bucket -> bucket.graded()).sum();
+        long total = buckets.stream().mapToLong(bucket -> bucket.graded()).sum();
         assertThat(total).isEqualTo(1L);
     }
 
@@ -178,7 +181,7 @@ class JpaPlatformOperationalHealthQueryRepositoryTests extends ContainerTestConf
         insertSession(UUID.randomUUID(), "GRADED", Instant.parse("2026-01-01T00:00:00Z"),
             Instant.parse("2026-01-02T00:00:00Z"));
 
-        var buckets = repository.findGradingOutcomeByDay(WINDOW_FROM, WINDOW_TO, ZoneConstant.BUSINESS_ZONE);
+        List<GradingOutcomeBucketDto> buckets = repository.findGradingOutcomeByDay(WINDOW_FROM, WINDOW_TO, ZoneConstant.BUSINESS_ZONE);
 
         assertThat(buckets).isEmpty();
     }

@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.role;
 
+import com.sep.vox.domain.model.user.Role;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +23,7 @@ public class ViewRolesUseCase implements IUseCase<ViewRolesQuery, PageResult<Rol
     @Override
     @Transactional(readOnly = true)
     public PageResult<RoleDto> execute(ViewRolesQuery input) {
-        var result = roleRepository.findAll(input.page(), input.size());
+        PageResult<Role> result = roleRepository.findAll(input.page(), input.size());
         return RoleDtoMapper.toRoleDtoPage(result);
     }
     

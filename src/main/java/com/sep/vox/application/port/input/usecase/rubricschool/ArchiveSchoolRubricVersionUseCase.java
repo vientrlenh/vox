@@ -10,6 +10,8 @@ import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.domain.model.rubric.RubricVersion;
+import com.sep.vox.domain.model.school.School;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
@@ -70,7 +72,7 @@ public class ArchiveSchoolRubricVersionUseCase implements IUseCase<ArchiveSchool
         Rubric rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
 
-        var schoolUser = schoolUserRepository.findByUserId(currentUserId)
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL ||
@@ -79,7 +81,7 @@ public class ArchiveSchoolRubricVersionUseCase implements IUseCase<ArchiveSchool
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền can thiệp vào phiên bản của trường khác.");
         }
 
-        var school = schoolRepository.findById(command.schoolId())
+        School school = schoolRepository.findById(command.schoolId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
         if (!school.isActive()) {
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");

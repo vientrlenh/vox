@@ -3,15 +3,15 @@ package com.sep.vox.application.port.input.query;
 import java.util.UUID;
 
 /**
- * Hàng đợi giáo viên — MỘT danh sách cho cả bốn vòng, lọc thêm được theo
- * {@code roundType} nếu họ muốn tách ra xem riêng. Phân trang 0-based.
+ * The teacher's queue -- ONE list for all four rounds, which can be filtered further by
+ * {@code roundType} if they want to look at one round separately. 0-based paging.
  *
- * <p>{@code examId} chỉ THU HẸP, không phải cổng phân quyền: phạm vi vẫn là các phân
- * công của chính người gọi, nên truyền id của kỳ thi mình không có bài vào chỉ ra danh
- * sách rỗng chứ không lộ gì.
+ * <p>{@code assessmentId} only NARROWS, it is not a permission gate: the scope is still the caller's own
+ * assignments, so passing the id of an assessment in which they have no attempt gives an empty
+ * list and reveals nothing.
  */
 public record ViewMyGradingTasksQuery(
-    UUID examId,
+    UUID assessmentId,
     String status,
     String roundType,
     int page,

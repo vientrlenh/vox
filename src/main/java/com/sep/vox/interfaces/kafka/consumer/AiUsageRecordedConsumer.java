@@ -21,6 +21,7 @@ import com.sep.vox.application.port.input.usecase.metering.RecordAiUsageUseCase;
 import com.sep.vox.domain.model.metering.AiUsageType;
 import com.sep.vox.interfaces.kafka.dto.AiUsageRecordedEventDto;
 
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 @Component
@@ -48,8 +49,8 @@ public class AiUsageRecordedConsumer {
     )
     public void consume(ConsumerRecord<String, Object> record, Acknowledgment ack) {
         try {
-            var payload = jsonMapper.valueToTree(record.value());
-            var event = jsonMapper.treeToValue(payload, AiUsageRecordedEventDto.class);
+            JsonNode payload = jsonMapper.valueToTree(record.value());
+            AiUsageRecordedEventDto event = jsonMapper.treeToValue(payload, AiUsageRecordedEventDto.class);
 
             LOGGER.info("Receive AI usage event topic={} partition={} offset={} turnId={}",
                 record.topic(), record.partition(), record.offset(), event == null ? null : event.turnId());
@@ -63,13 +64,13 @@ public class AiUsageRecordedConsumer {
                 return;
             }
 
-            var examSessionId = parseUuid(event.examSessionId(), "examSessionId");
-            var turnId = parseUuid(event.turnId(), "turnId");
+            UUID assessmentSessionId = parseUuid(event.assessmentSessionId(), "assessmentSessionId");
+            UUID turnId = parseUuid(event.turnId(), "turnId");
 
-            for (var item : event.usageEvents()) {
-                var usage = item.usage();
+            for (AiUsageRecordedEventDto.AiUsageEventItemDto item : event.usageEvents()) {
+                AiUsageRecordedEventDto.AiUsageTokensDto usage = item.usage();
                 recordAiUsageUseCase.execute(new RecordAiUsageCommand(
-                    examSessionId,
+                    assessmentSessionId,
                     turnId,
                     parseUuid(item.usageEventId(), "usageEventId"),
                     parseUsageType(item.type()),

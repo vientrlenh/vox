@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.metering;
 
+import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 import org.springframework.stereotype.Service;
@@ -36,8 +37,8 @@ public class RecordAiUsageUseCase implements IUseCase<RecordAiUsageCommand, Void
         if (input.usageEventId() == null) {
             throw new IllegalArgumentException("Thiếu usageEventId trong dữ liệu usage");
         }
-        if (input.examSessionId() == null) {
-            throw new IllegalArgumentException("Thiếu examSessionId trong dữ liệu usage");
+        if (input.assessmentSessionId() == null) {
+            throw new IllegalArgumentException("Thiếu assessmentSessionId trong dữ liệu usage");
         }
         // Chặn sớm thay vì để NPE ở phép nhân bên dưới: cost_vnd là NOT NULL nên một dòng thiếu
         // costUsd không thể ghi được, và nuốt lặng nó nghĩa là mất trắng một khoản chi thật.
@@ -59,11 +60,11 @@ public class RecordAiUsageUseCase implements IUseCase<RecordAiUsageCommand, Void
         // sang tận ngày hôm sau, lúc đó quy đổi lại theo tỷ giá "mới nhất" sẽ ra một con số khác với
         // lúc chi phí thật phát sinh. Ràng buộc idempotency ở trên bảo đảm một sự kiện chỉ được chốt
         // đúng một lần.
-        var exchangeRateVnd = quotaPricingPort.usdToVndRate();
-        var costVnd = input.costUsd().multiply(exchangeRateVnd).setScale(COST_VND_SCALE, RoundingMode.HALF_UP);
+        BigDecimal exchangeRateVnd = quotaPricingPort.usdToVndRate();
+        BigDecimal costVnd = input.costUsd().multiply(exchangeRateVnd).setScale(COST_VND_SCALE, RoundingMode.HALF_UP);
 
         aiUsageRecordRepository.save(new AiUsageRecord(
-            input.examSessionId(),
+            input.assessmentSessionId(),
             input.turnId(),
             input.usageEventId(),
             input.usageType(),

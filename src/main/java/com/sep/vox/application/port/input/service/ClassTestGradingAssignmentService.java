@@ -1,22 +1,25 @@
 package com.sep.vox.application.port.input.service;
 
+import com.sep.vox.domain.model.assessment.Assessment;
 import java.time.Instant;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.domain.model.exam.ExamCandidateResult;
-import com.sep.vox.domain.model.exam.ExamCandidateResultStatus;
-import com.sep.vox.domain.model.exam.ExamGradingAssignment;
-import com.sep.vox.domain.model.exam.ExamKind;
-import com.sep.vox.domain.model.exam.ExamMemberRole;
-import com.sep.vox.domain.model.exam.GradingRoundType;
-import com.sep.vox.domain.repository.ExamCandidateResultRepository;
-import com.sep.vox.domain.repository.ExamGradingAssignmentRepository;
-import com.sep.vox.domain.repository.ExamMemberRepository;
-import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.model.assessment.AssessmentCandidateResult;
+import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
+import com.sep.vox.domain.model.assessment.AssessmentGradingAssignment;
+import com.sep.vox.domain.model.assessment.AssessmentKind;
+import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
+import com.sep.vox.domain.model.assessment.GradingRoundType;
+import com.sep.vox.domain.repository.AssessmentCandidateResultRepository;
+import com.sep.vox.domain.repository.AssessmentGradingAssignmentRepository;
+import com.sep.vox.domain.repository.AssessmentMemberRepository;
+import com.sep.vox.domain.repository.AssessmentRepository;
 
 /**
  * Bài kiểm tra trên lớp: chủ bài (CHAIR) chấm hết, nên phân công vòng
@@ -34,47 +37,47 @@ import com.sep.vox.domain.repository.ExamRepository;
 @Service
 public class ClassTestGradingAssignmentService {
 
-    private final ExamRepository examRepository;
-    private final ExamMemberRepository examMemberRepository;
-    private final ExamCandidateResultRepository examCandidateResultRepository;
-    private final ExamGradingAssignmentRepository examGradingAssignmentRepository;
+    private final AssessmentRepository assessmentRepository;
+    private final AssessmentMemberRepository assessmentMemberRepository;
+    private final AssessmentCandidateResultRepository assessmentCandidateResultRepository;
+    private final AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository;
 
     public ClassTestGradingAssignmentService(
-            ExamRepository examRepository,
-            ExamMemberRepository examMemberRepository,
-            ExamCandidateResultRepository examCandidateResultRepository,
-            ExamGradingAssignmentRepository examGradingAssignmentRepository) {
-        this.examRepository = examRepository;
-        this.examMemberRepository = examMemberRepository;
-        this.examCandidateResultRepository = examCandidateResultRepository;
-        this.examGradingAssignmentRepository = examGradingAssignmentRepository;
+            AssessmentRepository assessmentRepository,
+            AssessmentMemberRepository assessmentMemberRepository,
+            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
+            AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository) {
+        this.assessmentRepository = assessmentRepository;
+        this.assessmentMemberRepository = assessmentMemberRepository;
+        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
+        this.assessmentGradingAssignmentRepository = assessmentGradingAssignmentRepository;
     }
 
     /**
-     * Mở phân công cho MỘT bài vừa rơi vào {@code PENDING_REVIEW}.
+     * Opens the assignment for ONE attempt that has just landed in {@code PENDING_REVIEW}.
      *
-     * <p>{@code REQUIRED} chứ không {@code MANDATORY}: điểm móc chính
-     * ({@code RecordExamAttemptEvaluationUseCase}) cố ý KHÔNG chạy trong một
-     * transaction bao ngoài — nó tự chia phase bằng {@code TransactionTemplate}. Đổi
-     * sang {@code MANDATORY} là chỗ đó ném ngay lúc chạy.
+     * <p>{@code REQUIRED} and not {@code MANDATORY}: the main hook
+     * ({@code RecordAssessmentAttemptEvaluationUseCase}) deliberately does NOT run inside an outer
+     * transaction -- it splits itself into phases with {@code TransactionTemplate}. Switching
+     * to {@code MANDATORY} would make it throw at run time right there.
      *
-     * <p>Hệ quả: phân công có thể commit ở transaction riêng, tách khỏi transaction
-     * ghi kết quả. Chấp nhận được vì hàm này idempotent, và lượt quét bù lúc đóng bài
-     * ({@link #ensureAssignmentsForExam}) chính là lưới hứng nếu tiến trình chết ở giữa.
+     * <p>Consequence: the assignment may commit in its own transaction, separate from the transaction
+     * that writes the result. This is acceptable because the function is idempotent, and the catch-up sweep when closing an assessment
+     * ({@link #ensureAssignmentsForAssessment}) is the safety net if the process dies in the middle.
      */
     @Transactional
-    public void ensureAssignmentForResult(ExamCandidateResult result) {
-        if (result == null || result.getStatus() != ExamCandidateResultStatus.PENDING_REVIEW) {
+    public void ensureAssignmentForResult(AssessmentCandidateResult result) {
+        if (result == null || result.getStatus() != AssessmentCandidateResultStatus.PENDING_REVIEW) {
             return;
         }
-        var chairId = findClassTestChairId(result.getExamId());
+        UUID chairId = findClassTestChairId(result.getAssessmentId());
         if (chairId == null) {
             return;
         }
-        if (examGradingAssignmentRepository.findOpenByCandidateResultId(result.getId()).isPresent()) {
+        if (assessmentGradingAssignmentRepository.findOpenByCandidateResultId(result.getId()).isPresent()) {
             return;
         }
-        examGradingAssignmentRepository.save(open(result, chairId, Instant.now()));
+        assessmentGradingAssignmentRepository.save(open(result, chairId, Instant.now()));
     }
 
     /**
@@ -92,46 +95,46 @@ public class ClassTestGradingAssignmentService {
      * @return số phân công vừa mở
      */
     @Transactional
-    public int ensureAssignmentsForExam(UUID examId) {
-        if (examId == null) {
+    public int ensureAssignmentsForAssessment(UUID assessmentId) {
+        if (assessmentId == null) {
             return 0;
         }
-        var chairId = findClassTestChairId(examId);
+        UUID chairId = findClassTestChairId(assessmentId);
         if (chairId == null) {
             return 0;
         }
-        var pending = examCandidateResultRepository.findByExamId(examId).stream()
-            .filter(result -> result.getStatus() == ExamCandidateResultStatus.PENDING_REVIEW)
+        List<AssessmentCandidateResult> pending = assessmentCandidateResultRepository.findByAssessmentId(assessmentId).stream()
+            .filter(result -> result.getStatus() == AssessmentCandidateResultStatus.PENDING_REVIEW)
             .toList();
         if (pending.isEmpty()) {
             return 0;
         }
 
         // Một query cho cả lô thay vì hỏi từng bài — số bài bằng sĩ số lớp.
-        var alreadyOpen = examGradingAssignmentRepository
+        Set<UUID> alreadyOpen = assessmentGradingAssignmentRepository
             .findOpenByCandidateResultIdIn(pending.stream().map(result -> result.getId()).toList()).stream()
             .map(assignment -> assignment.getCandidateResultId())
             .collect(Collectors.toSet());
 
-        var now = Instant.now();
-        var toOpen = pending.stream()
+        Instant now = Instant.now();
+        List<AssessmentGradingAssignment> toOpen = pending.stream()
             .filter(result -> !alreadyOpen.contains(result.getId()))
             .map(result -> open(result, chairId, now))
             .toList();
         if (toOpen.isEmpty()) {
             return 0;
         }
-        return examGradingAssignmentRepository.saveAll(toOpen).size();
+        return assessmentGradingAssignmentRepository.saveAll(toOpen).size();
     }
 
     /** {@code null} = không phải bài trên lớp, hoặc bài không có CHAIR. */
-    private UUID findClassTestChairId(UUID examId) {
-        var exam = examRepository.findById(examId).orElse(null);
-        if (exam == null || exam.getKind() != ExamKind.CLASS_TEST) {
+    private UUID findClassTestChairId(UUID assessmentId) {
+        Assessment assessment = assessmentRepository.findById(assessmentId).orElse(null);
+        if (assessment == null || assessment.getKind() != AssessmentKind.CLASS_TEST) {
             return null;
         }
-        return examMemberRepository.findByExamId(examId).stream()
-            .filter(member -> member.getRole() == ExamMemberRole.CHAIR)
+        return assessmentMemberRepository.findByAssessmentId(assessmentId).stream()
+            .filter(member -> member.getRole() == AssessmentMemberRole.CHAIR)
             .map(member -> member.getUserId())
             .findFirst()
             .orElse(null);
@@ -147,8 +150,8 @@ public class ClassTestGradingAssignmentService {
      * <p>{@code scoreBefore} chụp NGAY LÚC MỞ — đây là mốc đo độ lệch AI ↔ người; lấy
      * sau thì đã bị chính giáo viên sửa mất.
      */
-    private ExamGradingAssignment open(ExamCandidateResult result, UUID chairId, Instant now) {
-        return ExamGradingAssignment.open(
+    private AssessmentGradingAssignment open(AssessmentCandidateResult result, UUID chairId, Instant now) {
+        return AssessmentGradingAssignment.open(
             result.getId(),
             chairId,
             GradingRoundType.INITIAL,

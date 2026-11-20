@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.user;
 
+import com.sep.vox.domain.model.user.User;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.input.query.ViewUsersQuery;
@@ -20,7 +21,7 @@ public class ViewUsersUseCase implements IUseCase<ViewUsersQuery, PageResult<Use
 
     @Override
     public PageResult<UserDto> execute(ViewUsersQuery input) {
-        var result = userRepository.findAll(input.page(), input.size());
+        PageResult<User> result = userRepository.findAll(input.page(), input.size());
         return UserDtoMapper.toUserDtoPage(result);
     }
     

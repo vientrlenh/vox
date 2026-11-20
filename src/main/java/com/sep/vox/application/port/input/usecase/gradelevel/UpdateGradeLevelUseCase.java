@@ -53,8 +53,8 @@ public class UpdateGradeLevelUseCase implements IUseCase<UpdateGradeLevelCommand
             throw new NotFoundException("Không tìm thấy khối học.");
         }
 
-        var name = command.name() != null ? StringNormalization.trimAndCollapseSpaces(command.name()) : null;
-        var description = command.description() != null
+        String name = command.name() != null ? StringNormalization.trimAndCollapseSpaces(command.name()) : null;
+        String description = command.description() != null
                 ? StringNormalization.trimAndCollapseSpaces(command.description())
                 : null;
         validateName(name);

@@ -33,8 +33,8 @@ public class QuestionCloneService {
 
     @Transactional
     public Question cloneAsDraftWithDetails(Question source, UUID currentUserId) {
-        var now = Instant.now();
-        var clonedQuestion = new Question(
+        Instant now = Instant.now();
+        Question clonedQuestion = new Question(
             source.getQuestionBankId(),
             source.getQuestionTopicId(),
             cloneCodeOf(source.getCode()),
@@ -57,7 +57,7 @@ public class QuestionCloneService {
             currentUserId,
             currentUserId
         );
-        var savedQuestion = questionRepository.save(clonedQuestion);
+        Question savedQuestion = questionRepository.save(clonedQuestion);
 
         cloneAssets(source.getId(), savedQuestion.getId());
         cloneEvaluationGuide(source.getId(), savedQuestion.getId());
@@ -71,7 +71,7 @@ public class QuestionCloneService {
             return;
         }
 
-        var clonedAssets = sourceAssets.stream()
+        List<QuestionAsset> clonedAssets = sourceAssets.stream()
             .map(asset -> new QuestionAsset(
                 targetQuestionId,
                 asset.getTitle(),
@@ -102,12 +102,12 @@ public class QuestionCloneService {
     }
 
     private String cloneCodeOf(String sourceCode) {
-        var suffix = "-COPY-" + UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
+        String suffix = "-COPY-" + UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
         if (sourceCode == null || sourceCode.isBlank()) {
             return "Q" + suffix;
         }
-        var maxBaseLength = Math.max(0, 100 - suffix.length());
-        var base = sourceCode.length() > maxBaseLength
+        int maxBaseLength = Math.max(0, 100 - suffix.length());
+        String base = sourceCode.length() > maxBaseLength
             ? sourceCode.substring(0, maxBaseLength)
             : sourceCode;
         return base + suffix;

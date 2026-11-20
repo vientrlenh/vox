@@ -2,37 +2,34 @@ package com.sep.vox.infrastructure.persistence.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
 
-import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.model.devicesession.DeviceSession;
 import com.sep.vox.domain.model.devicesession.SessionPlatform;
 import com.sep.vox.domain.repository.DeviceSessionRepository;
 import com.sep.vox.infrastructure.persistence.adapter.DeviceSessionRepositoryImpl;
+import com.sep.vox.support.RepositoryTest;
 
-@DataJpaTest
-@ActiveProfiles("test")
+@RepositoryTest
 @Import({
     DeviceSessionRepositoryImpl.class
 })
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class DeviceSessionRepositoryTests extends ContainerTestConfig {
+class DeviceSessionRepositoryTests {
 
     @Autowired
     private DeviceSessionRepository deviceSessionRepository;
 
     @Test
     void whenSave_thenReturnsPersistedDeviceSession() {
-        var userId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
 
-        var saved = deviceSessionRepository.save(newDeviceSession(userId, "device-1", "Chrome on Windows"));
+        DeviceSession saved = deviceSessionRepository.save(newDeviceSession(userId, "device-1", "Chrome on Windows"));
 
         assertThat(saved.getId()).isNotNull();
         assertThat(saved.getUserId()).isEqualTo(userId);
@@ -44,9 +41,9 @@ class DeviceSessionRepositoryTests extends ContainerTestConfig {
 
     @Test
     void whenFindById_thenReturnsDeviceSession() {
-        var saved = deviceSessionRepository.save(newDeviceSession(UUID.randomUUID(), "device-2", "Safari on iPhone"));
+        DeviceSession saved = deviceSessionRepository.save(newDeviceSession(UUID.randomUUID(), "device-2", "Safari on iPhone"));
 
-        var found = deviceSessionRepository.findById(saved.getId());
+        Optional<DeviceSession> found = deviceSessionRepository.findById(saved.getId());
 
         assertThat(found).isPresent();
         assertThat(found.get().getId()).isEqualTo(saved.getId());
@@ -55,12 +52,12 @@ class DeviceSessionRepositoryTests extends ContainerTestConfig {
 
     @Test
     void whenFindByUserId_thenReturnsOnlySessionsForThatUser() {
-        var userId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
         deviceSessionRepository.save(newDeviceSession(userId, "device-3", "Chrome on Windows"));
         deviceSessionRepository.save(newDeviceSession(userId, "device-4", "Android App"));
         deviceSessionRepository.save(newDeviceSession(UUID.randomUUID(), "device-5", "Desktop App"));
 
-        var found = deviceSessionRepository.findByUserId(userId);
+        List<DeviceSession> found = deviceSessionRepository.findByUserId(userId);
 
         assertThat(found).hasSize(2);
         assertThat(found)

@@ -6,13 +6,13 @@ public final class AggregateTypeConstant {
     
     public static final String REGISTER_FORM = "RegisterForm";
     public static final String USER = "User";
-    public static final String EXAM_RESULT_APPEAL = "ExamResultAppeal";
-    public static final String EXAM_CANDIDATE_RESULT = "ExamCandidateResult";
-    public static final String EXAM_GRADING_ASSIGNMENT = "ExamGradingAssignment";
+    public static final String ASSESSMENT_RESULT_APPEAL = "AssessmentResultAppeal";
+    public static final String ASSESSMENT_CANDIDATE_RESULT = "AssessmentCandidateResult";
+    public static final String ASSESSMENT_GRADING_ASSIGNMENT = "AssessmentGradingAssignment";
 
-    public static final String EXAM = "Exam";
+    public static final String ASSESSMENT = "Assessment";
 
-    public static final String EXAM_BLUEPRINT_VERSION = "ExamBlueprintVersion";
+    public static final String ASSESSMENT_BLUEPRINT_VERSION = "AssessmentBlueprintVersion";
 
     public static final String INVOICE = "Invoice";
 

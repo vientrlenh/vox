@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.OutboxJpaEntity;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -29,21 +30,21 @@ public class OutboxRepositoryImpl implements OutboxRepository {
 
     @Override
     public Outbox save(Outbox outbox) {
-        var entity = OutboxMapper.toJpa(outbox);
-        var saved = springDataOutboxRepository.save(entity);
+        OutboxJpaEntity entity = OutboxMapper.toJpa(outbox);
+        OutboxJpaEntity saved = springDataOutboxRepository.save(entity);
         return OutboxMapper.toDomain(saved);
     }
 
     @Override
     @Transactional
     public List<Outbox> claimPendingEvents(int size) {
-        var now = Instant.now();
-        var rows = springDataOutboxRepository.lockPendingEvents(now, size);
+        Instant now = Instant.now();
+        List<OutboxJpaEntity> rows = springDataOutboxRepository.lockPendingEvents(now, size);
         if (rows.isEmpty()) {
             return List.of();
         }
-        var events = rows.stream().map(OutboxMapper::toDomain).toList();
-        var ids = events.stream().map(e -> e.getId()).toList();
+        List<Outbox> events = rows.stream().map(OutboxMapper::toDomain).toList();
+        List<UUID> ids = events.stream().map(e -> e.getId()).toList();
         springDataOutboxRepository.markProcessing(ids, now.plus(LEASE));
         return events;
     }
@@ -57,13 +58,13 @@ public class OutboxRepositoryImpl implements OutboxRepository {
     @Override
     @Transactional
     public void markFailed(UUID id, String lastError, int currentRetryCount) {
-        var nextRetryCount = currentRetryCount + 1;
+        int nextRetryCount = currentRetryCount + 1;
         if (nextRetryCount >= MAX_RETRIES) {
             springDataOutboxRepository.markFailed(id, OutboxStatus.FAILED.name(), lastError, null);
             return;
         }
 
-        var backoff = BASE_BACKOFF.multipliedBy(1L << currentRetryCount); // 30s, 60s, 120s
+        Duration backoff = BASE_BACKOFF.multipliedBy(1L << currentRetryCount); // 30s, 60s, 120s
         springDataOutboxRepository.markFailed(id, OutboxStatus.PENDING.name(), lastError, Instant.now().plus(backoff));
     }
 

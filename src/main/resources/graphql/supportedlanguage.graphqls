@@ -4,8 +4,8 @@ type SupportedLanguage {
     name: String
     description: String
     isActive: Boolean!
-    createdAt: String
-    updatedAt: String
+    createdAt: DateTime
+    updatedAt: DateTime
 }
 
 type SupportedLanguagePage {

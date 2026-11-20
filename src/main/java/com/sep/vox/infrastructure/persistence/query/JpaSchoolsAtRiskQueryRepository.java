@@ -14,6 +14,7 @@ import com.sep.vox.application.query.dto.SchoolAtRiskDto;
 import com.sep.vox.application.query.dto.SchoolRiskBucket;
 import com.sep.vox.application.query.repository.SchoolsAtRiskQueryRepository;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -90,12 +91,12 @@ public class JpaSchoolsAtRiskQueryRepository implements SchoolsAtRiskQueryReposi
     @SuppressWarnings("unchecked")
     public PageResult<SchoolAtRiskDto> findByBucket(
             SchoolRiskBucket bucket, Instant now, Instant expiringThrough, String keyword, int page, int size) {
-        // Xuống dòng ở cuối là BẮT BUỘC: mệnh đề này có thể kết thúc bằng một tham số có tên
-        // (:expiringThrough), và nối thẳng với "ORDER BY" ngay sau đó sẽ tạo ra tên tham số
-        // ":expiringThroughORDER" -- Hibernate báo "no parameter named" chứ không báo lỗi cú pháp SQL.
-        var where = " WHERE " + bucketPredicate(bucket) + keywordPredicate(keyword) + "\n";
+        // The trailing line break is REQUIRED: this clause may end with a named parameter
+        // (:expiringThrough), and concatenating it directly with the "ORDER BY" right after would produce the parameter name
+        // ":expiringThroughORDER" -- Hibernate reports "no parameter named" instead of an SQL syntax error.
+        String where = " WHERE " + bucketPredicate(bucket) + keywordPredicate(keyword) + "\n";
 
-        var total = toLong(bind(
+        long total = toLong(bind(
             em.createNativeQuery(SCHOOL_STATE_CTE + "SELECT COUNT(*)" + FROM_CLAUSE + where),
             bucket, now, expiringThrough, keyword).getSingleResult());
 
@@ -117,10 +118,10 @@ public class JpaSchoolsAtRiskQueryRepository implements SchoolsAtRiskQueryReposi
             LIMIT :pageSize OFFSET :offset
             """), bucket, now, expiringThrough, keyword)
             .setParameter("pageSize", size)
-            .setParameter("offset", (long) (page - 1) * size)
+            .setParameter("offset", OneBasedPaging.toOffset(page, size))
             .getResultList();
 
-        var content = rows.stream()
+        List<SchoolAtRiskDto> content = rows.stream()
             .map(row -> new SchoolAtRiskDto(
                 (UUID) row[0],
                 (String) row[1],

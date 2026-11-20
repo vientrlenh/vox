@@ -9,14 +9,14 @@ public class PhoneTests {
 
     @Test
     void should_accept_valid_vietnamese_phone_number() {
-        var phone = new Phone("0987654321");
+        Phone phone = new Phone("0987654321");
 
         assertThat(phone.value()).isEqualTo("0987654321");
     }
 
     @Test
     void should_accept_null_phone_number() {
-        var phone = new Phone(null);
+        Phone phone = new Phone(null);
 
         assertThat(phone.value()).isNull();
     }

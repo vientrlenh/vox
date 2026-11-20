@@ -7,6 +7,7 @@ import com.sep.vox.application.port.input.command.DeleteSystemRubricResultBandCo
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.rubric.*;
+import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
 import org.springframework.stereotype.Service;
@@ -35,7 +36,7 @@ public class DeleteSystemRubricResultBandUseCase implements IUseCase<DeleteSyste
     @Transactional
     public Void execute(DeleteSystemRubricResultBandCommand command) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Lỗi tài khoản."));
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Lỗi tài khoản."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
 
         RubricVersion version = rubricVersionRepository.findById(command.versionId()).orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản."));

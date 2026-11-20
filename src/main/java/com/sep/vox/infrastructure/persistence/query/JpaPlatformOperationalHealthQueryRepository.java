@@ -30,9 +30,9 @@ public class JpaPlatformOperationalHealthQueryRepository implements PlatformOper
         Object[] row = (Object[]) em.createNativeQuery("""
             SELECT
                 COUNT(*) FILTER (WHERE status = 'IN_PROGRESS'),
-                COUNT(DISTINCT exam_id) FILTER (WHERE status = 'IN_PROGRESS'),
+                COUNT(DISTINCT assessment_id) FILTER (WHERE status = 'IN_PROGRESS'),
                 COUNT(*) FILTER (WHERE status IN ('SUBMITTED', 'GRADING'))
-            FROM exam_sessions
+            FROM assessment_sessions
             WHERE status IN ('IN_PROGRESS', 'SUBMITTED', 'GRADING')
             """)
             .getSingleResult();
@@ -56,7 +56,7 @@ public class JpaPlatformOperationalHealthQueryRepository implements PlatformOper
                 CAST(date_trunc('day', submitted_at AT TIME ZONE CAST(:zone AS varchar)) AS date) AS day,
                 COUNT(*) FILTER (WHERE status = 'GRADED'),
                 COUNT(*) FILTER (WHERE status = 'GRADING_FAILED')
-            FROM exam_sessions
+            FROM assessment_sessions
             WHERE status IN ('GRADED', 'GRADING_FAILED')
               AND submitted_at >= :fromInstant
               AND submitted_at < :toInstant

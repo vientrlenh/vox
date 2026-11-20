@@ -19,8 +19,8 @@ public class SecurePasswordTokenProvider implements PasswordSetUpTokenPort {
 
     @Override
     public GeneratedPasswordSetUpToken generateToken() {
-        var token = secureTokenProvider.generateToken(TOKEN_LENGTH);
-        var hashedToken = secureTokenProvider.sha512(token);
+        String token = secureTokenProvider.generateToken(TOKEN_LENGTH);
+        String hashedToken = secureTokenProvider.sha512(token);
         return new GeneratedPasswordSetUpToken(token, hashedToken);
     }
 

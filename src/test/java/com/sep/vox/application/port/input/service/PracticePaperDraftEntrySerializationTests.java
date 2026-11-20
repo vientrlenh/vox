@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
+import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses;
 import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticePaper;
 import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticePaperDraft;
 import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticePaperQuestion;
@@ -27,9 +28,9 @@ class PracticePaperDraftEntrySerializationTests {
 
     @Test
     void draft_dang_READY_phai_di_qua_json_roi_ve_nguyen_ven() {
-        var draftId = UUID.randomUUID();
-        var studentId = UUID.randomUUID();
-        var paper = new PracticePaper(
+        UUID draftId = UUID.randomUUID();
+        UUID studentId = UUID.randomUUID();
+        PracticePlanningResponses.PracticePaper paper = new PracticePaper(
             UUID.randomUUID(),
             UUID.randomUUID(),
             "KEYWORD",
@@ -48,18 +49,18 @@ class PracticePaperDraftEntrySerializationTests {
                 List.of("kể theo trình tự thời gian", "nêu cảm nhận")
             ))
         );
-        var original = new PracticePaperDraftService.Entry(
+        PracticePaperDraftService.Entry original = new PracticePaperDraftService.Entry(
             studentId, PracticePaperDraft.ready(draftId, paper)
         );
 
-        var restored = jsonMapper.readValue(
+        PracticePaperDraftService.Entry restored = jsonMapper.readValue(
             jsonMapper.writeValueAsString(original),
             PracticePaperDraftService.Entry.class
         );
 
-        // usingRecursiveComparison: các bản ghi này là record nhưng so sánh sâu vẫn an toàn hơn --
-        // equals() của record so từng trường, và một List lồng bên trong so sai thì thông báo lỗi
-        // của recursive comparison chỉ thẳng ra trường nào lệch.
+        // usingRecursiveComparison: these entries are records, but a deep comparison is still safer
+        // -- a record's equals() compares field by field, and when a nested List differs, the
+        // recursive comparison's error message points straight at the field that differs.
         assertThat(restored).usingRecursiveComparison().isEqualTo(original);
         assertThat(restored.draft().paper().questions().get(0).suggestedIdeas())
             .containsExactly("kể theo trình tự thời gian", "nêu cảm nhận");
@@ -67,15 +68,15 @@ class PracticePaperDraftEntrySerializationTests {
 
     @Test
     void draft_dang_PREPARING_va_FAILED_khong_co_paper_van_phai_ve_duoc() {
-        var draftId = UUID.randomUUID();
-        var studentId = UUID.randomUUID();
+        UUID draftId = UUID.randomUUID();
+        UUID studentId = UUID.randomUUID();
 
-        for (var draft : List.of(
+        for (PracticePlanningResponses.PracticePaperDraft draft : List.of(
                 PracticePaperDraft.preparing(draftId),
                 PracticePaperDraft.failed(draftId, "Bạn đã dùng hết hạn mức luyện tập hôm nay.", "QUOTA_EXCEEDED"))) {
-            var original = new PracticePaperDraftService.Entry(studentId, draft);
+            PracticePaperDraftService.Entry original = new PracticePaperDraftService.Entry(studentId, draft);
 
-            var restored = jsonMapper.readValue(
+            PracticePaperDraftService.Entry restored = jsonMapper.readValue(
                 jsonMapper.writeValueAsString(original),
                 PracticePaperDraftService.Entry.class
             );

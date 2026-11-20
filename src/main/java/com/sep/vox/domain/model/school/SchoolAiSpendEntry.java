@@ -28,7 +28,7 @@ public class SchoolAiSpendEntry {
     private UUID subscriptionId;
     private QuotaType quotaType;
     private UUID userId;
-    private UUID examSessionId;
+    private UUID assessmentSessionId;
     private UUID practiceSessionId;
     private BigDecimal amountVnd;
     private Instant occurredAt;
@@ -37,12 +37,12 @@ public class SchoolAiSpendEntry {
     }
 
     private SchoolAiSpendEntry(UUID schoolId, UUID subscriptionId, QuotaType quotaType, UUID userId,
-            UUID examSessionId, UUID practiceSessionId, BigDecimal amountVnd, Instant occurredAt) {
+            UUID assessmentSessionId, UUID practiceSessionId, BigDecimal amountVnd, Instant occurredAt) {
         this.schoolId = schoolId;
         this.subscriptionId = subscriptionId;
         this.quotaType = quotaType;
         this.userId = userId;
-        this.examSessionId = examSessionId;
+        this.assessmentSessionId = assessmentSessionId;
         this.practiceSessionId = practiceSessionId;
         this.amountVnd = amountVnd;
         this.occurredAt = occurredAt;
@@ -55,10 +55,10 @@ public class SchoolAiSpendEntry {
      *               nhà trường tổ chức nên không thuộc trần chi của ai. null ở đây là một CÂU TRẢ
      *               LỜI, không phải dữ liệu thiếu.
      */
-    public static SchoolAiSpendEntry forExam(UUID schoolId, UUID subscriptionId, UUID examSessionId,
+    public static SchoolAiSpendEntry forAssessment(UUID schoolId, UUID subscriptionId, UUID assessmentSessionId,
             UUID userId, BigDecimal amountVnd, Instant occurredAt) {
-        return new SchoolAiSpendEntry(schoolId, subscriptionId, QuotaType.EXAM, userId,
-            examSessionId, null, amountVnd, occurredAt);
+        return new SchoolAiSpendEntry(schoolId, subscriptionId, QuotaType.ASSESSMENT, userId,
+            assessmentSessionId, null, amountVnd, occurredAt);
     }
 
     /** Khoản chi của một phiên LUYỆN NÓI — luôn thuộc về học sinh đã nói. */
@@ -92,8 +92,8 @@ public class SchoolAiSpendEntry {
         return userId;
     }
 
-    public UUID getExamSessionId() {
-        return examSessionId;
+    public UUID getAssessmentSessionId() {
+        return assessmentSessionId;
     }
 
     public UUID getPracticeSessionId() {

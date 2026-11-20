@@ -53,7 +53,7 @@ spring:
             minimum-idle: 0
 
     mail:
-        username: test@example.com
+        username: test@assessmentple.com
         password: test-password
 
 jwt:
@@ -62,7 +62,7 @@ jwt:
         secret: testsecretoooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
 
 system-admin:
-  email: sysadmin@example.com
+  email: sysadmin@assessmentple.com
   password: TestPassword123!
   phone: 0987654321
   fullName: System Admin
@@ -105,8 +105,8 @@ app:
           group-id: vox-test-user
         answer-turns:
           group-id: vox-test-answer-turns
-        exam-evaluation:
-          group-id: vox-test-exam-evaluation
+        assessment-evaluation:
+          group-id: vox-test-assessment-evaluation
         practice-evaluation:
           group-id: vox-test-practice-evaluation
         question-asset-analysis:

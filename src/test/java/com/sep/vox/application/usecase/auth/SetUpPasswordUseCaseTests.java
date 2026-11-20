@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -15,9 +14,12 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.SetUpPasswordCommand;
@@ -33,33 +35,25 @@ import com.sep.vox.domain.valueobject.Email;
 import com.sep.vox.domain.valueobject.FullName;
 import com.sep.vox.domain.valueobject.Phone;
 
+@ExtendWith(MockitoExtension.class)
 public class SetUpPasswordUseCaseTests {
 
+    @Mock
     private PasswordSetUpTokenRepository passwordSetUpTokenRepository;
+    @Mock
     private PasswordSetUpTokenPort passwordSetUpTokenPort;
+    @Mock
     private UserRepository userRepository;
+    @Mock
     private PasswordEncoderPort passwordEncoderPort;
+    @InjectMocks
     private SetUpPasswordUseCase setUpPasswordUseCase;
-
-    @BeforeEach
-    void setUp() {
-        passwordSetUpTokenRepository = mock(PasswordSetUpTokenRepository.class);
-        passwordSetUpTokenPort = mock(PasswordSetUpTokenPort.class);
-        userRepository = mock(UserRepository.class);
-        passwordEncoderPort = mock(PasswordEncoderPort.class);
-        setUpPasswordUseCase = new SetUpPasswordUseCase(
-            passwordSetUpTokenRepository,
-            passwordSetUpTokenPort,
-            userRepository,
-            passwordEncoderPort
-        );
-    }
 
     @Test
     void set_up_password_should_consume_token_update_password_and_activate_user() {
-        var userId = UUID.randomUUID();
-        var command = new SetUpPasswordCommand(userId, "raw-token", "new-password");
-        var user = inactiveUser(userId);
+        UUID userId = UUID.randomUUID();
+        SetUpPasswordCommand command = new SetUpPasswordCommand(userId, "raw-token", "new-password");
+        User user = inactiveUser(userId);
 
         when(passwordSetUpTokenPort.hash("raw-token")).thenReturn("hashed-token");
         when(passwordSetUpTokenRepository.updateUsedToken(eq(userId), eq("hashed-token"), any(Instant.class)))
@@ -68,12 +62,12 @@ public class SetUpPasswordUseCaseTests {
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        var result = setUpPasswordUseCase.execute(command);
+        Void result = setUpPasswordUseCase.execute(command);
 
         assertThat(result).isNull();
         verify(passwordSetUpTokenPort).hash("raw-token");
 
-        var tokenUsedAtCaptor = ArgumentCaptor.forClass(Instant.class);
+        ArgumentCaptor<Instant> tokenUsedAtCaptor = ArgumentCaptor.forClass(Instant.class);
         verify(passwordSetUpTokenRepository).updateUsedToken(
             eq(userId),
             eq("hashed-token"),
@@ -84,9 +78,9 @@ public class SetUpPasswordUseCaseTests {
         verify(passwordEncoderPort).hash("new-password");
         verify(userRepository).findById(userId);
 
-        var userCaptor = ArgumentCaptor.forClass(User.class);
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(userCaptor.capture());
-        var savedUser = userCaptor.getValue();
+        User savedUser = userCaptor.getValue();
         assertThat(savedUser.getId()).isEqualTo(userId);
         assertThat(savedUser.getPasswordHash()).isEqualTo("hashed-password");
         assertThat(savedUser.getStatus()).isEqualTo(UserStatus.ACTIVE);
@@ -95,8 +89,8 @@ public class SetUpPasswordUseCaseTests {
 
     @Test
     void set_up_password_should_reject_when_token_is_invalid_expired_or_used() {
-        var userId = UUID.randomUUID();
-        var command = new SetUpPasswordCommand(userId, "raw-token", "new-password");
+        UUID userId = UUID.randomUUID();
+        SetUpPasswordCommand command = new SetUpPasswordCommand(userId, "raw-token", "new-password");
 
         when(passwordSetUpTokenPort.hash("raw-token")).thenReturn("hashed-token");
         when(passwordSetUpTokenRepository.updateUsedToken(eq(userId), eq("hashed-token"), any(Instant.class)))
@@ -115,8 +109,8 @@ public class SetUpPasswordUseCaseTests {
 
     @Test
     void set_up_password_should_throw_when_user_is_not_found_after_token_is_consumed() {
-        var userId = UUID.randomUUID();
-        var command = new SetUpPasswordCommand(userId, "raw-token", "new-password");
+        UUID userId = UUID.randomUUID();
+        SetUpPasswordCommand command = new SetUpPasswordCommand(userId, "raw-token", "new-password");
 
         when(passwordSetUpTokenPort.hash("raw-token")).thenReturn("hashed-token");
         when(passwordSetUpTokenRepository.updateUsedToken(eq(userId), eq("hashed-token"), any(Instant.class)))
@@ -138,7 +132,7 @@ public class SetUpPasswordUseCaseTests {
     }
 
     private User inactiveUser(UUID userId) {
-        var now = Instant.now();
+        Instant now = Instant.now();
         return new User(
             userId,
             new Email("admin@example.com"),

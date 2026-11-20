@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.rest.controller;
 
+import com.sep.vox.application.response.input.payment.PaymentCallbackResponse;
 import java.util.Map;
 
 import org.springframework.http.HttpHeaders;
@@ -57,7 +58,7 @@ public class CallbackController {
     // Đây là lý do dùng ResponseEntity.ok chứ không phải 202/204 cho các nhánh "chưa chốt gì".
     private ResponseEntity<ApiResponse<Void>> respond(
             PaymentProvider provider, byte[] rawBody, HttpHeaders headers) {
-        var result = processPaymentCallbackUseCase.execute(
+        PaymentCallbackResponse result = processPaymentCallbackUseCase.execute(
             new ProcessPaymentCallbackCommand(provider, rawBody, toSingleValueMap(headers)));
         return ResponseEntity.ok(ApiResponse.success(messageOf(result.outcome())));
     }

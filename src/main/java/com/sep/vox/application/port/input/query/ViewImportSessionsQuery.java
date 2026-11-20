@@ -1,9 +1,12 @@
 package com.sep.vox.application.port.input.query;
 
+import com.sep.vox.domain.model.importfile.ImportSessionStatus;
+import com.sep.vox.domain.model.importfile.ImportType;
+
 public record ViewImportSessionsQuery(
     int page,
     int size,
-    String type,
-    String status
+    ImportType type,
+    ImportSessionStatus status
 ) {
 }

@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.balance;
 
+import com.sep.vox.domain.model.school.SchoolBalanceEntry;
 import java.time.Instant;
 
 import org.springframework.stereotype.Service;
@@ -33,7 +34,7 @@ public class ViewSchoolBalanceEntriesUseCase
     public PageResult<SchoolBalanceEntryDto> execute(ViewSchoolBalanceEntriesQuery input) {
         schoolScopedReadGuard.requireCanRead(input.schoolId());
 
-        var page = schoolBalanceEntryRepository.findBySchoolId(
+        PageResult<SchoolBalanceEntry> page = schoolBalanceEntryRepository.findBySchoolId(
             input.schoolId(),
             parseEntryType(input.entryType()),
             // Repository đòi hai mốc khác null (xem javadoc của nó). "Không chặn đầu nào" quy về cả

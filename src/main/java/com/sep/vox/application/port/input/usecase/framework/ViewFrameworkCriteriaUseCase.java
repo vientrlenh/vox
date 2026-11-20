@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
+import com.sep.vox.domain.model.framework.FrameworkCriterion;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -33,7 +34,7 @@ public class ViewFrameworkCriteriaUseCase implements IUseCase<ViewFrameworkCrite
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản Framework."));
 
         // 2. Lấy Criteria + Band tương ứng, map sang DTO
-        var criteria = frameworkCriterionRepository.findByFrameworkVersionId(query.frameworkVersionId());
+        List<FrameworkCriterion> criteria = frameworkCriterionRepository.findByFrameworkVersionId(query.frameworkVersionId());
 
         return criteria.stream()
                 .map(c -> FrameworkCriterionDtoMapper.toDto(c))

@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.service;
 
+import com.sep.vox.domain.model.rubric.Rubric;
+import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.service.rubric.ScoreRangeValidator;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.output.JsonSerializationPort;
@@ -60,12 +62,12 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
     @Override
     public ImportCommitResult commit(ImportSession session, List<ImportRow> rows) {
         UUID versionId = session.getImportedEntityId();
-        var version = rubricVersionRepository.findById(versionId)
+        RubricVersion version = rubricVersionRepository.findById(versionId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản Rubric khi xử lý ngầm."));
         if (version.getStatus() != RubricStatus.DRAFT) {
             throw new IllegalStateException("Chỉ có thể import Tiêu chí khi phiên bản Rubric đang ở trạng thái DRAFT.");
         }
-        var rubric = rubricRepository.findById(version.getRubricId())
+        Rubric rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc khi xử lý ngầm."));
 
         Map<String, String> mapping = new HashMap<>();
@@ -80,7 +82,7 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
                 FrameworkVersionStatus.PUBLISHED
         );
 
-        var activeFwVersion = activeVersions.stream().findFirst()
+        FrameworkVersion activeFwVersion = activeVersions.stream().findFirst()
                 .orElseThrow(() -> new IllegalStateException("Không tìm thấy phiên bản Khung tiêu chuẩn nào đang hoạt động cho Framework này."));
 
         // 2. SỬA CHỖ NÀY: Phải lấy theo ID của Phiên bản (Version ID), chứ không lấy theo Framework ID nữa!
@@ -219,10 +221,10 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
                 boolean isRequired = true;
 
                 if (errors.isEmpty()) {
-                    var safeWeightStr = weightStr == null ? "" : weightStr.trim();
-                    var safeMinStr = minStr == null ? "" : minStr.trim();
-                    var safeMaxStr = maxStr == null ? "" : maxStr.trim();
-                    var safeOrderStr = orderStr == null ? "" : orderStr.trim();
+                    String safeWeightStr = weightStr == null ? "" : weightStr.trim();
+                    String safeMinStr = minStr == null ? "" : minStr.trim();
+                    String safeMaxStr = maxStr == null ? "" : maxStr.trim();
+                    String safeOrderStr = orderStr == null ? "" : orderStr.trim();
 
                     try {
                         // File Excel ghi PHẦN TRĂM (20), cột DB lưu PHÂN SỐ (0.2).
@@ -235,7 +237,7 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
                         //
                         // Chia 100 với scale 6: 20 -> 0.200000, đủ chỗ cho cả trọng số lẻ như
                         // 12.5% mà không mất chữ số.
-                        var weightPercent = new BigDecimal(safeWeightStr);
+                        BigDecimal weightPercent = new BigDecimal(safeWeightStr);
                         if (weightPercent.compareTo(BigDecimal.ZERO) < 0) errors.add(error("weight", "Trọng số không được âm."));
                         weight = weightPercent.divide(ONE_HUNDRED, 6, RoundingMode.HALF_UP);
 
@@ -274,7 +276,7 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
                     row.setErrorsJson(jsonSerializationPort.toJson(errors));
                     invalidCount++;
                 } else {
-                    var safeNameStr = nameStr == null ? "" : nameStr.trim();
+                    String safeNameStr = nameStr == null ? "" : nameStr.trim();
                     if (targetCriterion != null) {
                         // Không setFrameworkCriterionId: tiêu chí đã tồn tại thì framework tham chiếu là bất biến,
                         // giống hệt cách "code" được bảo vệ không cho sửa sau khi tạo.

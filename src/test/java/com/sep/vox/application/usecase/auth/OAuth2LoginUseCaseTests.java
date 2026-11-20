@@ -8,11 +8,13 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -25,6 +27,7 @@ import com.sep.vox.application.port.output.AuthTokenPort;
 import com.sep.vox.application.port.output.SessionTokenManagerPort;
 import com.sep.vox.application.query.dto.UserRoleInfo;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.response.input.auth.LoginResponse;
 import com.sep.vox.application.response.output.GeneratedSessionToken;
 import com.sep.vox.domain.model.devicesession.DeviceSession;
 import com.sep.vox.domain.model.devicesession.SessionPlatform;
@@ -41,46 +44,35 @@ import com.sep.vox.domain.valueobject.Email;
 import com.sep.vox.domain.valueobject.FullName;
 import com.sep.vox.domain.valueobject.Phone;
 
+@ExtendWith(MockitoExtension.class)
 class OAuth2LoginUseCaseTests {
 
+    @Mock
     private UserRepository userRepository;
+    @Mock
     private UserRoleQueryRepository userRoleQueryRepository;
+    @Mock
     private DeviceSessionRepository deviceSessionRepository;
+    @Mock
     private RefreshTokenRepository refreshTokenRepository;
+    @Mock
     private SchoolUserRepository schoolUserRepository;
+    @Mock
     private AuthTokenPort authTokenPort;
+    @Mock
     private SessionTokenManagerPort sessionTokenManagerPort;
+    @InjectMocks
     private OAuth2LoginUseCase oAuth2LoginUseCase;
-
-    @BeforeEach
-    void setUp() {
-        userRepository = mock(UserRepository.class);
-        userRoleQueryRepository = mock(UserRoleQueryRepository.class);
-        deviceSessionRepository = mock(DeviceSessionRepository.class);
-        refreshTokenRepository = mock(RefreshTokenRepository.class);
-        authTokenPort = mock(AuthTokenPort.class);
-        sessionTokenManagerPort = mock(SessionTokenManagerPort.class);
-        schoolUserRepository = mock(SchoolUserRepository.class);
-        oAuth2LoginUseCase = new OAuth2LoginUseCase(
-            userRepository,
-            userRoleQueryRepository,
-            deviceSessionRepository,
-            refreshTokenRepository,
-            authTokenPort,
-            sessionTokenManagerPort,
-            schoolUserRepository
-        );
-    }
 
     @Test
     void oauth2Login_should_return_tokens_when_google_email_matches_active_user() {
-        var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var sessionId = UUID.randomUUID();
-        var roleId = UUID.randomUUID();
-        var user = activeUser(userId, schoolId);
-        var schoolUser = activeSchoolUser(userId, schoolId);
-        var savedDeviceSession = new DeviceSession(
+        UUID userId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
+        UUID roleId = UUID.randomUUID();
+        User user = activeUser(userId, schoolId);
+        SchoolUser schoolUser = activeSchoolUser(userId, schoolId);
+        DeviceSession savedDeviceSession = new DeviceSession(
             sessionId,
             userId,
             "device-1",
@@ -90,7 +82,7 @@ class OAuth2LoginUseCaseTests {
             "JUnit User Agent",
             null
         );
-        var roles = List.of(new UserRoleInfo(
+        List<UserRoleInfo> roles = List.of(new UserRoleInfo(
             UUID.randomUUID(),
             userId,
             roleId,
@@ -111,15 +103,15 @@ class OAuth2LoginUseCaseTests {
         when(sessionTokenManagerPort.generateToken())
             .thenReturn(new GeneratedSessionToken("refresh-token", "hashed-refresh-token"));
 
-        var result = oAuth2LoginUseCase.execute(validCommand());
+        LoginResponse result = oAuth2LoginUseCase.execute(validCommand());
 
         assertThat(result.accessToken()).isEqualTo("access-token");
         assertThat(result.refreshToken()).isEqualTo("refresh-token");
         assertThat(result.roles()).containsExactly("STUDENT");
 
-        var deviceSessionCaptor = ArgumentCaptor.forClass(DeviceSession.class);
+        ArgumentCaptor<DeviceSession> deviceSessionCaptor = ArgumentCaptor.forClass(DeviceSession.class);
         verify(deviceSessionRepository).save(deviceSessionCaptor.capture());
-        var deviceSession = deviceSessionCaptor.getValue();
+        DeviceSession deviceSession = deviceSessionCaptor.getValue();
         assertThat(deviceSession.getUserId()).isEqualTo(userId);
         assertThat(deviceSession.getDeviceId()).isEqualTo("device-1");
         assertThat(deviceSession.getDeviceName()).isEqualTo("Chrome on Windows");

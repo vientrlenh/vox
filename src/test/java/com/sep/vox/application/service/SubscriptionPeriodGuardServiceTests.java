@@ -103,8 +103,8 @@ class SubscriptionPeriodGuardServiceTests {
     }
 
     /**
-     * Cùng loại lỗi với các guard theo gói đã có (ExamTimeQuotaGuardService,
-     * ClassTestTokenQuotaGuardService) để FE phân biệt được "lỗi do gói" với "lỗi do nhập liệu".
+     * The same kind of error as the existing plan-based guards (AssessmentTimeQuotaGuardService,
+     * ClassTestTokenQuotaGuardService) so the FE can tell "an error caused by the plan" from "an error caused by data entry".
      */
     @Test
     void should_reject_when_school_has_no_active_subscription() {
@@ -155,11 +155,11 @@ class SubscriptionPeriodGuardServiceTests {
     }
 
     private void givenSubscription(LocalDate startDate, LocalDate endDate) {
-        var subscription = new SchoolSubscription();
+        SchoolSubscription subscription = new SchoolSubscription();
         subscription.setId(UUID.randomUUID());
         subscription.setSchoolId(schoolId);
-        // V2 mục 19: hai cột này là THỜI ĐIỂM chứ không còn là ngày. Quy đổi ở đúng zone mà guard
-        // dùng, nếu không thì các mốc biên trong test lệch đi 7 tiếng.
+        // V2 section 19: these two columns are now INSTANTS, no longer dates. Convert in exactly
+        // the zone the guard uses; otherwise the boundary points in the test are off by 7 hours.
         subscription.setStartDate(atStartOfDayVn(startDate));
         subscription.setEndDate(atStartOfDayVn(endDate));
         when(schoolSubscriptionRepository.findActiveBySchoolId(schoolId)).thenReturn(Optional.of(subscription));

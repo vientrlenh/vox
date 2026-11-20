@@ -9,22 +9,22 @@ public final class EventTypeConstant {
     public static final String REGISTER_FORM_REJECTED = "RegisterFormRejected";
     public static final String USER_CREATED = "UserCreated";
 
-    public static final String EXAM_APPEAL_PUBLISHED = "ExamAppealPublished";
-    public static final String EXAM_APPEAL_REJECTED = "ExamAppealRejected";
-    public static final String EXAM_APPEAL_APPROVED = "ExamAppealApproved";
+    public static final String ASSESSMENT_APPEAL_PUBLISHED = "AssessmentAppealPublished";
+    public static final String ASSESSMENT_APPEAL_REJECTED = "AssessmentAppealRejected";
+    public static final String ASSESSMENT_APPEAL_APPROVED = "AssessmentAppealApproved";
 
-    public static final String EXAM_RESULT_RELEASED = "ExamResultReleased";
-    public static final String EXAM_RESULT_REGRADED = "ExamResultRegraded";
-    public static final String EXAM_RESULT_INVALIDATED = "ExamResultInvalidated";
-    public static final String EXAM_RESULT_INVALID_CLEARED = "ExamResultInvalidCleared";
-    public static final String EXAM_RESULT_OUTCOME_DECIDED = "ExamResultOutcomeDecided";
+    public static final String ASSESSMENT_RESULT_RELEASED = "AssessmentResultReleased";
+    public static final String ASSESSMENT_RESULT_REGRADED = "AssessmentResultRegraded";
+    public static final String ASSESSMENT_RESULT_INVALIDATED = "AssessmentResultInvalidated";
+    public static final String ASSESSMENT_RESULT_INVALID_CLEARED = "AssessmentResultInvalidCleared";
+    public static final String ASSESSMENT_RESULT_OUTCOME_DECIDED = "AssessmentResultOutcomeDecided";
 
     public static final String GRADING_DEADLINE_REMINDER = "GradingDeadlineReminder";
     public static final String GRADING_ASSIGNMENT_DECLINED = "GradingAssignmentDeclined";
-    public static final String EXAM_BLUEPRINT_VERSION_PUBLISHED = "ExamBlueprintVersionPublished";
+    public static final String ASSESSMENT_BLUEPRINT_VERSION_PUBLISHED = "AssessmentBlueprintVersionPublished";
 
     /** Bài thi đóng lại mà còn bài ở PENDING_REVIEW ("Chờ soát điểm AI") -- cần người chấm tay. */
-    public static final String EXAM_HUMAN_GRADING_REQUIRED = "ExamHumanGradingRequired";
+    public static final String ASSESSMENT_HUMAN_GRADING_REQUIRED = "AssessmentHumanGradingRequired";
 
     /** Giáo viên vừa được giao một vòng chấm cụ thể (chấm lần đầu, hậu kiểm, phúc khảo...). */
     public static final String GRADING_ASSIGNMENT_OPENED = "GradingAssignmentOpened";
@@ -50,18 +50,18 @@ public final class EventTypeConstant {
         return List.of(
             REGISTER_FORM_REJECTED,
             USER_CREATED,
-            EXAM_APPEAL_PUBLISHED,
-            EXAM_APPEAL_REJECTED,
-            EXAM_APPEAL_APPROVED,
-            EXAM_RESULT_RELEASED,
-            EXAM_RESULT_REGRADED,
-            EXAM_RESULT_INVALIDATED,
-            EXAM_RESULT_INVALID_CLEARED,
-            EXAM_RESULT_OUTCOME_DECIDED,
+            ASSESSMENT_APPEAL_PUBLISHED,
+            ASSESSMENT_APPEAL_REJECTED,
+            ASSESSMENT_APPEAL_APPROVED,
+            ASSESSMENT_RESULT_RELEASED,
+            ASSESSMENT_RESULT_REGRADED,
+            ASSESSMENT_RESULT_INVALIDATED,
+            ASSESSMENT_RESULT_INVALID_CLEARED,
+            ASSESSMENT_RESULT_OUTCOME_DECIDED,
             GRADING_DEADLINE_REMINDER,
             GRADING_ASSIGNMENT_DECLINED,
-            EXAM_BLUEPRINT_VERSION_PUBLISHED,
-            EXAM_HUMAN_GRADING_REQUIRED,
+            ASSESSMENT_BLUEPRINT_VERSION_PUBLISHED,
+            ASSESSMENT_HUMAN_GRADING_REQUIRED,
             GRADING_ASSIGNMENT_OPENED,
             INVOICE_PAID,
             SCHOOL_DEBT_CAP_EXCEEDED,

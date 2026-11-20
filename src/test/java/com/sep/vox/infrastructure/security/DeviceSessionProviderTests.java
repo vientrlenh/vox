@@ -45,10 +45,10 @@ class DeviceSessionProviderTests {
         when(deviceSessionRepository.findById(sessionId)).thenReturn(Optional.of(session("lab-01")));
         when(deviceSessionRepository.revokeDeviceSession(any(), any())).thenReturn(1);
 
-        var now = Instant.now();
+        Instant now = Instant.now();
         provider.revoke(sessionId, now);
 
-        var captor = ArgumentCaptor.forClass(DeviceSessionRevokedEvent.class);
+        ArgumentCaptor<DeviceSessionRevokedEvent> captor = ArgumentCaptor.forClass(DeviceSessionRevokedEvent.class);
         verify(eventPublisherPort).publish(captor.capture());
 
         assertThat(captor.getValue().sessionId()).isEqualTo(sessionId);
@@ -82,7 +82,7 @@ class DeviceSessionProviderTests {
         when(deviceSessionRepository.findById(sessionId)).thenReturn(Optional.of(session("lab-01")));
         when(deviceSessionRepository.revokeDeviceSession(any(), any())).thenReturn(1);
 
-        var now = Instant.now();
+        Instant now = Instant.now();
         provider.revoke(sessionId, now);
 
         verify(deviceSessionRepository).revokeDeviceSession(sessionId, now);

@@ -3,7 +3,7 @@ package com.sep.vox.application.response.input.dashboard;
 import java.math.BigDecimal;
 
 public record SchoolClassScoreStatsResponse(
-    String examName,
+    String assessmentName,
     String className,
     BigDecimal averageScore,
     BigDecimal highestScore,

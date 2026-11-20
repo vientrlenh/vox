@@ -32,23 +32,23 @@ public class ResetPasswordUseCase implements IUseCase<ResetPasswordCommand, Void
     @Override
     @Transactional
     public Void execute(ResetPasswordCommand input) {
-        var command = normalize(input);
+        ResetPasswordCommand command = normalize(input);
 
         if (!userRepository.existsByEmailAndStatus(command.email(), UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Yêu cầu thay đổi mật khẩu thất bại");
         }
-        var key = resetPasswordKey(command); 
-        var otpHash = cacheManagerPort.get(key);
+        String key = resetPasswordKey(command); 
+        String otpHash = cacheManagerPort.get(key);
         if (otpHash == null) {
             throw new UnauthorizedException("Yêu cầu thay đổi mật khẩu thất bại");
         }
-        var hashedFromRequest = oneTimePasswordPort.hash(command.otp());
+        String hashedFromRequest = oneTimePasswordPort.hash(command.otp());
         if (!otpHash.equals(hashedFromRequest)) {
             throw new UnauthorizedException("Yêu cầu thay đổi mật khẩu thất bại");
         }
         
-        var passwordHash = passwordEncoderPort.hash(command.password());
-        var updatedRows = userRepository.changeUserPassword(command.email(), passwordHash);
+        String passwordHash = passwordEncoderPort.hash(command.password());
+        int updatedRows = userRepository.changeUserPassword(command.email(), passwordHash);
         if (updatedRows == 0) {
             throw new UnauthorizedException("Yêu cầu thay đổi mật khẩu thất bại");
         }

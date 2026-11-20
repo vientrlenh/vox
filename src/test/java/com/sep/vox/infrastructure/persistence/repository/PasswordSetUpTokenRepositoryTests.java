@@ -4,29 +4,25 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
 
-import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.model.passwordsetuptoken.PasswordSetUpToken;
 import com.sep.vox.domain.repository.PasswordSetUpTokenRepository;
 import com.sep.vox.infrastructure.persistence.adapter.PasswordSetUpTokenRepositoryImpl;
+import com.sep.vox.support.RepositoryTest;
 
 import jakarta.persistence.EntityManager;
 
-@DataJpaTest
-@ActiveProfiles("test")
+@RepositoryTest
 @Import({
     PasswordSetUpTokenRepositoryImpl.class
 })
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class PasswordSetUpTokenRepositoryTests extends ContainerTestConfig {
+class PasswordSetUpTokenRepositoryTests {
 
     @Autowired
     private PasswordSetUpTokenRepository passwordSetUpTokenRepository;
@@ -36,9 +32,9 @@ class PasswordSetUpTokenRepositoryTests extends ContainerTestConfig {
 
     @Test
     void whenSave_thenReturnsPersistedPasswordSetUpToken() {
-        var userId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
 
-        var saved = passwordSetUpTokenRepository.save(newToken(userId, "token-hash"));
+        PasswordSetUpToken saved = passwordSetUpTokenRepository.save(newToken(userId, "token-hash"));
 
         assertThat(saved.getId()).isNotNull();
         assertThat(saved.getUserId()).isEqualTo(userId);
@@ -48,9 +44,9 @@ class PasswordSetUpTokenRepositoryTests extends ContainerTestConfig {
 
     @Test
     void whenFindById_thenReturnsPasswordSetUpToken() {
-        var saved = passwordSetUpTokenRepository.save(newToken(UUID.randomUUID(), "find-id-token"));
+        PasswordSetUpToken saved = passwordSetUpTokenRepository.save(newToken(UUID.randomUUID(), "find-id-token"));
 
-        var found = passwordSetUpTokenRepository.findById(saved.getId());
+        Optional<PasswordSetUpToken> found = passwordSetUpTokenRepository.findById(saved.getId());
 
         assertThat(found).isPresent();
         assertThat(found.get().getId()).isEqualTo(saved.getId());
@@ -59,11 +55,11 @@ class PasswordSetUpTokenRepositoryTests extends ContainerTestConfig {
 
     @Test
     void whenFindByUserIdAndTokenHash_thenReturnsMatchingToken() {
-        var userId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
         passwordSetUpTokenRepository.save(newToken(userId, "matching-token"));
         passwordSetUpTokenRepository.save(newToken(UUID.randomUUID(), "matching-token"));
 
-        var found = passwordSetUpTokenRepository.findByUserIdAndTokenHash(userId, "matching-token");
+        Optional<PasswordSetUpToken> found = passwordSetUpTokenRepository.findByUserIdAndTokenHash(userId, "matching-token");
 
         assertThat(found).isPresent();
         assertThat(found.get().getUserId()).isEqualTo(userId);
@@ -72,16 +68,16 @@ class PasswordSetUpTokenRepositoryTests extends ContainerTestConfig {
 
     @Test
     void whenUpdateUsedTokenForValidToken_thenMarksTokenUsed() {
-        var userId = UUID.randomUUID();
-        var tokenHash = "valid-update-token";
+        UUID userId = UUID.randomUUID();
+        String tokenHash = "valid-update-token";
         passwordSetUpTokenRepository.save(newToken(userId, tokenHash));
         entityManager.flush();
 
-        var usedAt = Instant.now();
-        var updated = passwordSetUpTokenRepository.updateUsedToken(userId, tokenHash, usedAt);
+        Instant usedAt = Instant.now();
+        int updated = passwordSetUpTokenRepository.updateUsedToken(userId, tokenHash, usedAt);
         entityManager.clear();
 
-        var found = passwordSetUpTokenRepository.findByUserIdAndTokenHash(userId, tokenHash);
+        Optional<PasswordSetUpToken> found = passwordSetUpTokenRepository.findByUserIdAndTokenHash(userId, tokenHash);
         assertThat(updated).isEqualTo(1);
         assertThat(found).isPresent();
         assertThat(found.get().getUsedAt()).isNotNull();
@@ -89,21 +85,21 @@ class PasswordSetUpTokenRepositoryTests extends ContainerTestConfig {
 
     @Test
     void whenUpdateUsedTokenForExpiredToken_thenDoesNotUpdate() {
-        var userId = UUID.randomUUID();
-        var tokenHash = "expired-update-token";
-        var now = Instant.now();
+        UUID userId = UUID.randomUUID();
+        String tokenHash = "expired-update-token";
+        Instant now = Instant.now();
         passwordSetUpTokenRepository.save(
             new PasswordSetUpToken(userId, tokenHash, now.minus(3, ChronoUnit.DAYS), now.minus(1, ChronoUnit.DAYS), null)
         );
         entityManager.flush();
 
-        var updated = passwordSetUpTokenRepository.updateUsedToken(userId, tokenHash, now);
+        int updated = passwordSetUpTokenRepository.updateUsedToken(userId, tokenHash, now);
 
         assertThat(updated).isZero();
     }
 
     private static PasswordSetUpToken newToken(UUID userId, String tokenHash) {
-        var now = Instant.now();
+        Instant now = Instant.now();
         return new PasswordSetUpToken(
             userId,
             tokenHash,

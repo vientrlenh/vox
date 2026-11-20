@@ -16,10 +16,11 @@ import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
 import com.sep.vox.application.port.input.command.RecordAnswerTurnCommand;
-import com.sep.vox.application.port.input.usecase.examitemresponse.RecordAnswerTerminationReasonUseCase;
-import com.sep.vox.application.port.input.usecase.examitemresponse.RecordAnswerTurnUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentitemresponse.RecordAnswerTerminationReasonUseCase;
+import com.sep.vox.application.port.input.usecase.assessmentitemresponse.RecordAnswerTurnUseCase;
 import com.sep.vox.interfaces.kafka.dto.AnswerTurnsRecordedEventDto;
 
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 @Component
@@ -52,8 +53,8 @@ public class AnswerTurnsRecordedConsumer {
     )
     public void consume(ConsumerRecord<String, Object> record, Acknowledgment ack) {
         try {
-            var payload = jsonMapper.valueToTree(record.value());
-            var event = jsonMapper.treeToValue(payload, AnswerTurnsRecordedEventDto.class);
+            JsonNode payload = jsonMapper.valueToTree(record.value());
+            AnswerTurnsRecordedEventDto event = jsonMapper.treeToValue(payload, AnswerTurnsRecordedEventDto.class);
 
             LOGGER.info("Receive answer turns event topic={} partition={} offset={} answerKey={}",
                 record.topic(), record.partition(), record.offset(), record.key());
@@ -67,8 +68,8 @@ public class AnswerTurnsRecordedConsumer {
                 return;
             }
 
-            for (var turn : event.payload().turns()) {
-                var answerId = parseUuid(turn.answerId() != null ? turn.answerId() : event.answerId(), "answerId");
+            for (AnswerTurnsRecordedEventDto.AnswerTurnPayloadDto turn : event.payload().turns()) {
+                UUID answerId = parseUuid(turn.answerId() != null ? turn.answerId() : event.answerId(), "answerId");
                 recordAnswerTurnUseCase.execute(new RecordAnswerTurnCommand(
                     answerId,
                     parseUuid(turn.sessionId(), "sessionId"),

@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.questiontopic;
 
+import com.sep.vox.domain.model.question.QuestionTopic;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +23,7 @@ public class ViewQuestionTopicDetailsUseCase implements IUseCase<ViewQuestionTop
     @Override
     @Transactional(readOnly = true)
     public QuestionTopicDto execute(ViewQuestionTopicDetailsQuery input) {
-        var topic = questionTopicRepository.findById(input.id())
+        QuestionTopic topic = questionTopicRepository.findById(input.id())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề câu hỏi"));
         return QuestionTopicDtoMapper.toDto(topic);
     }

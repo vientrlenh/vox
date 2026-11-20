@@ -13,6 +13,7 @@ import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
+import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.ImportRowRepository;
 import com.sep.vox.domain.repository.ImportSessionRepository;
@@ -55,7 +56,7 @@ public class PreviewSystemAssessmentPolicyImportFromFileUseCase implements IUseC
     @Transactional
     public PreviewAssessmentPolicyImportResponse execute(PreviewSystemAssessmentPolicyImportFromFileCommand command) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = userRepository.findById(currentUserId)
+        User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");

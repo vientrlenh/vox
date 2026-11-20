@@ -2,21 +2,23 @@ package com.sep.vox.application.port.input.query;
 
 import java.util.UUID;
 
+import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
+
 /**
- * Phân trang 0-based, đồng bộ với các query cùng domain exam-appeal.
+ * 0-based paging, in line with the other queries of the same assessment-appeal domain.
  *
- * <p>Sau rework bảng này không còn khoá cứng ở PENDING_REVIEW nên có thêm các chiều
- * lọc của điều phối: trạng thái bài, vòng chấm, chưa gán, quá hạn, có đơn phúc khảo.
+ * <p>After the rework this table is no longer hard-locked to PENDING_REVIEW, so it gained the coordination
+ * filter dimensions: attempt status, grading round, unassigned, overdue, has an appeal.
  *
- * @param kind loại bài; {@code null} được use case hiểu là {@code CENTRALIZED}. Mặc định
- *             nghiêng về kỳ thi tập trung vì đây là bảng điều phối của nhà trường — bài
- *             kiểm tra trên lớp chỉ vào đây khi client hỏi đích danh (màn theo dõi).
+ * @param kind kind of assessment; {@code null} is interpreted by the use case as {@code CENTRALIZED}. The default
+ *             leans towards the centralized assessment because this is the school's coordination table -- class
+ *             tests only come here when the client asks for them explicitly (the monitoring screen).
  */
 public record SearchGradingAssignmentsQuery(
-    UUID examId,
+    UUID assessmentId,
     UUID scheduleId,
     UUID teacherId,
-    String resultStatus,
+    AssessmentCandidateResultStatus resultStatus,
     String roundType,
     String status,
     boolean unassignedOnly,

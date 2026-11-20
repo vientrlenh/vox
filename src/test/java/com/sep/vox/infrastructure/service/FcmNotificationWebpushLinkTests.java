@@ -31,20 +31,20 @@ class FcmNotificationWebpushLinkTests {
     }
 
     private PushMessage messageWithId() {
-        return message(Map.of("notificationId", NOTIFICATION_ID, "target", "EXAM_RESULT_DETAIL"));
+        return message(Map.of("notificationId", NOTIFICATION_ID, "target", "ASSESSMENT_RESULT_DETAIL"));
     }
 
     @Test
     void should_point_at_the_redirect_route_of_the_notification() {
-        var link = service("https://app.vox.edu.vn/n").webpushLink(messageWithId());
+        String link = service("https://app.vox.edu.vn/n").webpushLink(messageWithId());
 
         assertThat(link).isEqualTo("https://app.vox.edu.vn/n/" + NOTIFICATION_ID);
     }
 
-    /** Cấu hình có hay không có dấu / ở cuối đều phải ra cùng một URL, không ra "//". */
+    /** A configuration with or without a trailing / must produce the same URL, not "//". */
     @Test
     void should_not_double_the_slash_when_configured_url_ends_with_one() {
-        var link = service("https://app.vox.edu.vn/n/").webpushLink(messageWithId());
+        String link = service("https://app.vox.edu.vn/n/").webpushLink(messageWithId());
 
         assertThat(link).isEqualTo("https://app.vox.edu.vn/n/" + NOTIFICATION_ID);
     }
@@ -70,6 +70,6 @@ class FcmNotificationWebpushLinkTests {
     @Test
     void should_skip_the_link_when_the_push_carries_no_notification_id() {
         assertThat(service("https://app.vox.edu.vn/n")
-            .webpushLink(message(Map.of("target", "EXAM_RESULT_DETAIL")))).isNull();
+            .webpushLink(message(Map.of("target", "ASSESSMENT_RESULT_DETAIL")))).isNull();
     }
 }

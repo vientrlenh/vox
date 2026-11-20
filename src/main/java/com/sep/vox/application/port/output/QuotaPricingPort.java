@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 public interface QuotaPricingPort {
 
     /** Giá ước tính mỗi giây thi (USD) -- dùng cho ClassTestTokenQuotaGuardService. */
-    BigDecimal currentEstimatedCostPerExamSecondUsd();
+    BigDecimal currentEstimatedCostPerAssessmentSecondUsd();
 
     /** Giá ước tính mỗi giây luyện tập (USD) -- dùng cho BuildPracticePaperUseCase. */
     BigDecimal currentEstimatedCostPerPracticeSecondUsd();

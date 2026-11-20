@@ -20,12 +20,12 @@ public final class LearnerProfileMapper {
     }
 
     /**
-     * PHẢI mang theo {@code id}: hồ sơ nay cập nhật tại chỗ, mà JPA phân biệt insert với update
-     * bằng chính khoá chính. Thiếu id thì mỗi lần lưu lại chèn một dòng mới -- và unique index
-     * trên {@code student_id} sẽ ném ngay từ lần thứ hai.
+     * MUST carry the {@code id}: the profile is now updated in place, and JPA tells insert from update
+     * by the primary key itself. Without the id every save inserts a new row -- and the unique index
+     * on {@code student_id} throws from the second save onwards.
      */
     public static LearnerProfileJpaEntity toJpa(LearnerProfile profile) {
-        var entity = new LearnerProfileJpaEntity(
+        LearnerProfileJpaEntity entity = new LearnerProfileJpaEntity(
             profile.getStudentId(),
             profile.getGoalType(),
             profile.isAutoUpdateInterest(),

@@ -1,0 +1,507 @@
+enum GradingAssignmentStatus {
+    ASSIGNED
+    COMPLETED
+}
+
+"""
+Vòng chấm. Một bài đi qua nhiều vòng theo thời gian, mỗi vòng một dòng phân công
+và tối đa một dòng đang mở.
+"""
+enum GradingRoundType {
+    "Chấm lần đầu bài chờ chấm"
+    INITIAL
+    "Hậu kiểm bài đã công bố — bài GIỮ NGUYÊN trạng thái RELEASED suốt quá trình"
+    SPOT_CHECK
+    "Soi lại bài bị vô hiệu"
+    REMEDIATION
+    "Chấm phúc khảo theo đơn học sinh; nộp là công bố"
+    APPEAL
+}
+
+"Kết luận của giáo viên khi đóng một phân công."
+enum GradingOutcome {
+    "Giữ nguyên điểm đang có"
+    UPHELD
+    "Chấm lại, điểm thay đổi"
+    REGRADED
+    "Kết luận vi phạm -> bài INVALID"
+    INVALIDATED
+    "Kết luận không vi phạm -> gỡ INVALID"
+    CLEARED_INVALID
+    "Giáo viên trả lại phân công"
+    DECLINED
+}
+
+"Cách chọn tập bài khi giao tự động."
+enum GradingSampleSelectionMode {
+    ALL
+    "Bốc ngẫu nhiên N% — dùng cho hậu kiểm"
+    RANDOM_PERCENT
+    "Ưu tiên AI kém tự tin / điểm sát ngưỡng đạt"
+    RISK_BASED
+    MANUAL_LIST
+}
+
+"Tiến độ của một giáo viên trong phạm vi đang xem."
+type GradingTeacherProgress {
+    teacherId: ID!
+    teacherName: String
+    assigned: Int!
+    completed: Int!
+    overdue: Int!
+    "Hồ sơ giáo viên, nạp qua DataLoader `userById`. Dùng cho ảnh đại diện."
+    teacher: User
+}
+
+"Number of attempts in one result status."
+type GradingResultStatusCount {
+    status: AssessmentCandidateResultStatus!
+    count: Int!
+}
+
+"""
+Thẻ số đầu màn điều phối. Mẫu số là TOÀN BỘ bài của phạm vi đang xem — khác bản cũ
+vốn chỉ đếm bài chờ chấm, vì admin nay điều phối cả bốn vòng.
+"""
+type GradingStats {
+    total: Int!
+    byResultStatus: [GradingResultStatusCount!]!
+    """
+    Bài còn có thể nhận một vòng chấm (PENDING_REVIEW / RELEASED / INVALID / APPEALED /
+    RE_GRADING) mà chưa có phân công đang mở. Bài đã kết thúc vòng đời không tính vào đây.
+    """
+    unassigned: Int!
+    "Phân công đang mở"
+    assigned: Int!
+    "Phân công đang mở đã quá hạn"
+    overdue: Int!
+    teacherProgress: [GradingTeacherProgress!]!
+}
+
+"One question-answer turn in a part of the assessment. A part has MANY turns, each with its own audio/transcript."
+type GradingTurn {
+    id: ID!
+    turnOrder: Int
+    turnType: TurnType
+    promptText: String
+    audioUrl: String
+    transcript: String
+    durationSeconds: Int
+    wordCount: Int
+    asrConfidence: Float
+    "JSON string — the overall pronunciation score of the turn. The FE parses it, same as AssessmentItemEvaluationTurn."
+    pronunciationOverall: String
+    "JSON string — array of WordFeedback (a chip per word + phoneme details)"
+    wordFeedback: String
+}
+
+type GradingCriterionScore {
+    criterionId: ID!
+    criterionCode: String
+    label: String
+    score: Float
+    rationale: String
+}
+
+"""
+Tiêu chí rubric kèm dải điểm THẬT. FE dựng ô nhập từ minScore/maxScore ở đây,
+không hardcode 0-9 — mỗi rubric một thang khác nhau.
+"""
+type GradingCriterionMeta {
+    id: ID!
+    code: String
+    label: String
+    description: String
+    minScore: Float
+    maxScore: Float
+    "Trọng số dùng để quy đổi điểm tiêu chí thành điểm phần thi"
+    weight: Float
+    required: Boolean!
+}
+
+"""
+MỘT CÂU HỎI cần chấm, không phải một phần thi — một phần (section) có thể có nhiều câu.
+`partLabel` là tiêu đề section nên nhiều item dùng chung một nhãn; FE ghép thêm
+`orderInSection` để phân biệt.
+"""
+type GradingTaskItem {
+    paperItemId: ID!
+    responseId: ID!
+    partLabel: String
+    "Section chứa câu này. Gộp câu theo ID này, KHÔNG theo partLabel — hai section có thể trùng tên."
+    sectionId: ID
+    "Thứ tự của câu trong section, bắt đầu từ 1"
+    orderInSection: Int!
+    """
+    Đề bài của câu — cùng nguồn với màn Xem kết quả (`questions.question_text`).
+    Null khi paper item không trỏ tới câu hỏi nào hoặc câu hỏi đã bị xoá.
+    KHÁC `GradingTurn.promptText`: cái đó là lời AI đọc lúc vào lượt, không phải đề bài.
+    """
+    questionText: String
+    """
+    Tài nguyên đi kèm câu hỏi (ảnh / audio / video / đoạn văn). Null khi câu không có.
+    Thiếu nó thì giáo viên chấm câu tả tranh chỉ thấy đề bài và transcript, không có tấm ảnh —
+    không đối chiếu nổi câu trả lời với thứ thí sinh thực sự nhìn/nghe.
+    """
+    asset: QuestionAsset
+    "Điểm của bản chấm đang có hiệu lực (lần đầu là điểm AI) — mốc để đối chiếu"
+    currentItemScore: Float
+    currentFeedbackSummary: String
+    currentScores: [GradingCriterionScore!]!
+    "Luôn lấy từ bản AI — chỉ bản AI mới sinh lượt nói"
+    turns: [GradingTurn!]!
+    """
+    Điểm tiêu chí kèm rationale của BẢN AI. Khác `currentScores`: sau khi chấm tay,
+    bản đang hiệu lực là bản HUMAN nên rationale của AI biến mất khỏi `currentScores`,
+    trong khi giáo viên ở vòng phúc khảo vẫn cần đọc AI đã lập luận gì.
+    """
+    aiScores: [GradingCriterionScore!]!
+    aiOverallConfidence: Float
+    aiFeedbackSummary: String
+    aiRequiresHumanReview: Boolean!
+    aiReviewReasonCode: String
+    aiMarkedInvalid: Boolean!
+    aiRequiresRetake: Boolean!
+    "JSON string — EvaluationSignals (audioQuality, audioGateStatus, evidenceStatus, confidenceMode…)"
+    aiSignals: String
+    "JSON string — ValidityResult, chứa ruleResults[] cho khối Vi phạm quy tắc"
+    aiValidity: String
+}
+
+"""
+The teacher's grading screen.
+
+Centralized assessments are graded anonymously (`studentName`/`className` = null). Class tests
+carry them, because the grader is the very teacher who teaches that class.
+"""
+type GradingTaskDetail {
+    assignmentId: ID!
+    candidateResultId: ID!
+    "The first 8 hex characters of candidateResultId, upper-cased (for example A2041F3C)"
+    resultCode: String!
+    assessmentName: String
+    roundType: GradingRoundType!
+    assignmentStatus: GradingAssignmentStatus!
+    resultStatus: AssessmentCandidateResultStatus
+    flagged: Boolean!
+    flagReason: String
+    currentTotalScore: Float
+    "The score when the assignment was given — the reference point so the teacher knows what they are editing from"
+    scoreBefore: Float
+    deadlineAt: DateTime
+    overdue: Boolean!
+    """
+    Read-only flag decided by the BE: true only when the assignment is still ASSIGNED and the attempt is still in
+    the right status for the round. The FE builds the review mode from this flag and does not derive it from status.
+    """
+    editable: Boolean!
+    """
+    The actions allowed in this round, decided by the BE according to GradingRoundPolicy.
+    The FE builds exactly these buttons and does NOT derive them from roundType — deriving them in two places means
+    the two places drift apart sooner or later.
+    """
+    allowedOutcomes: [GradingOutcome!]!
+    "Only in the APPEAL round: the reason the student gave in the appeal"
+    appealReason: String
+    items: [GradingTaskItem!]!
+    criteria: [GradingCriterionMeta!]!
+    """
+    The student's name. ONLY present for class tests; a centralized assessment is always null because
+    anonymous grading guarantees fairness. The FE renders it conditionally, no separate on/off flag is needed.
+    """
+    studentName: String
+    "The student's class. Same rule as studentName."
+    className: String
+    "The session being graded — two attempts of the same student differ here."
+    sessionId: ID
+    "Which attempt this is, counted from 1 by the time the student started the assessment."
+    attemptNo: Int!
+    "Total number of attempts that student has made. When it equals 1 the FE does not show an attempt label."
+    attemptCount: Int!
+}
+
+"The teacher's queue — ONE list for all four rounds. Centralized assessments are graded anonymously."
+type GradingTask {
+    assignmentId: ID!
+    candidateResultId: ID!
+    resultCode: String!
+    assessmentName: String
+    "Number of parts to grade"
+    partCount: Int!
+    roundType: GradingRoundType!
+    status: GradingAssignmentStatus!
+    resultStatus: AssessmentCandidateResultStatus
+    "The current score of the attempt — in the spot-check/appeal rounds this is the published score"
+    currentScore: Float
+    flagged: Boolean!
+    assignedAt: DateTime
+    deadlineAt: DateTime
+    overdue: Boolean!
+    """
+    The student's name. ONLY present for class tests; a centralized assessment is always null because
+    anonymous grading guarantees fairness. The FE renders it conditionally, no separate on/off flag is needed.
+    """
+    studentName: String
+    "The student's class. Same rule as studentName."
+    className: String
+    "The session that produced this attempt — two attempts of the same student differ here."
+    sessionId: ID
+    "Which attempt this is, counted from 1 by the time the student started the assessment."
+    attemptNo: Int!
+    "Total number of attempts that student has made. When it equals 1 the FE does not show an attempt label."
+    attemptCount: Int!
+}
+
+type GradingTaskPage {
+    content: [GradingTask!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+"""
+A row of the school admin's coordination table. The admin sees the student's name normally.
+
+One row is ONE ATTEMPT: a student who retakes has that many rows with the same name, told apart by
+`attemptNo`/`attemptCount`.
+"""
+type GradingAssignmentRow {
+    candidateResultId: ID!
+    resultCode: String!
+    studentName: String
+    className: String
+    assessmentName: String
+    resultStatus: AssessmentCandidateResultStatus
+    totalScore: Float
+    flagged: Boolean!
+    "null means the attempt has no open assignment"
+    assignmentId: ID
+    teacherId: ID
+    teacherName: String
+    roundType: GradingRoundType
+    assignmentStatus: GradingAssignmentStatus
+    outcome: GradingOutcome
+    assignedAt: DateTime
+    completedAt: DateTime
+    deadlineAt: DateTime
+    overdue: Boolean!
+    "There is an unfinished appeal — another round should not be assigned right now"
+    hasOpenAppeal: Boolean!
+    "The session that produced this attempt — two attempts of the same student differ here."
+    sessionId: ID
+    "Which attempt this is, counted from 1 by the time the student started the assessment."
+    attemptNo: Int!
+    "Total number of attempts that student has made. When it equals 1 the FE does not show an attempt label."
+    attemptCount: Int!
+}
+
+type GradingAssignmentRowPage {
+    content: [GradingAssignmentRow!]!
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+}
+
+"Giáo viên có thể nhận bài, kèm tải hiện tại."
+type AssignableTeacher {
+    id: ID!
+    name: String
+    "Số phân công đang mở đang giữ, gộp cả bốn vòng"
+    load: Int!
+    """
+    Hồ sơ người dùng của chính giáo viên này, nạp qua DataLoader `userById` -- không thêm join vào
+    read model. Chỉ hỏi khi cần ảnh đại diện; `name` ở trên vẫn đủ cho mọi thứ khác.
+    """
+    user: User
+}
+
+"""
+Một mục trong bộ lọc kỳ thi của hàng đợi giáo viên. Cố ý mỏng — đây là dropdown, không
+phải màn kỳ thi: mỗi field thêm vào đây là một field giáo viên đọc được về kỳ thi tập
+trung mà họ không phải thành viên.
+"""
+type GradingAssessmentOption {
+    id: ID!
+    "Mã kỳ thi — tên kỳ thi trùng nhau giữa các đợt, mã thì không."
+    code: String
+    name: String
+    "Tổng số bài được giao ở kỳ thi này, gộp cả bốn vòng và cả phân công đã đóng"
+    taskCount: Int!
+    "Trong đó còn phải chấm (ASSIGNED)"
+    openTaskCount: Int!
+}
+
+"Who/what changed the status of an attempt."
+enum ResultStatusChangeSource {
+    AI_EVALUATION
+    TEACHER_INITIAL
+    TEACHER_SPOT_CHECK
+    TEACHER_REMEDIATION
+    TEACHER_APPEAL
+    ADMIN_BULK_FINALIZE
+    ASSESSMENT_PUBLISH
+    SYSTEM
+}
+
+"""
+One milestone in the score timeline. An append-only table: nothing can be edited here.
+`actorName` null means the system changed it itself (the AI finished grading, the finalize job).
+"""
+type ResultStatusHistoryEntry {
+    id: ID!
+    candidateResultId: ID!
+    "null when this is the first milestone of the attempt"
+    fromStatus: AssessmentCandidateResultStatus
+    toStatus: AssessmentCandidateResultStatus!
+    scoreBefore: Float
+    scoreAfter: Float
+    source: ResultStatusChangeSource!
+    actorId: ID
+    actorName: String
+    reason: String
+    createdAt: DateTime!
+}
+
+"Chất lượng AI theo từng giáo viên hậu kiểm."
+type AiQualityByTeacher {
+    teacherId: ID
+    teacherName: String
+    reviewed: Int!
+    regraded: Int!
+    "Lệch tuyệt đối trung bình trên các bài người này đã sửa điểm"
+    averageDelta: Float
+    "Hồ sơ giáo viên, nạp qua DataLoader `userById`. null khi teacherId null."
+    teacher: User
+}
+
+"""
+"AI chấm lệch bao nhiêu", đo từ chính dữ liệu hậu kiểm. Mẫu số là các vòng
+SPOT_CHECK đã hoàn thành — vòng INITIAL không tính vì ở đó AI vốn chưa được coi là chốt.
+"""
+type AiQualityReport {
+    reviewed: Int!
+    upheld: Int!
+    regraded: Int!
+    invalidated: Int!
+    "Phần trăm bài bị sửa điểm; null khi chưa hậu kiểm bài nào"
+    regradeRate: Float
+    "Lệch tuyệt đối trung bình, chỉ tính trên các bài bị sửa điểm"
+    averageDelta: Float
+    maxDelta: Float
+    byTeacher: [AiQualityByTeacher!]!
+}
+
+extend type Query {
+    """
+    The school's grading coordination table. Lists attempts in EVERY status (the old version was hard-locked
+    to PENDING_REVIEW), including attempts nobody has been assigned. Paging is 0-based.
+    `search` matches the student name, the teacher name or the attempt code.
+    """
+    gradingAssignments(
+        assessmentId: ID,
+        scheduleId: ID,
+        teacherId: ID,
+        resultStatus: AssessmentCandidateResultStatus,
+        roundType: GradingRoundType,
+        status: GradingAssignmentStatus,
+        unassignedOnly: Boolean,
+        overdueOnly: Boolean,
+        hasOpenAppeal: Boolean,
+        search: String,
+        """
+        Empty = CENTRALIZED. The school coordinates centralized assessments; pass
+        CLASS_TEST when used for the screen that tracks the grading of class tests.
+        """
+        kind: AssessmentKind,
+        page: Int = 1,
+        "At most 100 — a larger value is clamped to 100 instead of reporting an error."
+        size: Int = 20
+    ): GradingAssignmentRowPage!
+
+    "Cùng luật `kind` với `gradingAssignments` — hai chỗ phải đếm trên cùng một tập."
+    gradingStats(assessmentId: ID, scheduleId: ID, kind: AssessmentKind): GradingStats!
+
+    """
+    Tiến độ chấm của MỘT bài kiểm tra trên lớp, cho chính giáo viên tạo bài. Tách khỏi
+    `gradingStats` vì ở đó `assessmentId` rỗng nghĩa là toàn trường -- nới quyền chỗ đó là để
+    một giáo viên đọc được tiến độ chấm của cả trường.
+    """
+    classTestGradingStats(assessmentId: ID!): GradingStats!
+
+    """
+    Hàng đợi bài của giáo viên đang đăng nhập, cả bốn vòng. Phân trang 0-based.
+    CHỈ kỳ thi tập trung — bài kiểm tra trên lớp đi `myClassTestGradingTasks`.
+    """
+    myGradingTasks(
+        """
+        Thu hẹp về MỘT kỳ thi. Bỏ trống = mọi kỳ thi giáo viên đang có bài. Đây thuần là
+        bộ lọc, không phải cổng phân quyền: phạm vi vẫn là phân công của chính người gọi,
+        nên id của kỳ thi mình không có bài chỉ cho ra danh sách rỗng.
+        Danh sách kỳ thi để đổ vào dropdown lấy ở `myGradingAssessments`.
+        """
+        assessmentId: ID,
+        status: GradingAssignmentStatus,
+        roundType: GradingRoundType,
+        page: Int = 1,
+        "Tối đa 100 — giá trị lớn hơn bị kẹp xuống 100 chứ không báo lỗi."
+        size: Int = 20
+    ): GradingTaskPage!
+
+    """
+    The assessments used to build the filter for `myGradingTasks`: ONLY the CENTRALIZED assessments for which the
+    logged-in teacher currently has, or HAS had, a grading assignment get listed first. Not
+    paged -- this set is closed by the number of assignments of ONE person.
+
+    It needs its own query because `assessments` is not the path here: its visibility rule requires
+    the caller to be an admin or an assessment member, while a teacher grading a centralized assessment is not
+    a member -- asking there only returns an empty list.
+
+    An assessment that has been fully graded stays in the list: submitting the last attempt and having the selected item
+    vanish from the dropdown right under the user's hand is a bug, not a feature.
+    """
+    myGradingAssessments: [GradingAssessmentOption!]!
+
+    """
+    EVERY attempt of one class test, for the teacher who created it — including attempts with NO
+    assignment. `myClassTestGradingTasks` only returns attempts assigned to the caller, so an attempt the AI graded
+    cleanly (it goes straight to RELEASED and no assignment is opened) never shows up there;
+    this is where the teacher sees them and takes the `candidateResultId` to press Take grading.
+    One row is one ATTEMPT: a student who retakes has as many rows as attempts.
+    """
+    classTestGradingResults(
+        assessmentId: ID!,
+        resultStatus: AssessmentCandidateResultStatus,
+        "Only attempts with no open assignment — exactly the ones that still need to be taken for grading."
+        unassignedOnly: Boolean,
+        search: String,
+        page: Int = 1,
+        "At most 100 — a larger value is clamped to 100 instead of reporting an error."
+        size: Int = 20
+    ): GradingAssignmentRowPage!
+
+    myClassTestGradingTasks(
+        assessmentId: ID!,
+        status: GradingAssignmentStatus,
+        roundType: GradingRoundType,
+        page: Int = 1,
+        size: Int = 20
+    ): GradingTaskPage!
+
+    gradingTaskDetail(assignmentId: ID!): GradingTaskDetail!
+
+    "Dùng cho cả modal phân công tự động lẫn dropdown gán tay / đổi giáo viên."
+    assignableTeachers(search: String): [AssignableTeacher!]!
+
+    """
+    Dòng thời gian điểm của một bài, cũ trước. Học sinh xem được của CHÍNH MÌNH,
+    school admin xem được của bài thuộc trường mình, giáo viên xem được bài mình ĐÃ
+    TỪNG được giao chấm — kể cả khi phân công đó đã đóng, vì ở vòng phúc khảo người
+    chấm vòng trước chính là người bị hỏi lại.
+    """
+    resultStatusHistory(candidateResultId: ID!): [ResultStatusHistoryEntry!]!
+
+    "Báo cáo chất lượng AI. Bỏ trống assessmentId để xem toàn trường."
+    aiQualityReport(assessmentId: ID): AiQualityReport!
+}

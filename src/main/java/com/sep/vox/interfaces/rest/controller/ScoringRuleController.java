@@ -1,5 +1,7 @@
 package com.sep.vox.interfaces.rest.controller;
 
+import com.sep.vox.application.port.input.command.CreateSchoolScoringRuleCommand;
+import com.sep.vox.application.port.input.command.CreateScoringRuleCommand;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
@@ -60,8 +62,8 @@ public class ScoringRuleController {
             @PathVariable("policyId") UUID policyId,
             @Valid @RequestBody CreateScoringRuleRequest request
     ) {
-        var command = ScoringRuleCommandMapper.fromCreateRequest(policyId, request);
-        var ruleId = createSystemScoringRuleUseCase.execute(command);
+        CreateScoringRuleCommand command = ScoringRuleCommandMapper.fromCreateRequest(policyId, request);
+        UUID ruleId = createSystemScoringRuleUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Tạo Scoring Rule thành công", ruleId));
     }
 
@@ -75,8 +77,8 @@ public class ScoringRuleController {
             @PathVariable("policyId") UUID policyId,
             @Valid @RequestBody CreateScoringRuleRequest request
     ) {
-        var command = ScoringRuleCommandMapper.fromCreateSchoolRequest(schoolId, policyId, request);
-        var ruleId = createSchoolScoringRuleUseCase.execute(command);
+        CreateSchoolScoringRuleCommand command = ScoringRuleCommandMapper.fromCreateSchoolRequest(schoolId, policyId, request);
+        UUID ruleId = createSchoolScoringRuleUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success("Tạo Scoring Rule cho trường học thành công", ruleId));
     }
 

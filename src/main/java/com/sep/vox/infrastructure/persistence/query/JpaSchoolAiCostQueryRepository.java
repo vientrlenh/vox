@@ -16,6 +16,7 @@ import com.sep.vox.application.query.dto.UserAiSpendDto;
 import com.sep.vox.application.query.repository.SchoolAiCostQueryRepository;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.common.ZoneConstant;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -84,23 +85,23 @@ public class JpaSchoolAiCostQueryRepository implements SchoolAiCostQueryReposito
     }
 
     /**
-     * {@code LEFT JOIN} sang trần chi cá nhân chỉ có thể ra tối đa một dòng mỗi bút toán — khoá duy
-     * nhất của bảng đó là (subscription, quota_type, user) — nên phép SUM không bị nhân lên.
+     * The {@code LEFT JOIN} to the personal spending cap can produce at most one row per ledger entry — the only
+     * unique key of that table is (subscription, quota_type, user) — so the SUM is not multiplied.
      *
-     * <p>{@code MAX(allocated_amount_vnd)} chứ không phải một giá trị xác định: cửa sổ có thể vắt qua
-     * hai kỳ đăng ký với hai mức trần khác nhau, và không có câu trả lời đúng duy nhất cho "trần chi
-     * của người này trong khoảng đó". Lấy mức cao nhất để cột phần trăm không bao giờ vẽ ra một con
-     * số vượt 100% chỉ vì trường đã nâng trần giữa chừng.
+     * <p>{@code MAX(allocated_amount_vnd)} and not one fixed value: the window can span
+     * two subscription periods with two different caps, and there is no single correct answer for "this person's
+     * spending cap in that range". Taking the highest keeps the percentage column from ever drawing
+     * a number above 100% just because the school raised the cap midway.
      */
     @Override
     @SuppressWarnings("unchecked")
     public PageResult<UserAiSpendDto> findSpendByUser(
             UUID schoolId, Instant from, Instant to, String quotaType, int page, int size) {
-        var quotaFilter = quotaType == null ? "" : " AND e.quota_type = :quotaType\n";
+        String quotaFilter = quotaType == null ? "" : " AND e.quota_type = :quotaType\n";
 
-        // Đếm số NHÓM chứ không số dòng: một người có thể tiêu ở cả hai loại ví và mỗi loại là một
-        // hàng riêng trên bảng, nên COUNT(*) trên bút toán sẽ ra tổng số lần tiêu.
-        var total = toLong(bind(em.createNativeQuery("""
+        // Count GROUPS, not rows: one person can spend in both wallet types and each one is a separate
+        // row in the table, so COUNT(*) over the ledger entries would return the total number of spends.
+        long total = toLong(bind(em.createNativeQuery("""
             SELECT COUNT(*) FROM (
                 SELECT 1
                 FROM school_ai_spend_entries e
@@ -132,10 +133,10 @@ public class JpaSchoolAiCostQueryRepository implements SchoolAiCostQueryReposito
             LIMIT :pageSize OFFSET :offset
             """), schoolId, from, to, quotaType)
             .setParameter("pageSize", size)
-            .setParameter("offset", (long) (page - 1) * size)
+            .setParameter("offset", OneBasedPaging.toOffset(page, size))
             .getResultList();
 
-        var content = rows.stream()
+        List<UserAiSpendDto> content = rows.stream()
             .map(row -> new UserAiSpendDto(
                 toUuid(row[0]),
                 (String) row[1],
@@ -149,7 +150,7 @@ public class JpaSchoolAiCostQueryRepository implements SchoolAiCostQueryReposito
 
     @Override
     public BigDecimal sumSchoolWideCost(UUID schoolId, Instant from, Instant to, String quotaType) {
-        var result = bind(em.createNativeQuery("""
+        Object result = bind(em.createNativeQuery("""
             SELECT COALESCE(SUM(e.amount_vnd), 0)
             FROM school_ai_spend_entries e
             """ + WINDOW + " AND e.user_id IS NULL\n"

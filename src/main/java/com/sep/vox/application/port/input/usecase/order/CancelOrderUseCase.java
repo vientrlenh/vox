@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.order;
 
+import com.sep.vox.application.port.output.PaymentProcessPort;
+import com.sep.vox.domain.model.payment.PaymentRecord;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -64,7 +66,7 @@ public class CancelOrderUseCase implements IUseCase<CancelOrderCommand, UUID> {
         // Khóa đơn: hủy và callback "đã trả" hoàn toàn có thể về cùng lúc. Không khóa thì cả hai
         // cùng thấy đơn PENDING, một bên đóng CANCELLED, một bên đóng SUCCESS -- thứ tự ghi quyết
         // định kết quả, và một trong hai kết quả là sai.
-        var order = orderRepository.findByIdForUpdate(input.orderId())
+        Order order = orderRepository.findByIdForUpdate(input.orderId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn hàng"));
 
         if (!order.getSchoolId().equals(userContextPort.getCurrentSchoolId())) {
@@ -89,16 +91,16 @@ public class CancelOrderUseCase implements IUseCase<CancelOrderCommand, UUID> {
      * đóng đơn.
      */
     private void closeLivePaymentAttempt(Order order) {
-        var attempt = paymentRecordRepository.findPendingByOrderId(order.getId()).orElse(null);
+        PaymentRecord attempt = paymentRecordRepository.findPendingByOrderId(order.getId()).orElse(null);
         if (attempt == null) {
             return;
         }
 
-        var paymentPort = paymentProcessResolver.resolve(attempt.getProvider());
+        PaymentProcessPort paymentPort = paymentProcessResolver.resolve(attempt.getProvider());
 
         // Hỏi cổng TRƯỚC khi làm gì khác: dòng còn PENDING chỉ nói rằng chưa ai báo về cho ta, không
         // nói rằng trường chưa trả.
-        var remoteStatus = paymentPort.getPaymentLinkStatus(attempt.getProviderOrderRef()).status();
+        PaymentLinkRemoteStatus remoteStatus = paymentPort.getPaymentLinkStatus(attempt.getProviderOrderRef()).status();
 
         if (remoteStatus == PaymentLinkRemoteStatus.PAID) {
             throw new IllegalStateException(
@@ -153,7 +155,7 @@ public class CancelOrderUseCase implements IUseCase<CancelOrderCommand, UUID> {
      * trạng thái thất bại -- trùng đúng thứ ta sắp ghi, nên vô hại.)
      */
     private void markAttemptFailed(Order order, UUID attemptId) {
-        var current = paymentRecordRepository.findById(attemptId)
+        PaymentRecord current = paymentRecordRepository.findById(attemptId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy lần thanh toán của đơn"));
 
         if (current.getStatus() == PaymentStatus.PAID) {

@@ -126,7 +126,7 @@ public class GradeLevelBandScopeGuardService {
                 return;
             }
 
-            var scope = findScope(resolvedGradeLevelId, frameworkVersionId);
+            Optional<GradeLevelBandScope> scope = findScope(resolvedGradeLevelId, frameworkVersionId);
             if (scope.isEmpty()) {
                 // CHỦ ĐÍCH mở: cặp (khối, phiên bản khung) chưa khai trần thì không chặn gì cả.
                 // Chặn hết sẽ làm đứng mọi luồng tạo policy ngay ngày đầu, vì V42 không seed dòng
@@ -138,8 +138,8 @@ public class GradeLevelBandScopeGuardService {
                 return;
             }
 
-            var centralizeCapBand = findBand(scope.get().getDefaultTargetBandId());
-            var classTestCapBand = findBand(scope.get().getHardMaxBandId());
+            Optional<FrameworkResultBand> centralizeCapBand = findBand(scope.get().getDefaultTargetBandId());
+            Optional<FrameworkResultBand> classTestCapBand = findBand(scope.get().getHardMaxBandId());
             if (centralizeCapBand.isEmpty() || classTestCapBand.isEmpty()) {
                 // FK trong V42 lẽ ra không cho phép xảy ra; nếu vẫn xảy ra thì cấu hình hỏng chứ
                 // không phải người dùng sai -- không chặn họ, nhưng phải để lại dấu vết.

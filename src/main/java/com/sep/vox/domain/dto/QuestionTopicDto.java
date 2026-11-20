@@ -1,5 +1,6 @@
 package com.sep.vox.domain.dto;
 
+import java.time.Instant;
 import java.util.UUID;
 
 public record QuestionTopicDto(
@@ -9,8 +10,8 @@ public record QuestionTopicDto(
     String name,
     String description,
     String status, 
-    String createdAt,
-    String updatedAt,
+    Instant createdAt,
+    Instant updatedAt,
     UUID createdBy,
     UUID updatedBy
 ) {

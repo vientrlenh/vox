@@ -15,7 +15,10 @@ import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
+import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
+import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
 import org.springframework.stereotype.Service;
@@ -62,14 +65,14 @@ public class PreviewSchoolRubricVersionImportFromFileUseCase implements IUseCase
     @Transactional
     public PreviewRubricVersionImportResponse execute(PreviewSchoolRubricVersionImportCommand command) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
 
         // Kiểm tra quyền trường học
-        var schoolUser = schoolUserRepository.findByUserId(currentUserId).orElseThrow(() -> new ForbiddenException("Không thuộc trường học nào."));
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId).orElseThrow(() -> new ForbiddenException("Không thuộc trường học nào."));
         if (!schoolUser.getSchoolId().equals(command.schoolId())) throw new ForbiddenException("Hành vi xâm nhập dữ liệu trường học khác bị từ chối.");
 
-        var rubric = rubricRepository.findById(command.rubricId()).orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric yêu cầu."));
+        Rubric rubric = rubricRepository.findById(command.rubricId()).orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric yêu cầu."));
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || rubric.getSchoolId() == null || !rubric.getSchoolId().equals(command.schoolId())) {
             throw new ForbiddenException("Bộ Rubric này không thuộc quyền quản lý của trường bạn.");
         }

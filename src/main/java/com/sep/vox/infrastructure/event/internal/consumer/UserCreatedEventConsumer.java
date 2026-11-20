@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.event.internal.consumer;
 
+import com.sep.vox.application.response.output.GeneratedPasswordSetUpToken;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -77,7 +78,7 @@ public class UserCreatedEventConsumer {
         containerFactory = "stringKafkaListenerContainerFactory"
     )
     public void consume(ConsumerRecord<String, String> record, Acknowledgment ack) {
-        var eventId = KafkaEventHeaders.readEventId(record);
+        UUID eventId = KafkaEventHeaders.readEventId(record);
 
         LOGGER.info("Receive event user-created: eventId={}, partition={}, offset={}",
             eventId, record.partition(), record.offset());
@@ -96,15 +97,15 @@ public class UserCreatedEventConsumer {
             throw new IllegalStateException("Payload user-created không hợp lệ, eventId=" + eventId, e);
         }
 
-        // Sinh token TẠI ĐÂY thay vì ở producer: token là credential, không được nằm trong
-        // payload outbox/Kafka. Phải lưu xong (commit) trước khi gửi mail, nếu không người
-        // dùng bấm link ngay có thể gặp token chưa tồn tại trong DB.
+        // Generate the token HERE instead of in the producer: the token is a credential and must not be in the
+        // outbox/Kafka payload. It must be saved (committed) before the mail is sent, otherwise a user
+        // who clicks the link right away may hit a token that does not exist in the DB yet.
         //
-        // Retry sẽ sinh token mới -- không tái sử dụng được token cũ vì DB chỉ giữ bản hash.
-        // Token cũ vẫn hợp lệ tới khi hết hạn 48h; chấp nhận được, và số lần retry có trần.
+        // A retry generates a new token -- the old one cannot be reused because the DB only keeps the hash.
+        // The old token stays valid until it expires after 48h; acceptable, and the number of retries is capped.
         String rawToken;
         try {
-            var generatedToken = passwordSetUpTokenPort.generateToken();
+            GeneratedPasswordSetUpToken generatedToken = passwordSetUpTokenPort.generateToken();
             passwordSetUpTokenRepository.save(
                 PasswordSetUpToken.create(payload.userId(), generatedToken.hashedToken()));
             rawToken = generatedToken.rawToken();
@@ -116,8 +117,8 @@ public class UserCreatedEventConsumer {
         }
 
         try {
-            var setupUrl = buildPasswordSetupUrl(payload.userId(), rawToken);
-            var html = renderEmail(payload, setupUrl);
+            String setupUrl = buildPasswordSetupUrl(payload.userId(), rawToken);
+            String html = renderEmail(payload, setupUrl);
             mailSendingPort.sendHtml(payload.to(), SUBJECT, html);
         } catch (Exception e) {
             LOGGER.error("Send mail error: eventId={}, to={}", eventId, payload.to(), e);
@@ -143,7 +144,7 @@ public class UserCreatedEventConsumer {
     }
 
     private String buildPasswordSetupUrl(UUID userId, String rawToken) {
-        var separator = passwordSetupBaseUrl.contains("?") ? "&" : "?";
+        String separator = passwordSetupBaseUrl.contains("?") ? "&" : "?";
         return passwordSetupBaseUrl + separator
             + "userId=" + encode(userId.toString())
             + "&token=" + encode(rawToken);
@@ -155,7 +156,7 @@ public class UserCreatedEventConsumer {
 
     @DltHandler
     public void handleDlt(ConsumerRecord<String, String> record) {
-        var eventId = KafkaEventHeaders.readEventIdOrNull(record);
+        UUID eventId = KafkaEventHeaders.readEventIdOrNull(record);
         LOGGER.error("user-created event sent to DLT: eventId={}, topic={}, partition={}, offset={}, payload={}",
             eventId, record.topic(), record.partition(), record.offset(), record.value());
     }

@@ -121,15 +121,15 @@ public class QuestionGraphQlDataLoaderConfig {
         registry.<UUID, QuestionDto>forName("questionByIdAccessible")
             .registerMappedBatchLoader((Set<UUID> ids, BatchLoaderEnvironment env) ->
                 Mono.fromSupplier(() -> {
-                    var startedAt = System.nanoTime();
-                    var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-                    var systemAdmin = userContextPort.isSystemAdmin();
-                    var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+                    long startedAt = System.nanoTime();
+                    UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+                    boolean systemAdmin = userContextPort.isSystemAdmin();
+                    UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
                         .map(schoolUser -> schoolUser.getSchoolId())
                         .orElse(null);
-                    var schoolAdmin = !systemAdmin && userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+                    boolean schoolAdmin = !systemAdmin && userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
                         .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
-                    var result = questionRepository.findAccessibleByIdIn(ids, currentUserId, currentSchoolId, systemAdmin, schoolAdmin)
+                    Map<UUID, QuestionDto> result = questionRepository.findAccessibleByIdIn(ids, currentUserId, currentSchoolId, systemAdmin, schoolAdmin)
                         .stream()
                         .map(QuestionDtoMapper::toQuestionDto)
                         .collect(Collectors.toMap(question -> question.id(), dto -> dto));
@@ -139,14 +139,14 @@ public class QuestionGraphQlDataLoaderConfig {
                 })
             );
 
-        // KHÔNG check quyền — chỉ dùng ở nơi quyền xem đã được xác nhận qua parent
-        // (vd: ExamBlueprintSlot.fixedQuestion, sau khi ViewExamBlueprintDetailsUseCase.hasAccess
-        // đã pass rồi). Tránh lặp lại OR-tree phân quyền của questionByIdAccessible.
+        // Does NOT check permissions -- only use it where view permission has already been confirmed through
+        // the parent (e.g. AssessmentBlueprintSlot.fixedQuestion, after ViewAssessmentBlueprintDetailsUseCase.hasAccess has
+        // already passed). This avoids repeating the permission OR-tree of questionByIdAccessible.
         registry.<UUID, QuestionDto>forName("questionByIdBasic")
             .registerMappedBatchLoader((Set<UUID> ids, BatchLoaderEnvironment env) ->
                 Mono.fromSupplier(() -> {
-                    var startedAt = System.nanoTime();
-                    var result = questionRepository.findByIdIn(ids).stream()
+                    long startedAt = System.nanoTime();
+                    Map<UUID, QuestionDto> result = questionRepository.findByIdIn(ids).stream()
                         .map(QuestionDtoMapper::toQuestionDto)
                         .collect(Collectors.toMap(question -> question.id(), dto -> dto));
                     LOGGER.info("[blueprint-perf] loader=questionByIdBasic batchSize={} tookMs={}",

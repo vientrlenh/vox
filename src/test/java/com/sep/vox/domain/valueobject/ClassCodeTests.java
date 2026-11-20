@@ -9,14 +9,14 @@ public class ClassCodeTests {
 
     @Test
     void should_accept_valid_class_code() {
-        var classCode = new ClassCode("ENG_10-A");
+        ClassCode classCode = new ClassCode("ENG_10-A");
 
         assertThat(classCode.value()).isEqualTo("ENG_10-A");
     }
 
     @Test
     void should_accept_null_class_code() {
-        var classCode = new ClassCode(null);
+        ClassCode classCode = new ClassCode(null);
 
         assertThat(classCode.value()).isNull();
     }

@@ -25,14 +25,14 @@ public class PaymentGraphQlDataLoaderConfig {
         registry.<UUID, List<PaymentDto>>forName("paymentsByOrderId")
             .registerMappedBatchLoader((Set<UUID> orderIds, BatchLoaderEnvironment env) ->
                 Mono.fromSupplier(() -> {
-                    // Mồi List.of() vì lý do giống itemsByOrderId: đơn vừa tạo mà trường chưa bấm
-                    // thanh toán lần nào thì chưa có dòng payment_records nào cả.
+                    // Pre-fill List.of() for the same reason as itemsByOrderId: an order that was just created
+                    // and for which the school has not pressed pay even once has no payment_records rows yet.
                     Map<UUID, List<PaymentDto>> result = new HashMap<>();
                     orderIds.forEach(id -> result.put(id, List.of()));
 
-                    // groupingBy giữ nguyên thứ tự stream, nên thứ tự "mới nhất trước" đã chốt từ câu
-                    // truy vấn (findByOrderIdInOrderByIdDesc) được bảo toàn tới đây.
-                    var paymentsByOrderId = paymentRecordRepository.findByOrderIdIn(orderIds).stream()
+                    // groupingBy keeps the stream order, so the "newest first" order fixed by the query
+                    // (findByOrderIdInOrderByIdDesc) is preserved up to here.
+                    Map<UUID, List<PaymentDto>> paymentsByOrderId = paymentRecordRepository.findByOrderIdIn(orderIds).stream()
                         .map(PaymentDto::toDto)
                         .collect(Collectors.groupingBy(payment -> payment.orderId()));
 

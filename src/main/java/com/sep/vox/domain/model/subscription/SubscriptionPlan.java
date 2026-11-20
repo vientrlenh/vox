@@ -2,6 +2,7 @@ package com.sep.vox.domain.model.subscription;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.UUID;
 
 import com.sep.vox.domain.common.ZoneConstant;
@@ -190,8 +191,8 @@ public class SubscriptionPlan {
         if (start == null || periodType == null || periodCount == null) {
             throw new IllegalStateException("Gói thiếu chu kỳ (periodType/periodCount), không tính được hạn dùng");
         }
-        var local = start.atZone(ZoneConstant.BUSINESS_ZONE);
-        var end = switch (periodType) {
+        ZonedDateTime local = start.atZone(ZoneConstant.BUSINESS_ZONE);
+        ZonedDateTime end = switch (periodType) {
             case DAY -> local.plusDays(periodCount);
             case MONTH -> local.plusMonths(periodCount);
             case YEAR -> local.plusYears(periodCount);

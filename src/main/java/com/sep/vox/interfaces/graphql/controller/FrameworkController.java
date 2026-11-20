@@ -1,5 +1,9 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import com.sep.vox.application.port.input.command.UpdateFrameworkCriterionBandCommand;
+import com.sep.vox.application.port.input.command.UpdateFrameworkCriterionCommand;
+import com.sep.vox.application.port.input.command.UpdateFrameworkResultBandCommand;
+import com.sep.vox.application.port.input.command.UpdateFrameworkVersionCommand;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -41,6 +45,7 @@ import com.sep.vox.domain.dto.FrameworkCriterionDto;
 import com.sep.vox.domain.dto.FrameworkDto;
 import com.sep.vox.domain.dto.FrameworkResultBandDto;
 import com.sep.vox.domain.dto.FrameworkVersionDto;
+import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateFrameworkCriterionBandInput;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateFrameworkCriterionInput;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateFrameworkResultBandInput;
@@ -49,6 +54,7 @@ import com.sep.vox.interfaces.graphql.mapper.UpdateFrameworkCriterionBandCommand
 import com.sep.vox.interfaces.graphql.mapper.UpdateFrameworkCriterionCommandMapper;
 import com.sep.vox.interfaces.graphql.mapper.UpdateFrameworkResultBandCommandMapper;
 import com.sep.vox.interfaces.graphql.mapper.UpdateFrameworkVersionCommandMapper;
+import com.sep.vox.interfaces.shared.PageArguments;
 
 @Controller("graphqlFrameworkController")
 public class FrameworkController {
@@ -106,7 +112,7 @@ public class FrameworkController {
             @Argument(name = "size") Integer size,
             @Argument(name = "search") String search,
             @Argument(name = "isActive") Boolean isActive) {
-        validatePage(page, size);
+        PageArguments.validate(page, size);
         return viewFrameworksUseCase.execute(new ViewFrameworksQuery(page, size, search, isActive));
     }
 
@@ -120,10 +126,10 @@ public class FrameworkController {
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public PageResult<FrameworkVersionDto> frameworkVersions(
             @Argument(name = "frameworkId") UUID frameworkId,
-            @Argument(name = "status") String status,
+            @Argument(name = "status") FrameworkVersionStatus status,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePage(page, size);
+        PageArguments.validate(page, size);
         return viewFrameworkVersionsUseCase.execute(new ViewFrameworkVersionsQuery(frameworkId, status, page, size));
     }
 
@@ -133,53 +139,53 @@ public class FrameworkController {
         return viewFrameworkVersionDetailsUseCase.execute(new ViewFrameworkVersionDetailsQuery(id));
     }
 
-    // Query gốc lấy chi tiết 1 FrameworkVersion cho School Admin (chỉ Version đã PUBLISHED)
+    // Root query that fetches the details of one FrameworkVersion for the School Admin (only PUBLISHED versions)
     @QueryMapping(name = "schoolFrameworkVersion")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public FrameworkVersionDto schoolFrameworkVersion(@Argument(name = "id") UUID id) {
         return viewSchoolFrameworkVersionDetailsUseCase.execute(new ViewFrameworkVersionDetailsQuery(id));
     }
 
-    // Query gốc lấy danh sách FrameworkCriterion cho System Admin (không giới hạn trạng thái Version)
+    // Root query that fetches the FrameworkCriterion list for the System Admin (no limit on the Version status)
     @QueryMapping(name = "frameworkCriteria")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public List<FrameworkCriterionDto> frameworkCriteria(@Argument(name = "frameworkVersionId") UUID frameworkVersionId) {
         return viewFrameworkCriteriaUseCase.execute(new ViewFrameworkCriteriaQuery(frameworkVersionId));
     }
 
-    // Query gốc lấy chi tiết 1 FrameworkCriterion cho System Admin
+    // Root query that fetches the details of one FrameworkCriterion for the System Admin
     @QueryMapping(name = "frameworkCriterion")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public FrameworkCriterionDto frameworkCriterion(@Argument(name = "id") UUID id) {
         return viewFrameworkCriterionDetailsUseCase.execute(new ViewFrameworkCriterionDetailsQuery(id));
     }
 
-    // Query gốc lấy danh sách FrameworkCriterion cho School Admin (chỉ Version đã PUBLISHED)
+    // Root query that fetches the FrameworkCriterion list for the School Admin (only PUBLISHED versions)
     @QueryMapping(name = "schoolFrameworkCriteria")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public List<FrameworkCriterionDto> schoolFrameworkCriteria(@Argument(name = "frameworkVersionId") UUID frameworkVersionId) {
         return viewSchoolFrameworkCriteriaUseCase.execute(new ViewFrameworkCriteriaQuery(frameworkVersionId));
     }
 
-    // Query gốc lấy danh sách Framework đang active cho School Admin
+    // Root query that fetches the active Framework list for the School Admin
     @QueryMapping(name = "schoolFrameworks")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<FrameworkDto> schoolFrameworks(
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePage(page, size);
+        PageArguments.validate(page, size);
         return viewActiveFrameworksUseCase.execute(new ViewFrameworksQuery(page, size, null, true));
     }
 
-    // Query gốc lấy danh sách FrameworkVersion cho School Admin (chỉ Version đã PUBLISHED)
+    // Root query that fetches the FrameworkVersion list for the School Admin (only PUBLISHED versions)
     @QueryMapping(name = "schoolFrameworkVersions")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<FrameworkVersionDto> schoolFrameworkVersions(
             @Argument(name = "frameworkId") UUID frameworkId,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePage(page, size);
-        return viewSchoolFrameworkVersionsUseCase.execute(new ViewFrameworkVersionsQuery(frameworkId, "PUBLISHED", page, size));
+        PageArguments.validate(page, size);
+        return viewSchoolFrameworkVersionsUseCase.execute(new ViewFrameworkVersionsQuery(frameworkId, FrameworkVersionStatus.PUBLISHED, page, size));
     }
 
     @MutationMapping(name = "updateFrameworkVersion")
@@ -188,7 +194,7 @@ public class FrameworkController {
             @Argument(name = "frameworkId") UUID frameworkId,
             @Argument(name = "versionId") UUID versionId,
             @Argument(name = "input") UpdateFrameworkVersionInput input) {
-        var command = UpdateFrameworkVersionCommandMapper.fromInput(frameworkId, versionId, input);
+        UpdateFrameworkVersionCommand command = UpdateFrameworkVersionCommandMapper.fromInput(frameworkId, versionId, input);
         return updateFrameworkVersionUseCase.execute(command);
     }
 
@@ -199,7 +205,7 @@ public class FrameworkController {
             @Argument(name = "versionId") UUID versionId,
             @Argument(name = "criterionId") UUID criterionId,
             @Argument(name = "input") UpdateFrameworkCriterionInput input) {
-        var command = UpdateFrameworkCriterionCommandMapper.fromInput(frameworkId, versionId, criterionId, input);
+        UpdateFrameworkCriterionCommand command = UpdateFrameworkCriterionCommandMapper.fromInput(frameworkId, versionId, criterionId, input);
         return updateFrameworkCriterionUseCase.execute(command);
     }
 
@@ -211,7 +217,7 @@ public class FrameworkController {
             @Argument(name = "criterionId") UUID criterionId,
             @Argument(name = "bandId") UUID bandId,
             @Argument(name = "input") UpdateFrameworkCriterionBandInput input) {
-        var command = UpdateFrameworkCriterionBandCommandMapper.fromInput(
+        UpdateFrameworkCriterionBandCommand command = UpdateFrameworkCriterionBandCommandMapper.fromInput(
                 frameworkId, versionId, criterionId, bandId, input);
         return updateFrameworkCriterionBandUseCase.execute(command);
     }
@@ -223,7 +229,7 @@ public class FrameworkController {
             @Argument(name = "versionId") UUID versionId,
             @Argument(name = "bandId") UUID bandId,
             @Argument(name = "input") UpdateFrameworkResultBandInput input) {
-        var command = UpdateFrameworkResultBandCommandMapper.fromInput(frameworkId, versionId, bandId, input);
+        UpdateFrameworkResultBandCommand command = UpdateFrameworkResultBandCommandMapper.fromInput(frameworkId, versionId, bandId, input);
         return updateFrameworkResultBandUseCase.execute(command);
     }
 
@@ -248,10 +254,5 @@ public class FrameworkController {
             throw new NotFoundException("Không tìm thấy criterionBandsByFrameworkCriterion schema mapping");
         }
         return loader.load(criterion.id());
-    }
-
-    private void validatePage(Integer page, Integer size) {
-        if (page == null || size == null || page <= 0 || size <= 0)
-            throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
     }
 }

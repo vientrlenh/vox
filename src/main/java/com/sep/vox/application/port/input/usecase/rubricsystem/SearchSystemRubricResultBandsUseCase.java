@@ -7,7 +7,11 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.RubricResultBandDto;
 import com.sep.vox.domain.mapper.RubricResultBandDtoMapper;
+import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
+import com.sep.vox.domain.model.rubric.RubricResultBand;
+import com.sep.vox.domain.model.rubric.RubricVersion;
+import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
 import org.springframework.stereotype.Service;
@@ -41,17 +45,17 @@ public class SearchSystemRubricResultBandsUseCase implements IUseCase<SearchSyst
     @Transactional(readOnly = true)
     public PageResult<RubricResultBandDto> execute(SearchSystemRubricResultBandsQuery query) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản đã bị khóa.");
 
-        var version = rubricVersionRepository.findById(query.versionId()).orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản Rubric."));
-        var rubric = rubricRepository.findById(version.getRubricId()).orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
+        RubricVersion version = rubricVersionRepository.findById(query.versionId()).orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản Rubric."));
+        Rubric rubric = rubricRepository.findById(version.getRubricId()).orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             throw new ForbiddenException("BẢO MẬT: Dữ liệu thuộc về Trường học. Bạn không có quyền truy cập.");
         }
 
-        var pageResult = rubricResultBandRepository.searchRubricResultBands(query.versionId(), query.keyword(), query.page(), query.size());
+        PageResult<RubricResultBand> pageResult = rubricResultBandRepository.searchRubricResultBands(query.versionId(), query.keyword(), query.page(), query.size());
 
         return new PageResult<>(
                 pageResult.content().stream()

@@ -7,7 +7,7 @@ import java.util.UUID;
 import com.sep.vox.domain.model.metering.AiUsageType;
 
 public record RecordAiUsageCommand(
-    UUID examSessionId,
+    UUID assessmentSessionId,
     UUID turnId,
     UUID usageEventId,
     AiUsageType usageType,

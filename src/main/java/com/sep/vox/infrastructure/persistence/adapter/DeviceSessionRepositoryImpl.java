@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.DeviceSessionJpaEntity;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -23,8 +24,8 @@ public class DeviceSessionRepositoryImpl implements DeviceSessionRepository {
 
     @Override
     public DeviceSession save(DeviceSession session) {
-        var entity = DeviceSessionMapper.toJpa(session);
-        var saved = springDataDeviceSessionRepository.save(entity);
+        DeviceSessionJpaEntity entity = DeviceSessionMapper.toJpa(session);
+        DeviceSessionJpaEntity saved = springDataDeviceSessionRepository.save(entity);
         return DeviceSessionMapper.toDomain(saved);
     }
 

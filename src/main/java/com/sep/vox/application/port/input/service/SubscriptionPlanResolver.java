@@ -19,8 +19,8 @@ public class SubscriptionPlanResolver {
     }
 
     public SubscriptionPlan resolveActivePlan(SubscriptionPlan plan) {
-        var current = plan;
-        var hops = 0;
+        SubscriptionPlan current = plan;
+        int hops = 0;
         while (current.getStatus() == SubscriptionPlanStatus.ARCHIVED) {
             if (current.getReplacedByPlanId() == null) {
                 throw new NotFoundException("Gói đã ngừng cung cấp và chưa có gói thay thế");

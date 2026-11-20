@@ -38,7 +38,7 @@ public class SchoolSubscriptionQuotaUserAllocationRepositoryImpl implements Scho
 
     @Override
     public SchoolSubscriptionQuotaUserAllocation upsertAllocation(UUID schoolSubscriptionId, QuotaType quotaType, UUID userId, BigDecimal allocatedAmountVnd) {
-        var existing = springDataRepository.findBySchoolSubscriptionIdAndQuotaTypeAndUserId(schoolSubscriptionId, quotaType.name(), userId);
+        Optional<SchoolSubscriptionQuotaUserAllocationJpaEntity> existing = springDataRepository.findBySchoolSubscriptionIdAndQuotaTypeAndUserId(schoolSubscriptionId, quotaType.name(), userId);
         SchoolSubscriptionQuotaUserAllocationJpaEntity entity;
         if (existing.isPresent()) {
             entity = existing.get();
@@ -47,7 +47,7 @@ public class SchoolSubscriptionQuotaUserAllocationRepositoryImpl implements Scho
             entity = new SchoolSubscriptionQuotaUserAllocationJpaEntity(
                 null, schoolSubscriptionId, quotaType.name(), userId, allocatedAmountVnd, BigDecimal.ZERO);
         }
-        var saved = springDataRepository.save(entity);
+        SchoolSubscriptionQuotaUserAllocationJpaEntity saved = springDataRepository.save(entity);
         return SchoolSubscriptionQuotaUserAllocationMapper.toDomain(saved);
     }
 
@@ -57,28 +57,28 @@ public class SchoolSubscriptionQuotaUserAllocationRepositoryImpl implements Scho
     }
 
     /**
-     * COALESCE trong câu truy vấn đã lo tập rỗng, nhưng vẫn kẹp null một lần nữa ở đây: hợp đồng của
-     * cổng này là "không bao giờ null", và giữ nó đúng bằng chính mã của mình rẻ hơn là bằng một lời
-     * hứa nằm trong chuỗi JPQL.
+     * COALESCE in the query already handles an empty set, but null is clamped once more here: the contract of
+     * this port is "never null", and keeping it true in our own code is cheaper than relying on
+     * a promise that lives inside a JPQL string.
      */
     @Override
     public BigDecimal sumUnusedAllocation(UUID schoolSubscriptionId, QuotaType quotaType) {
-        var sum = springDataRepository.sumUnusedAllocation(schoolSubscriptionId, quotaType.name());
+        BigDecimal sum = springDataRepository.sumUnusedAllocation(schoolSubscriptionId, quotaType.name());
         return sum == null ? BigDecimal.ZERO : sum;
     }
 
-    /** Kẹp null một lần nữa ở đây, cùng lý do với {@link #sumUnusedAllocation}. */
+    /** Clamp null once more here, for the same reason as {@link #sumUnusedAllocation}. */
     @Override
     public BigDecimal sumAllocatedForEligibleUsers(
             UUID schoolSubscriptionId, QuotaType quotaType, UUID schoolId, UUID roleId, String userStatus) {
-        var sum = springDataRepository.sumAllocatedForEligibleUsers(
+        BigDecimal sum = springDataRepository.sumAllocatedForEligibleUsers(
             schoolSubscriptionId, quotaType.name(), schoolId, roleId, userStatus);
         return sum == null ? BigDecimal.ZERO : sum;
     }
 
     @Override
     public BigDecimal sumAllocated(UUID schoolSubscriptionId, QuotaType quotaType) {
-        var sum = springDataRepository.sumAllocated(schoolSubscriptionId, quotaType.name());
+        BigDecimal sum = springDataRepository.sumAllocated(schoolSubscriptionId, quotaType.name());
         return sum == null ? BigDecimal.ZERO : sum;
     }
 

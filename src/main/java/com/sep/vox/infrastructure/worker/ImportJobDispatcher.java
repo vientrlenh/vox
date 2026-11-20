@@ -36,15 +36,15 @@ public class ImportJobDispatcher {
 
     @Scheduled(fixedDelay = 5000)
     public void poll() {
-        var free = workers.getMaxPoolSize() - workers.getActiveCount();
+        int free = workers.getMaxPoolSize() - workers.getActiveCount();
         if (free <= 0) {
             return;
         }
-        for (var id : queueService.claimQueued(instanceId, free, LEASE)) {
+        for (UUID id : queueService.claimQueued(instanceId, free, LEASE)) {
             try {
                 workers.execute(() -> safeCommit(id));
             } catch (Exception e) {
-                // pool đầy/từ chối: để job ở IMPORTING -> sweeper sẽ requeue khi lease hết
+                // pool full/rejected: leave the job in IMPORTING -> the sweeper will requeue it when the lease expires
                 log.warn("Không submit được job import {}: {}", id, e.getMessage());
             }
         }
@@ -62,7 +62,7 @@ public class ImportJobDispatcher {
     @Scheduled(fixedDelay = 60000)
     public void sweep() {
         try {
-            var requeued = queueService.requeueExpired(MAX_ATTEMPTS);
+            int requeued = queueService.requeueExpired(MAX_ATTEMPTS);
             if (requeued > 0) {
                 log.info("Sweeper requeue {} phiên import quá hạn lease", requeued);
             }

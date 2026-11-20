@@ -1,10 +1,12 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.RegisterFormJpaEntity;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
@@ -13,6 +15,7 @@ import com.sep.vox.domain.model.registerform.RegisterForm;
 import com.sep.vox.domain.model.registerform.RegisterFormStatus;
 import com.sep.vox.domain.repository.RegisterFormRepository;
 import com.sep.vox.infrastructure.persistence.mapper.RegisterFormMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataRegisterFormRepository;
 
 @Repository
@@ -26,8 +29,8 @@ public class RegisterFormRepositoryImpl implements RegisterFormRepository {
 
     @Override
     public RegisterForm save(RegisterForm rf) {
-        var entity = RegisterFormMapper.toJpa(rf);
-        var saved = springDataRegisterFormRepository.save(entity);
+        RegisterFormJpaEntity entity = RegisterFormMapper.toJpa(rf);
+        RegisterFormJpaEntity saved = springDataRegisterFormRepository.save(entity);
         return RegisterFormMapper.toDomain(saved);
     }
 
@@ -39,8 +42,8 @@ public class RegisterFormRepositoryImpl implements RegisterFormRepository {
 
     @Override
     public PageResult<RegisterForm> findAll(int pageNumber, int size) {
-        var pageable = PageRequest.of(pageNumber - 1, size);
-        var page = springDataRegisterFormRepository.findAll(pageable);
+        PageRequest pageable = OneBasedPaging.toPageRequest(pageNumber, size);
+        Page<RegisterFormJpaEntity> page = springDataRegisterFormRepository.findAll(pageable);
         return new PageResult<>(
             page.getContent().stream()
                 .map(RegisterFormMapper::toDomain)

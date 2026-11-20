@@ -13,44 +13,43 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTransport;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.query.dto.GradingAssignmentFilter;
 import com.sep.vox.application.query.dto.GradingAssignmentRowInfo;
-import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
-import com.sep.vox.config.ContainerTestConfig;
-import com.sep.vox.infrastructure.persistence.entity.ExamCandidateJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.ExamCandidateResultJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.ExamGradingAssignmentJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.ExamJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.ExamSessionJpaEntity;
+import com.sep.vox.application.query.dto.GradingTaskDetailInfo;
+import com.sep.vox.application.query.dto.GradingTaskInfo;
+import com.sep.vox.application.query.repository.AssessmentGradingQueryRepository;
+import com.sep.vox.infrastructure.persistence.entity.AssessmentCandidateJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.AssessmentCandidateResultJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.AssessmentGradingAssignmentJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.AssessmentJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.AssessmentSessionJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.UserJpaEntity;
+import com.sep.vox.support.IntegrationTest;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
 /**
- * Số lượt thi trên màn chấm.
+ * The number of attempts on the grading screen.
  *
- * <p>Một học sinh thi lại sinh ra nhiều {@code exam_sessions}, mỗi phiên một
- * {@code exam_candidate_results} riêng — tức nhiều DÒNG cùng tên trên màn chấm. Không có
- * {@code attemptNo}/{@code attemptCount} thì người chấm nhìn hai dòng y hệt nhau và không
- * biết mình đang chấm lượt nào.
+ * <p>A student who retakes produces several {@code assessment_sessions}, each session with its own
+ * {@code assessment_candidate_results} -- i.e. several ROWS with the same name on the grading screen. Without
+ * {@code attemptNo}/{@code attemptCount} the grader sees two identical rows and
+ * does not know which attempt they are grading.
  *
- * <p>DB không có cột số lượt: thứ tự suy từ {@code startedAt}. Ca "lượt 2" là ca quan
- * trọng nhất ở đây — nó chốt rằng bài đang xét được đối chiếu đúng với phiên của nó chứ
- * không phải cứ lấy phiên đầu tiên.
+ * <p>The DB has no attempt-number column: the order is derived from {@code startedAt}. The "attempt 2" case is the most
+ * important one here -- it locks that the attempt under consideration is matched to its own session and not
+ * simply the first session.
  */
-@SpringBootTest
-@ActiveProfiles("test")
+@IntegrationTest
 @AutoConfigureTestGrpcTransport
 @Transactional
-class GradingAttemptQueryTests extends ContainerTestConfig {
+class GradingAttemptQueryTests {
 
     @Autowired
-    private ExamGradingQueryRepository examGradingQueryRepository;
+    private AssessmentGradingQueryRepository assessmentGradingQueryRepository;
 
     @PersistenceContext
     private EntityManager em;
@@ -62,24 +61,24 @@ class GradingAttemptQueryTests extends ContainerTestConfig {
     private static final String SINGLE_ATTEMPT_STUDENT = "Lê Văn Việt";
 
     private UUID schoolId;
-    private UUID examId;
+    private UUID assessmentId;
 
     @BeforeEach
     void seed() {
         schoolId = UUID.randomUUID();
-        var retakingStudentId = persist(user(RETAKING_STUDENT)).getId();
-        var singleAttemptStudentId = persist(user(SINGLE_ATTEMPT_STUDENT)).getId();
+        UUID retakingStudentId = persist(user(RETAKING_STUDENT)).getId();
+        UUID singleAttemptStudentId = persist(user(SINGLE_ATTEMPT_STUDENT)).getId();
 
-        examId = seedExam("Kiểm tra 15 phút");
+        assessmentId = seedAssessment("Kiểm tra 15 phút");
 
-        var retakingCandidateId = seedCandidate(examId, retakingStudentId);
-        // Hai lượt CÁCH NHAU về thời gian: thứ tự lượt suy từ startedAt, trùng mốc thì
-        // không còn thứ tự để suy.
-        seedAttempt(examId, retakingCandidateId, now.minus(2, ChronoUnit.HOURS));
-        seedAttempt(examId, retakingCandidateId, now.minus(1, ChronoUnit.HOURS));
+        UUID retakingCandidateId = seedCandidate(assessmentId, retakingStudentId);
+        // The two attempts are SEPARATED in time: the attempt order is derived from startedAt, and
+        // with the same instant there is no order left to derive.
+        seedAttempt(assessmentId, retakingCandidateId, now.minus(2, ChronoUnit.HOURS));
+        seedAttempt(assessmentId, retakingCandidateId, now.minus(1, ChronoUnit.HOURS));
 
-        var singleCandidateId = seedCandidate(examId, singleAttemptStudentId);
-        seedAttempt(examId, singleCandidateId, now.minus(2, ChronoUnit.HOURS));
+        UUID singleCandidateId = seedCandidate(assessmentId, singleAttemptStudentId);
+        seedAttempt(assessmentId, singleCandidateId, now.minus(2, ChronoUnit.HOURS));
 
         em.flush();
         em.clear();
@@ -87,7 +86,7 @@ class GradingAttemptQueryTests extends ContainerTestConfig {
 
     @Test
     void should_number_both_attempts_of_the_same_student_on_the_board() {
-        var rows = boardRowsOf(RETAKING_STUDENT);
+        List<GradingAssignmentRowInfo> rows = boardRowsOf(RETAKING_STUDENT);
 
         assertThat(rows).hasSize(2);
         assertThat(rows).extracting(row -> row.attemptNo()).containsExactlyInAnyOrder(1, 2);
@@ -95,13 +94,13 @@ class GradingAttemptQueryTests extends ContainerTestConfig {
             assertThat(row.attemptCount()).isEqualTo(2);
             assertThat(row.sessionId()).isNotNull();
         });
-        // Mỗi dòng phải trỏ về đúng phiên của mình — trùng sessionId nghĩa là đang lấy
-        // nhầm một phiên cho cả hai lượt.
+        // Each row must point back to its own session -- the same sessionId means one session was
+        // picked for both attempts by mistake.
         assertThat(rows.get(0).sessionId()).isNotEqualTo(rows.get(1).sessionId());
     }
 
     @Test
-    void should_report_a_single_attempt_when_the_student_took_the_exam_once() {
+    void should_report_a_single_attempt_when_the_student_took_the_assessment_once() {
         assertThat(boardRowsOf(SINGLE_ATTEMPT_STUDENT)).singleElement().satisfies(row -> {
             assertThat(row.attemptNo()).isEqualTo(1);
             assertThat(row.attemptCount()).isEqualTo(1);
@@ -109,8 +108,8 @@ class GradingAttemptQueryTests extends ContainerTestConfig {
     }
 
     private List<GradingAssignmentRowInfo> boardRowsOf(String studentName) {
-        return examGradingQueryRepository.searchAssignments(new GradingAssignmentFilter(
-            schoolId, examId, null, null, null, null, null, false, false, null, null,
+        return assessmentGradingQueryRepository.searchAssignments(new GradingAssignmentFilter(
+            schoolId, assessmentId, null, null, null, null, null, false, false, null, null,
             "CLASS_TEST"), 1, 20).content().stream()
             .filter(row -> studentName.equals(row.studentName()))
             .toList();
@@ -118,8 +117,8 @@ class GradingAttemptQueryTests extends ContainerTestConfig {
 
     @Test
     void should_number_attempts_in_the_teacher_queue() {
-        var tasks = examGradingQueryRepository
-            .findTasksByTeacherIdAndExamId(teacherId, examId, null, null, null, 1, 20).content();
+        List<GradingTaskInfo> tasks = assessmentGradingQueryRepository
+            .findTasksByTeacherIdAndAssessmentId(teacherId, assessmentId, null, null, null, 1, 20).content();
 
         assertThat(tasks).hasSize(3);
         assertThat(tasks).filteredOn(task -> task.attemptCount() == 2)
@@ -129,13 +128,13 @@ class GradingAttemptQueryTests extends ContainerTestConfig {
 
     @Test
     void should_number_the_attempt_on_the_grading_detail() {
-        var secondAttempt = examGradingQueryRepository
-            .findTasksByTeacherIdAndExamId(teacherId, examId, null, null, null, 1, 20).content().stream()
+        GradingTaskInfo secondAttempt = assessmentGradingQueryRepository
+            .findTasksByTeacherIdAndAssessmentId(teacherId, assessmentId, null, null, null, 1, 20).content().stream()
             .filter(task -> task.attemptNo() == 2)
             .findFirst()
             .orElseThrow();
 
-        var detail = examGradingQueryRepository
+        GradingTaskDetailInfo detail = assessmentGradingQueryRepository
             .findTaskDetail(secondAttempt.assignmentId(), teacherId).orElseThrow();
 
         assertThat(detail.attemptNo()).isEqualTo(2);
@@ -149,25 +148,25 @@ class GradingAttemptQueryTests extends ContainerTestConfig {
             now, now, null, null);
     }
 
-    private UUID seedExam(String name) {
-        return persist(new ExamJpaEntity(null, null, null, "EX-" + UUID.randomUUID(), name,
+    private UUID seedAssessment(String name) {
+        return persist(new AssessmentJpaEntity(null, null, null, "EX-" + UUID.randomUUID(), name,
             null, schoolId, UUID.randomUUID(), "CLASS_TEST", "STUDENT_DEVICE", "CLOSED",
             2, 900, "HIGHEST", null, null, null, null, UUID.randomUUID(), false,
             now, now, null, null)).getId();
     }
 
-    private UUID seedCandidate(UUID examId, UUID studentId) {
-        return persist(new ExamCandidateJpaEntity(null, examId, studentId, UUID.randomUUID(), null,
+    private UUID seedCandidate(UUID assessmentId, UUID studentId) {
+        return persist(new AssessmentCandidateJpaEntity(null, assessmentId, studentId, UUID.randomUUID(), null,
             "COMPLETED", now, now, null, null, null)).getId();
     }
 
-    private void seedAttempt(UUID examId, UUID candidateId, Instant startedAt) {
-        var sessionId = persist(new ExamSessionJpaEntity(null, examId, candidateId, UUID.randomUUID(),
+    private void seedAttempt(UUID assessmentId, UUID candidateId, Instant startedAt) {
+        UUID sessionId = persist(new AssessmentSessionJpaEntity(null, assessmentId, candidateId, UUID.randomUUID(),
             startedAt, startedAt, "GRADED", false, null)).getId();
-        var candidateResultId = persist(new ExamCandidateResultJpaEntity(null, examId, candidateId, sessionId,
+        UUID candidateResultId = persist(new AssessmentCandidateResultJpaEntity(null, assessmentId, candidateId, sessionId,
             UUID.randomUUID(), 1, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null,
             new BigDecimal("6.50"), "PENDING_REVIEW", null, null, now, now, null, null)).getId();
-        persist(new ExamGradingAssignmentJpaEntity(null, candidateResultId, teacherId,
+        persist(new AssessmentGradingAssignmentJpaEntity(null, candidateResultId, teacherId,
             "INITIAL", null, "ASSIGNED", null, new BigDecimal("6.50"), now, teacherId, null,
             null, null, null, candidateResultId));
     }

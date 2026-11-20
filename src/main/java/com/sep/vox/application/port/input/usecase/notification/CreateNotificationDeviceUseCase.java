@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.notification;
 
 import java.time.Instant;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,9 +27,9 @@ public class CreateNotificationDeviceUseCase implements IUseCase<CreateNotificat
     @Override
     @Transactional
     public Void execute(CreateNotificationDeviceCommand input) {
-        var command = normalize(input);
-        var now = Instant.now();
-        var userId = userContextPort.getCurrentAuthenticatedUserId();
+        CreateNotificationDeviceCommand command = normalize(input);
+        Instant now = Instant.now();
+        UUID userId = userContextPort.getCurrentAuthenticatedUserId();
         
         NotificationDevicePlatform platform;
         try {

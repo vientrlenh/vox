@@ -20,6 +20,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.SimpleTransactionStatus;
 
@@ -28,6 +29,7 @@ import com.sep.vox.application.port.input.service.PaymentProcessResolver;
 import com.sep.vox.application.port.input.usecase.payment.CreatePaymentCheckoutUrlUseCase;
 import com.sep.vox.application.port.output.PaymentProcessPort;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.response.input.payment.PaymentCheckoutResponse;
 import com.sep.vox.application.response.output.BankTransferDetails;
 import com.sep.vox.application.response.output.PaymentCheckoutResult;
 import com.sep.vox.application.response.output.PaymentLinkRemoteStatus;
@@ -77,20 +79,21 @@ class CreatePaymentCheckoutUrlUseCaseTests {
         paymentRecordRepository = mock(PaymentRecordRepository.class);
         paymentProcessPort = mock(PaymentProcessPort.class);
         transactionManager = mock(PlatformTransactionManager.class);
-        var userContextPort = mock(UserContextPort.class);
+        UserContextPort userContextPort = mock(UserContextPort.class);
 
         when(paymentProcessPort.provider()).thenReturn(PaymentProvider.PAYOS);
-        // Mặc định của mock là false, mà use case chặn ngay ở đó -- không khai thì mọi test dưới đây
-        // đều dừng ở "cổng chưa cấu hình" trước khi chạm tới thứ nó định kiểm.
+        // The mock's default is false, and the use case blocks right there -- if it is not
+        // declared, every test below would stop at "gateway not configured" before reaching what it
+        // means to check.
         when(paymentProcessPort.isConfigured()).thenReturn(true);
         when(paymentProcessPort.newOrderRef()).thenReturn("123456");
         when(transactionManager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
         when(userContextPort.getCurrentSchoolId()).thenReturn(SCHOOL_ID);
         when(orderRepository.findByIdForUpdate(ORDER_ID)).thenReturn(Optional.of(payableOrder()));
-        // Giả lập đúng hành vi của adapter thật: cột id có DEFAULT uuidv7() và entity khai
-        // @Generated(INSERT) + insertable=false, nên id chỉ có SAU khi lưu, và save() trả về bản đã
-        // mang id đó. attachCheckoutUrl đọc lại theo chính id này nên thiếu nó là test tự bịa ra một
-        // lỗi không tồn tại ngoài đời.
+        // Simulates the real adapter's behavior: the id column has DEFAULT uuidv7() and the entity
+        // declares @Generated(INSERT) + insertable=false, so the id exists only AFTER saving, and
+        // save() returns the copy carrying that id. attachCheckoutUrl reads back by this very id,
+        // so without it the test would invent an error that does not exist in real life.
         when(paymentRecordRepository.save(any())).thenAnswer(call -> {
             PaymentRecord saved = call.getArgument(0);
             if (saved.getId() == null) {
@@ -116,7 +119,7 @@ class CreatePaymentCheckoutUrlUseCaseTests {
 
         useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, "PAYOS"));
 
-        var order = inOrder(paymentRecordRepository, transactionManager, paymentProcessPort);
+        InOrder order = inOrder(paymentRecordRepository, transactionManager, paymentProcessPort);
         order.verify(paymentRecordRepository).save(any());
         order.verify(transactionManager).commit(any());
         order.verify(paymentProcessPort).createPaymentLink(any());
@@ -144,9 +147,10 @@ class CreatePaymentCheckoutUrlUseCaseTests {
     }
 
     /**
-     * Cổng trả về QR thì mã và thông tin chuyển khoản phải được LƯU, không chỉ đi qua response một
-     * lần rồi mất. Quét QR nghĩa là rời trang sang app ngân hàng -- quay lại là đường đi bình thường,
-     * mà hỏi trạng thái chỉ trả về TRẠNG THÁI chứ cổng không phát lại mã.
+     * When the gateway returns a QR, the code and the transfer information must be STORED, not just
+     * pass through the response once and be lost. Scanning the QR means leaving the page for the
+     * bank app -- coming back is the normal path, and asking for the status returns only the
+     * STATUS, since the gateway does not issue the code again.
      */
     @Test
     void should_persist_the_qr_payload_so_it_can_be_rebuilt_later() {
@@ -157,21 +161,21 @@ class CreatePaymentCheckoutUrlUseCaseTests {
             "https://payos.test/checkout",
             "link-1"));
 
-        var response = useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, "PAYOS"));
+        PaymentCheckoutResponse response = useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, "PAYOS"));
 
         assertThat(response.action()).isEqualTo("QR");
         assertThat(response.qrCode()).isEqualTo("00020101021138...VIETQR");
         assertThat(response.transfer().transferContent()).isEqualTo("VOX 8f3c1a04");
 
-        var stored = savedById.get(response.paymentId());
+        PaymentRecord stored = savedById.get(response.paymentId());
         assertThat(stored.getCheckoutUrl()).isEqualTo("https://payos.test/checkout");
         assertThat(stored.getProviderPayloadJson()).contains("VIETQR").contains("VOX 8f3c1a04");
     }
 
-    /** Và dựng lại được từ chính payload đó khi trường quay lại đơn còn treo. */
+    /** And it can be rebuilt from that very payload when the school returns to a pending order. */
     @Test
     void should_rebuild_the_qr_from_the_stored_payload_on_a_live_attempt() {
-        var live = existingAttempt();
+        PaymentRecord live = existingAttempt();
         live.setCheckoutUrl("https://payos.test/checkout");
         live.setProviderPayloadJson(
             "{\"qrCode\":\"00020101021138...VIETQR\",\"transfer\":{\"bankBin\":\"970422\","
@@ -181,7 +185,7 @@ class CreatePaymentCheckoutUrlUseCaseTests {
         when(paymentProcessPort.getPaymentLinkStatus("orphan-ref"))
             .thenReturn(new PaymentLinkStatusResult(PaymentLinkRemoteStatus.PENDING));
 
-        var response = useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, "PAYOS"));
+        PaymentCheckoutResponse response = useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, "PAYOS"));
 
         assertThat(response.action()).isEqualTo("QR");
         assertThat(response.qrCode()).isEqualTo("00020101021138...VIETQR");
@@ -190,20 +194,21 @@ class CreatePaymentCheckoutUrlUseCaseTests {
     }
 
     /**
-     * Hệ quả trực tiếp của việc commit trước: lời gọi tạo link hỏng TRƯỚC khi cổng kịp dựng phiên sẽ
-     * để lại một dòng PENDING mang mã mà bên cổng chưa từng thấy. Không có nhánh NOT_FOUND thì lần thử
-     * đó treo tới lúc đơn hết hạn và trường không xin được link mới.
+     * A direct consequence of committing first: a create-link call that fails BEFORE the gateway
+     * has built the session leaves a PENDING row carrying a code the gateway has never seen.
+     * Without the NOT_FOUND branch, that attempt hangs until the order expires and the school
+     * cannot get a new link.
      */
     @Test
     void should_retire_an_attempt_the_gateway_has_never_heard_of() {
-        var orphan = existingAttempt();
+        PaymentRecord orphan = existingAttempt();
         when(paymentRecordRepository.findPendingByOrderId(ORDER_ID)).thenReturn(Optional.of(orphan));
         when(paymentProcessPort.getPaymentLinkStatus("orphan-ref"))
             .thenReturn(new PaymentLinkStatusResult(PaymentLinkRemoteStatus.NOT_FOUND));
         when(paymentProcessPort.createPaymentLink(any()))
             .thenReturn(PaymentCheckoutResult.redirect("https://payos.test/checkout", "link-2"));
 
-        var response = useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, "PAYOS"));
+        PaymentCheckoutResponse response = useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, "PAYOS"));
 
         assertThat(orphan.getStatus()).isEqualTo(PaymentStatus.FAILED);
         assertThat(response.providerOrderRef()).isEqualTo("123456");
@@ -211,17 +216,18 @@ class CreatePaymentCheckoutUrlUseCaseTests {
     }
 
     /**
-     * Mặt kia của NOT_FOUND, và là ca nguy hiểm hơn: lần thử vừa mở vài giây trước thì NOT_FOUND
-     * KHÔNG có nghĩa là nó chết. Rất có thể một tab khác vừa commit dòng PENDING và đang đợi
-     * createPaymentLink trả về -- cổng chưa dựng phiên nên trả NOT_FOUND hoàn toàn đúng.
+     * The other side of NOT_FOUND, and the more dangerous case: for an attempt opened only a few
+     * seconds ago, NOT_FOUND does NOT mean it is dead. Quite possibly another tab has just
+     * committed the PENDING row and is waiting for createPaymentLink to return -- the gateway has
+     * not built the session yet, so returning NOT_FOUND is entirely correct.
      *
-     * <p>Chốt hỏng nó lúc này là tạo ra ca tệ nhất: tab kia nhận link thật, trường trả tiền vào đó,
-     * mà dòng ứng với khoản tiền ấy đã FAILED nên callback không giao gì (PAID_AFTER_WRITE_OFF).
-     * Thà bắt đợi vài phút.
+     * <p>Marking it failed now creates the worst case: the other tab receives a real link, the
+     * school pays into it, but the row for that payment is already FAILED so the callback delivers
+     * nothing (PAID_AFTER_WRITE_OFF). Better to make them wait a few minutes.
      */
     @Test
     void should_not_believe_not_found_for_an_attempt_that_was_just_opened() {
-        var justOpened = existingAttempt(Instant.now().minus(3, ChronoUnit.SECONDS));
+        PaymentRecord justOpened = existingAttempt(Instant.now().minus(3, ChronoUnit.SECONDS));
         when(paymentRecordRepository.findPendingByOrderId(ORDER_ID)).thenReturn(Optional.of(justOpened));
         when(paymentProcessPort.getPaymentLinkStatus("orphan-ref"))
             .thenReturn(new PaymentLinkStatusResult(PaymentLinkRemoteStatus.NOT_FOUND));
@@ -251,26 +257,29 @@ class CreatePaymentCheckoutUrlUseCaseTests {
         verify(paymentProcessPort, never()).createPaymentLink(any());
     }
 
-    /** Phiên cũ vẫn sống thì trả lại ĐÚNG link đó, không sinh mã mới. */
+    /**
+     * If the old session is still alive, return EXACTLY that link, and do not generate a new code.
+     */
     @Test
     void should_reuse_a_live_attempt_instead_of_opening_a_new_one() {
-        var live = existingAttempt();
+        PaymentRecord live = existingAttempt();
         live.setCheckoutUrl("https://payos.test/still-alive");
         when(paymentRecordRepository.findPendingByOrderId(ORDER_ID)).thenReturn(Optional.of(live));
         when(paymentProcessPort.getPaymentLinkStatus("orphan-ref"))
             .thenReturn(new PaymentLinkStatusResult(PaymentLinkRemoteStatus.PENDING));
 
-        var response = useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, "PAYOS"));
+        PaymentCheckoutResponse response = useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, "PAYOS"));
 
         assertThat(response.checkoutUrl()).isEqualTo("https://payos.test/still-alive");
         verify(paymentProcessPort, never()).createPaymentLink(any());
     }
 
     /**
-     * Nhánh REDIRECT phải LƯU được link, nếu không thì test trên chỉ đúng trên giấy: entity từng khai
-     * checkout_url là updatable = false, nên câu UPDATE của attachCheckoutUrl lặng lẽ bỏ qua cột đó
-     * -- không lỗi, không cảnh báo, cột ở NULL vĩnh viễn. Hệ quả là mọi lần quay lại trả tiếp đều rơi
-     * vào "đang có một phiên thanh toán chờ xử lý" thay vì nhận lại link của chính mình.
+     * The REDIRECT branch must STORE the link, otherwise the test above is only right on paper: the
+     * entity once declared checkout_url as updatable = false, so the UPDATE in attachCheckoutUrl
+     * silently skipped that column -- no error, no warning, the column stayed NULL forever. As a
+     * result every later return to pay fell into "a payment session is already pending" instead of
+     * getting back its own link.
      */
     @Test
     void should_persist_the_checkout_url_for_a_redirect_gateway() {
@@ -278,19 +287,20 @@ class CreatePaymentCheckoutUrlUseCaseTests {
         when(paymentProcessPort.createPaymentLink(any()))
             .thenReturn(PaymentCheckoutResult.redirect("https://payos.test/checkout", "link-1"));
 
-        var response = useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, "PAYOS"));
+        PaymentCheckoutResponse response = useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, "PAYOS"));
 
         assertThat(savedById.get(response.paymentId()).getCheckoutUrl())
             .isEqualTo("https://payos.test/checkout");
     }
 
     /**
-     * Ngược lại, cổng dạng FORM_POST KHÔNG được lưu: actionUrl của nó là một endpoint cố định dùng
-     * chung mọi đơn, còn thứ nhận dạng phiên nằm ở bộ field mang chữ ký (cố ý không lưu). Lưu mỗi URL
-     * rồi lần sau redirect thẳng tới đó là đưa trường vào một trang init trống.
+     * Conversely, a FORM_POST gateway is NOT stored: its actionUrl is a fixed endpoint shared by
+     * every order, while what identifies the session lives in the signed field set (deliberately
+     * not stored). Storing only the URL and redirecting straight to it next time would send the
+     * school to a blank init page.
      *
-     * <p>Nhờ vậy checkout_url IS NULL giữ đúng một nghĩa -- "lần thử này không dựng lại được" -- và
-     * đó chính là điều kiện resolvePendingAttempt đang kiểm.
+     * <p>That way checkout_url IS NULL keeps exactly one meaning -- "this attempt cannot be
+     * rebuilt" -- and that is the condition resolvePendingAttempt is checking.
      */
     @Test
     void should_not_persist_a_form_post_action_url() {
@@ -299,13 +309,13 @@ class CreatePaymentCheckoutUrlUseCaseTests {
             .thenReturn(PaymentCheckoutResult.formPost(
                 "https://sepay.test/v1/checkout/init", Map.of("merchant", "vox", "signature", "abc")));
 
-        var response = useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, "PAYOS"));
+        PaymentCheckoutResponse response = useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, "PAYOS"));
 
         assertThat(savedById.get(response.paymentId()).getCheckoutUrl()).isNull();
     }
 
     private static Order payableOrder() {
-        var order = new Order();
+        Order order = new Order();
         order.setId(ORDER_ID);
         order.setSchoolId(SCHOOL_ID);
         order.setType(OrderType.TOPUP);
@@ -322,7 +332,7 @@ class CreatePaymentCheckoutUrlUseCaseTests {
     }
 
     private static PaymentRecord existingAttempt(Instant createdAt) {
-        var attempt = PaymentRecord.forEBankingCheckout(
+        PaymentRecord attempt = PaymentRecord.forEBankingCheckout(
             ORDER_ID, new BigDecimal("500000"), PaymentProvider.PAYOS, "orphan-ref", createdAt);
         attempt.setId(UUID.randomUUID());
         return attempt;

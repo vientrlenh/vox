@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.rest.controller;
 
+import com.sep.vox.application.port.input.command.CreateNotificationDeviceCommand;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
@@ -44,9 +45,9 @@ public class NotificationController {
     @PostMapping("/devices")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Object>> createDevice(@RequestBody @Valid CreateNotificationDeviceRequest request) {
-        var command = CreateNotificationDeviceCommandMapper.fromRequest(request);
+        CreateNotificationDeviceCommand command = CreateNotificationDeviceCommandMapper.fromRequest(request);
         createNotificationDeviceUseCase.execute(command);
-        var response = ApiResponse.success("Thông báo cho thiết bị đã được khởi tạo");
+        ApiResponse<Object> response = ApiResponse.success("Thông báo cho thiết bị đã được khởi tạo");
         return ResponseEntity.ok(response);
     }
 
@@ -54,16 +55,16 @@ public class NotificationController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Object>> deleteDevice(@PathVariable(name = "installationId") String installationId) {
         deleteNotificationDeviceUseCase.execute(installationId);
-        var response = ApiResponse.success("Thiết bị nhận thông báo đã được gỡ");
+        ApiResponse<Object> response = ApiResponse.success("Thiết bị nhận thông báo đã được gỡ");
         return ResponseEntity.ok(response);
     }
 
     @PatchMapping("{id}/read")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<UUID>> markNotificationAsRead(@PathVariable(name = "id") UUID id) {
-        var command = new MarkNotificationAsReadCommand(id);
-        var data = markNotificationAsReadUseCase.execute(command);
-        var response = ApiResponse.success("Thông báo đã được đọc", data);
+        MarkNotificationAsReadCommand command = new MarkNotificationAsReadCommand(id);
+        UUID data = markNotificationAsReadUseCase.execute(command);
+        ApiResponse<UUID> response = ApiResponse.success("Thông báo đã được đọc", data);
         return ResponseEntity.ok(response);
     }
 
@@ -71,8 +72,8 @@ public class NotificationController {
     @PatchMapping("/read-all")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Object>> markAllNotificationsAsRead() {
-        var _ = markAllNotificationsAsReadUseCase.execute(null);
-        var response = ApiResponse.success("Tất cả thông báo đã được đọc");
+        markAllNotificationsAsReadUseCase.execute(null);
+        ApiResponse<Object> response = ApiResponse.success("Tất cả thông báo đã được đọc");
         return ResponseEntity.ok(response);
     }
 }

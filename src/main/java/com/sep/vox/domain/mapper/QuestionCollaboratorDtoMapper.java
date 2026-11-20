@@ -1,6 +1,5 @@
 package com.sep.vox.domain.mapper;
 
-import java.time.Instant;
 import java.util.List;
 
 import com.sep.vox.domain.dto.QuestionCollaboratorDto;
@@ -17,7 +16,7 @@ public final class QuestionCollaboratorDtoMapper {
             collaborator.getUserId(),
             collaborator.getQuestionId(),
             collaborator.getPermission().name(),
-            valueOf(collaborator.getAssignedAt())
+            collaborator.getAssignedAt()
         );
     }
 
@@ -25,9 +24,5 @@ public final class QuestionCollaboratorDtoMapper {
         return collaborators.stream()
             .map(QuestionCollaboratorDtoMapper::toDto)
             .toList();
-    }
-
-    private static String valueOf(Instant value) {
-        return value == null ? null : value.toString();
     }
 }

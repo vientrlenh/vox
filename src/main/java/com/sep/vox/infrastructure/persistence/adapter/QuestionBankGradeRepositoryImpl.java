@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.QuestionBankGradeJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -23,8 +24,8 @@ public class QuestionBankGradeRepositoryImpl implements QuestionBankGradeReposit
 
     @Override
     public QuestionBankGrade save(QuestionBankGrade grade) {
-        var entity = QuestionBankGradeMapper.toJpa(grade);
-        var saved = springDataQuestionBankGradeRepository.save(entity);
+        QuestionBankGradeJpaEntity entity = QuestionBankGradeMapper.toJpa(grade);
+        QuestionBankGradeJpaEntity saved = springDataQuestionBankGradeRepository.save(entity);
         return QuestionBankGradeMapper.toDomain(saved);
     }
 

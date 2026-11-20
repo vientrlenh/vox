@@ -21,6 +21,7 @@ import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.port.input.command.CreateSchoolClassCommand;
 import com.sep.vox.application.port.input.usecase.schoolclass.CreateSchoolClassUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.response.input.schoolclass.CreateSchoolClassResponse;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolGrade;
@@ -70,31 +71,31 @@ class CreateSchoolClassUseCaseTests {
 
     @Test
     void create_should_save_active_class_for_current_users_school() {
-        var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var languageId = UUID.randomUUID();
-        var gradeId = UUID.randomUUID();
-        var savedId = UUID.randomUUID();
-        var grade = activeGrade(gradeId, schoolId);
-        var command = new CreateSchoolClassCommand(schoolId, languageId, gradeId, "  eng-01  ", "  English   01  ", "  Starter   class  ");
+        UUID userId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        UUID languageId = UUID.randomUUID();
+        UUID gradeId = UUID.randomUUID();
+        UUID savedId = UUID.randomUUID();
+        SchoolGrade grade = activeGrade(gradeId, schoolId);
+        CreateSchoolClassCommand command = new CreateSchoolClassCommand(schoolId, languageId, gradeId, "  eng-01  ", "  English   01  ", "  Starter   class  ");
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        var _user = activeUser(userId, schoolId);
+        User _user = activeUser(userId, schoolId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(_user));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(supportedLanguageRepository.findById(languageId)).thenReturn(Optional.of(activeLanguage(languageId)));
         when(schoolGradeRepository.findById(gradeId)).thenReturn(Optional.of(grade));
         when(schoolClassRepository.findBySchoolIdAndCode(schoolId, "ENG-01")).thenReturn(Optional.empty());
         when(schoolClassRepository.save(any(SchoolClass.class))).thenAnswer(invocation -> {
-            var schoolClass = invocation.getArgument(0, SchoolClass.class);
+            SchoolClass schoolClass = invocation.getArgument(0, SchoolClass.class);
             schoolClass.setId(savedId);
             return schoolClass;
         });
 
-        var response = useCase.execute(command);
+        CreateSchoolClassResponse response = useCase.execute(command);
 
         assertThat(response.schoolClassId()).isEqualTo(savedId);
-        var captor = ArgumentCaptor.forClass(SchoolClass.class);
+        ArgumentCaptor<SchoolClass> captor = ArgumentCaptor.forClass(SchoolClass.class);
         verify(schoolClassRepository).save(captor.capture());
         assertThat(captor.getValue().getSchoolId()).isEqualTo(schoolId);
         assertThat(captor.getValue().getLanguageId()).isEqualTo(languageId);
@@ -108,15 +109,15 @@ class CreateSchoolClassUseCaseTests {
 
     @Test
     void create_should_throw_when_code_already_exists_in_school() {
-        var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var languageId = UUID.randomUUID();
-        var gradeId = UUID.randomUUID();
-        var grade = activeGrade(gradeId, schoolId);
-        var command = new CreateSchoolClassCommand(schoolId, languageId, gradeId, "ENG-01", "English 01", null);
+        UUID userId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        UUID languageId = UUID.randomUUID();
+        UUID gradeId = UUID.randomUUID();
+        SchoolGrade grade = activeGrade(gradeId, schoolId);
+        CreateSchoolClassCommand command = new CreateSchoolClassCommand(schoolId, languageId, gradeId, "ENG-01", "English 01", null);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        var _user1 = activeUser(userId, schoolId);
+        User _user1 = activeUser(userId, schoolId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(_user1));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(supportedLanguageRepository.findById(languageId)).thenReturn(Optional.of(activeLanguage(languageId)));
@@ -132,22 +133,22 @@ class CreateSchoolClassUseCaseTests {
 
     @Test
     void create_should_throw_when_grade_belongs_to_another_school() {
-        var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var languageId = UUID.randomUUID();
-        var gradeId = UUID.randomUUID();
-        var gradeLevelId = UUID.randomUUID();
-        var grade = new SchoolGrade();
+        UUID userId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        UUID languageId = UUID.randomUUID();
+        UUID gradeId = UUID.randomUUID();
+        UUID gradeLevelId = UUID.randomUUID();
+        SchoolGrade grade = new SchoolGrade();
         grade.setId(gradeId);
         grade.setCode("G10");
         grade.setGradeLevelId(gradeLevelId);
-        // Năm học thuộc trường khác → phải bị chặn.
+        // A school year that belongs to another school -> must be blocked.
         grade.setSchoolId(UUID.randomUUID());
         grade.setStatus(SchoolGradeStatus.ACTIVE);
-        var command = new CreateSchoolClassCommand(schoolId, languageId, gradeId, "ENG-01", "English 01", null);
+        CreateSchoolClassCommand command = new CreateSchoolClassCommand(schoolId, languageId, gradeId, "ENG-01", "English 01", null);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        var _user = activeUser(userId, schoolId);
+        User _user = activeUser(userId, schoolId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(_user));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(supportedLanguageRepository.findById(languageId)).thenReturn(Optional.of(activeLanguage(languageId)));
@@ -160,11 +161,11 @@ class CreateSchoolClassUseCaseTests {
 
     @Test
     void create_should_throw_when_current_user_is_inactive() {
-        var userId = UUID.randomUUID();
-        var command = new CreateSchoolClassCommand(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "ENG-01", "English 01", null);
+        UUID userId = UUID.randomUUID();
+        CreateSchoolClassCommand command = new CreateSchoolClassCommand(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "ENG-01", "English 01", null);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        var _u0 = user(userId, UUID.randomUUID(), UserStatus.INACTIVE);
+        User _u0 = user(userId, UUID.randomUUID(), UserStatus.INACTIVE);
         when(userRepository.findById(userId)).thenReturn(Optional.of(_u0));
 
         assertThrows(IllegalStateException.class, () -> useCase.execute(command));
@@ -174,12 +175,12 @@ class CreateSchoolClassUseCaseTests {
 
     @Test
     void create_should_throw_when_requested_school_differs_from_current_user_school() {
-        var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var command = new CreateSchoolClassCommand(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "ENG-01", "English 01", null);
+        UUID userId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        CreateSchoolClassCommand command = new CreateSchoolClassCommand(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "ENG-01", "English 01", null);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        var _user2 = activeUser(userId, schoolId);
+        User _user2 = activeUser(userId, schoolId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(_user2));
 
         assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
@@ -191,7 +192,7 @@ class CreateSchoolClassUseCaseTests {
     }
 
     private User user(UUID id, UUID schoolId, UserStatus status) {
-        var user = new User();
+        User user = new User();
         user.setId(id);
         user.setStatus(status);
         when(schoolUserRepository.findByUserId(id)).thenReturn(
@@ -201,14 +202,14 @@ class CreateSchoolClassUseCaseTests {
     }
 
     private static School activeSchool(UUID id) {
-        var school = new School();
+        School school = new School();
         school.setId(id);
         school.setActive(true);
         return school;
     }
 
     private static SupportedLanguage activeLanguage(UUID id) {
-        var language = new SupportedLanguage();
+        SupportedLanguage language = new SupportedLanguage();
         language.setId(id);
         language.setCode(new LanguageCode("EN"));
         language.setActive(true);
@@ -216,8 +217,8 @@ class CreateSchoolClassUseCaseTests {
     }
 
     private SchoolGrade activeGrade(UUID id, UUID schoolId) {
-        var gradeLevelId = UUID.randomUUID();
-        var grade = new SchoolGrade();
+        UUID gradeLevelId = UUID.randomUUID();
+        SchoolGrade grade = new SchoolGrade();
         grade.setId(id);
         grade.setCode("G10");
         grade.setGradeLevelId(gradeLevelId);

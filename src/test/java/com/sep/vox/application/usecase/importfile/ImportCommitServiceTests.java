@@ -45,9 +45,9 @@ class ImportCommitServiceTests {
 
     @Test
     void should_complete_session_and_save_rows_on_success() {
-        var sessionId = UUID.randomUUID();
-        var session = session(sessionId);
-        var rows = List.of(row(sessionId, 1L), row(sessionId, 2L));
+        UUID sessionId = UUID.randomUUID();
+        ImportSession session = session(sessionId);
+        List<ImportRow> rows = List.of(row(sessionId, 1L), row(sessionId, 2L));
 
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
         when(importRowRepository.findBySessionId(sessionId)).thenReturn(rows);
@@ -63,11 +63,11 @@ class ImportCommitServiceTests {
 
     @Test
     void should_save_row_progress_when_handler_fails_midway() {
-        var sessionId = UUID.randomUUID();
-        var session = session(sessionId);
-        var importedRow = row(sessionId, 1L);
-        var pendingRow = row(sessionId, 2L);
-        var rows = List.of(importedRow, pendingRow);
+        UUID sessionId = UUID.randomUUID();
+        ImportSession session = session(sessionId);
+        ImportRow importedRow = row(sessionId, 1L);
+        ImportRow pendingRow = row(sessionId, 2L);
+        List<ImportRow> rows = List.of(importedRow, pendingRow);
 
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
         when(importRowRepository.findBySessionId(sessionId)).thenReturn(rows);
@@ -78,7 +78,8 @@ class ImportCommitServiceTests {
 
         assertThatCode(() -> service().commit(sessionId)).doesNotThrowAnyException();
 
-        // Dòng đã xử lý xong trước khi lỗi phải được lưu lại, không bị mất trạng thái.
+        // Rows that were processed before the error must be saved, and their state must not be
+        // lost.
         assertThat(session.getStatus()).isEqualTo(ImportSessionStatus.FAILED);
         assertThat(session.getFailureReason()).contains("mail queue full");
         assertThat(importedRow.getStatus()).isEqualTo(ImportRowStatus.IMPORTED);
@@ -88,11 +89,11 @@ class ImportCommitServiceTests {
 
     @Test
     void should_not_touch_rows_when_session_type_has_no_handler() {
-        var sessionId = UUID.randomUUID();
-        var session = session(sessionId);
+        UUID sessionId = UUID.randomUUID();
+        ImportSession session = session(sessionId);
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
 
-        var serviceWithoutHandler = new ImportCommitService(List.of(), importSessionRepository, importRowRepository);
+        ImportCommitService serviceWithoutHandler = new ImportCommitService(List.of(), importSessionRepository, importRowRepository);
 
         assertThatCode(() -> serviceWithoutHandler.commit(sessionId)).isInstanceOf(IllegalStateException.class);
         verify(importRowRepository, never()).saveAll(any());

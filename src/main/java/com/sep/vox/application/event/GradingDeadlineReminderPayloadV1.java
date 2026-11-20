@@ -3,22 +3,22 @@ package com.sep.vox.application.event;
 import java.time.Instant;
 import java.util.UUID;
 
-import com.sep.vox.domain.model.exam.ExamKind;
+import com.sep.vox.domain.model.assessment.AssessmentKind;
 
 /**
- * Nhắc giáo viên một phân công sắp/đã tới hạn. Mỗi phân công chỉ nhắc một lần.
+ * Reminds a teacher that an assignment is about to be due or already overdue. Each assignment is reminded only once.
  *
- * @param examId màn hình chấm của bài kiểm tra lớp nằm dưới examId, bài tập trung thì không
- * @param examKind quyết định mở màn hình chấm nào
+ * @param assessmentId the grading screen of a class test sits under assessmentId, that of a centralized assessment does not
+ * @param assessmentKind decides which grading screen to open
  */
 public record GradingDeadlineReminderPayloadV1(
     UUID assignmentId,
     UUID teacherId,
-    String examName,
+    String assessmentName,
     String roundType,
     Instant deadlineAt,
-    UUID examId,
-    ExamKind examKind
+    UUID assessmentId,
+    AssessmentKind assessmentKind
 ) {
 
 }

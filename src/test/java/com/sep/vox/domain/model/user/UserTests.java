@@ -27,7 +27,7 @@ class UserTests {
     }
 
     private static User userWith(UserStatus status) {
-        var user = new User();
+        User user = new User();
         user.setStatus(status);
         return user;
     }

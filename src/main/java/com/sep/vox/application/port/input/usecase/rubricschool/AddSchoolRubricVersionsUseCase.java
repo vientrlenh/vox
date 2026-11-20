@@ -6,10 +6,13 @@ import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.AddSchoolRubricVersionsCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
 import com.sep.vox.domain.model.rubric.RubricVersion;
+import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
@@ -51,14 +54,14 @@ public class AddSchoolRubricVersionsUseCase implements IUseCase<AddSchoolRubricV
     @Transactional
     public List<UUID> execute(AddSchoolRubricVersionsCommand command) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
 
         //  CHECK QUYỀN TRƯỜNG HỌC
-        var schoolUser = schoolUserRepository.findByUserId(currentUserId).orElseThrow(() -> new ForbiddenException("Không thuộc trường học nào."));
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId).orElseThrow(() -> new ForbiddenException("Không thuộc trường học nào."));
         if (!schoolUser.getSchoolId().equals(command.schoolId())) throw new ForbiddenException("BẢO MẬT: Bạn không có quyền thao tác trên trường này.");
 
-        var rubric = rubricRepository.findById(command.rubricId()).orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
+        Rubric rubric = rubricRepository.findById(command.rubricId()).orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || rubric.getSchoolId() == null || !rubric.getSchoolId().equals(command.schoolId())) {
             throw new ForbiddenException("Bảo mật: Bộ Rubric này không thuộc sở hữu của trường bạn.");
         }

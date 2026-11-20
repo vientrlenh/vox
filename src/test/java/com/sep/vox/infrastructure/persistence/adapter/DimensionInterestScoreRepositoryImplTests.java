@@ -9,12 +9,10 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTransport;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.config.ContainerTestConfig;
 import com.sep.vox.domain.repository.DimensionInterestScoreRepository;
+import com.sep.vox.support.IntegrationTest;
 
 /**
  * Học sinh làm lại quiz sở thích -- mọi lần thứ hai trở đi -- gọi {@code replaceScores} với cùng
@@ -24,23 +22,22 @@ import com.sep.vox.domain.repository.DimensionInterestScoreRepository;
  * bất kể thứ tự gọi trong code -- unit test với repository giả lập không bao giờ thấy được điều
  * này, vì mock không có hàng đợi flush nào cả.
  */
-@SpringBootTest
-@ActiveProfiles("test")
+@IntegrationTest
 @AutoConfigureTestGrpcTransport
 @Transactional
-class DimensionInterestScoreRepositoryImplTests extends ContainerTestConfig {
+class DimensionInterestScoreRepositoryImplTests {
 
     @Autowired
     private DimensionInterestScoreRepository repository;
 
     /**
-     * Tái hiện đúng lỗi thật: {@code idx_dimension_interest_profile_dimension} nổ trên INSERT
-     * ngay trong lần replaceScores THỨ HAI, vì dòng cũ (cùng dimension) chưa kịp bị xoá lúc
-     * saveAll chạy.
+     * Reproduces the real bug: {@code idx_dimension_interest_profile_dimension} blows up on the
+     * INSERT in the SECOND replaceScores call, because the old row (same dimension) had not yet
+     * been deleted when saveAll ran.
      */
     @Test
     void should_replace_scores_again_without_violating_the_unique_index() {
-        var profileId = UUID.randomUUID();
+        UUID profileId = UUID.randomUUID();
 
         repository.replaceScores(profileId, Map.of(
             "TECH_GAMING", 0.6202,
@@ -52,21 +49,23 @@ class DimensionInterestScoreRepositoryImplTests extends ContainerTestConfig {
             "SPORTS_HEALTH", 0.2000
         ))).doesNotThrowAnyException();
 
-        var current = repository.findByLearnerProfile(profileId);
+        Map<String, Double> current = repository.findByLearnerProfile(profileId);
         assertThat(current).containsEntry("TECH_GAMING", 0.7000);
         assertThat(current).containsEntry("SPORTS_HEALTH", 0.2000);
-        // TRAVEL_PLACES thuộc lần đầu, không có trong lần thứ hai -- replaceScores nghĩa là THAY
-        // HẲN, không phải cộng dồn.
+        // TRAVEL_PLACES belongs to the first run and is absent from the second -- replaceScores
+        // means REPLACE entirely, not accumulate.
         assertThat(current).doesNotContainKey("TRAVEL_PLACES");
     }
 
-    /** Ba lần liên tiếp, đúng như học sinh bấm làm lại quiz nhiều lần trong một buổi. */
+    /**
+     * Three runs in a row, exactly like a student retaking the quiz several times in one sitting.
+     */
     @Test
     void should_survive_three_consecutive_replacements() {
-        var profileId = UUID.randomUUID();
+        UUID profileId = UUID.randomUUID();
 
-        for (var round = 1; round <= 3; round++) {
-            var roundScore = 0.1 * round;
+        for (int round = 1; round <= 3; round++) {
+            double roundScore = 0.1 * round;
             assertThatCode(() -> repository.replaceScores(profileId, Map.of("TECH_GAMING", roundScore)))
                 .doesNotThrowAnyException();
         }

@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.service;
 
+import com.sep.vox.domain.model.assessment.AssessmentCandidate;
+import com.sep.vox.domain.model.user.User;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -14,18 +16,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.event.GradingAssignmentOpenedPayloadV1;
-import com.sep.vox.application.mapper.examgrading.GradingResultCode;
+import com.sep.vox.application.mapper.assessmentgrading.GradingResultCode;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.common.AggregateTypeConstant;
 import com.sep.vox.domain.common.EventTypeConstant;
-import com.sep.vox.domain.model.exam.Exam;
-import com.sep.vox.domain.model.exam.ExamCandidateResult;
-import com.sep.vox.domain.model.exam.ExamGradingAssignment;
-import com.sep.vox.domain.model.exam.ExamKind;
+import com.sep.vox.domain.model.assessment.Assessment;
+import com.sep.vox.domain.model.assessment.AssessmentCandidateResult;
+import com.sep.vox.domain.model.assessment.AssessmentGradingAssignment;
+import com.sep.vox.domain.model.assessment.AssessmentKind;
 import com.sep.vox.domain.model.outbox.Outbox;
-import com.sep.vox.domain.repository.ExamCandidateRepository;
-import com.sep.vox.domain.repository.ExamCandidateResultRepository;
-import com.sep.vox.domain.repository.ExamRepository;
+import com.sep.vox.domain.repository.AssessmentCandidateRepository;
+import com.sep.vox.domain.repository.AssessmentCandidateResultRepository;
+import com.sep.vox.domain.repository.AssessmentRepository;
 import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
@@ -45,23 +47,23 @@ public class GradingAssignmentNotificationService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GradingAssignmentNotificationService.class);
 
-    private final ExamCandidateResultRepository examCandidateResultRepository;
-    private final ExamCandidateRepository examCandidateRepository;
-    private final ExamRepository examRepository;
+    private final AssessmentCandidateResultRepository assessmentCandidateResultRepository;
+    private final AssessmentCandidateRepository assessmentCandidateRepository;
+    private final AssessmentRepository assessmentRepository;
     private final UserRepository userRepository;
     private final OutboxRepository outboxRepository;
     private final JsonSerializationPort jsonSerializationPort;
 
     public GradingAssignmentNotificationService(
-            ExamCandidateResultRepository examCandidateResultRepository,
-            ExamCandidateRepository examCandidateRepository,
-            ExamRepository examRepository,
+            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
+            AssessmentCandidateRepository assessmentCandidateRepository,
+            AssessmentRepository assessmentRepository,
             UserRepository userRepository,
             OutboxRepository outboxRepository,
             JsonSerializationPort jsonSerializationPort) {
-        this.examCandidateResultRepository = examCandidateResultRepository;
-        this.examCandidateRepository = examCandidateRepository;
-        this.examRepository = examRepository;
+        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
+        this.assessmentCandidateRepository = assessmentCandidateRepository;
+        this.assessmentRepository = assessmentRepository;
         this.userRepository = userRepository;
         this.outboxRepository = outboxRepository;
         this.jsonSerializationPort = jsonSerializationPort;
@@ -73,50 +75,50 @@ public class GradingAssignmentNotificationService {
      * không biết mình có việc cho tới lần mở app kế tiếp.
      */
     @Transactional
-    public void publishAssigned(List<ExamGradingAssignment> assignments, Instant now) {
+    public void publishAssigned(List<AssessmentGradingAssignment> assignments, Instant now) {
         if (assignments == null || assignments.isEmpty()) {
             return;
         }
 
-        var resultsById = byId(
-            examCandidateResultRepository.findByIdIn(assignments.stream()
+        Map<UUID, AssessmentCandidateResult> resultsById = byId(
+            assessmentCandidateResultRepository.findByIdIn(assignments.stream()
                 .map(assignment -> assignment.getCandidateResultId())
                 .filter(id -> id != null)
                 .distinct()
                 .toList()),
             result -> result.getId());
 
-        var examsById = byId(
-            examRepository.findByIdIn(resultsById.values().stream()
-                .map(result -> result.getExamId())
+        Map<UUID, Assessment> assessmentsById = byId(
+            assessmentRepository.findByIdIn(resultsById.values().stream()
+                .map(result -> result.getAssessmentId())
                 .filter(id -> id != null)
                 .distinct()
                 .toList()),
-            exam -> exam.getId());
+            assessment -> assessment.getId());
 
-        var studentNamesByResultId = studentNames(resultsById.values(), examsById);
+        Map<UUID, String> studentNamesByResultId = studentNames(resultsById.values(), assessmentsById);
 
-        for (var assignment : assignments) {
-            var result = resultsById.get(assignment.getCandidateResultId());
-            var exam = result == null ? null : examsById.get(result.getExamId());
-            if (result == null || exam == null || assignment.getTeacherId() == null) {
+        for (AssessmentGradingAssignment assignment : assignments) {
+            AssessmentCandidateResult result = resultsById.get(assignment.getCandidateResultId());
+            Assessment assessment = result == null ? null : assessmentsById.get(result.getAssessmentId());
+            if (result == null || assessment == null || assignment.getTeacherId() == null) {
                 LOGGER.warn("Bỏ qua thông báo giao chấm, thiếu dữ liệu: assignmentId={}", assignment.getId());
                 continue;
             }
 
-            var payload = jsonSerializationPort.toJson(new GradingAssignmentOpenedPayloadV1(
+            String payload = jsonSerializationPort.toJson(new GradingAssignmentOpenedPayloadV1(
                 assignment.getId(),
                 assignment.getTeacherId(),
-                exam.getId(),
-                exam.getName(),
-                exam.getKind(),
+                assessment.getId(),
+                assessment.getName(),
+                assessment.getKind(),
                 assignment.getRoundType() == null ? null : assignment.getRoundType().name(),
-                candidateLabel(exam, result, studentNamesByResultId),
+                candidateLabel(assessment, result, studentNamesByResultId),
                 assignment.getDeadlineAt()
             ));
 
             outboxRepository.save(Outbox.create(
-                AggregateTypeConstant.EXAM_GRADING_ASSIGNMENT, assignment.getId(),
+                AggregateTypeConstant.ASSESSMENT_GRADING_ASSIGNMENT, assignment.getId(),
                 EventTypeConstant.GRADING_ASSIGNMENT_OPENED, payload, now
             ));
         }
@@ -125,18 +127,18 @@ public class GradingAssignmentNotificationService {
     }
 
     /**
-     * Thứ giáo viên dùng để nhận ra bài, chọn theo ĐÚNG luật của màn hình chấm.
+     * What the teacher uses to recognize an attempt, chosen by EXACTLY the rule of the grading screen.
      *
-     * <p>Kỳ thi tập trung chấm mù: tên học sinh không bao giờ rời khỏi tầng dữ liệu, kể cả vào
-     * một thông báo. Mã bài 8 ký tự là thứ duy nhất nhận diện được bài trên màn ẩn danh -- đúng
-     * thứ {@code JpaExamGradingQueryRepository} trả về cho hàng đợi chấm.
+     * <p>A centralized assessment is graded blind: the student's name never leaves the data layer, not even into
+     * a notification. The 8-character attempt code is the only thing that identifies an attempt on the anonymous screen -- exactly
+     * what {@code JpaAssessmentGradingQueryRepository} returns for the grading queue.
      */
     private String candidateLabel(
-            Exam exam, ExamCandidateResult result, Map<UUID, String> studentNamesByResultId) {
-        if (exam.getKind() != ExamKind.CLASS_TEST) {
+            Assessment assessment, AssessmentCandidateResult result, Map<UUID, String> studentNamesByResultId) {
+        if (assessment.getKind() != AssessmentKind.CLASS_TEST) {
             return GradingResultCode.of(result.getId());
         }
-        var studentName = studentNamesByResultId.get(result.getId());
+        String studentName = studentNamesByResultId.get(result.getId());
         return studentName != null ? studentName : GradingResultCode.of(result.getId());
     }
 
@@ -146,11 +148,11 @@ public class GradingAssignmentNotificationService {
      * lọt vào payload được, dù ai đó sửa nhầm {@link #candidateLabel} về sau.
      */
     private Map<UUID, String> studentNames(
-            Collection<ExamCandidateResult> results, Map<UUID, Exam> examsById) {
-        var classTestResults = results.stream()
+            Collection<AssessmentCandidateResult> results, Map<UUID, Assessment> assessmentsById) {
+        List<AssessmentCandidateResult> classTestResults = results.stream()
             .filter(result -> {
-                var exam = examsById.get(result.getExamId());
-                return exam != null && exam.getKind() == ExamKind.CLASS_TEST;
+                Assessment assessment = assessmentsById.get(result.getAssessmentId());
+                return assessment != null && assessment.getKind() == AssessmentKind.CLASS_TEST;
             })
             .filter(result -> result.getCandidateId() != null)
             .toList();
@@ -159,14 +161,14 @@ public class GradingAssignmentNotificationService {
             return Map.of();
         }
 
-        var candidatesById = byId(
-            examCandidateRepository.findByIdIn(classTestResults.stream()
+        Map<UUID, AssessmentCandidate> candidatesById = byId(
+            assessmentCandidateRepository.findByIdIn(classTestResults.stream()
                 .map(result -> result.getCandidateId())
                 .distinct()
                 .toList()),
             candidate -> candidate.getId());
 
-        var usersById = byId(
+        Map<UUID, User> usersById = byId(
             userRepository.findByIdIn(candidatesById.values().stream()
                 .map(candidate -> candidate.getStudentId())
                 .filter(id -> id != null)
@@ -174,13 +176,13 @@ public class GradingAssignmentNotificationService {
                 .toList()),
             user -> user.getId());
 
-        var names = new java.util.HashMap<UUID, String>();
-        for (var result : classTestResults) {
-            var candidate = candidatesById.get(result.getCandidateId());
+        Map<UUID, String> names = new java.util.HashMap<UUID, String>();
+        for (AssessmentCandidateResult result : classTestResults) {
+            AssessmentCandidate candidate = candidatesById.get(result.getCandidateId());
             if (candidate == null || candidate.getStudentId() == null) {
                 continue;
             }
-            var user = usersById.get(candidate.getStudentId());
+            User user = usersById.get(candidate.getStudentId());
             if (user == null || user.getFullName() == null) {
                 continue;
             }

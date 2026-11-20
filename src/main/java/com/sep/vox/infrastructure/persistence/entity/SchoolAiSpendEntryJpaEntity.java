@@ -29,7 +29,7 @@ import jakarta.persistence.Table;
     check = {
         @CheckConstraint(
             name = "chk_school_ai_spend_entries_quota_type_valid",
-            constraint = "quota_type IN ('EXAM', 'PRACTICE')"
+            constraint = "quota_type IN ('ASSESSMENT', 'PRACTICE')"
         ),
         @CheckConstraint(
             name = "chk_school_ai_spend_entries_amount_positive",
@@ -37,8 +37,8 @@ import jakarta.persistence.Table;
         ),
         @CheckConstraint(
             name = "chk_school_ai_spend_entries_source_matches_quota_type",
-            constraint = "(quota_type = 'EXAM' AND exam_session_id IS NOT NULL AND practice_session_id IS NULL)"
-                + " OR (quota_type = 'PRACTICE' AND practice_session_id IS NOT NULL AND exam_session_id IS NULL)"
+            constraint = "(quota_type = 'ASSESSMENT' AND assessment_session_id IS NOT NULL AND practice_session_id IS NULL)"
+                + " OR (quota_type = 'PRACTICE' AND practice_session_id IS NOT NULL AND assessment_session_id IS NULL)"
         )
     }
 )
@@ -68,8 +68,8 @@ public class SchoolAiSpendEntryJpaEntity {
     @Column(name = "user_id", updatable = false)
     private UUID userId;
 
-    @Column(name = "exam_session_id", updatable = false)
-    private UUID examSessionId;
+    @Column(name = "assessment_session_id", updatable = false)
+    private UUID assessmentSessionId;
 
     @Column(name = "practice_session_id", updatable = false)
     private UUID practiceSessionId;
@@ -84,12 +84,12 @@ public class SchoolAiSpendEntryJpaEntity {
     }
 
     public SchoolAiSpendEntryJpaEntity(UUID schoolId, UUID subscriptionId, String quotaType, UUID userId,
-            UUID examSessionId, UUID practiceSessionId, BigDecimal amountVnd, Instant occurredAt) {
+            UUID assessmentSessionId, UUID practiceSessionId, BigDecimal amountVnd, Instant occurredAt) {
         this.schoolId = schoolId;
         this.subscriptionId = subscriptionId;
         this.quotaType = quotaType;
         this.userId = userId;
-        this.examSessionId = examSessionId;
+        this.assessmentSessionId = assessmentSessionId;
         this.practiceSessionId = practiceSessionId;
         this.amountVnd = amountVnd;
         this.occurredAt = occurredAt;
@@ -115,8 +115,8 @@ public class SchoolAiSpendEntryJpaEntity {
         return userId;
     }
 
-    public UUID getExamSessionId() {
-        return examSessionId;
+    public UUID getAssessmentSessionId() {
+        return assessmentSessionId;
     }
 
     public UUID getPracticeSessionId() {

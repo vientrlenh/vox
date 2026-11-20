@@ -1,5 +1,6 @@
 package com.sep.vox.application.response.input.learnerprofile;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -13,7 +14,7 @@ public final class LearnerProfileResponses {
         String targetFrameworkBandCode,
         String targetFrameworkBandLabel,
                 boolean interestAutoUpdateEnabled,
-        String quizCompletedAt
+        Instant quizCompletedAt
     ) {
     }
 

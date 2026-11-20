@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.schoolclass;
 
+import com.sep.vox.domain.model.school.SchoolClass;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,7 +29,7 @@ public class ViewMyClassDetailsUseCase implements IUseCase<ViewMyClassDetailsQue
     public SchoolClassDto execute(ViewMyClassDetailsQuery input) {
         myClassAccessGuard.requireClassMembership(input.schoolClassId());
 
-        var schoolClass = schoolClassRepository.findById(input.schoolClassId())
+        SchoolClass schoolClass = schoolClassRepository.findById(input.schoolClassId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy lớp học"));
 
         return SchoolClassDtoMapper.toDto(schoolClass);

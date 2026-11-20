@@ -28,18 +28,19 @@ class SubscriptionUpgradeCreditTests {
     private final Instant now = Instant.parse("2026-06-01T00:00:00Z");
 
     /**
-     * Kỳ đang chạy còn nguyên giá trị + một kỳ xếp hàng đã trả đủ: tổng phần chưa dùng vượt hẳn giá
-     * gói mới. Bản cũ trả về đúng cap nên đơn ra 0đ.
+     * The running period still has its full value + a queued period that has been fully paid: the
+     * total unused portion clearly exceeds the new plan's price. The old version returned exactly
+     * the cap, so the order came out at 0 VND.
      */
     @Test
     void should_leave_something_payable_when_unused_credit_exceeds_the_new_plan_price() {
-        var newPlanPrice = new BigDecimal("12000000");
-        var unfinished = List.of(
+        BigDecimal newPlanPrice = new BigDecimal("12000000");
+        List<SchoolSubscription> unfinished = List.of(
             period(new BigDecimal("10000000"), now.minus(Duration.ofDays(1)), now.plus(Duration.ofDays(364))),
             queuedPeriod(new BigDecimal("10000000"), now.plus(Duration.ofDays(364)))
         );
 
-        var credit = policy.calculateUnusedCredit(unfinished, newPlanPrice, now);
+        BigDecimal credit = policy.calculateUnusedCredit(unfinished, newPlanPrice, now);
 
         assertThat(newPlanPrice.subtract(credit))
             .as("số tiền còn phải trả")
@@ -47,28 +48,34 @@ class SubscriptionUpgradeCreditTests {
         assertThat(credit).isEqualByComparingTo(newPlanPrice.subtract(MIN_PAYABLE_VND));
     }
 
-    /** Bù ít hơn trần thì không bị đụng tới -- kẹp chỉ áp khi thật sự chạm trần. */
+    /**
+     * A credit below the cap is left untouched -- clamping only applies when the cap is really
+     * reached.
+     */
     @Test
     void should_not_touch_a_credit_that_is_already_below_the_cap() {
-        var newPlanPrice = new BigDecimal("12000000");
-        // Nửa kỳ đã trôi qua của một gói 6.000.000 -> bù khoảng 3.000.000, xa trần.
-        var unfinished = List.of(
+        BigDecimal newPlanPrice = new BigDecimal("12000000");
+        // Half of a 6,000,000 plan has elapsed -> a credit of about 3,000,000, far from the cap.
+        List<SchoolSubscription> unfinished = List.of(
             period(new BigDecimal("6000000"), now.minus(Duration.ofDays(182)), now.plus(Duration.ofDays(183)))
         );
 
-        var credit = policy.calculateUnusedCredit(unfinished, newPlanPrice, now);
+        BigDecimal credit = policy.calculateUnusedCredit(unfinished, newPlanPrice, now);
 
         assertThat(credit).isLessThan(newPlanPrice.subtract(MIN_PAYABLE_VND));
         assertThat(credit).isGreaterThan(BigDecimal.ZERO);
     }
 
-    /** Gói rẻ hơn cả mức tối thiểu: không bù đồng nào, trường trả trọn giá -- vẫn hơn một đơn không trả được. */
+    /**
+     * A plan cheaper than even the minimum: no credit at all and the school pays the full price --
+     * still better than an order that cannot be paid.
+     */
     @Test
     void should_give_no_credit_when_the_new_plan_costs_less_than_the_minimum_payable() {
-        var newPlanPrice = new BigDecimal("500");
-        var unfinished = List.of(queuedPeriod(new BigDecimal("10000000"), now.plus(Duration.ofDays(300))));
+        BigDecimal newPlanPrice = new BigDecimal("500");
+        List<SchoolSubscription> unfinished = List.of(queuedPeriod(new BigDecimal("10000000"), now.plus(Duration.ofDays(300))));
 
-        var credit = policy.calculateUnusedCredit(unfinished, newPlanPrice, now);
+        BigDecimal credit = policy.calculateUnusedCredit(unfinished, newPlanPrice, now);
 
         assertThat(credit).isEqualByComparingTo(BigDecimal.ZERO);
     }
@@ -81,7 +88,7 @@ class SubscriptionUpgradeCreditTests {
     }
 
     private SchoolSubscription period(BigDecimal pricePaid, Instant start, Instant end) {
-        var subscription = new SchoolSubscription();
+        SchoolSubscription subscription = new SchoolSubscription();
         subscription.setPricePaidSnapshot(pricePaid);
         subscription.setStartDate(start);
         subscription.setEndDate(end);

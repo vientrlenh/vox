@@ -1,16 +1,18 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.RubricVersionJpaEntity;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.sep.vox.domain.common.PageResult;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
@@ -19,6 +21,7 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.infrastructure.persistence.mapper.RubricVersionMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataRubricVersionRepository;
 
 @Repository
@@ -61,7 +64,7 @@ public class RubricVersionRepositoryImpl implements RubricVersionRepository {
         if (codes == null || codes.isEmpty()) {
             return List.of();
         }
-        var upperCodes = codes.stream().map(s -> s.toUpperCase(Locale.ROOT)).collect(Collectors.toSet());
+        Set<String> upperCodes = codes.stream().map(s -> s.toUpperCase(Locale.ROOT)).collect(Collectors.toSet());
         return springDataRubricVersionRepository.findByCodeIn(upperCodes)
                 .stream().map(RubricVersionMapper::toDomain).toList();
     }
@@ -77,8 +80,8 @@ public class RubricVersionRepositoryImpl implements RubricVersionRepository {
 
     @Override
     public RubricVersion save(RubricVersion rubricVersion) {
-        var entity = RubricVersionMapper.toJpa(rubricVersion);
-        var saved = springDataRubricVersionRepository.save(entity);
+        RubricVersionJpaEntity entity = RubricVersionMapper.toJpa(rubricVersion);
+        RubricVersionJpaEntity saved = springDataRubricVersionRepository.save(entity);
         return RubricVersionMapper.toDomain(saved);
     }
 
@@ -101,7 +104,7 @@ public class RubricVersionRepositoryImpl implements RubricVersionRepository {
 
     @Override
     public List<RubricVersion> saveAll(List<RubricVersion> rubricVersions) {
-        var entities = rubricVersions.stream()
+        List<RubricVersionJpaEntity> entities = rubricVersions.stream()
                 .map(RubricVersionMapper::toJpa)
                 .toList();
         return springDataRubricVersionRepository.saveAll(entities).stream()
@@ -140,23 +143,16 @@ public class RubricVersionRepositoryImpl implements RubricVersionRepository {
 
     @Override
     public PageResult<RubricVersion> findAllByRubricIdAndStatus(UUID rubricId, String status, int page, int size) {
-        // Tối ưu: Mặc định sort theo version giảm dần (bản mới nhất nằm trên cùng)
-        Pageable pageable = PageRequest.of(page - 1, size, Sort.by("version").descending());
+        // Optimization: sort by version descending by default (newest version on top)
+        Pageable pageable = OneBasedPaging.toPageRequest(page, size, Sort.by("version").descending());
 
-        var entityPage = springDataRubricVersionRepository.findAllByRubricIdAndStatus(rubricId, status, pageable);
+        Page<RubricVersionJpaEntity> entityPage = springDataRubricVersionRepository.findAllByRubricIdAndStatus(rubricId, status, pageable);
 
-        // Giả sử bạn có RubricVersionMapper để chuyển Entity -> Domain
         List<RubricVersion> versions = entityPage.getContent().stream()
                 .map(RubricVersionMapper::toDomain)
                 .toList();
 
-        return new PageResult<>(
-                versions,
-                entityPage.getNumber(),
-                entityPage.getSize(),
-                entityPage.getTotalElements(),
-                entityPage.getTotalPages()
-        );
+        return OneBasedPaging.toPageResult(entityPage, versions);
     }
 
     @Override
@@ -170,21 +166,16 @@ public class RubricVersionRepositoryImpl implements RubricVersionRepository {
     @Override
     public PageResult<RubricVersion> searchRubricVersions(UUID rubricId, String keyword, String status, int page, int size) {
 
-        Pageable springPageable = PageRequest.of(page - 1, size);
+        Pageable springPageable = OneBasedPaging.toPageRequest(page, size);
 
-        // 1. Thực thi lấy dữ liệu từ Database
-        var pageEntity = springDataRubricVersionRepository.searchRubricVersions(
+        Page<RubricVersionJpaEntity> pageEntity = springDataRubricVersionRepository.searchRubricVersions(
                 rubricId, StringNormalization.toLikePattern(keyword), status, springPageable);
 
-        // 2. Map Entity về Domain và trả ra ngoài
-        return new PageResult<>(
-                pageEntity.getContent().stream()
-                        .map(RubricVersionMapper::toDomain) // Chuyển đổi sang Domain Model
-                        .toList(),
-                pageEntity.getNumber(),
-                pageEntity.getSize(),
-                (int) pageEntity.getTotalElements(),
-                pageEntity.getTotalPages()
+        return OneBasedPaging.toPageResult(
+            pageEntity,
+            pageEntity.getContent().stream()
+                        .map(RubricVersionMapper::toDomain)
+                        .toList()
         );
     }
 }

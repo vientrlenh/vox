@@ -1,6 +1,5 @@
 package com.sep.vox.domain.mapper;
 
-import java.time.Instant;
 import java.util.List;
 
 import com.sep.vox.domain.dto.QuestionBankGradeDto;
@@ -16,7 +15,7 @@ public final class QuestionBankGradeDtoMapper {
             grade.getId(),
             grade.getQuestionBankId(),
             grade.getSchoolGradeId(),
-            valueOf(grade.getAttachedAt()),
+            grade.getAttachedAt(),
             grade.getAttachedBy()
         );
     }
@@ -25,9 +24,5 @@ public final class QuestionBankGradeDtoMapper {
         return grades.stream()
             .map(QuestionBankGradeDtoMapper::toDto)
             .toList();
-    }
-
-    private static String valueOf(Instant date) {
-        return date == null ? null : date.toString();
     }
 }

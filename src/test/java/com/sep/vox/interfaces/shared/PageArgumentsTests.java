@@ -6,9 +6,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import org.junit.jupiter.api.Test;
 
 /**
- * Guard phân trang ở biên. Đây là chỗ DUY NHẤT còn chặn đầu vào sai: repository bên dưới đã bỏ hết
- * {@code Math.max(page, ...)} và chỉ trừ 1 để đổi sang offset, nên một số 0 lọt qua đây sẽ thành
- * offset âm chứ không âm thầm trả nhầm trang.
+ * Paging guard at the boundary. This is the ONLY place that still rejects wrong input: the repositories
+ * below have dropped every {@code Math.max(page, ...)} and only subtract 1 to get the offset, so a 0 that
+ * slipped through here would become a negative offset instead of silently returning the wrong page.
  */
 class PageArgumentsTests {
 
@@ -18,8 +18,8 @@ class PageArgumentsTests {
     }
 
     /**
-     * Trang đếm từ 1, nên 0 là SAI chứ không phải "trang đầu". Đây đúng là giá trị mà quy ước cũ
-     * từng nhận và lặng lẽ hiểu thành trang đầu.
+     * Pages are counted from 1, so 0 is WRONG, not "the first page". It is exactly the value the old
+     * convention accepted and silently read as the first page.
      */
     @Test
     void should_reject_page_zero() {
@@ -56,12 +56,17 @@ class PageArgumentsTests {
             .hasMessageContaining("Kích cỡ trang");
     }
 
-    /** Chặn trên là thứ thay cho {@code Math.min(size, MAX)} vừa bị bỏ khỏi repository. */
+    /** The upper bound replaces the {@code Math.min(size, MAX)} that was removed from the repositories. */
     @Test
     void should_reject_a_size_above_the_cap() {
         assertThatThrownBy(() -> PageArguments.validate(1, PageArguments.MAX_PAGE_SIZE + 1))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Kích cỡ trang");
+    }
+
+    @Test
+    void should_accept_the_smallest_size() {
+        assertThatCode(() -> PageArguments.validate(1, 1)).doesNotThrowAnyException();
     }
 
     @Test

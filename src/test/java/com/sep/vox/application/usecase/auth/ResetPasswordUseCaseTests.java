@@ -2,14 +2,16 @@ package com.sep.vox.application.usecase.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sep.vox.application.common.CacheKey;
 import com.sep.vox.application.exception.UnauthorizedException;
@@ -21,33 +23,25 @@ import com.sep.vox.application.port.output.PasswordEncoderPort;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.UserRepository;
 
+@ExtendWith(MockitoExtension.class)
 public class ResetPasswordUseCaseTests {
 
+    @Mock
     private CacheManagerPort cacheManagerPort;
+    @Mock
     private UserRepository userRepository;
+    @Mock
     private OneTimePasswordPort oneTimePasswordPort;
+    @Mock
     private PasswordEncoderPort passwordEncoderPort;
+    @InjectMocks
     private ResetPasswordUseCase resetPasswordUseCase;
-
-    @BeforeEach
-    void setUp() {
-        cacheManagerPort = mock(CacheManagerPort.class);
-        userRepository = mock(UserRepository.class);
-        oneTimePasswordPort = mock(OneTimePasswordPort.class);
-        passwordEncoderPort = mock(PasswordEncoderPort.class);
-        resetPasswordUseCase = new ResetPasswordUseCase(
-            cacheManagerPort,
-            userRepository,
-            oneTimePasswordPort,
-            passwordEncoderPort
-        );
-    }
 
     @Test
     void reset_password_should_verify_otp_update_password_and_delete_otp() {
-        var command = new ResetPasswordCommand(" Admin@Example.COM ", "new-password", " 1234567 ");
-        var email = "admin@example.com";
-        var key = resetPasswordKey(email);
+        ResetPasswordCommand command = new ResetPasswordCommand(" Admin@Example.COM ", "new-password", " 1234567 ");
+        String email = "admin@example.com";
+        String key = resetPasswordKey(email);
 
         when(userRepository.existsByEmailAndStatus(email, UserStatus.ACTIVE)).thenReturn(true);
         when(cacheManagerPort.get(key)).thenReturn("hashed-otp");
@@ -55,7 +49,7 @@ public class ResetPasswordUseCaseTests {
         when(passwordEncoderPort.hash("new-password")).thenReturn("hashed-password");
         when(userRepository.changeUserPassword(email, "hashed-password")).thenReturn(1);
 
-        var result = resetPasswordUseCase.execute(command);
+        Void result = resetPasswordUseCase.execute(command);
 
         assertThat(result).isNull();
         verify(userRepository).existsByEmailAndStatus(email, UserStatus.ACTIVE);
@@ -68,7 +62,7 @@ public class ResetPasswordUseCaseTests {
 
     @Test
     void reset_password_should_reject_when_active_user_does_not_exist() {
-        var command = new ResetPasswordCommand("missing@example.com", "new-password", "1234567");
+        ResetPasswordCommand command = new ResetPasswordCommand("missing@example.com", "new-password", "1234567");
 
         when(userRepository.existsByEmailAndStatus("missing@example.com", UserStatus.ACTIVE)).thenReturn(false);
 
@@ -81,8 +75,8 @@ public class ResetPasswordUseCaseTests {
 
     @Test
     void reset_password_should_reject_when_otp_is_missing_or_expired() {
-        var command = new ResetPasswordCommand("admin@example.com", "new-password", "1234567");
-        var key = resetPasswordKey("admin@example.com");
+        ResetPasswordCommand command = new ResetPasswordCommand("admin@example.com", "new-password", "1234567");
+        String key = resetPasswordKey("admin@example.com");
 
         when(userRepository.existsByEmailAndStatus("admin@example.com", UserStatus.ACTIVE)).thenReturn(true);
         when(cacheManagerPort.get(key)).thenReturn(null);
@@ -98,8 +92,8 @@ public class ResetPasswordUseCaseTests {
 
     @Test
     void reset_password_should_reject_when_otp_does_not_match() {
-        var command = new ResetPasswordCommand("admin@example.com", "new-password", "0000000");
-        var key = resetPasswordKey("admin@example.com");
+        ResetPasswordCommand command = new ResetPasswordCommand("admin@example.com", "new-password", "0000000");
+        String key = resetPasswordKey("admin@example.com");
 
         when(userRepository.existsByEmailAndStatus("admin@example.com", UserStatus.ACTIVE)).thenReturn(true);
         when(cacheManagerPort.get(key)).thenReturn("hashed-otp");
@@ -117,8 +111,8 @@ public class ResetPasswordUseCaseTests {
 
     @Test
     void reset_password_should_reject_and_keep_otp_when_password_update_affects_no_rows() {
-        var command = new ResetPasswordCommand("admin@example.com", "new-password", "1234567");
-        var key = resetPasswordKey("admin@example.com");
+        ResetPasswordCommand command = new ResetPasswordCommand("admin@example.com", "new-password", "1234567");
+        String key = resetPasswordKey("admin@example.com");
 
         when(userRepository.existsByEmailAndStatus("admin@example.com", UserStatus.ACTIVE)).thenReturn(true);
         when(cacheManagerPort.get(key)).thenReturn("hashed-otp");

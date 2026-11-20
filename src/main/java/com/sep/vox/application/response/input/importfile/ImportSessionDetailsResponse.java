@@ -1,12 +1,16 @@
 package com.sep.vox.application.response.input.importfile;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+
+import com.sep.vox.domain.model.importfile.ImportSessionStatus;
+import com.sep.vox.domain.model.importfile.ImportType;
 
 public record ImportSessionDetailsResponse(
     UUID id,
     UUID schoolId,
-    String type,
+    ImportType type,
     String fileName,
     List<String> originalHeaders,
     List<ImportMappingEntryResponse> suggestedMapping,
@@ -17,10 +21,10 @@ public record ImportSessionDetailsResponse(
     long skippedRows,
     long totalRows,
     String failureReason,
-    String status,
+    ImportSessionStatus status,
     UUID importedEntityId,
-    String expiresAt,
-    String createdAt,
-    String updatedAt
+    Instant expiresAt,
+    Instant createdAt,
+    Instant updatedAt
 ) {
 }

@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
+import com.sep.vox.domain.model.framework.FrameworkCriterion;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,7 +25,7 @@ public class ViewFrameworkCriterionDetailsUseCase implements IUseCase<ViewFramew
     @Override
     @Transactional(readOnly = true)
     public FrameworkCriterionDto execute(ViewFrameworkCriterionDetailsQuery query) {
-        var criterion = frameworkCriterionRepository.findById(query.criterionId())
+        FrameworkCriterion criterion = frameworkCriterionRepository.findById(query.criterionId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Tiêu chí (Criterion) này."));
 
         return FrameworkCriterionDtoMapper.toDto(criterion);

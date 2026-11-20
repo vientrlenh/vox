@@ -1,10 +1,12 @@
 package com.sep.vox.application.port.input.usecase.dashboard;
 
+import com.sep.vox.application.query.dto.SchoolSubscriptionHealthDto;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.YearMonth;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 
 import org.springframework.stereotype.Service;
@@ -43,17 +45,17 @@ public class ViewPlatformBusinessHealthUseCase
     @Override
     @Transactional(readOnly = true)
     public PlatformBusinessHealthResponse execute(ViewPlatformBusinessHealthQuery input) {
-        var zone = ZoneConstant.BUSINESS_ZONE;
-        var now = Instant.now();
+        ZoneId zone = ZoneConstant.BUSINESS_ZONE;
+        Instant now = Instant.now();
 
         // Ngưỡng trượt theo mốc hiện tại, KHÔNG neo vào ngày lịch: hai cột end_date/start_date là
         // timestamptz, nên "30 ngày nữa" tính bằng instant là phép so duy nhất không phải đoán múi giờ.
-        var health = platformBusinessHealthQueryRepository.countSchoolSubscriptionHealth(
+        SchoolSubscriptionHealthDto health = platformBusinessHealthQueryRepository.countSchoolSubscriptionHealth(
             now, now.plus(BusinessConstant.DASHBOARD_EXPIRING_SOON_DAYS, ChronoUnit.DAYS));
-        var schoolsInDebt = platformBusinessHealthQueryRepository.countSchoolsInDebt();
+        long schoolsInDebt = platformBusinessHealthQueryRepository.countSchoolsInDebt();
 
-        var to = input == null || input.dateTo() == null ? now : input.dateTo();
-        var from = input == null || input.dateFrom() == null
+        Instant to = input == null || input.dateTo() == null ? now : input.dateTo();
+        Instant from = input == null || input.dateFrom() == null
             ? YearMonth.now(zone).atDay(1).atStartOfDay(zone).toInstant()
             : input.dateFrom();
 
@@ -65,20 +67,20 @@ public class ViewPlatformBusinessHealthUseCase
                 BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, null, null);
         }
 
-        var revenue = zeroIfNull(orderRepository.sumTotalAmountByStatusInRange(OrderStatus.SUCCESS, from, to));
-        var aiCost = zeroIfNull(platformBusinessHealthQueryRepository.sumAiCostVnd(from, to));
+        BigDecimal revenue = zeroIfNull(orderRepository.sumTotalAmountByStatusInRange(OrderStatus.SUCCESS, from, to));
+        BigDecimal aiCost = zeroIfNull(platformBusinessHealthQueryRepository.sumAiCostVnd(from, to));
 
         // Kỳ so sánh là một khoảng CÙNG ĐỘ DÀI ngay trước đó, không phải tháng lịch trước. Mặc định
         // của màn hình là "từ đầu tháng tới giờ"; đem 10 ngày đầu tháng so với trọn tháng trước thì
         // tháng này luôn trông như sụp đổ, và đó là lỗi của phép so chứ không phải của việc kinh doanh.
-        var windowLength = Duration.between(from, to);
-        var previousFrom = from.minus(windowLength);
-        var previousRevenue = zeroIfNull(orderRepository.sumTotalAmountByStatusInRange(
+        Duration windowLength = Duration.between(from, to);
+        Instant previousFrom = from.minus(windowLength);
+        BigDecimal previousRevenue = zeroIfNull(orderRepository.sumTotalAmountByStatusInRange(
             OrderStatus.SUCCESS, previousFrom, from));
 
         // Giá vốn của kỳ trước chỉ để dựng ra BIÊN của kỳ trước, nên không trả nó ra ngoài: màn hình
         // hỏi "biên tháng này hơn kém tháng trước mấy điểm", không hỏi chi phí kỳ trước là bao nhiêu.
-        var previousAiCost = zeroIfNull(platformBusinessHealthQueryRepository.sumAiCostVnd(previousFrom, from));
+        BigDecimal previousAiCost = zeroIfNull(platformBusinessHealthQueryRepository.sumAiCostVnd(previousFrom, from));
 
         return new PlatformBusinessHealthResponse(
             health.subscribedSchools(), health.expiringSoonSchools(), health.lapsedSchools(),

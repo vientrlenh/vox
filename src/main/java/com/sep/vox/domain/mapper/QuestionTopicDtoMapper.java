@@ -1,6 +1,5 @@
 package com.sep.vox.domain.mapper;
 
-import java.time.Instant;
 import java.util.List;
 
 import com.sep.vox.domain.common.PageResult;
@@ -17,8 +16,8 @@ public class QuestionTopicDtoMapper {
             domain.getName(),
             domain.getDescription(),
             domain.getStatus().name(),
-            valueOf(domain.getCreatedAt()),
-            valueOf(domain.getUpdatedAt()),
+            domain.getCreatedAt(),
+            domain.getUpdatedAt(),
             domain.getCreatedBy(),
             domain.getUpdatedBy()
         );
@@ -38,9 +37,5 @@ public class QuestionTopicDtoMapper {
             page.totalElements(),
             page.totalPages()
         );
-    }
-
-    private static String valueOf(Instant date) {
-        return date == null ? null : date.toString();
     }
 }

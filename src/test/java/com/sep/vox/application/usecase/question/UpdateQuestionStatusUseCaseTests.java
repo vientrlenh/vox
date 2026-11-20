@@ -21,6 +21,7 @@ import com.sep.vox.application.port.input.service.QuestionStatusActorResolver;
 import com.sep.vox.application.port.input.usecase.question.UpdateQuestionStatusUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.domain.dto.QuestionDto;
 import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionBank;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
@@ -60,7 +61,7 @@ class UpdateQuestionStatusUseCaseTests {
         questionCollaboratorRepository = mock(QuestionCollaboratorRepository.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
         userContextPort = mock(UserContextPort.class);
-        var userRoleQueryRepository = mock(UserRoleQueryRepository.class);
+        UserRoleQueryRepository userRoleQueryRepository = mock(UserRoleQueryRepository.class);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userContextPort.isSystemAdmin()).thenReturn(false);
@@ -77,10 +78,10 @@ class UpdateQuestionStatusUseCaseTests {
 
     @Test
     void should_move_the_question_to_the_new_status() {
-        var question = question(QuestionStatus.DRAFT);
+        Question question = question(QuestionStatus.DRAFT);
         mockQuestion(question);
 
-        var result = useCase.execute(new UpdateQuestionStatusCommand(question.getId(), "SUBMIT", null));
+        QuestionDto result = useCase.execute(new UpdateQuestionStatusCommand(question.getId(), "SUBMIT", null));
 
         assertThat(result.status()).isEqualTo(QuestionStatus.SUBMITTED_FOR_REVIEW.name());
         assertThat(result.updatedBy()).isEqualTo(currentUserId);
@@ -88,10 +89,10 @@ class UpdateQuestionStatusUseCaseTests {
 
     @Test
     void should_normalize_a_lowercase_action() {
-        var question = question(QuestionStatus.DRAFT);
+        Question question = question(QuestionStatus.DRAFT);
         mockQuestion(question);
 
-        var result = useCase.execute(new UpdateQuestionStatusCommand(question.getId(), " submit ", null));
+        QuestionDto result = useCase.execute(new UpdateQuestionStatusCommand(question.getId(), " submit ", null));
 
         assertThat(result.status()).isEqualTo(QuestionStatus.SUBMITTED_FOR_REVIEW.name());
     }
@@ -107,7 +108,7 @@ class UpdateQuestionStatusUseCaseTests {
 
     @Test
     void should_throw_not_found_when_the_bank_does_not_exist() {
-        var question = question(QuestionStatus.DRAFT);
+        Question question = question(QuestionStatus.DRAFT);
         when(questionRepository.findById(question.getId())).thenReturn(Optional.of(question));
         when(questionBankRepository.findById(any())).thenReturn(Optional.empty());
 
@@ -118,7 +119,7 @@ class UpdateQuestionStatusUseCaseTests {
 
     @Test
     void should_throw_forbidden_when_the_actor_is_not_allowed() {
-        var question = question(QuestionStatus.DRAFT);
+        Question question = question(QuestionStatus.DRAFT);
         question.setCreatedBy(UUID.randomUUID());
         mockQuestion(question);
 
@@ -129,7 +130,7 @@ class UpdateQuestionStatusUseCaseTests {
 
     @Test
     void should_throw_invalid_state_when_the_status_does_not_allow_the_action() {
-        var question = question(QuestionStatus.SUBMITTED_FOR_REVIEW);
+        Question question = question(QuestionStatus.SUBMITTED_FOR_REVIEW);
         mockQuestion(question);
 
         assertThatThrownBy(() -> useCase.execute(new UpdateQuestionStatusCommand(question.getId(), "SUBMIT", null)))
@@ -140,7 +141,7 @@ class UpdateQuestionStatusUseCaseTests {
 
     @Test
     void should_throw_invalid_state_for_an_unknown_action() {
-        var question = question(QuestionStatus.DRAFT);
+        Question question = question(QuestionStatus.DRAFT);
         mockQuestion(question);
 
         assertThatThrownBy(() -> useCase.execute(new UpdateQuestionStatusCommand(question.getId(), "DEMOLISH", null)))
@@ -154,7 +155,7 @@ class UpdateQuestionStatusUseCaseTests {
     }
 
     private Question question(QuestionStatus status) {
-        var now = Instant.now();
+        Instant now = Instant.now();
         return new Question(
             UUID.randomUUID(), bankId, UUID.randomUUID(), "Q-1", null, "Câu hỏi", null, null,
             QuestionType.SHORT_ANSWER, 10, 10, 60, QuestionSharing.PRIVATE, null, false,
@@ -162,7 +163,7 @@ class UpdateQuestionStatusUseCaseTests {
     }
 
     private QuestionBank bank() {
-        var now = Instant.now();
+        Instant now = Instant.now();
         return new QuestionBank(
             bankId, UUID.randomUUID(), null, "BANK-1", "Ngân hàng", null,
             QuestionBankOwnerType.SYSTEM, QuestionBankStatus.PUBLISHED, now, now, currentUserId, currentUserId);

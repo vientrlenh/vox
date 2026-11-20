@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.user;
 
+import com.sep.vox.domain.model.user.User;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.NotFoundException;
@@ -23,8 +25,8 @@ public class ViewProfileUseCase implements IUseCase<Void, UserDto>{
 
     @Override
     public UserDto execute(Void input) {
-        var userId = userContextPort.getCurrentAuthenticatedUserId();
-        var user = userRepository.findByIdAndStatus(userId, UserStatus.ACTIVE)
+        UUID userId = userContextPort.getCurrentAuthenticatedUserId();
+        User user = userRepository.findByIdAndStatus(userId, UserStatus.ACTIVE)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng yêu cầu"));
         
         return UserDtoMapper.toUserDto(user);

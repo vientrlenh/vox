@@ -22,7 +22,7 @@ public class HttpCookieProvider implements CookieManagerPort {
 
     @Override
     public void setCookie(HttpServletResponse response, String key, String value, long ttl) {
-        var cookie = ResponseCookie.from(key, value)
+        ResponseCookie cookie = ResponseCookie.from(key, value)
             .httpOnly(true)
             .secure(secure)
             .path("/")

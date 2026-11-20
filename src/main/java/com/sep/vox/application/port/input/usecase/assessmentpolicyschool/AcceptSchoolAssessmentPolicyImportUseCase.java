@@ -8,8 +8,11 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.importfile.AcceptAssessmentPolicyImportResponse;
+import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
+import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.ImportSessionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -46,15 +49,15 @@ public class AcceptSchoolAssessmentPolicyImportUseCase implements IUseCase<Accep
     @Transactional
     public AcceptAssessmentPolicyImportResponse execute(AcceptSchoolAssessmentPolicyImportCommand command) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
 
-        var schoolUser = schoolUserRepository.findByUserId(currentUserId)
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Không thuộc trường học nào."));
         if (!schoolUser.getSchoolId().equals(command.schoolId()))
             throw new ForbiddenException("BẢO MẬT: Mã bảo mật trường học không trùng khớp.");
 
-        var session = importSessionRepository.findById(command.sessionId())
+        ImportSession session = importSessionRepository.findById(command.sessionId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên làm việc Import."));
 
         if (session.getType() != ImportType.ASSESSMENT_POLICY || session.getSchoolId() == null

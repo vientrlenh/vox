@@ -25,6 +25,7 @@ import com.sep.vox.application.port.input.command.PreviewSchoolClassUserImportFr
 import com.sep.vox.application.port.input.usecase.schoolclassuser.PreviewSchoolClassUserImportFromFileUseCase;
 import com.sep.vox.application.port.output.FileProcessingPort;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.response.input.importfile.PreviewSchoolClassUserImportResponse;
 import com.sep.vox.application.response.output.ParseImportFileResult;
 import com.sep.vox.application.support.FakeJsonSerializationPort;
 import com.sep.vox.domain.model.importfile.ImportRow;
@@ -78,12 +79,12 @@ class PreviewSchoolClassUserImportFromFileUseCaseTests {
 
     @Test
     void execute_should_create_preview_session_and_pending_rows() {
-        var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var sessionId = UUID.randomUUID();
-        var file = UploadedFile.upload("class-users.csv", "text/csv", 48,
+        UUID userId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
+        UploadedFile file = UploadedFile.upload("class-users.csv", "text/csv", 48,
             "email,classCode\nstudent@example.com,ENG-01\n".getBytes(StandardCharsets.UTF_8));
-        var parsed = new ParseImportFileResult(
+        ParseImportFileResult parsed = new ParseImportFileResult(
             List.of("email", "classCode"),
             Map.of("email", "email", "classCode", "classCode"),
             List.of(Map.of("email", "student@example.com", "classCode", "ENG-01")),
@@ -97,19 +98,19 @@ class PreviewSchoolClassUserImportFromFileUseCaseTests {
         mockUserSchool(userId, schoolId);
         when(fileProcessingPort.parse(file, ImportType.SCHOOL_CLASS_USER)).thenReturn(parsed);
         when(importSessionRepository.save(any(ImportSession.class))).thenAnswer(invocation -> {
-            var session = invocation.getArgument(0, ImportSession.class);
+            ImportSession session = invocation.getArgument(0, ImportSession.class);
             session.setId(sessionId);
             return session;
         });
 
-        var response = useCase.execute(new PreviewSchoolClassUserImportFromFileCommand(schoolId, file));
+        PreviewSchoolClassUserImportResponse response = useCase.execute(new PreviewSchoolClassUserImportFromFileCommand(schoolId, file));
 
         assertThat(response.importSessionId()).isEqualTo(sessionId);
         assertThat(response.fileName()).isEqualTo("class-users.csv");
         assertThat(response.originalHeaders()).containsExactly("email", "classCode");
         assertThat(response.totalRows()).isEqualTo(1L);
 
-        var sessionCaptor = ArgumentCaptor.forClass(ImportSession.class);
+        ArgumentCaptor<ImportSession> sessionCaptor = ArgumentCaptor.forClass(ImportSession.class);
         verify(importSessionRepository).save(sessionCaptor.capture());
         assertThat(sessionCaptor.getValue().getSchoolId()).isEqualTo(schoolId);
         assertThat(sessionCaptor.getValue().getType()).isEqualTo(ImportType.SCHOOL_CLASS_USER);
@@ -134,8 +135,8 @@ class PreviewSchoolClassUserImportFromFileUseCaseTests {
 
     @Test
     void execute_should_throw_when_current_user_is_inactive() {
-        var userId = UUID.randomUUID();
-        var file = UploadedFile.upload("class-users.csv", "text/csv", 1, new byte[] { 1 });
+        UUID userId = UUID.randomUUID();
+        UploadedFile file = UploadedFile.upload("class-users.csv", "text/csv", 1, new byte[] { 1 });
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user(userId, UUID.randomUUID(), UserStatus.INACTIVE)));
@@ -148,8 +149,8 @@ class PreviewSchoolClassUserImportFromFileUseCaseTests {
 
     @Test
     void execute_should_throw_when_current_user_has_no_school() {
-        var userId = UUID.randomUUID();
-        var file = UploadedFile.upload("class-users.csv", "text/csv", 1, new byte[] { 1 });
+        UUID userId = UUID.randomUUID();
+        UploadedFile file = UploadedFile.upload("class-users.csv", "text/csv", 1, new byte[] { 1 });
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(activeUser(userId, null)));
@@ -162,9 +163,9 @@ class PreviewSchoolClassUserImportFromFileUseCaseTests {
 
     @Test
     void execute_should_throw_when_requested_school_differs_from_current_user_school() {
-        var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var file = UploadedFile.upload("class-users.csv", "text/csv", 1, new byte[] { 1 });
+        UUID userId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        UploadedFile file = UploadedFile.upload("class-users.csv", "text/csv", 1, new byte[] { 1 });
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(activeUser(userId, schoolId)));
@@ -178,10 +179,10 @@ class PreviewSchoolClassUserImportFromFileUseCaseTests {
 
     @Test
     void execute_should_throw_when_school_is_inactive() {
-        var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var file = UploadedFile.upload("class-users.csv", "text/csv", 1, new byte[] { 1 });
-        var school = activeSchool(schoolId);
+        UUID userId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        UploadedFile file = UploadedFile.upload("class-users.csv", "text/csv", 1, new byte[] { 1 });
+        School school = activeSchool(schoolId);
         school.setActive(false);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
@@ -204,14 +205,14 @@ class PreviewSchoolClassUserImportFromFileUseCaseTests {
     }
 
     private static User user(UUID id, UUID schoolId, UserStatus status) {
-        var user = new User();
+        User user = new User();
         user.setId(id);
         user.setStatus(status);
         return user;
     }
 
     private static School activeSchool(UUID id) {
-        var school = new School();
+        School school = new School();
         school.setId(id);
         school.setActive(true);
         return school;

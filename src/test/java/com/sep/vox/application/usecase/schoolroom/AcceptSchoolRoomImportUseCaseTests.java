@@ -63,7 +63,7 @@ class AcceptSchoolRoomImportUseCaseTests {
             jsonSerializationPort,
             schoolUserRepository
         );
-        var currentUser = activeUser(userId, schoolId);
+        User currentUser = activeUser(userId, schoolId);
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(currentUser));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
@@ -92,7 +92,7 @@ class AcceptSchoolRoomImportUseCaseTests {
 
     @Test
     void execute_should_throw_when_session_type_mismatch() {
-        var wrongType = session(ImportType.SCHOOL_CLASS, ImportSessionStatus.PREVIEWED);
+        ImportSession wrongType = session(ImportType.SCHOOL_CLASS, ImportSessionStatus.PREVIEWED);
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(wrongType));
 
         assertThatThrownBy(() -> useCase.execute(
@@ -128,7 +128,7 @@ class AcceptSchoolRoomImportUseCaseTests {
     }
 
     private User activeUser(UUID id, UUID userSchoolId) {
-        var user = new User();
+        User user = new User();
         user.setId(id);
         user.setStatus(UserStatus.ACTIVE);
         when(schoolUserRepository.findByUserId(id)).thenReturn(
@@ -138,7 +138,7 @@ class AcceptSchoolRoomImportUseCaseTests {
     }
 
     private static School activeSchool(UUID id) {
-        var school = new School();
+        School school = new School();
         school.setId(id);
         school.setActive(true);
         return school;

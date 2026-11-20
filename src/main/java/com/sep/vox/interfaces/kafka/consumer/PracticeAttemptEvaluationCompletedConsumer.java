@@ -19,6 +19,7 @@ import com.sep.vox.interfaces.kafka.dto.PracticeAttemptEvaluationCompletedEventD
 import com.sep.vox.interfaces.kafka.dto.PracticeAttemptEvaluationFailedEventDto;
 import com.sep.vox.interfaces.kafka.mapper.RecordPracticeAttemptEvaluationCommandMapper;
 
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 @Component
@@ -57,21 +58,21 @@ public class PracticeAttemptEvaluationCompletedConsumer {
             record.partition(), record.offset(), record.key()
         );
         try {
-            var payload = jsonMapper.valueToTree(record.value());
-            var eventType = payload.path("eventType").asString();
+            JsonNode payload = jsonMapper.valueToTree(record.value());
+            String eventType = payload.path("eventType").asString();
 
             if ("PracticeAttemptEvaluationCompleted".equals(eventType)) {
-                var dto = jsonMapper.treeToValue(payload, PracticeAttemptEvaluationCompletedEventDto.class);
+                PracticeAttemptEvaluationCompletedEventDto dto = jsonMapper.treeToValue(payload, PracticeAttemptEvaluationCompletedEventDto.class);
                 recordPracticeAttemptEvaluationUseCase.execute(
                     RecordPracticeAttemptEvaluationCommandMapper.toCommand(dto)
                 );
                 LOGGER.info("Recorded practice evaluation for practiceResponseId={}", dto.practiceResponseId());
             } else if ("PracticeAttemptEvaluationFailed".equals(eventType)) {
-                // Trước 2026-08-12 nhánh này không tồn tại: sự kiện hỏng rơi vào "Skip unknown"
-                // nên Java không bao giờ biết chấm đã hỏng. Câu đó mãi mãi "chưa có bản chấm",
-                // job quét bắn lại mỗi 5 phút, hỏng lại -- vòng lặp vô hạn, và học sinh nhìn màn
-                // tổng kết quay mãi chờ một kết quả sẽ không bao giờ tới.
-                var failed = jsonMapper.treeToValue(payload, PracticeAttemptEvaluationFailedEventDto.class);
+                // Before 2026-08-12 this branch did not exist: a failed event fell into "Skip unknown", so Java
+                // never learned that grading had failed. That question stayed "no grading result" forever, the
+                // sweep job re-fired every 5 minutes and failed again -- an infinite loop, and the student
+                // watching the summary screen waited forever for a result that would never arrive.
+                PracticeAttemptEvaluationFailedEventDto failed = jsonMapper.treeToValue(payload, PracticeAttemptEvaluationFailedEventDto.class);
                 practiceItemResponseRepository.markGradingFailed(
                     UUID.fromString(failed.practiceResponseId())
                 );

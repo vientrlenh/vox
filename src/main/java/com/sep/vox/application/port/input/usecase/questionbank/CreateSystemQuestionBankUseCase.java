@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.questionbank;
 
 import java.time.Instant;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,16 +34,16 @@ public class CreateSystemQuestionBankUseCase implements IUseCase<CreateSystemQue
     @Override
     @Transactional
     public CreateQuestionBankResponse execute(CreateSystemQuestionBankCommand input) {
-        var command = normalize(input);
+        CreateSystemQuestionBankCommand command = normalize(input);
 
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         if (!supportedLanguageRepository.existsByIdAndIsActive(command.languageId(), true)) {
             throw new IllegalStateException("Ngôn ngữ yêu cầu không tồn tại hoặc không hoạt động");
         }
 
-        var now = Instant.now();
-        var questionBank = QuestionBank.create(
+        Instant now = Instant.now();
+        QuestionBank questionBank = QuestionBank.create(
             command.languageId(), 
             null, 
             command.code(), 
@@ -53,7 +54,7 @@ public class CreateSystemQuestionBankUseCase implements IUseCase<CreateSystemQue
             currentUserId
         );
 
-        var saved = questionBankRepository.save(questionBank);
+        QuestionBank saved = questionBankRepository.save(questionBank);
         return CreateQuestionBankResponseMapper.toResponse(saved.getId());
     }
 

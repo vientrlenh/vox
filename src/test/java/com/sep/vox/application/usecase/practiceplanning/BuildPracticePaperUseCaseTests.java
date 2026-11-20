@@ -46,7 +46,7 @@ class BuildPracticePaperUseCaseTests {
     void setUp() {
         topicRepository = mock(PracticeTopicRepository.class);
         schoolSubscriptionActiveGuardService = mock(SchoolSubscriptionActiveGuardService.class);
-        var userContextPort = mock(UserContextPort.class);
+        UserContextPort userContextPort = mock(UserContextPort.class);
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(STUDENT_ID);
 
         useCase = new BuildPracticePaperUseCase(
@@ -69,12 +69,13 @@ class BuildPracticePaperUseCaseTests {
                 "Trường chưa có gói subscription đang hoạt động, không thể bắt đầu buổi luyện tập cá nhân hóa AI."))
             .when(schoolSubscriptionActiveGuardService).requireActiveForStudent(eq(STUDENT_ID), any());
 
-        var command = new BuildPracticePaperCommand(TOPIC_ID, UUID.randomUUID(), "SELECTED", null, List.of(), List.of());
+        BuildPracticePaperCommand command = new BuildPracticePaperCommand(TOPIC_ID, UUID.randomUUID(), "SELECTED", null, List.of(), List.of());
 
         assertThatThrownBy(() -> useCase.execute(command))
             .isInstanceOf(PlanLimitExceededException.class)
             .hasMessageContaining("chưa có gói subscription đang hoạt động");
-        // Fail-fast: guard chạy trước cả bước tìm topic, không tốn thêm query/AI nào.
+        // Fail-fast: the guard runs even before the topic lookup step, so no extra query/AI call is
+        // spent.
         verify(topicRepository, never()).findTopicById(any());
     }
 }

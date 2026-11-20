@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>REPLACE: plan name</title>
+<style>
+  :root {
+    --bg: #fafaf8; --surface: #ffffff; --text: #1d1d1b; --muted: #5f5f5a; --border: #e2e1dc;
+    --accent: #1f5fbf; --accent-soft: #e8f0fc; --warn: #8a5a00; --warn-soft: #fdf3dc;
+    --ok: #17673a; --ok-soft: #e3f4ea; --bad: #9b1c1c; --bad-soft: #fbe6e6; --code-bg: #f3f2ee;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #151514; --surface: #1d1d1b; --text: #ecebe6; --muted: #a2a19a; --border: #33332f;
+      --accent: #7fb0f5; --accent-soft: #1b2a40; --warn: #f0c36a; --warn-soft: #3a2f14;
+      --ok: #7fd3a0; --ok-soft: #14301f; --bad: #f19a9a; --bad-soft: #3d1b1b; --code-bg: #262623;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #151514; --surface: #1d1d1b; --text: #ecebe6; --muted: #a2a19a; --border: #33332f;
+    --accent: #7fb0f5; --accent-soft: #1b2a40; --warn: #f0c36a; --warn-soft: #3a2f14;
+    --ok: #7fd3a0; --ok-soft: #14301f; --bad: #f19a9a; --bad-soft: #3d1b1b; --code-bg: #262623;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 32px 16px 96px; }
+  h1 { font-size: 1.9rem; line-height: 1.2; margin: 0 0 8px; }
+  h2 { font-size: 1.35rem; margin: 48px 0 12px; padding-top: 16px; border-top: 1px solid var(--border); }
+  h3 { font-size: 1.05rem; margin: 28px 0 8px; }
+  p, li { max-width: 72ch; }
+  .meta { color: var(--muted); font-size: .92rem; margin-bottom: 20px; }
+  .status { display: inline-block; border-radius: 999px; padding: 2px 12px; font-size: .8rem;
+    font-weight: 600; white-space: nowrap; background: var(--code-bg); color: var(--muted); }
+  .status.draft, .status.open { background: var(--warn-soft); color: var(--warn); }
+  .status.approved, .status.progress { background: var(--accent-soft); color: var(--accent); }
+  .status.done, .status.answered { background: var(--ok-soft); color: var(--ok); }
+  .status.blocked { background: var(--bad-soft); color: var(--bad); }
+  nav { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 18px; margin: 20px 0; }
+  nav ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 32px; }
+  nav a, td a { color: var(--accent); text-decoration: none; }
+  code { background: var(--code-bg); padding: 1px 6px; border-radius: 4px;
+    font: .88em ui-monospace, "SF Mono", Menlo, monospace; }
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; font: .85rem/1.5 ui-monospace, "SF Mono", Menlo, monospace; }
+  pre code { background: none; padding: 0; }
+  .table-scroll { overflow-x: auto; margin: 12px 0; }
+  table { border-collapse: collapse; width: 100%; background: var(--surface);
+    border: 1px solid var(--border); font-size: .92rem; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--code-bg); font-weight: 600; white-space: nowrap; }
+  td.indent { padding-left: 32px; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .callout { border-left: 4px solid var(--accent); background: var(--accent-soft);
+    padding: 10px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+  .callout.warn { border-color: var(--warn); background: var(--warn-soft); }
+  .callout.ok { border-color: var(--ok); background: var(--ok-soft); }
+  .callout p { margin: 4px 0; }
+  .decision, .phase { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 4px 18px 14px; margin: 14px 0; }
+  .decision h3, .phase h3 { margin-top: 14px; }
+  .rec { color: var(--ok); font-weight: 600; }
+  .answer { background: var(--code-bg); border-radius: 8px; padding: 8px 12px; margin: 10px 0 0; color: var(--muted); }
+  .decision[data-decision-state="answered"] .answer { background: var(--ok-soft); color: var(--text); }
+  .tag { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .jobs { list-style: none; padding: 0; margin: 10px 0; }
+  .job { border-top: 1px solid var(--border); padding: 10px 0; }
+  .job > .title { font-weight: 600; }
+  .status-log { font-size: .85rem; color: var(--muted); margin: 8px 0 0; padding-left: 20px; }
+  .status-log:empty { display: none; }
+  @media (max-width: 600px) { nav ol { columns: 1; } h1 { font-size: 1.5rem; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>REPLACE: plan name</h1>
+<div class="meta">
+  Repository: <code>vox</code> &middot; Branch: <code>REPLACE</code> &middot; Written REPLACE-YYYY-MM-DD &middot;
+  Plan status: <span class="status draft" id="plan-status" data-plan-status="draft">Draft</span>
+</div>
+
+<p>REPLACE: goal in two or three sentences. What changes, and why it is worth doing.</p>
+
+<nav aria-label="Contents">
+  <ol>
+    <li><a href="#progress">Progress</a></li>
+    <li><a href="#current">Current state</a></li>
+    <li><a href="#decisions">Decisions</a></li>
+    <li><a href="#phases">Phases</a></li>
+    <li><a href="#risks">Risks</a></li>
+    <li><a href="#scope">Out of scope</a></li>
+    <li><a href="#verify">Verification</a></li>
+    <li><a href="#changelog">Change log</a></li>
+    <li><a href="#notes">Implementation notes</a></li>
+  </ol>
+</nav>
+
+<h2 id="progress">Progress</h2>
+<p id="overview-summary" class="meta"></p>
+<div class="table-scroll"><table>
+  <thead><tr><th>Phase / job</th><th>Status</th></tr></thead>
+  <tbody id="overview-body"></tbody>
+</table></div>
+
+<h2 id="current">1. Current state (measured)</h2>
+<p>REPLACE: facts from reading the code, with counts and <code>file</code> references. No guesses.</p>
+
+<h2 id="decisions">2. Decisions</h2>
+<!-- One block per decision. data-decision-state is "open" or "answered". -->
+<div class="decision" id="d1" data-decision-state="open">
+  <h3>D1. REPLACE: question <span class="status open">Open</span></h3>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) REPLACE: option and its trade-off.</p>
+  <p><strong>B.</strong> REPLACE: option and its trade-off.</p>
+  <div class="answer">Not answered yet.</div>
+</div>
+
+<h2 id="phases">3. Phases</h2>
+<p>Each phase is independently reviewable and leaves the build green.</p>
+
+<!-- One block per phase. data-status is one of: todo, progress, done, blocked, skipped. -->
+<div class="phase" id="phase-1" data-status="todo">
+  <h3><span class="title">Phase 1 &ndash; REPLACE: name</span>
+    <span class="tag">REPLACE: size &middot; risk</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> REPLACE. <strong>Depends on:</strong> REPLACE (decisions or phases, or "nothing").</p>
+  <ul class="jobs">
+    <li class="job" id="job-1-1" data-status="todo">
+      <span class="title">1.1 REPLACE: job</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> REPLACE: one observable condition.
+         <strong>Files:</strong> <code>REPLACE</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*REPLACE*'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<h2 id="risks">4. Risks</h2>
+<ul><li>REPLACE: risk and how the plan limits it.</li></ul>
+
+<h2 id="scope">5. Out of scope</h2>
+<ul><li>REPLACE: what this plan deliberately does not do.</li></ul>
+
+<h2 id="verify">6. Verification</h2>
+<p>REPLACE: what proves the whole plan is finished (commands and observable results). Run the
+<code>verify-plan</code> skill after the last phase.</p>
+
+<h2 id="changelog">7. Change log</h2>
+<div class="table-scroll"><table>
+  <thead><tr><th>Date</th><th>Change</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>REPLACE-YYYY-MM-DD</td><td>Plan written (Draft)</td><td>First version</td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="notes">8. Implementation notes</h2>
+<p>Filled in by <code>implement-plan</code>: deviations from the plan, results of <code>verify-plan</code>, and
+problems noticed but not fixed.</p>
+<ul id="notes-list"></ul>
+
+</div>
+<script>
+  (function () {
+    var labels = { todo: "Not started", progress: "In progress", done: "Done", blocked: "Blocked", skipped: "Deferred" };
+    var body = document.getElementById("overview-body");
+    var summary = document.getElementById("overview-summary");
+    var phaseCounts = {};
+    document.querySelectorAll(".phase[data-status], .job[data-status]").forEach(function (element) {
+      var status = element.getAttribute("data-status");
+      if (element.classList.contains("phase")) { phaseCounts[status] = (phaseCounts[status] || 0) + 1; }
+      var row = body.insertRow();
+      var nameCell = row.insertCell();
+      if (element.classList.contains("job")) { nameCell.className = "indent"; }
+      var link = document.createElement("a");
+      link.href = "#" + element.id;
+      link.textContent = element.querySelector(".title").textContent;
+      nameCell.appendChild(link);
+      var pill = document.createElement("span");
+      pill.className = "status " + status;
+      pill.textContent = labels[status] || status;
+      row.insertCell().appendChild(pill);
+    });
+    var parts = Object.keys(labels).filter(function (key) { return phaseCounts[key]; })
+      .map(function (key) { return phaseCounts[key] + " " + labels[key].toLowerCase(); });
+    summary.textContent = parts.length ? "Phases: " + parts.join(" · ") : "";
+  })();
+</script>
+</body>
+</html>

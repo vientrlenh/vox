@@ -16,8 +16,8 @@ public interface QuestionRepository {
     List<Question> saveAll(Collection<Question> questions);
     Optional<Question> findById(UUID id);
     /**
-     * Lookup thẳng theo id, KHÔNG check quyền — chỉ dùng ở những nơi quyền xem đã được
-     * xác nhận qua parent (vd: đã pass hasAccess của blueprint/exam chứa câu hỏi này rồi).
+     * Direct lookup by id, with NO permission check -- only used where the view permission has already been
+     * confirmed through the parent (e.g. already passed hasAccess of the blueprint/assessment containing this question).
      */
     List<Question> findByIdIn(Collection<UUID> ids);
     PageResult<Question> findAccessible(
@@ -38,7 +38,7 @@ public interface QuestionRepository {
         int pageNumber,
         int size
     );
-    PageResult<Question> findAccessibleForExamPaper(
+    PageResult<Question> findAccessibleForAssessmentPaper(
         UUID currentUserId,
         UUID currentSchoolId,
         boolean systemAdmin,
@@ -69,7 +69,7 @@ public interface QuestionRepository {
         boolean systemAdmin,
         boolean schoolAdmin
     );
-    boolean existsUsedInExam(UUID id);
+    boolean existsUsedInAssessment(UUID id);
     boolean existsById(UUID id);
     boolean existsByQuestionBankIdAndCode(UUID questionBankId, String code);
     boolean existsByQuestionBankIdAndQuestionTopicIdAndQuestionText(

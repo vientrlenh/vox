@@ -1,11 +1,11 @@
 package com.sep.vox.interfaces.kafka.dto;
 
 /**
- * Payload topic {@code exam.alert.raised} do vox-streaming phát (xem domain.AlertRaisedEvent bên đó).
+ * The payload of the topic {@code assessment.alert.raised} published by vox-streaming (see domain.AlertRaisedEvent over there).
  *
- * <p>{@code participantId} là candidateId, {@code sessionId} là id phiên thi. Hai trường này từng bị
- * gán cùng một giá trị ở phía phát; vox-streaming nay tra bù lại trước khi phát, nhưng dữ liệu cũ
- * trên topic thì vẫn còn nguyên như thế -- nên phía đọc không được coi participantId là chắc chắn.
+ * <p>{@code participantId} is the candidateId, {@code sessionId} is the id of the assessment session. These two fields were once
+ * assigned the same value on the publishing side; vox-streaming now looks the value up before publishing, but the old data
+ * on the topic is still exactly as it was -- so the read side must not treat participantId as certain.
  */
 public record AlertRaisedEventDto(
     String eventId,

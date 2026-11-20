@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.Map;
 
+import jakarta.servlet.http.HttpSession;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -41,24 +42,24 @@ class OAuth2AuthenticationSuccessHandlerTests {
 
     @Test
     void onAuthenticationSuccess_should_issue_tokens_set_cookie_and_redirect() throws Exception {
-        var request = new MockHttpServletRequest();
+        MockHttpServletRequest request = new MockHttpServletRequest();
         request.setRemoteAddr("203.0.113.10");
         request.addHeader("User-Agent", "JUnit User Agent");
-        var session = request.getSession();
+        HttpSession session = request.getSession();
         session.setAttribute("oauth2_device_id", "device-1");
         session.setAttribute("oauth2_device_name", "Chrome on Windows");
         session.setAttribute("oauth2_platform", "WEB");
 
-        var response = new MockHttpServletResponse();
-        var authentication = googleAuthentication();
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        OAuth2AuthenticationToken authentication = googleAuthentication();
         when(oAuth2LoginUseCase.execute(any(OAuth2LoginCommand.class)))
             .thenReturn(new LoginResponse("access-token", "refresh-token", List.of("STUDENT")));
 
         handler.onAuthenticationSuccess(request, response, authentication);
 
-        var commandCaptor = ArgumentCaptor.forClass(OAuth2LoginCommand.class);
+        ArgumentCaptor<OAuth2LoginCommand> commandCaptor = ArgumentCaptor.forClass(OAuth2LoginCommand.class);
         verify(oAuth2LoginUseCase).execute(commandCaptor.capture());
-        var command = commandCaptor.getValue();
+        OAuth2LoginCommand command = commandCaptor.getValue();
         assertThat(command.provider()).isEqualTo("google");
         assertThat(command.providerUserId()).isEqualTo("google-user-id");
         assertThat(command.email()).isEqualTo("student@example.com");
@@ -79,29 +80,29 @@ class OAuth2AuthenticationSuccessHandlerTests {
 
     @Test
     void onAuthenticationSuccess_should_use_forwarded_ip_when_present() throws Exception {
-        var request = new MockHttpServletRequest();
+        MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader("X-Forwarded-For", "198.51.100.20, 203.0.113.10");
         request.addHeader("User-Agent", "JUnit User Agent");
-        var session = request.getSession();
+        HttpSession session = request.getSession();
         session.setAttribute("oauth2_device_id", "device-1");
         session.setAttribute("oauth2_device_name", "Chrome on Windows");
         session.setAttribute("oauth2_platform", "WEB");
 
-        var response = new MockHttpServletResponse();
+        MockHttpServletResponse response = new MockHttpServletResponse();
         when(oAuth2LoginUseCase.execute(any(OAuth2LoginCommand.class)))
             .thenReturn(new LoginResponse("access-token", "refresh-token", List.of("STUDENT")));
 
         handler.onAuthenticationSuccess(request, response, googleAuthentication());
 
-        var commandCaptor = ArgumentCaptor.forClass(OAuth2LoginCommand.class);
+        ArgumentCaptor<OAuth2LoginCommand> commandCaptor = ArgumentCaptor.forClass(OAuth2LoginCommand.class);
         verify(oAuth2LoginUseCase).execute(commandCaptor.capture());
         assertThat(commandCaptor.getValue().ipAddress()).isEqualTo("198.51.100.20");
     }
 
     @Test
     void onAuthenticationSuccess_should_throw_unauthorized_when_session_is_missing() throws Exception {
-        var request = new MockHttpServletRequest();
-        var response = new MockHttpServletResponse();
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpServletResponse response = new MockHttpServletResponse();
 
         handler.onAuthenticationSuccess(request, response, googleAuthentication());
 
@@ -109,14 +110,14 @@ class OAuth2AuthenticationSuccessHandlerTests {
     }
 
     private static OAuth2AuthenticationToken googleAuthentication() {
-        var attributes = Map.<String, Object>of(
+        Map<String, Object> attributes = Map.<String, Object>of(
             "sub", "google-user-id",
             "email", "student@example.com",
             "email_verified", true,
             "name", "Test Student",
             "picture", "https://example.com/avatar.png"
         );
-        var principal = new DefaultOAuth2User(List.of(), attributes, "sub");
+        DefaultOAuth2User principal = new DefaultOAuth2User(List.of(), attributes, "sub");
         return new OAuth2AuthenticationToken(principal, principal.getAuthorities(), "google");
     }
 }

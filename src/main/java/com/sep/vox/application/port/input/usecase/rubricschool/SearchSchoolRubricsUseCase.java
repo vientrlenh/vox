@@ -9,6 +9,8 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.RubricDto;
 import com.sep.vox.domain.mapper.RubricDtoMapper;
 import com.sep.vox.domain.model.rubric.Rubric;
+import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -43,7 +45,7 @@ public class SearchSchoolRubricsUseCase implements IUseCase<SearchSchoolRubricsQ
 
         // 1. Xác thực tài khoản
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = userRepository.findById(currentUserId)
+        User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
 
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
@@ -51,7 +53,7 @@ public class SearchSchoolRubricsUseCase implements IUseCase<SearchSchoolRubricsQ
         }
 
         // 2. Chốt chặn bảo mật: Kiểm tra School Admin có thuộc về trường này không
-        var schoolUser = schoolUserRepository.findByUserId(currentUserId)
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
 
         if (!schoolUser.getSchoolId().equals(query.schoolId())) {

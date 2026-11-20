@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.registration;
 
 import java.time.Instant;
 
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,20 +33,20 @@ public class RegisterBySelfDeclaredUseCase implements IUseCase<RegisterBySelfDec
     @Override
     @Transactional
     public Void execute(RegisterBySelfDeclaredCommand input) {
-        var command = normalize(input);
+        RegisterBySelfDeclaredCommand command = normalize(input);
 
         // KHÔNG chặn theo tên miền nữa: một trường nhiều cơ sở dùng chung 1 tên miền là chuyện
         // bình thường (vd Phổ thông Năng Khiếu có 2 cơ sở trên ptnk.edu.vn), mà mỗi cơ sở là một
         // School độc lập. Chặn theo tên miền thì cơ sở nộp đơn sau vĩnh viễn không đăng ký được --
         // blockingFormStatuses cũ tính cả APPROVED nên không phải chờ hết hạn gì cả. Danh tính
         // thật của trường là MÃ TRƯỜNG, và mã vẫn được ProvisionSchoolService chống trùng.
-        var formAlreadyPendingByContactInfo = registerFormRepository.existsByContactEmailAndStatus(command.contactEmail(), RegisterFormStatus.PENDING) || registerFormRepository.existsByContactPhoneAndStatus(command.contactPhone(), RegisterFormStatus.PENDING);
+        boolean formAlreadyPendingByContactInfo = registerFormRepository.existsByContactEmailAndStatus(command.contactEmail(), RegisterFormStatus.PENDING) || registerFormRepository.existsByContactPhoneAndStatus(command.contactPhone(), RegisterFormStatus.PENDING);
 
         if (formAlreadyPendingByContactInfo) {
             throw new DuplicatedException("Thông tin yêu cầu đang tồn tại đơn đăng ký cần được phê duyệt");
         }
 
-        var alreadyUser = userRepository.existsByEmail(command.contactEmail()) || userRepository.existsByPhone(command.contactPhone());
+        boolean alreadyUser = userRepository.existsByEmail(command.contactEmail()) || userRepository.existsByPhone(command.contactPhone());
 
         if (alreadyUser) {
             throw new DuplicatedException("Email hoặc số điện thoại yêu cầu đã được đăng ký");
@@ -55,8 +56,8 @@ public class RegisterBySelfDeclaredUseCase implements IUseCase<RegisterBySelfDec
             throw new IllegalArgumentException("Cần gửi tài liệu để xác thực");
         }
 
-        var now = Instant.now();
-        var registerForm = RegisterForm.selfDeclared(
+        Instant now = Instant.now();
+        RegisterForm registerForm = RegisterForm.selfDeclared(
             command.schoolName(), 
             command.schoolDomain(), 
             command.schoolAddress(), 
@@ -74,8 +75,8 @@ public class RegisterBySelfDeclaredUseCase implements IUseCase<RegisterBySelfDec
             now
         );
 
-        var savedForm = registerFormRepository.save(registerForm);
-        var documents = RegisterFormDocument.createMany(savedForm.getId(), command.documentUrls(), now);
+        RegisterForm savedForm = registerFormRepository.save(registerForm);
+        List<RegisterFormDocument> documents = RegisterFormDocument.createMany(savedForm.getId(), command.documentUrls(), now);
         registerFormDocumentRepository.saveAll(documents);
         return null;
     }

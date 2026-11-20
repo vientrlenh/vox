@@ -9,19 +9,19 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import graphql.schema.GraphQLNamedType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
+import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTransport;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.core.type.filter.TypeFilter;
 import org.springframework.graphql.execution.GraphQlSource;
-import org.springframework.test.context.ActiveProfiles;
-
-import com.sep.vox.config.ContainerTestConfig;
 
 import graphql.schema.GraphQLEnumType;
+
+import com.sep.vox.support.IntegrationTest;
 
 /**
  * Mọi enum trong SDL phải liệt kê ĐỦ hằng số của enum Java cùng tên.
@@ -38,10 +38,9 @@ import graphql.schema.GraphQLEnumType;
  * <p>Quét theo TÊN ĐƠN GIẢN. Enum SDL không có enum Java cùng tên thì bỏ qua -- nhiều enum của SDL
  * là hình chiếu riêng của tầng đọc (SchoolRiskBucket, AiCostGranularity...) chứ không mirror cái gì.
  */
-@SpringBootTest
-@ActiveProfiles("test")
+@IntegrationTest
 @AutoConfigureTestGrpcTransport
-class GraphQlEnumParityTests extends ContainerTestConfig {
+class GraphQlEnumParityTests {
 
     private static final String DOMAIN_PACKAGE = "com.sep.vox.domain.model";
 
@@ -50,30 +49,31 @@ class GraphQlEnumParityTests extends ContainerTestConfig {
 
     @Test
     void every_graphql_enum_lists_exactly_the_values_of_the_java_enum_it_mirrors() {
-        var javaEnums = scanDomainEnums();
-        var drift = new LinkedHashMap<String, String>();
+        Map<String, Class<?>> javaEnums = scanDomainEnums();
+        Map<String, String> drift = new LinkedHashMap<String, String>();
 
-        for (var type : graphQlSource.schema().getAllTypesAsList()) {
+        for (GraphQLNamedType type : graphQlSource.schema().getAllTypesAsList()) {
             if (!(type instanceof GraphQLEnumType sdlEnum) || sdlEnum.getName().startsWith("__")) {
                 continue;
             }
-            var javaEnum = javaEnums.get(sdlEnum.getName());
+            Class<?> javaEnum = javaEnums.get(sdlEnum.getName());
             if (javaEnum == null) {
                 continue;
             }
 
-            var inJava = Arrays.stream(javaEnum.getEnumConstants())
+            TreeSet<String> inJava = Arrays.stream(javaEnum.getEnumConstants())
                 .map(constant -> ((Enum<?>) constant).name())
                 .collect(Collectors.toCollection(TreeSet::new));
-            var inSdl = sdlEnum.getValues().stream()
+            TreeSet<String> inSdl = sdlEnum.getValues().stream()
                 .map(value -> value.getName())
                 .collect(Collectors.toCollection(TreeSet::new));
 
-            // Java thừa -> serialize hỏng (đúng ca QUOTA_FUNDING). SDL thừa -> nhận được một giá trị
-            // đầu vào mà valueOf() sẽ ném. Hai chiều hỏng khác nhau nhưng cùng một nguyên nhân.
-            var missingFromSdl = new TreeSet<>(inJava);
+            // Extra on the Java side -> serialization breaks (exactly the QUOTA_FUNDING case).
+            // Extra in the SDL -> clients can send an input value that valueOf() will throw on. The
+            // two directions fail differently but share the same cause.
+            TreeSet<String> missingFromSdl = new TreeSet<>(inJava);
             missingFromSdl.removeAll(inSdl);
-            var missingFromJava = new TreeSet<>(inSdl);
+            TreeSet<String> missingFromJava = new TreeSet<>(inSdl);
             missingFromJava.removeAll(inJava);
 
             if (!missingFromSdl.isEmpty() || !missingFromJava.isEmpty()) {
@@ -88,12 +88,12 @@ class GraphQlEnumParityTests extends ContainerTestConfig {
     }
 
     /**
-     * Bắt buộc phải nới {@code isCandidateComponent}: mặc định nó loại mọi class abstract, mà enum có
-     * thân riêng cho từng hằng số (vd {@code QuotaType}) thì bytecode CHÍNH LÀ abstract. Không nới thì
-     * đúng những enum thú vị nhất lại rơi khỏi phép kiểm này.
+     * {@code isCandidateComponent} must be relaxed: by default it rejects every abstract class, yet
+     * an enum with its own body per constant (e.g. {@code QuotaType}) IS abstract in bytecode.
+     * Without relaxing it, exactly the most interesting enums would fall out of this check.
      */
     private static Map<String, Class<?>> scanDomainEnums() {
-        var scanner = new ClassPathScanningCandidateComponentProvider(false) {
+        ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false) {
             @Override
             protected boolean isCandidateComponent(AnnotatedBeanDefinition beanDefinition) {
                 return true;
@@ -101,19 +101,19 @@ class GraphQlEnumParityTests extends ContainerTestConfig {
         };
         scanner.addIncludeFilter((TypeFilter) (metadataReader, factory) -> true);
 
-        var found = new LinkedHashMap<String, Class<?>>();
-        for (var candidate : scanner.findCandidateComponents(DOMAIN_PACKAGE)) {
-            var className = candidate.getBeanClassName();
+        Map<String, Class<?>> found = new LinkedHashMap<String, Class<?>>();
+        for (BeanDefinition candidate : scanner.findCandidateComponents(DOMAIN_PACKAGE)) {
+            String className = candidate.getBeanClassName();
             if (className == null) {
                 continue;
             }
             try {
-                var loaded = Class.forName(className);
+                Class<?> loaded = Class.forName(className);
                 if (loaded.isEnum()) {
                     found.put(loaded.getSimpleName(), loaded);
                 }
             } catch (ClassNotFoundException | NoClassDefFoundError ignored) {
-                // Không phải việc của test này.
+                // Not the job of this test.
             }
         }
         return found;
@@ -129,8 +129,8 @@ class GraphQlEnumParityTests extends ContainerTestConfig {
 
     @Test
     void the_balance_ledger_enum_is_complete_in_the_sdl() {
-        var sdlEnum = (GraphQLEnumType) graphQlSource.schema().getType("SchoolBalanceEntryType");
-        var inSdl = sdlEnum.getValues().stream()
+        GraphQLEnumType sdlEnum = (GraphQLEnumType) graphQlSource.schema().getType("SchoolBalanceEntryType");
+        Set<String> inSdl = sdlEnum.getValues().stream()
             .map(value -> value.getName())
             .collect(Collectors.toSet());
 

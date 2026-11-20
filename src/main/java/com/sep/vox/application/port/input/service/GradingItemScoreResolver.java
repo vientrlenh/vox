@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.service;
 
+import com.sep.vox.domain.model.assessment.AssessmentItemResponse;
+import com.sep.vox.domain.model.rubric.RubricVersion;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -14,11 +16,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.command.SubmitGradingCommand;
-import com.sep.vox.application.port.input.service.ExamGradingAccessService.GradingContext;
+import com.sep.vox.application.port.input.service.AssessmentGradingAccessService.GradingContext;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
 import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
-import com.sep.vox.domain.service.exam.RubricItemScoreFormula;
-import com.sep.vox.domain.repository.ExamItemResponseRepository;
+import com.sep.vox.domain.service.assessment.RubricItemScoreFormula;
+import com.sep.vox.domain.repository.AssessmentItemResponseRepository;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 
@@ -33,15 +35,15 @@ import com.sep.vox.domain.repository.RubricVersionRepository;
 @Service
 public class GradingItemScoreResolver {
 
-    private final ExamItemResponseRepository examItemResponseRepository;
+    private final AssessmentItemResponseRepository assessmentItemResponseRepository;
     private final RubricCriterionRepository rubricCriterionRepository;
     private final RubricVersionRepository rubricVersionRepository;
 
     public GradingItemScoreResolver(
-            ExamItemResponseRepository examItemResponseRepository,
+            AssessmentItemResponseRepository assessmentItemResponseRepository,
             RubricCriterionRepository rubricCriterionRepository,
             RubricVersionRepository rubricVersionRepository) {
-        this.examItemResponseRepository = examItemResponseRepository;
+        this.assessmentItemResponseRepository = assessmentItemResponseRepository;
         this.rubricCriterionRepository = rubricCriterionRepository;
         this.rubricVersionRepository = rubricVersionRepository;
     }
@@ -68,11 +70,11 @@ public class GradingItemScoreResolver {
     @Transactional(readOnly = true)
     public List<ResolvedItem> resolve(
             GradingContext context, SubmitGradingCommand command, boolean enforceFullCoverage) {
-        var items = command.items() == null ? List.<SubmitGradingCommand.ItemGrade>of() : command.items();
+        List<SubmitGradingCommand.ItemGrade> items = command.items() == null ? List.<SubmitGradingCommand.ItemGrade>of() : command.items();
         if (items.isEmpty()) {
             throw new IllegalArgumentException("Phải chấm điểm cho ít nhất một phần thi.");
         }
-        var paperItemIds = items.stream().map(itemGrade -> itemGrade.paperItemId()).toList();
+        List<UUID> paperItemIds = items.stream().map(itemGrade -> itemGrade.paperItemId()).toList();
         if (paperItemIds.stream().anyMatch(java.util.Objects::isNull)) {
             throw new IllegalArgumentException("Thiếu phần thi cần chấm.");
         }
@@ -80,7 +82,7 @@ public class GradingItemScoreResolver {
             throw new IllegalArgumentException("Không được chấm trùng phần thi.");
         }
 
-        var responsesByPaperItemId = examItemResponseRepository
+        Map<UUID, AssessmentItemResponse> responsesByPaperItemId = assessmentItemResponseRepository
             .findBySessionId(context.candidateResult().getSessionId()).stream()
             .collect(Collectors.toMap(res -> res.getPaperItemId(), Function.identity(),
                 (left, right) -> left));
@@ -88,17 +90,17 @@ public class GradingItemScoreResolver {
             throw new IllegalArgumentException(
                 "Phải chấm đủ tất cả " + responsesByPaperItemId.size() + " phần thi của bài.");
         }
-        var criteria = rubricCriterionRepository
+        Map<UUID, RubricCriterion> criteria = rubricCriterionRepository
             .findByRubricVersionId(context.candidateResult().getRubricVersionId()).stream()
             .collect(Collectors.toMap(criterion -> criterion.getId(), Function.identity(), (left, right) -> left));
-        var rubricVersion = rubricVersionRepository.findById(context.candidateResult().getRubricVersionId())
+        RubricVersion rubricVersion = rubricVersionRepository.findById(context.candidateResult().getRubricVersionId())
             .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy rubric version của bài thi."));
 
         // Chấm xong toàn bộ rồi mới trả về — một phần lỗi không được để lại điểm
         // nửa vời của các phần trước đó.
-        var resolved = new ArrayList<ResolvedItem>();
-        for (var item : items) {
-            var response = responsesByPaperItemId.get(item.paperItemId());
+        List<ResolvedItem> resolved = new ArrayList<ResolvedItem>();
+        for (SubmitGradingCommand.ItemGrade item : items) {
+            AssessmentItemResponse response = responsesByPaperItemId.get(item.paperItemId());
             if (response == null) {
                 throw new IllegalArgumentException("Phần thi không thuộc bài thi này.");
             }
@@ -120,16 +122,16 @@ public class GradingItemScoreResolver {
     }
 
     /**
-     * Kiểm tra điểm giáo viên nhập rồi giao phép tính cho {@link RubricItemScoreFormula} -- công
-     * thức DÙNG CHUNG với đường AI chấm ({@code RecordExamAttemptEvaluationUseCase}).
+     * Validates the score the teacher entered and then hands the computation to {@link RubricItemScoreFormula} -- a formula
+     * SHARED with the AI grading path ({@code RecordAssessmentAttemptEvaluationUseCase}).
      *
-     * <p>Trước 2026-08-11 đây là bản chép tay thứ hai của cùng công thức, và hai bản đã trôi lệch:
-     * nhánh dự phòng (rubric không khai trọng số) bên này chia cho số tiêu chí NỘP LÊN, bên kia
-     * chia cho số tiêu chí KHỚP được rubric. Nay cả hai cùng chia cho số tiêu chí đã phân giải.
+     * <p>Before 2026-08-11 this was a second hand-copied version of the same formula, and the two had drifted apart:
+     * the fallback branch (rubric without declared weights) here divided by the number of criteria SUBMITTED, the other one
+     * divided by the number of criteria that MATCHED the rubric. Now both divide by the number of resolved criteria.
      *
-     * <p>Phần giữ riêng ở đây là KIỂM TRA đầu vào, và nó cố ý nghiêm hơn đường AI: người đang nhập
-     * tay thì phải bị chặn ngay khi thiếu tiêu chí bắt buộc, chấm trùng, hoặc điểm lọt ra ngoài
-     * khoảng của tiêu chí.
+     * <p>What stays specific here is the INPUT validation, which is deliberately stricter than the AI path: a person entering
+     * scores by hand must be blocked right away on a missing mandatory criterion, a duplicate grade, or a score that falls outside the
+     * criterion's range.
      */
     private BigDecimal itemScore(
             List<SubmitGradingCommand.CriterionScoreItem> scores,
@@ -140,7 +142,7 @@ public class GradingItemScoreResolver {
         if (scores == null || scores.isEmpty()) {
             throw new IllegalArgumentException("Phải chấm điểm cho các tiêu chí.");
         }
-        var submittedIds = scores.stream()
+        List<UUID> submittedIds = scores.stream()
             .map(item -> item.rubricCriterionId()).toList();
         if (submittedIds.stream().anyMatch(Objects::isNull)) {
             throw new IllegalArgumentException("Thiếu tiêu chí chấm điểm.");
@@ -148,7 +150,7 @@ public class GradingItemScoreResolver {
         if (new HashSet<>(submittedIds).size() != submittedIds.size()) {
             throw new IllegalArgumentException("Không được chấm trùng tiêu chí.");
         }
-        var missingRequired = criteria.values().stream()
+        List<String> missingRequired = criteria.values().stream()
             .filter(criterion -> criterion.isRequired())
             .filter(criterion -> !submittedIds.contains(criterion.getId()))
             .map(criterion -> criterion.getName())
@@ -158,9 +160,9 @@ public class GradingItemScoreResolver {
                 "Phải chấm đủ các tiêu chí bắt buộc: " + String.join(", ", missingRequired) + ".");
         }
 
-        var scored = new ArrayList<RubricItemScoreFormula.ScoredCriterion>();
-        for (var item : scores) {
-            var criterion = criteria.get(item.rubricCriterionId());
+        List<RubricItemScoreFormula.ScoredCriterion> scored = new ArrayList<RubricItemScoreFormula.ScoredCriterion>();
+        for (SubmitGradingCommand.CriterionScoreItem item : scores) {
+            RubricCriterion criterion = criteria.get(item.rubricCriterionId());
             if (criterion == null) {
                 throw new IllegalArgumentException("Tiêu chí không thuộc rubric của bài thi này.");
             }

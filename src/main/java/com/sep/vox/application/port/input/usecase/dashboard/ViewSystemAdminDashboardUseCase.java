@@ -7,6 +7,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
 import java.util.List;
 
+import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -67,17 +68,17 @@ public class ViewSystemAdminDashboardUseCase implements IUseCase<Void, SystemAdm
     @Override
     @Transactional(readOnly = true)
     public SystemAdminDashboardSummaryResponse execute(Void input) {
-        var now = Instant.now();
-        var totalSchools = schoolRepository.countAll();
-        var activeSchools = schoolRepository.countByIsActiveTrue();
+        Instant now = Instant.now();
+        long totalSchools = schoolRepository.countAll();
+        long activeSchools = schoolRepository.countByIsActiveTrue();
 
         // Cộng dồn ở DB chứ không nạp đơn về đếm: đây là con số TỪ TRƯỚC TỚI NAY, danh sách đứng sau
         // nó chỉ có tăng. Mốc dưới là EPOCH vì "tất cả" -- khoảng nửa mở [from, to) nên mốc trên là
         // now, tức tính tới đúng thời điểm mở màn hình.
-        var totalRevenue = orderRepository.sumTotalAmountByStatusInRange(OrderStatus.SUCCESS, Instant.EPOCH, now);
+        BigDecimal totalRevenue = orderRepository.sumTotalAmountByStatusInRange(OrderStatus.SUCCESS, Instant.EPOCH, now);
 
-        var activeFrameworkCount = frameworkRepository.findAllActive(1, 1).totalElements();
-        var systemRubricCount = rubricRepository.findAllByOwnerType(RubricOwnerType.SYSTEM, 1, 1).totalElements();
+        long activeFrameworkCount = frameworkRepository.findAllActive(1, 1).totalElements();
+        long systemRubricCount = rubricRepository.findAllByOwnerType(RubricOwnerType.SYSTEM, 1, 1).totalElements();
 
         return new SystemAdminDashboardSummaryResponse(
             totalSchools,
@@ -133,17 +134,17 @@ public class ViewSystemAdminDashboardUseCase implements IUseCase<Void, SystemAdm
      * Nam trước khi cắt tháng: cắt theo UTC sẽ đẩy 7 giờ đầu của mỗi tháng sang tháng trước.
      */
     private List<MonthlyRevenueResponse> buildMonthlyRevenue(Instant now) {
-        var currentMonth = YearMonth.now(ZoneConstant.BUSINESS_ZONE);
-        var totalsByMonth = new LinkedHashMap<YearMonth, BigDecimal>();
-        for (var i = REVENUE_MONTHS - 1; i >= 0; i--) {
+        YearMonth currentMonth = YearMonth.now(ZoneConstant.BUSINESS_ZONE);
+        Map<YearMonth, BigDecimal> totalsByMonth = new LinkedHashMap<YearMonth, BigDecimal>();
+        for (int i = REVENUE_MONTHS - 1; i >= 0; i--) {
             totalsByMonth.put(currentMonth.minusMonths(i), BigDecimal.ZERO);
         }
 
-        var windowStart = currentMonth.minusMonths(REVENUE_MONTHS - 1L)
+        Instant windowStart = currentMonth.minusMonths(REVENUE_MONTHS - 1L)
             .atDay(1).atStartOfDay(ZoneConstant.BUSINESS_ZONE).toInstant();
 
         for (Order order : orderRepository.findByStatusInRange(OrderStatus.SUCCESS, windowStart, now)) {
-            var orderMonth = YearMonth.from(order.getCreatedAt().atZone(ZoneConstant.BUSINESS_ZONE));
+            YearMonth orderMonth = YearMonth.from(order.getCreatedAt().atZone(ZoneConstant.BUSINESS_ZONE));
             totalsByMonth.computeIfPresent(orderMonth, (month, total) -> total.add(order.getTotalAmountVnd()));
         }
 

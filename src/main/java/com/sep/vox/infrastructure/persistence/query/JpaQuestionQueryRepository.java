@@ -67,17 +67,17 @@ public class JpaQuestionQueryRepository implements QuestionQueryRepository {
                 (:systemAdmin = true AND qb.ownerType = 'SYSTEM')
                 OR EXISTS (
                     SELECT 1
-                    FROM ExamPaperItemJpaEntity epi
-                    JOIN ExamPaperJpaEntity ep ON ep.id = epi.paperId
-                    JOIN ExamMemberJpaEntity em ON em.examId = ep.examId
+                    FROM AssessmentPaperItemJpaEntity epi
+                    JOIN AssessmentPaperJpaEntity ep ON ep.id = epi.paperId
+                    JOIN AssessmentMemberJpaEntity em ON em.assessmentId = ep.assessmentId
                     WHERE epi.questionId = q.id
                       AND em.userId = :currentUserId
                 )
                 OR EXISTS (
                     SELECT 1
-                    FROM ExamBlueprintSlotJpaEntity bs
-                    JOIN ExamBlueprintVersionJpaEntity bv ON bv.id = bs.blueprintVersionId
-                    JOIN ExamBlueprintJpaEntity b ON b.id = bv.blueprintId
+                    FROM AssessmentBlueprintSlotJpaEntity bs
+                    JOIN AssessmentBlueprintVersionJpaEntity bv ON bv.id = bs.blueprintVersionId
+                    JOIN AssessmentBlueprintJpaEntity b ON b.id = bv.blueprintId
                     WHERE bs.fixedQuestionId = q.id
                       AND (:systemAdmin = true OR b.schoolId = :currentSchoolId)
                 )
@@ -150,11 +150,11 @@ public class JpaQuestionQueryRepository implements QuestionQueryRepository {
             String sharing,
             String scope,
             String keywordPattern) {
-        // Không dùng SELECT new ... được: cột status của QuestionJpaEntity là String (xem
-        // @Column ở entity, ràng buộc bằng CHECK chứ không phải @Enumerated), nên constructor
-        // nhận QuestionStatus sẽ không khớp. Đổi String -> enum tại đây là đúng chỗ: đây là
-        // nơi duy nhất biết cách entity lưu trữ.
-        var rows = em.createQuery(ACCESSIBLE_QUESTIONS_JPQL, Object[].class)
+        // SELECT new ... cannot be used: the status column of QuestionJpaEntity is a String (see the
+        // @Column on the entity, constrained by a CHECK rather than @Enumerated), so a constructor
+        // taking QuestionStatus would not match. Converting String -> enum here is the right place: this is
+        // the only place that knows how the entity stores it.
+        List<Object[]> rows = em.createQuery(ACCESSIBLE_QUESTIONS_JPQL, Object[].class)
             .setParameter("currentUserId", currentUserId)
             .setParameter("currentSchoolId", currentSchoolId)
             .setParameter("systemAdmin", systemAdmin)

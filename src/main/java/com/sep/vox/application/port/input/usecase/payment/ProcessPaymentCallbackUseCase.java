@@ -1,7 +1,10 @@
 package com.sep.vox.application.port.input.usecase.payment;
 
+import com.sep.vox.application.response.output.CallbackVerificationResult;
+import com.sep.vox.domain.model.payment.PaymentRecord;
 import java.time.Instant;
 
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -49,21 +52,21 @@ public class ProcessPaymentCallbackUseCase implements IUseCase<ProcessPaymentCal
 
     @Transactional
     public PaymentCallbackResponse execute(ProcessPaymentCallbackCommand input) {
-        var verification = paymentProcessResolver
+        CallbackVerificationResult verification = paymentProcessResolver
                 .resolve(input.provider())
                 .verifyCallback(input.rawBody(), input.headers());
         if (!verification.valid()) {
             throw new UnauthorizedException("Callback " + input.provider() + " không hợp lệ");
         }
 
-        var paymentOpt = paymentRecordRepository.findByProviderAndProviderOrderRef(
+        Optional<PaymentRecord> paymentOpt = paymentRecordRepository.findByProviderAndProviderOrderRef(
             input.provider(), verification.providerOrderRef());
         if (paymentOpt.isEmpty()) {
             LOGGER.warn("Nhận callback {} hợp lệ nhưng không tìm thấy lần thanh toán cho orderRef={}",
                 input.provider(), verification.providerOrderRef());
             return PaymentCallbackResponse.toResponse(CallbackOutcome.UNKNOWN_PAYMENT);
         }
-        var payment = paymentOpt.get();
+        PaymentRecord payment = paymentOpt.get();
 
         // Callback lặp lại là chuyện BÌNH THƯỜNG, không phải lỗi: cổng gửi lại khi chưa nhận được
         // 200. Thoát sớm ở đây thay vì để settlePaid tự chặn, để phân biệt được "vừa chốt xong" và
@@ -103,7 +106,7 @@ public class ProcessPaymentCallbackUseCase implements IUseCase<ProcessPaymentCal
             return PaymentCallbackResponse.toResponse(CallbackOutcome.AMOUNT_MISMATCH);
         }
 
-        var status = verification.status();
+        PaymentLinkRemoteStatus status = verification.status();
         if (status == PaymentLinkRemoteStatus.PAID) {
             LOGGER.info("[WEBHOOK] Chốt lần thanh toán {} (orderRef={}) thành PAID qua callback {}",
                 payment.getId(), verification.providerOrderRef(), input.provider());
@@ -114,7 +117,7 @@ public class ProcessPaymentCallbackUseCase implements IUseCase<ProcessPaymentCal
         // status null (adapter chưa kết luận được) hoặc PENDING/PROCESSING/UNDERPAID: giao dịch chưa
         // xong hẳn bên cổng. KHÔNG được đánh hỏng ở đây -- SePay có gửi thông báo trung gian, và
         // đóng một lần thử còn sống nghĩa là lần báo "đã trả" sau đó không còn dòng nào để chốt.
-        var failureStatus = toFailureStatus(status);
+        PaymentStatus failureStatus = toFailureStatus(status);
         if (failureStatus == null) {
             LOGGER.info("Callback {} cho orderRef={} ở trạng thái {} -- chưa chốt gì",
                 input.provider(), verification.providerOrderRef(), status);

@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.service;
 import java.util.HashMap;
 import java.util.List;
 
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
@@ -57,18 +58,18 @@ public class InterestQuizBankTopUpService {
     }
 
     public int topUp() {
-        var dimensions = interestQuizScorer.quizDimensionCodes();
+        List<String> dimensions = interestQuizScorer.quizDimensionCodes();
         if (dimensions.isEmpty()) {
             return 0;
         }
-        var pool = quizItemRepository.findAllActiveQuizItems();
-        var coverage = new HashMap<String, Integer>();
-        for (var item : pool) {
-            for (var dimension : item.getDimensionPerStatement()) {
+        List<InterestQuizSeedItem> pool = quizItemRepository.findAllActiveQuizItems();
+        Map<String, Integer> coverage = new HashMap<String, Integer>();
+        for (InterestQuizSeedItem item : pool) {
+            for (String dimension : item.getDimensionPerStatement()) {
                 coverage.merge(dimension, 1, (current, delta) -> current + delta);
             }
         }
-        var underCovered = dimensions.stream()
+        List<String> underCovered = dimensions.stream()
             .filter(dimension -> coverage.getOrDefault(dimension, 0) < MIN_COVERAGE_PER_DIMENSION)
             .toList();
         if (underCovered.isEmpty()) {
@@ -79,17 +80,17 @@ public class InterestQuizBankTopUpService {
             "Kho quiz sở thích thiếu phủ cho {} -- sinh bổ sung",
             underCovered
         );
-        var existingStatements = pool.stream()
+        List<String> existingStatements = pool.stream()
             .flatMap(item -> item.getStatements().stream())
             .toList();
         // Vẫn gửi TOÀN BỘ danh mục chứ không chỉ chiều thiếu: mỗi triplet bắt buộc dùng 3
         // chiều KHÁC NHAU, nên nếu chỉ đưa 1 chiều thiếu thì không dựng nổi triplet nào.
-        var generated = quizGenerationPort.generate(
+        List<InterestQuizSeedItem> generated = quizGenerationPort.generate(
             MAX_ITEMS_PER_RUN,
             existingStatements,
             dimensions
         );
-        var usable = generated.stream()
+        List<InterestQuizSeedItem> usable = generated.stream()
             .filter(item -> item.getDimensionPerStatement().stream().anyMatch(underCovered::contains))
             .toList();
         if (usable.isEmpty()) {

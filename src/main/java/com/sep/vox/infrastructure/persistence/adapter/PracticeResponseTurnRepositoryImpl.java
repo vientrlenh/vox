@@ -3,6 +3,7 @@ package com.sep.vox.infrastructure.persistence.adapter;
 import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
@@ -32,13 +33,13 @@ public class PracticeResponseTurnRepositoryImpl implements PracticeResponseTurnR
             int durationSeconds,
             String wordFeedbackJson,
             Double turnScore) {
-        var existing = repository.findByPracticeResponseIdAndTurnOrder(practiceResponseId, turnOrder);
+        Optional<PracticeResponseTurnJpaEntity> existing = repository.findByPracticeResponseIdAndTurnOrder(practiceResponseId, turnOrder);
         if (existing.isPresent()) {
             // Same turn already recorded -- a Python retry after a lost HTTP response, not a
             // real second turn (turn_order is client-driven and monotonic per question).
             return new TurnWrite(existing.get().getId(), false);
         }
-        var saved = repository.save(new PracticeResponseTurnJpaEntity(
+        PracticeResponseTurnJpaEntity saved = repository.save(new PracticeResponseTurnJpaEntity(
             UUID.randomUUID(),
             practiceResponseId,
             turnOrder,
@@ -55,7 +56,7 @@ public class PracticeResponseTurnRepositoryImpl implements PracticeResponseTurnR
 
     @Override
     public int findRemainingQuestionSeconds(UUID sessionId, UUID questionId) {
-        var value = repository.findRemainingQuestionSeconds(sessionId, questionId);
+        Integer value = repository.findRemainingQuestionSeconds(sessionId, questionId);
         return value == null ? 0 : value;
     }
 

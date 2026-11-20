@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.port.input.usecase.subscription.ViewMyPracticeQuotaAllocationUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.domain.dto.SchoolSubscriptionQuotaUserAllocationDto;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaUserAllocation;
@@ -40,7 +41,7 @@ class ViewMyPracticeQuotaAllocationUseCaseTests {
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(userContextPort.getCurrentSchoolId()).thenReturn(schoolId);
-        var subscription = new SchoolSubscription();
+        SchoolSubscription subscription = new SchoolSubscription();
         subscription.setId(subscriptionId);
         when(schoolSubscriptionRepository.findActiveBySchoolId(schoolId)).thenReturn(Optional.of(subscription));
     }
@@ -52,7 +53,7 @@ class ViewMyPracticeQuotaAllocationUseCaseTests {
             .thenReturn(Optional.of(new SchoolSubscriptionQuotaUserAllocation(
                 subscriptionId, QuotaType.PRACTICE, userId, BigDecimal.valueOf(1200), BigDecimal.valueOf(300))));
 
-        var result = useCase.execute(null);
+        SchoolSubscriptionQuotaUserAllocationDto result = useCase.execute(null);
 
         assertThat(result).isNotNull();
         assertThat(result.allocatedAmountVnd()).isEqualByComparingTo(BigDecimal.valueOf(1200));

@@ -1,6 +1,10 @@
 package com.sep.vox.infrastructure.security;
 
 
+import com.sep.vox.application.query.dto.UserRoleInfo;
+import com.sep.vox.domain.model.school.SchoolUser;
+import java.util.List;
+import java.util.UUID;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -36,14 +40,14 @@ public class CustomUserDetailsService implements UserDetailsService {
             user = userRepository.findByPhone(login)
                 .orElseThrow(() -> new UsernameNotFoundException("Thông tin đăng nhập sai"));
         } 
-        var userRoleWithInfo = userRoleQueryRepository.findByUserIdWithRoleInfo(user.getId());
-        var roles = userRoleWithInfo
+        List<UserRoleInfo> userRoleWithInfo = userRoleQueryRepository.findByUserIdWithRoleInfo(user.getId());
+        List<String> roles = userRoleWithInfo
             .stream()
             .map(role -> role.roleCode())
             .toList();
-        var schoolUser = schoolUserRepository.findByUserId(user.getId())
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(user.getId())
             .orElse(null);
-        var schoolId = schoolUser == null ? null : schoolUser.getSchoolId();
+        UUID schoolId = schoolUser == null ? null : schoolUser.getSchoolId();
         return CustomUserDetails.createFromUser(user, schoolId, roles);
     }
     

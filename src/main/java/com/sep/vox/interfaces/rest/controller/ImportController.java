@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.rest.controller;
 
+import com.sep.vox.application.port.input.command.RejectImportSessionCommand;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
@@ -31,9 +32,9 @@ public class ImportController {
     public ResponseEntity<ApiResponse<RejectImportSessionResponse>> rejectImportSession(
             @PathVariable("sessionId") UUID sessionId,
             @RequestBody(required = false) RejectImportSessionRequest request) {
-        var command = RejectImportSessionCommandMapper.fromRequest(sessionId, request);
-        var data = rejectImportSessionUseCase.execute(command);
-        var response = ApiResponse.success("Hủy import thành công", data);
+        RejectImportSessionCommand command = RejectImportSessionCommandMapper.fromRequest(sessionId, request);
+        RejectImportSessionResponse data = rejectImportSessionUseCase.execute(command);
+        ApiResponse<RejectImportSessionResponse> response = ApiResponse.success("Hủy import thành công", data);
         return ResponseEntity.ok(response);
     }
 }

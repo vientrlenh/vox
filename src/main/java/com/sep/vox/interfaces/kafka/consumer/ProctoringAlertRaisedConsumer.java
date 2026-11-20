@@ -15,14 +15,15 @@ import com.sep.vox.application.port.input.usecase.proctoring.RecordProctoringAle
 import com.sep.vox.interfaces.kafka.dto.AlertRaisedEventDto;
 import com.sep.vox.interfaces.kafka.mapper.ProctoringAlertCommandMapper;
 
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Đầu đọc của topic {@code exam.alert.raised}.
+ * The reader of the topic {@code assessment.alert.raised}.
  *
- * <p>vox-streaming đã phát topic này từ trước mà không ai tiêu thụ, nên mọi cảnh báo giám sát chỉ
- * tồn tại trong bộ nhớ tab trình duyệt của giám thị đang mở. Consumer này là chỗ chúng trở thành bản
- * ghi: phát lại được cho giám thị vào ca muộn, và tra lại được khi chấm bài sau thi.
+ * <p>vox-streaming has published this topic for a long time without anyone consuming it, so every proctoring alert only
+ * existed in the memory of the open proctor's browser tab. This consumer is where they become a
+ * record: replayable for a proctor who joins a session late, and searchable when grading after the assessment.
  */
 @Component
 public class ProctoringAlertRaisedConsumer {
@@ -51,13 +52,13 @@ public class ProctoringAlertRaisedConsumer {
     )
     public void consume(ConsumerRecord<String, Object> record, Acknowledgment ack) {
         try {
-            var payload = jsonMapper.valueToTree(record.value());
-            var dto = jsonMapper.treeToValue(payload, AlertRaisedEventDto.class);
-            var stored = recordProctoringAlertUseCase.execute(ProctoringAlertCommandMapper.toCommand(dto));
+            JsonNode payload = jsonMapper.valueToTree(record.value());
+            AlertRaisedEventDto dto = jsonMapper.treeToValue(payload, AlertRaisedEventDto.class);
+            Boolean stored = recordProctoringAlertUseCase.execute(ProctoringAlertCommandMapper.toCommand(dto));
 
-            // Chỉ log ở mức INFO khi thật sự có dòng mới. Cảnh báo lặp lại là chuyện bình thường của
-            // Kafka, và ghi log mỗi lần gửi lại sẽ biến log giám sát thành nhiễu đúng lúc cần đọc nó
-            // nhất -- khi đang có sự cố.
+            // Log at INFO only when a new row was actually stored. Repeated alerts are normal with Kafka, and
+            // logging every redelivery would turn the monitoring log into noise exactly when it needs to be
+            // read the most -- during an incident.
             if (Boolean.TRUE.equals(stored)) {
                 LOGGER.info(
                     "Đã lưu cảnh báo giám sát: eventId={} sessionId={} alertType={} capturedAt={}",

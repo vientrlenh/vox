@@ -17,11 +17,10 @@ public record SchoolGradeDto(
     String description,
     LocalDate startDate,
     LocalDate endDate,
-    String status,
+    SchoolGradeStatus status,
     Instant createdAt,
     Instant updatedAt
 ) {
-
     public static SchoolGradeDto toDto(SchoolGrade grade) {
         return new SchoolGradeDto(
             grade.getId(),
@@ -32,13 +31,9 @@ public record SchoolGradeDto(
             grade.getDescription(),
             grade.getStartDate(),
             grade.getEndDate(),
-            valueOf(grade.getStatus()),
+            grade.getStatus(),
             grade.getCreatedAt(),
             grade.getUpdatedAt()
         );
-    }
-
-    private static String valueOf(SchoolGradeStatus status) {
-        return status == null ? null : status.name();
     }
 }

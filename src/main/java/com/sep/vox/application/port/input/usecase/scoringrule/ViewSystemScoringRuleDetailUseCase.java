@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.scoringrule;
 
+import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
+import com.sep.vox.domain.model.user.User;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -43,7 +45,7 @@ public class ViewSystemScoringRuleDetailUseCase implements IUseCase<ViewScoringR
     public ScoringRuleDto execute(ViewScoringRuleDetailQuery query) {
         // 1. Kiểm tra tài khoản System Admin
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = userRepository.findById(currentUserId)
+        User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("Tài khoản đã bị khóa.");
@@ -59,7 +61,7 @@ public class ViewSystemScoringRuleDetailUseCase implements IUseCase<ViewScoringR
         }
 
         // 4. Kiểm tra Assessment Policy tồn tại và thuộc phạm vi toàn hệ thống
-        var policy = assessmentPolicyRepository.findById(rule.getPolicyId())
+        AssessmentPolicy policy = assessmentPolicyRepository.findById(rule.getPolicyId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Assessment Policy."));
         if (policy.getSchoolId() != null) {
             throw new ForbiddenException("Không thể xem Scoring Rule của Assessment Policy thuộc trường học.");

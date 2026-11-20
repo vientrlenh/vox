@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.RefreshTokenJpaEntity;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -37,8 +38,8 @@ public class RefreshTokenRepositoryImpl implements RefreshTokenRepository {
 
     @Override
     public RefreshToken save(RefreshToken token) {
-        var entity = RefreshTokenMapper.toJpa(token);
-        var saved = springDataRefreshTokenRepository.save(entity);
+        RefreshTokenJpaEntity entity = RefreshTokenMapper.toJpa(token);
+        RefreshTokenJpaEntity saved = springDataRefreshTokenRepository.save(entity);
         return RefreshTokenMapper.toDomain(saved);
     }
 

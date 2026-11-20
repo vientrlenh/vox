@@ -29,6 +29,7 @@ import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import com.sep.vox.domain.model.school.SchoolGradeStatus;
 
 class ViewSchoolGradesUseCaseTests {
 
@@ -65,33 +66,20 @@ class ViewSchoolGradesUseCaseTests {
         when(schoolGradeRepository.findBySchoolId(eq(schoolId), isNull(), eq("ARCHIVED"), eq(1), eq(20)))
             .thenReturn(new PageResult<>(List.<SchoolGrade>of(), 1, 20, 0, 0));
 
-        useCase.execute(new ViewSchoolGradesQuery(schoolId, null, "  archived ", 1, 20));
+        useCase.execute(new ViewSchoolGradesQuery(schoolId, null, SchoolGradeStatus.ARCHIVED, 1, 20));
 
         verify(schoolGradeRepository).findBySchoolId(eq(schoolId), isNull(), eq("ARCHIVED"), eq(1), eq(20));
     }
 
     @Test
-    void should_pass_null_status_when_blank() {
+    void should_pass_null_status_when_not_given() {
         grantAccess();
         when(schoolGradeRepository.findBySchoolId(eq(schoolId), isNull(), isNull(), eq(1), eq(20)))
             .thenReturn(new PageResult<>(List.<SchoolGrade>of(), 1, 20, 0, 0));
 
-        useCase.execute(new ViewSchoolGradesQuery(schoolId, null, "  ", 1, 20));
+        useCase.execute(new ViewSchoolGradesQuery(schoolId, null, null, 1, 20));
 
         verify(schoolGradeRepository).findBySchoolId(eq(schoolId), isNull(), isNull(), eq(1), eq(20));
-    }
-
-    @Test
-    void should_reject_invalid_status() {
-        grantAccess();
-
-        assertThatThrownBy(() -> useCase.execute(new ViewSchoolGradesQuery(schoolId, null, "UNKNOWN", 1, 20)))
-            .isInstanceOf(IllegalArgumentException.class);
-
-        verify(schoolGradeRepository, never())
-            .findBySchoolId(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
-                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyInt(),
-                org.mockito.ArgumentMatchers.anyInt());
     }
 
     @Test

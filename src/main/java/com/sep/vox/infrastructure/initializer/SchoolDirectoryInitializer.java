@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -54,21 +55,21 @@ public class SchoolDirectoryInitializer implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) throws IOException {
-        var seeds = readSeeds();
+        List<SeedRow> seeds = readSeeds();
         if (seeds.isEmpty()) {
             LOGGER.info("[school-directory] File seed rỗng, bỏ qua khởi tạo danh mục trường");
             return;
         }
 
-        var existingCodes = schoolDirectoryRepository
+        Set<String> existingCodes = schoolDirectoryRepository
             .findByCodeIn(seeds.stream().map(seed -> seed.code()).toList())
             .stream()
             .map(directory -> directory.getCode())
             .collect(Collectors.toSet());
 
-        var now = Instant.now();
-        var inserted = 0;
-        for (var seed : seeds) {
+        Instant now = Instant.now();
+        int inserted = 0;
+        for (SeedRow seed : seeds) {
             if (existingCodes.contains(seed.code())) {
                 continue;
             }
@@ -81,8 +82,8 @@ public class SchoolDirectoryInitializer implements ApplicationRunner {
     }
 
     private List<SeedRow> readSeeds() throws IOException {
-        var resource = new ClassPathResource(SEED_PATH);
-        var json = new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+        ClassPathResource resource = new ClassPathResource(SEED_PATH);
+        String json = new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
         return jsonMapper.readValue(json, new TypeReference<List<SeedRow>>() {
         });
     }

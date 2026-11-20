@@ -46,7 +46,7 @@ public class SubscriptionGraphQlDataLoaderConfig {
                     Map<UUID, List<SubscriptionPlanQuotaDto>> result = new HashMap<>();
                     subscriptionPlanIds.forEach(id -> result.put(id, List.of()));
 
-                    var quotasByPlanId = subscriptionPlanQuotaRepository.findBySubscriptionPlanIdIn(subscriptionPlanIds)
+                    Map<UUID, List<SubscriptionPlanQuotaDto>> quotasByPlanId = subscriptionPlanQuotaRepository.findBySubscriptionPlanIdIn(subscriptionPlanIds)
                         .stream()
                         .map(SubscriptionPlanQuotaDto::toDto)
                         .collect(Collectors.groupingBy(q -> q.subscriptionPlanId()));

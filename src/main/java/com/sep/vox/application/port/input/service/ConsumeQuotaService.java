@@ -82,22 +82,22 @@ public class ConsumeQuotaService {
     }
 
     /**
-     * Trừ chi phí của một phiên THI. Ghi nhận ĐỦ khoản chi dù có vượt hạn mức: chi phí AI thật đã phát
-     * sinh rồi, từ chối ở đây chỉ làm mất dấu khoản tiền chứ không lấy lại được nó.
+     * Deducts the cost of an ASSESSMENT session. Records the FULL expense even if it exceeds the quota: the real AI cost has already
+     * been incurred, and refusing here would only lose track of the money without getting it back.
      *
-     * <p>Không nhận {@code quotaType}: phiên thi luôn trừ vào ví EXAM. Để nó thành tham số là mở cửa
-     * cho việc ghi một khoản trừ EXAM kèm id phiên luyện nói (hoặc ngược lại), tức một dòng sổ cái tự
-     * mâu thuẫn mà không ràng buộc nào ở tầng Java chặn được.
+     * <p>Does not take {@code quotaType}: an assessment session always deducts from the ASSESSMENT wallet. Making it a parameter would open the door
+     * to writing an ASSESSMENT deduction carrying the id of a speaking practice session (or the other way round), i.e. a self-contradicting
+     * ledger row that no constraint at the Java layer can block.
      *
-     * @param amountVnd  chi phí đã quy sang VND -- KHÔNG phải cost_usd
-     * @param costUsd    chi phí gốc nhà cung cấp tính, giữ để đối soát ngược với ai_usage_records
-     * @param fxRateUsed tỷ giá đã dùng để ra amountVnd, chốt lại vì tỷ giá đổi hằng ngày
+     * @param amountVnd  cost converted to VND -- NOT cost_usd
+     * @param costUsd    the original cost charged by the provider, kept for reconciliation against ai_usage_records
+     * @param fxRateUsed the exchange rate used to get amountVnd, recorded because the rate changes daily
      */
     @Transactional
-    public ConsumeQuotaResponse consumeExamAllowingDebt(
-            UUID subscriptionId, UUID examSessionId, BigDecimal amountVnd,
+    public ConsumeQuotaResponse consumeAssessmentAllowingDebt(
+            UUID subscriptionId, UUID assessmentSessionId, BigDecimal amountVnd,
             BigDecimal costUsd, BigDecimal fxRateUsed, UUID userId) {
-        return consumeAllowingDebt(subscriptionId, examSessionId, null, QuotaType.EXAM,
+        return consumeAllowingDebt(subscriptionId, assessmentSessionId, null, QuotaType.ASSESSMENT,
             amountVnd, costUsd, fxRateUsed, userId);
     }
 
@@ -122,9 +122,9 @@ public class ConsumeQuotaService {
     }
 
     private ConsumeQuotaResponse consumeAllowingDebt(
-            UUID subscriptionId, UUID examSessionId, UUID practiceSessionId, QuotaType quotaType,
+            UUID subscriptionId, UUID assessmentSessionId, UUID practiceSessionId, QuotaType quotaType,
             BigDecimal amountVnd, BigDecimal costUsd, BigDecimal fxRateUsed, UUID userId) {
-        var quota = requireQuota(subscriptionId, quotaType);
+        SchoolSubscriptionQuotaRecord quota = requireQuota(subscriptionId, quotaType);
 
         // tryConsume là UPDATE có điều kiện nên tự nó đã là chốt chặn -- không đọc-rồi-so ở Java.
         // Lọt qua = khoản này nằm gọn trong hạn mức: không đụng số dư, không sinh bút toán nào.
@@ -134,12 +134,12 @@ public class ConsumeQuotaService {
                 quota.getUsedAmountVnd(), quota.getUsedAmountVnd().add(amountVnd), Instant.now());
             split = new ChargeSplit(amountVnd, BigDecimal.ZERO, currentBalanceVnd(subscriptionId), false);
         } else {
-            split = chargeOverage(subscriptionId, examSessionId, practiceSessionId, quotaType, quota,
+            split = chargeOverage(subscriptionId, assessmentSessionId, practiceSessionId, quotaType, quota,
                 amountVnd, costUsd, fxRateUsed);
         }
 
         consumeUserAllocation(subscriptionId, quotaType, userId, amountVnd);
-        recordSpend(subscriptionId, examSessionId, practiceSessionId, quotaType, amountVnd, userId);
+        recordSpend(subscriptionId, assessmentSessionId, practiceSessionId, quotaType, amountVnd, userId);
         return buildResponse(subscriptionId, quota.getId(), split);
     }
 
@@ -157,7 +157,7 @@ public class ConsumeQuotaService {
      *
      * <p>{@code userId} null là một CÂU TRẢ LỜI -- kỳ thi tập trung không thuộc trần chi của ai.
      */
-    private void recordSpend(UUID subscriptionId, UUID examSessionId, UUID practiceSessionId,
+    private void recordSpend(UUID subscriptionId, UUID assessmentSessionId, UUID practiceSessionId,
             QuotaType quotaType, BigDecimal amountVnd, UUID userId) {
         // Ràng buộc chk_..._amount_positive từ chối dòng 0 đồng, và một lần trừ 0 đồng cũng không
         // phải sự kiện đáng ghi -- chặn ở đây thay vì để DB ném giữa luồng chấm bài.
@@ -165,10 +165,10 @@ public class ConsumeQuotaService {
             return;
         }
 
-        var schoolId = requireSchoolId(subscriptionId);
-        var now = Instant.now();
-        schoolAiSpendEntryRepository.save(examSessionId != null
-            ? SchoolAiSpendEntry.forExam(schoolId, subscriptionId, examSessionId, userId, amountVnd, now)
+        UUID schoolId = requireSchoolId(subscriptionId);
+        Instant now = Instant.now();
+        schoolAiSpendEntryRepository.save(assessmentSessionId != null
+            ? SchoolAiSpendEntry.forAssessment(schoolId, subscriptionId, assessmentSessionId, userId, amountVnd, now)
             : SchoolAiSpendEntry.forPractice(
                 schoolId, subscriptionId, practiceSessionId, userId, amountVnd, now));
     }
@@ -185,20 +185,20 @@ public class ConsumeQuotaService {
      * {@code amountVnd} dù chia thế nào, chỉ ranh giới giữa "trừ vào hạn mức" và "trừ vào ví" là xê
      * dịch. Hai lần kẹp bên dưới giữ cho phần lệch đó không bao giờ đẩy used vượt total.
      */
-    private ChargeSplit chargeOverage(UUID subscriptionId, UUID examSessionId, UUID practiceSessionId,
+    private ChargeSplit chargeOverage(UUID subscriptionId, UUID assessmentSessionId, UUID practiceSessionId,
             QuotaType quotaType, SchoolSubscriptionQuotaRecord quota, BigDecimal amountVnd,
             BigDecimal costUsd, BigDecimal fxRateUsed) {
 
-        var schoolId = requireSchoolId(subscriptionId);
-        var now = Instant.now();
-        var balance = schoolBalanceRepository.findBySchoolIdForUpdateOrCreate(schoolId, now);
+        UUID schoolId = requireSchoolId(subscriptionId);
+        Instant now = Instant.now();
+        SchoolBalance balance = schoolBalanceRepository.findBySchoolIdForUpdateOrCreate(schoolId, now);
 
-        var current = requireQuota(subscriptionId, quotaType);
-        var remainingVnd = current.getTotalAllocatedAmountVnd()
+        SchoolSubscriptionQuotaRecord current = requireQuota(subscriptionId, quotaType);
+        BigDecimal remainingVnd = current.getTotalAllocatedAmountVnd()
             .subtract(current.getUsedAmountVnd())
             .max(BigDecimal.ZERO)
             .min(amountVnd);
-        var overageVnd = amountVnd.subtract(remainingVnd);
+        BigDecimal overageVnd = amountVnd.subtract(remainingVnd);
 
         if (remainingVnd.signum() > 0) {
             schoolSubscriptionQuotaRecordRepository.addUsage(quota.getId(), remainingVnd);
@@ -214,40 +214,40 @@ public class ConsumeQuotaService {
             return new ChargeSplit(remainingVnd, BigDecimal.ZERO, balance.getBalanceVnd(), false);
         }
 
-        var balanceBeforeVnd = balance.getBalanceVnd();
-        var balanceAfterVnd = balance.apply(overageVnd.negate(), now);
+        BigDecimal balanceBeforeVnd = balance.getBalanceVnd();
+        BigDecimal balanceAfterVnd = balance.apply(overageVnd.negate(), now);
         schoolBalanceRepository.save(balance);
-        schoolBalanceEntryRepository.save(examSessionId != null
-            ? SchoolBalanceEntry.forExamOverageCharge(
-                schoolId, subscriptionId, examSessionId, quotaType, overageVnd, balanceAfterVnd,
+        schoolBalanceEntryRepository.save(assessmentSessionId != null
+            ? SchoolBalanceEntry.forAssessmentOverageCharge(
+                schoolId, subscriptionId, assessmentSessionId, quotaType, overageVnd, balanceAfterVnd,
                 costUsd, fxRateUsed, now)
             : SchoolBalanceEntry.forPracticeOverageCharge(
                 schoolId, subscriptionId, practiceSessionId, quotaType, overageVnd, balanceAfterVnd,
                 costUsd, fxRateUsed, now));
 
-        // Truyền CẢ HAI nguồn, y như lúc ghi bút toán ở ngay trên. Bản trước chỉ truyền examSessionId
-        // trong khi practiceSessionId nằm ngay trong tầm với, nên mọi dòng CAP_EXCEEDED do luyện nói
-        // gây ra đều mất dấu vết.
-        checkDebtCapTransition(subscriptionId, schoolId, quotaType, examSessionId, practiceSessionId,
+        // Pass BOTH sources, exactly like when writing the ledger entry right above. The previous version only passed assessmentSessionId
+        // while practiceSessionId was within reach, so every CAP_EXCEEDED row caused by speaking practice
+        // lost its trace.
+        checkDebtCapTransition(subscriptionId, schoolId, quotaType, assessmentSessionId, practiceSessionId,
             overageVnd, current.getTotalAllocatedAmountVnd(), balanceBeforeVnd, balanceAfterVnd, now);
 
         // crossedIntoDebt lấy TRƯỚC/SAU của cùng một dòng đang giữ khóa -- không phải hai lần đọc rời
         // nhau, nên không thể lệch với những gì vừa thực sự xảy ra ở trên.
-        var crossedIntoDebt = balanceBeforeVnd.signum() >= 0 && balanceAfterVnd.signum() < 0;
+        boolean crossedIntoDebt = balanceBeforeVnd.signum() >= 0 && balanceAfterVnd.signum() < 0;
 
-        // Báo "trường vừa bị khoá" NGAY TẠI ĐÂY chứ không để chỗ gọi tự làm.
+        // Announces "the school has just been locked" RIGHT HERE rather than leaving it to the caller.
         //
-        // Trước đây việc này nằm ở CompleteExamSessionGradingUseCase, tức chỉ đường CHẤM THI có --
-        // luyện nói cũng đẩy trường vào nợ y hệt mà không sinh dòng LOCKED nào, không gửi mail cho
-        // ai. Trường vẫn bị khoá thật (guard suy từ dấu số dư, không quan tâm nguồn nào gây ra) nên
-        // hiệu trưởng mất quyền mở ca thi mà không có chỗ nào giải thích vì sao.
+        // This used to live in CompleteAssessmentSessionGradingUseCase, i.e. only the ASSESSMENT GRADING path had it --
+        // speaking practice pushes a school into debt just the same without producing any LOCKED row or sending an email to
+        // anyone. The school was still really locked (the guard derives from the sign of the balance, regardless of which source caused it), so
+        // the principal lost the right to open assessment sessions with nowhere to explain why.
         //
-        // Đặt ở đây thì mọi nguồn trừ tiền hiện tại và tương lai đều được báo, và dòng sự kiện commit
-        // CÙNG transaction với bút toán đã gây ra nó -- không còn cửa sổ nào để một cái vào sổ mà cái
-        // kia không.
+        // Placed here, every deduction source, present and future, gets announced, and the event row commits in the
+        // SAME transaction as the ledger entry that caused it -- there is no window where one gets recorded and the
+        // other does not.
         if (crossedIntoDebt) {
             schoolDebtNotificationService.publishSchoolLockedDueToDebt(
-                subscriptionId, schoolId, quotaType, examSessionId, practiceSessionId, amountVnd,
+                subscriptionId, schoolId, quotaType, assessmentSessionId, practiceSessionId, amountVnd,
                 current.getTotalAllocatedAmountVnd(), balanceAfterVnd.negate().max(BigDecimal.ZERO), now
             );
         }
@@ -291,23 +291,23 @@ public class ConsumeQuotaService {
      * bản cũ phải fetch before/after quanh một bulk update và vì thế phải bật {@code clearAutomatically}.
      */
     private void checkDebtCapTransition(UUID subscriptionId, UUID schoolId, QuotaType quotaType,
-            UUID examSessionId, UUID practiceSessionId, BigDecimal overageVnd, BigDecimal totalAllocatedVnd,
+            UUID assessmentSessionId, UUID practiceSessionId, BigDecimal overageVnd, BigDecimal totalAllocatedVnd,
             BigDecimal balanceBeforeVnd, BigDecimal balanceAfterVnd, Instant now) {
-        var cap = totalAllocatedVnd.multiply(quotaDebtConfig.capRatio());
-        var debtBeforeVnd = balanceBeforeVnd.negate().max(BigDecimal.ZERO);
-        var debtAfterVnd = balanceAfterVnd.negate().max(BigDecimal.ZERO);
+        BigDecimal cap = totalAllocatedVnd.multiply(quotaDebtConfig.capRatio());
+        BigDecimal debtBeforeVnd = balanceBeforeVnd.negate().max(BigDecimal.ZERO);
+        BigDecimal debtAfterVnd = balanceAfterVnd.negate().max(BigDecimal.ZERO);
 
         if (debtAfterVnd.compareTo(cap) <= 0 || debtBeforeVnd.compareTo(cap) > 0) {
             return;
         }
 
         LOGGER.warn(
-            "Nợ vượt trần cảnh báo: subscriptionId={} quotaType={} examSessionId={} practiceSessionId={} debtVnd={} capVnd={}",
-            subscriptionId, quotaType, examSessionId, practiceSessionId, debtAfterVnd, cap
+            "Nợ vượt trần cảnh báo: subscriptionId={} quotaType={} assessmentSessionId={} practiceSessionId={} debtVnd={} capVnd={}",
+            subscriptionId, quotaType, assessmentSessionId, practiceSessionId, debtAfterVnd, cap
         );
 
         schoolDebtNotificationService.publishDebtCapExceeded(
-            subscriptionId, schoolId, quotaType, examSessionId, practiceSessionId, overageVnd,
+            subscriptionId, schoolId, quotaType, assessmentSessionId, practiceSessionId, overageVnd,
             totalAllocatedVnd, totalAllocatedVnd.add(debtAfterVnd), debtAfterVnd, cap, now
         );
     }
@@ -327,7 +327,7 @@ public class ConsumeQuotaService {
             return;
         }
 
-        var threshold = totalAllocatedVnd.multiply(quotaUsageWarningConfig.warningRatio());
+        BigDecimal threshold = totalAllocatedVnd.multiply(quotaUsageWarningConfig.warningRatio());
         if (usedAfterVnd.compareTo(threshold) < 0 || usedBeforeVnd.compareTo(threshold) >= 0) {
             return;
         }
@@ -358,11 +358,11 @@ public class ConsumeQuotaService {
      * tiêu tiếp được, nên chỉ nhìn một bên sẽ đóng phiên luyện nói sớm hơn thực tế.
      */
     private ConsumeQuotaResponse buildResponse(UUID subscriptionId, UUID quotaId, ChargeSplit split) {
-        var quota = schoolSubscriptionQuotaRecordRepository.findById(quotaId)
+        SchoolSubscriptionQuotaRecord quota = schoolSubscriptionQuotaRecordRepository.findById(quotaId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy hạn mức của gói đăng ký"));
 
-        var quotaRemainingVnd = quota.getTotalAllocatedAmountVnd().subtract(quota.getUsedAmountVnd());
-        var fundsExhausted = quotaRemainingVnd.signum() <= 0 && split.balanceAfterVnd().signum() <= 0;
+        BigDecimal quotaRemainingVnd = quota.getTotalAllocatedAmountVnd().subtract(quota.getUsedAmountVnd());
+        boolean fundsExhausted = quotaRemainingVnd.signum() <= 0 && split.balanceAfterVnd().signum() <= 0;
 
         return new ConsumeQuotaResponse(
             SchoolSubscriptionQuotaRecordDto.toDto(quota),

@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricschool;
 
+import com.sep.vox.domain.model.school.School;
+import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.service.rubric.RubricOrderValidator;
 import com.sep.vox.domain.service.rubric.RubricResultBandValidator;
 import com.sep.vox.domain.service.rubric.ScoreRangeValidator;
@@ -77,7 +79,7 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
 
         // Lấy thông tin liên kết trường học của User hiện tại
-        var schoolUser = schoolUserRepository.findByUserId(currentUserId)
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
 
         // Xác thực quyền chỉnh sửa
@@ -86,7 +88,7 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
         }
 
         // Kiểm tra xem trường học có đang hoạt động không
-        var school = schoolRepository.findById(command.schoolId())
+        School school = schoolRepository.findById(command.schoolId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
         if (!school.isActive()) {
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");

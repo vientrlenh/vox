@@ -11,21 +11,21 @@ class ExchangeRateApiClientTests {
 
     @Test
     void extractRateReadsRatesVndFromResponse() {
-        var response = Map.of("result", "success", "rates", Map.of("VND", 26777.5));
+        Map<String, Object> response = Map.of("result", "success", "rates", Map.of("VND", 26777.5));
 
         assertThat(ExchangeRateApiClient.extractRate(response)).isEqualByComparingTo(new BigDecimal("26777.5"));
     }
 
     @Test
     void extractRateReturnsNullWhenRatesMissing() {
-        var response = Map.of("result", "success");
+        Map<String, String> response = Map.of("result", "success");
 
         assertThat(ExchangeRateApiClient.extractRate(response)).isNull();
     }
 
     @Test
     void extractRateReturnsNullWhenVndMissing() {
-        var response = Map.of("rates", Map.of("EUR", 0.9));
+        Map<String, Map<String, Double>> response = Map.of("rates", Map.of("EUR", 0.9));
 
         assertThat(ExchangeRateApiClient.extractRate(response)).isNull();
     }

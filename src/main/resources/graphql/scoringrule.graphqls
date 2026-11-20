@@ -1,19 +1,59 @@
+enum ScoringRuleConditionType {
+    DURATION_LESS_THAN
+    DURATION_GREATER_THAN
+    WORD_COUNT_LESS_THAN
+    WORD_COUNT_GREATER_THAN
+    CRITERION_SCORE_LESS_THAN
+    CRITERION_SCORE_GREATER_THAN
+    FINAL_SCORE_LESS_THAN
+    FINAL_SCORE_GREATER_THAN
+    TASK_RELEVANCE_LESS_THAN
+    OFF_TOPIC_RATIO_GREATER_THAN
+    CODE_SWITCHING_RATIO_GREATER_THAN
+    ASR_CONFIDENCE_LESS_THAN
+    AI_CONFIDENCE_LESS_THAN
+    AUDIO_QUALITY_LESS_THAN
+    SILENCE_RATIO_GREATER_THAN
+    SPEECH_RATE_LESS_THAN
+    SPEECH_RATE_GREATER_THAN
+}
+
+enum ScoringRuleActionType {
+    CAP_FINAL_SCORE
+    CAP_CRITERION_SCORE
+    ADD_FINAL_SCORE_DELTA
+    ADD_CRITERION_SCORE_DELTA
+    CAP_FRAMEWORK_RESULT_BAND
+    SET_FRAMEWORK_RESULT_BAND
+    REQUIRE_HUMAN_REVIEW
+    MARK_RESPONSE_INVALID
+    REQUIRE_RETAKE
+    ADD_FEEDBACK_TAG
+    ADD_REVIEW_REASON
+}
+
+enum ScoringRuleSeverity {
+    INFO
+    WARNING
+    BLOCKING
+}
+
 type ScoringRule {
     id: ID!
     policyId: ID!
     code: String!
     name: String!
     description: String
-    conditionType: String!
+    conditionType: ScoringRuleConditionType!
     conditionParamsJson: String!
-    actionType: String!
+    actionType: ScoringRuleActionType!
     actionParamsJson: String!
     priority: Int!
-    severity: String!
+    severity: ScoringRuleSeverity!
     stopProcessing: Boolean!
     isActive: Boolean!
-    createdAt: String
-    updatedAt: String
+    createdAt: DateTime
+    updatedAt: DateTime
 }
 
 type ScoringRulePage {
@@ -25,47 +65,47 @@ type ScoringRulePage {
 }
 
 extend type Query {
-    # Xem/tìm kiếm danh sách Scoring Rule (phân trang) của 1 Assessment Policy hệ thống.
-    # Xem được ở mọi trạng thái Policy (kể cả PUBLISHED/ARCHIVED) để phục vụ tra cứu lịch sử.
+    # View/search the (paged) Scoring Rule list of one system Assessment Policy.
+    # Viewable in every Policy status (including PUBLISHED/ARCHIVED) to support history lookups.
     searchSystemScoringRules(policyId: ID!, keyword: String, isActive: Boolean, page: Int = 1, size: Int = 10): ScoringRulePage!
 
-    # Xem/tìm kiếm danh sách Scoring Rule (phân trang) của 1 Assessment Policy thuộc trường học.
+    # View/search the (paged) Scoring Rule list of one school Assessment Policy.
     searchSchoolScoringRules(schoolId: ID!, policyId: ID!, keyword: String, isActive: Boolean, page: Int = 1, size: Int = 10): ScoringRulePage!
 
-    # Xem toàn bộ (phân trang) danh sách Scoring Rule của 1 Assessment Policy hệ thống.
+    # View the whole (paged) Scoring Rule list of one system Assessment Policy.
     viewAllSystemScoringRules(policyId: ID!, page: Int = 1, size: Int = 10): ScoringRulePage!
 
-    # Xem toàn bộ (phân trang) danh sách Scoring Rule của 1 Assessment Policy thuộc trường học.
+    # View the whole (paged) Scoring Rule list of one school Assessment Policy.
     viewAllSchoolScoringRules(schoolId: ID!, policyId: ID!, page: Int = 1, size: Int = 10): ScoringRulePage!
 
-    # Xem chi tiết 1 Scoring Rule của Assessment Policy hệ thống.
+    # View the details of one Scoring Rule of a system Assessment Policy.
     viewSystemScoringRuleDetails(policyId: ID!, ruleId: ID!): ScoringRule!
 
-    # Xem chi tiết 1 Scoring Rule của Assessment Policy thuộc trường học.
+    # View the details of one Scoring Rule of a school Assessment Policy.
     viewSchoolScoringRuleDetails(schoolId: ID!, policyId: ID!, ruleId: ID!): ScoringRule!
 }
 
-# Input cập nhật Scoring Rule. Không có "code" vì code là bất biến, không cho đổi sau khi tạo.
-# conditionParamsJson/actionParamsJson là chuỗi JSON thô, cấu trúc phải khớp với conditionType/actionType đã chọn.
+# Input to update a Scoring Rule. There is no "code" because the code is immutable and cannot change after creation.
+# conditionParamsJson/actionParamsJson are raw JSON strings whose structure must match the chosen conditionType/actionType.
 input UpdateScoringRuleInput {
     name: String!
     description: String
-    conditionType: String!
+    conditionType: ScoringRuleConditionType!
     conditionParamsJson: String!
-    actionType: String!
+    actionType: ScoringRuleActionType!
     actionParamsJson: String!
     priority: Int!
-    severity: String!
+    severity: ScoringRuleSeverity!
     stopProcessing: Boolean!
     isActive: Boolean!
 }
 
 extend type Mutation {
-    # Cập nhật Scoring Rule của Assessment Policy hệ thống.
-    # Chỉ sửa được khi Policy đang ở trạng thái DRAFT (tránh thay đổi luật chấm điểm ngầm
-    # khi Policy đã PUBLISHED đang được dùng để chấm bài thi thật).
+    # Update a Scoring Rule of a system Assessment Policy.
+    # Only editable while the Policy is DRAFT (to avoid silently changing the scoring rules
+    # of a PUBLISHED Policy that is already used to grade real assessments).
     updateSystemScoringRule(policyId: ID!, ruleId: ID!, input: UpdateScoringRuleInput!): ID!
 
-    # Cập nhật Scoring Rule của Assessment Policy thuộc trường học (cùng điều kiện Policy phải đang DRAFT).
+    # Update a Scoring Rule of a school Assessment Policy (the same condition applies: the Policy must be DRAFT).
     updateSchoolScoringRule(schoolId: ID!, policyId: ID!, ruleId: ID!, input: UpdateScoringRuleInput!): ID!
 }

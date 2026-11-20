@@ -1,10 +1,12 @@
 package com.sep.vox.application.port.input.usecase.questiontopic;
 
+import com.sep.vox.domain.dto.QuestionTopicDto;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -63,25 +65,25 @@ public class BulkUpdateQuestionTopicStatusUseCase
             throw new IllegalArgumentException("Danh sách chủ đề câu hỏi không được để trống");
         }
 
-        var action = StringNormalization.normalizeCode(input.action());
-        var ids = new LinkedHashSet<>(input.ids());
+        String action = StringNormalization.normalizeCode(input.action());
+        Set<UUID> ids = new LinkedHashSet<>(input.ids());
 
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
 
-        var topicsById = questionTopicRepository.findByIdIn(ids).stream()
+        Map<UUID, QuestionTopic> topicsById = questionTopicRepository.findByIdIn(ids).stream()
             .collect(Collectors.toMap(topic -> topic.getId(), topic -> topic, (first, second) -> first));
         // Quyền của chủ đề suy từ ngân hàng chứa nó, nên phải nạp kèm -- vẫn một query cho cả lô.
-        var banksById = loadBanks(topicsById);
+        Map<UUID, QuestionBank> banksById = loadBanks(topicsById);
 
-        var failed = new ArrayList<BulkUpdateQuestionScopeStatusFailure>();
-        var toSave = new ArrayList<QuestionTopic>();
-        var now = Instant.now();
+        List<BulkUpdateQuestionScopeStatusFailure> failed = new ArrayList<BulkUpdateQuestionScopeStatusFailure>();
+        List<QuestionTopic> toSave = new ArrayList<QuestionTopic>();
+        Instant now = Instant.now();
 
-        for (var id : ids) {
-            var topic = topicsById.get(id);
+        for (UUID id : ids) {
+            QuestionTopic topic = topicsById.get(id);
             if (topic == null) {
                 failed.add(new BulkUpdateQuestionScopeStatusFailure(
                     id, null, null,
@@ -89,14 +91,14 @@ public class BulkUpdateQuestionTopicStatusUseCase
                     QuestionScopeStatusTransition.NOT_FOUND_TOPIC));
                 continue;
             }
-            var bank = banksById.get(topic.getQuestionBankId());
+            QuestionBank bank = banksById.get(topic.getQuestionBankId());
             if (bank == null || !canManage(bank, currentSchoolId)) {
                 failed.add(failure(topic, RejectionCode.NO_PERMISSION.name(),
                     QuestionScopeStatusTransition.NO_PERMISSION));
                 continue;
             }
 
-            var rejection = QuestionScopeStatusTransition.rejectionFor(
+            QuestionScopeStatusTransition.Rejection rejection = QuestionScopeStatusTransition.rejectionFor(
                 topic.getStatus().name(), action, "chủ đề câu hỏi");
             if (rejection != null) {
                 failed.add(failure(topic, rejection.code().name(), rejection.reason()));
@@ -111,8 +113,8 @@ public class BulkUpdateQuestionTopicStatusUseCase
 
         // Xem BulkUpdateQuestionBankStatusUseCase: repository chưa có saveAll, và trong cùng một
         // transaction thì lưu từng mục không sinh thêm câu lệnh nào.
-        var updated = new ArrayList<com.sep.vox.domain.dto.QuestionTopicDto>();
-        for (var topic : toSave) {
+        List<QuestionTopicDto> updated = new ArrayList<com.sep.vox.domain.dto.QuestionTopicDto>();
+        for (QuestionTopic topic : toSave) {
             updated.add(QuestionTopicDtoMapper.toDto(questionTopicRepository.save(topic)));
         }
 
@@ -120,7 +122,7 @@ public class BulkUpdateQuestionTopicStatusUseCase
     }
 
     private Map<UUID, QuestionBank> loadBanks(Map<UUID, QuestionTopic> topicsById) {
-        var bankIds = topicsById.values().stream()
+        Set<UUID> bankIds = topicsById.values().stream()
             .map(topic -> topic.getQuestionBankId())
             .collect(Collectors.toSet());
         if (bankIds.isEmpty()) {

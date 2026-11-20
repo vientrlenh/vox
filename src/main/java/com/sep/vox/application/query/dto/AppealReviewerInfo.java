@@ -3,21 +3,23 @@ package com.sep.vox.application.query.dto;
 import java.time.Instant;
 import java.util.UUID;
 
+import com.sep.vox.domain.model.assessment.GradingAssignmentStatus;
+import com.sep.vox.domain.model.assessment.GradingOutcome;
+
 /**
- * Người chấm phúc khảo của một đơn — chỉ MỘT người, và dữ liệu lấy từ dòng
- * {@code exam_grading_assignments} vòng {@code APPEAL} chứ không từ bảng riêng.
+ * The appeal grader of an appeal -- only ONE person, and the data is taken from the
+ * {@code assessment_grading_assignments} row of the {@code APPEAL} round, not from a separate table.
  *
- * <p>Không còn "điểm đề xuất": với một người chấm thì không có gì để đối chiếu, và
- * điểm họ nộp đi thẳng vào kết quả bài thi.
+ * <p>There is no longer a "proposed score": with a single grader there is nothing to compare against, and
+ * the score they submit goes straight into the assessment result.
  */
 public record AppealReviewerInfo(
     UUID assignmentId,
     UUID reviewerId,
     String reviewerName,
-    /** ASSIGNED | COMPLETED */
-    String status,
-    /** UPHELD | REGRADED | DECLINED; null khi chưa nộp. */
-    String outcome,
+    GradingAssignmentStatus status,
+    /** UPHELD | REGRADED | DECLINED; null until submitted. */
+    GradingOutcome outcome,
     Instant assignedAt,
     Instant completedAt,
     Instant deadlineAt,

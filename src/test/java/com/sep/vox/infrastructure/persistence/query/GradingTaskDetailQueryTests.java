@@ -4,30 +4,30 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTransport;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.query.dto.GradingTaskDetailInfo;
-import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
-import com.sep.vox.config.ContainerTestConfig;
-import com.sep.vox.infrastructure.persistence.entity.ExamCandidateResultJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.ExamGradingAssignmentJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.ExamItemCriterionScoreJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.ExamItemEvaluationJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.ExamItemEvaluationTurnJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.ExamItemResponseJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.ExamJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.ExamPaperItemJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.ExamPaperSectionJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.ExamSessionJpaEntity;
+import com.sep.vox.application.query.dto.GradingTaskItemInfo;
+import com.sep.vox.application.query.repository.AssessmentGradingQueryRepository;
+import com.sep.vox.infrastructure.persistence.entity.AssessmentCandidateResultJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.AssessmentGradingAssignmentJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.AssessmentItemCriterionScoreJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.AssessmentItemEvaluationJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.AssessmentItemEvaluationTurnJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.AssessmentItemResponseJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.AssessmentJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.AssessmentPaperItemJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.AssessmentPaperSectionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.AssessmentSessionJpaEntity;
 import com.sep.vox.infrastructure.persistence.entity.RubricCriterionJpaEntity;
+import com.sep.vox.support.IntegrationTest;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -45,11 +45,10 @@ import jakarta.persistence.PersistenceContext;
  *       {@code ORDER BY} thì số thứ tự câu nhảy lung tung chứ không lỗi.</li>
  * </ul>
  */
-@SpringBootTest
-@ActiveProfiles("test")
+@IntegrationTest
 @AutoConfigureTestGrpcTransport
 @Transactional
-class GradingTaskDetailQueryTests extends ContainerTestConfig {
+class GradingTaskDetailQueryTests {
 
     private static final String AI_SIGNALS_JSON = "{\"audioQuality\":0.82,\"audioGateStatus\":\"PASS\"}";
     private static final String AI_VALIDITY_JSON =
@@ -58,7 +57,7 @@ class GradingTaskDetailQueryTests extends ContainerTestConfig {
         "[{\"word\":\"friends\",\"accuracyScore\":49,\"color\":\"red\"}]";
 
     @Autowired
-    private ExamGradingQueryRepository examGradingQueryRepository;
+    private AssessmentGradingQueryRepository assessmentGradingQueryRepository;
 
     @PersistenceContext
     private EntityManager em;
@@ -71,51 +70,53 @@ class GradingTaskDetailQueryTests extends ContainerTestConfig {
 
     @BeforeEach
     void setUp() {
-        var paperId = UUID.randomUUID();
-        var rubricVersionId = UUID.randomUUID();
+        UUID paperId = UUID.randomUUID();
+        UUID rubricVersionId = UUID.randomUUID();
 
         criterionId = persist(new RubricCriterionJpaEntity(null, rubricVersionId, UUID.randomUUID(),
             "grammar", "Ngữ pháp", null, null, BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.TEN,
             1, true, now, now, null, null)).getId();
 
-        // Part 1 có HAI câu, Part 2 có một — đúng hình dạng làm tab hiện "Part 1" hai lần.
-        var partOne = persist(new ExamPaperSectionJpaEntity(null, paperId, 1, "Part 1", null,
+        // Part 1 has TWO questions, Part 2 has one -- exactly the shape that makes the tab show
+        // "Part 1" twice.
+        UUID partOne = persist(new AssessmentPaperSectionJpaEntity(null, paperId, 1, "Part 1", null,
             null, null, now, now, null, null)).getId();
-        var partTwo = persist(new ExamPaperSectionJpaEntity(null, paperId, 2, "Part 2", null,
+        UUID partTwo = persist(new AssessmentPaperSectionJpaEntity(null, paperId, 2, "Part 2", null,
             null, null, now, now, null, null)).getId();
-        var itemOne = paperItem(paperId, partOne, 1);
-        var itemTwo = paperItem(paperId, partOne, 2);
-        var itemThree = paperItem(paperId, partTwo, 1);
+        UUID itemOne = paperItem(paperId, partOne, 1);
+        UUID itemTwo = paperItem(paperId, partOne, 2);
+        UUID itemThree = paperItem(paperId, partTwo, 1);
 
-        var examId = persist(new ExamJpaEntity(null, null, null, "EX-" + UUID.randomUUID(), "Kỳ thi thử",
+        UUID assessmentId = persist(new AssessmentJpaEntity(null, null, null, "EX-" + UUID.randomUUID(), "Kỳ thi thử",
             null, UUID.randomUUID(), UUID.randomUUID(), "CENTRALIZED", "STUDENT_DEVICE", "CLOSED",
             1, 900, "HIGHEST", null, null, null, null, UUID.randomUUID(), false,
             now, now, null, null)).getId();
-        var candidateId = UUID.randomUUID();
-        var sessionId = persist(new ExamSessionJpaEntity(null, examId, candidateId, paperId, now, now,
+        UUID candidateId = UUID.randomUUID();
+        UUID sessionId = persist(new AssessmentSessionJpaEntity(null, assessmentId, candidateId, paperId, now, now,
             "GRADED", false, null)).getId();
-        var candidateResultId = persist(new ExamCandidateResultJpaEntity(null, examId, candidateId, sessionId,
+        UUID candidateResultId = persist(new AssessmentCandidateResultJpaEntity(null, assessmentId, candidateId, sessionId,
             UUID.randomUUID(), 1, rubricVersionId, UUID.randomUUID(), UUID.randomUUID(), null,
             new BigDecimal("6.50"), "PENDING_REVIEW", null, null, now, now, null, null)).getId();
-        assignmentId = persist(new ExamGradingAssignmentJpaEntity(null, candidateResultId, teacherId,
+        assignmentId = persist(new AssessmentGradingAssignmentJpaEntity(null, candidateResultId, teacherId,
             "INITIAL", null, "ASSIGNED", null, new BigDecimal("6.50"), now, teacherId, null,
             now.plusSeconds(86_400), null, null, candidateResultId)).getId();
 
-        // Câu 1: đã chấm tay rồi — bản AI bị SUPERSEDED, bản hiệu lực là bản HUMAN.
-        var responseOne = response(sessionId, itemOne);
-        var aiEvaluation = evaluation(responseOne, itemOne, "AI_SINGLE", "SUPERSEDED", true);
+        // Question 1: already graded by hand -- the AI version is SUPERSEDED, the effective version
+        // is the HUMAN one.
+        UUID responseOne = response(sessionId, itemOne);
+        UUID aiEvaluation = evaluation(responseOne, itemOne, "AI_SINGLE", "SUPERSEDED", true);
         turn(aiEvaluation);
         criterionScore(aiEvaluation, "AI thấy thí sinh dùng thì quá khứ chưa nhất quán.");
-        var humanEvaluation = evaluation(responseOne, itemOne, "HUMAN", "FINALIZED", false);
+        UUID humanEvaluation = evaluation(responseOne, itemOne, "HUMAN", "FINALIZED", false);
         criterionScore(humanEvaluation, "Giáo viên chấm lại: ngữ pháp ổn hơn AI đánh giá.");
 
-        // Câu 2: mới chỉ có bản AI.
-        var responseTwo = response(sessionId, itemTwo);
-        var aiOnly = evaluation(responseTwo, itemTwo, "AI_SINGLE", "AUTO_GRADED", true);
+        // Question 2: only has the AI version so far.
+        UUID responseTwo = response(sessionId, itemTwo);
+        UUID aiOnly = evaluation(responseTwo, itemTwo, "AI_SINGLE", "AUTO_GRADED", true);
         turn(aiOnly);
         criterionScore(aiOnly, "AI: từ vựng đủ dùng.");
 
-        // Câu 3: chưa chấm gì cả — màn chấm vẫn phải mở được.
+        // Question 3: not graded at all -- the grading screen must still be able to open.
         response(sessionId, itemThree);
 
         em.flush();
@@ -124,7 +125,7 @@ class GradingTaskDetailQueryTests extends ContainerTestConfig {
 
     @Test
     void should_number_questions_within_their_section() {
-        var items = detail().items();
+        List<GradingTaskItemInfo> items = detail().items();
 
         assertThat(items).hasSize(3);
         assertThat(items).extracting(item -> item.partLabel())
@@ -138,7 +139,7 @@ class GradingTaskDetailQueryTests extends ContainerTestConfig {
 
     @Test
     void should_keep_ai_evidence_after_the_question_has_been_graded_by_a_teacher() {
-        var item = detail().items().get(0);
+        GradingTaskItemInfo item = detail().items().get(0);
 
         assertThat(item.aiScores()).singleElement()
             .satisfies(score -> assertThat(score.rationale())
@@ -167,7 +168,7 @@ class GradingTaskDetailQueryTests extends ContainerTestConfig {
 
     @Test
     void should_return_an_openable_item_when_the_question_has_no_ai_evaluation() {
-        var item = detail().items().get(2);
+        GradingTaskItemInfo item = detail().items().get(2);
 
         assertThat(item.turns()).isEmpty();
         assertThat(item.aiScores()).isEmpty();
@@ -180,11 +181,11 @@ class GradingTaskDetailQueryTests extends ContainerTestConfig {
     }
 
     private GradingTaskDetailInfo detail() {
-        return examGradingQueryRepository.findTaskDetail(assignmentId, teacherId).orElseThrow();
+        return assessmentGradingQueryRepository.findTaskDetail(assignmentId, teacherId).orElseThrow();
     }
 
     private UUID paperItem(UUID paperId, UUID sectionId, int order) {
-        return persist(new ExamPaperItemJpaEntity(null, null, sectionId, paperId, UUID.randomUUID(),
+        return persist(new AssessmentPaperItemJpaEntity(null, null, sectionId, paperId, UUID.randomUUID(),
             order, BigDecimal.ONE)).getId();
     }
 
@@ -192,12 +193,12 @@ class GradingTaskDetailQueryTests extends ContainerTestConfig {
     // còn lại của fixture vốn để Postgres sinh uuidv7() — gán null vào đây sẽ nổ
     // IdentifierGenerationException.
     private UUID response(UUID sessionId, UUID paperItemId) {
-        return persist(new ExamItemResponseJpaEntity(UUID.randomUUID(), sessionId, paperItemId,
+        return persist(new AssessmentItemResponseJpaEntity(UUID.randomUUID(), sessionId, paperItemId,
             "https://example.test/audio.mp3", 60, "my friends helped me", null, now)).getId();
     }
 
     private UUID evaluation(UUID responseId, UUID paperItemId, String engineType, String status, boolean ai) {
-        return persist(new ExamItemEvaluationJpaEntity(null, responseId, paperItemId, engineType,
+        return persist(new AssessmentItemEvaluationJpaEntity(null, responseId, paperItemId, engineType,
             ai ? "gpt-test" : "human", null, null, new BigDecimal("6.00"), new BigDecimal("6.50"),
             ai ? new BigDecimal("0.42") : null, ai, ai ? "LOW_CONFIDENCE" : null, false, false,
             ai ? AI_SIGNALS_JSON : null, ai ? AI_VALIDITY_JSON : null,
@@ -206,13 +207,13 @@ class GradingTaskDetailQueryTests extends ContainerTestConfig {
     }
 
     private void turn(UUID evaluationId) {
-        persist(new ExamItemEvaluationTurnJpaEntity(UUID.randomUUID(), evaluationId, 1, "MAIN", "Tell me about a friend.",
+        persist(new AssessmentItemEvaluationTurnJpaEntity(UUID.randomUUID(), evaluationId, 1, "MAIN", "Tell me about a friend.",
             "https://example.test/turn.mp3", "my friends helped me", 109, 42, 0.93,
             "{\"accuracyScore\":74}", WORD_FEEDBACK_JSON));
     }
 
     private void criterionScore(UUID evaluationId, String rationale) {
-        persist(new ExamItemCriterionScoreJpaEntity(null, evaluationId, criterionId,
+        persist(new AssessmentItemCriterionScoreJpaEntity(null, evaluationId, criterionId,
             new BigDecimal("6.00"), new BigDecimal("6.30"), rationale));
     }
 

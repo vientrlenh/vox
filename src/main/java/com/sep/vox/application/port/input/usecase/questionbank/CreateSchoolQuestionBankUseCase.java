@@ -1,7 +1,9 @@
 package com.sep.vox.application.port.input.usecase.questionbank;
 
+import com.sep.vox.domain.model.school.SchoolUser;
 import java.time.Instant;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,14 +35,14 @@ public class CreateSchoolQuestionBankUseCase implements IUseCase<CreateSchoolQue
     @Override
     @Transactional
     public CreateQuestionBankResponse execute(CreateSchoolQuestionBankCommand input) {
-        var command = normalize(input);
+        CreateSchoolQuestionBankCommand command = normalize(input);
 
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var schoolUser = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
             .orElseThrow(() -> new ForbiddenException("Quyền truy cập không hợp lệ"));
 
-        var now = Instant.now();
-        var questionBank = QuestionBank.create(
+        Instant now = Instant.now();
+        QuestionBank questionBank = QuestionBank.create(
             command.languageId(), 
             schoolUser.getSchoolId(), 
             command.code(), 
@@ -51,7 +53,7 @@ public class CreateSchoolQuestionBankUseCase implements IUseCase<CreateSchoolQue
             currentUserId
         );
 
-        var saved = questionBankRepository.save(questionBank);
+        QuestionBank saved = questionBankRepository.save(questionBank);
         return CreateQuestionBankResponseMapper.toResponse(saved.getId());
     }
 

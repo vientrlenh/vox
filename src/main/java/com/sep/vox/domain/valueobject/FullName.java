@@ -9,11 +9,11 @@ public record FullName(String value) {
     }
 
     private static boolean isValidFullName(String value) {
-        var words = value.strip().split("\\s+");
+        String[] words = value.strip().split("\\s+");
         if (words.length == 0) {
             return false;
         }
-        for (var word : words) {
+        for (String word : words) {
             if (!isValidNameWord(word)) {
                 return false;
             }
@@ -26,13 +26,13 @@ public record FullName(String value) {
             return false;
         }
 
-        var firstCodePoint = word.codePointAt(0);
+        int firstCodePoint = word.codePointAt(0);
         if (!Character.isLetter(firstCodePoint) || !Character.isUpperCase(firstCodePoint)) {
             return false;
         }
 
-        for (var i = Character.charCount(firstCodePoint); i < word.length();) {
-            var codePoint = word.codePointAt(i);
+        for (int i = Character.charCount(firstCodePoint); i < word.length();) {
+            int codePoint = word.codePointAt(i);
             if (!Character.isLetter(codePoint)) {
                 return false;
             }

@@ -21,6 +21,7 @@ import com.sep.vox.application.port.input.query.ViewSchoolClassesQuery;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassesUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
@@ -59,11 +60,11 @@ class ViewSchoolClassesUseCaseTests {
 
     @Test
     void view_should_return_school_classes_with_search_and_filters() {
-        var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var languageId = UUID.randomUUID();
-        var gradeId = UUID.randomUUID();
-        var schoolClass = SchoolClass.create(
+        UUID userId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        UUID languageId = UUID.randomUUID();
+        UUID gradeId = UUID.randomUUID();
+        SchoolClass schoolClass = SchoolClass.create(
             schoolId,
             languageId,
             gradeId,
@@ -74,10 +75,10 @@ class ViewSchoolClassesUseCaseTests {
             Instant.now()
         );
         schoolClass.setId(UUID.randomUUID());
-        var page = new PageResult<>(List.of(schoolClass), 1, 20, 1, 1);
+        PageResult<SchoolClass> page = new PageResult<>(List.of(schoolClass), 1, 20, 1, 1);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        var _user = user(userId, schoolId, UserStatus.ACTIVE);
+        User _user = user(userId, schoolId, UserStatus.ACTIVE);
         when(userRepository.findById(userId)).thenReturn(Optional.of(_user));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(schoolClassRepository.findBySchoolId(
@@ -90,7 +91,7 @@ class ViewSchoolClassesUseCaseTests {
             20
         )).thenReturn(page);
 
-        var result = useCase.execute(new ViewSchoolClassesQuery(1, 20, "  English   01  ", "ACTIVE", languageId, gradeId));
+        PageResult<SchoolClassDto> result = useCase.execute(new ViewSchoolClassesQuery(1, 20, "  English   01  ", SchoolClassStatus.ACTIVE, languageId, gradeId));
 
         assertThat(result.content()).hasSize(1);
         assertThat(result.content().getFirst().id()).isEqualTo(schoolClass.getId());
@@ -108,27 +109,11 @@ class ViewSchoolClassesUseCaseTests {
     }
 
     @Test
-    void view_should_throw_when_status_is_invalid() {
-        var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-
-        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        var _user1 = user(userId, schoolId, UserStatus.ACTIVE);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(_user1));
-        when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
-
-        assertThrows(
-            IllegalArgumentException.class,
-            () -> useCase.execute(new ViewSchoolClassesQuery(1, 20, null, "DELETED", null, null))
-        );
-    }
-
-    @Test
     void view_should_throw_when_current_user_is_inactive() {
-        var userId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        var _u3 = user(userId, UUID.randomUUID(), UserStatus.INACTIVE);
+        User _u3 = user(userId, UUID.randomUUID(), UserStatus.INACTIVE);
         when(userRepository.findById(userId)).thenReturn(Optional.of(_u3));
 
         assertThrows(
@@ -140,7 +125,7 @@ class ViewSchoolClassesUseCaseTests {
     }
 
     private User user(UUID id, UUID schoolId, UserStatus status) {
-        var user = new User();
+        User user = new User();
         user.setId(id);
         user.setStatus(status);
         when(schoolUserRepository.findByUserId(id)).thenReturn(
@@ -150,7 +135,7 @@ class ViewSchoolClassesUseCaseTests {
     }
 
     private static School activeSchool(UUID id) {
-        var school = new School();
+        School school = new School();
         school.setId(id);
         school.setActive(true);
         return school;

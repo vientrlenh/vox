@@ -6,9 +6,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
@@ -18,6 +20,7 @@ import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolClassMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolClassRepository;
 
 @Repository
@@ -37,8 +40,8 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
 
     @Override
     public SchoolClass save(SchoolClass schoolClass) {
-        var entity = SchoolClassMapper.toJpa(schoolClass);
-        var saved = springDataSchoolClassRepository.save(entity);
+        SchoolClassJpaEntity entity = SchoolClassMapper.toJpa(schoolClass);
+        SchoolClassJpaEntity saved = springDataSchoolClassRepository.save(entity);
         return SchoolClassMapper.toDomain(saved);
     }
 
@@ -55,13 +58,13 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
     @Override
     public PageResult<SchoolClass> findBySchoolId(UUID schoolId, String search, SchoolClassStatus status,
             UUID languageId, UUID schoolGradeId, int pageNumber, int size) {
-        var pageable = PageRequest.of(
-            pageNumber - 1,
+        PageRequest pageable = OneBasedPaging.toPageRequest(
+            pageNumber,
             size,
             Sort.by(Sort.Direction.DESC, (SchoolClassJpaEntity entity) -> entity.getCreatedAt()).and(Sort.by(Sort.Direction.ASC, (SchoolClassJpaEntity entity) -> entity.getId()))
         );
-        var normalizedSearch = blankToNull(search);
-        var page = normalizedSearch == null
+        String normalizedSearch = blankToNull(search);
+        Page<SchoolClassJpaEntity> page = normalizedSearch == null
             ? springDataSchoolClassRepository.findBySchoolIdWithFilters(
                 schoolId,
                 valueOf(status),
@@ -96,13 +99,13 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
     @Override
     public PageResult<SchoolClass> findByUserId(UUID schoolId, UUID userId, String search, SchoolClassStatus status,
             int pageNumber, int size) {
-        var pageable = PageRequest.of(
-            pageNumber - 1,
+        PageRequest pageable = OneBasedPaging.toPageRequest(
+            pageNumber,
             size,
             Sort.by(Sort.Direction.DESC, (SchoolClassJpaEntity entity) -> entity.getCreatedAt()).and(Sort.by(Sort.Direction.ASC, (SchoolClassJpaEntity entity) -> entity.getId()))
         );
-        var normalizedSearch = blankToNull(search);
-        var page = normalizedSearch == null
+        String normalizedSearch = blankToNull(search);
+        Page<SchoolClassJpaEntity> page = normalizedSearch == null
             ? springDataSchoolClassRepository.findByUserId(schoolId, userId, valueOf(status), pageable)
             : springDataSchoolClassRepository.findByUserIdWithSearch(
                 schoolId,
@@ -139,7 +142,7 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
         if (schoolId == null || codes == null || codes.isEmpty()) {
             return List.of();
         }
-        var upperCodes = codes.stream().map(s -> s.toUpperCase(Locale.ROOT)).collect(Collectors.toSet());
+        Set<String> upperCodes = codes.stream().map(s -> s.toUpperCase(Locale.ROOT)).collect(Collectors.toSet());
         return springDataSchoolClassRepository.findBySchoolIdAndCodeIn(schoolId, upperCodes)
             .stream()
             .map(SchoolClassMapper::toDomain)
@@ -185,8 +188,8 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
 
     @Override
     public List<SchoolClass> findBySchoolIdIn(Collection<UUID> schoolIds, int page, int size) {
-        var fromRow = (page - 1) * size + 1;
-        var toRow = page * size;
+        int fromRow = OneBasedPaging.toFirstRow(page, size);
+        int toRow = OneBasedPaging.toLastRow(page, size);
         return springDataSchoolClassRepository.findBySchoolIdIn(schoolIds, fromRow, toRow)
             .stream()
             .map(SchoolClassMapper::toDomain)

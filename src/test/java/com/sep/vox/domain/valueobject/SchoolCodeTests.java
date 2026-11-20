@@ -9,14 +9,14 @@ public class SchoolCodeTests {
 
     @Test
     void should_accept_valid_school_code() {
-        var schoolCode = new SchoolCode("HCMUS_01");
+        SchoolCode schoolCode = new SchoolCode("HCMUS_01");
 
         assertThat(schoolCode.value()).isEqualTo("HCMUS_01");
     }
 
     @Test
     void should_accept_null_school_code() {
-        var schoolCode = new SchoolCode(null);
+        SchoolCode schoolCode = new SchoolCode(null);
 
         assertThat(schoolCode.value()).isNull();
     }

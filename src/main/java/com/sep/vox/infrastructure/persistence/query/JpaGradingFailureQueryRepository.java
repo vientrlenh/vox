@@ -14,6 +14,7 @@ import com.sep.vox.application.query.dto.GradingFailureSessionDto;
 import com.sep.vox.application.query.dto.GradingFailureTotalsDto;
 import com.sep.vox.application.query.repository.GradingFailureQueryRepository;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -36,11 +37,11 @@ public class JpaGradingFailureQueryRepository implements GradingFailureQueryRepo
                 s.grading_error                                 AS error,
                 s.grading_retry_count                           AS retry_count,
                 vox_grading_error_signature(s.grading_error)    AS signature,
-                s.exam_id                                       AS exam_id,
+                s.assessment_id                                       AS assessment_id,
                 e.school_id                                     AS school_id,
                 e.status <> 'RESULTS_PUBLISHED'                 AS retryable
-            FROM exam_sessions s
-            JOIN exams e ON e.id = s.exam_id
+            FROM assessment_sessions s
+            JOIN assessments e ON e.id = s.assessment_id
             WHERE s.status = 'GRADING_FAILED'
               AND s.submitted_at >= :fromInstant
               AND s.submitted_at < :toInstant
@@ -87,7 +88,7 @@ public class JpaGradingFailureQueryRepository implements GradingFailureQueryRepo
                 (array_agg(error ORDER BY failed_at DESC))[1],
                 COUNT(*),
                 COUNT(DISTINCT school_id),
-                COUNT(DISTINCT exam_id),
+                COUNT(DISTINCT assessment_id),
                 MIN(failed_at),
                 MAX(failed_at),
                 COUNT(*) FILTER (WHERE retryable)
@@ -115,19 +116,19 @@ public class JpaGradingFailureQueryRepository implements GradingFailureQueryRepo
     }
 
     /**
-     * {@code IS NOT DISTINCT FROM} chứ không phải {@code =}: nhóm "không rõ nguyên nhân" có chữ ký
-     * null, và {@code null = null} trong SQL ra null nên bấm vào nhóm đó sẽ trả về danh sách rỗng
-     * trong khi thẻ nhóm vẫn hiện số phiên.
+     * {@code IS NOT DISTINCT FROM} and not {@code =}: the "unknown cause" group has a null signature,
+     * and {@code null = null} in SQL gives null, so clicking that group would return an empty list
+     * while the group card still shows the session count.
      *
-     * <p>Sắp xếp kèm {@code session_id} làm khóa phụ: nhiều phiên của cùng một ca thi hỏng trong
-     * cùng một giây, và chỉ xếp theo thời gian thì thứ tự giữa chúng không xác định — phân trang sẽ
-     * lặp phiên ở trang này và đánh rơi phiên ở trang kia.
+     * <p>Sorting also uses {@code session_id} as a secondary key: several sessions of the same failed assessment shift fall in
+     * the same second, and sorting by time alone leaves their order undefined — pagination would
+     * repeat a session on one page and drop one on another.
      */
     @Override
     @SuppressWarnings("unchecked")
     public PageResult<GradingFailureSessionDto> findSessions(
             Instant from, Instant to, String signature, int page, int size) {
-        var total = toLong(em.createNativeQuery(FAILED_SESSIONS_CTE + """
+        long total = toLong(em.createNativeQuery(FAILED_SESSIONS_CTE + """
             SELECT COUNT(*) FROM failed WHERE signature IS NOT DISTINCT FROM :signature
             """)
             .setParameter("fromInstant", from)
@@ -145,18 +146,18 @@ public class JpaGradingFailureQueryRepository implements GradingFailureQueryRepo
                 f.school_id,
                 sc.name,
                 sc.code,
-                f.exam_id,
+                f.assessment_id,
                 e.name,
                 u.full_name,
                 f.failed_at,
                 f.retry_count,
                 f.error,
                 f.retryable,
-                EXISTS (SELECT 1 FROM exam_candidate_results r WHERE r.session_id = f.session_id)
+                EXISTS (SELECT 1 FROM assessment_candidate_results r WHERE r.session_id = f.session_id)
             FROM failed f
-            JOIN exams e ON e.id = f.exam_id
-            JOIN exam_sessions s ON s.id = f.session_id
-            JOIN exam_candidates c ON c.id = s.candidate_id
+            JOIN assessments e ON e.id = f.assessment_id
+            JOIN assessment_sessions s ON s.id = f.session_id
+            JOIN assessment_candidates c ON c.id = s.candidate_id
             LEFT JOIN schools sc ON sc.id = f.school_id
             LEFT JOIN users u ON u.id = c.student_id
             WHERE f.signature IS NOT DISTINCT FROM :signature
@@ -167,10 +168,10 @@ public class JpaGradingFailureQueryRepository implements GradingFailureQueryRepo
             .setParameter("toInstant", to)
             .setParameter("signature", signature)
             .setParameter("pageSize", size)
-            .setParameter("offset", (long) (page - 1) * size)
+            .setParameter("offset", OneBasedPaging.toOffset(page, size))
             .getResultList();
 
-        var content = rows.stream()
+        List<GradingFailureSessionDto> content = rows.stream()
             .map(row -> new GradingFailureSessionDto(
                 toUuid(row[0]),
                 toUuid(row[1]),

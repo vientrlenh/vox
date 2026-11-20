@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
+import com.sep.vox.domain.model.subscription.SchoolSubscription;
+import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaRecord;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -36,13 +38,13 @@ public class ViewSchoolSubscriptionQuotaRecordsUseCase implements IUseCase<ViewS
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        var activeSubscription = schoolSubscriptionRepository.findActiveBySchoolId(input.schoolId())
+        SchoolSubscription activeSubscription = schoolSubscriptionRepository.findActiveBySchoolId(input.schoolId())
             .orElse(null);
         if (activeSubscription == null) {
             return List.of();
         }
 
-        var quotas = schoolSubscriptionQuotaRecordRepository.findBySchoolSubscriptionId(activeSubscription.getId());
+        List<SchoolSubscriptionQuotaRecord> quotas = schoolSubscriptionQuotaRecordRepository.findBySchoolSubscriptionId(activeSubscription.getId());
 
         return SchoolSubscriptionQuotaRecordDto.toDtoList(quotas);
     }

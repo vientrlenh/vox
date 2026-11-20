@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
+import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -52,13 +53,13 @@ public class OutboxEventScheduler {
             return;
         }
 
-        var inFlight = events
+        List<Map.Entry<Outbox, CompletableFuture<Void>>> inFlight = events
             .stream()
             .map(event -> Map.entry(event, eventMessagePublisherPort.publish(event)))
             .toList();
         
-        for (var entry : inFlight) {
-            var event = entry.getKey();
+        for (Map.Entry<Outbox, CompletableFuture<Void>> entry : inFlight) {
+            Outbox event = entry.getKey();
             try {
                 entry.getValue().join();
                 outboxRepository.markPublished(event.getId(), Instant.now());
@@ -72,7 +73,7 @@ public class OutboxEventScheduler {
     @Scheduled(fixedDelay = 60_000, scheduler = "outboxTaskScheduler")
     public void releaseStuckEvents() {
         try {
-            var released = outboxRepository.releaseExpiredLeases();
+            int released = outboxRepository.releaseExpiredLeases();
             if (released > 0) {
                 LOGGER.warn("Released {} expired outbox events to PENDING", released);
             }
@@ -83,7 +84,7 @@ public class OutboxEventScheduler {
 
 
     private String describe(Exception e) {
-        var cause = e.getCause() == null ? e : e.getCause();
+        Throwable cause = e.getCause() == null ? e : e.getCause();
         return cause.getClass().getSimpleName() + ": " + cause.getMessage();
     }
 }

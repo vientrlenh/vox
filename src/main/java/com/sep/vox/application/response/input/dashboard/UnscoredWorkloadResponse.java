@@ -25,7 +25,7 @@ public record UnscoredWorkloadResponse(
     int assignedInProgress,
     /** Bài chờ lâu nhất đã chờ bao nhiêu ngày lịch; null khi không còn bài nào. */
     Integer oldestWaitingDays,
-    int examCount
+    int assessmentCount
 ) {
 
     public static UnscoredWorkloadResponse of(SchoolUnscoredWorkloadDto dto, Instant now) {
@@ -38,7 +38,7 @@ public record UnscoredWorkloadResponse(
             dto.assignedOverdue(),
             dto.assignedInProgress(),
             BusinessDays.waitedDaysSince(dto.oldestSubmittedAt(), now),
-            dto.examCount()
+            dto.assessmentCount()
         );
     }
 }

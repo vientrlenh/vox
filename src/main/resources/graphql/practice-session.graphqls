@@ -1,6 +1,6 @@
 extend type Query {
     myPracticeHistory(limit: Int = 20): [PracticeSession!]!
-    "Học sinh xem lại bài của CHÍNH MÌNH. Cùng nội dung với studentPracticeSessionDetail nhưng khác quyền -- bên kia dành cho giáo viên xem bài học sinh mình dạy."
+    "A student reviews their OWN work. Same content as studentPracticeSessionDetail but with different permissions -- the other one is for a teacher to view the work of the students they teach."
     myPracticeSessionDetail(sessionId: ID!): TeacherPracticeSessionDetail!
     studentPracticeSessionDetail(sessionId: ID!): TeacherPracticeSessionDetail!
 }
@@ -26,9 +26,9 @@ type PracticeSession {
     abandonDiagnosis: String
     overallScore: Float
     gradedSeconds: Int!
-    startedAt: String!
-    endedAt: String
-    """Số câu đã nói nhưng chưa chấm xong. > 0 nghĩa là overallScore còn TẠM."""
+    startedAt: DateTime!
+    endedAt: DateTime
+    """Number of answers spoken but not graded yet. > 0 means overallScore is still PROVISIONAL."""
     pendingEvaluations: Int!
 }
 
@@ -57,20 +57,20 @@ type TeacherPracticeTurnView {
 type TeacherPracticeSessionDetail {
     sessionId: ID!
     topicName: String!
-    startedAt: String!
+    startedAt: DateTime!
     durationSeconds: Int!
     itemCount: Int!
     overallScore: Float
     criterionScores: [CriterionScore!]!
     completed: Boolean!
-    "Số câu đã nói nhưng chưa có bản chấm. > 0 nghĩa là kết quả còn đang được tổng hợp -- màn tổng kết dựa vào đây để biết nên chờ hay nên hiện luôn."
+    "Number of answers spoken but without a grading yet. > 0 means the result is still being compiled -- the summary screen relies on this to decide whether to wait or show it right away."
     pendingEvaluationCount: Int!
-    """Số câu chấm hỏng và đã hết lượt thử -- sẽ KHÔNG BAO GIỜ có điểm, đừng chờ nữa."""
+    """Number of answers whose grading failed and whose attempts are used up -- they will NEVER get a score, so do not wait any longer."""
     gradingGaveUpCount: Int!
-    "Thang chấm của CHÍNH phiên này: 0-100 với phiên từ V13 (luyện tập không dùng rubric), hoặc thang của rubric đã áp với phiên cũ. Client phải đọc trường này thay vì viết cứng mẫu số -- hai loại phiên cùng tồn tại lâu dài."
+    "The scoring scale of THIS session itself: 0-100 for sessions from V13 (practice does not use a rubric), or the scale of the applied rubric for older sessions. The client must read this field instead of hard-coding the denominator -- both kinds of session will coexist for a long time."
     scoreScaleMin: Float!
     scoreScaleMax: Float!
-    "Trung bình độ khó (difficulty_rank) các câu đã trả lời. Điểm một mình không đọc được: nó neo vào bậc mục tiêu còn độ khó câu lại bám theo bậc hiện tại của học sinh."
+    "Average difficulty (difficulty_rank) of the answered questions. The score alone cannot be interpreted: it is anchored to the target band while the question difficulty follows the student's current band."
     difficultyRank: Float
     turns: [TeacherPracticeTurnView!]!
 }

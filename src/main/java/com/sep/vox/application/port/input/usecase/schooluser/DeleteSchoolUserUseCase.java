@@ -1,7 +1,10 @@
 package com.sep.vox.application.port.input.usecase.schooluser;
 
+import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.domain.model.user.User;
 import java.time.Instant;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,12 +32,12 @@ public class DeleteSchoolUserUseCase implements IUseCase<DeleteSchoolUserCommand
     @Override
     @Transactional
     public Void execute(DeleteSchoolUserCommand input) {
-        var now = Instant.now();
-        var callerId = userContextPort.getCurrentAuthenticatedUserId();
+        Instant now = Instant.now();
+        UUID callerId = userContextPort.getCurrentAuthenticatedUserId();
 
         userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
-        var callerSchoolUser = schoolUserRepository.findByUserId(callerId)
+        SchoolUser callerSchoolUser = schoolUserRepository.findByUserId(callerId)
             .orElseThrow(() -> new IllegalArgumentException("Không có quyền thực hiện thao tác này"));
         if (!input.schoolId().equals(callerSchoolUser.getSchoolId())) {
             throw new IllegalArgumentException("Không có quyền thực hiện thao tác này");
@@ -43,9 +46,9 @@ public class DeleteSchoolUserUseCase implements IUseCase<DeleteSchoolUserCommand
             throw new IllegalArgumentException("Không thể tự xóa tài khoản của chính mình");
         }
 
-        var targetUser = userRepository.findById(input.userId())
+        User targetUser = userRepository.findById(input.userId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
-        var targetSchoolUser = schoolUserRepository.findByUserId(input.userId())
+        SchoolUser targetSchoolUser = schoolUserRepository.findByUserId(input.userId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
         if (!input.schoolId().equals(targetSchoolUser.getSchoolId())) {
             throw new NotFoundException("Không tìm thấy người dùng");
@@ -56,8 +59,8 @@ public class DeleteSchoolUserUseCase implements IUseCase<DeleteSchoolUserCommand
 
         // SchoolUser không có cờ isActive: kết thúc membership bằng endDate để vô hiệu hóa,
         // đảm bảo ràng buộc DB start_date < end_date luôn thỏa mãn.
-        var startDate = targetSchoolUser.getStartDate();
-        var membershipEnd = (startDate != null && !startDate.isBefore(now))
+        Instant startDate = targetSchoolUser.getStartDate();
+        Instant membershipEnd = (startDate != null && !startDate.isBefore(now))
             ? startDate.plusSeconds(1)
             : now;
         targetSchoolUser.setEndDate(membershipEnd);

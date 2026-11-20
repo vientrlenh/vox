@@ -15,6 +15,9 @@ import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
+import com.sep.vox.domain.model.school.School;
+import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.ImportRowRepository;
 import com.sep.vox.domain.repository.ImportSessionRepository;
@@ -65,16 +68,16 @@ public class PreviewSchoolAssessmentPolicyImportFromFileUseCase implements IUseC
     @Transactional
     public PreviewAssessmentPolicyImportResponse execute(PreviewSchoolAssessmentPolicyImportFromFileCommand command) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
 
-        var schoolUser = schoolUserRepository.findByUserId(currentUserId)
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được phân bổ vào trường học nào."));
         if (!schoolUser.getSchoolId().equals(command.schoolId())) {
             throw new ForbiddenException("BẢO MẬT: Bạn không được quyền nạp file cho một trường học khác.");
         }
 
-        var school = schoolRepository.findById(command.schoolId())
+        School school = schoolRepository.findById(command.schoolId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
         if (!school.isActive()) {
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");

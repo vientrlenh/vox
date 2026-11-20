@@ -31,7 +31,7 @@ public class ViewGradingFailureSessionsUseCase
     @Override
     @Transactional(readOnly = true)
     public PageResult<GradingFailureSessionDto> execute(ViewGradingFailureSessionsQuery input) {
-        var window = GradingFailureWindow.resolve(input.dateFrom(), input.dateTo());
+        ViewGradingFailureOverviewUseCase.GradingFailureWindow window = GradingFailureWindow.resolve(input.dateFrom(), input.dateTo());
 
         // Khoảng rỗng/ngược: trang rỗng chứ không phải lỗi, cùng cách xử lý với các query dashboard
         // khác -- người dùng chọn nhầm khoảng thì thấy "không có phiên nào", không thấy màn lỗi.

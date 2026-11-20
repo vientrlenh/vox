@@ -1,6 +1,14 @@
 package com.sep.vox.interfaces.graphql.controller;
 
 
+import com.sep.vox.application.port.input.command.UpdateSchoolRubricCommand;
+import com.sep.vox.application.port.input.command.UpdateSchoolRubricCriterionCommand;
+import com.sep.vox.application.port.input.command.UpdateSchoolRubricResultBandCommand;
+import com.sep.vox.application.port.input.command.UpdateSchoolRubricVersionCommand;
+import com.sep.vox.application.port.input.command.UpdateSystemRubricCommand;
+import com.sep.vox.application.port.input.command.UpdateSystemRubricCriterionCommand;
+import com.sep.vox.application.port.input.command.UpdateSystemRubricResultBandCommand;
+import com.sep.vox.application.port.input.command.UpdateSystemRubricVersionCommand;
 import com.sep.vox.application.port.input.query.*;
 import com.sep.vox.application.port.input.query.key.RubricCriteriaKey;
 import com.sep.vox.application.port.input.query.key.RubricResultBandsKey;
@@ -10,8 +18,10 @@ import com.sep.vox.application.port.input.usecase.rubricsystem.*;
 import com.sep.vox.application.port.input.usecase.rubricteacher.*;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.*;
+import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.interfaces.graphql.dto.request.*;
 import com.sep.vox.interfaces.graphql.mapper.*;
+import com.sep.vox.interfaces.shared.PageArguments;
 import graphql.schema.DataFetchingEnvironment;
 import jakarta.validation.Valid;
 import org.dataloader.DataLoader;
@@ -102,20 +112,20 @@ public class RubricController {
 
 
     //============================== RUBRIC ========================================
-    //Update Rubric của hệ thống
+    // Update the system Rubric
     @MutationMapping(name = "updateSystemRubric")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public UUID updateSystemRubric(
             @Argument(name = "id") UUID id,
             @Argument(name = "input") UpdateRubricInput input
     ) {
-        var command = UpdateRubricGraphQLMapper.fromSystemInput(id, input);
+        UpdateSystemRubricCommand command = UpdateRubricGraphQLMapper.fromSystemInput(id, input);
 
         return updateSystemRubricUseCase.execute(command);
     }
 
 
-    //Update Rubric của trường học
+    // Update the school Rubric
     @MutationMapping(name = "updateSchoolRubric")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public UUID updateSchoolRubric(
@@ -123,33 +133,33 @@ public class RubricController {
             @Argument(name = "id") UUID id,
             @Valid @Argument(name = "input") UpdateRubricInput input
     ) {
-        var command = UpdateRubricGraphQLMapper.fromSchoolInput(schoolId, id, input);
+        UpdateSchoolRubricCommand command = UpdateRubricGraphQLMapper.fromSchoolInput(schoolId, id, input);
         return updateSchoolRubricUseCase.execute(command);
     }
 
 
-    //View Rubric của hệ thống
+    // View the system Rubric
     @QueryMapping(name = "viewSystemRubric")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public RubricDto viewSystemRubricById(@Argument(name = "id") UUID id) {
-        var query = new ViewSystemRubricDetailsQuery(id);
+        ViewSystemRubricDetailsQuery query = new ViewSystemRubricDetailsQuery(id);
         return viewSystemRubricDetailsUseCase.execute(query);
     }
 
 
-    //View Rubric của trường học
+    // View the school Rubric
     @QueryMapping(name = "viewSchoolRubric")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public RubricDto viewSchoolRubricById(
             @Argument(name = "schoolId") UUID schoolId,
             @Argument(name = "id") UUID id
     ) {
-        var query = new ViewSchoolRubricDetailsQuery(schoolId, id);
+        ViewSchoolRubricDetailsQuery query = new ViewSchoolRubricDetailsQuery(schoolId, id);
         return viewSchoolRubricDetailsUseCase.execute(query);
     }
 
 
-    //View Rubrics của hệ thống
+    // View the system Rubrics
     @QueryMapping(name = "viewSystemRubrics")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<RubricDto> viewSystemRubrics(
@@ -157,14 +167,14 @@ public class RubricController {
             @Argument(name = "size") Integer size
     ) {
 
-        validatePageSize(page, size);
-        var query = new ViewSystemRubricsQuery(page, size);
+        PageArguments.validate(page, size);
+        ViewSystemRubricsQuery query = new ViewSystemRubricsQuery(page, size);
 
         return viewSystemRubricsUseCase.execute(query);
     }
 
 
-    //View Rubrics của trường học
+    // View the school Rubrics
     @QueryMapping(name = "viewSchoolRubrics")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<RubricDto> viewSchoolRubrics(
@@ -172,9 +182,9 @@ public class RubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size
     ) {
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
 
-        var query = new ViewSchoolRubricsQuery(schoolId, page, size);
+        ViewSchoolRubricsQuery query = new ViewSchoolRubricsQuery(schoolId, page, size);
         return viewSchoolRubricsUseCase.execute(query);
     }
 
@@ -205,26 +215,26 @@ public class RubricController {
     }
 
 
-    //Lấy tất cẩ Rubric Version của trường
-    // Ko thể tách ra được do dùng chung 1 type bên scheme
-    // Xử lý Role
+    // Get all Rubric Versions of the school
+    // Cannot be split because one type in the schema is shared
+    // Handle roles
     @SchemaMapping(typeName = "Rubric", field = "versions")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public CompletableFuture<PageResult<RubricVersionDto>> getRubricVersions(
             RubricDto rubric,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size,
-            @Argument(name = "status") String status,
+            @Argument(name = "status") RubricStatus status,
             DataFetchingEnvironment env) {
 
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
 
         DataLoader<RubricVersionsKey, PageResult<RubricVersionDto>> loader = env.getDataLoader("rubricVersionsDataLoader");
         return loader.load(new RubricVersionsKey(rubric.id(), status, page, size));
     }
 
 
-    //Search Rubric theo code, name của hệ thống
+    // Search system Rubrics by code, name
     @QueryMapping(name = "searchSystemRubrics")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<RubricDto> searchSystemRubrics(
@@ -232,13 +242,11 @@ public class RubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
 
-        // Tránh NullPointerException nếu Frontend không truyền filter
-        var safeFilter = (filter != null) ? filter : new SearchRubricFilterRequest(null, null, null);
+        SearchRubricFilterRequest safeFilter = (filter != null) ? filter : new SearchRubricFilterRequest(null, null, null);
 
-        // Tạo Query của Clean Architecture (Lưu ý tham số thứ 4 là PageRequest)
-        var query = new SearchSystemRubricsQuery(
+        SearchSystemRubricsQuery query = new SearchSystemRubricsQuery(
                 safeFilter.keyword(),
                 safeFilter.frameworkId(),
                 safeFilter.languageId(),
@@ -246,25 +254,24 @@ public class RubricController {
                 size
         );
 
-        // SỬA COMMENT: Thực thi UseCase của hệ thống (chứ không phải của trường)
         return searchSystemRubricsUseCase.execute(query);
     }
 
 
     /**
-     * Danh mục bộ tiêu chí MẪU của hệ thống, cho trường duyệt trước khi sao về.
+     * Catalog of the system's TEMPLATE criteria sets, for schools to browse before copying them.
      *
-     * <p>Trả về đúng kiểu {@code Rubric} như mọi cổng khác, nên phần đi sâu xuống phiên bản / tiêu
-     * chí / dải kết quả dùng lại nguyên các resolver đã có -- vốn đã gộp truy vấn qua DataLoader và
-     * đã mở cho SCHOOL_ADMIN. Trường lọc bản đã ban hành bằng chính đối số sẵn có:
-     * {@code versions(status: "PUBLISHED")}.
+     * <p>Returns the same {@code Rubric} type as every other entry point, so going deeper into versions /
+     * criteria / result bands reuses the existing resolvers as they are -- which already batch queries through DataLoader and
+     * are already open to SCHOOL_ADMIN. A school filters for published versions with the existing argument:
+     * {@code versions(status: PUBLISHED)}.
      *
-     * <p>Tách khỏi {@link #searchSystemRubrics} thay vì nới quyền của nó: hai cổng phục vụ hai vai
-     * khác nhau, gộp lại thì lần sau ai đó siết hoặc nới một bên sẽ vô tình đổi luôn bên kia.
+     * <p>Kept separate from {@link #searchSystemRubrics} instead of widening its permissions: the two entry points serve two roles,
+     * and if merged, the next person who tightens or loosens one side would accidentally change the other.
      *
-     * <p>Bản nháp của hệ thống vẫn nhìn thấy được nếu trường không truyền bộ lọc trạng thái. Chấp
-     * nhận được, vì cửa chặn thật nằm ở hành động chứ không ở tầm nhìn:
-     * {@code CloneSystemRubricToSchoolUseCase} từ chối sao chép mọi phiên bản chưa PUBLISHED.
+     * <p>System drafts are still visible if the school passes no status filter. That is
+     * acceptable, because the real gate is on the action, not on visibility:
+     * {@code CloneSystemRubricToSchoolUseCase} refuses to copy any version that is not PUBLISHED.
      */
     @QueryMapping(name = "systemRubricTemplates")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
@@ -273,8 +280,8 @@ public class RubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
-        validatePageSize(page, size);
-        var safeFilter = (filter != null) ? filter : new SearchRubricFilterRequest(null, null, null);
+        PageArguments.validate(page, size);
+        SearchRubricFilterRequest safeFilter = (filter != null) ? filter : new SearchRubricFilterRequest(null, null, null);
 
         return searchSystemRubricsUseCase.execute(new SearchSystemRubricsQuery(
                 safeFilter.keyword(),
@@ -286,7 +293,7 @@ public class RubricController {
     }
 
 
-    //Search Rubric theo code, name của trường
+    // Search school Rubrics by code, name
     @QueryMapping(name = "searchSchoolRubrics")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<RubricDto> searchSchoolRubrics(
@@ -295,13 +302,11 @@ public class RubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
 
-        // 2. Tránh NullPointer
-        var safeFilter = (filter != null) ? filter : new SearchRubricFilterRequest(null, null, null);
+        SearchRubricFilterRequest safeFilter = (filter != null) ? filter : new SearchRubricFilterRequest(null, null, null);
 
-        // 3. Khởi tạo Query gọn gàng (Gộp inline PageRequest)
-        var query = new SearchSchoolRubricsQuery(
+        SearchSchoolRubricsQuery query = new SearchSchoolRubricsQuery(
                 schoolId,
                 safeFilter.keyword(),
                 safeFilter.frameworkId(),
@@ -312,7 +317,7 @@ public class RubricController {
         return searchSchoolRubricsUseCase.execute(query);
     }
 
-    //Search Rubric theo code, name của Teacher (chỉ rubric thuộc trường của Teacher)
+    // Search Rubrics by code, name for a Teacher (only rubrics belonging to the Teacher's school)
     @QueryMapping(name = "searchTeacherRubrics")
     @PreAuthorize("hasRole('TEACHER')")
     public PageResult<RubricDto> searchTeacherRubrics(
@@ -320,13 +325,12 @@ public class RubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
 
-        // 2. Tránh NullPointer
-        var safeFilter = (filter != null) ? filter : new SearchRubricFilterRequest(null, null, null);
+        SearchRubricFilterRequest safeFilter = (filter != null) ? filter : new SearchRubricFilterRequest(null, null, null);
 
-        // 3. Khởi tạo Query (schoolId được UseCase tự suy ra từ Teacher đang đăng nhập)
-        var query = new SearchTeacherRubricsQuery(
+        // schoolId is derived by the use case from the signed-in teacher.
+        SearchTeacherRubricsQuery query = new SearchTeacherRubricsQuery(
                 safeFilter.keyword(),
                 safeFilter.frameworkId(),
                 safeFilter.languageId(),
@@ -337,21 +341,20 @@ public class RubricController {
     }
 
     //========================== RUBRIC VERSION ===============================================
-    // Update Rubric Version của hệ thống
+    // Update the system Rubric Version
     @MutationMapping(name = "updateSystemRubricVersion")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public UUID updateSystemRubricVersion(
             @Argument(name = "versionId") UUID versionId,
             @Argument(name = "input") UpdateRubricVersionInput input
     ) {
-        // Sử dụng Mapper chuẩn men
-        var command = UpdateRubricVersionGraphQLMapper.fromSystemInput(versionId, input);
+        UpdateSystemRubricVersionCommand command = UpdateRubricVersionGraphQLMapper.fromSystemInput(versionId, input);
 
         return updateSystemRubricVersionUseCase.execute(command);
     }
 
 
-    // Update Rubric Version của school Admin
+    // Update the Rubric Version of the school Admin
     @MutationMapping(name = "updateSchoolRubricVersion")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public UUID updateSchoolRubricVersion(
@@ -359,66 +362,66 @@ public class RubricController {
             @Argument(name = "versionId") UUID versionId,
             @Argument(name = "input") UpdateRubricVersionInput input
     ) {
-        var command = UpdateRubricVersionGraphQLMapper.fromSchoolInput(schoolId, versionId, input);
+        UpdateSchoolRubricVersionCommand command = UpdateRubricVersionGraphQLMapper.fromSchoolInput(schoolId, versionId, input);
 
         return updateSchoolRubricVersionUseCase.execute(command);
     }
 
-    //View School Rubric Version Details của trường
+    // View the school Rubric Version details
     @QueryMapping(name = "viewSchoolRubricVersion")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public RubricVersionDto viewSchoolRubricVersion(
             @Argument(name = "schoolId") UUID schoolId,
             @Argument(name = "versionId") UUID versionId
     ) {
-        var query = new ViewSchoolRubricVersionDetailsQuery(schoolId, versionId);
+        ViewSchoolRubricVersionDetailsQuery query = new ViewSchoolRubricVersionDetailsQuery(schoolId, versionId);
         return viewSchoolRubricVersionDetailsUseCase.execute(query);
     }
 
-    //View School Rubric Version Details của hệ thống
+    // View the system Rubric Version details
     @QueryMapping(name = "viewSystemRubricVersion")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public RubricVersionDto viewSystemRubricVersion(
             @Argument(name = "versionId") UUID versionId
     ) {
-        var query = new ViewSystemRubricVersionDetailsQuery(versionId);
+        ViewSystemRubricVersionDetailsQuery query = new ViewSystemRubricVersionDetailsQuery(versionId);
         return viewSystemRubricVersionDetailsUseCase.execute(query);
     }
 
 
-    //View School Rubric Versions của trường
+    // View the school Rubric Versions
     @QueryMapping(name = "viewSchoolRubricVersions")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<RubricVersionDto> viewSchoolRubricVersions(
             @Argument(name = "schoolId") UUID schoolId,
             @Argument(name = "rubricId") UUID rubricId,
-            @Argument(name = "status") String status,
+            @Argument(name = "status") RubricStatus status,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size
     ) {
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
 
-        var query = new ViewSchoolRubricVersionsQuery(schoolId, rubricId, status, page, size);
+        ViewSchoolRubricVersionsQuery query = new ViewSchoolRubricVersionsQuery(schoolId, rubricId, status, page, size);
         return viewSchoolRubricVersionsUseCase.execute(query);
     }
 
 
-    //View System Rubric Versions của hệ thống
+    // View the system Rubric Versions
     @QueryMapping(name = "viewSystemRubricVersions")
     @PreAuthorize("isAuthenticated()")
     public PageResult<RubricVersionDto> viewSystemRubricVersions(
             @Argument(name = "rubricId") UUID rubricId,
-            @Argument(name = "status") String status,
+            @Argument(name = "status") RubricStatus status,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size
     ) {
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
 
-        var query = new ViewSystemRubricVersionsQuery(rubricId, status, page, size);
+        ViewSystemRubricVersionsQuery query = new ViewSystemRubricVersionsQuery(rubricId, status, page, size);
         return viewSystemRubricVersionsUseCase.execute(query);
     }
 
-    //View Rubric Versions cho Teacher (chỉ PUBLISHED, chỉ rubric thuộc trường của Teacher)
+    // View Rubric Versions for a Teacher (only PUBLISHED, only rubrics belonging to the Teacher's school)
     @QueryMapping(name = "viewTeacherRubricVersions")
     @PreAuthorize("hasRole('TEACHER')")
     public PageResult<RubricVersionDto> viewTeacherRubricVersions(
@@ -426,13 +429,13 @@ public class RubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size
     ) {
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
 
-        var query = new ViewTeacherRubricVersionsQuery(rubricId, page, size);
+        ViewTeacherRubricVersionsQuery query = new ViewTeacherRubricVersionsQuery(rubricId, page, size);
         return viewTeacherRubricVersionsUseCase.execute(query);
     }
 
-    // Lấy các tiêu chí(rubric criterions của rubric version
+    // Get the criteria (rubric criteria) of the rubric version
     @SchemaMapping(typeName = "RubricVersion", field = "criteria")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public CompletableFuture<PageResult<RubricCriterionDto>> getRubricCriteria(
@@ -441,7 +444,7 @@ public class RubricController {
             @Argument(name = "size") Integer size,
             DataFetchingEnvironment env) {
 
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
 
         DataLoader<RubricCriteriaKey, PageResult<RubricCriterionDto>> loader = env.getDataLoader("rubricCriteriaDataLoader");
         if (loader == null) {
@@ -452,7 +455,7 @@ public class RubricController {
     }
 
 
-    // Lấy Rubric ResultBand từ rubric version
+    // Get the Rubric ResultBands from the rubric version
     @SchemaMapping(typeName = "RubricVersion", field = "resultBands")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public CompletableFuture<PageResult<RubricResultBandDto>> getRubricResultBands(
@@ -461,7 +464,7 @@ public class RubricController {
             @Argument(name = "size") Integer size,
             DataFetchingEnvironment env) {
 
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
 
         DataLoader<RubricResultBandsKey, PageResult<RubricResultBandDto>> loader = env.getDataLoader("rubricResultBandsDataLoader");
         if (loader == null) {
@@ -472,7 +475,7 @@ public class RubricController {
     }
 
 
-    //Search Rubric version của hệ thống
+    // Search system Rubric versions
     @QueryMapping(name = "searchSystemRubricVersions")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<RubricVersionDto> searchSystemRubricVersions(
@@ -481,12 +484,11 @@ public class RubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
 
-        // 2. Phòng hộ lỗi dữ liệu null của Filter block
-        var safeFilter = (filter != null) ? filter : new SearchRubricVersionFilterRequest(null, null);
+        SearchRubricVersionFilterRequest safeFilter = (filter != null) ? filter : new SearchRubricVersionFilterRequest(null, null);
 
-        var query = new SearchSystemRubricVersionsQuery(
+        SearchSystemRubricVersionsQuery query = new SearchSystemRubricVersionsQuery(
                 rubricId,
                 safeFilter.keyword(),
                 safeFilter.status(),
@@ -497,7 +499,7 @@ public class RubricController {
         return searchSystemRubricVersionsUseCase.execute(query);
     }
 
-    // Search Rubric Version của school
+    // Search school Rubric Versions
     @QueryMapping(name = "searchSchoolRubricVersions")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<RubricVersionDto> searchSchoolRubricVersions(
@@ -507,13 +509,11 @@ public class RubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
 
-        // Tránh NullPointer
-        var safeFilter = (filter != null) ? filter : new SearchRubricVersionFilterRequest(null, null);
+        SearchRubricVersionFilterRequest safeFilter = (filter != null) ? filter : new SearchRubricVersionFilterRequest(null, null);
 
-        // Khởi tạo Query phẳng
-        var query = new SearchSchoolRubricVersionsQuery(
+        SearchSchoolRubricVersionsQuery query = new SearchSchoolRubricVersionsQuery(
                 schoolId,
                 rubricId,
                 safeFilter.keyword(),
@@ -527,18 +527,18 @@ public class RubricController {
 
     //========================== RUBRIC CRITERION =======================
 
-    //Update Rubric Criterion của hệ thống
+    // Update the system Rubric Criterion
     @MutationMapping(name = "updateSystemRubricCriterion")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public UUID updateSystemRubricCriterion(
             @Argument(name = "criterionId") UUID criterionId,
             @Argument(name = "input") UpdateRubricCriterionInput input
     ) {
-        var command = RubricCriterionGraphQLMapper.fromSystemInput(criterionId, input);
+        UpdateSystemRubricCriterionCommand command = RubricCriterionGraphQLMapper.fromSystemInput(criterionId, input);
         return updateSystemRubricCriterionUseCase.execute(command);
     }
 
-    //Update Rubric Criterion của trường học
+    // Update the school Rubric Criterion
     @MutationMapping(name = "updateSchoolRubricCriterion")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public UUID updateSchoolRubricCriterion(
@@ -546,33 +546,33 @@ public class RubricController {
             @Argument(name = "criterionId") UUID criterionId,
             @Argument(name = "input") UpdateRubricCriterionInput input
     ) {
-        var command = RubricCriterionGraphQLMapper.fromSchoolInput(schoolId, criterionId, input);
+        UpdateSchoolRubricCriterionCommand command = RubricCriterionGraphQLMapper.fromSchoolInput(schoolId, criterionId, input);
         return updateSchoolRubricCriterionUseCase.execute(command);
     }
 
-    //View Rubric Criterion của hệ thống
+    // View the system Rubric Criterion
     @QueryMapping(name = "viewSystemRubricCriterion")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public RubricCriterionDto viewSystemRubricCriterion(
             @Argument(name = "criterionId") UUID criterionId
     ) {
-        var query = new ViewSystemRubricCriterionDetailsQuery(criterionId);
+        ViewSystemRubricCriterionDetailsQuery query = new ViewSystemRubricCriterionDetailsQuery(criterionId);
         return viewSystemRubricCriterionDetailsUseCase.execute(query);
     }
 
-    // View Rubric Criterion của trường học
+    // View the school Rubric Criterion
     @QueryMapping(name = "viewSchoolRubricCriterion")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public RubricCriterionDto viewSchoolRubricCriterion(
             @Argument(name = "schoolId") UUID schoolId,
             @Argument(name = "criterionId") UUID criterionId
     ) {
-        var query = new ViewSchoolRubricCriterionDetailsQuery(schoolId, criterionId);
+        ViewSchoolRubricCriterionDetailsQuery query = new ViewSchoolRubricCriterionDetailsQuery(schoolId, criterionId);
         return viewSchoolRubricCriterionDetailsUseCase.execute(query);
     }
 
 
-    //View Danh sách Rubric Criterion của hệ thống
+    // View the system Rubric Criterion list
     @QueryMapping(name = "viewSystemRubricCriteria")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<RubricCriterionDto> viewSystemRubricCriteria(
@@ -580,13 +580,13 @@ public class RubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size
     ) {
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
 
-        var query = new ViewSystemRubricCriteriaQuery(versionId, page, size);
+        ViewSystemRubricCriteriaQuery query = new ViewSystemRubricCriteriaQuery(versionId, page, size);
         return viewSystemRubricCriteriaUseCase.execute(query);
     }
 
-    //View Danh sách Rubric Criterion của trường học
+    // View the school Rubric Criterion list
     @QueryMapping(name = "viewSchoolRubricCriteria")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<RubricCriterionDto> viewSchoolRubricCriteria(
@@ -596,9 +596,9 @@ public class RubricController {
             @Argument(name = "size") Integer size
     ) {
 
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
 
-        var query = new ViewSchoolRubricCriteriaQuery(schoolId, versionId, page, size);
+        ViewSchoolRubricCriteriaQuery query = new ViewSchoolRubricCriteriaQuery(schoolId, versionId, page, size);
         return viewSchoolRubricCriteriaUseCase.execute(query);
     }
 
@@ -612,10 +612,10 @@ public class RubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
-        validatePageSize(page, size);
-        var safeFilter = (filter != null) ? filter : new SearchRubricCriterionFilterRequest(null, null);
+        PageArguments.validate(page, size);
+        SearchRubricCriterionFilterRequest safeFilter = (filter != null) ? filter : new SearchRubricCriterionFilterRequest(null, null);
 
-        var query = new SearchSystemRubricCriteriaQuery(
+        SearchSystemRubricCriteriaQuery query = new SearchSystemRubricCriteriaQuery(
                 versionId, safeFilter.keyword(), safeFilter.isRequired(), page, size
         );
 
@@ -632,10 +632,10 @@ public class RubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
-        validatePageSize(page, size);
-        var safeFilter = (filter != null) ? filter : new SearchRubricCriterionFilterRequest(null, null);
+        PageArguments.validate(page, size);
+        SearchRubricCriterionFilterRequest safeFilter = (filter != null) ? filter : new SearchRubricCriterionFilterRequest(null, null);
 
-        var query = new SearchSchoolRubricCriteriaQuery(
+        SearchSchoolRubricCriteriaQuery query = new SearchSchoolRubricCriteriaQuery(
                 schoolId, versionId, safeFilter.keyword(), safeFilter.isRequired(), page, size
         );
 
@@ -643,18 +643,18 @@ public class RubricController {
     }
 
     // ====================RUBRIC RESULT BAND =====================
-    //Update Rubric Result Band của hệ thống
+    // Update the system Rubric Result Band
     @MutationMapping(name = "updateSystemRubricResultBand")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public UUID updateSystemRubricResultBand(
             @Argument(name = "resultBandId") UUID resultBandId,
             @Argument(name = "input") UpdateRubricResultBandInput input
     ) {
-        var command = RubricResultBandGraphQLMapper.fromSystemInput(resultBandId, input);
+        UpdateSystemRubricResultBandCommand command = RubricResultBandGraphQLMapper.fromSystemInput(resultBandId, input);
         return updateSystemRubricResultBandUseCase.execute(command);
     }
 
-    //Update school rubric result band của trường
+    // Update the school rubric result band
     @MutationMapping(name = "updateSchoolRubricResultBand")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public UUID updateSchoolRubricResultBand(
@@ -662,32 +662,32 @@ public class RubricController {
             @Argument(name = "resultBandId") UUID resultBandId,
             @Argument(name = "input") UpdateRubricResultBandInput input
     ) {
-        var command = RubricResultBandGraphQLMapper.fromSchoolInput(schoolId, resultBandId, input);
+        UpdateSchoolRubricResultBandCommand command = RubricResultBandGraphQLMapper.fromSchoolInput(schoolId, resultBandId, input);
         return updateSchoolRubricResultBandUseCase.execute(command);
     }
 
-    //View Rubric Result Band của hệ thống
+    // View the system Rubric Result Band
     @QueryMapping(name = "viewSystemRubricResultBand")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public RubricResultBandDto viewSystemRubricResultBand(
             @Argument(name = "resultBandId") UUID resultBandId
     ) {
-        var query = new ViewSystemRubricResultBandDetailsQuery(resultBandId);
+        ViewSystemRubricResultBandDetailsQuery query = new ViewSystemRubricResultBandDetailsQuery(resultBandId);
         return viewSystemRubricResultBandDetailsUseCase.execute(query);
     }
 
-    //View Rubric Result Band của trường
+    // View the school Rubric Result Band
     @QueryMapping(name = "viewSchoolRubricResultBand")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public RubricResultBandDto viewSchoolRubricResultBand(
             @Argument(name = "schoolId") UUID schoolId,
             @Argument(name = "resultBandId") UUID resultBandId
     ) {
-        var query = new ViewSchoolRubricResultBandDetailsQuery(schoolId, resultBandId);
+        ViewSchoolRubricResultBandDetailsQuery query = new ViewSchoolRubricResultBandDetailsQuery(schoolId, resultBandId);
         return viewSchoolRubricResultBandDetailsUseCase.execute(query);
     }
 
-    //View Rubric Result Bands của hệ thống
+    // View the system Rubric Result Bands
     @QueryMapping(name = "viewSystemRubricResultBands")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<RubricResultBandDto> viewSystemRubricResultBands(
@@ -696,13 +696,13 @@ public class RubricController {
             @Argument(name = "size") Integer size
     ) {
 
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
 
-        var query = new ViewSystemRubricResultBandsQuery(versionId, page, size);
+        ViewSystemRubricResultBandsQuery query = new ViewSystemRubricResultBandsQuery(versionId, page, size);
         return viewSystemRubricResultBandsUseCase.execute(query);
     }
 
-    //View Rubric Result Bands của trường học
+    // View the school Rubric Result Bands
     @QueryMapping(name = "viewSchoolRubricResultBands")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<RubricResultBandDto> viewSchoolRubricResultBands(
@@ -712,13 +712,13 @@ public class RubricController {
             @Argument(name = "size") Integer size
     ) {
 
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
 
-        var query = new ViewSchoolRubricResultBandsQuery(schoolId, versionId, page, size);
+        ViewSchoolRubricResultBandsQuery query = new ViewSchoolRubricResultBandsQuery(schoolId, versionId, page, size);
         return viewSchoolRubricResultBandsUseCase.execute(query);
     }
 
-    // GraphQL: TÌM KIẾM THANG ĐIỂM KẾT QUẢ CHO SYSTEM ADMIN
+    // GraphQL: SEARCH RESULT BANDS FOR SYSTEM ADMIN
     @QueryMapping(name = "searchSystemRubricResultBands")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<RubricResultBandDto> searchSystemRubricResultBands(
@@ -727,14 +727,14 @@ public class RubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
-        validatePageSize(page, size);
-        var safeFilter = (filter != null) ? filter : new SearchRubricResultBandFilterRequest(null);
+        PageArguments.validate(page, size);
+        SearchRubricResultBandFilterRequest safeFilter = (filter != null) ? filter : new SearchRubricResultBandFilterRequest(null);
 
-        var query = new SearchSystemRubricResultBandsQuery(versionId, safeFilter.keyword(), page, size);
+        SearchSystemRubricResultBandsQuery query = new SearchSystemRubricResultBandsQuery(versionId, safeFilter.keyword(), page, size);
         return searchSystemRubricResultBandsUseCase.execute(query);
     }
 
-    // GraphQL: TÌM KIẾM THANG ĐIỂM KẾT QUẢ CHO SCHOOL ADMIN
+    // GraphQL: SEARCH RESULT BANDS FOR SCHOOL ADMIN
     @QueryMapping(name = "searchSchoolRubricResultBands")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<RubricResultBandDto> searchSchoolRubricResultBands(
@@ -744,19 +744,10 @@ public class RubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
-        validatePageSize(page, size);
-        var safeFilter = (filter != null) ? filter : new SearchRubricResultBandFilterRequest(null);
+        PageArguments.validate(page, size);
+        SearchRubricResultBandFilterRequest safeFilter = (filter != null) ? filter : new SearchRubricResultBandFilterRequest(null);
 
-        var query = new SearchSchoolRubricResultBandsQuery(schoolId, versionId, safeFilter.keyword(), page, size);
+        SearchSchoolRubricResultBandsQuery query = new SearchSchoolRubricResultBandsQuery(schoolId, versionId, safeFilter.keyword(), page, size);
         return searchSchoolRubricResultBandsUseCase.execute(query);
-    }
-
-    private void validatePageSize(Integer page, Integer size) {
-        if (page == null || page <= 0) {
-            throw new IllegalArgumentException("Số trang yêu cầu không hợp lệ");
-        }
-        if (size == null || size <= 0) {
-            throw new IllegalArgumentException("Kích cỡ trang yêu cầu không hợp lệ");
-        }
     }
 }

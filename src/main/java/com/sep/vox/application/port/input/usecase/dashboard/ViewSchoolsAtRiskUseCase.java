@@ -1,5 +1,8 @@
 package com.sep.vox.application.port.input.usecase.dashboard;
 
+import com.sep.vox.application.query.dto.SchoolAtRiskDto;
+import com.sep.vox.application.query.dto.SchoolSubscriptionHealthDto;
+import com.sep.vox.domain.common.PageResult;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
@@ -41,18 +44,18 @@ public class ViewSchoolsAtRiskUseCase implements IUseCase<ViewSchoolsAtRiskQuery
         // MỘT mốc "bây giờ" cho cả phép đếm lẫn danh sách. Gọi Instant.now() hai lần thì một kỳ hết
         // hạn đúng giữa hai lời gọi sẽ khiến thẻ và bảng ngay bên dưới nó lệch nhau một trường, và
         // không có cách nào tái hiện được.
-        var now = Instant.now();
-        var expiringThrough = now.plus(BusinessConstant.DASHBOARD_EXPIRING_SOON_DAYS, ChronoUnit.DAYS);
+        Instant now = Instant.now();
+        Instant expiringThrough = now.plus(BusinessConstant.DASHBOARD_EXPIRING_SOON_DAYS, ChronoUnit.DAYS);
 
-        var health = platformBusinessHealthQueryRepository.countSchoolSubscriptionHealth(now, expiringThrough);
-        var counts = new SchoolsAtRiskResponse.BucketCounts(
+        SchoolSubscriptionHealthDto health = platformBusinessHealthQueryRepository.countSchoolSubscriptionHealth(now, expiringThrough);
+        SchoolsAtRiskResponse.BucketCounts counts = new SchoolsAtRiskResponse.BucketCounts(
             health.expiringSoonSchools(),
             health.lapsedSchools(),
             health.suspendedSchools(),
             platformBusinessHealthQueryRepository.countSchoolsInDebt()
         );
 
-        var schools = schoolsAtRiskQueryRepository.findByBucket(
+        PageResult<SchoolAtRiskDto> schools = schoolsAtRiskQueryRepository.findByBucket(
             input.bucket(), now, expiringThrough, input.keyword(), input.page(), input.size());
 
         return new SchoolsAtRiskResponse(input.bucket(), counts, schools);

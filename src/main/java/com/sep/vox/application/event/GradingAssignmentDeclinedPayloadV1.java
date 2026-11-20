@@ -2,24 +2,24 @@ package com.sep.vox.application.event;
 
 import java.util.UUID;
 
-import com.sep.vox.domain.model.exam.ExamKind;
+import com.sep.vox.domain.model.assessment.AssessmentKind;
 
 /**
- * Giáo viên trả lại phân công. Người nhận tin là <em>admin đã giao</em>, không phải
- * học sinh: bài quay về hàng chưa giao và cần người điều phối xử lý tiếp.
+ * A teacher gives an assignment back. The recipient is <em>the admin who assigned it</em>, not the
+ * student: the attempt goes back to the unassigned queue and a coordinator has to handle it again.
  *
- * @param examId màn hình chấm của bài kiểm tra lớp nằm dưới examId, bài tập trung thì không
- * @param examKind quyết định mở màn hình chấm nào
+ * @param assessmentId the grading screen of a class test sits under assessmentId, that of a centralized assessment does not
+ * @param assessmentKind decides which grading screen to open
  */
 public record GradingAssignmentDeclinedPayloadV1(
     UUID assignmentId,
     UUID candidateResultId,
     UUID teacherId,
     UUID assignedBy,
-    String examName,
+    String assessmentName,
     String reason,
-    UUID examId,
-    ExamKind examKind
+    UUID assessmentId,
+    AssessmentKind assessmentKind
 ) {
 
 }

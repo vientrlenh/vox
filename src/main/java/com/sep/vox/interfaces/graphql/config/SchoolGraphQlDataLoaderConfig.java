@@ -54,19 +54,19 @@ public class SchoolGraphQlDataLoaderConfig {
 
                 keys.forEach(key -> result.put(key, List.of()));
 
-                var keysByPage = keys.stream()
+                Map<PageKey, List<SchoolClassesKey>> keysByPage = keys.stream()
                     .collect(Collectors.groupingBy(key -> new PageKey(key.page(), key.size()))
                 );
 
-                for (var entry : keysByPage.entrySet()) {
-                    var pageKey = entry.getKey();
-                    var groupedKeys = entry.getValue();
+                for (Map.Entry<PageKey, List<SchoolClassesKey>> entry : keysByPage.entrySet()) {
+                    PageKey pageKey = entry.getKey();
+                    List<SchoolClassesKey> groupedKeys = entry.getValue();
 
-                    var schoolIds = groupedKeys.stream()
+                    List<UUID> schoolIds = groupedKeys.stream()
                         .map(k -> k.schoolId())
                         .toList();
 
-                    var schoolClasses = schoolClassRepository
+                    Map<UUID, List<SchoolClassDto>> schoolClasses = schoolClassRepository
                         .findBySchoolIdIn(schoolIds, pageKey.page(), pageKey.size())
                         .stream()
                         .map(SchoolClassDtoMapper::toDto)
@@ -89,17 +89,17 @@ public class SchoolGraphQlDataLoaderConfig {
 
                 keys.forEach(key -> result.put(key, List.of()));
 
-                var keysByPage = keys.stream().collect(Collectors.groupingBy(key -> new PageKey(key.page(), key.size())));
+                Map<PageKey, List<SchoolUsersKey>> keysByPage = keys.stream().collect(Collectors.groupingBy(key -> new PageKey(key.page(), key.size())));
 
-                for (var entry : keysByPage.entrySet()) {
-                    var pageKey = entry.getKey();
-                    var groupedKeys = entry.getValue();
+                for (Map.Entry<PageKey, List<SchoolUsersKey>> entry : keysByPage.entrySet()) {
+                    PageKey pageKey = entry.getKey();
+                    List<SchoolUsersKey> groupedKeys = entry.getValue();
 
-                    var schoolIds = groupedKeys.stream()
+                    List<UUID> schoolIds = groupedKeys.stream()
                         .map(k -> k.schoolId())
                         .toList();
 
-                    var usersBySchoolId = schoolUserRepository.findBySchoolIdIn(schoolIds, pageKey.page(), pageKey.size())
+                    Map<UUID, List<SchoolUserDto>> usersBySchoolId = schoolUserRepository.findBySchoolIdIn(schoolIds, pageKey.page(), pageKey.size())
                         .stream()
                         .map(SchoolUserDtoMapper::toSchoolUserDto)
                         .collect(Collectors.groupingBy(u -> u.schoolId()));
@@ -158,13 +158,13 @@ public class SchoolGraphQlDataLoaderConfig {
                 .collect(Collectors.toMap(u -> u.id(), user -> user)))
         );
 
-        // MyClass.activeMemberCount là Int! nên loader phải trả entry cho MỌI key:
-        // lớp chưa có thành viên không xuất hiện trong kết quả GROUP BY, thiếu key
-        // thì GraphQL nhận null và văng lỗi non-null.
+        // MyClass.activeMemberCount is Int!, so the loader must return an entry for EVERY key: a class with no
+        // members does not appear in the GROUP BY result, and when the key is missing GraphQL receives null and
+        // throws a non-null error.
         registry.<UUID, Integer>forName("activeMemberCountByClass")
         .registerMappedBatchLoader((Set<UUID> classIds, BatchLoaderEnvironment env) ->
             Mono.fromSupplier(() -> {
-                var counts = schoolClassUserRepository.countActiveBySchoolClassIdIn(classIds);
+                Map<UUID, Integer> counts = schoolClassUserRepository.countActiveBySchoolClassIdIn(classIds);
                 Map<UUID, Integer> result = new HashMap<>();
                 classIds.forEach(classId -> result.put(classId, counts.getOrDefault(classId, 0)));
                 return result;

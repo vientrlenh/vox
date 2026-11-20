@@ -1,6 +1,7 @@
 package com.sep.vox.domain.dto;
 
 import java.util.UUID;
+import com.sep.vox.domain.model.rubric.RubricOwnerType;
 
 public record RubricDto(
         UUID id,
@@ -9,7 +10,7 @@ public record RubricDto(
         String description,
         UUID languageId,
         UUID frameworkId,
-        String ownerType,
+        RubricOwnerType ownerType,
         UUID schoolId
 ) {
 }

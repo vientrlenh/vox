@@ -89,7 +89,7 @@ public class PracticeQuestionSelectionService {
     public PracticeFocusInfo resolveFocus(UUID studentId, String forcedSubAttribute) {
         //Code này đã bỏ dead code chưa xóa
         if (forcedSubAttribute != null) {
-            var forcedCriterion = SubAttributePolicy.criterionForSubAttribute(forcedSubAttribute);
+            String forcedCriterion = SubAttributePolicy.criterionForSubAttribute(forcedSubAttribute);
             if (forcedCriterion == null) {
                 throw new IllegalArgumentException("Sub-attribute không thuộc taxonomy luyện tập.");
             }
@@ -104,7 +104,7 @@ public class PracticeQuestionSelectionService {
 
         // Tiêu chí điểm THẤP nhất luyện trước. Nguồn là điểm đã chấm, không còn là hồ sơ điểm
         // yếu (đã gỡ khỏi hệ thống) -- xem CriterionScoreAverageRepository để biết đổi những gì.
-        var scored = criterionScoreRepository.findCriterionCodesOrderedByLowestAverageScore(studentId);
+        List<String> scored = criterionScoreRepository.findCriterionCodesOrderedByLowestAverageScore(studentId);
 
         // BÙ cho đủ năm tiêu chí. Query chỉ trả về tiêu chí ĐÃ có điểm; nếu lấy nguyên danh sách
         // đó thì hai chỗ hỏng cùng lúc:
@@ -114,8 +114,8 @@ public class PracticeQuestionSelectionService {
         //      nên bốn tiêu chí còn lại vĩnh viễn không có điểm mới, nên vĩnh viễn không lọt
         //      vào danh sách. Đúng kiểu bế tắc tự khoá đã gặp ở nhánh sub-attribute cũ.
         // Chưa đo được thì xếp SAU (không tuyên bố là yếu), nhưng phải có mặt để còn được hỏi tới.
-        var ordered = new ArrayList<String>(scored);
-        for (var criterion : ALL_PRACTICE_CRITERIA) {
+        List<String> ordered = new ArrayList<String>(scored);
+        for (String criterion : ALL_PRACTICE_CRITERIA) {
             if (!ordered.contains(criterion)) {
                 ordered.add(criterion);
             }
@@ -145,12 +145,12 @@ public class PracticeQuestionSelectionService {
             int bandCount,
             UUID frameworkVersionId,
             List<PracticeQuestion> alreadyChosenInSession) {
-        var slotIndex = alreadyChosenInSession.size();
+        int slotIndex = alreadyChosenInSession.size();
         // Chu kỳ 4 ô: yếu nhất, yếu nhất, yếu nhì, xoay vòng phần còn lại -- xem
         // PracticeFocusInfo.criterionForSlot. Bản trước chỉ có hai tiêu chí và cắt cứng ở ô
         // thứ 2, nên từ ô thứ ba trở đi mọi câu đều nhắm đúng một tiêu chí.
-        var criterion = focus.criterionForSlot(slotIndex);
-        var subAttribute = SubAttributePolicy.plannedSubAttribute(
+        String criterion = focus.criterionForSlot(slotIndex);
+        String subAttribute = SubAttributePolicy.plannedSubAttribute(
             criterion,
             focus.subAttributeForSlot(slotIndex)
         );
@@ -161,15 +161,15 @@ public class PracticeQuestionSelectionService {
         // Thì đích của ô này: chủ đề nói trước (chủ đề lịch sử thì khoá quá khứ), chủ đề MIXED
         // thì xoay vòng theo ô để một buổi phủ nhiều khung thời gian. Bậc có quyền phủ quyết --
         // xem TensePolicy, thì và độ khó KHÔNG độc lập.
-        var tense = TensePolicy.forSlot(
+        String tense = TensePolicy.forSlot(
             topic.getTemporalAffordance(), slotIndex, targetRank, bandCount
         );
         // Mọi ô cùng một bậc: bậc học sinh CHỌN. Trước đây ô thứ 4 trở đi tự nâng thêm một
         // bậc -- nghĩa là độ khó trôi ngay giữa phiên, theo một luật học sinh không nhìn thấy.
-        var excludeIds = alreadyChosenInSession.stream().map(question -> question.getId()).toList();
+        List<UUID> excludeIds = alreadyChosenInSession.stream().map(question -> question.getId()).toList();
 
         // Hai bậc đọc DB trước (rẻ), CHƯA sinh mới.
-        var candidates = ladderCandidatesForOneQuestion(
+        List<PracticeQuestion> candidates = ladderCandidatesForOneQuestion(
             topic, studentId, criterion, tense, targetRank, excludeIds, bandCount
         );
         // Ba nước, đắt dần. Điều kiện đi tiếp là KHÔNG CHỌN ĐƯỢC CÂU DÙNG ĐƯỢC -- không phải
@@ -177,7 +177,7 @@ public class PracticeQuestionSelectionService {
         // một câu: thang leo trả về 1 câu, pickOne loại nó vì trùng kiểu lập luận với câu vừa
         // hỏi (kho chủ đề có 12/14 câu cùng kiểu 'description'), thế là hết câu để hỏi trong
         // khi bậc sinh không bao giờ chạy vì "đã tìm được 1 dòng rồi".
-        var chosen = pickOne(candidates, alreadyChosenInSession, tense, targetRank, false);
+        Optional<PracticeQuestion> chosen = pickOne(candidates, alreadyChosenInSession, tense, targetRank, false);
         if (chosen.isEmpty()) {
             // Nới ĐÚNG luật đa dạng kiểu lập luận, GIỮ NGUYÊN luật gần-trùng-nội-dung. Hai luật
             // này không cùng hạng: hỏi hai câu cùng kiểu lập luận chỉ là kém phong phú, còn hỏi
@@ -187,7 +187,7 @@ public class PracticeQuestionSelectionService {
         if (chosen.isEmpty()) {
             // Chỉ tới đây mới trả giá LLM 10-40 giây với học sinh đang ngồi chờ -- khi kho thật
             // sự không còn gì hỏi được, chứ không phải mỗi lần pool chưa đủ 4 câu như bản gốc.
-            var generated = generateThenReload(
+            List<PracticeQuestion> generated = generateThenReload(
                 topic, studentId, criterion, subAttribute, tense, targetRank, excludeIds,
                 bandCount, frameworkVersionId
             );
@@ -218,12 +218,12 @@ public class PracticeQuestionSelectionService {
         if (candidates.isEmpty()) {
             return Optional.empty();
         }
-        var similarities = diversityPort.maxSimilarities(
+        Map<UUID, Double> similarities = diversityPort.maxSimilarities(
             candidates.stream().map(question -> question.getId()).toList(),
             alreadyChosen.stream().map(question -> question.getId()).toList()
         );
-        var previousReasoning = alreadyChosen.isEmpty() ? null : reasoningType(alreadyChosen.getLast());
-        var ranked = candidates.stream()
+        String previousReasoning = alreadyChosen.isEmpty() ? null : reasoningType(alreadyChosen.getLast());
+        List<PracticeQuestion> ranked = candidates.stream()
             .filter(question -> alreadyChosen.isEmpty()
                 || similarities.getOrDefault(question.getId(), 1.0) < 0.85)
             .filter(question -> relaxReasoning
@@ -278,9 +278,9 @@ public class PracticeQuestionSelectionService {
             int targetRank,
             List<UUID> excludeIds,
             int bandCount) {
-        var selected = new LinkedHashMap<UUID, PracticeQuestion>();
-        var rankMin = Math.max(1, targetRank - 1);
-        var rankMax = Math.min(bandCount, targetRank + 1);
+        LinkedHashMap<UUID, PracticeQuestion> selected = new LinkedHashMap<UUID, PracticeQuestion>();
+        int rankMin = Math.max(1, targetRank - 1);
+        int rankMax = Math.min(bandCount, targetRank + 1);
 
         questions(topic.getId(), studentId, criterion, tense, rankMin, rankMax)
             .forEach(question -> putIfNotExcluded(selected, question, excludeIds));
@@ -315,7 +315,7 @@ public class PracticeQuestionSelectionService {
             List<UUID> excludeIds,
             int bandCount,
             UUID frameworkVersionId) {
-        var selected = new LinkedHashMap<UUID, PracticeQuestion>();
+        LinkedHashMap<UUID, PracticeQuestion> selected = new LinkedHashMap<UUID, PracticeQuestion>();
         try {
             generationService.generateAndStore(
                 topic.getId(),
@@ -380,7 +380,7 @@ public class PracticeQuestionSelectionService {
     }
 
     private String reasoningType(PracticeQuestion question) {
-        var value = question.getDifficultyFeaturesJson();
+        String value = question.getDifficultyFeaturesJson();
         if (value == null || value.isBlank()) {
             return null;
         }

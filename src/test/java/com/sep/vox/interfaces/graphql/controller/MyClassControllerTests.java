@@ -68,7 +68,7 @@ class MyClassControllerTests {
     void my_classes_should_reject_invalid_paging() {
         assertThatThrownBy(() -> controller.myClasses(schoolId, null, null, 0, 10))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage("Số trang hoặc kích cỡ trang yêu cầu không hợp lệ");
+            .hasMessage("Số trang yêu cầu không hợp lệ");
         assertThatThrownBy(() -> controller.myClasses(schoolId, null, null, 1, 0))
             .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> controller.myClasses(schoolId, null, null, null, null))

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 import com.sep.vox.application.query.dto.SchoolUserInfo;
 import com.sep.vox.application.query.repository.SchoolUserQueryRepository;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -48,7 +49,7 @@ public class JpaSchoolUserQueryRepository implements SchoolUserQueryRepository {
         """, SchoolUserInfo.class)
             .setParameter("schoolId", schoolId)
             .setParameter("roleCodes", roleCodes)
-            .setFirstResult((page - 1) * size)
+            .setFirstResult(OneBasedPaging.toFirstResult(page, size))
             .setMaxResults(size)
             .getResultList();
 

@@ -16,6 +16,7 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolRepository;
 
 @Repository
@@ -48,19 +49,16 @@ public class SchoolRepositoryImpl implements SchoolRepository {
 
     @Override
     public PageResult<School> findAll(int page, int size, String search, Boolean isActive) {
-        PageRequest pageRequest = PageRequest.of(page - 1, size);
+        PageRequest pageRequest = OneBasedPaging.toPageRequest(page, size);
         String pattern = StringNormalization.toLikePattern(search);
         Page<SchoolJpaEntity> pageable = isActive != null
             ? springDataSchoolRepository.findAllBySearchAndIsActive(pattern, isActive, pageRequest)
             : springDataSchoolRepository.findAllBySearch(pattern, pageRequest);
-        return new PageResult<>(
+        return OneBasedPaging.toPageResult(
+            pageable,
             pageable.getContent().stream()
                 .map(SchoolMapper::toDomain)
-                .toList(),
-            pageable.getNumber() + 1,
-            pageable.getSize(),
-            pageable.getTotalElements(),
-            pageable.getTotalPages()
+                .toList()
         );
     }
 

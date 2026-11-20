@@ -14,6 +14,7 @@ import org.springframework.stereotype.Repository;
 import com.sep.vox.domain.model.school.SchoolRoom;
 import com.sep.vox.domain.repository.SchoolRoomRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolRoomMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolRoomRepository;
 
 @Repository
@@ -66,7 +67,7 @@ public class SchoolRoomRepositoryImpl implements SchoolRoomRepository {
 
     @Override
     public PageResult<SchoolRoom> findBySchoolId(UUID schoolId, int pageNumber, int size) {
-        PageRequest pageable = PageRequest.of(pageNumber - 1, size);
+        PageRequest pageable = OneBasedPaging.toPageRequest(pageNumber, size);
 
         Page<SchoolRoomJpaEntity> page = springDataSchoolRoomRepository.findBySchoolId(schoolId, pageable);
 

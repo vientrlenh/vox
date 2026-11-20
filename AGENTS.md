@@ -72,9 +72,12 @@ Look at an existing feature end to end before writing a new one (e.g. `CreateAss
 
 ## Conventions that are easy to get wrong
 
-- **Pagination is 1-based at every boundary.** Only `infrastructure/persistence/adapter` and `.../query` convert to Spring
-  Data's 0-based pages (`PageRequest.of(page - 1, ...)`, `setFirstResult((page - 1) * size)`). `PagingConventionTests` scans
-  source text for this; a wrong offset passes every behavioural test.
+- **Pagination is 1-based at every boundary.** Two shared classes are the only places that handle it. Controllers validate
+  every `page`/`size` argument with `PageArguments.validate(page, size)` (`interfaces/shared`; rejects a null or `< 1` page and
+  a size outside 1..200), and never write their own page check. `OneBasedPaging` (`infrastructure/persistence/paging`) is the
+  only code that subtracts or adds 1: adapters and query repositories use `toPageRequest(...)`, `toOffset(...)` and
+  `toPageResult(...)` and never write `PageRequest.of(page - 1, ...)`, `(page - 1) * size` or `getNumber()` by hand.
+  `PagingConventionTests` scans source text for this; a wrong offset passes every behavioural test.
 - **Authorization** is `@PreAuthorize("hasRole(...)")` on controller methods. Roles in use: `SYSTEM_ADMIN`, `SCHOOL_ADMIN`,
   `TEACHER`, `STUDENT`. A new endpoint without it is a security bug. School-scoped data must also be checked against
   the caller's school in the use case, not only by role.

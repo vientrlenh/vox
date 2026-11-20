@@ -18,6 +18,7 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
 import com.sep.vox.infrastructure.persistence.mapper.RubricCriterionMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataRubricCriterionRepository;
 
 @Repository
@@ -67,7 +68,7 @@ public class RubricCriterionRepositoryImpl implements RubricCriterionRepository 
     @Override
     public PageResult<RubricCriterion> findAllByRubricVersionId(UUID rubricVersionId, int page, int size) {
         // Optimization: sort by order by default so the scoring table is displayed in the right order
-        Pageable pageable = PageRequest.of(page - 1, size, Sort.by("order").ascending());
+        Pageable pageable = OneBasedPaging.toPageRequest(page, size, Sort.by("order").ascending());
 
         Page<RubricCriterionJpaEntity> entityPage = springDataRubricCriterionRepository.findAllByRubricVersionId(rubricVersionId, pageable);
 
@@ -75,13 +76,7 @@ public class RubricCriterionRepositoryImpl implements RubricCriterionRepository 
                 .map(RubricCriterionMapper::toDomain)
                 .toList();
 
-        return new PageResult<>(
-                criteria,
-                entityPage.getNumber(),
-                entityPage.getSize(),
-                entityPage.getTotalElements(),
-                entityPage.getTotalPages()
-        );
+        return OneBasedPaging.toPageResult(entityPage, criteria);
     }
 
     @Override
@@ -94,17 +89,11 @@ public class RubricCriterionRepositoryImpl implements RubricCriterionRepository 
 
     @Override
     public PageResult<RubricCriterion> searchRubricCriteria(UUID versionId, String keyword, Boolean isRequired, int page, int size) {
-        PageRequest springPageable = PageRequest.of(page - 1, size);
+        PageRequest springPageable = OneBasedPaging.toPageRequest(page, size);
         Page<RubricCriterionJpaEntity> pageEntity = springDataRubricCriterionRepository.searchRubricCriteria(
                 versionId, StringNormalization.toLikePattern(keyword), isRequired, springPageable);
 
-        return new PageResult<>(
-                pageEntity.getContent().stream().map(RubricCriterionMapper::toDomain).toList(),
-                pageEntity.getNumber(),
-                pageEntity.getSize(),
-                (int) pageEntity.getTotalElements(),
-                pageEntity.getTotalPages()
-        );
+        return OneBasedPaging.toPageResult(pageEntity, pageEntity.getContent().stream().map(RubricCriterionMapper::toDomain).toList());
     }
 
     // Ném thêm override này vào trong class RubricCriterionRepositoryImpl

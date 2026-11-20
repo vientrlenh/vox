@@ -6,6 +6,7 @@ import com.sep.vox.domain.model.gradelevel.GradeLevelStatus;
 import com.sep.vox.domain.repository.GradeLevelRepository;
 import com.sep.vox.infrastructure.persistence.entity.GradeLevelJpaEntity;
 import com.sep.vox.infrastructure.persistence.mapper.GradeLevelMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataGradeLevelRepository;
 import java.util.Set;
 import org.springframework.data.domain.Page;
@@ -50,7 +51,7 @@ public class GradeLevelRepositoryImpl implements GradeLevelRepository {
             ? null
             : "%" + search.strip().toLowerCase() + "%";
         String statusFilter = status == null ? null : status.name();
-        PageRequest pageable = PageRequest.of(page - 1, size);
+        PageRequest pageable = OneBasedPaging.toPageRequest(page, size);
         Page<GradeLevelJpaEntity> result = gradeLevelRepository.findAllWithFilters(searchPattern, statusFilter, pageable);
         return new PageResult<>(
             result.getContent().stream()

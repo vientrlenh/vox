@@ -18,6 +18,7 @@ import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
 import com.sep.vox.infrastructure.persistence.mapper.FrameworkVersionMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataFrameworkVersionRepository;
 
 @Repository
@@ -81,15 +82,9 @@ public class FrameworkVersionRepositoryImpl implements FrameworkVersionRepositor
 
     @Override
     public PageResult<FrameworkVersion> findByFrameworkId(UUID frameworkId, int pageNumber, int size) {
-        PageRequest pageable = PageRequest.of(pageNumber - 1, size);
+        PageRequest pageable = OneBasedPaging.toPageRequest(pageNumber, size);
         Page<FrameworkVersionJpaEntity> page = springDataFrameworkVersionRepository.findByFrameworkId(frameworkId, pageable);
-        return new PageResult<>(
-            page.getContent().stream().map(FrameworkVersionMapper::toDomain).toList(),
-            page.getNumber() + 1,
-            page.getSize(),
-            page.getTotalElements(),
-            page.getTotalPages()
-        );
+        return OneBasedPaging.toPageResult(page, page.getContent().stream().map(FrameworkVersionMapper::toDomain).toList());
     }
 
     @Override
@@ -101,15 +96,9 @@ public class FrameworkVersionRepositoryImpl implements FrameworkVersionRepositor
 
     @Override
     public PageResult<FrameworkVersion> findByFrameworkIdAndStatus(UUID frameworkId, FrameworkVersionStatus status, int pageNumber, int size) {
-        PageRequest pageable = PageRequest.of(pageNumber - 1, size);
+        PageRequest pageable = OneBasedPaging.toPageRequest(pageNumber, size);
         Page<FrameworkVersionJpaEntity> page = springDataFrameworkVersionRepository.findByFrameworkIdAndStatus(frameworkId, status.name(), pageable);
-        return new PageResult<>(
-            page.getContent().stream().map(FrameworkVersionMapper::toDomain).toList(),
-            page.getNumber() + 1,
-            page.getSize(),
-            page.getTotalElements(),
-            page.getTotalPages()
-        );
+        return OneBasedPaging.toPageResult(page, page.getContent().stream().map(FrameworkVersionMapper::toDomain).toList());
     }
 
     @Override

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.HashMap;
@@ -175,8 +176,8 @@ class SchoolControllerTests {
 
     @Test
     void school_classes_should_throw_when_page_or_size_invalid() {
-        assertThrows(IllegalStateException.class, () -> controller.schoolClasses(0, 20, null, null, null, null));
-        assertThrows(IllegalStateException.class, () -> controller.schoolClasses(1, 0, null, null, null, null));
+        assertThrows(IllegalArgumentException.class, () -> controller.schoolClasses(0, 20, null, null, null, null));
+        assertThrows(IllegalArgumentException.class, () -> controller.schoolClasses(1, 0, null, null, null, null));
     }
 
     @Test
@@ -362,8 +363,8 @@ class SchoolControllerTests {
     @Test
     void school_students_by_school_should_reject_invalid_paging() {
         assertThatThrownBy(() -> controller.schoolStudentsBySchool(schoolId, 0, 20, null, null))
-            .isInstanceOf(IllegalStateException.class)
-            .hasMessage("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Số trang yêu cầu không hợp lệ");
     }
 
     @Test
@@ -381,8 +382,8 @@ class SchoolControllerTests {
     @Test
     void school_teachers_by_school_should_reject_invalid_paging() {
         assertThatThrownBy(() -> controller.schoolTeachersBySchool(schoolId, 0, 20, null, null))
-            .isInstanceOf(IllegalStateException.class)
-            .hasMessage("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Số trang yêu cầu không hợp lệ");
     }
 
     @Test
@@ -415,8 +416,8 @@ class SchoolControllerTests {
     @Test
     void school_users_by_school_field_should_reject_invalid_paging() {
         assertThatThrownBy(() -> controller.schoolUsersBySchool(schoolId, 0, 20, null, null, null, null, null))
-            .isInstanceOf(IllegalStateException.class)
-            .hasMessage("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Số trang yêu cầu không hợp lệ");
     }
 
     private SchoolUserDto schoolUserDto(UUID id, UUID schoolId, UUID userId) {
@@ -436,5 +437,32 @@ class SchoolControllerTests {
             "2026-06-06T12:00:00Z",
             "2026-06-06T12:00:00Z"
         );
+    }
+
+    @Test
+    void schools_should_reject_page_zero_missing_page_and_a_size_above_the_cap() {
+        assertThrows(IllegalArgumentException.class, () -> controller.schools(0, 20, null, null));
+        assertThrows(IllegalArgumentException.class, () -> controller.schools(null, 20, null, null));
+        assertThrows(IllegalArgumentException.class, () -> controller.schools(1, 201, null, null));
+
+        verifyNoInteractions(viewSchoolsUseCase);
+    }
+
+    @Test
+    void school_rooms_should_reject_page_zero_and_missing_paging_instead_of_clamping() {
+        assertThrows(IllegalArgumentException.class, () -> controller.schoolRooms(schoolId, 0, 10));
+        assertThrows(IllegalArgumentException.class, () -> controller.schoolRooms(schoolId, null, 10));
+        assertThrows(IllegalArgumentException.class, () -> controller.schoolRooms(schoolId, 1, null));
+
+        verifyNoInteractions(viewSchoolRoomsUseCase);
+    }
+
+    @Test
+    void school_grades_should_reject_page_zero_and_missing_paging_instead_of_clamping() {
+        assertThrows(IllegalArgumentException.class, () -> controller.schoolGrades(schoolId, null, null, 0, 10));
+        assertThrows(IllegalArgumentException.class, () -> controller.schoolGrades(schoolId, null, null, null, 10));
+        assertThrows(IllegalArgumentException.class, () -> controller.schoolGrades(schoolId, null, null, 1, null));
+
+        verifyNoInteractions(viewSchoolGradesUseCase);
     }
 }

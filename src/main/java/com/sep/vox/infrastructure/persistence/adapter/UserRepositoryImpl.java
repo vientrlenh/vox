@@ -15,6 +15,7 @@ import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.infrastructure.persistence.mapper.UserMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataUserRepository;
 
 @Repository
@@ -132,7 +133,7 @@ public class UserRepositoryImpl implements UserRepository {
 
     @Override
     public PageResult<User> findAll(int pageNumber, int size) {
-        PageRequest pageable = PageRequest.of(pageNumber - 1, size);
+        PageRequest pageable = OneBasedPaging.toPageRequest(pageNumber, size);
         Page<UserJpaEntity> page = springDataUserRepository.findAll(pageable);
         return new PageResult<>(
             page.getContent()

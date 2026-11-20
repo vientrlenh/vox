@@ -31,6 +31,7 @@ import com.sep.vox.domain.repository.AssessmentBlueprintSectionRepository;
 import com.sep.vox.domain.repository.AssessmentBlueprintSlotRepository;
 import com.sep.vox.domain.repository.AssessmentBlueprintVersionRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
+import com.sep.vox.interfaces.shared.PageArguments;
 
 @Controller("graphqlAssessmentBlueprintController")
 public class AssessmentBlueprintController {
@@ -68,7 +69,7 @@ public class AssessmentBlueprintController {
             @Argument(name = "keyword") String keyword,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePage(page, size);
+        PageArguments.validate(page, size);
         return viewAssessmentBlueprintsUseCase.execute(
             new ViewAssessmentBlueprintsQuery(schoolId, isActive, languageId, assessmentKind, keyword, page, size)
         );
@@ -173,11 +174,5 @@ public class AssessmentBlueprintController {
 
     private static AssessmentBlueprintVersionDto latestVersion(List<AssessmentBlueprintVersionDto> versions) {
         return versions.stream().max(Comparator.comparingInt(blueprintVersion -> blueprintVersion.version())).orElse(null);
-    }
-
-    private void validatePage(Integer page, Integer size) {
-        if (page == null || size == null || page < 0 || size <= 0) {
-            throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
-        }
     }
 }

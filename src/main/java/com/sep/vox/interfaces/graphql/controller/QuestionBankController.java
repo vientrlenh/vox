@@ -22,6 +22,7 @@ import com.sep.vox.domain.dto.QuestionBankGradeDto;
 import com.sep.vox.domain.dto.SchoolGradeDto;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.model.question.QuestionBankStatus;
+import com.sep.vox.interfaces.shared.PageArguments;
 
 @Controller("graphqlQuestionBankController")
 public class QuestionBankController {
@@ -46,7 +47,7 @@ public class QuestionBankController {
             @Argument(name = "keyword") String keyword,
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
-        validatePage(page, size);
+        PageArguments.validate(page, size);
         ViewQuestionBanksQuery query = new ViewQuestionBanksQuery(ownerType, status, languageId, schoolId, schoolGradeId, keyword, page, size);
         return viewQuestionBanksUseCase.execute(query);
     }
@@ -67,11 +68,5 @@ public class QuestionBankController {
     public CompletableFuture<SchoolGradeDto> schoolGrade(QuestionBankGradeDto source, DataFetchingEnvironment env) {
         DataLoader<UUID, SchoolGradeDto> loader = env.getDataLoader("schoolGradeById");
         return loader.load(source.schoolGradeId());
-    }
-
-    private void validatePage(int page, int size) {
-        if (page < 0 || size <= 0) {
-            throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
-        }
     }
 }

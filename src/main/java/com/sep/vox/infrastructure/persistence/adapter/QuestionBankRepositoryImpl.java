@@ -18,6 +18,7 @@ import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.model.question.QuestionBankStatus;
 import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.infrastructure.persistence.mapper.QuestionBankMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataQuestionBankRepository;
 
 @Repository
@@ -61,7 +62,7 @@ public class QuestionBankRepositoryImpl implements QuestionBankRepository {
 
     @Override
     public PageResult<QuestionBank> findAll(int pageNumber, int size) {
-        PageRequest pageable = PageRequest.of(pageNumber - 1, size);
+        PageRequest pageable = OneBasedPaging.toPageRequest(pageNumber, size);
         Page<QuestionBankJpaEntity> page = springDataQuestionBankRepository.findAll(pageable);
         return new PageResult<>(
             page.getContent().stream()
@@ -88,7 +89,7 @@ public class QuestionBankRepositoryImpl implements QuestionBankRepository {
     public PageResult<QuestionBank> findAccessible(UUID currentSchoolId, boolean systemAdmin, boolean schoolAdmin,
             QuestionBankOwnerType ownerType, QuestionBankStatus status, UUID languageId, UUID schoolId,
             UUID schoolGradeId, String keyword, int pageNumber, int size) {
-        PageRequest pageable = PageRequest.of(pageNumber - 1, size);
+        PageRequest pageable = OneBasedPaging.toPageRequest(pageNumber, size);
         Page<QuestionBankJpaEntity> page = springDataQuestionBankRepository.findAccessible(
             currentSchoolId,
             systemAdmin,

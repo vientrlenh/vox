@@ -49,6 +49,7 @@ import com.sep.vox.application.port.input.usecase.subscription.ViewPracticeQuota
 import com.sep.vox.application.response.input.subscription.QuotaUserAllocationPageResponse;
 import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.interfaces.graphql.mapper.UpdateSubscriptionPlanCommandMapper;
+import com.sep.vox.interfaces.shared.PageArguments;
 
 @Controller("graphqlSubscriptionController")
 public class SubscriptionController {
@@ -100,7 +101,7 @@ public class SubscriptionController {
     public PageResult<ViewSubscriptionPlansResponse> subscriptionPlans(
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
         return viewSubscriptionPlansUseCase.execute(new ViewSubscriptionPlansQuery(page, size));
     }
 
@@ -116,7 +117,7 @@ public class SubscriptionController {
             @Argument(name = "status") SchoolSubscriptionStatus status,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
         return viewSchoolSubscriptionsUseCase.execute(new ViewSchoolSubscriptionsQuery(keyword, subscriptionPlanId, status, page, size));
     } 
 
@@ -199,16 +200,6 @@ public class SubscriptionController {
         return loader.load(dto.schoolId());
     }
 
-    // page ĐẾM TỪ 1 theo quy ước chung của dự án -- các repository adapter trừ 1 trước khi xuống
-    // PageRequest (xem OrderRepositoryImpl/SubscriptionPlanRepositoryImpl). Guard này vốn đã đúng;
-    // thứ sai là schema từng khai mặc định `page: Int = 0`, nên client KHÔNG truyền page -- đường đi
-    // mặc định -- nhận số 0 rồi bị chính guard này từ chối.
-    private void validatePageSize(Integer page, Integer size) {
-        if (page == null || size == null || page <= 0 || size <= 0) {
-            throw new IllegalArgumentException("Trang hoặc kích thước yêu cầu phải lớn hơn 0");
-        }
-    }
-
     @QueryMapping(name = "schoolAssessmentQuotaUserAllocations")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public QuotaUserAllocationPageResponse schoolAssessmentQuotaUserAllocations(
@@ -216,7 +207,7 @@ public class SubscriptionController {
             @Argument(name = "search") String search,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePaging(page, size);
+        PageArguments.validate(page, size);
         return viewAssessmentQuotaUserAllocationsUseCase.execute(
             new ViewQuotaUserAllocationsQuery(schoolId, search, page, size));
     }
@@ -228,7 +219,7 @@ public class SubscriptionController {
             @Argument(name = "search") String search,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePaging(page, size);
+        PageArguments.validate(page, size);
         return viewPracticeQuotaUserAllocationsUseCase.execute(
             new ViewQuotaUserAllocationsQuery(schoolId, search, page, size));
     }
@@ -245,15 +236,5 @@ public class SubscriptionController {
             QuotaUserAllocationPageResponse.Row row, DataFetchingEnvironment env) {
         DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
         return loader.load(row.userId());
-    }
-
-    // page ĐẾM TỪ 1 theo quy ước chung của dự án -- adapter trừ 1 trước khi xuống PageRequest.
-    private static void validatePaging(Integer page, Integer size) {
-        if (page == null || page < 1) {
-            throw new IllegalArgumentException("Số trang phải lớn hơn hoặc bằng 1");
-        }
-        if (size == null || size <= 0) {
-            throw new IllegalArgumentException("Kích thước trang phải lớn hơn 0");
-        }
     }
 }

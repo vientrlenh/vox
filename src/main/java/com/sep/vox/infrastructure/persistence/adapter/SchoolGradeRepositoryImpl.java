@@ -19,6 +19,7 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.SchoolGrade;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolGradeMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolGradeRepository;
 
 @Repository
@@ -103,7 +104,7 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
 
     @Override
     public PageResult<SchoolGrade> findBySchoolId(UUID schoolId, UUID gradeLevelId, String status, int pageNumber, int size) {
-        PageRequest pageable = PageRequest.of(pageNumber - 1, size);
+        PageRequest pageable = OneBasedPaging.toPageRequest(pageNumber, size);
         Page<SchoolGradeJpaEntity> page = springDataSchoolGradeRepository.findAllBySchoolId(schoolId, gradeLevelId, status, pageable);
         return new PageResult<>(
                 page.getContent().stream()

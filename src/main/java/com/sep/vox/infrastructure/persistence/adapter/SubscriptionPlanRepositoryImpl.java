@@ -6,7 +6,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
@@ -16,6 +15,7 @@ import com.sep.vox.domain.model.subscription.SubscriptionPlanStatus;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 import com.sep.vox.infrastructure.persistence.entity.SubscriptionPlanJpaEntity;
 import com.sep.vox.infrastructure.persistence.mapper.SubscriptionPlanMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSubscriptionPlanRepository;
 
 @Repository
@@ -89,9 +89,9 @@ public class SubscriptionPlanRepositoryImpl implements SubscriptionPlanRepositor
     @Override
     public PageResult<SubscriptionPlan> findByStatus(SubscriptionPlanStatus status, int page, int size) {
         return toPageResult(
-            // page vào theo lối 1-BASED như mọi repository khác trong dự án (xem OrderRepositoryImpl),
-            // còn PageRequest đếm từ 0 -- thiếu phép trừ này thì trang đầu không cách nào lấy được.
-            springDataSubscriptionPlanRepository.findByStatus(status.name(), PageRequest.of(page - 1, size, NEWEST_FIRST)),
+            // The page comes in 1-BASED like every other repository in the project (see OrderRepositoryImpl),
+            // while PageRequest counts from 0 -- without this subtraction the first page can never be fetched.
+            springDataSubscriptionPlanRepository.findByStatus(status.name(), OneBasedPaging.toPageRequest(page, size, NEWEST_FIRST)),
             page,
             size
         );
@@ -100,8 +100,8 @@ public class SubscriptionPlanRepositoryImpl implements SubscriptionPlanRepositor
     @Override
     public PageResult<SubscriptionPlan> findAll(int page, int size) {
         return toPageResult(
-            // 1-based vào, 0-based xuống PageRequest -- xem findByStatus.
-            springDataSubscriptionPlanRepository.findAll(PageRequest.of(page - 1, size, NEWEST_FIRST)),
+            // 1-based in, 0-based down to PageRequest -- see findByStatus.
+            springDataSubscriptionPlanRepository.findAll(OneBasedPaging.toPageRequest(page, size, NEWEST_FIRST)),
             page,
             size
         );

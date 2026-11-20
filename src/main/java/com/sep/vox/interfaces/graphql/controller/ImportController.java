@@ -17,6 +17,7 @@ import com.sep.vox.application.response.input.importfile.ImportRowResponse;
 import com.sep.vox.application.response.input.importfile.ImportSessionDetailsResponse;
 import com.sep.vox.application.response.input.importfile.ImportSessionSummaryResponse;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.interfaces.shared.PageArguments;
 
 @Controller("graphqlImportController")
 public class ImportController {
@@ -47,7 +48,7 @@ public class ImportController {
             @Argument(name = "size") Integer size,
             @Argument(name = "type") String type,
             @Argument(name = "status") String status) {
-        validatePage(page, size);
+        PageArguments.validate(page, size);
         return viewImportSessionsUseCase.execute(new ViewImportSessionsQuery(page, size, type, status));
     }
 
@@ -58,13 +59,7 @@ public class ImportController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size,
             @Argument(name = "status") String status) {
-        validatePage(page, size);
+        PageArguments.validate(page, size);
         return viewImportRowsUseCase.execute(new ViewImportRowsQuery(sessionId, page, size, status));
-    }
-
-    private void validatePage(Integer page, Integer size) {
-        if (page == null || size == null || page <= 0 || size <= 0) {
-            throw new IllegalArgumentException("Số trang hoặc kích thuớc trang yêu cầu không hợp lệ");
-        }
     }
 }

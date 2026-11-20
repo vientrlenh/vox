@@ -20,6 +20,7 @@ import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.model.question.QuestionType;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.infrastructure.persistence.mapper.QuestionMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataQuestionRepository;
 
 @Repository
@@ -141,7 +142,7 @@ public class QuestionRepositoryImpl implements QuestionRepository {
             boolean schoolAdmin, UUID questionBankId, UUID questionTopicId, String topicName, QuestionStatus status,
             QuestionType type, QuestionSharing sharing, String assetType, String scope, String keyword,
             int pageNumber, int size) {
-        PageRequest pageable = PageRequest.of(pageNumber - 1, size);
+        PageRequest pageable = OneBasedPaging.toPageRequest(pageNumber, size);
         Page<QuestionJpaEntity> page = springDataQuestionRepository.findAccessible(
             currentUserId,
             currentSchoolId,
@@ -174,7 +175,7 @@ public class QuestionRepositoryImpl implements QuestionRepository {
             boolean schoolAdmin, UUID questionBankId, UUID questionTopicId, String topicName, QuestionStatus status,
             QuestionType type, QuestionSharing sharing, String assetType, String scope, String keyword,
             int pageNumber, int size) {
-        PageRequest pageable = PageRequest.of(pageNumber - 1, size);
+        PageRequest pageable = OneBasedPaging.toPageRequest(pageNumber, size);
         Page<QuestionJpaEntity> page = springDataQuestionRepository.findAccessibleForAssessmentPaper(
             currentUserId,
             currentSchoolId,

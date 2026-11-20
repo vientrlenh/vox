@@ -33,6 +33,7 @@ import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
 import com.sep.vox.domain.model.question.QuestionSharing;
 import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.model.question.QuestionType;
+import com.sep.vox.interfaces.shared.PageArguments;
 
 @Controller("graphqlQuestionController")
 public class QuestionController {
@@ -89,7 +90,7 @@ public class QuestionController {
             @Argument(name = "keyword") String keyword,
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
-        validatePage(page, size);
+        PageArguments.validate(page, size);
         ViewQuestionsQuery query = new ViewQuestionsQuery(
             questionBankId,
             questionTopicId,
@@ -119,7 +120,7 @@ public class QuestionController {
             @Argument(name = "keyword") String keyword,
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
-        validatePage(page, size);
+        PageArguments.validate(page, size);
         ViewQuestionsQuery query = new ViewQuestionsQuery(
             questionBankId,
             questionTopicId,
@@ -207,11 +208,5 @@ public class QuestionController {
     public CompletableFuture<UserDto> collaboratorUser(QuestionCollaboratorDto source, DataFetchingEnvironment env) {
         DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
         return loader.load(source.userId());
-    }
-
-    private void validatePage(int page, int size) {
-        if (page < 0 || size <= 0) {
-            throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
-        }
     }
 }

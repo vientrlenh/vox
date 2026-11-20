@@ -16,6 +16,7 @@ import com.sep.vox.domain.model.question.QuestionTopic;
 import com.sep.vox.domain.model.question.QuestionTopicStatus;
 import com.sep.vox.domain.repository.QuestionTopicRepository;
 import com.sep.vox.infrastructure.persistence.mapper.QuestionTopicMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataQuestionTopicRepository;
 
 @Repository
@@ -59,7 +60,7 @@ public class QuestionTopicRepositoryImpl implements QuestionTopicRepository {
 
     @Override
     public PageResult<QuestionTopic> findByQuestionBankId(UUID questionBankId, int pageNumber, int size) {
-        PageRequest pageable = PageRequest.of(pageNumber - 1, size);
+        PageRequest pageable = OneBasedPaging.toPageRequest(pageNumber, size);
         Page<QuestionTopicJpaEntity> page = springDataQuestionTopicRepository.findByQuestionBankId(questionBankId, pageable);
         return new PageResult<>(
             page.getContent().stream()
@@ -90,15 +91,7 @@ public class QuestionTopicRepositoryImpl implements QuestionTopicRepository {
     @Override
     public PageResult<QuestionTopic> findAccessible(UUID currentSchoolId, boolean systemAdmin, boolean schoolAdmin,
             UUID questionBankId, QuestionTopicStatus status, String keyword, int pageNumber, int size) {
-        // pageNumber is 1-based like every other paginated query in the project; Spring Data counts from 0.
-        //
-        // The subscription refactor flipped 35 pagination fields in the GraphQL schema to 1-based
-        // but did NOT update the matching adapters, so for a long time the schema promised 1-based
-        // while this code still counted from 0: the first page the client asked for came back as the
-        // second page. No error surfaced because the data types did not change -- only the data was
-        // wrong. This is one of the 16 adapters that were pulled back in line; the shared convention
-        // is that an adapter always receives 1-based and subtracts on its own.
-        PageRequest pageable = PageRequest.of(pageNumber - 1, size);
+        PageRequest pageable = OneBasedPaging.toPageRequest(pageNumber, size);
         Page<QuestionTopicJpaEntity> page = springDataQuestionTopicRepository.findAccessible(
             currentSchoolId,
             systemAdmin,

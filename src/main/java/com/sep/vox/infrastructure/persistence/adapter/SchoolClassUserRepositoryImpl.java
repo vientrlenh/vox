@@ -17,6 +17,7 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.SchoolClassUser;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolClassUserMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolClassUserRepository;
 
 @Repository
@@ -65,7 +66,7 @@ public class SchoolClassUserRepositoryImpl implements SchoolClassUserRepository 
 
     @Override
     public PageResult<SchoolClassUser> findBySchoolClassId(UUID schoolClassId, int page, int size) {
-        PageRequest pageRequest = PageRequest.of(page - 1, size);
+        PageRequest pageRequest = OneBasedPaging.toPageRequest(page, size);
         Page<SchoolClassUserJpaEntity> pageable = springDataSchoolClassUserRepository.findBySchoolClassId(schoolClassId, pageRequest);
         return new PageResult<>(
             pageable.getContent().stream().map(SchoolClassUserMapper::toDomain).toList(),
@@ -80,7 +81,7 @@ public class SchoolClassUserRepositoryImpl implements SchoolClassUserRepository 
     public PageResult<SchoolClassUser> findBySchoolClassId(UUID schoolClassId, String roleCode, String search,
             int page, int size) {
         // The sort is already in the ORDER BY of the @Query, so the PageRequest here is left unsorted.
-        PageRequest pageRequest = PageRequest.of(page - 1, size);
+        PageRequest pageRequest = OneBasedPaging.toPageRequest(page, size);
         String normalizedSearch = blankToNull(search);
         Page<SchoolClassUserJpaEntity> pageable = springDataSchoolClassUserRepository.findBySchoolClassIdWithFilters(
             schoolClassId,

@@ -14,6 +14,7 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.user.Role;
 import com.sep.vox.domain.repository.RoleRepository;
 import com.sep.vox.infrastructure.persistence.mapper.RoleMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataRoleRepository;
 
 @Repository
@@ -76,7 +77,7 @@ public class RoleRepositoryImpl implements RoleRepository {
 
     @Override
     public PageResult<Role> findAll(int page, int size) {
-        PageRequest pageRequest = PageRequest.of(page - 1, size);
+        PageRequest pageRequest = OneBasedPaging.toPageRequest(page, size);
         Page<RoleJpaEntity> pageable = springDataRoleRepository.findAll(pageRequest);
         return new PageResult<>(
                 pageable.getContent()

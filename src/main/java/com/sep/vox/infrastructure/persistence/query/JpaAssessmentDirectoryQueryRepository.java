@@ -11,6 +11,7 @@ import com.sep.vox.application.query.dto.AssessmentDirectoryUserInfo;
 import com.sep.vox.application.query.repository.AssessmentDirectoryQueryRepository;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.common.VnSearchKey;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -141,7 +142,7 @@ public class JpaAssessmentDirectoryQueryRepository implements AssessmentDirector
         int normalizedSize = normalizeSize(size);
 
         List<T> content = contentQuery
-            .setFirstResult((normalizedPage - 1) * normalizedSize)
+            .setFirstResult(OneBasedPaging.toFirstResult(normalizedPage, normalizedSize))
             .setMaxResults(normalizedSize)
             .getResultList();
         Long totalElements = countQuery.getSingleResult();

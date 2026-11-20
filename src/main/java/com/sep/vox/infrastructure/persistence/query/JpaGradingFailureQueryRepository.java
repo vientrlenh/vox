@@ -14,6 +14,7 @@ import com.sep.vox.application.query.dto.GradingFailureSessionDto;
 import com.sep.vox.application.query.dto.GradingFailureTotalsDto;
 import com.sep.vox.application.query.repository.GradingFailureQueryRepository;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -167,7 +168,7 @@ public class JpaGradingFailureQueryRepository implements GradingFailureQueryRepo
             .setParameter("toInstant", to)
             .setParameter("signature", signature)
             .setParameter("pageSize", size)
-            .setParameter("offset", (long) (page - 1) * size)
+            .setParameter("offset", OneBasedPaging.toOffset(page, size))
             .getResultList();
 
         List<GradingFailureSessionDto> content = rows.stream()

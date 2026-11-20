@@ -4,13 +4,13 @@ import com.sep.vox.infrastructure.persistence.entity.SchoolDebtEventJpaEntity;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.SchoolDebtEvent;
 import com.sep.vox.domain.repository.SchoolDebtEventRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolDebtEventMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolDebtEventRepository;
 
 @Repository
@@ -32,9 +32,7 @@ public class SchoolDebtEventRepositoryImpl implements SchoolDebtEventRepository 
     @Override
     public PageResult<SchoolDebtEvent> findBySchoolId(UUID schoolId, int page, int size) {
         Page<SchoolDebtEventJpaEntity> result = springDataSchoolDebtEventRepository
-            // The page arrives 1-BASED like every other repository in the project, while PageRequest counts from 0 --
-            // see SchoolBalanceEntryRepositoryImpl.findBySchoolId.
-            .findBySchoolIdOrderByOccurredAtDescIdDesc(schoolId, PageRequest.of(page - 1, size));
+            .findBySchoolIdOrderByOccurredAtDescIdDesc(schoolId, OneBasedPaging.toPageRequest(page, size));
 
         return new PageResult<>(
             result.getContent().stream().map(SchoolDebtEventMapper::toDomain).toList(),

@@ -53,6 +53,7 @@ import com.sep.vox.interfaces.graphql.mapper.UpdateFrameworkCriterionBandCommand
 import com.sep.vox.interfaces.graphql.mapper.UpdateFrameworkCriterionCommandMapper;
 import com.sep.vox.interfaces.graphql.mapper.UpdateFrameworkResultBandCommandMapper;
 import com.sep.vox.interfaces.graphql.mapper.UpdateFrameworkVersionCommandMapper;
+import com.sep.vox.interfaces.shared.PageArguments;
 
 @Controller("graphqlFrameworkController")
 public class FrameworkController {
@@ -110,7 +111,7 @@ public class FrameworkController {
             @Argument(name = "size") Integer size,
             @Argument(name = "search") String search,
             @Argument(name = "isActive") Boolean isActive) {
-        validatePage(page, size);
+        PageArguments.validate(page, size);
         return viewFrameworksUseCase.execute(new ViewFrameworksQuery(page, size, search, isActive));
     }
 
@@ -127,7 +128,7 @@ public class FrameworkController {
             @Argument(name = "status") String status,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePage(page, size);
+        PageArguments.validate(page, size);
         return viewFrameworkVersionsUseCase.execute(new ViewFrameworkVersionsQuery(frameworkId, status, page, size));
     }
 
@@ -171,7 +172,7 @@ public class FrameworkController {
     public PageResult<FrameworkDto> schoolFrameworks(
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePage(page, size);
+        PageArguments.validate(page, size);
         return viewActiveFrameworksUseCase.execute(new ViewFrameworksQuery(page, size, null, true));
     }
 
@@ -182,7 +183,7 @@ public class FrameworkController {
             @Argument(name = "frameworkId") UUID frameworkId,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePage(page, size);
+        PageArguments.validate(page, size);
         return viewSchoolFrameworkVersionsUseCase.execute(new ViewFrameworkVersionsQuery(frameworkId, "PUBLISHED", page, size));
     }
 
@@ -252,10 +253,5 @@ public class FrameworkController {
             throw new NotFoundException("Không tìm thấy criterionBandsByFrameworkCriterion schema mapping");
         }
         return loader.load(criterion.id());
-    }
-
-    private void validatePage(Integer page, Integer size) {
-        if (page == null || size == null || page <= 0 || size <= 0)
-            throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
     }
 }

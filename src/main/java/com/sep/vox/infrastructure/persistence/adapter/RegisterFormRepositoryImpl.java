@@ -15,6 +15,7 @@ import com.sep.vox.domain.model.registerform.RegisterForm;
 import com.sep.vox.domain.model.registerform.RegisterFormStatus;
 import com.sep.vox.domain.repository.RegisterFormRepository;
 import com.sep.vox.infrastructure.persistence.mapper.RegisterFormMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataRegisterFormRepository;
 
 @Repository
@@ -41,7 +42,7 @@ public class RegisterFormRepositoryImpl implements RegisterFormRepository {
 
     @Override
     public PageResult<RegisterForm> findAll(int pageNumber, int size) {
-        PageRequest pageable = PageRequest.of(pageNumber - 1, size);
+        PageRequest pageable = OneBasedPaging.toPageRequest(pageNumber, size);
         Page<RegisterFormJpaEntity> page = springDataRegisterFormRepository.findAll(pageable);
         return new PageResult<>(
             page.getContent().stream()

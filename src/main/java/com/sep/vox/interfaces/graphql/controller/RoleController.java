@@ -19,6 +19,7 @@ import com.sep.vox.application.port.input.usecase.role.ViewRolesUseCase;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.RoleDto;
 import com.sep.vox.domain.dto.UserDto;
+import com.sep.vox.interfaces.shared.PageArguments;
 
 import graphql.schema.DataFetchingEnvironment;
 
@@ -36,9 +37,7 @@ public class RoleController {
     @QueryMapping(name = "roles")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<RoleDto> roles(@Argument(name = "page") Integer page, @Argument(name = "size") Integer size) {
-        if (page == null || size == null || page <= 0 || size <= 0) {
-            throw new IllegalArgumentException("Số trang hoặc kích cỡ yêu cầu không hợp lệ");
-        }
+        PageArguments.validate(page, size);
         ViewRolesQuery query = new ViewRolesQuery(page, size);
         return viewRolesUseCase.execute(query);
     }
@@ -53,6 +52,7 @@ public class RoleController {
     @SchemaMapping(typeName = "Role", field = "users")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public CompletableFuture<List<UserDto>> roleUsers(RoleDto role, @Argument(name = "page") Integer page, @Argument(name = "size") Integer size,  DataFetchingEnvironment env) {
+        PageArguments.validate(page, size);
         DataLoader<RoleUsersKey, List<UserDto>> loader = env.getDataLoader("usersByRole");
         return loader.load(new RoleUsersKey(role.id(), page, size));
     }

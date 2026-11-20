@@ -20,6 +20,7 @@ import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolClassMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolClassRepository;
 
 @Repository
@@ -57,8 +58,8 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
     @Override
     public PageResult<SchoolClass> findBySchoolId(UUID schoolId, String search, SchoolClassStatus status,
             UUID languageId, UUID schoolGradeId, int pageNumber, int size) {
-        PageRequest pageable = PageRequest.of(
-            pageNumber - 1,
+        PageRequest pageable = OneBasedPaging.toPageRequest(
+            pageNumber,
             size,
             Sort.by(Sort.Direction.DESC, (SchoolClassJpaEntity entity) -> entity.getCreatedAt()).and(Sort.by(Sort.Direction.ASC, (SchoolClassJpaEntity entity) -> entity.getId()))
         );
@@ -98,8 +99,8 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
     @Override
     public PageResult<SchoolClass> findByUserId(UUID schoolId, UUID userId, String search, SchoolClassStatus status,
             int pageNumber, int size) {
-        PageRequest pageable = PageRequest.of(
-            pageNumber - 1,
+        PageRequest pageable = OneBasedPaging.toPageRequest(
+            pageNumber,
             size,
             Sort.by(Sort.Direction.DESC, (SchoolClassJpaEntity entity) -> entity.getCreatedAt()).and(Sort.by(Sort.Direction.ASC, (SchoolClassJpaEntity entity) -> entity.getId()))
         );
@@ -187,8 +188,8 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
 
     @Override
     public List<SchoolClass> findBySchoolIdIn(Collection<UUID> schoolIds, int page, int size) {
-        int fromRow = (page - 1) * size + 1;
-        int toRow = page * size;
+        int fromRow = OneBasedPaging.toFirstRow(page, size);
+        int toRow = OneBasedPaging.toLastRow(page, size);
         return springDataSchoolClassRepository.findBySchoolIdIn(schoolIds, fromRow, toRow)
             .stream()
             .map(SchoolClassMapper::toDomain)

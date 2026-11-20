@@ -14,6 +14,7 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolUserMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolUserRepository;
 
 @Repository
@@ -51,8 +52,8 @@ public class SchoolUserRepositoryImpl implements SchoolUserRepository {
 
     @Override
     public List<SchoolUser> findBySchoolIdIn(Collection<UUID> schoolIds, int pageNumber, int size) {
-        int fromRow = (pageNumber - 1) * size + 1;
-        int toRow = pageNumber * size;
+        int fromRow = OneBasedPaging.toFirstRow(pageNumber, size);
+        int toRow = OneBasedPaging.toLastRow(pageNumber, size);
         return springDataSchoolUserRepository.findBySchoolIdIn(schoolIds, fromRow, toRow)
             .stream()
             .map(SchoolUserMapper::toDomain)
@@ -66,7 +67,7 @@ public class SchoolUserRepositoryImpl implements SchoolUserRepository {
             ? null
             : "%" + search.strip().toLowerCase() + "%";
         String statusFilter = (status == null || status.isBlank()) ? null : status;
-        PageRequest pageRequest = PageRequest.of(page - 1, size);
+        PageRequest pageRequest = OneBasedPaging.toPageRequest(page, size);
         Page<SchoolUserJpaEntity> pageable = springDataSchoolUserRepository.searchBySchoolId(
             schoolId, null, searchPattern, roleId, statusFilter, excludeClassId, excludeAdminRoles, pageRequest);
         return new PageResult<>(
@@ -88,7 +89,7 @@ public class SchoolUserRepositoryImpl implements SchoolUserRepository {
             ? null
             : "%" + search.strip().toLowerCase() + "%";
         String statusFilter = (status == null || status.isBlank()) ? null : status;
-        PageRequest pageRequest = PageRequest.of(page - 1, size);
+        PageRequest pageRequest = OneBasedPaging.toPageRequest(page, size);
         Page<SchoolUserJpaEntity> pageable = springDataSchoolUserRepository.searchBySchoolId(
             schoolId, excludeUserId, searchPattern, roleId, statusFilter, null, false, pageRequest);
         return new PageResult<>(

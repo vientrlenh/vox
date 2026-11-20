@@ -14,6 +14,7 @@ import com.sep.vox.domain.model.importfile.ImportRow;
 import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.repository.ImportRowRepository;
 import com.sep.vox.infrastructure.persistence.mapper.ImportRowMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataImportRowRepository;
 
 @Repository
@@ -36,8 +37,8 @@ public class ImportRowRepositoryImpl implements ImportRowRepository {
     @Override
     public PageResult<ImportRow> findBySessionId(UUID sessionId, ImportRowStatus status, int pageNumber, int size) {
         Sort sort = Sort.by(Sort.Order.asc((ImportRowJpaEntity row) -> row.getRowNumber()));
-        PageRequest pageable = PageRequest.of(
-            pageNumber - 1,
+        PageRequest pageable = OneBasedPaging.toPageRequest(
+            pageNumber,
             size,
             sort
         );

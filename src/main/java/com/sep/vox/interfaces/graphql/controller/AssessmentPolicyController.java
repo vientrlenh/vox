@@ -26,6 +26,7 @@ import com.sep.vox.domain.dto.GradeLevelDto;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateAssessmentPolicyInput;
 import com.sep.vox.interfaces.graphql.mapper.UpdateAssessmentPolicyGraphQLMapper;
+import com.sep.vox.interfaces.shared.PageArguments;
 import org.dataloader.DataLoader;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
@@ -79,7 +80,7 @@ public class AssessmentPolicyController {
             @Argument(name = "effectiveTo") String effectiveTo,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
         return viewSystemAssessmentPoliciesUseCase
                 .execute(new ViewSystemAssessmentPoliciesQuery(status, languageId, rubricVersionId,
                         DateMapper.toInstant(effectiveFrom),
@@ -97,7 +98,7 @@ public class AssessmentPolicyController {
             @Argument(name = "effectiveTo") String effectiveTo,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
         return viewSchoolAssessmentPoliciesUseCase
                 .execute(new ViewSchoolAssessmentPoliciesQuery(schoolId, status, languageId, rubricVersionId,
                         DateMapper.toInstant(effectiveFrom),
@@ -114,7 +115,7 @@ public class AssessmentPolicyController {
             @Argument(name = "effectiveTo") String effectiveTo,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
         return viewTeacherAssessmentPoliciesUseCase.execute(new ViewTeacherAssessmentPoliciesQuery(
                 languageId,
                 rubricVersionId,
@@ -221,14 +222,5 @@ public class AssessmentPolicyController {
             @Argument(name = "input") UpdateAssessmentPolicyInput input) {
         UpdateAssessmentPolicyCommand command = UpdateAssessmentPolicyGraphQLMapper.fromSchoolInput(schoolId, policyId, input);
         return updateSchoolAssessmentPolicyUseCase.execute(command);
-    }
-
-    private void validatePageSize(Integer page, Integer size) {
-        if (page == null || page <= 0) {
-            throw new IllegalArgumentException("Số trang yêu cầu không hợp lệ");
-        }
-        if (size == null || size <= 0) {
-            throw new IllegalArgumentException("Kích cỡ trang yêu cầu không hợp lệ");
-        }
     }
 }

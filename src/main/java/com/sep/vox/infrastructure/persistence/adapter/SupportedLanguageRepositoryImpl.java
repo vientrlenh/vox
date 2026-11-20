@@ -19,6 +19,7 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SupportedLanguageMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSupportedLanguageRepository;
 
 @Repository
@@ -73,8 +74,8 @@ public class SupportedLanguageRepositoryImpl implements SupportedLanguageReposit
 
     @Override
     public PageResult<SupportedLanguage> findAll(String search, Boolean isActive, int pageNumber, int size) {
-        PageRequest pageable = PageRequest.of(
-            pageNumber - 1,
+        PageRequest pageable = OneBasedPaging.toPageRequest(
+            pageNumber,
             size,
             Sort.by(Sort.Direction.DESC, (SupportedLanguageJpaEntity entity) -> entity.getCreatedAt()).and(Sort.by(Sort.Direction.ASC, (SupportedLanguageJpaEntity entity) -> entity.getId()))
         );

@@ -17,6 +17,7 @@ import com.sep.vox.application.query.dto.SchoolUnscoredWorkloadDto;
 import com.sep.vox.application.query.repository.SchoolWorkloadQueryRepository;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.assessment.AssessmentSession;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -214,7 +215,7 @@ public class JpaSchoolWorkloadQueryRepository implements SchoolWorkloadQueryRepo
             LIMIT :pageSize OFFSET :offset
             """), schoolId, assessmentId)
             .setParameter("pageSize", size)
-            .setParameter("offset", (long) (page - 1) * size)
+            .setParameter("offset", OneBasedPaging.toOffset(page, size))
             .getResultList();
 
         List<SchoolGradingFailureDto> content = rows.stream()

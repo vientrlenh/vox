@@ -20,6 +20,7 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.*;
 import com.sep.vox.interfaces.graphql.dto.request.*;
 import com.sep.vox.interfaces.graphql.mapper.*;
+import com.sep.vox.interfaces.shared.PageArguments;
 import graphql.schema.DataFetchingEnvironment;
 import jakarta.validation.Valid;
 import org.dataloader.DataLoader;
@@ -165,7 +166,7 @@ public class RubricController {
             @Argument(name = "size") Integer size
     ) {
 
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
         ViewSystemRubricsQuery query = new ViewSystemRubricsQuery(page, size);
 
         return viewSystemRubricsUseCase.execute(query);
@@ -180,7 +181,7 @@ public class RubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size
     ) {
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
 
         ViewSchoolRubricsQuery query = new ViewSchoolRubricsQuery(schoolId, page, size);
         return viewSchoolRubricsUseCase.execute(query);
@@ -225,7 +226,7 @@ public class RubricController {
             @Argument(name = "status") String status,
             DataFetchingEnvironment env) {
 
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
 
         DataLoader<RubricVersionsKey, PageResult<RubricVersionDto>> loader = env.getDataLoader("rubricVersionsDataLoader");
         return loader.load(new RubricVersionsKey(rubric.id(), status, page, size));
@@ -240,7 +241,7 @@ public class RubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
 
         SearchRubricFilterRequest safeFilter = (filter != null) ? filter : new SearchRubricFilterRequest(null, null, null);
 
@@ -278,7 +279,7 @@ public class RubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
         SearchRubricFilterRequest safeFilter = (filter != null) ? filter : new SearchRubricFilterRequest(null, null, null);
 
         return searchSystemRubricsUseCase.execute(new SearchSystemRubricsQuery(
@@ -300,7 +301,7 @@ public class RubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
 
         SearchRubricFilterRequest safeFilter = (filter != null) ? filter : new SearchRubricFilterRequest(null, null, null);
 
@@ -323,7 +324,7 @@ public class RubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
 
         SearchRubricFilterRequest safeFilter = (filter != null) ? filter : new SearchRubricFilterRequest(null, null, null);
 
@@ -397,7 +398,7 @@ public class RubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size
     ) {
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
 
         ViewSchoolRubricVersionsQuery query = new ViewSchoolRubricVersionsQuery(schoolId, rubricId, status, page, size);
         return viewSchoolRubricVersionsUseCase.execute(query);
@@ -413,7 +414,7 @@ public class RubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size
     ) {
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
 
         ViewSystemRubricVersionsQuery query = new ViewSystemRubricVersionsQuery(rubricId, status, page, size);
         return viewSystemRubricVersionsUseCase.execute(query);
@@ -427,7 +428,7 @@ public class RubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size
     ) {
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
 
         ViewTeacherRubricVersionsQuery query = new ViewTeacherRubricVersionsQuery(rubricId, page, size);
         return viewTeacherRubricVersionsUseCase.execute(query);
@@ -442,7 +443,7 @@ public class RubricController {
             @Argument(name = "size") Integer size,
             DataFetchingEnvironment env) {
 
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
 
         DataLoader<RubricCriteriaKey, PageResult<RubricCriterionDto>> loader = env.getDataLoader("rubricCriteriaDataLoader");
         if (loader == null) {
@@ -462,7 +463,7 @@ public class RubricController {
             @Argument(name = "size") Integer size,
             DataFetchingEnvironment env) {
 
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
 
         DataLoader<RubricResultBandsKey, PageResult<RubricResultBandDto>> loader = env.getDataLoader("rubricResultBandsDataLoader");
         if (loader == null) {
@@ -482,7 +483,7 @@ public class RubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
 
         SearchRubricVersionFilterRequest safeFilter = (filter != null) ? filter : new SearchRubricVersionFilterRequest(null, null);
 
@@ -507,7 +508,7 @@ public class RubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
 
         SearchRubricVersionFilterRequest safeFilter = (filter != null) ? filter : new SearchRubricVersionFilterRequest(null, null);
 
@@ -578,7 +579,7 @@ public class RubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size
     ) {
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
 
         ViewSystemRubricCriteriaQuery query = new ViewSystemRubricCriteriaQuery(versionId, page, size);
         return viewSystemRubricCriteriaUseCase.execute(query);
@@ -594,7 +595,7 @@ public class RubricController {
             @Argument(name = "size") Integer size
     ) {
 
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
 
         ViewSchoolRubricCriteriaQuery query = new ViewSchoolRubricCriteriaQuery(schoolId, versionId, page, size);
         return viewSchoolRubricCriteriaUseCase.execute(query);
@@ -610,7 +611,7 @@ public class RubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
         SearchRubricCriterionFilterRequest safeFilter = (filter != null) ? filter : new SearchRubricCriterionFilterRequest(null, null);
 
         SearchSystemRubricCriteriaQuery query = new SearchSystemRubricCriteriaQuery(
@@ -630,7 +631,7 @@ public class RubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
         SearchRubricCriterionFilterRequest safeFilter = (filter != null) ? filter : new SearchRubricCriterionFilterRequest(null, null);
 
         SearchSchoolRubricCriteriaQuery query = new SearchSchoolRubricCriteriaQuery(
@@ -694,7 +695,7 @@ public class RubricController {
             @Argument(name = "size") Integer size
     ) {
 
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
 
         ViewSystemRubricResultBandsQuery query = new ViewSystemRubricResultBandsQuery(versionId, page, size);
         return viewSystemRubricResultBandsUseCase.execute(query);
@@ -710,7 +711,7 @@ public class RubricController {
             @Argument(name = "size") Integer size
     ) {
 
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
 
         ViewSchoolRubricResultBandsQuery query = new ViewSchoolRubricResultBandsQuery(schoolId, versionId, page, size);
         return viewSchoolRubricResultBandsUseCase.execute(query);
@@ -725,7 +726,7 @@ public class RubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
         SearchRubricResultBandFilterRequest safeFilter = (filter != null) ? filter : new SearchRubricResultBandFilterRequest(null);
 
         SearchSystemRubricResultBandsQuery query = new SearchSystemRubricResultBandsQuery(versionId, safeFilter.keyword(), page, size);
@@ -742,19 +743,10 @@ public class RubricController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
         SearchRubricResultBandFilterRequest safeFilter = (filter != null) ? filter : new SearchRubricResultBandFilterRequest(null);
 
         SearchSchoolRubricResultBandsQuery query = new SearchSchoolRubricResultBandsQuery(schoolId, versionId, safeFilter.keyword(), page, size);
         return searchSchoolRubricResultBandsUseCase.execute(query);
-    }
-
-    private void validatePageSize(Integer page, Integer size) {
-        if (page == null || page <= 0) {
-            throw new IllegalArgumentException("Số trang yêu cầu không hợp lệ");
-        }
-        if (size == null || size <= 0) {
-            throw new IllegalArgumentException("Kích cỡ trang yêu cầu không hợp lệ");
-        }
     }
 }

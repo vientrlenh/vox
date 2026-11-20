@@ -25,6 +25,7 @@ import com.sep.vox.domain.dto.SchoolClassUserDto;
 import com.sep.vox.domain.dto.SchoolGradeDto;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
 import com.sep.vox.domain.dto.UserDto;
+import com.sep.vox.interfaces.shared.PageArguments;
 
 import graphql.schema.DataFetchingEnvironment;
 
@@ -59,7 +60,7 @@ public class MyClassController {
             @Argument(name = "status") String status,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        requireValidPaging(page, size);
+        PageArguments.validate(page, size);
         return viewMyClassesUseCase.execute(new ViewMyClassesQuery(schoolId, search, status, page, size));
     }
 
@@ -77,7 +78,7 @@ public class MyClassController {
             @Argument(name = "search") String search,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        requireValidPaging(page, size);
+        PageArguments.validate(page, size);
         return viewMyClassMembersUseCase.execute(
             new ViewMyClassMembersQuery(schoolClassId, roleCode, search, page, size));
     }
@@ -116,11 +117,5 @@ public class MyClassController {
         DataLoader<UserRolesKey, List<RoleDto>> loader = env.getDataLoader("rolesByUser");
         return loader.load(new UserRolesKey(user.id()))
             .thenApply(roles -> roles.stream().map(role -> role.code()).toList());
-    }
-
-    private static void requireValidPaging(Integer page, Integer size) {
-        if (page == null || size == null || page <= 0 || size <= 0) {
-            throw new IllegalArgumentException("Số trang hoặc kích cỡ trang yêu cầu không hợp lệ");
-        }
     }
 }

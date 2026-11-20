@@ -16,6 +16,7 @@ import com.sep.vox.domain.model.school.SchoolBalanceEntry;
 import com.sep.vox.domain.model.school.SchoolBalanceEntryType;
 import com.sep.vox.domain.repository.SchoolBalanceEntryRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolBalanceEntryMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolBalanceEntryRepository;
 
 @Repository
@@ -42,11 +43,7 @@ public class SchoolBalanceEntryRepositoryImpl implements SchoolBalanceEntryRepos
     @Override
     public PageResult<SchoolBalanceEntry> findBySchoolId(
             UUID schoolId, SchoolBalanceEntryType entryType, Instant from, Instant to, int page, int size) {
-        // The page arrives 1-BASED like every other repository in the project, while PageRequest counts from 0 --
-        // see OrderRepositoryImpl.findBySchoolId. Without this subtraction a caller following the shared
-        // convention would skip the newest page of the statement, and page = 0 is already rejected by the
-        // controllers upstream (validatePaging requires page >= 1), so the first page could never be fetched.
-        PageRequest pageable = PageRequest.of(page - 1, size);
+        PageRequest pageable = OneBasedPaging.toPageRequest(page, size);
         Page<SchoolBalanceEntryJpaEntity> result = entryType == null
             ? springDataSchoolBalanceEntryRepository.findPageBySchoolIdInRange(schoolId, from, to, pageable)
             : springDataSchoolBalanceEntryRepository

@@ -28,6 +28,7 @@ import com.sep.vox.application.query.dto.AppealTurnInfo;
 import com.sep.vox.application.query.repository.AssessmentAppealQueryRepository;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.assessment.GradingAssignmentStatus;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -68,7 +69,7 @@ public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQuery
             .setParameter("assessmentId", assessmentId)
             .setParameter("status", status)
             .setParameter("keyword", normalizedKeyword)
-            .setFirstResult((page - 1) * size)
+            .setFirstResult(OneBasedPaging.toFirstResult(page, size))
             .setMaxResults(size);
 
         List<Tuple> rows = query.getResultList();
@@ -144,7 +145,7 @@ public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQuery
         """, Tuple.class)
             .setParameter("studentId", studentId)
             .setParameter("status", status)
-            .setFirstResult((page - 1) * size)
+            .setFirstResult(OneBasedPaging.toFirstResult(page, size))
             .setMaxResults(size)
             .getResultList();
 

@@ -41,6 +41,7 @@ import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
 import com.sep.vox.domain.model.assessment.GradingAssignmentStatus;
 import com.sep.vox.domain.model.assessment.GradingRoundPolicy;
 import com.sep.vox.domain.model.assessment.GradingRoundType;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -121,7 +122,7 @@ public class JpaAssessmentGradingQueryRepository implements AssessmentGradingQue
             """ + WHERE_CLAUSE + """
             ORDER BY cr.updatedAt DESC, cr.id ASC
         """, Tuple.class), filter, now)
-            .setFirstResult((page - 1) * size)
+            .setFirstResult(OneBasedPaging.toFirstResult(page, size))
             .setMaxResults(size)
             .getResultList();
 
@@ -571,7 +572,7 @@ public class JpaAssessmentGradingQueryRepository implements AssessmentGradingQue
             .setParameter("assessmentId", assessmentId)
             .setParameter("status", status)
             .setParameter("roundType", roundType)
-            .setFirstResult((page - 1) * size)
+            .setFirstResult(OneBasedPaging.toFirstResult(page, size))
             .setMaxResults(size)
             .getResultList();
 

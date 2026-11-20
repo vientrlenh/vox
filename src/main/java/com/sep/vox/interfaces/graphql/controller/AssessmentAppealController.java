@@ -73,7 +73,7 @@ public class AssessmentAppealController {
             @Argument(name = "keyword") String keyword,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
         return viewAssessmentAppealsUseCase.execute(new SearchAssessmentAppealsQuery(
             status, keyword, page, size));
     }
@@ -86,7 +86,7 @@ public class AssessmentAppealController {
             @Argument(name = "keyword") String keyword,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
         return viewAssessmentAppealsByAssessmentUseCase.execute(new SearchAppealsByAssessmentQuery(
             assessmentId, status, keyword, page, size));
     }
@@ -109,7 +109,7 @@ public class AssessmentAppealController {
             @Argument(name = "status") String status,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePageSize(page, size);
+        PageArguments.validate(page, size);
         return viewMyAppealsUseCase.execute(new SearchAssessmentAppealsQuery(
             status, null, page, size));
     }
@@ -126,14 +126,6 @@ public class AssessmentAppealController {
             @Argument(name = "appealId") UUID appealId,
             @Argument(name = "keyword") String keyword) {
         return viewAssignableReviewersUseCase.execute(new ViewAssignableReviewersQuery(appealId, keyword));
-    }
-
-    /**
-     * Biên là chỗ duy nhất kiểm phân trang: repository bên dưới tin vào đây và chỉ còn trừ 1 để đổi
-     * sang offset, không tự kẹp lại giá trị sai nữa.
-     */
-    private void validatePageSize(Integer page, Integer size) {
-        PageArguments.validate(page, size);
     }
 
     /**

@@ -47,6 +47,7 @@ import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.model.assessment.AssessmentKind;
 import com.sep.vox.domain.model.assessment.AssessmentPaperStatus;
 import com.sep.vox.domain.model.assessment.AssessmentStatus;
+import com.sep.vox.interfaces.shared.PageArguments;
 
 @Controller("graphqlAssessmentController")
 public class AssessmentController {
@@ -87,7 +88,7 @@ public class AssessmentController {
             @Argument(name = "keyword") String keyword,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePage(page, size);
+        PageArguments.validate(page, size);
         return viewAssessmentsUseCase.execute(new ViewAssessmentsQuery(kind, status, schoolId, null, keyword, page, size));
     }
 
@@ -98,7 +99,7 @@ public class AssessmentController {
             @Argument(name = "keyword") String keyword,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePage(page, size);
+        PageArguments.validate(page, size);
         return viewAssessmentsUseCase.execute(
             new ViewAssessmentsQuery(AssessmentKind.CLASS_TEST, status, null, schoolClassId, keyword, page, size)
         );
@@ -272,11 +273,5 @@ public class AssessmentController {
         DataLoader<UUID, List<AssessmentMemberDto>> loader = env.getDataLoader("assessmentMembersByAssessmentId");
         return loader.load(source.id()).thenApply(members -> members.stream()
             .anyMatch(member -> member.userId().equals(currentUserId)));
-    }
-
-    private void validatePage(Integer page, Integer size) {
-        if (page == null || size == null || page < 0 || size <= 0) {
-            throw new IllegalStateException("Số trang hoặc kích thước trang yêu cầu không hợp lệ");
-        }
     }
 }

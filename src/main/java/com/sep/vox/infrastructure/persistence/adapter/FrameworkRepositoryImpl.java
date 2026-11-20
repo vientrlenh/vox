@@ -15,6 +15,7 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.framework.Framework;
 import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.infrastructure.persistence.mapper.FrameworkMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataFrameworkRepository;
 
 @Repository
@@ -45,31 +46,19 @@ public class FrameworkRepositoryImpl implements FrameworkRepository {
 
     @Override
     public PageResult<Framework> findAll(int pageNumber, int size, String search, Boolean isActive) {
-        PageRequest pageable = PageRequest.of(pageNumber - 1, size);
+        PageRequest pageable = OneBasedPaging.toPageRequest(pageNumber, size);
         String pattern = StringNormalization.toLikePattern(search);
         Page<FrameworkJpaEntity> page = isActive != null
             ? springDataFrameworkRepository.findAllBySearchAndIsActive(pattern, isActive, pageable)
             : springDataFrameworkRepository.findAllBySearch(pattern, pageable);
-        return new PageResult<>(
-                page.getContent().stream().map(FrameworkMapper::toDomain).toList(),
-                page.getNumber() + 1,
-                page.getSize(),
-                page.getTotalElements(),
-                page.getTotalPages()
-        );
+        return OneBasedPaging.toPageResult(page, page.getContent().stream().map(FrameworkMapper::toDomain).toList());
     }
 
     @Override
     public PageResult<Framework> findAllActive(int pageNumber, int size) {
-        PageRequest pageable = PageRequest.of(pageNumber - 1, size);
+        PageRequest pageable = OneBasedPaging.toPageRequest(pageNumber, size);
         Page<FrameworkJpaEntity> page = springDataFrameworkRepository.findAllActive(pageable);
-        return new PageResult<>(
-                page.getContent().stream().map(FrameworkMapper::toDomain).toList(),
-                page.getNumber() + 1,
-                page.getSize(),
-                page.getTotalElements(),
-                page.getTotalPages()
-        );
+        return OneBasedPaging.toPageResult(page, page.getContent().stream().map(FrameworkMapper::toDomain).toList());
     }
 
     @Override

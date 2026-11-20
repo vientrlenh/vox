@@ -22,6 +22,7 @@ import com.sep.vox.domain.dto.InvoiceDto;
 import com.sep.vox.domain.dto.OrderDto;
 import com.sep.vox.domain.dto.OrderItemDto;
 import com.sep.vox.domain.dto.PaymentDto;
+import com.sep.vox.interfaces.shared.PageArguments;
 
 import graphql.schema.DataFetchingEnvironment;
 
@@ -45,7 +46,7 @@ public class OrderController {
     public PageResult<OrderDto> myOrders(
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePaging(page, size);
+        PageArguments.validate(page, size);
         return viewMySchoolOrdersUseCase.execute(new ViewMySchoolOrdersQuery(page, size));
     }
 
@@ -63,7 +64,7 @@ public class OrderController {
             @Argument(name = "keyword") String keyword,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePaging(page, size);
+        PageArguments.validate(page, size);
         return viewOrdersUseCase.execute(new ViewOrdersQuery(schoolId, status, type, keyword, page, size));
     }
 
@@ -108,16 +109,5 @@ public class OrderController {
             throw new IllegalStateException("Không tìm thấy data loader paymentsByOrderId");
         }
         return loader.load(order.id());
-    }
-
-    // page ĐẾM TỪ 1 theo quy ước chung của dự án; OrderRepositoryImpl trừ 1 trước khi xuống
-    // PageRequest. Chặn cả 0 để không có hai cách gọi trang đầu (0 và 1) cho ra hai kết quả khác nhau.
-    private static void validatePaging(Integer page, Integer size) {
-        if (page == null || page < 1) {
-            throw new IllegalArgumentException("Số trang phải lớn hơn hoặc bằng 1");
-        }
-        if (size == null || size <= 0) {
-            throw new IllegalArgumentException("Kích thước trang phải lớn hơn 0");
-        }
     }
 }

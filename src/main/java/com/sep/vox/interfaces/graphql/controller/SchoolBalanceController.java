@@ -20,6 +20,7 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolBalanceDto;
 import com.sep.vox.domain.dto.SchoolBalanceEntryDto;
 import com.sep.vox.domain.dto.SchoolDebtEventDto;
+import com.sep.vox.interfaces.shared.PageArguments;
 
 /**
  * Ví tiền tự nạp của trường: số dư, sao kê, tổng hợp, và nhật ký nợ.
@@ -64,7 +65,7 @@ public class SchoolBalanceController {
             @Argument(name = "entryType") String entryType,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePaging(page, size);
+        PageArguments.validate(page, size);
         return viewSchoolBalanceEntriesUseCase.execute(
             new ViewSchoolBalanceEntriesQuery(schoolId, entryType, null, null, page, size));
     }
@@ -83,7 +84,7 @@ public class SchoolBalanceController {
             @Argument(name = "schoolId") UUID schoolId,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        validatePaging(page, size);
+        PageArguments.validate(page, size);
         return viewSchoolDebtEventsUseCase.execute(new ViewSchoolDebtEventsQuery(schoolId, page, size));
     }
 
@@ -101,16 +102,6 @@ public class SchoolBalanceController {
         } catch (DateTimeParseException e) {
             throw new IllegalArgumentException(
                 "Mốc thời gian '" + field + "' phải theo định dạng ISO-8601, ví dụ 2026-08-01T00:00:00Z");
-        }
-    }
-
-    // page ĐẾM TỪ 1 theo quy ước chung của dự án -- adapter trừ 1 trước khi xuống PageRequest.
-    private static void validatePaging(Integer page, Integer size) {
-        if (page == null || page < 1) {
-            throw new IllegalArgumentException("Số trang phải lớn hơn hoặc bằng 1");
-        }
-        if (size == null || size <= 0) {
-            throw new IllegalArgumentException("Kích thước trang phải lớn hơn 0");
         }
     }
 }

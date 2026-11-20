@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.user.UserRole;
 import com.sep.vox.domain.repository.UserRoleRepository;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.mapper.UserRoleMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataUserRoleRepository;
 
@@ -66,8 +67,8 @@ public class UserRoleRepositoryImpl implements UserRoleRepository {
 
     @Override
     public List<UserRole> findByRoleIdIn(Collection<UUID> roleIds, int page, int size) {
-        int fromRow = (page - 1) * size + 1;
-        int toRow = page * size;
+        int fromRow = OneBasedPaging.toFirstRow(page, size);
+        int toRow = OneBasedPaging.toLastRow(page, size);
         return springDataUserRoleRepository.findByRoleIdIn(roleIds, fromRow, toRow)
             .stream()
             .map(UserRoleMapper::toDomain)

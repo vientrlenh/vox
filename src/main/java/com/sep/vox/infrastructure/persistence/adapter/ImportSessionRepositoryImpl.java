@@ -18,6 +18,7 @@ import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
 import com.sep.vox.domain.repository.ImportSessionRepository;
 import com.sep.vox.infrastructure.persistence.mapper.ImportSessionMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataImportSessionRepository;
 
 @Repository
@@ -44,8 +45,8 @@ public class ImportSessionRepositoryImpl implements ImportSessionRepository {
 
     @Override
     public PageResult<ImportSession> findBySchoolId(UUID schoolId, ImportType type, ImportSessionStatus status, int pageNumber, int size) {
-        PageRequest pageable = PageRequest.of(
-            pageNumber - 1,
+        PageRequest pageable = OneBasedPaging.toPageRequest(
+            pageNumber,
             size,
             Sort.by(Sort.Direction.DESC, (ImportSessionJpaEntity entity) -> entity.getCreatedAt()).and(Sort.by(Sort.Direction.DESC, (ImportSessionJpaEntity entity) -> entity.getId()))
         );

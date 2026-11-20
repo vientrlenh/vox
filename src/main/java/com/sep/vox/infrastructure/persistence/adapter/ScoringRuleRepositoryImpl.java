@@ -13,6 +13,7 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.scoringrule.ScoringRule;
 import com.sep.vox.domain.repository.ScoringRuleRepository;
 import com.sep.vox.infrastructure.persistence.mapper.ScoringRuleMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataScoringRuleRepository;
 
 @Repository
@@ -43,8 +44,7 @@ public class ScoringRuleRepositoryImpl implements ScoringRuleRepository {
 
     @Override
     public PageResult<ScoringRule> searchByPolicyId(UUID policyId, String keyword, Boolean isActive, int page, int size) {
-        // The page from the client is 1-based, Spring Data's PageRequest is 0-based -> subtract 1
-        PageRequest pageable = PageRequest.of(page - 1, size);
+        PageRequest pageable = OneBasedPaging.toPageRequest(page, size);
         Page<ScoringRuleJpaEntity> pageEntity = springDataScoringRuleRepository.searchByPolicyId(
                 policyId, StringNormalization.toLikePattern(keyword), isActive, pageable);
 

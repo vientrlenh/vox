@@ -17,6 +17,7 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprint;
 import com.sep.vox.domain.repository.AssessmentBlueprintRepository;
 import com.sep.vox.infrastructure.persistence.mapper.AssessmentBlueprintMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataAssessmentBlueprintRepository;
 
 @Repository
@@ -59,7 +60,7 @@ public class AssessmentBlueprintRepositoryImpl implements AssessmentBlueprintRep
     @Override
     public PageResult<AssessmentBlueprint> findAccessible(UUID currentUserId, UUID currentSchoolId, boolean systemAdmin,
             boolean schoolAdmin, UUID schoolId, Boolean isActive, UUID languageId, String assessmentKind, String keyword, int page, int size) {
-        PageRequest pageable = PageRequest.of(page - 1, size);
+        PageRequest pageable = OneBasedPaging.toPageRequest(page, size);
         Page<AssessmentBlueprintJpaEntity> result = springDataAssessmentBlueprintRepository.findAccessible(
             currentUserId,
             currentSchoolId,

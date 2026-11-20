@@ -14,6 +14,7 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.infrastructure.persistence.mapper.AssessmentPolicyMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataAssessmentPolicyRepository;
 
 @Repository
@@ -47,7 +48,7 @@ public class AssessmentPolicyRepositoryImpl implements AssessmentPolicyRepositor
     @Override
     public PageResult<AssessmentPolicy> findAllSystemWide(String status, UUID languageId, UUID rubricVersionId,
             Instant effectiveFrom, Instant effectiveTo, int page, int size) {
-        PageRequest pageable = PageRequest.of(page - 1, size);
+        PageRequest pageable = OneBasedPaging.toPageRequest(page, size);
         Page<AssessmentPolicyJpaEntity> result = springDataAssessmentPolicyRepository.findBySchoolIdIsNullAndStatus(status, languageId, rubricVersionId, effectiveFrom, effectiveTo, pageable);
         return new PageResult<>(
                 result.getContent().stream().map(AssessmentPolicyMapper::toDomain).toList(),
@@ -61,7 +62,7 @@ public class AssessmentPolicyRepositoryImpl implements AssessmentPolicyRepositor
     @Override
     public PageResult<AssessmentPolicy> findAllBySchoolId(UUID schoolId, String status, UUID languageId, UUID rubricVersionId,
             Instant effectiveFrom, Instant effectiveTo, int page, int size) {
-        PageRequest pageable = PageRequest.of(page - 1, size);
+        PageRequest pageable = OneBasedPaging.toPageRequest(page, size);
         Page<AssessmentPolicyJpaEntity> result = springDataAssessmentPolicyRepository.findBySchoolIdAndStatus(schoolId, status, languageId, rubricVersionId, effectiveFrom, effectiveTo, pageable);
         return new PageResult<>(
                 result.getContent().stream().map(AssessmentPolicyMapper::toDomain).toList(),

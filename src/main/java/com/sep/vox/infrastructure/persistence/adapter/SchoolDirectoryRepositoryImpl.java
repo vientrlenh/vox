@@ -15,6 +15,7 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.SchoolDirectory;
 import com.sep.vox.domain.repository.SchoolDirectoryRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolDirectoryMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolDirectoryRepository;
 
 @Repository
@@ -79,7 +80,7 @@ public class SchoolDirectoryRepositoryImpl implements SchoolDirectoryRepository 
 
     @Override
     public PageResult<SchoolDirectory> findAll(int pageNumber, int size) {
-        PageRequest pageable = PageRequest.of(pageNumber - 1, size);
+        PageRequest pageable = OneBasedPaging.toPageRequest(pageNumber, size);
         Page<SchoolDirectoryJpaEntity> page = springDataSchoolDirectoryRepository.findAllByOrderByIdDesc(pageable);
         return new PageResult<>(
             page.stream()

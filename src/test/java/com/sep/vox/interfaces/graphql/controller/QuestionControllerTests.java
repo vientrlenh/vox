@@ -1,10 +1,12 @@
 package com.sep.vox.interfaces.graphql.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.UUID;
@@ -27,14 +29,16 @@ import graphql.schema.DataFetchingEnvironment;
 class QuestionControllerTests {
 
     private QuestionController controller;
+    private ViewQuestionsUseCase viewQuestionsUseCase;
 
     private final UUID questionId = UUID.randomUUID();
     private final UUID createdById = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
+        viewQuestionsUseCase = mock(ViewQuestionsUseCase.class);
         controller = new QuestionController(
-            mock(ViewQuestionsUseCase.class),
+            viewQuestionsUseCase,
             mock(ViewQuestionsForAssessmentPaperUseCase.class),
             mock(ViewQuestionDetailsUseCase.class),
             mock(ViewQuestionStatusCountsUseCase.class),
@@ -73,5 +77,13 @@ class QuestionControllerTests {
 
         assertThat(result.join()).isNull();
         verify(env, never()).getDataLoader(any());
+    }
+
+    @Test
+    void questions_should_reject_page_zero_without_calling_the_use_case() {
+        assertThatThrownBy(() -> controller.questions(null, null, null, null, null, null, null, null, null, 0, 20))
+            .isInstanceOf(IllegalArgumentException.class);
+
+        verifyNoInteractions(viewQuestionsUseCase);
     }
 }

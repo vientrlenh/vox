@@ -29,6 +29,7 @@ import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.mapper.SchoolDtoMapper;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.interfaces.shared.PageArguments;
 
 import graphql.schema.DataFetchingEnvironment;
 
@@ -67,9 +68,7 @@ public class UserController {
     @QueryMapping(name = "users")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<UserDto> users(@Argument(name = "page") Integer page, @Argument(name = "size") Integer size) {
-        if (page == null || size == null || page <= 0  || size <= 0) {
-            throw new IllegalArgumentException("Số trang hoặc kích cỡ yêu cầu không hợp lệ");
-        }
+        PageArguments.validate(page, size);
         ViewUsersQuery query = new ViewUsersQuery(page, size);
         return viewUsersUseCase.execute(query);
     }

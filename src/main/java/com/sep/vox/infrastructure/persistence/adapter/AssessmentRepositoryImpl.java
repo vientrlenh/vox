@@ -18,6 +18,7 @@ import com.sep.vox.domain.model.assessment.AssessmentKind;
 import com.sep.vox.domain.model.assessment.AssessmentStatus;
 import com.sep.vox.domain.repository.AssessmentRepository;
 import com.sep.vox.infrastructure.persistence.mapper.AssessmentMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataAssessmentRepository;
 
 @Repository
@@ -56,7 +57,7 @@ public class AssessmentRepositoryImpl implements AssessmentRepository {
     public PageResult<Assessment> findAccessible(UUID currentUserId, UUID currentSchoolId, boolean systemAdmin,
             boolean schoolAdmin, UUID schoolId, UUID schoolClassId, AssessmentKind kind, AssessmentStatus status, String keyword,
             int page, int size) {
-        PageRequest pageable = PageRequest.of(page - 1, size);
+        PageRequest pageable = OneBasedPaging.toPageRequest(page, size);
         Page<AssessmentJpaEntity> result = springDataAssessmentRepository.findAccessible(
             currentUserId,
             currentSchoolId,

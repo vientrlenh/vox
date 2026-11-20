@@ -8,7 +8,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.application.common.StringNormalization;
@@ -17,6 +16,7 @@ import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionStatus;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolSubscriptionMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolSubscriptionRepository;
 
 @Repository
@@ -79,8 +79,7 @@ public class SchoolSubscriptionRepositoryImpl implements SchoolSubscriptionRepos
             planId,
             status == null ? null : status.name(),
             StringNormalization.toLikePattern(keyword),
-            // 1-based in, 0-based down to PageRequest -- see OrderRepositoryImpl.findBySchoolId.
-            PageRequest.of(page - 1, size)
+            OneBasedPaging.toPageRequest(page, size)
         );
         return new PageResult<>(
             result.getContent().stream().map(SchoolSubscriptionMapper::toDomain).toList(),

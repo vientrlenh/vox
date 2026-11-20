@@ -92,7 +92,7 @@ public class ViewPlatformOperationalHealthUseCase
             long dayFailed = bucket == null ? 0L : bucket.failed();
             graded += dayGraded;
             failed += dayFailed;
-            daily.add(new GradingOutcomeBucketResponse(day.toString(), dayGraded, dayFailed));
+            daily.add(new GradingOutcomeBucketResponse(day, dayGraded, dayFailed));
         }
 
         return new PlatformOperationalHealthResponse(

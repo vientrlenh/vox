@@ -49,9 +49,9 @@ public class ViewSchoolAiCostTimeseriesUseCase
         List<AiCostBucketDto> buckets = schoolAiCostQueryRepository.findBucketedCost(
             schoolId, from, to, input.granularity().sqlUnit());
 
-        // Cộng ở Java trên tập ĐÃ gom nhóm (tối đa vài chục dòng), không phải một câu SUM thứ hai:
-        // hai câu riêng có thể lệch nhau nếu bút toán được ghi xen vào giữa, và lúc đó tổng ở đầu thẻ
-        // không bằng tổng các cột ngay bên dưới nó.
+        // Sum in Java over the ALREADY grouped set (a few dozen rows at most), not with a second SUM query:
+        // two separate queries can disagree if an entry is written in between, and then the total at the top
+        // of the card would not equal the sum of the columns right below it.
         BigDecimal total = buckets.stream()
             .map(bucket -> bucket.costVnd())
             .reduce(BigDecimal.ZERO, (left, right) -> left.add(right));
@@ -59,15 +59,15 @@ public class ViewSchoolAiCostTimeseriesUseCase
         Instant recordedFrom = schoolAiCostQueryRepository.findFirstRecordedAt(schoolId);
 
         return new SchoolAiCostTimeseriesResponse(
-            input.granularity().name(),
+            input.granularity(),
             DecimalText.of(total),
             buckets.stream()
                 .map(bucket -> new SchoolAiCostTimeseriesResponse.AiCostPointResponse(
-                    bucket.bucket().toString(),
+                    bucket.bucket(),
                     bucket.quotaType(),
                     DecimalText.of(bucket.costVnd())))
                 .toList(),
-            recordedFrom == null ? null : recordedFrom.toString()
+            recordedFrom
         );
     }
 }

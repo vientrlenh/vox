@@ -1,16 +1,17 @@
 package com.sep.vox.application.response.input.dashboard;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import com.sep.vox.application.query.dto.AssessmentAwaitingPublishDto;
 
-/** Kỳ thi đã đóng còn bài chưa có điểm — công bố là đóng vĩnh viễn mọi lối ra cho những bài đó. */
+/** An assessment that has closed but still has attempts without a score -- publishing permanently closes every exit for those attempts. */
 public record AssessmentAwaitingPublishResponse(
     UUID assessmentId,
     String code,
     String name,
-    /** ISO-8601; null với kỳ không đặt mốc đóng. */
-    String closeAt,
+    /** null for an assessment with no close time. */
+    Instant closeAt,
     int unscoredCount,
     int aiFailedRetryLeft,
     int aiFailedNoRetryLeft,
@@ -22,7 +23,7 @@ public record AssessmentAwaitingPublishResponse(
             dto.assessmentId(),
             dto.code(),
             dto.name(),
-            dto.closeAt() == null ? null : dto.closeAt().toString(),
+            dto.closeAt(),
             dto.unscoredCount(),
             dto.aiFailedRetryLeft(),
             dto.aiFailedNoRetryLeft(),

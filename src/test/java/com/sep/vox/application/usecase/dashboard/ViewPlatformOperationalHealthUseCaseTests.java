@@ -58,7 +58,7 @@ class ViewPlatformOperationalHealthUseCaseTests {
         PlatformOperationalHealthResponse result = useCase.execute(new ViewPlatformOperationalHealthQuery(FROM, TO));
 
         assertThat(result.daily()).extracting(bucket -> bucket.day())
-            .containsExactly("2026-08-01", "2026-08-02", "2026-08-03", "2026-08-04");
+            .containsExactly(LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 2), LocalDate.of(2026, 8, 3), LocalDate.of(2026, 8, 4));
         assertThat(result.daily()).extracting(bucket -> bucket.graded())
             .containsExactly(120L, 0L, 0L, 80L);
         assertThat(result.daily()).extracting(bucket -> bucket.failed())
@@ -136,7 +136,7 @@ class ViewPlatformOperationalHealthUseCaseTests {
 
         assertThat(result.daily()).hasSize(14);
         assertThat(result.daily().get(13).day())
-            .isEqualTo(LocalDate.now(ZoneConstant.BUSINESS_ZONE).toString());
+            .isEqualTo(LocalDate.now(ZoneConstant.BUSINESS_ZONE));
     }
 
     /**
@@ -150,7 +150,7 @@ class ViewPlatformOperationalHealthUseCaseTests {
 
         PlatformOperationalHealthResponse result = useCase.execute(new ViewPlatformOperationalHealthQuery(FROM, TO));
 
-        assertThat(result.daily().get(0).day()).isEqualTo("2026-08-01");
+        assertThat(result.daily().get(0).day()).isEqualTo(LocalDate.of(2026, 8, 1));
         ArgumentCaptor<ZoneId> zoneCaptor = ArgumentCaptor.forClass(ZoneId.class);
         org.mockito.Mockito.verify(queryRepository)
             .findGradingOutcomeByDay(eq(FROM), eq(TO), zoneCaptor.capture());

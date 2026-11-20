@@ -42,8 +42,8 @@ type SchoolMonthlySpending {
 type SubscriptionRenewal {
     planName: String
     status: SchoolSubscriptionStatus!
-    "Ngày hết hạn / gia hạn gói, định dạng YYYY-MM-DD"
-    endDate: String!
+    "End of the current subscription period"
+    endDate: DateTime!
 }
 
 """
@@ -147,8 +147,8 @@ type AssessmentAwaitingPublish {
     assessmentId: ID!
     code: String!
     name: String!
-    "ISO-8601; null với kỳ không đặt mốc đóng"
-    closeAt: String
+    "null for an assessment with no close time"
+    closeAt: DateTime
     unscoredCount: Int!
     "Trong số đó, còn cứu được bằng AI"
     aiFailedRetryLeft: Int!
@@ -172,8 +172,8 @@ type SchoolGradingFailure {
     candidateName: String
     "null khi học sinh chưa được xếp vào lớp đang hoạt động nào"
     className: String
-    "ISO-8601, mốc nộp bài"
-    failedAt: String
+    "Submission time"
+    failedAt: DateTime
     "Thông điệp lỗi thô, nguyên văn; null với phiên bị đánh dấu hỏng qua nhánh DLT"
     error: String
     """
@@ -265,10 +265,10 @@ type NearestCentralizedAssessment {
     code: String!
     name: String!
     status: AssessmentStatus!
-    "Mốc mở kỳ thi, định dạng ISO-8601"
-    openAt: String
-    "Mốc đóng kỳ thi, định dạng ISO-8601"
-    closeAt: String
+    "When the assessment opens"
+    openAt: DateTime
+    "When the assessment closes"
+    closeAt: DateTime
     totalCandidates: Int!
     absentCandidates: Int!
 }
@@ -292,8 +292,8 @@ type QuestionBankStats {
 
 "Kết quả chấm AI của một ngày lịch theo giờ Việt Nam."
 type GradingOutcomeBucket {
-    "Định dạng YYYY-MM-DD"
-    day: String!
+    "Calendar day in Vietnam time"
+    day: Date!
     graded: Int!
     failed: Int!
 }
@@ -387,9 +387,9 @@ type GradingFailureGroup {
     "Kỳ thi cấp hệ thống không thuộc trường nào nên không được đếm"
     schoolCount: Int!
     assessmentCount: Int!
-    "ISO-8601. Cùng với lastFailedAt cho thấy sự cố gói trong hai tiếng hay lỗi rỉ rả suốt hai tuần"
-    firstFailedAt: String
-    lastFailedAt: String
+    "Together with lastFailedAt this shows whether the failures were an incident contained in two hours or a slow-burning error lasting two weeks"
+    firstFailedAt: DateTime
+    lastFailedAt: DateTime
     "Số phiên thuộc kỳ CHƯA công bố điểm, tức thật sự chấm lại được"
     retryableCount: Int!
 }
@@ -430,8 +430,8 @@ type GradingFailureSession {
     assessmentId: ID!
     assessmentName: String!
     candidateName: String
-    "ISO-8601, mốc nộp bài"
-    failedAt: String
+    "Submission time"
+    failedAt: DateTime
     "Dịch vụ chấm đã thử mấy lần trước khi bỏ cuộc; null khi không rõ"
     retryCount: Int
     "Thông điệp lỗi thô, nguyên văn; null ở nhóm không rõ nguyên nhân"
@@ -480,8 +480,8 @@ type SchoolAtRisk {
     schoolCode: String!
     "Tên gói của kỳ LIÊN QUAN tới nhóm: kỳ đang phủ nếu còn gói, kỳ gần nhất nếu không"
     planName: String
-    "ISO-8601, ngày hết hạn của chính kỳ đó"
-    relevantEndDate: String
+    "End of that same period"
+    relevantEndDate: DateTime
     "Lý do đình chỉ gần nhất; chỉ có nghĩa ở nhóm SUSPENDED"
     suspendedReason: String
     "Số dư ví tự nạp, VND. Âm nghĩa là trường đang bị chặn mở ca thi. Không bao giờ null"
@@ -548,12 +548,12 @@ type SchoolAiCostTimeseries {
     trước mốc này vẽ ra đường phẳng ở 0 dù trường có tiêu tiền. Giao diện phải nói được sự khác biệt
     giữa "không tiêu gì" và "chưa ghi sổ".
     """
-    recordedFrom: String
+    recordedFrom: DateTime
 }
 
 type AiCostPoint {
-    "ISO-8601, đầu mốc theo giờ Việt Nam — date_trunc chạy trên giờ nghiệp vụ, không phải UTC"
-    bucket: String!
+    "Start of the bucket in Vietnam time -- date_trunc runs on the business zone, not on UTC"
+    bucket: DateTime!
     quotaType: QuotaType!
     costVnd: String!
 }
@@ -595,29 +595,29 @@ extend type Query {
     systemAdminDashboard: SystemAdminDashboardSummary!
 
     """
-    Chi phí AI của trường ĐANG ĐĂNG NHẬP theo thời gian.
+    AI cost of the CURRENTLY LOGGED-IN school over time.
 
-    Không nhận schoolId — bản cũ nhận, tức một quản trị trường gửi id trường khác lên là đọc được
-    chi tiêu của họ.
+    It takes no schoolId -- the old version did, which meant a school admin who sent another school's id could read
+    that school's spending.
 
-    dateFrom BAO GỒM, dateTo KHÔNG bao gồm. Bỏ trống dateTo = ngay lúc gọi; bỏ trống dateFrom = lùi
-    30 ngày.
+    dateFrom is INCLUSIVE, dateTo is EXCLUSIVE. An omitted dateTo means the time of the call; an omitted dateFrom means
+    30 days back.
     """
     schoolAiCostTimeseries(
-        dateFrom: String
-        dateTo: String
+        dateFrom: DateTime
+        dateTo: DateTime
         granularity: AiCostGranularity! = DAY
     ): SchoolAiCostTimeseries!
 
     """
-    Ai đang tiêu hạn mức AI của trường. Cùng quy ước cửa sổ và cùng mặc định với
-    `schoolAiCostTimeseries` — hai khối đứng cạnh nhau nên phải đọc cùng một khoảng.
+    Who is spending the school's AI quota. Same window convention and same defaults as
+    `schoolAiCostTimeseries` -- the two blocks sit side by side, so they must read the same range.
 
-    Bỏ trống quotaType là cả hai loại ví. Nhiều tiền nhất xếp trước.
+    An omitted quotaType means both wallet kinds. Biggest spender first.
     """
     schoolAiSpendByUser(
-        dateFrom: String
-        dateTo: String
+        dateFrom: DateTime
+        dateTo: DateTime
         quotaType: QuotaType
         page: Int = 1
         size: Int = 20
@@ -638,36 +638,36 @@ extend type Query {
     ): SchoolsAtRisk!
 
     """
-    Cùng quy ước khoảng với platformOperationalHealth, và cùng mặc định: bỏ trống dateTo = ngay lúc
-    này, bỏ trống dateFrom = lùi 14 ngày. Người dùng bấm vào con số phiên lỗi trên trang tổng quan
-    rồi mong thấy đúng những phiên tạo ra con số đó.
+    Same range convention as platformOperationalHealth, and the same defaults: an omitted dateTo means now, an omitted
+    dateFrom means 14 days back. A user who clicks the failed-session number on the overview expects to see exactly the
+    sessions that produced that number.
     """
-    gradingFailureOverview(dateFrom: String, dateTo: String): GradingFailureOverview!
+    gradingFailureOverview(dateFrom: DateTime, dateTo: DateTime): GradingFailureOverview!
 
     """
-    Phiên trong MỘT nhóm. `signature` lấy nguyên văn từ GradingFailureGroup.signature — bỏ trống
-    hoặc null chọn đúng nhóm "không rõ nguyên nhân", KHÔNG phải bỏ lọc.
+    Sessions of ONE group. `signature` is taken verbatim from GradingFailureGroup.signature -- omitting it
+    or passing null selects exactly the "unknown cause" group, it does NOT drop the filter.
     """
     gradingFailureSessions(
-        dateFrom: String
-        dateTo: String
+        dateFrom: DateTime
+        dateTo: DateTime
         signature: String
         page: Int = 1
         size: Int = 20
     ): GradingFailureSessionPage!
 
     """
-    dateFrom/dateTo là ISO instant (vd "2026-08-01T00:00:00Z"). dateFrom BAO GỒM, dateTo KHÔNG bao
-    gồm — hai dải liền nhau sẽ đếm trùng phiên rơi đúng ranh giới nếu dùng <=, cùng quy ước với
-    schoolBalanceSummary. Bỏ trống dateTo = ngay lúc này; bỏ trống dateFrom = lùi 14 ngày.
+    dateFrom is INCLUSIVE, dateTo is EXCLUSIVE -- two adjacent ranges would count a session on the exact boundary twice if
+    <= were used, the same convention as schoolBalanceSummary. An omitted dateTo means now; an omitted dateFrom means
+    14 days back.
     """
-    platformOperationalHealth(dateFrom: String, dateTo: String): PlatformOperationalHealth!
+    platformOperationalHealth(dateFrom: DateTime, dateTo: DateTime): PlatformOperationalHealth!
 
     """
-    Cùng quy ước khoảng với platformOperationalHealth. Bỏ trống dateFrom = đầu tháng hiện tại theo
-    giờ Việt Nam.
+    Same range convention as platformOperationalHealth. An omitted dateFrom means the start of the current month in
+    Vietnam time.
     """
-    platformBusinessHealth(dateFrom: String, dateTo: String): PlatformBusinessHealth!
+    platformBusinessHealth(dateFrom: DateTime, dateTo: DateTime): PlatformBusinessHealth!
 
     """
     Bài AI chấm lỗi mà CHƯA ai xử lý, của trường đang đăng nhập — chỗ đáp của dòng cùng tên trên

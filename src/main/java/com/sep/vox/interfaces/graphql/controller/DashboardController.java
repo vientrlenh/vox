@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.graphql.data.method.annotation.Argument;
@@ -7,7 +8,6 @@ import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.query.ViewGradingFailureOverviewQuery;
 import com.sep.vox.application.port.input.query.ViewGradingFailureSessionsQuery;
 import com.sep.vox.application.port.input.query.ViewPlatformBusinessHealthQuery;
@@ -124,34 +124,33 @@ public class DashboardController {
     }
 
     /**
-     * Chi phí AI của trường đang đăng nhập theo thời gian.
+     * AI cost of the logged-in school over time.
      *
-     * <p>Không nhận schoolId, khác hẳn {@code schoolTokenUsageTimeseries} mà client vẫn gọi: use case
-     * lấy phạm vi từ người đăng nhập, nên không còn đường nào để một quản trị trường đọc chi tiêu của
-     * trường khác.
+     * <p>It takes no schoolId, unlike the {@code schoolTokenUsageTimeseries} that clients still call: the use case
+     * takes the scope from the logged-in user, so there is no way left for a school admin to read another
+     * school's spending.
      */
     @QueryMapping(name = "schoolAiCostTimeseries")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public SchoolAiCostTimeseriesResponse schoolAiCostTimeseries(
-            @Argument(name = "dateFrom") String dateFrom,
-            @Argument(name = "dateTo") String dateTo,
+            @Argument(name = "dateFrom") Instant dateFrom,
+            @Argument(name = "dateTo") Instant dateTo,
             @Argument(name = "granularity") AiCostGranularity granularity) {
         return viewSchoolAiCostTimeseriesUseCase.execute(new ViewSchoolAiCostQuery(
-            DateMapper.toInstant(dateFrom), DateMapper.toInstant(dateTo), granularity));
+            dateFrom, dateTo, granularity));
     }
 
     @QueryMapping(name = "schoolAiSpendByUser")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public SchoolAiSpendByUserPageResponse schoolAiSpendByUser(
-            @Argument(name = "dateFrom") String dateFrom,
-            @Argument(name = "dateTo") String dateTo,
+            @Argument(name = "dateFrom") Instant dateFrom,
+            @Argument(name = "dateTo") Instant dateTo,
             @Argument(name = "quotaType") QuotaType quotaType,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
         PageArguments.validate(page, size);
         return viewSchoolAiSpendByUserUseCase.execute(new SearchSchoolAiSpendByUserQuery(
-            DateMapper.toInstant(dateFrom), DateMapper.toInstant(dateTo),
-            quotaType, page, size));
+            dateFrom, dateTo, quotaType, page, size));
     }
 
     @QueryMapping(name = "teacherDashboard")
@@ -175,48 +174,48 @@ public class DashboardController {
     @QueryMapping(name = "platformOperationalHealth")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PlatformOperationalHealthResponse platformOperationalHealth(
-            @Argument(name = "dateFrom") String dateFrom,
-            @Argument(name = "dateTo") String dateTo) {
+            @Argument(name = "dateFrom") Instant dateFrom,
+            @Argument(name = "dateTo") Instant dateTo) {
         return viewPlatformOperationalHealthUseCase.execute(new ViewPlatformOperationalHealthQuery(
-            DateMapper.toInstant(dateFrom),
-            DateMapper.toInstant(dateTo)
+            dateFrom,
+            dateTo
         ));
     }
 
     @QueryMapping(name = "platformBusinessHealth")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PlatformBusinessHealthResponse platformBusinessHealth(
-            @Argument(name = "dateFrom") String dateFrom,
-            @Argument(name = "dateTo") String dateTo) {
+            @Argument(name = "dateFrom") Instant dateFrom,
+            @Argument(name = "dateTo") Instant dateTo) {
         return viewPlatformBusinessHealthUseCase.execute(new ViewPlatformBusinessHealthQuery(
-            DateMapper.toInstant(dateFrom),
-            DateMapper.toInstant(dateTo)
+            dateFrom,
+            dateTo
         ));
     }
 
     @QueryMapping(name = "gradingFailureOverview")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public GradingFailureOverviewResponse gradingFailureOverview(
-            @Argument(name = "dateFrom") String dateFrom,
-            @Argument(name = "dateTo") String dateTo) {
+            @Argument(name = "dateFrom") Instant dateFrom,
+            @Argument(name = "dateTo") Instant dateTo) {
         return viewGradingFailureOverviewUseCase.execute(new ViewGradingFailureOverviewQuery(
-            DateMapper.toInstant(dateFrom),
-            DateMapper.toInstant(dateTo)
+            dateFrom,
+            dateTo
         ));
     }
 
     @QueryMapping(name = "gradingFailureSessions")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<GradingFailureSessionDto> gradingFailureSessions(
-            @Argument(name = "dateFrom") String dateFrom,
-            @Argument(name = "dateTo") String dateTo,
+            @Argument(name = "dateFrom") Instant dateFrom,
+            @Argument(name = "dateTo") Instant dateTo,
             @Argument(name = "signature") String signature,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
         PageArguments.validate(page, size);
         return viewGradingFailureSessionsUseCase.execute(new ViewGradingFailureSessionsQuery(
-            DateMapper.toInstant(dateFrom),
-            DateMapper.toInstant(dateTo),
+            dateFrom,
+            dateTo,
             signature,
             page,
             size

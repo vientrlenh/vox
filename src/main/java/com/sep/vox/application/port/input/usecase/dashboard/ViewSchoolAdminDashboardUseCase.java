@@ -284,7 +284,7 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
             .map(plan -> plan.getName())
             .orElse(null);
         return new SchoolSubscriptionRenewalResponse(
-            planName, subscription.getStatus().name(), subscription.getEndDate().toString());
+            planName, subscription.getStatus().name(), subscription.getEndDate());
     }
 
 }

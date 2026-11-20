@@ -1,5 +1,6 @@
 package com.sep.vox.domain.dto;
 
+import java.time.Instant;
 import java.util.UUID;
 
 public record QuestionBankDto(
@@ -11,8 +12,8 @@ public record QuestionBankDto(
     String description,
     String ownerType,
     String status, 
-    String createdAt,
-    String updatedAt,
+    Instant createdAt,
+    Instant updatedAt,
     UUID createdBy,
     UUID updatedBy
 ) {

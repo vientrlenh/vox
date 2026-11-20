@@ -23,8 +23,8 @@ public class RefreshTokenSessionProvider implements SessionTokenManagerPort {
     
     @Override
     public GeneratedSessionToken generateToken() {
-        var token = secureTokenProvider.generateToken(TOKEN_LENGTH);
-        var hashedToken = secureTokenProvider.sha512(token);
+        String token = secureTokenProvider.generateToken(TOKEN_LENGTH);
+        String hashedToken = secureTokenProvider.sha512(token);
         return new GeneratedSessionToken(token, hashedToken);
     }
 

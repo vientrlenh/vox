@@ -101,23 +101,23 @@ public class PracticePlanningController {
             @Argument("bucket") String bucket) {
         return CompletableFuture.supplyAsync(
             () -> {
-                var offers = new ArrayList<>(viewPracticeTopicOffersUseCase.execute(
+                List<PracticeTopicOffer> offers = new ArrayList<>(viewPracticeTopicOffersUseCase.execute(
                     new ViewPracticeTopicOffersQuery(
                         excludeTopicIds,
                         round == null ? 1 : Math.max(1, Math.min(round, 3)),
                         bucket == null ? "FOR_YOU" : bucket
                     )
                 ));
-                // Kho còn thưa -> bổ sung chạy NỀN, KHÔNG chặn request.
+                // The pool is running low -> top it up in the BACKGROUND, do NOT block the request.
                 //
-                // Bản trước gọi thẳng viewSynchronousTopicOffersUseCase ở đây, tức chờ LLM
-                // đề xuất chủ đề rồi index vector store ngay trong request. Với kho trống
-                // (học sinh mới, hoặc vừa dựng lại dữ liệu) thì LẦN NÀO cũng rơi vào đường
-                // đó, nên lượt mở màn ngay sau khi làm xong quiz luôn timeout.
+                // The previous version called viewSynchronousTopicOffersUseCase directly here, i.e. it waited
+                // for the LLM to propose topics and then indexed the vector store inside the request. With an
+                // empty pool (a new student, or data that was just rebuilt) EVERY call fell into that path, so
+                // the first screen right after finishing the quiz always timed out.
                 //
-                // Trả về những gì đang có -- kể cả rỗng. Client hiện "đang tổng hợp, quay
-                // lại sau 1-2 phút"; chủ đề sinh xong được ghi thẳng vào kho nên lần mở sau
-                // đường xếp hạng thông thường tự thấy chúng.
+                // Return what is available -- even if empty. The client shows "generating, come back in 1-2
+                // minutes"; the generated topics are written straight into the pool, so the next open through
+                // the normal ranking path sees them on its own.
                 if (offers.size() < 3) {
                     topicOfferBackfillService.backfillAsync(
                         userContextPort.getCurrentAuthenticatedUserId()
@@ -166,7 +166,7 @@ public class PracticePlanningController {
     @MutationMapping
     @PreAuthorize("hasRole('STUDENT')")
     public PracticePaperDraft buildPracticePaper(@Argument("input") StartPracticeSessionInput input) {
-        var command = new BuildPracticePaperCommand(
+        BuildPracticePaperCommand command = new BuildPracticePaperCommand(
             input.topicId(),
             input.targetFrameworkBandId(),
             input.origin(),

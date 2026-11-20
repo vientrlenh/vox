@@ -21,6 +21,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.RejectImportSessionCommand;
 import com.sep.vox.application.port.input.usecase.importfile.RejectImportSessionUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.response.input.importfile.RejectImportSessionResponse;
 import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
@@ -54,16 +55,16 @@ class RejectImportSessionUseCaseTests {
 
     @Test
     void execute_should_cancel_previewed_session_for_current_school() {
-        var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var sessionId = UUID.randomUUID();
-        var session = session(sessionId, schoolId, ImportSessionStatus.PREVIEWED, Instant.now().plus(1, ChronoUnit.DAYS));
+        UUID userId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
+        ImportSession session = session(sessionId, schoolId, ImportSessionStatus.PREVIEWED, Instant.now().plus(1, ChronoUnit.DAYS));
 
         mockActiveContext(userId, schoolId);
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
         when(importSessionRepository.save(any(ImportSession.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        var response = useCase.execute(new RejectImportSessionCommand(sessionId, "  User   cancelled  "));
+        RejectImportSessionResponse response = useCase.execute(new RejectImportSessionCommand(sessionId, "  User   cancelled  "));
 
         assertThat(response.importSessionId()).isEqualTo(sessionId);
         assertThat(response.status()).isEqualTo("CANCELLED");
@@ -76,16 +77,16 @@ class RejectImportSessionUseCaseTests {
 
     @Test
     void execute_should_store_null_reason_when_reason_blank() {
-        var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var sessionId = UUID.randomUUID();
-        var session = session(sessionId, schoolId, ImportSessionStatus.PREVIEWED, Instant.now().plus(1, ChronoUnit.DAYS));
+        UUID userId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
+        ImportSession session = session(sessionId, schoolId, ImportSessionStatus.PREVIEWED, Instant.now().plus(1, ChronoUnit.DAYS));
 
         mockActiveContext(userId, schoolId);
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
         when(importSessionRepository.save(any(ImportSession.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        var response = useCase.execute(new RejectImportSessionCommand(sessionId, " "));
+        RejectImportSessionResponse response = useCase.execute(new RejectImportSessionCommand(sessionId, " "));
 
         assertThat(response.reason()).isNull();
         assertThat(session.getFailureReason()).isNull();
@@ -93,9 +94,9 @@ class RejectImportSessionUseCaseTests {
 
     @Test
     void execute_should_throw_when_session_belongs_to_other_school() {
-        var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var sessionId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
 
         mockActiveContext(userId, schoolId);
         when(importSessionRepository.findById(sessionId))
@@ -106,9 +107,9 @@ class RejectImportSessionUseCaseTests {
 
     @Test
     void execute_should_throw_when_session_not_found() {
-        var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var sessionId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
 
         mockActiveContext(userId, schoolId);
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.empty());
@@ -118,9 +119,9 @@ class RejectImportSessionUseCaseTests {
 
     @Test
     void execute_should_throw_when_session_not_previewed() {
-        var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var sessionId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
 
         mockActiveContext(userId, schoolId);
         when(importSessionRepository.findById(sessionId))
@@ -131,10 +132,10 @@ class RejectImportSessionUseCaseTests {
 
     @Test
     void execute_should_mark_expired_session_and_throw() {
-        var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var sessionId = UUID.randomUUID();
-        var session = session(sessionId, schoolId, ImportSessionStatus.PREVIEWED, Instant.now().minus(1, ChronoUnit.MINUTES));
+        UUID userId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
+        ImportSession session = session(sessionId, schoolId, ImportSessionStatus.PREVIEWED, Instant.now().minus(1, ChronoUnit.MINUTES));
 
         mockActiveContext(userId, schoolId);
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
@@ -142,7 +143,7 @@ class RejectImportSessionUseCaseTests {
 
         assertThrows(IllegalStateException.class, () -> useCase.execute(new RejectImportSessionCommand(sessionId, null)));
 
-        var captor = ArgumentCaptor.forClass(ImportSession.class);
+        ArgumentCaptor<ImportSession> captor = ArgumentCaptor.forClass(ImportSession.class);
         verify(importSessionRepository).save(captor.capture());
         assertThat(captor.getValue().getStatus()).isEqualTo(ImportSessionStatus.EXPIRED);
         assertThat(captor.getValue().getUpdatedBy()).isEqualTo(userId);
@@ -150,10 +151,10 @@ class RejectImportSessionUseCaseTests {
 
     @Test
     void execute_should_throw_when_current_user_inactive() {
-        var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        var _user = user(userId, schoolId, UserStatus.INACTIVE);
+        User _user = user(userId, schoolId, UserStatus.INACTIVE);
         when(userRepository.findById(userId)).thenReturn(Optional.of(_user));
 
         assertThrows(IllegalStateException.class, () -> useCase.execute(new RejectImportSessionCommand(UUID.randomUUID(), null)));
@@ -161,9 +162,9 @@ class RejectImportSessionUseCaseTests {
 
     @Test
     void execute_should_throw_when_current_user_has_no_school() {
-        var userId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        var _user1 = user(userId, null, UserStatus.ACTIVE);
+        User _user1 = user(userId, null, UserStatus.ACTIVE);
         when(userRepository.findById(userId)).thenReturn(Optional.of(_user1));
 
         assertThrows(IllegalStateException.class, () -> useCase.execute(new RejectImportSessionCommand(UUID.randomUUID(), null)));
@@ -171,10 +172,10 @@ class RejectImportSessionUseCaseTests {
 
     @Test
     void execute_should_throw_when_school_inactive() {
-        var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        var _user2 = user(userId, schoolId, UserStatus.ACTIVE);
+        User _user2 = user(userId, schoolId, UserStatus.ACTIVE);
         when(userRepository.findById(userId)).thenReturn(Optional.of(_user2));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(school(schoolId, false)));
 
@@ -188,7 +189,7 @@ class RejectImportSessionUseCaseTests {
 
     private void mockActiveContext(UUID userId, UUID schoolId) {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        var _user3 = user(userId, schoolId, UserStatus.ACTIVE);
+        User _user3 = user(userId, schoolId, UserStatus.ACTIVE);
         when(userRepository.findById(userId)).thenReturn(Optional.of(_user3));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(school(schoolId, true)));
     }
@@ -223,7 +224,7 @@ class RejectImportSessionUseCaseTests {
     }
 
     private User user(UUID id, UUID schoolId, UserStatus status) {
-        var user = new User();
+        User user = new User();
         user.setId(id);
         user.setStatus(status);
         when(schoolUserRepository.findByUserId(id)).thenReturn(
@@ -233,7 +234,7 @@ class RejectImportSessionUseCaseTests {
     }
 
     private static School school(UUID id, boolean active) {
-        var school = new School();
+        School school = new School();
         school.setId(id);
         school.setActive(active);
         return school;

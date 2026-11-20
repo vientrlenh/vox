@@ -44,11 +44,11 @@ public record EvaluationSignals(
         if (expectedMinWords != null && expectedMinWords < 0) {
             throw new IllegalArgumentException("Số từ tối thiểu mong đợi không được dưới 0");
         }
-        // Các field bên dưới là BigDecimal có thể null khi tín hiệu đó CHƯA ĐO ĐƯỢC (VD
-        // asrConfidence null khi dùng ASR không trả logprob) -- null KHÁC 0 (đã đo, tệ nhất),
-        // nên chỉ validate range khi có giá trị thật, không ép non-null như trước (từng khiến
-        // caller phải giả 0.0 cho "chưa đo được", hiện ra sai thành "audio quality 0%" ở
-        // frontend -- xem ExamEvaluationSignalMapper.clamp01).
+        // The fields below are BigDecimal and may be null when that signal has NOT BEEN MEASURED (e.g.
+        // asrConfidence is null when using an ASR that returns no logprob) -- null is DIFFERENT from 0 (measured, the worst),
+        // so the range is only validated when there is a real value, and non-null is no longer forced as before (which once made
+        // callers fake 0.0 for "not measured", incorrectly appearing as "audio quality 0%" in the
+        // frontend -- see AssessmentEvaluationSignalMapper.clamp01).
         if (taskRelevance != null && (taskRelevance.compareTo(BigDecimal.ZERO) < 0 || taskRelevance.compareTo(BigDecimal.ONE) > 0)) {
             throw new IllegalArgumentException("Relevance của task phải nằm trong khoảng 0 đến 1");
         }

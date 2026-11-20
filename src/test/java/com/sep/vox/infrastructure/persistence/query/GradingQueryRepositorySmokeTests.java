@@ -8,14 +8,17 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTransport;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.query.dto.AiQualityReportInfo;
+import com.sep.vox.application.query.dto.BulkFinalizePreviewInfo;
 import com.sep.vox.application.query.dto.GradingAssignmentFilter;
-import com.sep.vox.application.query.repository.ExamGradingQueryRepository;
-import com.sep.vox.application.query.repository.ExamResultAuditQueryRepository;
-import com.sep.vox.config.ContainerTestConfig;
+import com.sep.vox.application.query.dto.GradingAssignmentRowInfo;
+import com.sep.vox.application.query.dto.GradingStatsInfo;
+import com.sep.vox.application.query.repository.AssessmentGradingQueryRepository;
+import com.sep.vox.application.query.repository.AssessmentResultAuditQueryRepository;
+import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.support.IntegrationTest;
 
 /**
  * Mọi câu ở hai repository này dựng bằng {@code em.createQuery} — tức chỉ được phân
@@ -27,26 +30,25 @@ import com.sep.vox.config.ContainerTestConfig;
  * <p>Lớp này chạy từng method một lần với phạm vi rỗng. Không kiểm nghiệp vụ — cái đó
  * là việc của test use case — chỉ kiểm "câu này chạy được trên Postgres thật".
  */
-@SpringBootTest
-@ActiveProfiles("test")
+@IntegrationTest
 @AutoConfigureTestGrpcTransport
 @Transactional
-class GradingQueryRepositorySmokeTests extends ContainerTestConfig {
+class GradingQueryRepositorySmokeTests {
 
     @Autowired
-    private ExamGradingQueryRepository examGradingQueryRepository;
+    private AssessmentGradingQueryRepository assessmentGradingQueryRepository;
 
     @Autowired
-    private ExamResultAuditQueryRepository examResultAuditQueryRepository;
+    private AssessmentResultAuditQueryRepository assessmentResultAuditQueryRepository;
 
     private final UUID schoolId = UUID.randomUUID();
-    private final UUID examId = UUID.randomUUID();
+    private final UUID assessmentId = UUID.randomUUID();
     private final UUID scheduleId = UUID.randomUUID();
     private final UUID someId = UUID.randomUUID();
 
     @Test
     void should_run_the_bulk_finalize_preview() {
-        var preview = examGradingQueryRepository.previewBulkFinalize(schoolId, examId);
+        BulkFinalizePreviewInfo preview = assessmentGradingQueryRepository.previewBulkFinalize(schoolId, assessmentId);
 
         assertThat(preview.total()).isZero();
         assertThat(preview.readyToFinalize()).isZero();
@@ -60,26 +62,26 @@ class GradingQueryRepositorySmokeTests extends ContainerTestConfig {
 
     @Test
     void should_run_the_coordination_board_query() {
-        var filter = new GradingAssignmentFilter(
+        GradingAssignmentFilter filter = new GradingAssignmentFilter(
             schoolId, null, null, null, null, null, null, false, false, null, null, null);
 
-        var page = examGradingQueryRepository.searchAssignments(filter, 1, 20);
+        PageResult<GradingAssignmentRowInfo> page = assessmentGradingQueryRepository.searchAssignments(filter, 1, 20);
 
         assertThat(page.content()).isEmpty();
     }
 
     @Test
     void should_run_the_coordination_board_query_with_every_filter_on() {
-        var filter = new GradingAssignmentFilter(
-            schoolId, examId, scheduleId, someId, "PENDING_REVIEW", "APPEAL", "ASSIGNED",
+        GradingAssignmentFilter filter = new GradingAssignmentFilter(
+            schoolId, assessmentId, scheduleId, someId, "PENDING_REVIEW", "APPEAL", "ASSIGNED",
             true, true, Boolean.TRUE, "nguyen", "CENTRALIZED");
 
-        assertThat(examGradingQueryRepository.searchAssignments(filter, 1, 20).content()).isEmpty();
+        assertThat(assessmentGradingQueryRepository.searchAssignments(filter, 1, 20).content()).isEmpty();
     }
 
     @Test
     void should_run_the_stats_query() {
-        var stats = examGradingQueryRepository.stats(schoolId, examId, scheduleId, "CENTRALIZED");
+        GradingStatsInfo stats = assessmentGradingQueryRepository.stats(schoolId, assessmentId, scheduleId, "CENTRALIZED");
 
         assertThat(stats.total()).isZero();
         assertThat(stats.unassigned()).isZero();
@@ -88,42 +90,42 @@ class GradingQueryRepositorySmokeTests extends ContainerTestConfig {
 
     @Test
     void should_run_the_teacher_queue_query() {
-        assertThat(examGradingQueryRepository
+        assertThat(assessmentGradingQueryRepository
             .findTasksByTeacherId(someId, "CENTRALIZED", null, null, 1, 20).content())
             .isEmpty();
     }
 
-    /** Cả hai nhánh của {@code (:examKind IS NULL OR …)} — null là đường đi khác hẳn. */
+    /** Both branches of {@code (:assessmentKind IS NULL OR …)} -- null is a completely different path. */
     @Test
-    void should_run_the_teacher_exam_picker_query() {
-        assertThat(examGradingQueryRepository
-            .findExamsWithTasksByTeacherId(someId, "CENTRALIZED")).isEmpty();
-        assertThat(examGradingQueryRepository
-            .findExamsWithTasksByTeacherId(someId, null)).isEmpty();
+    void should_run_the_teacher_assessment_picker_query() {
+        assertThat(assessmentGradingQueryRepository
+            .findAssessmentsWithTasksByTeacherId(someId, "CENTRALIZED")).isEmpty();
+        assertThat(assessmentGradingQueryRepository
+            .findAssessmentsWithTasksByTeacherId(someId, null)).isEmpty();
     }
 
     @Test
     void should_run_the_task_detail_query() {
-        assertThat(examGradingQueryRepository.findTaskDetail(someId, someId)).isEmpty();
+        assertThat(assessmentGradingQueryRepository.findTaskDetail(someId, someId)).isEmpty();
     }
 
     @Test
     void should_run_the_assignable_teacher_queries() {
-        assertThat(examGradingQueryRepository.findAssignableTeachers(schoolId, "nguyen")).isEmpty();
-        assertThat(examGradingQueryRepository.findTeacherIdsInSchool(schoolId, List.of(someId))).isEmpty();
-        assertThat(examGradingQueryRepository.assignedLoadByTeacherIds(List.of(someId))).isEmpty();
+        assertThat(assessmentGradingQueryRepository.findAssignableTeachers(schoolId, "nguyen")).isEmpty();
+        assertThat(assessmentGradingQueryRepository.findTeacherIdsInSchool(schoolId, List.of(someId))).isEmpty();
+        assertThat(assessmentGradingQueryRepository.assignedLoadByTeacherIds(List.of(someId))).isEmpty();
     }
 
     @Test
     void should_run_the_assignable_result_query() {
-        assertThat(examGradingQueryRepository.findAssignableResultIds(
-            schoolId, examId, scheduleId, List.of("PENDING_REVIEW", "RELEASED"))).isEmpty();
+        assertThat(assessmentGradingQueryRepository.findAssignableResultIds(
+            schoolId, assessmentId, scheduleId, List.of("PENDING_REVIEW", "RELEASED"))).isEmpty();
     }
 
     @Test
     void should_run_the_risk_and_conflict_queries() {
-        assertThat(examGradingQueryRepository.findRiskInfos(List.of(someId))).isEmpty();
-        assertThat(examGradingQueryRepository.findTeacherIdsWithHumanEvaluation(someId)).isEmpty();
+        assertThat(assessmentGradingQueryRepository.findRiskInfos(List.of(someId))).isEmpty();
+        assertThat(assessmentGradingQueryRepository.findTeacherIdsWithHumanEvaluation(someId)).isEmpty();
     }
 
     /**
@@ -132,25 +134,25 @@ class GradingQueryRepositorySmokeTests extends ContainerTestConfig {
      */
     @Test
     void should_run_the_score_export_query() {
-        assertThat(examGradingQueryRepository.findScoreRows(
-            scoreExportFilter(examId, null, "CENTRALIZED"))).isEmpty();
-        assertThat(examGradingQueryRepository.findScoreRows(
+        assertThat(assessmentGradingQueryRepository.findScoreRows(
+            scoreExportFilter(assessmentId, null, "CENTRALIZED"))).isEmpty();
+        assertThat(assessmentGradingQueryRepository.findScoreRows(
             scoreExportFilter(null, scheduleId, "CLASS_TEST"))).isEmpty();
-        assertThat(examGradingQueryRepository.findScoreRows(new GradingAssignmentFilter(
-            schoolId, examId, null, someId, "RELEASED", "INITIAL", "COMPLETED",
+        assertThat(assessmentGradingQueryRepository.findScoreRows(new GradingAssignmentFilter(
+            schoolId, assessmentId, null, someId, "RELEASED", "INITIAL", "COMPLETED",
             true, true, Boolean.TRUE, "nguyen", "CENTRALIZED"))).isEmpty();
     }
 
-    private GradingAssignmentFilter scoreExportFilter(UUID examId, UUID scheduleId, String kind) {
-        return new GradingAssignmentFilter(schoolId, examId, scheduleId, null, null, null, null,
+    private GradingAssignmentFilter scoreExportFilter(UUID assessmentId, UUID scheduleId, String kind) {
+        return new GradingAssignmentFilter(schoolId, assessmentId, scheduleId, null, null, null, null,
             false, false, null, null, kind);
     }
 
     @Test
     void should_run_the_audit_queries() {
-        assertThat(examResultAuditQueryRepository.findHistory(someId)).isEmpty();
+        assertThat(assessmentResultAuditQueryRepository.findHistory(someId)).isEmpty();
 
-        var report = examResultAuditQueryRepository.aiQualityReport(schoolId, examId);
+        AiQualityReportInfo report = assessmentResultAuditQueryRepository.aiQualityReport(schoolId, assessmentId);
 
         assertThat(report.reviewed()).isZero();
         assertThat(report.byTeacher()).isEmpty();

@@ -54,7 +54,7 @@ class ViewSchoolUsersForRequesterUseCaseTests {
 
     @Test
     void should_force_teacher_role_and_exclude_self_for_teacher_caller() {
-        var teacherRoleId = UUID.randomUUID();
+        UUID teacherRoleId = UUID.randomUUID();
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(callerId))
             .thenReturn(List.of(roleInfo(teacherRoleId, "TEACHER")));
         when(schoolUserRepository.searchBySchoolId(eq(schoolId), eq(callerId), isNull(), eq(teacherRoleId), isNull(), eq(1), eq(20)))
@@ -62,7 +62,8 @@ class ViewSchoolUsersForRequesterUseCaseTests {
 
         useCase.execute(new ViewSchoolUsersBySchoolQuery(schoolId, 1, 20, null, UUID.randomUUID(), null));
 
-        // roleId của teacher được ép, bỏ qua roleId trong input; excludeUserId = callerId
+        // The teacher's roleId is forced, ignoring the roleId in the input; excludeUserId =
+        // callerId.
         verify(schoolUserRepository).searchBySchoolId(eq(schoolId), eq(callerId), isNull(), eq(teacherRoleId), isNull(), eq(1), eq(20));
     }
 
@@ -80,7 +81,7 @@ class ViewSchoolUsersForRequesterUseCaseTests {
 
     @Test
     void should_honor_input_role_for_admin_caller() {
-        var requestedRoleId = UUID.randomUUID();
+        UUID requestedRoleId = UUID.randomUUID();
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(callerId))
             .thenReturn(List.of(roleInfo(UUID.randomUUID(), "SCHOOL_ADMIN")));
         when(schoolUserRepository.searchBySchoolId(eq(schoolId), isNull(), isNull(), eq(requestedRoleId), isNull(), eq(1), eq(20)))

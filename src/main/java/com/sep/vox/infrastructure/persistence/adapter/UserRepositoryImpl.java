@@ -1,10 +1,12 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.UserJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
@@ -13,6 +15,7 @@ import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.infrastructure.persistence.mapper.UserMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataUserRepository;
 
 @Repository
@@ -71,15 +74,15 @@ public class UserRepositoryImpl implements UserRepository {
 
     @Override
     public User save(User user) {
-        var entity = UserMapper.toJpa(user);
-        var saved = springDataUserRepository.save(entity);
+        UserJpaEntity entity = UserMapper.toJpa(user);
+        UserJpaEntity saved = springDataUserRepository.save(entity);
         return UserMapper.toDomain(saved);
     }
 
     @Override
     public User saveAndFlush(User user) {
-        var entity = UserMapper.toJpa(user);
-        var saved = springDataUserRepository.saveAndFlush(entity);
+        UserJpaEntity entity = UserMapper.toJpa(user);
+        UserJpaEntity saved = springDataUserRepository.saveAndFlush(entity);
         return UserMapper.toDomain(saved);
     }
 
@@ -130,8 +133,8 @@ public class UserRepositoryImpl implements UserRepository {
 
     @Override
     public PageResult<User> findAll(int pageNumber, int size) {
-        var pageable = PageRequest.of(pageNumber - 1, size);
-        var page = springDataUserRepository.findAll(pageable);
+        PageRequest pageable = OneBasedPaging.toPageRequest(pageNumber, size);
+        Page<UserJpaEntity> page = springDataUserRepository.findAll(pageable);
         return new PageResult<>(
             page.getContent()
                 .stream()

@@ -9,6 +9,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -17,17 +19,21 @@ import com.sep.vox.infrastructure.exception.InfrastructureException;
 import com.sep.vox.infrastructure.properties.AwsS3StorageProperties;
 
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.http.SdkHttpResponse;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.CORSRule;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
+import software.amazon.awssdk.services.s3.model.PublicAccessBlockConfiguration;
 import software.amazon.awssdk.services.s3.model.PutBucketCorsRequest;
 import software.amazon.awssdk.services.s3.model.PutBucketPolicyRequest;
 import software.amazon.awssdk.services.s3.model.PutPublicAccessBlockRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.waiters.S3Waiter;
 
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 class S3BucketInitializerTests {
@@ -87,7 +93,7 @@ class S3BucketInitializerTests {
 
         initializer().run(null);
 
-        var captor = ArgumentCaptor.forClass(CreateBucketRequest.class);
+        ArgumentCaptor<CreateBucketRequest> captor = ArgumentCaptor.forClass(CreateBucketRequest.class);
         verify(s3Client).createBucket(captor.capture());
         assertThat(captor.getValue().bucket()).isEqualTo(BUCKET);
         assertThat(captor.getValue().createBucketConfiguration().locationConstraintAsString())
@@ -101,7 +107,7 @@ class S3BucketInitializerTests {
 
         initializer().run(null);
 
-        var captor = ArgumentCaptor.forClass(CreateBucketRequest.class);
+        ArgumentCaptor<CreateBucketRequest> captor = ArgumentCaptor.forClass(CreateBucketRequest.class);
         verify(s3Client).createBucket(captor.capture());
         assertThat(captor.getValue().createBucketConfiguration()).isNull();
     }
@@ -119,7 +125,7 @@ class S3BucketInitializerTests {
     @Test
     void reportsActualBucketRegionWhenClientTargetsTheWrongEndpoint() {
         properties.setRegion("ap-southeast-2");
-        var redirect = S3Exception.builder()
+        AwsServiceException redirect = S3Exception.builder()
             .statusCode(301)
             .message("Moved Permanently")
             .awsErrorDetails(AwsErrorDetails.builder()
@@ -143,9 +149,9 @@ class S3BucketInitializerTests {
     void relaxesPublicPolicyBlockButKeepsAclBlocked() {
         initializer().run(null);
 
-        var captor = ArgumentCaptor.forClass(PutPublicAccessBlockRequest.class);
+        ArgumentCaptor<PutPublicAccessBlockRequest> captor = ArgumentCaptor.forClass(PutPublicAccessBlockRequest.class);
         verify(s3Client).putPublicAccessBlock(captor.capture());
-        var config = captor.getValue().publicAccessBlockConfiguration();
+        PublicAccessBlockConfiguration config = captor.getValue().publicAccessBlockConfiguration();
         assertThat(config.blockPublicPolicy()).isFalse();
         assertThat(config.restrictPublicBuckets()).isFalse();
         assertThat(config.blockPublicAcls()).isTrue();
@@ -174,22 +180,22 @@ class S3BucketInitializerTests {
     void buildsPolicyWithPublicReadAndUploaderStatements() {
         initializer().run(null);
 
-        var captor = ArgumentCaptor.forClass(PutBucketPolicyRequest.class);
+        ArgumentCaptor<PutBucketPolicyRequest> captor = ArgumentCaptor.forClass(PutBucketPolicyRequest.class);
         verify(s3Client).putBucketPolicy(captor.capture());
 
-        var policy = jsonMapper.readTree(captor.getValue().policy());
+        JsonNode policy = jsonMapper.readTree(captor.getValue().policy());
         assertThat(policy.get("Version").asString()).isEqualTo("2012-10-17");
 
-        var statements = policy.get("Statement");
+        JsonNode statements = policy.get("Statement");
         assertThat(statements).hasSize(2);
 
-        var publicRead = statements.get(0);
+        JsonNode publicRead = statements.get(0);
         assertThat(publicRead.get("Sid").asString()).isEqualTo("PublicReadObjects");
         assertThat(publicRead.get("Principal").asString()).isEqualTo("*");
         assertThat(publicRead.get("Action").asString()).isEqualTo("s3:GetObject");
         assertThat(publicRead.get("Resource").asString()).isEqualTo("arn:aws:s3:::" + BUCKET + "/*");
 
-        var uploader = statements.get(1);
+        JsonNode uploader = statements.get(1);
         assertThat(uploader.get("Sid").asString()).isEqualTo("AllowUploaderPutObject");
         assertThat(uploader.get("Principal").get("AWS").asString()).isEqualTo(UPLOADER_ARN);
         assertThat(uploader.get("Action").asString()).isEqualTo("s3:PutObject");
@@ -201,10 +207,10 @@ class S3BucketInitializerTests {
 
         initializer().run(null);
 
-        var captor = ArgumentCaptor.forClass(PutBucketPolicyRequest.class);
+        ArgumentCaptor<PutBucketPolicyRequest> captor = ArgumentCaptor.forClass(PutBucketPolicyRequest.class);
         verify(s3Client).putBucketPolicy(captor.capture());
 
-        var statements = jsonMapper.readTree(captor.getValue().policy()).get("Statement");
+        JsonNode statements = jsonMapper.readTree(captor.getValue().policy()).get("Statement");
         assertThat(statements).hasSize(1);
         assertThat(statements.get(0).get("Sid").asString()).isEqualTo("PublicReadObjects");
     }
@@ -223,10 +229,10 @@ class S3BucketInitializerTests {
     void appliesReadOnlyCorsRule() {
         initializer().run(null);
 
-        var captor = ArgumentCaptor.forClass(PutBucketCorsRequest.class);
+        ArgumentCaptor<PutBucketCorsRequest> captor = ArgumentCaptor.forClass(PutBucketCorsRequest.class);
         verify(s3Client).putBucketCors(captor.capture());
 
-        var rules = captor.getValue().corsConfiguration().corsRules();
+        List<CORSRule> rules = captor.getValue().corsConfiguration().corsRules();
         assertThat(rules).hasSize(1);
         assertThat(rules.get(0).allowedMethods()).containsExactly("GET", "HEAD");
         assertThat(rules.get(0).allowedOrigins()).containsExactly("*");

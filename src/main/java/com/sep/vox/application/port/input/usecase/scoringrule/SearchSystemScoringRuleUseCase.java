@@ -1,5 +1,8 @@
 package com.sep.vox.application.port.input.usecase.scoringrule;
 
+import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
+import com.sep.vox.domain.model.scoringrule.ScoringRule;
+import com.sep.vox.domain.model.user.User;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -43,14 +46,14 @@ public class SearchSystemScoringRuleUseCase implements IUseCase<SearchScoringRul
     public PageResult<ScoringRuleDto> execute(SearchScoringRuleQuery query) {
         // 1. Kiểm tra tài khoản System Admin
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = userRepository.findById(currentUserId)
+        User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("Tài khoản đã bị khóa.");
         }
 
         // 2. Kiểm tra Assessment Policy tồn tại và thuộc phạm vi toàn hệ thống
-        var policy = assessmentPolicyRepository.findById(query.policyId())
+        AssessmentPolicy policy = assessmentPolicyRepository.findById(query.policyId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Assessment Policy."));
         if (policy.getSchoolId() != null) {
             throw new ForbiddenException("Không thể xem Scoring Rule của Assessment Policy thuộc trường học.");
@@ -60,7 +63,7 @@ public class SearchSystemScoringRuleUseCase implements IUseCase<SearchScoringRul
         // Scoring Rule kể cả khi Policy đã PUBLISHED/ARCHIVED để phục vụ tra cứu lịch sử chấm điểm.
 
         // 3. Tìm kiếm/phân trang
-        var pageResult = scoringRuleRepository.searchByPolicyId(
+        PageResult<ScoringRule> pageResult = scoringRuleRepository.searchByPolicyId(
                 query.policyId(), query.keyword(), query.isActive(), query.page(), query.size());
 
         return new PageResult<>(

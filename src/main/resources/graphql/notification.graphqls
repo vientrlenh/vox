@@ -1,3 +1,19 @@
+enum NotificationDevicePlatform {
+    WEB
+    ANDROID
+    IOS
+}
+
+enum NotificationCategory {
+    ASSESSMENT_RESULT
+    ASSESSMENT_APPEAL
+    GRADING
+    ASSESSMENT_SCHEDULE
+    ASSESSMENT_BLUEPRINT
+    BILLING
+    SYSTEM
+}
+
 type Notification {
     id: ID!
     userId: ID!
@@ -6,25 +22,25 @@ type Notification {
     title: String
     body: String
     payload: String
-    readAt: String
-    createdAt: String
+    readAt: DateTime
+    createdAt: DateTime
 }
 
 type NotificationDevice {
     id: ID!
     userId: ID!
     deviceId: ID!
-    platform: String
+    platform: NotificationDevicePlatform
     installationId: String
-    createdAt: String
-    lastSeenAt: String
+    createdAt: DateTime
+    lastSeenAt: DateTime
 }
 
 
 type NotificationPreference {
     id: ID!
     userId: ID!
-    category: String
+    category: NotificationCategory
     pushEnabled: Boolean
 }
 
@@ -37,6 +53,6 @@ type NotificationCursorPage {
 extend type Query {
     myNotifications(cursor: ID, limit: Int! = 20): NotificationCursorPage
     myUnreadNotificationCount: Int!
-    "Một thông báo của chính người đang đăng nhập. Dùng cho luồng mở từ thông báo đẩy, nơi client chỉ cầm mỗi id."
+    "One notification of the signed-in user. Used by the push-notification flow, where the client only holds the id."
     myNotification(id: ID!): Notification
 }

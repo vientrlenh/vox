@@ -1,39 +1,37 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
 
-import com.sep.vox.config.ContainerTestConfig;
+import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.domain.valueobject.LanguageCode;
 import com.sep.vox.infrastructure.persistence.adapter.SupportedLanguageRepositoryImpl;
+import com.sep.vox.support.RepositoryTest;
 
-@DataJpaTest
-@ActiveProfiles("test")
+@RepositoryTest
 @Import({
     SupportedLanguageRepositoryImpl.class
 })
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class SupportedLanguageRepositoryTests extends ContainerTestConfig {
+class SupportedLanguageRepositoryTests {
 
     @Autowired
     private SupportedLanguageRepository supportedLanguageRepository;
 
     @Test
     void whenSave_thenReturnsPersistedSupportedLanguage() {
-        var language = newSupportedLanguage("EN", "English");
+        SupportedLanguage language = newSupportedLanguage("EN", "English");
 
-        var saved = supportedLanguageRepository.save(language);
+        SupportedLanguage saved = supportedLanguageRepository.save(language);
 
         assertThat(saved.getId()).isNotNull();
         assertThat(saved.getCode().value()).isEqualTo("EN");
@@ -43,9 +41,9 @@ class SupportedLanguageRepositoryTests extends ContainerTestConfig {
 
     @Test
     void whenFindById_thenReturnsSupportedLanguage() {
-        var saved = supportedLanguageRepository.save(newSupportedLanguage("FR", "French"));
+        SupportedLanguage saved = supportedLanguageRepository.save(newSupportedLanguage("FR", "French"));
 
-        var found = supportedLanguageRepository.findById(saved.getId());
+        Optional<SupportedLanguage> found = supportedLanguageRepository.findById(saved.getId());
 
         assertThat(found).isPresent();
         assertThat(found.get().getId()).isEqualTo(saved.getId());
@@ -56,7 +54,7 @@ class SupportedLanguageRepositoryTests extends ContainerTestConfig {
     void whenFindByCode_thenReturnsSupportedLanguage() {
         supportedLanguageRepository.save(newSupportedLanguage("JP", "Japanese"));
 
-        var found = supportedLanguageRepository.findByCode("JP");
+        Optional<SupportedLanguage> found = supportedLanguageRepository.findByCode("JP");
 
         assertThat(found).isPresent();
         assertThat(found.get().getName()).isEqualTo("Japanese");
@@ -67,7 +65,7 @@ class SupportedLanguageRepositoryTests extends ContainerTestConfig {
         supportedLanguageRepository.save(newSupportedLanguage("KO", "Korean"));
         supportedLanguageRepository.save(newSupportedLanguage("IT", "Italian"));
 
-        var found = supportedLanguageRepository.findByCodeIn(Set.of("KO", "IT", "MISSING"));
+        List<SupportedLanguage> found = supportedLanguageRepository.findByCodeIn(Set.of("KO", "IT", "MISSING"));
 
         assertThat(found)
             .hasSize(2)
@@ -77,7 +75,7 @@ class SupportedLanguageRepositoryTests extends ContainerTestConfig {
 
     @Test
     void whenCount_thenReturnsNumberOfSupportedLanguages() {
-        var before = supportedLanguageRepository.count();
+        long before = supportedLanguageRepository.count();
         supportedLanguageRepository.save(newSupportedLanguage("DE", "German"));
 
         assertThat(supportedLanguageRepository.count()).isEqualTo(before + 1);
@@ -88,7 +86,7 @@ class SupportedLanguageRepositoryTests extends ContainerTestConfig {
         supportedLanguageRepository.save(newSupportedLanguage("PT", "Portuguese"));
         supportedLanguageRepository.save(newSupportedLanguage("NL", "Dutch"));
 
-        var result = supportedLanguageRepository.findAll("port", null, 1, 20);
+        PageResult<SupportedLanguage> result = supportedLanguageRepository.findAll("port", null, 1, 20);
 
         assertThat(result.content())
             .extracting(language -> language.getCode().value())
@@ -101,8 +99,8 @@ class SupportedLanguageRepositoryTests extends ContainerTestConfig {
         supportedLanguageRepository.save(newSupportedLanguage("TR", "Turkish", true));
         supportedLanguageRepository.save(newSupportedLanguage("PL", "Polish", false));
 
-        var active = supportedLanguageRepository.findAll(null, true, 1, 20);
-        var inactive = supportedLanguageRepository.findAll(null, false, 1, 20);
+        PageResult<SupportedLanguage> active = supportedLanguageRepository.findAll(null, true, 1, 20);
+        PageResult<SupportedLanguage> inactive = supportedLanguageRepository.findAll(null, false, 1, 20);
 
         assertThat(active.content())
             .extracting(language -> language.getCode().value())
@@ -119,7 +117,7 @@ class SupportedLanguageRepositoryTests extends ContainerTestConfig {
         supportedLanguageRepository.save(newSupportedLanguage("SV", "Swedish", true, Instant.parse("2026-06-01T10:00:00Z")));
         supportedLanguageRepository.save(newSupportedLanguage("DA", "Danish", true, Instant.parse("2026-06-02T10:00:00Z")));
 
-        var result = supportedLanguageRepository.findAll(null, null, 1, 1);
+        PageResult<SupportedLanguage> result = supportedLanguageRepository.findAll(null, null, 1, 1);
 
         assertThat(result.content()).hasSize(1);
         assertThat(result.content().get(0).getCode().value()).isEqualTo("DA");
@@ -131,11 +129,11 @@ class SupportedLanguageRepositoryTests extends ContainerTestConfig {
 
     @Test
     void whenUpdateMutableFields_thenOnlyProvidedFieldsAreUpdated() {
-        var saved = supportedLanguageRepository.save(newSupportedLanguage("RU", "Russian", true));
-        var updatedAt = Instant.parse("2026-06-10T10:00:00Z");
-        var updatedBy = UUID.randomUUID();
+        SupportedLanguage saved = supportedLanguageRepository.save(newSupportedLanguage("RU", "Russian", true));
+        Instant updatedAt = Instant.parse("2026-06-10T10:00:00Z");
+        UUID updatedBy = UUID.randomUUID();
 
-        var updatedRows = supportedLanguageRepository.updateMutableFields(
+        int updatedRows = supportedLanguageRepository.updateMutableFields(
             saved.getId(),
             "ES",
             true,
@@ -149,7 +147,7 @@ class SupportedLanguageRepositoryTests extends ContainerTestConfig {
             updatedBy
         );
 
-        var updated = supportedLanguageRepository.findById(saved.getId()).orElseThrow();
+        SupportedLanguage updated = supportedLanguageRepository.findById(saved.getId()).orElseThrow();
         assertThat(updatedRows).isEqualTo(1);
         assertThat(updated.getCode().value()).isEqualTo("ES");
         assertThat(updated.getName()).isEqualTo("Russian");
@@ -161,9 +159,9 @@ class SupportedLanguageRepositoryTests extends ContainerTestConfig {
 
     @Test
     void whenUpdateMutableFieldsWithNullDescription_thenClearsDescription() {
-        var saved = supportedLanguageRepository.save(newSupportedLanguage("VI", "Vietnamese", true));
+        SupportedLanguage saved = supportedLanguageRepository.save(newSupportedLanguage("VI", "Vietnamese", true));
 
-        var updatedRows = supportedLanguageRepository.updateMutableFields(
+        int updatedRows = supportedLanguageRepository.updateMutableFields(
             saved.getId(),
             null,
             false,
@@ -177,14 +175,14 @@ class SupportedLanguageRepositoryTests extends ContainerTestConfig {
             UUID.randomUUID()
         );
 
-        var updated = supportedLanguageRepository.findById(saved.getId()).orElseThrow();
+        SupportedLanguage updated = supportedLanguageRepository.findById(saved.getId()).orElseThrow();
         assertThat(updatedRows).isEqualTo(1);
         assertThat(updated.getDescription()).isNull();
     }
 
     @Test
     void whenUpdateMutableFieldsWithMissingId_thenReturnsZero() {
-        var updatedRows = supportedLanguageRepository.updateMutableFields(
+        int updatedRows = supportedLanguageRepository.updateMutableFields(
             UUID.randomUUID(),
             "ID",
             true,

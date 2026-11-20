@@ -1,5 +1,8 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
+import com.sep.vox.domain.model.subscription.SubscriptionPlan;
+import java.util.List;
+import java.util.UUID;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,16 +53,16 @@ public class ViewSubscriptionPlansUseCase implements IUseCase<ViewSubscriptionPl
             isSystemAdmin = false;
         }
 
-        var page = isSystemAdmin
+        PageResult<SubscriptionPlan> page = isSystemAdmin
             ? subscriptionPlanRepository.findAll(input.page(), input.size())
             : subscriptionPlanRepository.findByStatus(SubscriptionPlanStatus.ACTIVE, input.page(), input.size());
 
         // Tính một lần cho cả trang, và tính TOÀN CỤC chứ không phải trong phạm vi trang -- xem
         // SubscriptionPlanQueryRepository#findMostPopularPlanId. Rỗng nghĩa là chưa trường nào đăng
         // ký, khi đó không gói nào được gắn nhãn.
-        var mostPopularPlanId = subscriptionPlanQueryRepository.findMostPopularPlanId().orElse(null);
+        UUID mostPopularPlanId = subscriptionPlanQueryRepository.findMostPopularPlanId().orElse(null);
 
-        var content = page.content().stream()
+        List<ViewSubscriptionPlansResponse> content = page.content().stream()
             .map(SubscriptionPlanDto::toDto)
             .map(plan -> new ViewSubscriptionPlansResponse(plan, plan.id().equals(mostPopularPlanId)))
             .toList();

@@ -23,6 +23,7 @@ import com.sep.vox.application.port.input.command.FundQuotaFromBalanceCommand;
 import com.sep.vox.application.port.input.service.SchoolSubscriptionDebtGuardService;
 import com.sep.vox.application.port.input.usecase.subscription.FundQuotaFromBalanceUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.response.input.subscription.QuotaFundingResponse;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.school.SchoolBalance;
 import com.sep.vox.domain.model.school.SchoolBalanceEntry;
@@ -66,7 +67,7 @@ class FundQuotaFromBalanceUseCaseTests {
     @BeforeEach
     void setUp() {
         userContextPort = mock(UserContextPort.class);
-        var schoolSubscriptionRepository = mock(SchoolSubscriptionRepository.class);
+        SchoolSubscriptionRepository schoolSubscriptionRepository = mock(SchoolSubscriptionRepository.class);
         quotaRecordRepository = mock(SchoolSubscriptionQuotaRecordRepository.class);
         schoolBalanceRepository = mock(SchoolBalanceRepository.class);
         schoolBalanceEntryRepository = mock(SchoolBalanceEntryRepository.class);
@@ -83,7 +84,7 @@ class FundQuotaFromBalanceUseCaseTests {
         when(userContextPort.getCurrentSchoolId()).thenReturn(schoolId);
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(actorId);
 
-        var subscription = new SchoolSubscription();
+        SchoolSubscription subscription = new SchoolSubscription();
         subscription.setId(subscriptionId);
         subscription.setSchoolId(schoolId);
         when(schoolSubscriptionRepository.findActiveBySchoolId(schoolId)).thenReturn(Optional.of(subscription));
@@ -94,7 +95,7 @@ class FundQuotaFromBalanceUseCaseTests {
 
     @Test
     void funding_moves_money_from_the_wallet_into_the_quota_pool() {
-        var response = useCase.execute(fund(500_000));
+        QuotaFundingResponse response = useCase.execute(fund(500_000));
 
         verify(quotaRecordRepository).addFundingFromBalance(eq(quotaId), eq(BigDecimal.valueOf(500_000)));
         assertThat(response.fundedAmountVnd()).isEqualByComparingTo("500000");
@@ -105,10 +106,11 @@ class FundQuotaFromBalanceUseCaseTests {
     void funding_debits_the_wallet_exactly_once_and_records_one_entry() {
         useCase.execute(fund(500_000));
 
-        var entry = captureEntry();
+        SchoolBalanceEntry entry = captureEntry();
         assertThat(entry.getEntryType()).isEqualTo(SchoolBalanceEntryType.QUOTA_FUNDING);
-        // Âm: tiền RỜI ví. chk_school_balance_entries_quota_funding_traceable đòi amount_vnd < 0, và
-        // factory tự đảo dấu để chỗ gọi không phải nhớ.
+        // Negative: the money LEAVES the wallet. chk_school_balance_entries_quota_funding_traceable
+        // requires amount_vnd < 0, and the factory flips the sign itself so the caller does not
+        // have to remember.
         assertThat(entry.getAmountVnd()).isEqualByComparingTo("-500000");
         verify(schoolBalanceRepository).save(any());
         verify(schoolBalanceEntryRepository).save(any());
@@ -118,8 +120,8 @@ class FundQuotaFromBalanceUseCaseTests {
     void funding_takes_balance_after_from_the_row_it_just_debited() {
         useCase.execute(fund(500_000));
 
-        var entry = captureEntry();
-        var balanceCaptor = ArgumentCaptor.forClass(SchoolBalance.class);
+        SchoolBalanceEntry entry = captureEntry();
+        ArgumentCaptor<SchoolBalance> balanceCaptor = ArgumentCaptor.forClass(SchoolBalance.class);
         verify(schoolBalanceRepository).save(balanceCaptor.capture());
 
         assertThat(entry.getBalanceAfterVnd())
@@ -135,11 +137,11 @@ class FundQuotaFromBalanceUseCaseTests {
 
     @Test
     void funding_carries_the_actor_and_quota_type_onto_the_entry() {
-        // Cả hai đều BẮT BUỘC ở tầng DB: đây là quyết định của con người, một chiều, không hoàn lại
-        // được, nên sổ phải nói được ai bấm và tiền vào túi nào.
+        // Both are REQUIRED at the DB level: this is a human decision, one-way and not refundable,
+        // so the ledger must be able to say who clicked and which pocket the money went into.
         useCase.execute(fund(500_000));
 
-        var entry = captureEntry();
+        SchoolBalanceEntry entry = captureEntry();
         assertThat(entry.getActorId()).isEqualTo(actorId);
         assertThat(entry.getQuotaType()).isEqualTo(QuotaType.PRACTICE);
         assertThat(entry.getSubscriptionId()).isEqualTo(subscriptionId);
@@ -147,14 +149,14 @@ class FundQuotaFromBalanceUseCaseTests {
 
     @Test
     void funding_entry_carries_no_ai_cost_columns() {
-        // Đây là tiền đổi túi, KHÔNG phải một khoản chi cho AI -- không có hóa đơn nhà cung cấp nào để
-        // đối soát và không phiên nào gây ra nó. Ràng buộc ở DB đòi đúng như vậy.
+        // This is money moving between pockets, NOT an AI expense -- there is no vendor invoice to
+        // reconcile against and no session that caused it. The DB constraint demands exactly that.
         useCase.execute(fund(500_000));
 
-        var entry = captureEntry();
+        SchoolBalanceEntry entry = captureEntry();
         assertThat(entry.getCostUsd()).isNull();
         assertThat(entry.getFxRateUsed()).isNull();
-        assertThat(entry.getExamSessionId()).isNull();
+        assertThat(entry.getAssessmentSessionId()).isNull();
         assertThat(entry.getPracticeSessionId()).isNull();
         assertThat(entry.getOrderId()).isNull();
     }
@@ -223,13 +225,13 @@ class FundQuotaFromBalanceUseCaseTests {
     }
 
     private SchoolBalanceEntry captureEntry() {
-        var captor = ArgumentCaptor.forClass(SchoolBalanceEntry.class);
+        ArgumentCaptor<SchoolBalanceEntry> captor = ArgumentCaptor.forClass(SchoolBalanceEntry.class);
         verify(schoolBalanceEntryRepository).save(captor.capture());
         return captor.getValue();
     }
 
     private void givenPool(long totalVnd, long usedVnd, long fundedVnd) {
-        var pool = new SchoolSubscriptionQuotaRecord(
+        SchoolSubscriptionQuotaRecord pool = new SchoolSubscriptionQuotaRecord(
             quotaId, subscriptionId, QuotaType.PRACTICE,
             BigDecimal.valueOf(totalVnd), BigDecimal.valueOf(usedVnd), BigDecimal.valueOf(fundedVnd));
         when(quotaRecordRepository.findBySchoolSubscriptionIdAndQuotaType(subscriptionId, QuotaType.PRACTICE))
@@ -238,11 +240,12 @@ class FundQuotaFromBalanceUseCaseTests {
     }
 
     /**
-     * CÙNG MỘT instance cho cả đường đọc (guard nợ) lẫn đường ghi (khóa dòng): use case gọi
-     * {@code apply()} lên bản ghi đang giữ khóa, và test phải thấy đúng con số đã bị đổi đó.
+     * The SAME instance for both the read path (debt guard) and the write path (row lock): the use
+     * case calls {@code apply()} on the record that holds the lock, and the test must see exactly
+     * the number that was changed.
      */
     private void givenWallet(long balanceVnd) {
-        var balance = new SchoolBalance(schoolId, BigDecimal.valueOf(balanceVnd), null, null);
+        SchoolBalance balance = new SchoolBalance(schoolId, BigDecimal.valueOf(balanceVnd), null, null);
         when(schoolBalanceRepository.findBySchoolId(schoolId)).thenReturn(Optional.of(balance));
         when(schoolBalanceRepository.findBySchoolIdForUpdateOrCreate(eq(schoolId), any())).thenReturn(balance);
     }

@@ -2,8 +2,8 @@ package com.sep.vox.interfaces.rest.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
@@ -12,50 +12,37 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.test.context.support.WithAnonymousUser;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.assertj.MockMvcTester;
+import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
 import com.sep.vox.application.port.input.command.AcceptSchoolClassImportCommand;
+import com.sep.vox.application.port.input.command.AcceptSchoolClassUserImportCommand;
 import com.sep.vox.application.port.input.command.AcceptSchoolUserImportCommand;
 import com.sep.vox.application.port.input.command.CreateSchoolClassCommand;
+import com.sep.vox.application.port.input.command.CreateSchoolClassUserCommand;
 import com.sep.vox.application.port.input.command.CreateSchoolUserCommand;
 import com.sep.vox.application.port.input.command.DeleteSchoolClassCommand;
-import com.sep.vox.application.port.input.command.DeleteSchoolUserCommand;
-import com.sep.vox.application.port.input.command.AcceptSchoolClassUserImportCommand;
-import com.sep.vox.application.port.input.command.CreateSchoolClassUserCommand;
 import com.sep.vox.application.port.input.command.DeleteSchoolClassUserCommand;
+import com.sep.vox.application.port.input.command.DeleteSchoolUserCommand;
 import com.sep.vox.application.port.input.command.PreviewSchoolClassImportFromFileCommand;
 import com.sep.vox.application.port.input.command.PreviewSchoolClassUserImportFromFileCommand;
 import com.sep.vox.application.port.input.command.UpdateSchoolClassUserStatusCommand;
+import com.sep.vox.application.port.input.usecase.gradelevel.CreateGradeLevelUseCase;
+import com.sep.vox.application.port.input.usecase.gradelevel.DeleteGradeLevelUseCase;
+import com.sep.vox.application.port.input.usecase.school.CreateSchoolUseCase;
+import com.sep.vox.application.port.input.usecase.school.DeleteSchoolUseCase;
+import com.sep.vox.application.port.input.usecase.school.UpdateSchoolStatusUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.AcceptSchoolClassImportUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.CreateSchoolClassUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.DeleteSchoolClassUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.PreviewSchoolClassImportFromFileUseCase;
-import com.sep.vox.application.port.input.usecase.schooluser.AcceptSchoolUserImportUseCase;
-import com.sep.vox.application.port.input.usecase.schooluser.CreateSchoolUserUseCase;
-import com.sep.vox.application.port.input.usecase.schooluser.DeleteSchoolUserUseCase;
-import com.sep.vox.application.port.input.usecase.schooluser.PreviewSchoolUserImportFromFileUseCase;
-import com.sep.vox.application.port.input.usecase.school.CreateSchoolUseCase;
-import com.sep.vox.application.port.input.usecase.school.DeleteSchoolUseCase;
-import com.sep.vox.application.port.input.usecase.school.UpdateSchoolStatusUseCase;
-import com.sep.vox.application.port.input.usecase.schoolroom.AddSchoolRoomUseCase;
-import com.sep.vox.application.port.input.usecase.schoolroom.DeleteSchoolRoomUseCase;
-import com.sep.vox.application.port.input.usecase.schoolgrade.CreateSchoolGradeUseCase;
-import com.sep.vox.application.port.input.usecase.schoolgrade.DeleteSchoolGradeUseCase;
-import com.sep.vox.application.port.input.usecase.schoolgrade.PreviewSchoolGradeImportFromFileUseCase;
-import com.sep.vox.application.port.input.usecase.schoolgrade.AcceptSchoolGradeImportUseCase;
-import com.sep.vox.application.port.input.usecase.gradelevel.CreateGradeLevelUseCase;
-import com.sep.vox.application.port.input.usecase.gradelevel.DeleteGradeLevelUseCase;
-import com.sep.vox.application.response.input.importfile.PreviewSchoolClassImportResponse;
-import com.sep.vox.application.response.input.importfile.PreviewSchoolUserImportResponse;
-import com.sep.vox.application.response.input.schoolclass.CreateSchoolClassResponse;
-import com.sep.vox.application.response.input.schooluser.CreateSchoolUserResponse;
-import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolClassImportRequest;
-import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolUserImportRequest;
-import com.sep.vox.interfaces.rest.dto.request.CreateSchoolClassRequest;
-import com.sep.vox.interfaces.rest.dto.request.CreateSchoolUserRequest;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.AcceptSchoolClassUserImportUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.BulkCreateSchoolClassUsersUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.CreateSchoolClassUserUseCase;
@@ -66,47 +53,51 @@ import com.sep.vox.application.port.input.usecase.schooldirectory.AcceptSchoolDi
 import com.sep.vox.application.port.input.usecase.schooldirectory.CreateSchoolDirectoryUseCase;
 import com.sep.vox.application.port.input.usecase.schooldirectory.PreviewSchoolDirectoryImportFromFileUseCase;
 import com.sep.vox.application.port.input.usecase.schooldirectory.VerifySchoolDirectoryUseCase;
+import com.sep.vox.application.port.input.usecase.schoolgrade.AcceptSchoolGradeImportUseCase;
+import com.sep.vox.application.port.input.usecase.schoolgrade.CreateSchoolGradeUseCase;
+import com.sep.vox.application.port.input.usecase.schoolgrade.DeleteSchoolGradeUseCase;
+import com.sep.vox.application.port.input.usecase.schoolgrade.PreviewSchoolGradeImportFromFileUseCase;
+import com.sep.vox.application.port.input.usecase.schoolroom.AcceptSchoolRoomImportUseCase;
+import com.sep.vox.application.port.input.usecase.schoolroom.AddSchoolRoomUseCase;
+import com.sep.vox.application.port.input.usecase.schoolroom.DeleteSchoolRoomUseCase;
+import com.sep.vox.application.port.input.usecase.schoolroom.PreviewSchoolRoomImportFromFileUseCase;
+import com.sep.vox.application.port.input.usecase.schooluser.AcceptSchoolUserImportUseCase;
+import com.sep.vox.application.port.input.usecase.schooluser.CreateSchoolUserUseCase;
+import com.sep.vox.application.port.input.usecase.schooluser.DeleteSchoolUserUseCase;
+import com.sep.vox.application.port.input.usecase.schooluser.PreviewSchoolUserImportFromFileUseCase;
+import com.sep.vox.application.response.input.importfile.PreviewSchoolClassImportResponse;
 import com.sep.vox.application.response.input.importfile.PreviewSchoolClassUserImportResponse;
+import com.sep.vox.application.response.input.importfile.PreviewSchoolUserImportResponse;
+import com.sep.vox.application.response.input.schoolclass.CreateSchoolClassResponse;
 import com.sep.vox.application.response.input.schoolclassuser.CreateSchoolClassUserResponse;
 import com.sep.vox.application.response.input.schoolclassuser.UpdateSchoolClassUserStatusResponse;
-import com.sep.vox.interfaces.rest.dto.request.AcceptSchoolClassUserImportRequest;
-import com.sep.vox.interfaces.rest.dto.request.CreateSchoolClassUserRequest;
-import com.sep.vox.interfaces.rest.dto.request.UpdateSchoolClassUserStatusRequest;
+import com.sep.vox.application.response.input.schooluser.CreateSchoolUserResponse;
+import com.sep.vox.support.RestControllerTest;
 
+/**
+ * The school routes are split between SCHOOL_ADMIN (everything under {@code /{schoolId}/...}) and
+ * SYSTEM_ADMIN (the directories, grade levels and the school itself). The default user is a
+ * SCHOOL_ADMIN; tests for the other group switch the role with {@code @WithMockUser}.
+ */
+@RestControllerTest(SchoolController.class)
+@WithMockUser(roles = "SCHOOL_ADMIN")
+@MockitoBean(types = {
+    CreateSchoolClassUseCase.class, CreateSchoolClassUserUseCase.class, BulkCreateSchoolClassUsersUseCase.class,
+    DeleteSchoolClassUseCase.class, DeleteSchoolClassUserUseCase.class, UpdateSchoolClassUserStatusUseCase.class,
+    PreviewSchoolClassImportFromFileUseCase.class, AcceptSchoolClassImportUseCase.class,
+    CreateSchoolUserUseCase.class, DeleteSchoolUserUseCase.class, PreviewSchoolUserImportFromFileUseCase.class,
+    AcceptSchoolUserImportUseCase.class, PreviewSchoolClassUserImportFromFileUseCase.class,
+    AcceptSchoolClassUserImportUseCase.class, CreateSchoolUseCase.class, DeleteSchoolUseCase.class,
+    UpdateSchoolStatusUseCase.class, AddSchoolRoomUseCase.class, DeleteSchoolRoomUseCase.class,
+    PreviewSchoolRoomImportFromFileUseCase.class, AcceptSchoolRoomImportUseCase.class,
+    CreateSchoolGradeUseCase.class, DeleteSchoolGradeUseCase.class, PreviewSchoolGradeImportFromFileUseCase.class,
+    AcceptSchoolGradeImportUseCase.class, CreateGradeLevelUseCase.class, DeleteGradeLevelUseCase.class,
+    PreviewSchoolDirectoryImportFromFileUseCase.class, AcceptSchoolDirectoryImportUseCase.class,
+    CreateSchoolDirectoryUseCase.class, VerifySchoolDirectoryUseCase.class
+})
 class SchoolControllerTests {
 
-    private CreateSchoolClassUseCase createSchoolClassUseCase;
-    private DeleteSchoolClassUseCase deleteSchoolClassUseCase;
-    private PreviewSchoolClassImportFromFileUseCase previewSchoolClassImportFromFileUseCase;
-    private AcceptSchoolClassImportUseCase acceptSchoolClassImportUseCase;
-    private CreateSchoolUserUseCase createSchoolUserUseCase;
-    private DeleteSchoolUserUseCase deleteSchoolUserUseCase;
-    private PreviewSchoolUserImportFromFileUseCase previewSchoolUserImportFromFileUseCase;
-    private AcceptSchoolUserImportUseCase acceptSchoolUserImportUseCase;
-    private CreateSchoolClassUserUseCase createSchoolClassUserUseCase;
-    private BulkCreateSchoolClassUsersUseCase bulkCreateSchoolClassUsersUseCase;
-    private DeleteSchoolClassUserUseCase deleteSchoolClassUserUseCase;
-    private UpdateSchoolClassUserStatusUseCase updateSchoolClassUserStatusUseCase;
-    private PreviewSchoolClassUserImportFromFileUseCase previewSchoolClassUserImportFromFileUseCase;
-    private AcceptSchoolClassUserImportUseCase acceptSchoolClassUserImportUseCase;
-    private CreateSchoolUseCase createSchoolUseCase;
-    private DeleteSchoolUseCase deleteSchoolUseCase;
-    private UpdateSchoolStatusUseCase updateSchoolStatusUseCase;
-    private AddSchoolRoomUseCase addSchoolRoomUseCase;
-    private DeleteSchoolRoomUseCase deleteSchoolRoomUseCase;
-    private com.sep.vox.application.port.input.usecase.schoolroom.PreviewSchoolRoomImportFromFileUseCase previewSchoolRoomImportFromFileUseCase;
-    private com.sep.vox.application.port.input.usecase.schoolroom.AcceptSchoolRoomImportUseCase acceptSchoolRoomImportUseCase;
-    private CreateSchoolGradeUseCase createSchoolGradeUseCase;
-    private DeleteSchoolGradeUseCase deleteSchoolGradeUseCase;
-    private PreviewSchoolGradeImportFromFileUseCase previewSchoolGradeImportFromFileUseCase;
-    private AcceptSchoolGradeImportUseCase acceptSchoolGradeImportUseCase;
-    private CreateGradeLevelUseCase createGradeLevelUseCase;
-    private DeleteGradeLevelUseCase deleteGradeLevelUseCase;
-    private PreviewSchoolDirectoryImportFromFileUseCase previewSchoolDirectoryImportFromFileUseCase;
-    private AcceptSchoolDirectoryImportUseCase acceptSchoolDirectoryImportUseCase;
-    private CreateSchoolDirectoryUseCase createSchoolDirectoryUseCase;
-    private VerifySchoolDirectoryUseCase verifySchoolDirectoryUseCase;
-    private SchoolController controller;
+    private static final String SCHOOLS_URI = "/api/v1/schools";
 
     private final UUID schoolId = UUID.randomUUID();
     private final UUID schoolClassId = UUID.randomUUID();
@@ -115,306 +106,299 @@ class SchoolControllerTests {
     private final UUID languageId = UUID.randomUUID();
     private final UUID gradeId = UUID.randomUUID();
 
-    @BeforeEach
-    void setUp() {
-        createSchoolClassUseCase = mock(CreateSchoolClassUseCase.class);
-        deleteSchoolClassUseCase = mock(DeleteSchoolClassUseCase.class);
-        previewSchoolClassImportFromFileUseCase = mock(PreviewSchoolClassImportFromFileUseCase.class);
-        acceptSchoolClassImportUseCase = mock(AcceptSchoolClassImportUseCase.class);
-        createSchoolUserUseCase = mock(CreateSchoolUserUseCase.class);
-        deleteSchoolUserUseCase = mock(DeleteSchoolUserUseCase.class);
-        previewSchoolUserImportFromFileUseCase = mock(PreviewSchoolUserImportFromFileUseCase.class);
-        acceptSchoolUserImportUseCase = mock(AcceptSchoolUserImportUseCase.class);
-        createSchoolClassUserUseCase = mock(CreateSchoolClassUserUseCase.class);
-        bulkCreateSchoolClassUsersUseCase = mock(BulkCreateSchoolClassUsersUseCase.class);
-        deleteSchoolClassUserUseCase = mock(DeleteSchoolClassUserUseCase.class);
-        updateSchoolClassUserStatusUseCase = mock(UpdateSchoolClassUserStatusUseCase.class);
-        previewSchoolClassUserImportFromFileUseCase = mock(PreviewSchoolClassUserImportFromFileUseCase.class);
-        acceptSchoolClassUserImportUseCase = mock(AcceptSchoolClassUserImportUseCase.class);
-        createSchoolUseCase = mock(CreateSchoolUseCase.class);
-        deleteSchoolUseCase = mock(DeleteSchoolUseCase.class);
-        updateSchoolStatusUseCase = mock(UpdateSchoolStatusUseCase.class);
-        addSchoolRoomUseCase = mock(AddSchoolRoomUseCase.class);
-        deleteSchoolRoomUseCase = mock(DeleteSchoolRoomUseCase.class);
-        previewSchoolRoomImportFromFileUseCase = mock(com.sep.vox.application.port.input.usecase.schoolroom.PreviewSchoolRoomImportFromFileUseCase.class);
-        acceptSchoolRoomImportUseCase = mock(com.sep.vox.application.port.input.usecase.schoolroom.AcceptSchoolRoomImportUseCase.class);
-        createSchoolGradeUseCase = mock(CreateSchoolGradeUseCase.class);
-        deleteSchoolGradeUseCase = mock(DeleteSchoolGradeUseCase.class);
-        previewSchoolGradeImportFromFileUseCase = mock(PreviewSchoolGradeImportFromFileUseCase.class);
-        acceptSchoolGradeImportUseCase = mock(AcceptSchoolGradeImportUseCase.class);
-        createGradeLevelUseCase = mock(CreateGradeLevelUseCase.class);
-        deleteGradeLevelUseCase = mock(DeleteGradeLevelUseCase.class);
-        previewSchoolDirectoryImportFromFileUseCase = mock(PreviewSchoolDirectoryImportFromFileUseCase.class);
-        acceptSchoolDirectoryImportUseCase = mock(AcceptSchoolDirectoryImportUseCase.class);
-        createSchoolDirectoryUseCase = mock(CreateSchoolDirectoryUseCase.class);
-        verifySchoolDirectoryUseCase = mock(VerifySchoolDirectoryUseCase.class);
-        
-        controller = new SchoolController(
-            createSchoolClassUseCase, 
-            createSchoolClassUserUseCase,
-            bulkCreateSchoolClassUsersUseCase,
-            deleteSchoolClassUseCase, 
-            deleteSchoolClassUserUseCase, 
-            updateSchoolClassUserStatusUseCase, 
-            previewSchoolClassImportFromFileUseCase, 
-            acceptSchoolClassImportUseCase,
-            createSchoolUserUseCase, 
-            deleteSchoolUserUseCase,
-            previewSchoolUserImportFromFileUseCase,
-            acceptSchoolUserImportUseCase,
-            previewSchoolClassUserImportFromFileUseCase, 
-            acceptSchoolClassUserImportUseCase,
-            createSchoolUseCase,
-            deleteSchoolUseCase,
-            updateSchoolStatusUseCase,
-            addSchoolRoomUseCase,
-            deleteSchoolRoomUseCase,
-            previewSchoolRoomImportFromFileUseCase,
-            acceptSchoolRoomImportUseCase,
-            createSchoolGradeUseCase,
-            deleteSchoolGradeUseCase,
-            previewSchoolGradeImportFromFileUseCase,
-            acceptSchoolGradeImportUseCase,
-            createGradeLevelUseCase,
-            deleteGradeLevelUseCase,
-            previewSchoolDirectoryImportFromFileUseCase,
-            acceptSchoolDirectoryImportUseCase, 
-            createSchoolDirectoryUseCase,
-            verifySchoolDirectoryUseCase
-        );
+    @Autowired
+    private MockMvcTester mvc;
+
+    @Autowired
+    private CreateSchoolClassUseCase createSchoolClassUseCase;
+    @Autowired
+    private CreateSchoolClassUserUseCase createSchoolClassUserUseCase;
+    @Autowired
+    private DeleteSchoolClassUseCase deleteSchoolClassUseCase;
+    @Autowired
+    private DeleteSchoolClassUserUseCase deleteSchoolClassUserUseCase;
+    @Autowired
+    private UpdateSchoolClassUserStatusUseCase updateSchoolClassUserStatusUseCase;
+    @Autowired
+    private PreviewSchoolClassImportFromFileUseCase previewSchoolClassImportFromFileUseCase;
+    @Autowired
+    private AcceptSchoolClassImportUseCase acceptSchoolClassImportUseCase;
+    @Autowired
+    private CreateSchoolUserUseCase createSchoolUserUseCase;
+    @Autowired
+    private DeleteSchoolUserUseCase deleteSchoolUserUseCase;
+    @Autowired
+    private PreviewSchoolUserImportFromFileUseCase previewSchoolUserImportFromFileUseCase;
+    @Autowired
+    private AcceptSchoolUserImportUseCase acceptSchoolUserImportUseCase;
+    @Autowired
+    private PreviewSchoolClassUserImportFromFileUseCase previewSchoolClassUserImportFromFileUseCase;
+    @Autowired
+    private AcceptSchoolClassUserImportUseCase acceptSchoolClassUserImportUseCase;
+    @Autowired
+    private CreateSchoolDirectoryUseCase createSchoolDirectoryUseCase;
+    @Autowired
+    private DeleteSchoolUseCase deleteSchoolUseCase;
+
+    private MockMvcTester.MockMvcRequestBuilder postJson(String uri, String body, Object... uriVariables) {
+        return mvc.post().uri(uri, uriVariables).contentType(MediaType.APPLICATION_JSON).content(body);
+    }
+
+    private MockMultipartFile csvFile(String name, String content) {
+        return new MockMultipartFile("file", name, "text/csv", content.getBytes(StandardCharsets.UTF_8));
     }
 
     @Test
     void create_school_class_should_return_created_response() {
-        var request = new CreateSchoolClassRequest(
-            languageId,
-            gradeId,
-            "ENG-01",
-            "English 01",
-            "Starter class"
-        );
-        var expectedCommand = new CreateSchoolClassCommand(
-            schoolId,
-            languageId,
-            gradeId,
-            "ENG-01",
-            "English 01",
-            "Starter class"
-        );
+        CreateSchoolClassCommand expectedCommand = new CreateSchoolClassCommand(
+            schoolId, languageId, gradeId, "ENG-01", "English 01", "Starter class");
         when(createSchoolClassUseCase.execute(expectedCommand)).thenReturn(new CreateSchoolClassResponse(schoolClassId));
 
-        var response = controller.create(schoolId, request);
+        MvcTestResult result = postJson(SCHOOLS_URI + "/{schoolId}/classes", """
+            {"languageId": "%s", "schoolGradeId": "%s", "code": "ENG-01", "name": "English 01",
+             "description": "Starter class"}""".formatted(languageId, gradeId), schoolId).exchange();
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().data()).isEqualTo(new CreateSchoolClassResponse(schoolClassId));
+        assertThat(result).hasStatus(201).bodyJson()
+            .extractingPath("$.data.schoolClassId").isEqualTo(schoolClassId.toString());
         verify(createSchoolClassUseCase).execute(expectedCommand);
     }
 
     @Test
+    void create_school_class_should_return_bad_request_when_code_is_missing() {
+        MvcTestResult result = postJson(SCHOOLS_URI + "/{schoolId}/classes",
+            "{\"languageId\": \"%s\", \"schoolGradeId\": \"%s\", \"name\": \"English 01\"}".formatted(languageId, gradeId),
+            schoolId).exchange();
+
+        assertThat(result).hasStatus(400);
+        verifyNoInteractions(createSchoolClassUseCase);
+    }
+
+    @Test
     void create_class_user_should_return_created_response() {
-        var schoolId = UUID.randomUUID();
-        var classId = UUID.randomUUID();
-        var userId = UUID.randomUUID();
-        var schoolClassUserId = UUID.randomUUID();
-        var request = new CreateSchoolClassUserRequest(userId);
-        var expectedCommand = new CreateSchoolClassUserCommand(schoolId, classId, userId);
-        var expected = new CreateSchoolClassUserResponse(schoolClassUserId);
-        when(createSchoolClassUserUseCase.execute(any(CreateSchoolClassUserCommand.class))).thenReturn(expected);
+        UUID schoolClassUserId = UUID.randomUUID();
+        CreateSchoolClassUserCommand expectedCommand = new CreateSchoolClassUserCommand(schoolId, schoolClassId, userId);
+        when(createSchoolClassUserUseCase.execute(expectedCommand))
+            .thenReturn(new CreateSchoolClassUserResponse(schoolClassUserId));
 
-        var response = controller.createClassUser(schoolId, classId, request);
+        MvcTestResult result = postJson(SCHOOLS_URI + "/{schoolId}/classes/{classId}/users",
+            "{\"userId\": \"%s\"}".formatted(userId), schoolId, schoolClassId).exchange();
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().data()).isEqualTo(expected);
-        verify(createSchoolClassUserUseCase).execute(expectedCommand);
+        assertThat(result).hasStatus(201).bodyJson()
+            .extractingPath("$.data.schoolClassUserId").isEqualTo(schoolClassUserId.toString());
     }
 
     @Test
     void delete_school_class_should_return_ok_response() {
-        var schoolId = UUID.randomUUID();
-        var schoolClassId = UUID.randomUUID();
-        var response = controller.delete(schoolId, schoolClassId);
+        MvcTestResult result = mvc.delete().uri(SCHOOLS_URI + "/{schoolId}/classes/{classId}", schoolId, schoolClassId)
+            .exchange();
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().message()).isEqualTo("Xóa lớp học thành công");
-        assertThat(response.getBody().data()).isNull();
+        assertThat(result).hasStatusOk().bodyJson()
+            .extractingPath("$.message").isEqualTo("Xóa lớp học thành công");
         verify(deleteSchoolClassUseCase).execute(new DeleteSchoolClassCommand(schoolId, schoolClassId));
     }
 
     @Test
-    void create_import_file_session_should_return_preview_response() throws Exception {
-        var expected = new PreviewSchoolClassImportResponse(
-            importSessionId,
-            "classes.csv",
-            List.of("code", "name"),
-            Map.of("code", "code", "name", "name"),
-            List.of(Map.of("code", "ENG-01", "name", "English 01")),
-            1L,
-            "2026-06-09T10:00:00+07:00"
-        );
-        var file = new MockMultipartFile(
-            "file",
-            "classes.csv",
-            "text/csv",
-            "code,name\nENG-01,English 01\n".getBytes(StandardCharsets.UTF_8)
-        );
-        when(previewSchoolClassImportFromFileUseCase.execute(any(PreviewSchoolClassImportFromFileCommand.class))).thenReturn(expected);
+    void create_import_file_session_should_return_preview_response() {
+        PreviewSchoolClassImportResponse expected = new PreviewSchoolClassImportResponse(importSessionId, "classes.csv",
+            List.of("code", "name"), Map.of("code", "code", "name", "name"),
+            List.of(Map.of("code", "ENG-01", "name", "English 01")), 1L, "2026-06-09T10:00:00+07:00");
+        when(previewSchoolClassImportFromFileUseCase.execute(any(PreviewSchoolClassImportFromFileCommand.class)))
+            .thenReturn(expected);
 
-        var response = controller.createImportFileSession(schoolId, file);
+        MvcTestResult result = mvc.post().uri(SCHOOLS_URI + "/{schoolId}/classes/import/preview", schoolId)
+            .multipart().file(csvFile("classes.csv", "code,name\nENG-01,English 01\n")).exchange();
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().data()).isEqualTo(expected);
-        verify(previewSchoolClassImportFromFileUseCase).execute(any(PreviewSchoolClassImportFromFileCommand.class));
+        assertThat(result).hasStatusOk().bodyJson()
+            .extractingPath("$.data.importSessionId").isEqualTo(importSessionId.toString());
     }
 
     @Test
     void accept_school_class_import_session_should_return_ok() {
-        var request = new AcceptSchoolClassImportRequest(Map.of(
-            "Mã lớp", "code",
-            "Tên lớp", "name",
-            "Ngôn ngữ", "languageCode",
-            "Khối", "schoolGradeCode"
-        ));
-        var expectedCommand = new AcceptSchoolClassImportCommand(schoolId, importSessionId, request.confirmedMapping());
+        Map<String, String> mapping = Map.of("Mã lớp", "code", "Tên lớp", "name", "Ngôn ngữ", "languageCode", "Khối", "schoolGradeCode");
 
-        var response = controller.acceptImportSession(schoolId, importSessionId, request);
+        MvcTestResult result = postJson(SCHOOLS_URI + "/{schoolId}/classes/import/{sessionId}/accept", """
+            {"confirmedMapping": {"Mã lớp": "code", "Tên lớp": "name", "Ngôn ngữ": "languageCode",
+                                  "Khối": "schoolGradeCode"}}""", schoolId, importSessionId).exchange();
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().message()).isEqualTo("Yêu cầu import lớp học đã được tiếp nhận, đang xử lý");
-        verify(acceptSchoolClassImportUseCase).execute(expectedCommand);
+        assertThat(result).hasStatusOk().bodyJson()
+            .extractingPath("$.message").isEqualTo("Yêu cầu import lớp học đã được tiếp nhận, đang xử lý");
+        verify(acceptSchoolClassImportUseCase)
+            .execute(new AcceptSchoolClassImportCommand(schoolId, importSessionId, mapping));
+    }
+
+    @Test
+    void accept_school_class_import_session_should_return_bad_request_when_mapping_is_empty() {
+        MvcTestResult result = postJson(SCHOOLS_URI + "/{schoolId}/classes/import/{sessionId}/accept",
+            "{\"confirmedMapping\": {}}", schoolId, importSessionId).exchange();
+
+        assertThat(result).hasStatus(400);
+        verifyNoInteractions(acceptSchoolClassImportUseCase);
     }
 
     @Test
     void create_user_should_return_created_with_response() {
-        var request = new CreateSchoolUserRequest(
-            "student@school.edu.vn", "0987654321", "John Cena",
-            "2005-01-15", "123 Street", "STUDENT", null, null
-        );
-        var expected = new CreateSchoolUserResponse(userId);
+        CreateSchoolUserResponse expected = new CreateSchoolUserResponse(userId);
         when(createSchoolUserUseCase.execute(any(CreateSchoolUserCommand.class))).thenReturn(expected);
 
-        var response = controller.createUser(schoolId, request);
+        MvcTestResult result = postJson(SCHOOLS_URI + "/{schoolId}/users", """
+            {"email": "student@school.edu.vn", "phone": "0987654321", "fullName": "John Cena",
+             "dateOfBirth": "2005-01-15", "address": "123 Street", "roleCode": "STUDENT"}""", schoolId).exchange();
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().message()).isEqualTo("Tạo người dùng thành công");
-        assertThat(response.getBody().data()).isEqualTo(expected);
-        verify(createSchoolUserUseCase).execute(any(CreateSchoolUserCommand.class));
+        assertThat(result).hasStatus(201).bodyJson().extractingPath("$.message").isEqualTo("Tạo người dùng thành công");
+        assertThat(result).bodyJson().extractingPath("$.data.id").isEqualTo(userId.toString());
     }
 
     @Test
     void delete_school_user_should_return_no_content() {
-        var response = controller.deleteUser(schoolId, userId);
+        MvcTestResult result = mvc.delete().uri(SCHOOLS_URI + "/{schoolId}/users/{userId}", schoolId, userId).exchange();
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-        assertThat(response.getBody()).isNull();
+        assertThat(result).hasStatus(204);
         verify(deleteSchoolUserUseCase).execute(new DeleteSchoolUserCommand(schoolId, userId));
     }
 
     @Test
-    void preview_import_user_should_return_ok() throws Exception {
-        var file = new MockMultipartFile("file", "students.csv", "text/csv", "email,fullName\n".getBytes());
-        var expected = new PreviewSchoolUserImportResponse(
-            importSessionId, "students.csv",
-            List.of("email", "fullName"),
-            Map.of("email", "email"),
-            List.of(), 1L,
-            OffsetDateTime.now().plusDays(1).toString()
-        );
+    void preview_import_user_should_return_ok() {
+        PreviewSchoolUserImportResponse expected = new PreviewSchoolUserImportResponse(importSessionId, "students.csv",
+            List.of("email", "fullName"), Map.of("email", "email"), List.of(), 1L,
+            OffsetDateTime.now().plusDays(1).toString());
         when(previewSchoolUserImportFromFileUseCase.execute(any())).thenReturn(expected);
 
-        var response = controller.previewImportFile(schoolId, file);
+        MvcTestResult result = mvc.post().uri(SCHOOLS_URI + "/{schoolId}/users/import/preview", schoolId)
+            .multipart().file(csvFile("students.csv", "email,fullName\n")).exchange();
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().message()).isEqualTo("Preview import người dùng thành công");
-        assertThat(response.getBody().data()).isEqualTo(expected);
-        verify(previewSchoolUserImportFromFileUseCase).execute(any());
+        assertThat(result).hasStatusOk().bodyJson()
+            .extractingPath("$.message").isEqualTo("Preview import người dùng thành công");
     }
 
     @Test
     void accept_import_user_should_return_ok() {
-        var request = new AcceptSchoolUserImportRequest(Map.of("Email", "email", "Họ tên", "fullName"));
-        var response = controller.acceptImportSession(schoolId, importSessionId, request);
+        MvcTestResult result = postJson(SCHOOLS_URI + "/{schoolId}/users/import/{sessionId}/accept",
+            "{\"confirmedMapping\": {\"Email\": \"email\", \"Họ tên\": \"fullName\"}}", schoolId, importSessionId)
+            .exchange();
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().message()).isEqualTo("Yêu cầu import người dùng đã được tiếp nhận, đang xử lý");
+        assertThat(result).hasStatusOk().bodyJson()
+            .extractingPath("$.message").isEqualTo("Yêu cầu import người dùng đã được tiếp nhận, đang xử lý");
         verify(acceptSchoolUserImportUseCase).execute(any(AcceptSchoolUserImportCommand.class));
     }
 
     @Test
-    void create_class_user_import_file_session_should_return_preview_response() throws Exception {
-        var expected = new PreviewSchoolClassUserImportResponse(
-            importSessionId,
-            "class-users.csv",
-            List.of("email", "classCode"),
-            Map.of("email", "email", "classCode", "classCode"),
-            List.of(Map.of("email", "student@example.com", "classCode", "ENG-01")),
-            1L,
-            "2026-06-09T10:00:00+07:00"
-        );
-        var file = new MockMultipartFile(
-            "file",
-            "class-users.csv",
-            "text/csv",
-            "email,classCode\nstudent@example.com,ENG-01\n".getBytes(StandardCharsets.UTF_8)
-        );
-        when(previewSchoolClassUserImportFromFileUseCase.execute(any(PreviewSchoolClassUserImportFromFileCommand.class))).thenReturn(expected);
+    void create_class_user_import_file_session_should_return_preview_response() {
+        PreviewSchoolClassUserImportResponse expected = new PreviewSchoolClassUserImportResponse(importSessionId, "class-users.csv",
+            List.of("email", "classCode"), Map.of("email", "email", "classCode", "classCode"),
+            List.of(Map.of("email", "student@example.com", "classCode", "ENG-01")), 1L, "2026-06-09T10:00:00+07:00");
+        when(previewSchoolClassUserImportFromFileUseCase.execute(any(PreviewSchoolClassUserImportFromFileCommand.class)))
+            .thenReturn(expected);
 
-        var response = controller.createClassUserImportFileSession(schoolId, file);
+        MvcTestResult result = mvc.post().uri(SCHOOLS_URI + "/{schoolId}/classes/users/import/preview", schoolId)
+            .multipart().file(csvFile("class-users.csv", "email,classCode\nstudent@example.com,ENG-01\n")).exchange();
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().data()).isEqualTo(expected);
-        verify(previewSchoolClassUserImportFromFileUseCase).execute(any(PreviewSchoolClassUserImportFromFileCommand.class));
+        assertThat(result).hasStatusOk().bodyJson()
+            .extractingPath("$.data.importSessionId").isEqualTo(importSessionId.toString());
     }
 
     @Test
     void accept_class_user_import_session_should_return_ok() {
-        var request = new AcceptSchoolClassUserImportRequest(Map.of(
-            "Email", "email",
-            "Mã lớp", "classCode"
-        ));
+        MvcTestResult result = postJson(SCHOOLS_URI + "/{schoolId}/classes/users/import/{sessionId}/accept",
+            "{\"confirmedMapping\": {\"Email\": \"email\", \"Mã lớp\": \"classCode\"}}", schoolId, importSessionId)
+            .exchange();
 
-        var response = controller.acceptClassUserImportSession(schoolId, importSessionId, request);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().message()).isEqualTo("Yêu cầu import người dùng vào lớp học đã được tiếp nhận, đang xử lý");
+        assertThat(result).hasStatusOk().bodyJson().extractingPath("$.message")
+            .isEqualTo("Yêu cầu import người dùng vào lớp học đã được tiếp nhận, đang xử lý");
         verify(acceptSchoolClassUserImportUseCase).execute(any(AcceptSchoolClassUserImportCommand.class));
     }
 
     @Test
-    void deleteClassUser_should_return_ok_response_without_success_field() {
-        var expectedCommand = new DeleteSchoolClassUserCommand(schoolId, schoolClassId, userId);
-        var response = controller.deleteClassUser(schoolId, schoolClassId, userId);
+    void delete_class_user_should_return_ok_response_without_data() {
+        MvcTestResult result = mvc.delete()
+            .uri(SCHOOLS_URI + "/{schoolId}/classes/{classId}/users/{userId}", schoolId, schoolClassId, userId)
+            .exchange();
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().message()).isEqualTo("Xóa người dùng khỏi lớp học thành công");
-        assertThat(response.getBody().data()).isNull();
-        verify(deleteSchoolClassUserUseCase).execute(expectedCommand);
+        assertThat(result).hasStatusOk().bodyJson()
+            .extractingPath("$.message").isEqualTo("Xóa người dùng khỏi lớp học thành công");
+        assertThat(result).bodyJson().extractingPath("$.data").isNull();
+        verify(deleteSchoolClassUserUseCase).execute(new DeleteSchoolClassUserCommand(schoolId, schoolClassId, userId));
     }
 
     @Test
-    void update_class_user_status_should_return_ok_response_without_success_field() {
-        var request = new UpdateSchoolClassUserStatusRequest(true);
-        var expected = new UpdateSchoolClassUserStatusResponse(schoolClassId);
+    void update_class_user_status_should_return_ok_response() {
+        UpdateSchoolClassUserStatusResponse expected = new UpdateSchoolClassUserStatusResponse(schoolClassId);
+        when(updateSchoolClassUserStatusUseCase.execute(any(UpdateSchoolClassUserStatusCommand.class)))
+            .thenReturn(expected);
 
-        when(updateSchoolClassUserStatusUseCase.execute(
-                any(UpdateSchoolClassUserStatusCommand.class))).thenReturn(expected);
+        MvcTestResult result = mvc.patch()
+            .uri(SCHOOLS_URI + "/{schoolId}/classes/{classId}/users/{userId}/status", schoolId, schoolClassId, userId)
+            .contentType(MediaType.APPLICATION_JSON).content("{\"isActive\": true}").exchange();
 
-        var response = controller.updateClassUserStatus(schoolId, schoolClassId, userId, request);
+        assertThat(result).hasStatusOk().bodyJson().extractingPath("$.message")
+            .isEqualTo("Cập nhật trạng thái người dùng trong lớp học thành công");
+    }
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().message()).isEqualTo("Cập nhật trạng thái người dùng trong lớp học thành công");
-        assertThat(response.getBody().data()).isEqualTo(expected);
-        verify(updateSchoolClassUserStatusUseCase).execute(any(UpdateSchoolClassUserStatusCommand.class));
+    @Test
+    @WithMockUser(roles = "SYSTEM_ADMIN")
+    void school_admin_routes_should_return_403_for_system_admin() {
+        MvcTestResult result = mvc.delete().uri(SCHOOLS_URI + "/{schoolId}/classes/{classId}", schoolId, schoolClassId)
+            .exchange();
+
+        assertThat(result).hasStatus(403);
+        verifyNoInteractions(deleteSchoolClassUseCase);
+    }
+
+    @Test
+    @WithMockUser(roles = "TEACHER")
+    void school_admin_routes_should_return_403_for_teacher() {
+        MvcTestResult result = mvc.delete().uri(SCHOOLS_URI + "/{schoolId}/users/{userId}", schoolId, userId).exchange();
+
+        assertThat(result).hasStatus(403);
+        verifyNoInteractions(deleteSchoolUserUseCase);
+    }
+
+    @Test
+    void system_admin_routes_should_return_403_for_school_admin() {
+        MvcTestResult result = mvc.delete().uri(SCHOOLS_URI + "/{id}", schoolId).exchange();
+
+        assertThat(result).hasStatus(403);
+        verifyNoInteractions(deleteSchoolUseCase);
+    }
+
+    /**
+     * The body is valid on purpose: {@code @Valid} runs before {@code @PreAuthorize}, so an invalid body
+     * would be answered with 400 and never reach the role check.
+     */
+    @Test
+    void create_school_directory_should_return_403_for_school_admin() {
+        MvcTestResult result = postJson(SCHOOLS_URI + "/directories", """
+            {"code": "HCM-01", "name": "Vox HCM", "provinceCode": "79", "provinceName": "Ho Chi Minh",
+             "districtName": "District 1"}""").exchange();
+
+        assertThat(result).hasStatus(403);
+        verifyNoInteractions(createSchoolDirectoryUseCase);
+    }
+
+    @Test
+    @WithMockUser(roles = "SYSTEM_ADMIN")
+    void delete_school_should_return_ok_for_system_admin() {
+        MvcTestResult result = mvc.delete().uri(SCHOOLS_URI + "/{id}", schoolId).exchange();
+
+        assertThat(result).hasStatusOk();
+        verify(deleteSchoolUseCase).execute(any());
+    }
+
+    @Test
+    @WithAnonymousUser
+    void school_admin_routes_should_return_401_without_authentication() {
+        MvcTestResult result = mvc.delete().uri(SCHOOLS_URI + "/{schoolId}/classes/{classId}", schoolId, schoolClassId)
+            .exchange();
+
+        assertThat(result).hasStatus(401);
+        verifyNoInteractions(deleteSchoolClassUseCase);
+    }
+
+    @Test
+    @WithAnonymousUser
+    void system_admin_routes_should_return_401_without_authentication() {
+        MvcTestResult result = mvc.delete().uri(SCHOOLS_URI + "/{id}", schoolId).exchange();
+
+        assertThat(result).hasStatus(401);
+        verifyNoInteractions(deleteSchoolUseCase);
     }
 }

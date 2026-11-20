@@ -25,15 +25,17 @@ import com.sep.vox.domain.dto.SchoolClassUserDto;
 import com.sep.vox.domain.dto.SchoolGradeDto;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
 import com.sep.vox.domain.dto.UserDto;
+import com.sep.vox.domain.model.school.SchoolClassStatus;
+import com.sep.vox.interfaces.shared.PageArguments;
 
 import graphql.schema.DataFetchingEnvironment;
 
 /**
- * Bề mặt GraphQL "lớp của tôi" cho giáo viên — chỉ đọc.
+ * GraphQL surface "my classes" for teachers — read-only.
  *
- * Tách khỏi {@link SchoolController} (toàn quyền SCHOOL_ADMIN) để không phải nới
- * quyền trên các type dùng chung. Các DataLoader thì dùng lại nguyên: chúng chỉ
- * gom batch theo id, phân quyền nằm ở @PreAuthorize của từng resolver dưới đây.
+ * Kept apart from {@link SchoolController} (full SCHOOL_ADMIN access) so that the permissions
+ * on shared types do not have to be loosened. The DataLoaders are reused as they are: they only
+ * batch by id, and authorization lives in the @PreAuthorize of each resolver below.
  */
 @Controller
 public class MyClassController {
@@ -56,10 +58,10 @@ public class MyClassController {
     public PageResult<SchoolClassDto> myClasses(
             @Argument(name = "schoolId") UUID schoolId,
             @Argument(name = "search") String search,
-            @Argument(name = "status") String status,
+            @Argument(name = "status") SchoolClassStatus status,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        requireValidPaging(page, size);
+        PageArguments.validate(page, size);
         return viewMyClassesUseCase.execute(new ViewMyClassesQuery(schoolId, search, status, page, size));
     }
 
@@ -77,7 +79,7 @@ public class MyClassController {
             @Argument(name = "search") String search,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
-        requireValidPaging(page, size);
+        PageArguments.validate(page, size);
         return viewMyClassMembersUseCase.execute(
             new ViewMyClassMembersQuery(schoolClassId, roleCode, search, page, size));
     }
@@ -116,11 +118,5 @@ public class MyClassController {
         DataLoader<UserRolesKey, List<RoleDto>> loader = env.getDataLoader("rolesByUser");
         return loader.load(new UserRolesKey(user.id()))
             .thenApply(roles -> roles.stream().map(role -> role.code()).toList());
-    }
-
-    private static void requireValidPaging(Integer page, Integer size) {
-        if (page == null || size == null || page <= 0 || size <= 0) {
-            throw new IllegalArgumentException("Số trang hoặc kích cỡ trang yêu cầu không hợp lệ");
-        }
     }
 }

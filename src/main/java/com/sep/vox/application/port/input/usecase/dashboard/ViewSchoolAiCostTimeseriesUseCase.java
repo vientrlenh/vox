@@ -1,9 +1,12 @@
 package com.sep.vox.application.port.input.usecase.dashboard;
 
+import com.sep.vox.application.query.dto.AiCostBucketDto;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
+import java.util.List;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,32 +42,32 @@ public class ViewSchoolAiCostTimeseriesUseCase
     @Override
     @Transactional(readOnly = true)
     public SchoolAiCostTimeseriesResponse execute(ViewSchoolAiCostQuery input) {
-        var schoolId = userContextPort.getCurrentSchoolId();
-        var to = input.to() == null ? Instant.now() : input.to();
-        var from = input.from() == null ? to.minus(DEFAULT_WINDOW_DAYS, ChronoUnit.DAYS) : input.from();
+        UUID schoolId = userContextPort.getCurrentSchoolId();
+        Instant to = input.to() == null ? Instant.now() : input.to();
+        Instant from = input.from() == null ? to.minus(DEFAULT_WINDOW_DAYS, ChronoUnit.DAYS) : input.from();
 
-        var buckets = schoolAiCostQueryRepository.findBucketedCost(
+        List<AiCostBucketDto> buckets = schoolAiCostQueryRepository.findBucketedCost(
             schoolId, from, to, input.granularity().sqlUnit());
 
-        // Cộng ở Java trên tập ĐÃ gom nhóm (tối đa vài chục dòng), không phải một câu SUM thứ hai:
-        // hai câu riêng có thể lệch nhau nếu bút toán được ghi xen vào giữa, và lúc đó tổng ở đầu thẻ
-        // không bằng tổng các cột ngay bên dưới nó.
-        var total = buckets.stream()
+        // Sum in Java over the ALREADY grouped set (a few dozen rows at most), not with a second SUM query:
+        // two separate queries can disagree if an entry is written in between, and then the total at the top
+        // of the card would not equal the sum of the columns right below it.
+        BigDecimal total = buckets.stream()
             .map(bucket -> bucket.costVnd())
             .reduce(BigDecimal.ZERO, (left, right) -> left.add(right));
 
-        var recordedFrom = schoolAiCostQueryRepository.findFirstRecordedAt(schoolId);
+        Instant recordedFrom = schoolAiCostQueryRepository.findFirstRecordedAt(schoolId);
 
         return new SchoolAiCostTimeseriesResponse(
-            input.granularity().name(),
+            input.granularity(),
             DecimalText.of(total),
             buckets.stream()
                 .map(bucket -> new SchoolAiCostTimeseriesResponse.AiCostPointResponse(
-                    bucket.bucket().toString(),
+                    bucket.bucket(),
                     bucket.quotaType(),
                     DecimalText.of(bucket.costVnd())))
                 .toList(),
-            recordedFrom == null ? null : recordedFrom.toString()
+            recordedFrom
         );
     }
 }

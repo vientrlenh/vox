@@ -54,14 +54,14 @@ public class CreateTopUpOrderUseCase implements IUseCase<CreateTopUpOrderCommand
     @Override
     @Transactional
     public UUID execute(CreateTopUpOrderCommand input) {
-        var schoolId = userContextPort.getCurrentSchoolId();
+        UUID schoolId = userContextPort.getCurrentSchoolId();
 
-        var creditAmountVnd = validatedCreditAmount(input.creditAmountVnd());
+        BigDecimal creditAmountVnd = validatedCreditAmount(input.creditAmountVnd());
 
         // Số dư chỉ bị tiêu khi hạn mức kèm gói đã cạn (OVERAGE_CHARGE), nên nạp lúc chưa có gói nào
         // đang chạy là nạp tiền vào chỗ không tiêu được. Số dư VẪN sống xuyên qua các lần gia hạn --
         // chặn ở đây là chặn nạp SỚM, không phải gắn tiền vào gói.
-        var hasActiveSubscription = schoolSubscriptionRepository.findActiveBySchoolId(schoolId).isPresent();
+        boolean hasActiveSubscription = schoolSubscriptionRepository.findActiveBySchoolId(schoolId).isPresent();
         if (!hasActiveSubscription) {
             throw new IllegalStateException("Trường chưa có gói đăng ký nào đang hoạt động để nạp thêm.");
         }
@@ -70,7 +70,7 @@ public class CreateTopUpOrderUseCase implements IUseCase<CreateTopUpOrderCommand
         // thì nhận đúng 1.000.000đ vào ví và trả 1.200.000đ. Làm tròn phí về đồng nguyên vì cột là
         // numeric(15,0) và cổng chỉ nhận số nguyên -- làm tròn ở đây chứ không để Postgres tự làm, để
         // số ghi xuống đúng bằng số đã dùng để tính tổng.
-        var serviceFeeVnd = creditAmountVnd
+        BigDecimal serviceFeeVnd = creditAmountVnd
             .multiply(serviceFeePort.serviceFeeRatio())
             .setScale(0, RoundingMode.HALF_UP);
 
@@ -78,8 +78,8 @@ public class CreateTopUpOrderUseCase implements IUseCase<CreateTopUpOrderCommand
             throw new IllegalArgumentException("Số tiền nạp vượt quá giới hạn cho phép");
         }
 
-        var now = Instant.now();
-        var savedOrder = orderRepository.save(Order.forTopUp(
+        Instant now = Instant.now();
+        Order savedOrder = orderRepository.save(Order.forTopUp(
             schoolId,
             "Nạp thêm vào số dư",
             creditAmountVnd,

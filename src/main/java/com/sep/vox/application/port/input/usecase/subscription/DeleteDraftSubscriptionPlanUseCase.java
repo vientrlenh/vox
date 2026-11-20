@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
+import com.sep.vox.domain.model.subscription.SubscriptionPlan;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +27,7 @@ public class DeleteDraftSubscriptionPlanUseCase implements IUseCase<DeleteDraftS
     @Override
     @Transactional
     public Void execute(DeleteDraftSubscriptionPlanCommand input) {
-        var plan = subscriptionPlanRepository.findById(input.subscriptionPlanId())
+        SubscriptionPlan plan = subscriptionPlanRepository.findById(input.subscriptionPlanId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
 
         // Gói đã publish thì có thể đã có trường mua, và kể cả chưa có thì dòng đơn hàng

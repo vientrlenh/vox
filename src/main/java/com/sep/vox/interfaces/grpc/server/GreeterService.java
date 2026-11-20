@@ -15,7 +15,7 @@ public class GreeterService extends GreeterImplBase {
     @Override
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public void greet(GreetRequest request, StreamObserver<GreetReply> responseObserver) {
-        var reply = GreetReply.newBuilder()
+        GreetReply reply = GreetReply.newBuilder()
             .setMessage("Hello " + request.getName())
             .build();
         responseObserver.onNext(reply);
@@ -25,9 +25,9 @@ public class GreeterService extends GreeterImplBase {
     @Override
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public void streamGreet(GreetRequest request, StreamObserver<GreetReply> responseObserver) {
-        var count = 1;
+        int count = 1;
         while (count <= 10) {
-            var reply = GreetReply.newBuilder()
+            GreetReply reply = GreetReply.newBuilder()
                 .setMessage("Hello (" + count + "): " + request.getName())
                 .build();
             responseObserver.onNext(reply);

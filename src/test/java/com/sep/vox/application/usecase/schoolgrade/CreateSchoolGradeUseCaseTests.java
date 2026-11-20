@@ -61,8 +61,8 @@ class CreateSchoolGradeUseCaseTests {
 
     @Test
     void should_create_grade_with_active_status() {
-        var now = Instant.now();
-        var gradeLevel = new GradeLevel(
+        Instant now = Instant.now();
+        GradeLevel gradeLevel = new GradeLevel(
             gradeLevelId, "K1", "Khối 1", "desc", 1, GradeLevelStatus.ACTIVE, now, now,
             UUID.randomUUID(), UUID.randomUUID());
         when(gradeLevelRepository.findById(gradeLevelId)).thenReturn(Optional.of(gradeLevel));
@@ -73,12 +73,12 @@ class CreateSchoolGradeUseCaseTests {
             return toSave;
         });
 
-        var command = new CreateSchoolGradeCommand(
+        CreateSchoolGradeCommand command = new CreateSchoolGradeCommand(
             schoolId, gradeLevelId, "nh2024", "Năm học 2024", "desc",
             LocalDate.of(2024, 9, 1), LocalDate.of(2025, 6, 30));
         useCase.execute(command);
 
-        var captor = ArgumentCaptor.forClass(SchoolGrade.class);
+        ArgumentCaptor<SchoolGrade> captor = ArgumentCaptor.forClass(SchoolGrade.class);
         org.mockito.Mockito.verify(schoolGradeRepository).save(captor.capture());
         assertThat(captor.getValue().getStatus()).isEqualTo(SchoolGradeStatus.ACTIVE);
     }

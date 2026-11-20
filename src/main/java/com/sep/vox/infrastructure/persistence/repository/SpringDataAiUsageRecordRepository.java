@@ -13,32 +13,32 @@ import org.springframework.data.repository.query.Param;
 import com.sep.vox.infrastructure.persistence.entity.AiUsageRecordJpaEntity;
 
 public interface SpringDataAiUsageRecordRepository extends JpaRepository<AiUsageRecordJpaEntity, UUID> {
-    List<AiUsageRecordJpaEntity> findByExamSessionId(UUID examSessionId);
+    List<AiUsageRecordJpaEntity> findByAssessmentSessionId(UUID assessmentSessionId);
     boolean existsByUsageEventId(UUID usageEventId);
 
-    // KHÔNG có bản cộng cả phiên (sumCost*ByExamSessionId cũ): nó là chính thứ đã thu tiền hai lần
-    // khi một phiên được chấm lại. Mọi lần cộng để thu tiền phải đi qua mốc chargedAt bên dưới.
+    // There is NO whole-session sum (the old sumCost*ByAssessmentSessionId): it is the very thing that charged twice
+    // when a session was regraded. Every sum used to charge money must go through the chargedAt stamp below.
 
     /**
-     * GIÀNH mọi dòng chi phí chưa thu của phiên bằng cách đóng cùng một mốc {@code chargedAt}, và trả
-     * về số dòng đã giành. Mốc đó chính là thẻ định danh của lượt thu này -- xem
-     * {@link #sumCostVndByExamSessionIdAndChargedAt}.
+     * CLAIMS every uncharged cost row of the session by stamping them with one shared {@code chargedAt}, and returns
+     * the number of rows claimed. That stamp is the identity tag of this charge -- see
+     * {@link #sumCostVndByAssessmentSessionIdAndChargedAt}.
      *
-     * <p>Giành TRƯỚC rồi mới cộng, chứ không cộng trước rồi đóng dấu: một dòng usage do Kafka chèn vào
-     * giữa hai bước ở chiều ngược lại sẽ bị đóng dấu "đã thu" mà chưa hề được cộng vào khoản trừ, tức
-     * mất trắng đúng khoản tiền đó. Theo chiều này thì nó vẫn còn NULL và lượt thu sau sẽ nhặt được.
+     * <p>Claim FIRST and sum afterwards, not sum first and then stamp: a usage row inserted by Kafka between the two
+     * steps in the opposite order would be stamped "charged" without ever being added to the deduction, i.e.
+     * that exact amount would be lost. In this order it stays NULL and the next charge will pick it up.
      *
-     * <p>clearAutomatically không cần: chỗ gọi chỉ đọc lại bằng truy vấn tổng hợp, không nạp lại
-     * entity nào của bảng này.
+     * <p>clearAutomatically is not needed: the caller only reads back through an aggregate query and does not reload
+     * any entity of this table.
      */
     @Modifying
     @Query("""
         UPDATE AiUsageRecordJpaEntity r
         SET r.chargedAt = :chargedAt
-        WHERE r.examSessionId = :examSessionId AND r.chargedAt IS NULL AND r.waivedAt IS NULL
+        WHERE r.assessmentSessionId = :assessmentSessionId AND r.chargedAt IS NULL AND r.waivedAt IS NULL
     """)
-    int markChargedByExamSessionId(
-        @Param("examSessionId") UUID examSessionId, @Param("chargedAt") Instant chargedAt);
+    int markChargedByAssessmentSessionId(
+        @Param("assessmentSessionId") UUID assessmentSessionId, @Param("chargedAt") Instant chargedAt);
 
     /**
      * MIỄN mọi dòng chi phí chưa ngã ngũ của phiên: chúng thuộc lượt chấm vừa hỏng, và lượt hỏng
@@ -56,32 +56,32 @@ public interface SpringDataAiUsageRecordRepository extends JpaRepository<AiUsage
     @Query("""
         UPDATE AiUsageRecordJpaEntity r
         SET r.waivedAt = :waivedAt
-        WHERE r.examSessionId = :examSessionId AND r.chargedAt IS NULL AND r.waivedAt IS NULL
+        WHERE r.assessmentSessionId = :assessmentSessionId AND r.chargedAt IS NULL AND r.waivedAt IS NULL
     """)
-    int markWaivedByExamSessionId(
-        @Param("examSessionId") UUID examSessionId, @Param("waivedAt") Instant waivedAt);
+    int markWaivedByAssessmentSessionId(
+        @Param("assessmentSessionId") UUID assessmentSessionId, @Param("waivedAt") Instant waivedAt);
 
     /** Tổng chi phí nền tảng đã gánh thay cho các lượt chấm hỏng của phiên này. */
     @Query("""
         SELECT COALESCE(SUM(r.costVnd), 0)
         FROM AiUsageRecordJpaEntity r
-        WHERE r.examSessionId = :examSessionId AND r.waivedAt IS NOT NULL
+        WHERE r.assessmentSessionId = :assessmentSessionId AND r.waivedAt IS NOT NULL
     """)
-    BigDecimal sumWaivedCostVndByExamSessionId(@Param("examSessionId") UUID examSessionId);
+    BigDecimal sumWaivedCostVndByAssessmentSessionId(@Param("assessmentSessionId") UUID assessmentSessionId);
 
     @Query("""
         SELECT COALESCE(SUM(r.costVnd), 0)
         FROM AiUsageRecordJpaEntity r
-        WHERE r.examSessionId = :examSessionId AND r.chargedAt = :chargedAt
+        WHERE r.assessmentSessionId = :assessmentSessionId AND r.chargedAt = :chargedAt
     """)
-    BigDecimal sumCostVndByExamSessionIdAndChargedAt(
-        @Param("examSessionId") UUID examSessionId, @Param("chargedAt") Instant chargedAt);
+    BigDecimal sumCostVndByAssessmentSessionIdAndChargedAt(
+        @Param("assessmentSessionId") UUID assessmentSessionId, @Param("chargedAt") Instant chargedAt);
 
     @Query("""
         SELECT COALESCE(SUM(r.costUsd), 0)
         FROM AiUsageRecordJpaEntity r
-        WHERE r.examSessionId = :examSessionId AND r.chargedAt = :chargedAt
+        WHERE r.assessmentSessionId = :assessmentSessionId AND r.chargedAt = :chargedAt
     """)
-    BigDecimal sumCostUsdByExamSessionIdAndChargedAt(
-        @Param("examSessionId") UUID examSessionId, @Param("chargedAt") Instant chargedAt);
+    BigDecimal sumCostUsdByAssessmentSessionIdAndChargedAt(
+        @Param("assessmentSessionId") UUID assessmentSessionId, @Param("chargedAt") Instant chargedAt);
 }

@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.QuestionCollaboratorJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -23,8 +24,8 @@ public class QuestionCollaboratorRepositoryImpl implements QuestionCollaboratorR
 
     @Override
     public QuestionCollaborator save(QuestionCollaborator collaborator) {
-        var entity = QuestionCollaboratorMapper.toJpa(collaborator);
-        var saved = springDataQuestionCollaboratorRepository.save(entity);
+        QuestionCollaboratorJpaEntity entity = QuestionCollaboratorMapper.toJpa(collaborator);
+        QuestionCollaboratorJpaEntity saved = springDataQuestionCollaboratorRepository.save(entity);
         return QuestionCollaboratorMapper.toDomain(saved);
     }
 

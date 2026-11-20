@@ -1,7 +1,10 @@
 package com.sep.vox.application.port.input.usecase.questiontopic;
 
+import com.sep.vox.domain.model.question.QuestionBank;
+import com.sep.vox.domain.model.question.QuestionTopic;
 import java.time.Instant;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,15 +42,15 @@ public class UpdateQuestionTopicStatusUseCase implements IUseCase<UpdateQuestion
     @Override
     @Transactional
     public QuestionTopicDto execute(UpdateQuestionTopicStatusCommand input) {
-        var command = normalize(input);
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UpdateQuestionTopicStatusCommand command = normalize(input);
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
 
-        var topic = questionTopicRepository.findById(command.id())
+        QuestionTopic topic = questionTopicRepository.findById(command.id())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề câu hỏi"));
-        var bank = questionBankRepository.findById(topic.getQuestionBankId())
+        QuestionBank bank = questionBankRepository.findById(topic.getQuestionBankId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
         validateAccess(bank.getOwnerType(), bank.getSchoolId(), currentSchoolId);
@@ -66,7 +69,7 @@ public class UpdateQuestionTopicStatusUseCase implements IUseCase<UpdateQuestion
         topic.setUpdatedAt(Instant.now());
         topic.setUpdatedBy(currentUserId);
 
-        var saved = questionTopicRepository.save(topic);
+        QuestionTopic saved = questionTopicRepository.save(topic);
         return QuestionTopicDtoMapper.toDto(saved);
     }
 

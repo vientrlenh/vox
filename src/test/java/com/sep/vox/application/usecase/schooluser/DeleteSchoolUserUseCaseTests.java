@@ -51,10 +51,10 @@ public class DeleteSchoolUserUseCaseTests {
 
     @Test
     void delete_should_soft_delete_user() {
-        var targetId = UUID.randomUUID();
-        var caller = user(callerId, schoolId, UserStatus.ACTIVE);
-        var target = user(targetId, schoolId, UserStatus.ACTIVE);
-        var command = new DeleteSchoolUserCommand(schoolId, targetId);
+        UUID targetId = UUID.randomUUID();
+        User caller = user(callerId, schoolId, UserStatus.ACTIVE);
+        User target = user(targetId, schoolId, UserStatus.ACTIVE);
+        DeleteSchoolUserCommand command = new DeleteSchoolUserCommand(schoolId, targetId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(caller));
@@ -68,8 +68,8 @@ public class DeleteSchoolUserUseCaseTests {
 
     @Test
     void delete_should_throw_when_caller_belongs_to_different_school() {
-        var caller = user(callerId, UUID.randomUUID(), UserStatus.ACTIVE);
-        var command = new DeleteSchoolUserCommand(schoolId, UUID.randomUUID());
+        User caller = user(callerId, UUID.randomUUID(), UserStatus.ACTIVE);
+        DeleteSchoolUserCommand command = new DeleteSchoolUserCommand(schoolId, UUID.randomUUID());
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(caller));
@@ -80,9 +80,9 @@ public class DeleteSchoolUserUseCaseTests {
 
     @Test
     void delete_should_throw_when_target_user_not_found() {
-        var targetId = UUID.randomUUID();
-        var caller = user(callerId, schoolId, UserStatus.ACTIVE);
-        var command = new DeleteSchoolUserCommand(schoolId, targetId);
+        UUID targetId = UUID.randomUUID();
+        User caller = user(callerId, schoolId, UserStatus.ACTIVE);
+        DeleteSchoolUserCommand command = new DeleteSchoolUserCommand(schoolId, targetId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(caller));
@@ -94,10 +94,10 @@ public class DeleteSchoolUserUseCaseTests {
 
     @Test
     void delete_should_throw_when_target_belongs_to_different_school() {
-        var targetId = UUID.randomUUID();
-        var caller = user(callerId, schoolId, UserStatus.ACTIVE);
-        var target = user(targetId, UUID.randomUUID(), UserStatus.ACTIVE);
-        var command = new DeleteSchoolUserCommand(schoolId, targetId);
+        UUID targetId = UUID.randomUUID();
+        User caller = user(callerId, schoolId, UserStatus.ACTIVE);
+        User target = user(targetId, UUID.randomUUID(), UserStatus.ACTIVE);
+        DeleteSchoolUserCommand command = new DeleteSchoolUserCommand(schoolId, targetId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(caller));
@@ -109,10 +109,10 @@ public class DeleteSchoolUserUseCaseTests {
 
     @Test
     void delete_should_soft_delete_even_when_target_inactive() {
-        var targetId = UUID.randomUUID();
-        var caller = user(callerId, schoolId, UserStatus.ACTIVE);
-        var target = user(targetId, schoolId, UserStatus.INACTIVE);
-        var command = new DeleteSchoolUserCommand(schoolId, targetId);
+        UUID targetId = UUID.randomUUID();
+        User caller = user(callerId, schoolId, UserStatus.ACTIVE);
+        User target = user(targetId, schoolId, UserStatus.INACTIVE);
+        DeleteSchoolUserCommand command = new DeleteSchoolUserCommand(schoolId, targetId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(caller));
@@ -126,8 +126,8 @@ public class DeleteSchoolUserUseCaseTests {
 
     @Test
     void delete_should_reject_self_delete() {
-        var caller = user(callerId, schoolId, UserStatus.ACTIVE);
-        var command = new DeleteSchoolUserCommand(schoolId, callerId);
+        User caller = user(callerId, schoolId, UserStatus.ACTIVE);
+        DeleteSchoolUserCommand command = new DeleteSchoolUserCommand(schoolId, callerId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(caller));
@@ -138,7 +138,7 @@ public class DeleteSchoolUserUseCaseTests {
 
     @Test
     void delete_should_throw_when_caller_inactive() {
-        var command = new DeleteSchoolUserCommand(schoolId, UUID.randomUUID());
+        DeleteSchoolUserCommand command = new DeleteSchoolUserCommand(schoolId, UUID.randomUUID());
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.empty());
@@ -149,10 +149,10 @@ public class DeleteSchoolUserUseCaseTests {
 
     @Test
     void delete_should_end_membership() {
-        var targetId = UUID.randomUUID();
-        var caller = user(callerId, schoolId, UserStatus.ACTIVE);
-        var target = user(targetId, schoolId, UserStatus.ACTIVE);
-        var command = new DeleteSchoolUserCommand(schoolId, targetId);
+        UUID targetId = UUID.randomUUID();
+        User caller = user(callerId, schoolId, UserStatus.ACTIVE);
+        User target = user(targetId, schoolId, UserStatus.ACTIVE);
+        DeleteSchoolUserCommand command = new DeleteSchoolUserCommand(schoolId, targetId);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(caller));
@@ -162,13 +162,14 @@ public class DeleteSchoolUserUseCaseTests {
 
         deleteSchoolUserUseCase.execute(command);
 
-        // Membership bị kết thúc: endDate không còn ở tương lai xa (100 năm) mà <= hiện tại + biên nhỏ
+        // The membership is ended: endDate is no longer far in the future (100 years) but <= now +
+        // a small margin.
         verify(schoolUserRepository).save(argThat(su ->
             su.getEndDate() != null && su.getEndDate().isBefore(Instant.now().plus(1, ChronoUnit.MINUTES))));
     }
 
     private User user(UUID id, UUID userSchoolId, UserStatus status) {
-        var now = Instant.now();
+        Instant now = Instant.now();
         when(schoolUserRepository.findByUserId(id)).thenReturn(Optional.of(
             new SchoolUser(userSchoolId, id, now, now.plus(36500, ChronoUnit.DAYS))
         ));

@@ -1,5 +1,8 @@
 package com.sep.vox.application.port.input.usecase.scoringrule;
 
+import com.sep.vox.domain.model.school.School;
+import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.domain.model.user.User;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -70,20 +73,20 @@ public class UpdateSchoolScoringRuleUseCase implements IUseCase<UpdateSchoolScor
     public UUID execute(UpdateSchoolScoringRuleCommand command) {
         // 1. Kiểm tra tài khoản School Admin
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = userRepository.findById(currentUserId)
+        User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("Tài khoản đã bị khóa.");
         }
 
         // 2. Kiểm tra tài khoản thuộc đúng trường học yêu cầu
-        var schoolUser = schoolUserRepository.findByUserId(currentUserId)
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được phân bổ vào trường học nào."));
         if (!schoolUser.getSchoolId().equals(command.schoolId())) {
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền can thiệp vào Assessment Policy của trường khác.");
         }
 
-        var school = schoolRepository.findById(command.schoolId())
+        School school = schoolRepository.findById(command.schoolId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
         if (!school.isActive()) {
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
@@ -116,8 +119,8 @@ public class UpdateSchoolScoringRuleUseCase implements IUseCase<UpdateSchoolScor
         }
 
         // 8. Convert Map JSON thô -> Value Object cụ thể theo conditionType/actionType MỚI
-        var conditionParams = ScoringRuleParamsMapper.toConditionParams(command.conditionType(), command.conditionParams());
-        var actionParams = ScoringRuleParamsMapper.toActionParams(command.actionType(), command.actionParams());
+        ScoringRuleConditionParams conditionParams = ScoringRuleParamsMapper.toConditionParams(command.conditionType(), command.conditionParams());
+        ScoringRuleActionParams actionParams = ScoringRuleParamsMapper.toActionParams(command.actionType(), command.actionParams());
 
         // 8b. Kiểm tra criterionCode/bandCode (nếu có) có thực sự tồn tại trong Rubric Version của Policy
         validateCriterionReferences(policy.getRubricVersionId(), policy.getFrameworkVersionId(), conditionParams, actionParams);

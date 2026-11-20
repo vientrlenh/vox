@@ -15,6 +15,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionStatus;
@@ -52,10 +53,10 @@ class SchoolRoomImportCommitHandlerTests {
 
     @Test
     void should_create_valid_rows_and_mark_invalid_rows() {
-        var schoolId = UUID.randomUUID();
-        var createdBy = UUID.randomUUID();
-        var sessionId = UUID.randomUUID();
-        var rows = List.of(
+        UUID schoolId = UUID.randomUUID();
+        UUID createdBy = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
+        List<ImportRow> rows = List.of(
             row(sessionId, 1L, data("P101", "Phòng 101")),
             row(sessionId, 2L, data("", "Thiếu mã"))
         );
@@ -76,13 +77,13 @@ class SchoolRoomImportCommitHandlerTests {
 
     @Test
     void should_create_room_active_by_default() {
-        var schoolId = UUID.randomUUID();
-        var createdBy = UUID.randomUUID();
-        var sessionId = UUID.randomUUID();
-        var rows = List.of(row(sessionId, 1L, data("P101", "Phòng 101")));
+        UUID schoolId = UUID.randomUUID();
+        UUID createdBy = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
+        List<ImportRow> rows = List.of(row(sessionId, 1L, data("P101", "Phòng 101")));
 
         when(schoolRoomRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("P101"))).thenReturn(List.of());
-        var captor = org.mockito.ArgumentCaptor.forClass(SchoolRoom.class);
+        ArgumentCaptor<SchoolRoom> captor = org.mockito.ArgumentCaptor.forClass(SchoolRoom.class);
         when(schoolRoomRepository.save(any(SchoolRoom.class))).thenAnswer(inv -> inv.getArgument(0));
 
         handler.commit(session(sessionId, schoolId, createdBy), rows);
@@ -94,15 +95,15 @@ class SchoolRoomImportCommitHandlerTests {
 
     @Test
     void should_update_existing_room_when_code_exists() {
-        var schoolId = UUID.randomUUID();
-        var createdBy = UUID.randomUUID();
-        var sessionId = UUID.randomUUID();
-        var createdAt = Instant.now().minus(5, ChronoUnit.DAYS);
-        var existing = new SchoolRoom(
+        UUID schoolId = UUID.randomUUID();
+        UUID createdBy = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
+        Instant createdAt = Instant.now().minus(5, ChronoUnit.DAYS);
+        SchoolRoom existing = new SchoolRoom(
             UUID.randomUUID(), schoolId, "P101", "Phòng cũ", "Mô tả cũ", true,
             createdAt, createdAt, createdBy, createdBy
         );
-        var rows = List.of(row(sessionId, 1L, dataWithDescription("P101", "Phòng mới", "Mô tả mới")));
+        List<ImportRow> rows = List.of(row(sessionId, 1L, dataWithDescription("P101", "Phòng mới", "Mô tả mới")));
 
         when(schoolRoomRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("P101"))).thenReturn(List.of(existing));
         when(schoolRoomRepository.save(any(SchoolRoom.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -122,15 +123,15 @@ class SchoolRoomImportCommitHandlerTests {
 
     @Test
     void should_reactivate_existing_inactive_room() {
-        var schoolId = UUID.randomUUID();
-        var createdBy = UUID.randomUUID();
-        var sessionId = UUID.randomUUID();
-        var createdAt = Instant.now().minus(5, ChronoUnit.DAYS);
-        var existing = new SchoolRoom(
+        UUID schoolId = UUID.randomUUID();
+        UUID createdBy = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
+        Instant createdAt = Instant.now().minus(5, ChronoUnit.DAYS);
+        SchoolRoom existing = new SchoolRoom(
             UUID.randomUUID(), schoolId, "P101", "Phòng cũ", "Mô tả cũ", false,
             createdAt, createdAt, createdBy, createdBy
         );
-        var rows = List.of(row(sessionId, 1L, dataWithDescription("P101", "Phòng mới", "Mô tả mới")));
+        List<ImportRow> rows = List.of(row(sessionId, 1L, dataWithDescription("P101", "Phòng mới", "Mô tả mới")));
 
         when(schoolRoomRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("P101"))).thenReturn(List.of(existing));
         when(schoolRoomRepository.save(any(SchoolRoom.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -147,10 +148,10 @@ class SchoolRoomImportCommitHandlerTests {
 
     @Test
     void should_keep_duplicate_code_in_same_file_invalid() {
-        var schoolId = UUID.randomUUID();
-        var createdBy = UUID.randomUUID();
-        var sessionId = UUID.randomUUID();
-        var rows = List.of(
+        UUID schoolId = UUID.randomUUID();
+        UUID createdBy = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
+        List<ImportRow> rows = List.of(
             row(sessionId, 1L, data("P101", "Phòng 101")),
             row(sessionId, 2L, data("P101", "Phòng trùng"))
         );
@@ -168,10 +169,10 @@ class SchoolRoomImportCommitHandlerTests {
 
     @Test
     void should_mark_failed_when_unique_constraint_violated() {
-        var schoolId = UUID.randomUUID();
-        var createdBy = UUID.randomUUID();
-        var sessionId = UUID.randomUUID();
-        var rows = List.of(row(sessionId, 1L, data("P101", "Phòng 101")));
+        UUID schoolId = UUID.randomUUID();
+        UUID createdBy = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
+        List<ImportRow> rows = List.of(row(sessionId, 1L, data("P101", "Phòng 101")));
 
         when(schoolRoomRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("P101"))).thenReturn(List.of());
         when(schoolRoomRepository.save(any(SchoolRoom.class)))

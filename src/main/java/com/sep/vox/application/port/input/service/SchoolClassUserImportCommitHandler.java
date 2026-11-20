@@ -67,9 +67,9 @@ public class SchoolClassUserImportCommitHandler implements ImportCommitHandler {
 
     @Override
     public ImportCommitResult commit(ImportSession session, List<ImportRow> rows) {
-        var schoolId = session.getSchoolId();
-        var currentUserId = session.getCreatedBy();
-        var mapping = jsonSerializationPort.toStringMap(session.getConfirmedMappingJson());
+        UUID schoolId = session.getSchoolId();
+        UUID currentUserId = session.getCreatedBy();
+        Map<String, String> mapping = jsonSerializationPort.toStringMap(session.getConfirmedMappingJson());
         validateMappingKeys(rows, mapping);
         return processRows(rows, mapping, schoolId, currentUserId);
     }
@@ -78,14 +78,14 @@ public class SchoolClassUserImportCommitHandler implements ImportCommitHandler {
         if (rows.isEmpty()) {
             return;
         }
-        var validHeaders = jsonSerializationPort.toStringMap(rows.get(0).getRawDataJson()).keySet();
-        var invalidKeys = confirmedMapping.keySet().stream()
+        Set<String> validHeaders = jsonSerializationPort.toStringMap(rows.get(0).getRawDataJson()).keySet();
+        List<String> invalidKeys = confirmedMapping.keySet().stream()
             .filter(key -> !validHeaders.contains(key))
             .toList();
         if (!invalidKeys.isEmpty()) {
             throw new IllegalArgumentException("Mapping chứa cột không tồn tại trong file: " + String.join(", ", invalidKeys));
         }
-        var invalidValues = confirmedMapping.values().stream()
+        List<String> invalidValues = confirmedMapping.values().stream()
             .map(value -> value == null ? null : value.strip())
             .filter(value -> value != null && !value.isEmpty() && !SUPPORTED_FIELDS.contains(value))
             .toList();
@@ -95,18 +95,18 @@ public class SchoolClassUserImportCommitHandler implements ImportCommitHandler {
     }
 
     private ImportCommitResult processRows(List<ImportRow> rows, Map<String, String> confirmedMapping, UUID schoolId, UUID currentUserId) {
-        var createdRows = 0L;
-        var updatedRows = 0L;
-        var invalidRows = 0L;
-        var seenMemberships = new HashSet<MembershipKey>();
-        var rowContexts = new ArrayList<RowContext>();
-        var emails = new HashSet<String>();
-        var classCodes = new HashSet<String>();
+        long createdRows = 0L;
+        long updatedRows = 0L;
+        long invalidRows = 0L;
+        Set<MembershipKey> seenMemberships = new HashSet<MembershipKey>();
+        List<RowContext> rowContexts = new ArrayList<RowContext>();
+        Set<String> emails = new HashSet<String>();
+        Set<String> classCodes = new HashSet<String>();
 
-        for (var row : rows) {
-            var rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
-            var mappedData = mapRawData(rawData, confirmedMapping);
-            var normalized = normalize(mappedData);
+        for (ImportRow row : rows) {
+            Map<String, String> rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
+            Map<String, String> mappedData = mapRawData(rawData, confirmedMapping);
+            Map<String, String> normalized = normalize(mappedData);
             row.setMappedDataJson(jsonSerializationPort.toJson(normalized));
             rowContexts.add(new RowContext(row, normalized));
 
@@ -114,15 +114,15 @@ public class SchoolClassUserImportCommitHandler implements ImportCommitHandler {
             addIfPresent(classCodes, normalized.get("classCode"));
         }
 
-        var usersByEmail = findUsersByEmail(emails);
-        var classesByCode = findClassesByCode(schoolId, classCodes);
-        var schoolUsersByUserId = findSchoolUsersByUserId(usersByEmail.values());
-        var existingMembershipsByPair = findExistingMembershipsByPair(usersByEmail.values(), classesByCode.values());
+        Map<String, User> usersByEmail = findUsersByEmail(emails);
+        Map<String, SchoolClass> classesByCode = findClassesByCode(schoolId, classCodes);
+        Map<UUID, SchoolUser> schoolUsersByUserId = findSchoolUsersByUserId(usersByEmail.values());
+        Map<String, SchoolClassUser> existingMembershipsByPair = findExistingMembershipsByPair(usersByEmail.values(), classesByCode.values());
 
-        for (var rowContext : rowContexts) {
-            var row = rowContext.row();
-            var normalized = rowContext.normalized();
-            var validation = validateRow(normalized, schoolId, seenMemberships, usersByEmail, classesByCode, schoolUsersByUserId);
+        for (RowContext rowContext : rowContexts) {
+            ImportRow row = rowContext.row();
+            Map<String, String> normalized = rowContext.normalized();
+            RowValidation validation = validateRow(normalized, schoolId, seenMemberships, usersByEmail, classesByCode, schoolUsersByUserId);
 
             if (!validation.errors().isEmpty()) {
                 row.setErrorsJson(jsonSerializationPort.toJson(validation.errors()));
@@ -131,11 +131,11 @@ public class SchoolClassUserImportCommitHandler implements ImportCommitHandler {
                 continue;
             }
 
-            var now = Instant.now();
-            var user = validation.user();
-            var schoolClass = validation.schoolClass();
-            var key = membershipKey(user.getId(), schoolClass.getId());
-            var existing = existingMembershipsByPair.get(key);
+            Instant now = Instant.now();
+            User user = validation.user();
+            SchoolClass schoolClass = validation.schoolClass();
+            String key = membershipKey(user.getId(), schoolClass.getId());
+            SchoolClassUser existing = existingMembershipsByPair.get(key);
 
             try {
                 if (existing != null) {
@@ -166,43 +166,43 @@ public class SchoolClassUserImportCommitHandler implements ImportCommitHandler {
     }
 
     private Map<String, User> findUsersByEmail(Set<String> emails) {
-        var usersByEmail = new LinkedHashMap<String, User>();
+        Map<String, User> usersByEmail = new LinkedHashMap<String, User>();
         userRepository.findByEmailIn(emails)
             .forEach(user -> usersByEmail.putIfAbsent(user.getEmail().value(), user));
         return usersByEmail;
     }
 
     private Map<String, SchoolClass> findClassesByCode(UUID schoolId, Set<String> classCodes) {
-        var classesByCode = new LinkedHashMap<String, SchoolClass>();
+        Map<String, SchoolClass> classesByCode = new LinkedHashMap<String, SchoolClass>();
         schoolClassRepository.findBySchoolIdAndCodeIn(schoolId, classCodes)
             .forEach(schoolClass -> classesByCode.putIfAbsent(schoolClass.getCode().value(), schoolClass));
         return classesByCode;
     }
 
     private Map<UUID, SchoolUser> findSchoolUsersByUserId(Iterable<User> users) {
-        var userIds = new HashSet<UUID>();
+        Set<UUID> userIds = new HashSet<UUID>();
         users.forEach(user -> userIds.add(user.getId()));
-        var schoolUsersByUserId = new LinkedHashMap<UUID, SchoolUser>();
+        Map<UUID, SchoolUser> schoolUsersByUserId = new LinkedHashMap<UUID, SchoolUser>();
         schoolUserRepository.findByUserIdIn(userIds)
             .forEach(schoolUser -> schoolUsersByUserId.putIfAbsent(schoolUser.getUserId(), schoolUser));
         return schoolUsersByUserId;
     }
 
     private Map<String, SchoolClassUser> findExistingMembershipsByPair(Iterable<User> users, Iterable<SchoolClass> schoolClasses) {
-        var userIds = new HashSet<UUID>();
-        var schoolClassIds = new HashSet<UUID>();
+        Set<UUID> userIds = new HashSet<UUID>();
+        Set<UUID> schoolClassIds = new HashSet<UUID>();
         users.forEach(user -> userIds.add(user.getId()));
         schoolClasses.forEach(schoolClass -> schoolClassIds.add(schoolClass.getId()));
-        var existingMembershipsByPair = new LinkedHashMap<String, SchoolClassUser>();
+        Map<String, SchoolClassUser> existingMembershipsByPair = new LinkedHashMap<String, SchoolClassUser>();
         schoolClassUserRepository.findByUserIdInAndSchoolClassIdIn(userIds, schoolClassIds)
             .forEach(membership -> existingMembershipsByPair.putIfAbsent(membershipKey(membership.getUserId(), membership.getSchoolClassId()), membership));
         return existingMembershipsByPair;
     }
 
     private Map<String, String> mapRawData(Map<String, String> rawData, Map<String, String> confirmedMapping) {
-        var mappedData = new LinkedHashMap<String, String>();
+        Map<String, String> mappedData = new LinkedHashMap<String, String>();
         rawData.forEach((originalHeader, value) -> {
-            var systemField = confirmedMapping.get(originalHeader);
+            String systemField = confirmedMapping.get(originalHeader);
             if (systemField != null) {
                 systemField = systemField.strip();
             }
@@ -214,7 +214,7 @@ public class SchoolClassUserImportCommitHandler implements ImportCommitHandler {
     }
 
     private Map<String, String> normalize(Map<String, String> mappedData) {
-        var normalized = new LinkedHashMap<String, String>();
+        Map<String, String> normalized = new LinkedHashMap<String, String>();
         normalized.put("email", normalizeEmail(mappedData.get("email")));
         normalized.put("classCode", StringNormalization.normalizeCode(mappedData.get("classCode")));
         return normalized;
@@ -227,12 +227,12 @@ public class SchoolClassUserImportCommitHandler implements ImportCommitHandler {
     private RowValidation validateRow(Map<String, String> mappedData, UUID schoolId, Set<MembershipKey> seenMemberships,
             Map<String, User> usersByEmail, Map<String, SchoolClass> classesByCode,
             Map<UUID, SchoolUser> schoolUsersByUserId) {
-        var errors = new ArrayList<Map<String, String>>();
+        List<Map<String, String>> errors = new ArrayList<Map<String, String>>();
         addMissingError(errors, mappedData, "email", "Email không được để trống");
         addMissingError(errors, mappedData, "classCode", "Mã lớp không được để trống");
 
-        var email = mappedData.get("email");
-        var classCode = mappedData.get("classCode");
+        String email = mappedData.get("email");
+        String classCode = mappedData.get("classCode");
         if (isPresent(email) && isPresent(classCode) && !seenMemberships.add(new MembershipKey(email, classCode))) {
             errors.add(error("email", "Người dùng và lớp học bị trùng trong file import"));
         }
@@ -246,7 +246,7 @@ public class SchoolClassUserImportCommitHandler implements ImportCommitHandler {
                 if (!user.canBeAssignedToSchoolClass()) {
                     errors.add(error("email", "Người dùng đã bị khoá hoặc vô hiệu hoá"));
                 }
-                var schoolUser = schoolUsersByUserId.get(user.getId());
+                SchoolUser schoolUser = schoolUsersByUserId.get(user.getId());
                 if (schoolUser == null || !Objects.equals(schoolUser.getSchoolId(), schoolId)) {
                     errors.add(error("email", "Người dùng không thuộc trường hiện tại"));
                 }

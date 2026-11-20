@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import com.sep.vox.application.port.input.usecase.question.RecordQuestionAssetAnalysisResultUseCase;
 import com.sep.vox.interfaces.kafka.dto.QuestionAssetAnalysisCompletedEventDto;
 
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 @Component
@@ -45,8 +46,8 @@ public class QuestionAssetAnalysisCompletedConsumer {
     )
     public void consume(ConsumerRecord<String, Object> record, Acknowledgment ack) {
         try {
-            var payload = jsonMapper.valueToTree(record.value());
-            var event = jsonMapper.treeToValue(payload, QuestionAssetAnalysisCompletedEventDto.class);
+            JsonNode payload = jsonMapper.valueToTree(record.value());
+            QuestionAssetAnalysisCompletedEventDto event = jsonMapper.treeToValue(payload, QuestionAssetAnalysisCompletedEventDto.class);
 
             LOGGER.info("Receive question asset analysis event topic={} partition={} offset={} assetId={}",
                 record.topic(), record.partition(), record.offset(), event == null ? null : event.assetId());
@@ -60,7 +61,7 @@ public class QuestionAssetAnalysisCompletedConsumer {
                 return;
             }
 
-            var payloadDto = event.payload();
+            QuestionAssetAnalysisCompletedEventDto.Payload payloadDto = event.payload();
             recordQuestionAssetAnalysisResultUseCase.execute(new RecordQuestionAssetAnalysisResultUseCase.Command(
                 UUID.fromString(event.assetId().trim()),
                 payloadDto == null ? null : payloadDto.transcript(),

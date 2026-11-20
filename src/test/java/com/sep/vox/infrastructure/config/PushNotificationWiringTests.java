@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.context.PropertyPlaceholderAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.core.env.MutablePropertySources;
 import org.springframework.core.env.StandardEnvironment;
 
 import com.sep.vox.application.port.output.PushNotificationPort;
@@ -39,7 +40,7 @@ class PushNotificationWiringTests {
     void usesNoOpAdapterWhenFirebasePropertyIsAbsent() {
         contextRunner
             .withInitializer(context -> {
-                var source = context.getEnvironment().getPropertySources();
+                MutablePropertySources source = context.getEnvironment().getPropertySources();
                 source.remove(StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME);
                 source.remove(StandardEnvironment.SYSTEM_PROPERTIES_PROPERTY_SOURCE_NAME);
             })

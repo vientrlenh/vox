@@ -17,6 +17,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.query.ViewMyNotificationQuery;
 import com.sep.vox.application.port.input.usecase.notification.ViewMyNotificationUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.query.dto.NotificationDto;
 import com.sep.vox.domain.model.notification.Notification;
 import com.sep.vox.domain.repository.NotificationRepository;
 
@@ -46,14 +47,14 @@ class ViewMyNotificationUseCaseTests {
 
     @Test
     void should_return_the_notification_with_its_navigation_payload() {
-        var payload = "{\"eventType\":\"ExamResultReleased\",\"target\":\"EXAM_RESULT_DETAIL\"}";
+        String payload = "{\"eventType\":\"AssessmentResultReleased\",\"target\":\"ASSESSMENT_RESULT_DETAIL\"}";
         when(notificationRepository.findByIdAndUserId(notificationId, userId))
             .thenReturn(Optional.of(new Notification(
-                notificationId, userId, UUID.randomUUID(), "ExamResultReleased",
+                notificationId, userId, UUID.randomUUID(), "AssessmentResultReleased",
                 "Điểm thi của bạn đã có", "Kỳ thi giữa kỳ: 8.5 điểm", payload,
                 null, Instant.parse("2026-09-01T03:00:00Z"))));
 
-        var result = useCase.execute(new ViewMyNotificationQuery(notificationId));
+        NotificationDto result = useCase.execute(new ViewMyNotificationQuery(notificationId));
 
         assertThat(result.id()).isEqualTo(notificationId);
         assertThat(result.payload()).isEqualTo(payload);

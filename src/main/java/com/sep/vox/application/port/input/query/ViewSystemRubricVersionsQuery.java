@@ -1,10 +1,11 @@
 package com.sep.vox.application.port.input.query;
 
 import java.util.UUID;
+import com.sep.vox.domain.model.rubric.RubricStatus;
 
 public record ViewSystemRubricVersionsQuery(
         UUID rubricId,
-        String status, // Sửa thành String để hứng từ GraphQL cho an toàn
+        RubricStatus status,
         int page,
         int size
 ) {}

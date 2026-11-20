@@ -18,7 +18,7 @@ public class JpaQuestionBankStatsQueryRepository implements QuestionBankStatsQue
 
     @Override
     public QuestionBankStatsDto countForSchool(UUID schoolId) {
-        var totalQuestionBanks = em.createQuery("""
+        Long totalQuestionBanks = em.createQuery("""
             SELECT COUNT(qb)
             FROM QuestionBankJpaEntity qb
             WHERE qb.schoolId = :schoolId
@@ -26,7 +26,7 @@ public class JpaQuestionBankStatsQueryRepository implements QuestionBankStatsQue
             .setParameter("schoolId", schoolId)
             .getSingleResult();
 
-        var counts = em.createQuery("""
+        QuestionBankStatsDto counts = em.createQuery("""
             SELECT new com.sep.vox.application.query.dto.QuestionBankStatsDto(
                 COUNT(q),
                 0L,

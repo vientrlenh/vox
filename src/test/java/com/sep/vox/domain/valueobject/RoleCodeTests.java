@@ -9,14 +9,14 @@ public class RoleCodeTests {
 
     @Test
     void should_accept_valid_role_code() {
-        var roleCode = new RoleCode("SCHOOL_ADMIN");
+        RoleCode roleCode = new RoleCode("SCHOOL_ADMIN");
 
         assertThat(roleCode.value()).isEqualTo("SCHOOL_ADMIN");
     }
 
     @Test
     void should_accept_null_role_code() {
-        var roleCode = new RoleCode(null);
+        RoleCode roleCode = new RoleCode(null);
 
         assertThat(roleCode.value()).isNull();
     }

@@ -8,15 +8,15 @@ import com.sep.vox.application.query.dto.GradingOutcomeBucketDto;
 import com.sep.vox.application.query.dto.LiveSessionCountsDto;
 
 /**
- * Đọc tình trạng VẬN HÀNH của nền tảng từ bảng {@code exam_sessions}, cho dashboard system admin.
+ * Reads the OPERATIONAL health of the platform from the {@code assessment_sessions} table, for the system admin dashboard.
  *
- * <p>Là một BÁO CÁO, không phải cổng ghi của aggregate nào — cùng khuôn với
- * {@link SchoolAiCostQueryRepository} và {@link QuestionBankStatsQueryRepository}: gộp nhiều
- * phiên lại thành những con số không tương ứng với một thực thể nào và không có đường ghi ngược.
+ * <p>It is a REPORT, not the write gateway of any aggregate -- in the same mold as
+ * {@link SchoolAiCostQueryRepository} and {@link QuestionBankStatsQueryRepository}: it gathers many
+ * sessions into numbers that correspond to no entity and has no write path back.
  *
- * <p>Nguồn sự thật là cột {@code exam_sessions.status}, nơi {@code GRADING_FAILED} nghĩa là AI chấm
- * lỗi — xem {@code ExamSessionStatus}. Không suy ra từ {@code exam_item_evaluations}: bảng đó chỉ có
- * bản ghi khi việc chấm đã THÀNH CÔNG, nên đếm ở đó thì mọi lượt chấm lỗi đều vô hình.
+ * <p>The source of truth is the column {@code assessment_sessions.status}, where {@code GRADING_FAILED} means the AI's grading
+ * failed -- see {@code AssessmentSessionStatus}. It is not derived from {@code assessment_item_evaluations}: that table only has
+ * a record once grading has SUCCEEDED, so counting there makes every failed grading invisible.
  */
 public interface PlatformOperationalHealthQueryRepository {
 

@@ -8,9 +8,13 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.importfile.AcceptRubricResultBandImportResponse;
+import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
+import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
+import com.sep.vox.domain.model.rubric.RubricVersion;
+import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.ImportSessionRepository;
 import com.sep.vox.domain.repository.RubricRepository;
@@ -51,14 +55,14 @@ public class AcceptSystemRubricResultBandImportUseCase implements IUseCase<Accep
     public AcceptRubricResultBandImportResponse execute(AcceptRubricResultBandImportCommand command) {
         // Bước 1: Xác thực tài khoản Admin hệ thống
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = userRepository.findById(currentUserId)
+        User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
         }
 
         // Bước 2: Kiểm tra tính hợp lệ của phiên Import (ImportSession)
-        var session = importSessionRepository.findById(command.sessionId())
+        ImportSession session = importSessionRepository.findById(command.sessionId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên làm việc Import tương ứng."));
 
         if (session.getType() != ImportType.RUBRIC_RESULT_BAND || session.getImportedEntityId() == null) {
@@ -70,9 +74,9 @@ public class AcceptSystemRubricResultBandImportUseCase implements IUseCase<Accep
 
         // Bước 3: Bảo mật ngược dữ liệu đích (Đảm bảo Rubric Version thuộc về SYSTEM)
         UUID versionId = session.getImportedEntityId();
-        var version = rubricVersionRepository.findById(versionId)
+        RubricVersion version = rubricVersionRepository.findById(versionId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản Rubric tương ứng."));
-        var rubric = rubricRepository.findById(version.getRubricId())
+        Rubric rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {

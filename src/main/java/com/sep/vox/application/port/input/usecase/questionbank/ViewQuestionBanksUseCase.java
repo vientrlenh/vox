@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.questionbank;
 
+import com.sep.vox.domain.model.question.QuestionBank;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,19 +35,19 @@ public class ViewQuestionBanksUseCase implements IUseCase<ViewQuestionBanksQuery
     @Override
     @Transactional(readOnly = true)
     public PageResult<QuestionBankDto> execute(ViewQuestionBanksQuery input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var systemAdmin = userContextPort.isSystemAdmin();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        boolean systemAdmin = userContextPort.isSystemAdmin();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = !systemAdmin && userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+        boolean schoolAdmin = !systemAdmin && userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
 
         if (!systemAdmin && currentSchoolId == null) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        var result = questionBankRepository.findAccessible(
+        PageResult<QuestionBank> result = questionBankRepository.findAccessible(
             currentSchoolId,
             systemAdmin,
             schoolAdmin,

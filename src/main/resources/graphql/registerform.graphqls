@@ -1,10 +1,18 @@
+enum RegisterFormStatus {
+    PENDING
+    AUTO_APPROVED
+    APPROVED
+    REJECTED
+    EXPIRED
+}
+
 type RegisterForm {
     id: ID!
     contactFullName: String
     identityNumber: String
     contactPhone: String
     contactEmail: String
-    dateOfBirth: String
+    dateOfBirth: Date
     contactAddress: String
     schoolDomain: String
     schoolName: String
@@ -13,7 +21,7 @@ type RegisterForm {
     position: String
     studentCount: Int
     reason: String
-    status: String
+    status: RegisterFormStatus
     documents: [RegisterFormDocument!]
 }
 
@@ -29,7 +37,7 @@ type RegisterFormDocument {
     id: ID!
     registerFormId: ID
     url: String
-    createdAt: String
+    createdAt: DateTime
 }
 
 extend type Query {

@@ -1,12 +1,13 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.SchoolSubscriptionJpaEntity;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.application.common.StringNormalization;
@@ -15,6 +16,7 @@ import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionStatus;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolSubscriptionMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolSubscriptionRepository;
 
 @Repository
@@ -33,8 +35,8 @@ public class SchoolSubscriptionRepositoryImpl implements SchoolSubscriptionRepos
 
     @Override
     public SchoolSubscription save(SchoolSubscription subscription) {
-        var entity = SchoolSubscriptionMapper.toJpa(subscription);
-        var saved = springDataSchoolSubscriptionRepository.save(entity);
+        SchoolSubscriptionJpaEntity entity = SchoolSubscriptionMapper.toJpa(subscription);
+        SchoolSubscriptionJpaEntity saved = springDataSchoolSubscriptionRepository.save(entity);
         return SchoolSubscriptionMapper.toDomain(saved);
     }
 
@@ -73,12 +75,11 @@ public class SchoolSubscriptionRepositoryImpl implements SchoolSubscriptionRepos
     @Override
     public PageResult<SchoolSubscription> findForAdmin(
             UUID planId, SchoolSubscriptionStatus status, String keyword, int page, int size) {
-        var result = springDataSchoolSubscriptionRepository.findForAdmin(
+        Page<SchoolSubscriptionJpaEntity> result = springDataSchoolSubscriptionRepository.findForAdmin(
             planId,
             status == null ? null : status.name(),
             StringNormalization.toLikePattern(keyword),
-            // 1-based vào, 0-based xuống PageRequest -- xem OrderRepositoryImpl.findBySchoolId.
-            PageRequest.of(page - 1, size)
+            OneBasedPaging.toPageRequest(page, size)
         );
         return new PageResult<>(
             result.getContent().stream().map(SchoolSubscriptionMapper::toDomain).toList(),

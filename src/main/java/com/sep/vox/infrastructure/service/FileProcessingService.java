@@ -11,11 +11,16 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.springframework.stereotype.Service;
 
@@ -35,15 +40,15 @@ public class FileProcessingService implements FileProcessingPort {
     public ParseImportFileResult parse(UploadedFile file, ImportType type) {
         validate(file, type);
 
-        var extension = extensionOf(file.fileName());
+        String extension = extensionOf(file.fileName());
         validateMagicBytes(extension, file.content());
-        var table = switch (extension) {
+        ParsedImportTable table = switch (extension) {
             case "xlsx", "xls" -> parseExcel(file.fileName(), file.content());
             case "csv" -> parseCsv(file.fileName(), file.content());
             default -> throw new IllegalArgumentException("Định dạng file không được hỗ trợ để parse");
         };
 
-        var suggestedMapping = suggestMapping(table.headers(), type);
+        Map<String, String> suggestedMapping = suggestMapping(table.headers(), type);
         return new ParseImportFileResult(
                 table.headers(),
                 suggestedMapping,
@@ -67,11 +72,11 @@ public class FileProcessingService implements FileProcessingPort {
 
     private void validateMagicBytes(String extension, byte[] content) {
         if (content.length < 4) {
-            return; // để parser tự báo lỗi định dạng
+            return; // let the parser report the format error itself
         }
-        var isZipMagic = content[0] == 0x50 && content[1] == 0x4B
+        boolean isZipMagic = content[0] == 0x50 && content[1] == 0x4B
                 && content[2] == 0x03 && content[3] == 0x04;
-        var isOle2Magic = content.length >= 8
+        boolean isOle2Magic = content.length >= 8
                 && (content[0] & 0xFF) == 0xD0 && (content[1] & 0xFF) == 0xCF
                 && (content[2] & 0xFF) == 0x11 && (content[3] & 0xFF) == 0xE0;
         switch (extension) {
@@ -91,7 +96,7 @@ public class FileProcessingService implements FileProcessingPort {
                 }
             }
             default -> {
-                // định dạng khác sẽ bị từ chối ở bước switch parse
+                // any other format will be rejected at the parse switch step
             }
         }
     }
@@ -100,7 +105,7 @@ public class FileProcessingService implements FileProcessingPort {
         if (fileName == null || fileName.isBlank()) {
             return "";
         }
-        var dotIndex = fileName.lastIndexOf(".");
+        int dotIndex = fileName.lastIndexOf(".");
         if (dotIndex < 0 || dotIndex == fileName.length() - 1) {
             return "";
         }
@@ -108,27 +113,27 @@ public class FileProcessingService implements FileProcessingPort {
     }
 
     private ParsedImportTable parseExcel(String fileName, byte[] content) {
-        try (var workbook = WorkbookFactory.create(new ByteArrayInputStream(content))) {
-            var sheet = workbook.getSheetAt(0);
-            var formatter = new DataFormatter();
-            var headerRow = sheet.getRow(sheet.getFirstRowNum());
+        try (Workbook workbook = WorkbookFactory.create(new ByteArrayInputStream(content))) {
+            Sheet sheet = workbook.getSheetAt(0);
+            DataFormatter formatter = new DataFormatter();
+            Row headerRow = sheet.getRow(sheet.getFirstRowNum());
             if (headerRow == null) {
                 throw new IllegalArgumentException("File import thiếu header");
             }
 
-            var headers = getHeadersFromExcelHeader(headerRow, formatter);
+            List<String> headers = getHeadersFromExcelHeader(headerRow, formatter);
             validateHeaders(headers);
 
-            var rows = new ArrayList<Map<String, String>>();
-            var sampleRows = new ArrayList<Map<String, String>>();
-            var totalRows = 0L;
-            for (var rowIndex = sheet.getFirstRowNum() + 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
-                var row = sheet.getRow(rowIndex);
+            List<Map<String, String>> rows = new ArrayList<Map<String, String>>();
+            List<Map<String, String>> sampleRows = new ArrayList<Map<String, String>>();
+            long totalRows = 0L;
+            for (int rowIndex = sheet.getFirstRowNum() + 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
+                Row row = sheet.getRow(rowIndex);
                 if (row == null) {
                     continue;
                 }
-                var values = new LinkedHashMap<String, String>();
-                for (var headerIndex = 0; headerIndex < headers.size(); headerIndex++) {
+                Map<String, String> values = new LinkedHashMap<String, String>();
+                for (int headerIndex = 0; headerIndex < headers.size(); headerIndex++) {
                     values.put(headers.get(headerIndex), formatter.formatCellValue(row.getCell(headerIndex)));
                 }
                 if (isBlankRow(values)) {
@@ -148,32 +153,32 @@ public class FileProcessingService implements FileProcessingPort {
     }
 
     private List<String> getHeadersFromExcelHeader(Row headerRow, DataFormatter formatter) {
-        var headers = new ArrayList<String>();
-        for (var cellIndex = headerRow.getFirstCellNum(); cellIndex < headerRow.getLastCellNum(); cellIndex++) {
+        List<String> headers = new ArrayList<String>();
+        for (short cellIndex = headerRow.getFirstCellNum(); cellIndex < headerRow.getLastCellNum(); cellIndex++) {
             headers.add(formatter.formatCellValue(headerRow.getCell(cellIndex)).strip());
         }
         return headers;
     }
 
     private ParsedImportTable parseCsv(String fileName, byte[] content) {
-        var csvContent = removeUtf8Bom(new String(content, StandardCharsets.UTF_8));
-        var format = CSVFormat.DEFAULT.builder()
+        String csvContent = removeUtf8Bom(new String(content, StandardCharsets.UTF_8));
+        CSVFormat format = CSVFormat.DEFAULT.builder()
                 .setHeader()
                 .setSkipHeaderRecord(true)
                 .setIgnoreEmptyLines(false)
                 .get();
         try (
-                var parser = format.parse(new StringReader(csvContent));
+                CSVParser parser = format.parse(new StringReader(csvContent));
         ) {
-            var headers = new ArrayList<String>(parser.getHeaderMap().keySet());
+            List<String> headers = new ArrayList<String>(parser.getHeaderMap().keySet());
             validateHeaders(headers);
 
-            var rows = new ArrayList<Map<String, String>>();
-            var sampleRows = new ArrayList<Map<String, String>>();
-            var totalRows = 0L;
-            for (var record : parser) {
-                var values = new LinkedHashMap<String, String>();
-                for (var header : headers) {
+            List<Map<String, String>> rows = new ArrayList<Map<String, String>>();
+            List<Map<String, String>> sampleRows = new ArrayList<Map<String, String>>();
+            long totalRows = 0L;
+            for (CSVRecord record : parser) {
+                Map<String, String> values = new LinkedHashMap<String, String>();
+                for (String header : headers) {
                     values.put(header, record.get(header));
                 }
                 if (isBlankRow(values)) {
@@ -203,10 +208,10 @@ public class FileProcessingService implements FileProcessingPort {
     }
 
     private Map<String, String> suggestMapping(List<String> originalHeaders, ImportType type) {
-        var lookup = aliasLookup(type);
-        var mapping = new LinkedHashMap<String, String>();
-        for (var originalHeader : originalHeaders) {
-            var systemField = lookup.get(normalizeHeader(originalHeader));
+        Map<String, String> lookup = aliasLookup(type);
+        Map<String, String> mapping = new LinkedHashMap<String, String>();
+        for (String originalHeader : originalHeaders) {
+            String systemField = lookup.get(normalizeHeader(originalHeader));
             if (systemField != null) {
                 mapping.put(originalHeader, systemField);
             }
@@ -215,13 +220,13 @@ public class FileProcessingService implements FileProcessingPort {
     }
 
     private Map<String, String> aliasLookup(ImportType type) {
-        var ambiguousAliases = new java.util.HashSet<String>();
-        var lookup = new LinkedHashMap<String, String>();
-        for (var entry : aliasesBySystemField(type).entrySet()) {
-            var systemField = entry.getKey();
-            for (var alias : entry.getValue()) {
-                var normalizedAlias = normalizeHeader(alias);
-                var existing = lookup.putIfAbsent(normalizedAlias, systemField);
+        Set<String> ambiguousAliases = new java.util.HashSet<String>();
+        Map<String, String> lookup = new LinkedHashMap<String, String>();
+        for (Map.Entry<String, List<String>> entry : aliasesBySystemField(type).entrySet()) {
+            String systemField = entry.getKey();
+            for (String alias : entry.getValue()) {
+                String normalizedAlias = normalizeHeader(alias);
+                String existing = lookup.putIfAbsent(normalizedAlias, systemField);
                 if (existing != null && !existing.equals(systemField)) {
                     ambiguousAliases.add(normalizedAlias);
                 }
@@ -394,7 +399,7 @@ public class FileProcessingService implements FileProcessingPort {
         if (header == null) {
             return "";
         }
-        var withoutDiacritics = DIACRITICS.matcher(Normalizer.normalize(header, Normalizer.Form.NFD)).replaceAll("");
+        String withoutDiacritics = DIACRITICS.matcher(Normalizer.normalize(header, Normalizer.Form.NFD)).replaceAll("");
         return NON_ALPHANUMERIC.matcher(withoutDiacritics.toLowerCase(Locale.ROOT).strip())
                 .replaceAll(" ")
                 .strip();

@@ -6,17 +6,17 @@ import com.sep.vox.domain.dto.SchoolSubscriptionQuotaRecordDto;
 import com.sep.vox.domain.dto.SchoolSubscriptionQuotaUserAllocationDto;
 
 /**
- * Màn quản trị trường chia hạn mức cá nhân: ví cấp trường đang có gì, và trường đã chia cho từng
- * người bao nhiêu.
+ * The school administrator's screen for distributing personal quota: what the school wallet holds, and how much the school has
+ * distributed to each person.
  *
- * <p>Luôn trả CẢ HAI vì một mình danh sách allocation không đọc được: "giáo viên A còn 200.000đ"
- * chỉ có nghĩa khi biết ví EXAM của trường còn bao nhiêu -- tổng phần chia cho từng người KHÔNG bị
- * ép bằng dung lượng ví (xem DistributeQuotaToUsersService), nên hai con số này lệch nhau là
- * chuyện bình thường và chính chỗ lệch mới là thứ người dùng cần nhìn.
+ * <p>ALWAYS returns BOTH because the allocation list alone cannot be read: "teacher A has 200,000 left"
+ * only means something when you know how much the school's ASSESSMENT wallet has left -- the total distributed to individuals is NOT
+ * forced to equal the wallet capacity (see DistributeQuotaToUsersService), so a mismatch between the two numbers is
+ * normal and the mismatch itself is what the user needs to look at.
  *
- * @param pool        ví cấp trường -- EXAM khi chia cho giáo viên, PRACTICE khi chia cho học sinh
- * @param allocations chỉ những người ĐÃ được cấp hạn mức riêng; không có tên trong đây nghĩa là
- *                    không bị chặn theo cá nhân, chỉ ví của trường áp dụng
+ * @param pool        the school-level wallet -- ASSESSMENT when distributing to teachers, PRACTICE when distributing to students
+ * @param allocations only people who HAVE been given a separate quota; not being in here means
+ *                    not being blocked per person, only the school's wallet applies
  */
 public record QuotaUserAllocationSummaryResponse(
     SchoolSubscriptionQuotaRecordDto pool,

@@ -1,11 +1,13 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.SchoolBalanceEntryJpaEntity;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
@@ -14,6 +16,7 @@ import com.sep.vox.domain.model.school.SchoolBalanceEntry;
 import com.sep.vox.domain.model.school.SchoolBalanceEntryType;
 import com.sep.vox.domain.repository.SchoolBalanceEntryRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolBalanceEntryMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolBalanceEntryRepository;
 
 @Repository
@@ -32,20 +35,16 @@ public class SchoolBalanceEntryRepositoryImpl implements SchoolBalanceEntryRepos
 
     @Override
     public SchoolBalanceEntry save(SchoolBalanceEntry entry) {
-        var entity = SchoolBalanceEntryMapper.toJpa(entry);
-        var saved = springDataSchoolBalanceEntryRepository.save(entity);
+        SchoolBalanceEntryJpaEntity entity = SchoolBalanceEntryMapper.toJpa(entry);
+        SchoolBalanceEntryJpaEntity saved = springDataSchoolBalanceEntryRepository.save(entity);
         return SchoolBalanceEntryMapper.toDomain(saved);
     }
 
     @Override
     public PageResult<SchoolBalanceEntry> findBySchoolId(
             UUID schoolId, SchoolBalanceEntryType entryType, Instant from, Instant to, int page, int size) {
-        // page vào theo lối 1-BASED như mọi repository khác trong dự án, PageRequest đếm từ 0 --
-        // xem OrderRepositoryImpl.findBySchoolId. Thiếu phép trừ này thì người gọi theo đúng quy
-        // ước chung sẽ nhảy mất trang mới nhất của sao kê, còn page = 0 thì đã bị các controller
-        // chặn từ ngoài (validatePaging đòi page >= 1) nên trang đầu không cách nào lấy được.
-        var pageable = PageRequest.of(page - 1, size);
-        var result = entryType == null
+        PageRequest pageable = OneBasedPaging.toPageRequest(page, size);
+        Page<SchoolBalanceEntryJpaEntity> result = entryType == null
             ? springDataSchoolBalanceEntryRepository.findPageBySchoolIdInRange(schoolId, from, to, pageable)
             : springDataSchoolBalanceEntryRepository
                 .findPageBySchoolIdAndEntryTypeInRange(schoolId, entryType.name(), from, to, pageable);

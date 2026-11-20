@@ -1,6 +1,5 @@
 package com.sep.vox.interfaces.graphql.mapper;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.command.UpdateAssessmentPolicyCommand;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateAssessmentPolicyInput;
 
@@ -15,8 +14,8 @@ public class UpdateAssessmentPolicyGraphQLMapper {
                 input.targetFrameworkBandId(),
                 input.passingScore(),
                 input.strictness(),
-                DateMapper.toInstant(input.effectiveFrom()),
-                DateMapper.toInstant(input.effectiveTo())
+                input.effectiveFrom(),
+                input.effectiveTo()
         );
     }
 
@@ -27,8 +26,8 @@ public class UpdateAssessmentPolicyGraphQLMapper {
                 input.targetFrameworkBandId(),
                 input.passingScore(),
                 input.strictness(),
-                DateMapper.toInstant(input.effectiveFrom()),
-                DateMapper.toInstant(input.effectiveTo())
+                input.effectiveFrom(),
+                input.effectiveTo()
         );
     }
 }

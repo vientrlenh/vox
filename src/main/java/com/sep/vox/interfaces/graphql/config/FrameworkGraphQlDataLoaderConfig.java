@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.graphql.config;
 
+import com.sep.vox.domain.model.framework.FrameworkCriterion;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,9 +39,9 @@ public class FrameworkGraphQlDataLoaderConfig {
                 Map<UUID, List<FrameworkCriterionDto>> result = new HashMap<>();
                 versionIds.forEach(id -> result.put(id, List.of()));
 
-                var criteria = frameworkCriterionRepository.findByFrameworkVersionIdIn(versionIds);
+                List<FrameworkCriterion> criteria = frameworkCriterionRepository.findByFrameworkVersionIdIn(versionIds);
 
-                var criteriaByVersionId = criteria.stream()
+                Map<UUID, List<FrameworkCriterionDto>> criteriaByVersionId = criteria.stream()
                     .map(c -> FrameworkCriterionDtoMapper.toDto(c))
                     .collect(Collectors.groupingBy(b -> b.frameworkVersionId()));
 
@@ -55,7 +56,7 @@ public class FrameworkGraphQlDataLoaderConfig {
                 Map<UUID, List<FrameworkResultBandDto>> result = new HashMap<>();
                 versionIds.forEach(id -> result.put(id, List.of()));
 
-                var bandsByVersionId = frameworkResultBandRepository.findByFrameworkVersionIdIn(versionIds)
+                Map<UUID, List<FrameworkResultBandDto>> bandsByVersionId = frameworkResultBandRepository.findByFrameworkVersionIdIn(versionIds)
                     .stream()
                     .map(FrameworkResultBandDtoMapper::toDto)
                     .collect(Collectors.groupingBy(b -> b.frameworkVersionId()));
@@ -68,10 +69,10 @@ public class FrameworkGraphQlDataLoaderConfig {
         registry.<UUID, List<FrameworkCriterionBandDto>>forName("criterionBandsByFrameworkCriterion")
             .registerMappedBatchLoader((Set<UUID> criterionIds, BatchLoaderEnvironment env) -> 
                 Mono.fromSupplier(() -> {
-                    var result = new HashMap<UUID, List<FrameworkCriterionBandDto>>();
+                    Map<UUID, List<FrameworkCriterionBandDto>> result = new HashMap<UUID, List<FrameworkCriterionBandDto>>();
                     criterionIds.forEach(id -> result.put(id, List.of()));
 
-                    var criterionBandsByCriterionId = frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(criterionIds)
+                    Map<UUID, List<FrameworkCriterionBandDto>> criterionBandsByCriterionId = frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(criterionIds)
                         .stream()
                         .map(FrameworkCriterionBandDtoMapper::toDto)
                         .collect(Collectors.groupingBy(b -> b.frameworkCriterionId()));

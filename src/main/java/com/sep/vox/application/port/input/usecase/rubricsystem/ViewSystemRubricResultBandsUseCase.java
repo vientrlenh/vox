@@ -9,12 +9,16 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.RubricResultBandDto;
 import com.sep.vox.domain.mapper.RubricResultBandDtoMapper;
+import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
+import com.sep.vox.domain.model.rubric.RubricResultBand;
+import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.RubricResultBandRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,17 +48,17 @@ public class ViewSystemRubricResultBandsUseCase implements IUseCase<ViewSystemRu
     @Transactional(readOnly = true)
     public PageResult<RubricResultBandDto> execute(ViewSystemRubricResultBandsQuery query) {
         // 1. Xác thực User
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
         }
 
         // 2. Lấy Version ra để kiểm tra
-        var version = rubricVersionRepository.findById(query.versionId())
+        RubricVersion version = rubricVersionRepository.findById(query.versionId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Rubric Version."));
 
         // 3. Lấy Rubric gốc và kiểm tra quyền SYSTEM
-        var rubric = rubricRepository.findById(version.getRubricId())
+        Rubric rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
@@ -62,7 +66,7 @@ public class ViewSystemRubricResultBandsUseCase implements IUseCase<ViewSystemRu
         }
 
         // 4. Query danh sách Result Band phân trang từ Database (Đã sort tăng dần theo order)
-        var resultBandsPage = rubricResultBandRepository.findAllByRubricVersionId(
+        PageResult<RubricResultBand> resultBandsPage = rubricResultBandRepository.findAllByRubricVersionId(
                 query.versionId(),
                 query.page(),
                 query.size()

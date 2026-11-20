@@ -1,14 +1,19 @@
+enum Gender {
+    MALE
+    FEMALE
+}
+
 type User {
     id: ID!
     email: String!
     phone: String!
     fullName: String
-    gender: String 
-    dateOfBirth: String 
+    gender: Gender
+    dateOfBirth: Date
     address: String 
     avatarUrl: String
-    createdAt: String
-    updatedAt: String
+    createdAt: DateTime
+    updatedAt: DateTime
     roles: [Role!]
     school: School
 }
@@ -24,8 +29,8 @@ type Role {
     id: ID!
     code: String!
     name: String
-    createdAt: String
-    updatedAt: String
+    createdAt: DateTime
+    updatedAt: DateTime
     users(page: Int! = 1, size: Int! = 10): [User!]
 }
 
@@ -40,7 +45,7 @@ type UserRole {
     id: ID!
     userId: ID!
     roleId: ID!
-    createdAt: String
+    createdAt: DateTime
     user: User
     role: Role
 }
@@ -55,23 +60,23 @@ extend type Query {
 }
 
 """
-Mọi trường đều optional và mang ngữ nghĩa PATCH: KHÔNG gửi trường = giữ nguyên, gửi null = xóa.
-Mapper phân biệt hai trường hợp đó bằng Map.containsKey, xem UpdateProfileCommandMapper.
-Vì vậy avatarUrl: null chính là thao tác gỡ ảnh đại diện -- không có mutation removeAvatar riêng.
+Every field is optional and has PATCH semantics: NOT sending a field = keep it unchanged, sending null = clear it.
+The mapper tells the two cases apart with Map.containsKey, see UpdateProfileCommandMapper.
+So avatarUrl: null is the operation that removes the avatar -- there is no separate removeAvatar mutation.
 
-avatarUrl là URL client nhận được sau khi TỰ tải ảnh lên kho lưu trữ của nó (hiện là Firebase
-Storage). Backend chỉ lưu tham chiếu, không nhận file. URL phải là https và, nếu
-app.avatar.allowed-hosts có cấu hình, phải thuộc host nằm trong danh sách đó.
+avatarUrl is the URL the client gets after uploading the image ITSELF to its own storage (currently
+Firebase Storage). The backend only stores the reference and never receives the file. The URL must be https
+and, if app.avatar.allowed-hosts is configured, its host must be in that list.
 """
 input UpdateProfileInput {
     fullName: String
     phone: String
     address: String
-    dateOfBirth: String
+    dateOfBirth: Date
     avatarUrl: String
 }
 
 extend type Mutation {
-    "Sửa hồ sơ của chính người gọi. Không nhận userId -- sửa người khác đi updateSchoolUser."
+    "Edits the caller's own profile. Takes no userId -- to edit another user use updateSchoolUser."
     updateProfile(input: UpdateProfileInput!): User!
 }

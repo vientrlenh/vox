@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.rest.mapper;
 
+import java.util.List;
 import java.util.UUID;
 
 import com.sep.vox.application.port.input.command.ClassTestSectionCommand;
@@ -11,8 +12,8 @@ public final class UpdateClassTestQuestionsCommandMapper {
     private UpdateClassTestQuestionsCommandMapper() {
     }
 
-    public static UpdateClassTestQuestionsCommand fromRequest(UUID examId, UpdateClassTestQuestionsRequest request) {
-        var sections = request.sections().stream()
+    public static UpdateClassTestQuestionsCommand fromRequest(UUID assessmentId, UpdateClassTestQuestionsRequest request) {
+        List<ClassTestSectionCommand> sections = request.sections().stream()
             .map(section -> new ClassTestSectionCommand(
                 section.title(),
                 section.instruction(),
@@ -20,6 +21,6 @@ public final class UpdateClassTestQuestionsCommandMapper {
                 ClassTestQuestionCommandMapper.fromRequests(section.questions())
             ))
             .toList();
-        return new UpdateClassTestQuestionsCommand(examId, request.paperId(), sections);
+        return new UpdateClassTestQuestionsCommand(assessmentId, request.paperId(), sections);
     }
 }

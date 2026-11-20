@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.RubricResultBandJpaEntity;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Collection;
@@ -8,6 +9,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import com.sep.vox.domain.common.PageResult;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -17,6 +19,7 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.domain.model.rubric.RubricResultBand;
 import com.sep.vox.domain.repository.RubricResultBandRepository;
 import com.sep.vox.infrastructure.persistence.mapper.RubricResultBandMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataRubricResultBandRepository;
 
 @Repository
@@ -42,8 +45,8 @@ public class RubricResultBandRepositoryImpl implements RubricResultBandRepositor
 
     @Override
     public RubricResultBand save(RubricResultBand band) {
-        var entity = RubricResultBandMapper.toJpa(band);
-        var saved = springDataRubricResultBandRepository.save(entity);
+        RubricResultBandJpaEntity entity = RubricResultBandMapper.toJpa(band);
+        RubricResultBandJpaEntity saved = springDataRubricResultBandRepository.save(entity);
         return RubricResultBandMapper.toDomain(saved);
     }
 
@@ -59,10 +62,10 @@ public class RubricResultBandRepositoryImpl implements RubricResultBandRepositor
 
     @Override
     public List<RubricResultBand> saveAll(List<RubricResultBand> bands) {
-        var entities = bands.stream()
+        List<RubricResultBandJpaEntity> entities = bands.stream()
                 .map(RubricResultBandMapper::toJpa)
                 .toList();
-        var savedEntities = springDataRubricResultBandRepository.saveAll(entities);
+        List<RubricResultBandJpaEntity> savedEntities = springDataRubricResultBandRepository.saveAll(entities);
 
         return savedEntities.stream()
                 .map(RubricResultBandMapper::toDomain)
@@ -76,22 +79,16 @@ public class RubricResultBandRepositoryImpl implements RubricResultBandRepositor
 
     @Override
     public PageResult<RubricResultBand> findAllByRubricVersionId(UUID rubricVersionId, int page, int size) {
-        // Tối ưu: Mặc định sort theo order TĂNG DẦN để bảng kết quả hiển thị chuẩn
-        Pageable pageable = PageRequest.of(page - 1, size, Sort.by("order").ascending());
+        // Optimization: sort by order ASCENDING by default so the result table is displayed in the right order
+        Pageable pageable = OneBasedPaging.toPageRequest(page, size, Sort.by("order").ascending());
 
-        var entityPage = springDataRubricResultBandRepository.findAllByRubricVersionId(rubricVersionId, pageable);
+        Page<RubricResultBandJpaEntity> entityPage = springDataRubricResultBandRepository.findAllByRubricVersionId(rubricVersionId, pageable);
 
         List<RubricResultBand> bands = entityPage.getContent().stream()
                 .map(RubricResultBandMapper::toDomain)
                 .toList();
 
-        return new PageResult<>(
-                bands,
-                entityPage.getNumber(),
-                entityPage.getSize(),
-                entityPage.getTotalElements(),
-                entityPage.getTotalPages()
-        );
+        return OneBasedPaging.toPageResult(entityPage, bands);
     }
 
     @Override
@@ -104,17 +101,11 @@ public class RubricResultBandRepositoryImpl implements RubricResultBandRepositor
 
     @Override
     public PageResult<RubricResultBand> searchRubricResultBands(UUID versionId, String keyword, int page, int size) {
-        var springPageable = PageRequest.of(page - 1, size);
-        var pageEntity = springDataRubricResultBandRepository.searchRubricResultBands(
+        PageRequest springPageable = OneBasedPaging.toPageRequest(page, size);
+        Page<RubricResultBandJpaEntity> pageEntity = springDataRubricResultBandRepository.searchRubricResultBands(
                 versionId, StringNormalization.toLikePattern(keyword), springPageable);
 
-        return new PageResult<>(
-                pageEntity.getContent().stream().map(RubricResultBandMapper::toDomain).toList(),
-                pageEntity.getNumber(),
-                pageEntity.getSize(),
-                (int) pageEntity.getTotalElements(),
-                pageEntity.getTotalPages()
-        );
+        return OneBasedPaging.toPageResult(pageEntity, pageEntity.getContent().stream().map(RubricResultBandMapper::toDomain).toList());
     }
 
     @Override

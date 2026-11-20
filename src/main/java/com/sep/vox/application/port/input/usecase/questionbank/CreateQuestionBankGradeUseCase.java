@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.questionbank;
 
+import com.sep.vox.domain.model.question.QuestionBank;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -46,12 +47,12 @@ public class CreateQuestionBankGradeUseCase implements IUseCase<CreateQuestionBa
     @Override
     @Transactional
     public QuestionBankGradeDto execute(CreateQuestionBankGradeCommand input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
 
-        var questionBank = questionBankRepository.findById(input.questionBankId())
+        QuestionBank questionBank = questionBankRepository.findById(input.questionBankId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
         validateAccess(questionBank.getOwnerType(), questionBank.getSchoolId(), currentSchoolId);
@@ -63,13 +64,13 @@ public class CreateQuestionBankGradeUseCase implements IUseCase<CreateQuestionBa
             throw new DuplicatedException("Khối lớp này đã được gắn với ngân hàng câu hỏi");
         }
 
-        var grade = new QuestionBankGrade(
+        QuestionBankGrade grade = new QuestionBankGrade(
             questionBank.getId(),
             input.schoolGradeId(),
             Instant.now(),
             currentUserId
         );
-        var saved = questionBankGradeRepository.save(grade);
+        QuestionBankGrade saved = questionBankGradeRepository.save(grade);
         return QuestionBankGradeDtoMapper.toDto(saved);
     }
 

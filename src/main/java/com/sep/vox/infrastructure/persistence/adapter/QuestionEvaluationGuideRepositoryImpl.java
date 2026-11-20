@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.QuestionEvaluationGuideJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -23,8 +24,8 @@ public class QuestionEvaluationGuideRepositoryImpl implements QuestionEvaluation
 
     @Override
     public QuestionEvaluationGuide save(QuestionEvaluationGuide questionEvaluationGuide) {
-        var entity = QuestionEvaluationGuideMapper.toJpa(questionEvaluationGuide);
-        var saved = springDataQuestionEvaluationGuideRepository.save(entity);
+        QuestionEvaluationGuideJpaEntity entity = QuestionEvaluationGuideMapper.toJpa(questionEvaluationGuide);
+        QuestionEvaluationGuideJpaEntity saved = springDataQuestionEvaluationGuideRepository.save(entity);
         return QuestionEvaluationGuideMapper.toDomain(saved);
     }
 

@@ -1,10 +1,10 @@
 package com.sep.vox.domain.mapper;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.UserDto;
-import com.sep.vox.domain.model.user.Gender;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.valueobject.DateOfBirth;
 import com.sep.vox.domain.valueobject.Email;
@@ -19,12 +19,12 @@ public final class UserDtoMapper {
             valueOf(user.getEmail()), 
             valueOf(user.getPhone()), 
             valueOf(user.getFullName()), 
-            valueOf(user.getGender()), 
+            user.getGender(),
             valueOf(user.getDateOfBirth()),
             user.getAddress(), 
             user.getAvatarUrl(), 
-            user.getCreatedAt().toString(), 
-            user.getUpdatedAt().toString()
+            user.getCreatedAt(), 
+            user.getUpdatedAt()
         );
     }
 
@@ -56,17 +56,13 @@ public final class UserDtoMapper {
         return fullName == null ? null : fullName.value();
     }
 
-    private static String valueOf(Gender gender) {
-        return gender == null ? null : gender.name();
-    }
-
     /**
-     * Ngày sinh CÓ THỂ null: cột nullable, và UpdateSchoolUserUseCase cho phép school admin xoá
-     * trắng ngày sinh của người dùng trong trường. Trước đây chỗ này gọi thẳng
-     * {@code getDateOfBirth().value()} nên chỉ cần một người có ngày sinh trống là toàn bộ đường
-     * ĐỌC hồ sơ ném NPE -- profile, user(id), users, và cả phản hồi của updateProfile.
+     * The date of birth CAN be null: the column is nullable, and UpdateSchoolUserUseCase lets a school
+     * admin blank out the date of birth of a user in the school. This used to call
+     * {@code getDateOfBirth().value()} directly, so a single person with an empty date of birth made the
+     * whole profile READ path throw an NPE -- profile, user(id), users, and also the updateProfile response.
      */
-    private static String valueOf(DateOfBirth dateOfBirth) {
-        return dateOfBirth == null || dateOfBirth.value() == null ? null : dateOfBirth.value().toString();
+    private static LocalDate valueOf(DateOfBirth dateOfBirth) {
+        return dateOfBirth == null ? null : dateOfBirth.value();
     }
 }

@@ -9,13 +9,13 @@ public class FrameworkCodeTests {
 
     @Test
     void should_accept_valid_framework_code() {
-        var code = new FrameworkCode("CEFR_EN");
+        FrameworkCode code = new FrameworkCode("CEFR_EN");
         assertThat(code.value()).isEqualTo("CEFR_EN");
     }
 
     @Test
     void should_accept_null_code() {
-        var code = new FrameworkCode(null);
+        FrameworkCode code = new FrameworkCode(null);
         assertThat(code.value()).isNull();
     }
 
@@ -41,8 +41,8 @@ public class FrameworkCodeTests {
 
     @Test
     void should_accept_code_with_dash_and_underscore() {
-        var code1 = new FrameworkCode("CEFR-2024");
-        var code2 = new FrameworkCode("CEFR_2024");
+        FrameworkCode code1 = new FrameworkCode("CEFR-2024");
+        FrameworkCode code2 = new FrameworkCode("CEFR_2024");
         assertThat(code1.value()).isEqualTo("CEFR-2024");
         assertThat(code2.value()).isEqualTo("CEFR_2024");
     }

@@ -100,7 +100,7 @@ public class CreatePaymentCheckoutUrlUseCase
      */
     @Override
     public PaymentCheckoutResponse execute(CreatePaymentCheckoutUrlCommand input) {
-        var provider = providerOf(input.provider());
+        PaymentProvider provider = providerOf(input.provider());
 
         // Chặn TRƯỚC mọi transaction, và đây là chỗ duy nhất chặn được.
         //
@@ -118,23 +118,23 @@ public class CreatePaymentCheckoutUrlUseCase
                 "Cổng thanh toán " + provider + " chưa được cấu hình trên hệ thống. Vui lòng chọn cổng khác hoặc liên hệ hỗ trợ.");
         }
 
-        var pending = inTransaction(() -> loadPendingAttempt(input.orderId()));
+        PaymentRecord pending = inTransaction(() -> loadPendingAttempt(input.orderId()));
         if (pending != null) {
             // Gọi cổng NGOÀI mọi transaction: đây là lượt mạng thứ nhất.
-            var remoteStatus = paymentProcessResolver.resolve(pending.getProvider())
+            PaymentLinkRemoteStatus remoteStatus = paymentProcessResolver.resolve(pending.getProvider())
                 .getPaymentLinkStatus(pending.getProviderOrderRef())
                 .status();
 
-            var reusable = inTransaction(() -> resolvePendingAttempt(input.orderId(), pending, remoteStatus));
+            PaymentCheckoutResponse reusable = inTransaction(() -> resolvePendingAttempt(input.orderId(), pending, remoteStatus));
             if (reusable != null) {
                 return reusable;
             }
         }
 
         // Dòng PENDING được COMMIT ở đây, trước lượt mạng thứ hai.
-        var prepared = inTransaction(() -> openAttempt(input.orderId(), provider));
+        PreparedAttempt prepared = inTransaction(() -> openAttempt(input.orderId(), provider));
 
-        var result = paymentProcessResolver.resolve(provider).createPaymentLink(new CreatePaymentLinkCommand(
+        PaymentCheckoutResult result = paymentProcessResolver.resolve(provider).createPaymentLink(new CreatePaymentLinkCommand(
             prepared.providerOrderRef(),
             prepared.amountVnd(),
             "VOX-" + prepared.providerOrderRef(),
@@ -170,7 +170,7 @@ public class CreatePaymentCheckoutUrlUseCase
      * cùng một sự thật về "đã có lần thử nào treo chưa" thay vì cùng đọc rồi cùng phát link.
      */
     private PaymentRecord loadPendingAttempt(UUID orderId) {
-        var order = requirePayableOrder(orderId);
+        Order order = requirePayableOrder(orderId);
         return paymentRecordRepository.findPendingByOrderId(order.getId()).orElse(null);
     }
 
@@ -188,7 +188,7 @@ public class CreatePaymentCheckoutUrlUseCase
      */
     private PaymentCheckoutResponse resolvePendingAttempt(
             UUID orderId, PaymentRecord pending, PaymentLinkRemoteStatus remoteStatus) {
-        var order = requirePayableOrder(orderId);
+        Order order = requirePayableOrder(orderId);
 
         switch (remoteStatus) {
             case PAID -> throw new IllegalStateException(
@@ -224,7 +224,7 @@ public class CreatePaymentCheckoutUrlUseCase
             default -> {
                 // Cổng có QR: dựng lại mã từ payload đã lưu. Đây là đường đi BÌNH THƯỜNG chứ không
                 // phải ca hiếm -- quét QR nghĩa là rời trang sang app ngân hàng rồi quay lại.
-                var qr = readQrPayload(pending);
+                StoredQrPayload qr = readQrPayload(pending);
                 if (qr != null) {
                     return PaymentCheckoutResponse.qrFor(
                         order.getId(), pending.getId(), pending.getProviderOrderRef(),
@@ -252,7 +252,7 @@ public class CreatePaymentCheckoutUrlUseCase
      * tab khác đã kịp mở lần thử của nó.
      */
     private PreparedAttempt openAttempt(UUID orderId, PaymentProvider provider) {
-        var order = requirePayableOrder(orderId);
+        Order order = requirePayableOrder(orderId);
 
         // Không đưa số tiền <= 0 sang cổng. Không cổng nào nhận, nên nếu lọt qua thì trường nhận một
         // lỗi của nhà cung cấp không đọc được, còn đơn thì nằm PENDING tới lúc hết hạn. Đường sinh ra
@@ -267,9 +267,9 @@ public class CreatePaymentCheckoutUrlUseCase
         // Mã đơn do adapter sinh và LUÔN MỚI, kể cả khi đây là lần trả lại của cùng một đơn: PayOS từ
         // chối orderCode trùng, SePay đòi order_invoice_number duy nhất. Cả hai adapter sinh mã cục bộ
         // (đồng hồ / UUID) chứ không gọi mạng, nên gọi trong transaction là an toàn.
-        var providerOrderRef = paymentProcessResolver.resolve(provider).newOrderRef();
+        String providerOrderRef = paymentProcessResolver.resolve(provider).newOrderRef();
 
-        var payment = paymentRecordRepository.save(PaymentRecord.forEBankingCheckout(
+        PaymentRecord payment = paymentRecordRepository.save(PaymentRecord.forEBankingCheckout(
             order.getId(), order.getTotalAmountVnd(), provider, providerOrderRef, Instant.now()));
 
         return new PreparedAttempt(
@@ -284,7 +284,7 @@ public class CreatePaymentCheckoutUrlUseCase
      * tồn tại hay không đã chốt xong ở {@code openAttempt}.
      */
     private Void attachCheckoutData(UUID paymentId, String checkoutUrl, String qrPayloadJson) {
-        var payment = paymentRecordRepository.findById(paymentId)
+        PaymentRecord payment = paymentRecordRepository.findById(paymentId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy lần thanh toán vừa tạo"));
         payment.setCheckoutUrl(checkoutUrl);
         if (qrPayloadJson != null) {
@@ -313,12 +313,12 @@ public class CreatePaymentCheckoutUrlUseCase
 
     /** Đọc ngược payload đã lưu; trả null nếu lần thử này không phải dạng QR hoặc payload hỏng. */
     private StoredQrPayload readQrPayload(PaymentRecord pending) {
-        var json = pending.getProviderPayloadJson();
+        String json = pending.getProviderPayloadJson();
         if (json == null || json.isBlank()) {
             return null;
         }
         try {
-            var payload = jsonMapper.readValue(json, StoredQrPayload.class);
+            StoredQrPayload payload = jsonMapper.readValue(json, StoredQrPayload.class);
             return payload.qrCode() == null ? null : payload;
         } catch (RuntimeException e) {
             LOGGER.warn("Payload QR của lần thanh toán {} không đọc được -- bỏ qua, dùng đường checkout_url",
@@ -335,7 +335,7 @@ public class CreatePaymentCheckoutUrlUseCase
      * có ghi, vì mỗi transaction là một lần nhìn dữ liệu mới.
      */
     private Order requirePayableOrder(UUID orderId) {
-        var order = orderRepository.findByIdForUpdate(orderId)
+        Order order = orderRepository.findByIdForUpdate(orderId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn hàng"));
 
         if (!order.getSchoolId().equals(userContextPort.getCurrentSchoolId())) {
@@ -370,7 +370,7 @@ public class CreatePaymentCheckoutUrlUseCase
         UUID paymentId, String providerOrderRef, BigDecimal amountVnd, Instant expiresAt) {}
 
     private static PaymentProvider providerOf(String provider) {
-        var normalized = StringNormalization.normalizeCode(provider);
+        String normalized = StringNormalization.normalizeCode(provider);
         if (normalized == null || normalized.isEmpty()) {
             throw new IllegalArgumentException("Cổng thanh toán không được để trống");
         }

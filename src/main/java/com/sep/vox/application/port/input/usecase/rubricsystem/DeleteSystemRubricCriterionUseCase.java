@@ -7,6 +7,7 @@ import com.sep.vox.application.port.input.command.DeleteSystemRubricCriterionCom
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.rubric.*;
+import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
 import org.springframework.stereotype.Service;
@@ -41,7 +42,7 @@ public class DeleteSystemRubricCriterionUseCase implements IUseCase<DeleteSystem
     public Void execute(DeleteSystemRubricCriterionCommand command) {
         // 1. Xác thực
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Lỗi tài khoản."));
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Lỗi tài khoản."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
 
         // 2. Check Version (DRAFT)

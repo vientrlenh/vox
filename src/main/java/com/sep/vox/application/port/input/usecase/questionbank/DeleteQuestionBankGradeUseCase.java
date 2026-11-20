@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.usecase.questionbank;
 
+import com.sep.vox.domain.model.question.QuestionBank;
+import com.sep.vox.domain.model.question.QuestionBankGrade;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -37,17 +39,17 @@ public class DeleteQuestionBankGradeUseCase implements IUseCase<DeleteQuestionBa
     @Override
     @Transactional
     public Void execute(DeleteQuestionBankGradeCommand input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
 
-        var questionBank = questionBankRepository.findById(input.questionBankId())
+        QuestionBank questionBank = questionBankRepository.findById(input.questionBankId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
         validateAccess(questionBank.getOwnerType(), questionBank.getSchoolId(), currentSchoolId);
 
-        var grade = questionBankGradeRepository.findById(input.gradeRowId())
+        QuestionBankGrade grade = questionBankGradeRepository.findById(input.gradeRowId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy khối lớp đã gắn"));
         if (!grade.getQuestionBankId().equals(questionBank.getId())) {
             throw new NotFoundException("Không tìm thấy khối lớp đã gắn");

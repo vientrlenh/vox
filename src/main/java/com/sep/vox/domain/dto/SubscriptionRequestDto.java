@@ -1,6 +1,7 @@
 package com.sep.vox.domain.dto;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.UUID;
 
 public record SubscriptionRequestDto(
@@ -11,8 +12,8 @@ public record SubscriptionRequestDto(
     UUID requestedPlanId,
     BigDecimal amount,
     String status,
-    String submittedAt,
+    Instant submittedAt,
     UUID reviewedBy,
-    String reviewedAt
+    Instant reviewedAt
 ) {
 }

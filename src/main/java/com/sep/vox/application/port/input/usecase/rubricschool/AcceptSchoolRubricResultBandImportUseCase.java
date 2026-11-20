@@ -8,9 +8,14 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.importfile.AcceptRubricResultBandImportResponse;
+import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
+import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
+import com.sep.vox.domain.model.rubric.RubricVersion;
+import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.ImportSessionRepository;
 import com.sep.vox.domain.repository.RubricRepository;
@@ -58,13 +63,13 @@ public class AcceptSchoolRubricResultBandImportUseCase implements IUseCase<Accep
         }
 
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
 
-        var schoolUser = schoolUserRepository.findByUserId(currentUserId).orElseThrow(() -> new ForbiddenException("Không thuộc trường học nào."));
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId).orElseThrow(() -> new ForbiddenException("Không thuộc trường học nào."));
         if (!schoolUser.getSchoolId().equals(command.schoolId())) throw new ForbiddenException("BẢO MẬT: Mã bảo mật trường học không trùng khớp.");
 
-        var session = importSessionRepository.findById(command.sessionId()).orElseThrow(() -> new NotFoundException("Không tìm thấy phiên làm việc Import."));
+        ImportSession session = importSessionRepository.findById(command.sessionId()).orElseThrow(() -> new NotFoundException("Không tìm thấy phiên làm việc Import."));
 
         // Xác minh chéo session thuộc về đúng trường học
         if (session.getType() != ImportType.RUBRIC_RESULT_BAND || session.getImportedEntityId() == null
@@ -75,8 +80,8 @@ public class AcceptSchoolRubricResultBandImportUseCase implements IUseCase<Accep
             throw new IllegalStateException("Phiên làm việc phải ở trạng thái PREVIEWED mới có thể thực hiện Xác nhận.");
         }
 
-        var version = rubricVersionRepository.findById(session.getImportedEntityId()).orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản Rubric tương ứng."));
-        var rubric = rubricRepository.findById(version.getRubricId()).orElseThrow();
+        RubricVersion version = rubricVersionRepository.findById(session.getImportedEntityId()).orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản Rubric tương ứng."));
+        Rubric rubric = rubricRepository.findById(version.getRubricId()).orElseThrow();
 
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !rubric.getSchoolId().equals(command.schoolId())) {
             throw new ForbiddenException("Bảo mật: Bộ Rubric này không thuộc sở hữu của trường học bạn.");

@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.registration;
 
+import com.sep.vox.domain.model.school.SchoolDirectory;
 import java.time.Instant;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,24 +50,24 @@ public class VerifyRegisterFormOtpUseCase implements IUseCase<VerifyRegisterForm
     @Override
     @Transactional
     public Void execute(VerifyRegisterFormOtpCommand input) {
-        var command = normalize(input);
+        VerifyRegisterFormOtpCommand command = normalize(input);
 
-        var key = CacheKey.registerVerificationKey(command.email());
-        var payload = cacheManagerPort.get(key, CachePayload.RegisterVerificationPayload.class);
+        String key = CacheKey.registerVerificationKey(command.email());
+        CachePayload.RegisterVerificationPayload payload = cacheManagerPort.get(key, CachePayload.RegisterVerificationPayload.class);
         if (payload == null) {
             throw new UnauthorizedException("Yêu cầu xác thực thất bại");
         }
-        var otpHash = payload.otpHash();
+        String otpHash = payload.otpHash();
 
-        var hashedFromRequest = oneTimePasswordPort.hash(command.otp());
+        String hashedFromRequest = oneTimePasswordPort.hash(command.otp());
         if (!hashedFromRequest.equals(otpHash)) {
             throw new UnauthorizedException("Yêu cầu xác thực thất bại");
         }
 
-        var schoolDirectory = schoolDirectoryRepository.findById(payload.schoolDirectoryId())
+        SchoolDirectory schoolDirectory = schoolDirectoryRepository.findById(payload.schoolDirectoryId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy danh mục trường"));
 
-        var now = Instant.now();
+        Instant now = Instant.now();
         provisionSchoolService.provision(new ProvisionSchoolCommand(
             schoolDirectory.getCode(), 
             schoolDirectory.getName(), 
@@ -84,7 +85,7 @@ public class VerifyRegisterFormOtpUseCase implements IUseCase<VerifyRegisterForm
             now
         ));
 
-        var registerForm = RegisterForm.fromDirectoryWithVerifiedOtp(payload.schoolDirectoryId(), RegisterFormVerificationMethod.DOMAIN_OTP, payload.fullName(), payload.identityNumber(), payload.email(), payload.phone(), payload.dateOfBirth(), payload.address(), payload.postalCode(), payload.position(), payload.studentCount(), now);
+        RegisterForm registerForm = RegisterForm.fromDirectoryWithVerifiedOtp(payload.schoolDirectoryId(), RegisterFormVerificationMethod.DOMAIN_OTP, payload.fullName(), payload.identityNumber(), payload.email(), payload.phone(), payload.dateOfBirth(), payload.address(), payload.postalCode(), payload.position(), payload.studentCount(), now);
         registerFormRepository.save(registerForm);
 
         eventPublisherPort.publish(new RegisterVerificationConsumedEvent(key));

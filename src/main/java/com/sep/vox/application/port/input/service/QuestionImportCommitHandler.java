@@ -125,25 +125,25 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
         //
         // Xét cả hai chứ không mỗi questionBankId: ghim ngân hàng mà bỏ trống chủ đề sẽ rơi vào
         // nhánh cũ rồi ném ngay ở parseUuid(questionTopicId).
-        var firstRowRaw = jsonSerializationPort.toStringMap(rows.get(0).getRawDataJson());
-        var bulkMode = !isPresent(firstRowRaw.get("questionBankId"))
+        Map<String, String> firstRowRaw = jsonSerializationPort.toStringMap(rows.get(0).getRawDataJson());
+        boolean bulkMode = !isPresent(firstRowRaw.get("questionBankId"))
             || !isPresent(firstRowRaw.get("questionTopicId"));
-        var sharedContext = bulkMode ? null : resolveContext(rows.get(0));
-        var bulkScope = bulkMode ? buildBulkScope(session) : null;
-        var confirmedMapping = jsonSerializationPort.toStringMap(session.getConfirmedMappingJson());
-        var createdRows = 0L;
-        var skippedRows = 0L;
-        var invalidRows = 0L;
-        var seenCodes = new HashSet<String>();
+        ImportContext sharedContext = bulkMode ? null : resolveContext(rows.get(0));
+        BulkScope bulkScope = bulkMode ? buildBulkScope(session) : null;
+        Map<String, String> confirmedMapping = jsonSerializationPort.toStringMap(session.getConfirmedMappingJson());
+        long createdRows = 0L;
+        long skippedRows = 0L;
+        long invalidRows = 0L;
+        Set<String> seenCodes = new HashSet<String>();
 
-        for (var row : rows) {
-            var rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
-            var mappedData = mapRawData(rawData, confirmedMapping);
-            var normalized = normalize(mappedData);
+        for (ImportRow row : rows) {
+            Map<String, String> rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
+            Map<String, String> mappedData = mapRawData(rawData, confirmedMapping);
+            Map<String, String> normalized = normalize(mappedData);
             row.setMappedDataJson(jsonSerializationPort.toJson(normalized));
 
-            var errors = validateRow(normalized, sharedContext, seenCodes);
-            final var importContext = bulkMode
+            List<Map<String, String>> errors = validateRow(normalized, sharedContext, seenCodes);
+            final ImportContext importContext = bulkMode
                 ? resolveContextFromCodes(normalized, bulkScope, errors)
                 : sharedContext;
             if (!errors.isEmpty() || importContext == null) {
@@ -162,8 +162,8 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
                 continue;
             }
 
-            var code = normalized.get("code");
-            var questionText = normalized.get("questionText");
+            String code = normalized.get("code");
+            String questionText = normalized.get("questionText");
             if (isPresent(code) && questionRepository.existsByQuestionBankIdAndCode(importContext.questionBank().getId(), code)) {
                 row.setErrorsJson(jsonSerializationPort.toJson(List.of(
                     error("code", "Đã tồn tại câu hỏi cùng mã trong question bank này")
@@ -205,12 +205,12 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
     }
 
     private ImportContext resolveContext(ImportRow row) {
-        var rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
-        var questionBankId = parseUuid(rawData.get("questionBankId"), "Không tìm thấy question bank của phiên import");
-        var questionTopicId = parseUuid(rawData.get("questionTopicId"), "Không tìm thấy question topic của phiên import");
-        var questionBank = questionBankRepository.findById(questionBankId)
+        Map<String, String> rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
+        UUID questionBankId = parseUuid(rawData.get("questionBankId"), "Không tìm thấy question bank của phiên import");
+        UUID questionTopicId = parseUuid(rawData.get("questionTopicId"), "Không tìm thấy question topic của phiên import");
+        QuestionBank questionBank = questionBankRepository.findById(questionBankId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
-        var questionTopic = questionTopicRepository.findById(questionTopicId)
+        QuestionTopic questionTopic = questionTopicRepository.findById(questionTopicId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề câu hỏi"));
         if (!questionTopic.getQuestionBankId().equals(questionBank.getId())) {
             throw new IllegalStateException("Chủ đề không thuộc ngân hàng câu hỏi đã chọn");
@@ -237,14 +237,14 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
             Map<String, String> data,
             BulkScope scope,
             List<Map<String, String>> errors) {
-        var bankCode = data.get("questionBankCode");
-        var topicCode = data.get("questionTopicCode");
+        String bankCode = data.get("questionBankCode");
+        String topicCode = data.get("questionTopicCode");
 
         // Ngân hàng và chủ đề giải ĐỘC LẬP nhau: người dùng chọn sẵn cái nào thì cái đó được ghim,
         // cái còn lại lấy theo mã trong file. Nhờ vậy "chọn ngân hàng, để trống chủ đề" chỉ cần cột
         // Mã chủ đề, không phải khai lại cả mã ngân hàng vừa chọn trên màn hình.
-        var pinnedBankId = parseUuidOrNull(data.get("questionBankId"));
-        var pinnedTopicId = parseUuidOrNull(data.get("questionTopicId"));
+        UUID pinnedBankId = parseUuidOrNull(data.get("questionBankId"));
+        UUID pinnedTopicId = parseUuidOrNull(data.get("questionTopicId"));
 
         if (pinnedBankId == null && !isPresent(bankCode)) {
             errors.add(error("questionBankCode", "Thiếu mã ngân hàng câu hỏi"));
@@ -253,7 +253,7 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
             errors.add(error("questionTopicCode", "Thiếu mã chủ đề câu hỏi"));
         }
 
-        var schoolCode = data.get("schoolCode");
+        String schoolCode = data.get("schoolCode");
         if (isPresent(schoolCode) && !schoolCode.equalsIgnoreCase(scope.schoolCode())) {
             errors.add(error(
                 "schoolCode",
@@ -265,7 +265,7 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
             return null;
         }
 
-        var questionBank = pinnedBankId != null
+        QuestionBank questionBank = pinnedBankId != null
             ? questionBankRepository.findById(pinnedBankId).orElse(null)
             : scope.banksByCode().get(normalizeLookupKey(bankCode));
         if (questionBank == null) {
@@ -278,7 +278,7 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
         }
 
         if (pinnedTopicId != null) {
-            var pinnedTopic = questionTopicRepository.findById(pinnedTopicId).orElse(null);
+            QuestionTopic pinnedTopic = questionTopicRepository.findById(pinnedTopicId).orElse(null);
             if (pinnedTopic == null || !pinnedTopic.getQuestionBankId().equals(questionBank.getId())) {
                 errors.add(error(
                     "questionTopicCode",
@@ -295,10 +295,10 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
             return new ImportContext(questionBank, pinnedTopic);
         }
 
-        var questionTopic = scope.topicsByBankAndCode()
+        QuestionTopic questionTopic = scope.topicsByBankAndCode()
             .computeIfAbsent(questionBank.getId(), bankId -> {
-                var byCode = new HashMap<String, QuestionTopic>();
-                for (var topic : questionTopicRepository.findByQuestionBankId(bankId)) {
+                Map<String, QuestionTopic> byCode = new HashMap<String, QuestionTopic>();
+                for (QuestionTopic topic : questionTopicRepository.findByQuestionBankId(bankId)) {
                     byCode.putIfAbsent(normalizeLookupKey(topic.getCode()), topic);
                 }
                 return byCode;
@@ -334,13 +334,13 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
     }
 
     private BulkScope buildBulkScope(ImportSession session) {
-        var schoolId = session.getSchoolId();
-        var ownerType = schoolId == null ? QuestionBankOwnerType.SYSTEM : QuestionBankOwnerType.SCHOOL;
-        var banksByCode = new HashMap<String, QuestionBank>();
-        for (var bank : questionBankRepository.findByOwnerScope(ownerType, schoolId)) {
+        UUID schoolId = session.getSchoolId();
+        QuestionBankOwnerType ownerType = schoolId == null ? QuestionBankOwnerType.SYSTEM : QuestionBankOwnerType.SCHOOL;
+        Map<String, QuestionBank> banksByCode = new HashMap<String, QuestionBank>();
+        for (QuestionBank bank : questionBankRepository.findByOwnerScope(ownerType, schoolId)) {
             banksByCode.putIfAbsent(normalizeLookupKey(bank.getCode()), bank);
         }
-        var schoolCode = schoolId == null
+        String schoolCode = schoolId == null
             ? null
             : schoolRepository.findById(schoolId)
                 .map(school -> school.getCode() == null ? null : school.getCode().value())
@@ -353,9 +353,9 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
     }
 
     private Map<String, String> mapRawData(Map<String, String> rawData, Map<String, String> confirmedMapping) {
-        var mappedData = new LinkedHashMap<String, String>();
+        Map<String, String> mappedData = new LinkedHashMap<String, String>();
         rawData.forEach((originalHeader, value) -> {
-            var systemField = confirmedMapping.get(originalHeader);
+            String systemField = confirmedMapping.get(originalHeader);
             if (systemField != null) {
                 systemField = systemField.strip();
             }
@@ -378,7 +378,7 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
      * {@code createAssetIfPresent} đọc {@code assetType} từ chính map này).
      */
     private Map<String, String> normalize(Map<String, String> mappedData) {
-        var normalized = new LinkedHashMap<String, String>();
+        Map<String, String> normalized = new LinkedHashMap<String, String>();
         normalized.put("questionBankId", trimOrNull(mappedData.get("questionBankId")));
         normalized.put("questionTopicId", trimOrNull(mappedData.get("questionTopicId")));
         // Mã đích của từng dòng ở chế độ hàng loạt. normalizeCode viết hoa -- khớp với cách tra cứu
@@ -425,7 +425,7 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
             Map<String, String> data,
             ImportContext importContext,
             Set<String> seenCodes) {
-        var errors = new ArrayList<Map<String, String>>();
+        List<Map<String, String>> errors = new ArrayList<Map<String, String>>();
 
         addMissingError(errors, data, "type", "Loại câu hỏi không được để trống");
         addMissingError(errors, data, "questionText", "Nội dung câu hỏi không được để trống");
@@ -439,13 +439,13 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
         validateNumberField(errors, data.get("minResponseSeconds"), "minResponseSeconds", "Thời gian trả lời tối thiểu phải là số nguyên >= 0");
         validateNumberField(errors, data.get("maxResponseSeconds"), "maxResponseSeconds", "Thời gian trả lời tối đa phải là số nguyên >= 0");
 
-        var minResponse = parseInteger(data.get("minResponseSeconds"));
-        var maxResponse = parseInteger(data.get("maxResponseSeconds"));
+        Integer minResponse = parseInteger(data.get("minResponseSeconds"));
+        Integer maxResponse = parseInteger(data.get("maxResponseSeconds"));
         if (minResponse != null && maxResponse != null && minResponse > maxResponse) {
             errors.add(error("minResponseSeconds", "Thời gian trả lời tối thiểu không được lớn hơn thời gian trả lời tối đa"));
         }
 
-        var code = data.get("code");
+        String code = data.get("code");
         if (isPresent(code) && !seenCodes.add(code)) {
             errors.add(error("code", "Mã câu hỏi bị trùng trong file import"));
         }
@@ -464,8 +464,8 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
     }
 
     private void createQuestion(Map<String, String> data, ImportContext importContext, UUID currentUserId) {
-        var now = Instant.now();
-        var question = new Question(
+        Instant now = Instant.now();
+        Question question = new Question(
             importContext.questionBank().getId(),
             importContext.questionTopic().getId(),
             questionCodeOf(data.get("code")),
@@ -493,7 +493,7 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
             currentUserId,
             currentUserId
         );
-        var savedQuestion = questionRepository.save(question);
+        Question savedQuestion = questionRepository.save(question);
         createAssetIfPresent(data, savedQuestion.getId());
         if (hasEvaluationGuide(data)) {
             questionEvaluationGuideRepository.save(new QuestionEvaluationGuide(
@@ -517,23 +517,23 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
      * mà AI hỏi và chấm chung chung, không ai biết cho tới lúc chấm xong.
      */
     private void createAssetIfPresent(Map<String, String> data, UUID questionId) {
-        var rawType = data.get("assetType");
+        String rawType = data.get("assetType");
         if (rawType == null || rawType.isBlank()) {
             return;
         }
 
-        var assetType = QuestionAssetType.valueOf(rawType.strip().toUpperCase(java.util.Locale.ROOT));
-        var url = assetType == QuestionAssetType.TEXT_PASSAGE ? null : data.get("assetUrl");
-        var transcript = QuestionAssetAnalysisRequestPublisher.supportsTranscript(assetType)
+        QuestionAssetType assetType = QuestionAssetType.valueOf(rawType.strip().toUpperCase(java.util.Locale.ROOT));
+        String url = assetType == QuestionAssetType.TEXT_PASSAGE ? null : data.get("assetUrl");
+        String transcript = QuestionAssetAnalysisRequestPublisher.supportsTranscript(assetType)
             ? data.get("assetTranscript")
             : null;
-        var description = data.get("assetDescription");
-        var altText = data.get("assetAltText");
+        String description = data.get("assetDescription");
+        String altText = data.get("assetAltText");
 
         QuestionAssetContentValidator.validate(assetType, url, transcript, description, altText);
 
         Integer durationSeconds = null;
-        var rawDuration = data.get("assetDurationSeconds");
+        String rawDuration = data.get("assetDurationSeconds");
         if (rawDuration != null && !rawDuration.isBlank()) {
             durationSeconds = Integer.parseInt(rawDuration.strip());
         }

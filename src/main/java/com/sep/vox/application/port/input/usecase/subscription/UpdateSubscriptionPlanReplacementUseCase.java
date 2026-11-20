@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
+import com.sep.vox.domain.model.subscription.SubscriptionPlan;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -53,7 +54,7 @@ public class UpdateSubscriptionPlanReplacementUseCase
     @Override
     @Transactional
     public UUID execute(UpdateSubscriptionPlanReplacementCommand input) {
-        var plan = subscriptionPlanRepository.findById(input.subscriptionPlanId())
+        SubscriptionPlan plan = subscriptionPlanRepository.findById(input.subscriptionPlanId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
 
         // CHỈ áp cho gói đã lưu trữ: replacedByPlanId của một gói còn bán không có nghĩa gì --
@@ -63,7 +64,7 @@ public class UpdateSubscriptionPlanReplacementUseCase
             throw new IllegalStateException("Chỉ gói đã lưu trữ mới cần gói thay thế.");
         }
 
-        var replacement = subscriptionPlanRepository.findById(input.replacedByPlanId())
+        SubscriptionPlan replacement = subscriptionPlanRepository.findById(input.replacedByPlanId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói thay thế"));
 
         // Cùng bộ luật với lúc lưu trữ. Sửa con trỏ sau này KHÔNG được lỏng hơn: trường vẫn bị ép đi

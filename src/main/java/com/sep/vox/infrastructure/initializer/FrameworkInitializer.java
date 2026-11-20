@@ -89,14 +89,14 @@ public class FrameworkInitializer implements ApplicationRunner {
     private static final String FRAMEWORK_VERSION_BAND_CODE_6 = "BAC_6";
 
     /**
-     * Số dấu hiệu đầu danh sách được đánh HIGH. Danh sách trong {@link BandContent} viết theo
-     * thứ tự giảm dần độ quyết định, nên hai cái đầu là thứ một mình nó đã đủ xếp bậc, phần
-     * còn lại là dấu hiệu hỗ trợ.
+     * The number of signals at the top of the list that are marked HIGH. The list in {@link BandContent} is written in
+     * descending order of how decisive each signal is, so the first two are enough on their own to rank a level, and the
+     * rest are supporting signals.
      *
-     * <p>Lưu ý: {@code importance} KHÔNG đi ra tới model chấm -- cả hai đường gửi yêu cầu chấm
-     * (SubmitExamSessionUseCase và PracticeEvaluationRequestFactory) chỉ lấy
-     * {@code signal.description()}. Trường này phục vụ màn hình quản trị khung và chỗ dựa nếu
-     * sau này prompt có xếp hạng dấu hiệu.
+     * <p>Note: {@code importance} does NOT reach the grading model -- both paths that send a grading request
+     * (SubmitAssessmentSessionUseCase and PracticeEvaluationRequestFactory) only take
+     * {@code signal.description()}. This field serves the framework admin screen and is something to lean on if
+     * the prompt later ranks signals.
      */
     private static final int HIGH_IMPORTANCE_SIGNAL_COUNT = 2;
 
@@ -148,10 +148,9 @@ public class FrameworkInitializer implements ApplicationRunner {
     }
 
     /**
-     * {@code @Transactional} ở đây không phải để tối ưu: dữ liệu này là một đồ thị có khoá
-     * ngoại (framework -> version -> criterion/result band -> criterion band). Nếu tiến
-     * trình chết giữa chừng mà không cuộn lại, lần khởi động sau sẽ thấy framework đã tồn
-     * tại rồi bỏ qua, để lại một bản dựng dở không bao giờ được sửa.
+     * {@code @Transactional} here is not for optimization: this data is a graph with foreign keys
+     * (framework -> version -> criterion/result band -> criterion band). If the process dies midway without rolling
+     * back, the next startup sees that the framework already exists and skips it, leaving a half-built version that is never fixed.
      */
     @Override
     @Transactional
@@ -161,9 +160,9 @@ public class FrameworkInitializer implements ApplicationRunner {
             return;
         }
 
-        var now = Instant.now();
+        Instant now = Instant.now();
 
-        var framework = frameworkRepository.save(new Framework(
+        Framework framework = frameworkRepository.save(new Framework(
             new FrameworkCode(FRAMEWORK_CODE),
             "Khung năng lực ngoại ngữ 6 bậc dùng cho Việt Nam",
             "Khung đánh giá năng lực nói mặc định của hệ thống, gồm 5 tiêu chí và 6 bậc từ Bậc 1 đến Bậc 6 "
@@ -172,9 +171,9 @@ public class FrameworkInitializer implements ApplicationRunner {
             now, now, null, null
         ));
 
-        // effectiveFrom = now và effectiveTo = null là điều kiện để findActiveVersionId nhìn
-        // thấy bản này; thiếu effectiveFrom thì luyện tập vẫn không chạy dù đã PUBLISHED.
-        var version = frameworkVersionRepository.save(new FrameworkVersion(
+        // effectiveFrom = now and effectiveTo = null are what let findActiveVersionId see
+        // this version; without effectiveFrom practice still does not run even though it is PUBLISHED.
+        FrameworkVersion version = frameworkVersionRepository.save(new FrameworkVersion(
             framework.getId(),
             FRAMEWORK_VERSION_CODE,
             "KNLNNVN phiên bản 1",
@@ -186,13 +185,13 @@ public class FrameworkInitializer implements ApplicationRunner {
             now, now, null, null
         ));
 
-        var criteria = frameworkCriterionRepository.saveAll(CRITERIA.stream()
+        List<FrameworkCriterion> criteria = frameworkCriterionRepository.saveAll(CRITERIA.stream()
             .map(seed -> new FrameworkCriterion(
                 version.getId(), seed.code(), seed.name(), seed.description(), seed.order(),
                 now, now, null, null))
             .toList());
 
-        var resultBands = frameworkResultBandRepository.saveAll(RESULT_BANDS.stream()
+        List<FrameworkResultBand> resultBands = frameworkResultBandRepository.saveAll(RESULT_BANDS.stream()
             .map(seed -> new FrameworkResultBand(
                 version.getId(), seed.code(), seed.label(), seed.description(), seed.order(),
                 now, now, null, null))
@@ -205,19 +204,19 @@ public class FrameworkInitializer implements ApplicationRunner {
     }
 
     /**
-     * Tích Descartes 5 tiêu chí x 6 thang = 30 dòng. Mỗi dòng bắt buộc có descriptor cùng ít
-     * nhất một dấu hiệu tích cực và một dấu hiệu tiêu cực -- thiếu bất kỳ phần nào thì bản
-     * này không còn hợp lệ để ở trạng thái PUBLISHED.
+     * Cartesian product of 5 criteria x 6 scales = 30 rows. Every row must have a descriptor with at least
+     * one positive signal and one negative signal -- missing any part makes this version
+     * no longer valid to keep in the PUBLISHED state.
      */
     private List<FrameworkCriterionBand> buildCriterionBands(
             List<FrameworkCriterion> criteria, List<FrameworkResultBand> resultBands, Instant now) {
-        var contentByCriterion = bandContent();
-        var bands = new ArrayList<FrameworkCriterionBand>();
+        Map<String, Map<String, BandContent>> contentByCriterion = bandContent();
+        List<FrameworkCriterionBand> bands = new ArrayList<FrameworkCriterionBand>();
 
-        for (var criterion : criteria) {
-            var contentByBand = contentByCriterion.get(criterion.getCode());
-            for (var resultBand : resultBands) {
-                var content = contentByBand.get(resultBand.getCode());
+        for (FrameworkCriterion criterion : criteria) {
+            Map<String, BandContent> contentByBand = contentByCriterion.get(criterion.getCode());
+            for (FrameworkResultBand resultBand : resultBands) {
+                BandContent content = contentByBand.get(resultBand.getCode());
                 bands.add(new FrameworkCriterionBand(
                     criterion.getId(),
                     resultBand.getId(),
@@ -232,13 +231,13 @@ public class FrameworkInitializer implements ApplicationRunner {
     }
 
     /**
-     * Mã dấu hiệu được đánh số theo vị trí trong danh sách (…_POS_1, …_POS_2). Mã phải duy
-     * nhất trong phạm vi một ô tiêu chí x bậc vì đó là thứ màn hình quản trị dùng để trỏ vào
-     * đúng dấu hiệu khi sửa.
+     * The signal code is numbered by its position in the list (…_POS_1, …_POS_2). The code must be
+     * unique within one criterion x band cell because the admin screen uses it to point at
+     * the exact signal when editing.
      */
     private FrameworkCriterionSignals signals(String codePrefix, List<String> descriptions) {
-        var values = new ArrayList<FrameworkCriterionSignal>(descriptions.size());
-        for (var index = 0; index < descriptions.size(); index++) {
+        List<FrameworkCriterionSignal> values = new ArrayList<FrameworkCriterionSignal>(descriptions.size());
+        for (int index = 0; index < descriptions.size(); index++) {
             values.add(new FrameworkCriterionSignal(
                 codePrefix + "_" + (index + 1),
                 descriptions.get(index),
@@ -251,7 +250,7 @@ public class FrameworkInitializer implements ApplicationRunner {
     }
 
     private Map<String, Map<String, BandContent>> bandContent() {
-        var content = new LinkedHashMap<String, Map<String, BandContent>>();
+        Map<String, Map<String, BandContent>> content = new LinkedHashMap<String, Map<String, BandContent>>();
         content.put(FRAMEWORK_VERSION_CRITERION_CODE_PRONUNCIATION, pronunciationBands());
         content.put(FRAMEWORK_VERSION_CRITERION_CODE_FLUENCY, fluencyBands());
         content.put(FRAMEWORK_VERSION_CRITERION_CODE_GRAMMAR, grammarBands());

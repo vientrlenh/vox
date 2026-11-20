@@ -10,7 +10,7 @@ public final class RegisterFormDocumentDtoMapper {
             document.getId(), 
             document.getRegisterFormId(), 
             document.getUrl(), 
-            document.getCreatedAt().toString()
+            document.getCreatedAt()
         );
     }
 }

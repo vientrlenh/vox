@@ -6,17 +6,19 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
 
+import com.sep.vox.application.query.dto.GradingFailureGroupDto;
+import com.sep.vox.application.query.dto.GradingFailureSessionDto;
+import com.sep.vox.application.query.dto.GradingFailureTotalsDto;
 import com.sep.vox.application.query.repository.GradingFailureQueryRepository;
-import com.sep.vox.config.ContainerTestConfig;
+import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.support.RepositoryTest;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -27,11 +29,9 @@ import jakarta.persistence.PersistenceContext;
  * {@code IS NOT DISTINCT FROM}, {@code COUNT(...) FILTER}, và {@code COUNT(DISTINCT ...)} bỏ qua
  * null. Một test với repository giả sẽ khẳng định đúng những gì nó tự dựng ra.
  */
-@DataJpaTest
-@ActiveProfiles("test")
+@RepositoryTest
 @Import(JpaGradingFailureQueryRepository.class)
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class JpaGradingFailureQueryRepositoryTests extends ContainerTestConfig {
+class JpaGradingFailureQueryRepositoryTests {
 
     private static final Instant WINDOW_FROM = Instant.parse("2026-08-17T00:00:00Z");
     private static final Instant WINDOW_TO = Instant.parse("2026-08-31T00:00:00Z");
@@ -50,40 +50,42 @@ class JpaGradingFailureQueryRepositoryTests extends ContainerTestConfig {
 
     @Test
     void shouldGroupTheSameIncidentTogetherDespiteDifferentIdsAndNumbers() {
-        var school = insertSchool("THPT A");
-        var exam = insertExam(school, "Giữa kỳ I", "DRAFT");
-        insertFailedSession(exam, Instant.parse("2026-08-23T02:14:00Z"), TIMEOUT_A, 3);
-        insertFailedSession(exam, Instant.parse("2026-08-23T03:48:00Z"), TIMEOUT_B, 3);
+        UUID school = insertSchool("THPT A");
+        UUID assessment = insertAssessment(school, "Giữa kỳ I", "DRAFT");
+        insertFailedSession(assessment, Instant.parse("2026-08-23T02:14:00Z"), TIMEOUT_A, 3);
+        insertFailedSession(assessment, Instant.parse("2026-08-23T03:48:00Z"), TIMEOUT_B, 3);
 
-        var groups = repository.findGroups(WINDOW_FROM, WINDOW_TO, 10);
+        List<GradingFailureGroupDto> groups = repository.findGroups(WINDOW_FROM, WINDOW_TO, 10);
 
         assertThat(groups).hasSize(1);
         assertThat(groups.get(0).sessionCount()).isEqualTo(2L);
-        // Chữ ký đã thay uuid và số bằng chỗ trống, nên hai thông điệp về chung một nhóm.
+        // The signature has replaced uuids and numbers with placeholders, so the two messages fall
+        // into one group.
         assertThat(groups.get(0).signature()).contains("<id>").contains("<n>");
-        // Mẫu đại diện là thông điệp THÔ, để người trực còn đọc được một câu lỗi thật.
+        // The representative sample is the RAW message, so whoever is on call can still read a real
+        // error sentence.
         assertThat(groups.get(0).sampleError()).isEqualTo(TIMEOUT_B);
         assertThat(groups.get(0).firstFailedAt()).isEqualTo(Instant.parse("2026-08-23T02:14:00Z"));
         assertThat(groups.get(0).lastFailedAt()).isEqualTo(Instant.parse("2026-08-23T03:48:00Z"));
     }
 
     /**
-     * Phiên hỏng qua nhánh DLT không mang lý do nào. Đó là một NHÓM THẬT, không phải dữ liệu thiếu —
-     * và nó phải tách khỏi nhóm có lý do, nếu không thì "không rõ nguyên nhân" bị trộn vào một sự cố
-     * cụ thể và người trực đi sửa nhầm thứ.
+     * A session that fails through the DLT branch carries no reason. That is a REAL GROUP, not
+     * missing data -- and it must be separated from the groups that have a reason, otherwise "cause
+     * unknown" gets mixed into one specific incident and the on-call person fixes the wrong thing.
      */
     @Test
     void shouldKeepSessionsWithoutAReasonAsTheirOwnGroup() {
-        var school = insertSchool("THPT A");
-        var exam = insertExam(school, "Giữa kỳ I", "DRAFT");
-        insertFailedSession(exam, Instant.parse("2026-08-23T02:14:00Z"), TIMEOUT_A, 3);
-        insertFailedSession(exam, Instant.parse("2026-08-24T02:14:00Z"), null, null);
-        insertFailedSession(exam, Instant.parse("2026-08-25T02:14:00Z"), null, null);
+        UUID school = insertSchool("THPT A");
+        UUID assessment = insertAssessment(school, "Giữa kỳ I", "DRAFT");
+        insertFailedSession(assessment, Instant.parse("2026-08-23T02:14:00Z"), TIMEOUT_A, 3);
+        insertFailedSession(assessment, Instant.parse("2026-08-24T02:14:00Z"), null, null);
+        insertFailedSession(assessment, Instant.parse("2026-08-25T02:14:00Z"), null, null);
 
-        var groups = repository.findGroups(WINDOW_FROM, WINDOW_TO, 10);
+        List<GradingFailureGroupDto> groups = repository.findGroups(WINDOW_FROM, WINDOW_TO, 10);
 
         assertThat(groups).hasSize(2);
-        // Nhóm đông nhất trước: hai phiên không rõ nguyên nhân đứng trên một phiên timeout.
+        // The biggest group first: two sessions with unknown cause rank above one timeout session.
         assertThat(groups.get(0).signature()).isNull();
         assertThat(groups.get(0).sessionCount()).isEqualTo(2L);
         assertThat(groups.get(0).sampleError()).isNull();
@@ -91,69 +93,73 @@ class JpaGradingFailureQueryRepositoryTests extends ContainerTestConfig {
     }
 
     /**
-     * {@code COUNT(DISTINCT signature)} BỎ QUA null, nên nhóm không rõ nguyên nhân phải được cộng
-     * tay — thiếu phép cộng đó thì một hệ thống mà mọi phiên đều hỏng qua DLT sẽ báo "0 nguyên nhân"
-     * ngay bên trên một danh sách đang hiện một nhóm.
+     * {@code COUNT(DISTINCT signature)} IGNORES null, so the unknown-cause group must be added by
+     * hand -- without that addition, a system where every session failed through the DLT would
+     * report "0 causes" right above a list that is showing one group.
      */
     @Test
     void shouldCountTheUnknownCauseGroupAsACause() {
-        var school = insertSchool("THPT A");
-        var exam = insertExam(school, "Giữa kỳ I", "DRAFT");
-        insertFailedSession(exam, Instant.parse("2026-08-24T02:14:00Z"), null, null);
-        insertFailedSession(exam, Instant.parse("2026-08-25T02:14:00Z"), null, null);
+        UUID school = insertSchool("THPT A");
+        UUID assessment = insertAssessment(school, "Giữa kỳ I", "DRAFT");
+        insertFailedSession(assessment, Instant.parse("2026-08-24T02:14:00Z"), null, null);
+        insertFailedSession(assessment, Instant.parse("2026-08-25T02:14:00Z"), null, null);
 
-        var totals = repository.countTotals(WINDOW_FROM, WINDOW_TO);
+        GradingFailureTotalsDto totals = repository.countTotals(WINDOW_FROM, WINDOW_TO);
 
         assertThat(totals.sessionCount()).isEqualTo(2L);
         assertThat(totals.causeCount()).isEqualTo(1L);
     }
 
-    /** Kỳ đã công bố điểm thì {@code RetryGradingExamSessionUseCase} từ chối, nên không tính là chấm lại được. */
+    /**
+     * A period whose scores are already published is refused by
+     * {@code RetryGradingAssessmentSessionUseCase}, so it does not count as regradable.
+     */
     @Test
-    void shouldNotCountSessionsOfPublishedExamsAsRetryable() {
-        var school = insertSchool("THPT A");
-        var openExam = insertExam(school, "Giữa kỳ I", "CLOSED");
-        var publishedExam = insertExam(school, "Thi thử", "RESULTS_PUBLISHED");
-        insertFailedSession(openExam, Instant.parse("2026-08-23T02:14:00Z"), TIMEOUT_A, 3);
-        insertFailedSession(publishedExam, Instant.parse("2026-08-23T02:20:00Z"), TIMEOUT_B, 3);
+    void shouldNotCountSessionsOfPublishedAssessmentsAsRetryable() {
+        UUID school = insertSchool("THPT A");
+        UUID openAssessment = insertAssessment(school, "Giữa kỳ I", "CLOSED");
+        UUID publishedAssessment = insertAssessment(school, "Thi thử", "RESULTS_PUBLISHED");
+        insertFailedSession(openAssessment, Instant.parse("2026-08-23T02:14:00Z"), TIMEOUT_A, 3);
+        insertFailedSession(publishedAssessment, Instant.parse("2026-08-23T02:20:00Z"), TIMEOUT_B, 3);
 
-        var totals = repository.countTotals(WINDOW_FROM, WINDOW_TO);
+        GradingFailureTotalsDto totals = repository.countTotals(WINDOW_FROM, WINDOW_TO);
 
         assertThat(totals.sessionCount()).isEqualTo(2L);
         assertThat(totals.retryableCount()).isEqualTo(1L);
         assertThat(repository.findGroups(WINDOW_FROM, WINDOW_TO, 10).get(0).retryableCount()).isEqualTo(1L);
     }
 
-    /** Một trường dính hai nguyên nhân vẫn chỉ là MỘT trường bị ảnh hưởng. */
+    /** A school hit by two causes is still only ONE affected school. */
     @Test
     void shouldCountEachAffectedSchoolOnce() {
-        var schoolA = insertSchool("THPT A");
-        var schoolB = insertSchool("THPT B");
-        var examA1 = insertExam(schoolA, "Giữa kỳ I", "DRAFT");
-        var examA2 = insertExam(schoolA, "Cuối kỳ", "DRAFT");
-        var examB = insertExam(schoolB, "Khảo sát", "DRAFT");
-        insertFailedSession(examA1, Instant.parse("2026-08-23T02:14:00Z"), TIMEOUT_A, 3);
-        insertFailedSession(examA2, Instant.parse("2026-08-24T02:14:00Z"), null, null);
-        insertFailedSession(examB, Instant.parse("2026-08-25T02:14:00Z"), TIMEOUT_B, 3);
+        UUID schoolA = insertSchool("THPT A");
+        UUID schoolB = insertSchool("THPT B");
+        UUID assessmentA1 = insertAssessment(schoolA, "Giữa kỳ I", "DRAFT");
+        UUID assessmentA2 = insertAssessment(schoolA, "Cuối kỳ", "DRAFT");
+        UUID assessmentB = insertAssessment(schoolB, "Khảo sát", "DRAFT");
+        insertFailedSession(assessmentA1, Instant.parse("2026-08-23T02:14:00Z"), TIMEOUT_A, 3);
+        insertFailedSession(assessmentA2, Instant.parse("2026-08-24T02:14:00Z"), null, null);
+        insertFailedSession(assessmentB, Instant.parse("2026-08-25T02:14:00Z"), TIMEOUT_B, 3);
 
-        var totals = repository.countTotals(WINDOW_FROM, WINDOW_TO);
+        GradingFailureTotalsDto totals = repository.countTotals(WINDOW_FROM, WINDOW_TO);
 
         assertThat(totals.schoolCount()).isEqualTo(2L);
         assertThat(totals.causeCount()).isEqualTo(2L);
     }
 
     /**
-     * Chữ ký null chọn ĐÚNG nhóm không rõ nguyên nhân, không phải "bỏ lọc". Dùng {@code =} thay cho
-     * {@code IS NOT DISTINCT FROM} thì bấm vào nhóm đó ra danh sách rỗng trong khi thẻ vẫn hiện số.
+     * A null signature selects EXACTLY the unknown-cause group, it does not mean "remove the
+     * filter". Using {@code =} instead of {@code IS NOT DISTINCT FROM} would make clicking that
+     * group produce an empty list while the card still shows a number.
      */
     @Test
     void shouldOpenTheUnknownCauseGroupWithANullSignature() {
-        var school = insertSchool("THPT A");
-        var exam = insertExam(school, "Giữa kỳ I", "DRAFT");
-        insertFailedSession(exam, Instant.parse("2026-08-23T02:14:00Z"), TIMEOUT_A, 3);
-        insertFailedSession(exam, Instant.parse("2026-08-24T02:14:00Z"), null, null);
+        UUID school = insertSchool("THPT A");
+        UUID assessment = insertAssessment(school, "Giữa kỳ I", "DRAFT");
+        insertFailedSession(assessment, Instant.parse("2026-08-23T02:14:00Z"), TIMEOUT_A, 3);
+        insertFailedSession(assessment, Instant.parse("2026-08-24T02:14:00Z"), null, null);
 
-        var page = repository.findSessions(WINDOW_FROM, WINDOW_TO, null, 1, 20);
+        PageResult<GradingFailureSessionDto> page = repository.findSessions(WINDOW_FROM, WINDOW_TO, null, 1, 20);
 
         assertThat(page.totalElements()).isEqualTo(1L);
         assertThat(page.content().get(0).error()).isNull();
@@ -161,63 +167,67 @@ class JpaGradingFailureQueryRepositoryTests extends ContainerTestConfig {
     }
 
     @Test
-    void shouldListSessionsOfOneGroupWithSchoolExamAndCandidate() {
-        var school = insertSchool("THPT Nguyễn Huệ");
-        var exam = insertExam(school, "Giữa kỳ I", "CLOSED");
-        var sessionId = insertFailedSession(exam, Instant.parse("2026-08-23T02:14:00Z"), TIMEOUT_A, 3);
+    void shouldListSessionsOfOneGroupWithSchoolAssessmentAndCandidate() {
+        UUID school = insertSchool("THPT Nguyễn Huệ");
+        UUID assessment = insertAssessment(school, "Giữa kỳ I", "CLOSED");
+        UUID sessionId = insertFailedSession(assessment, Instant.parse("2026-08-23T02:14:00Z"), TIMEOUT_A, 3);
 
-        var signature = repository.findGroups(WINDOW_FROM, WINDOW_TO, 10).get(0).signature();
-        var page = repository.findSessions(WINDOW_FROM, WINDOW_TO, signature, 1, 20);
+        String signature = repository.findGroups(WINDOW_FROM, WINDOW_TO, 10).get(0).signature();
+        PageResult<GradingFailureSessionDto> page = repository.findSessions(WINDOW_FROM, WINDOW_TO, signature, 1, 20);
 
         assertThat(page.totalElements()).isEqualTo(1L);
-        var row = page.content().get(0);
+        GradingFailureSessionDto row = page.content().get(0);
         assertThat(row.sessionId()).isEqualTo(sessionId);
         assertThat(row.schoolName()).isEqualTo("THPT Nguyễn Huệ");
-        assertThat(row.examName()).isEqualTo("Giữa kỳ I");
+        assertThat(row.assessmentName()).isEqualTo("Giữa kỳ I");
         assertThat(row.candidateName()).isEqualTo("Trần Minh Anh");
         assertThat(row.retryCount()).isEqualTo(3);
         assertThat(row.retryable()).isTrue();
-        // Chưa ai chuyển sang người chấm, nên chưa có dòng kết quả nào trỏ về phiên.
+        // Nobody has handed over to a grader yet, so no result row points back to the session.
         assertThat(row.handedOff()).isFalse();
     }
 
     /**
-     * Chuyển người chấm KHÔNG đổi trạng thái phiên (cố ý, xem {@code HandOffGradingToHumanUseCase}),
-     * nên phiên vẫn nằm trong danh sách này. Cờ {@code handedOff} là thứ duy nhất phân biệt — thiếu
-     * nó thì thao tác hàng loạt sẽ chấm đè lên bài giáo viên đang chấm dở.
+     * Handing over to a grader does NOT change the session status (on purpose, see
+     * {@code HandOffGradingToHumanUseCase}), so the session stays in this list. The
+     * {@code handedOff} flag is the only thing that tells them apart -- without it, a bulk action
+     * would grade over a submission the teacher is in the middle of grading.
      */
     @Test
     void shouldFlagSessionsAlreadyHandedOffToAHumanGrader() {
-        var school = insertSchool("THPT A");
-        var exam = insertExam(school, "Giữa kỳ I", "CLOSED");
-        var sessionId = insertFailedSession(exam, Instant.parse("2026-08-23T02:14:00Z"), TIMEOUT_A, 3);
-        insertCandidateResult(exam, sessionId);
+        UUID school = insertSchool("THPT A");
+        UUID assessment = insertAssessment(school, "Giữa kỳ I", "CLOSED");
+        UUID sessionId = insertFailedSession(assessment, Instant.parse("2026-08-23T02:14:00Z"), TIMEOUT_A, 3);
+        insertCandidateResult(assessment, sessionId);
 
-        var signature = repository.findGroups(WINDOW_FROM, WINDOW_TO, 10).get(0).signature();
-        var page = repository.findSessions(WINDOW_FROM, WINDOW_TO, signature, 1, 20);
+        String signature = repository.findGroups(WINDOW_FROM, WINDOW_TO, 10).get(0).signature();
+        PageResult<GradingFailureSessionDto> page = repository.findSessions(WINDOW_FROM, WINDOW_TO, signature, 1, 20);
 
         assertThat(page.content().get(0).handedOff()).isTrue();
     }
 
-    /** Cửa sổ là nửa mở {@code [from, to)} — cùng quy ước với thẻ trên trang tổng quan. */
+    /**
+     * The window is half-open {@code [from, to)} -- the same convention as the card on the overview
+     * page.
+     */
     @Test
     void shouldExcludeSessionsOutsideTheWindow() {
-        var school = insertSchool("THPT A");
-        var exam = insertExam(school, "Giữa kỳ I", "DRAFT");
-        insertFailedSession(exam, WINDOW_FROM.minusSeconds(1), TIMEOUT_A, 3);
-        insertFailedSession(exam, WINDOW_TO, TIMEOUT_A, 3);
-        insertFailedSession(exam, WINDOW_FROM, TIMEOUT_A, 3);
+        UUID school = insertSchool("THPT A");
+        UUID assessment = insertAssessment(school, "Giữa kỳ I", "DRAFT");
+        insertFailedSession(assessment, WINDOW_FROM.minusSeconds(1), TIMEOUT_A, 3);
+        insertFailedSession(assessment, WINDOW_TO, TIMEOUT_A, 3);
+        insertFailedSession(assessment, WINDOW_FROM, TIMEOUT_A, 3);
 
         assertThat(repository.countTotals(WINDOW_FROM, WINDOW_TO).sessionCount()).isEqualTo(1L);
     }
 
-    /** Chỉ phiên GRADING_FAILED, không phải mọi phiên đã nộp. */
+    /** Only GRADING_FAILED sessions, not every submitted session. */
     @Test
     void shouldIgnoreSessionsThatAreNotFailed() {
-        var school = insertSchool("THPT A");
-        var exam = insertExam(school, "Giữa kỳ I", "DRAFT");
-        insertSession(exam, Instant.parse("2026-08-23T02:14:00Z"), "GRADED", null, null);
-        insertFailedSession(exam, Instant.parse("2026-08-23T02:15:00Z"), TIMEOUT_A, 3);
+        UUID school = insertSchool("THPT A");
+        UUID assessment = insertAssessment(school, "Giữa kỳ I", "DRAFT");
+        insertSession(assessment, Instant.parse("2026-08-23T02:14:00Z"), "GRADED", null, null);
+        insertFailedSession(assessment, Instant.parse("2026-08-23T02:15:00Z"), TIMEOUT_A, 3);
 
         assertThat(repository.countTotals(WINDOW_FROM, WINDOW_TO).sessionCount()).isEqualTo(1L);
     }
@@ -225,9 +235,9 @@ class JpaGradingFailureQueryRepositoryTests extends ContainerTestConfig {
     // ---------- fixtures ----------
 
     private UUID insertSchool(String name) {
-        var id = UUID.randomUUID();
-        var actor = UUID.randomUUID();
-        var now = OffsetDateTime.now(ZoneOffset.UTC);
+        UUID id = UUID.randomUUID();
+        UUID actor = UUID.randomUUID();
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         em.createNativeQuery("""
             INSERT INTO schools (id, code, name, address, contact_email, contact_phone,
                                  is_active, student_count, created_at, updated_at, created_by, updated_by)
@@ -243,11 +253,11 @@ class JpaGradingFailureQueryRepositoryTests extends ContainerTestConfig {
         return id;
     }
 
-    private UUID insertExam(UUID schoolId, String name, String status) {
-        var id = UUID.randomUUID();
-        var now = OffsetDateTime.now(ZoneOffset.UTC);
+    private UUID insertAssessment(UUID schoolId, String name, String status) {
+        UUID id = UUID.randomUUID();
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         em.createNativeQuery("""
-            INSERT INTO exams (id, school_id, language_id, code, name, kind, status, requires_otp,
+            INSERT INTO assessments (id, school_id, language_id, code, name, kind, status, requires_otp,
                                created_at, updated_at)
             VALUES (:id, :schoolId, :languageId, :code, :name, 'CENTRALIZED', :status, TRUE, :now, :now)
             """)
@@ -262,9 +272,9 @@ class JpaGradingFailureQueryRepositoryTests extends ContainerTestConfig {
         return id;
     }
 
-    private UUID insertCandidate(UUID examId) {
-        var studentId = UUID.randomUUID();
-        var now = OffsetDateTime.now(ZoneOffset.UTC);
+    private UUID insertCandidate(UUID assessmentId) {
+        UUID studentId = UUID.randomUUID();
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         em.createNativeQuery("""
             INSERT INTO users (id, email, full_name, password_hash, date_of_birth, status, created_at, updated_at)
             VALUES (:id, :email, 'Trần Minh Anh', 'x', DATE '2008-01-01', 'ACTIVE', :now, :now)
@@ -274,34 +284,34 @@ class JpaGradingFailureQueryRepositoryTests extends ContainerTestConfig {
             .setParameter("now", now)
             .executeUpdate();
 
-        var candidateId = UUID.randomUUID();
+        UUID candidateId = UUID.randomUUID();
         em.createNativeQuery("""
-            INSERT INTO exam_candidates (id, exam_id, student_id, status, assigned_at, updated_at)
-            VALUES (:id, :examId, :studentId, 'ATTENDED', :now, :now)
+            INSERT INTO assessment_candidates (id, assessment_id, student_id, status, assigned_at, updated_at)
+            VALUES (:id, :assessmentId, :studentId, 'ATTENDED', :now, :now)
             """)
             .setParameter("id", candidateId)
-            .setParameter("examId", examId)
+            .setParameter("assessmentId", assessmentId)
             .setParameter("studentId", studentId)
             .setParameter("now", now)
             .executeUpdate();
         return candidateId;
     }
 
-    private UUID insertFailedSession(UUID examId, Instant submittedAt, String error, Integer retryCount) {
-        return insertSession(examId, submittedAt, "GRADING_FAILED", error, retryCount);
+    private UUID insertFailedSession(UUID assessmentId, Instant submittedAt, String error, Integer retryCount) {
+        return insertSession(assessmentId, submittedAt, "GRADING_FAILED", error, retryCount);
     }
 
-    private UUID insertSession(UUID examId, Instant submittedAt, String status, String error, Integer retryCount) {
-        var id = UUID.randomUUID();
+    private UUID insertSession(UUID assessmentId, Instant submittedAt, String status, String error, Integer retryCount) {
+        UUID id = UUID.randomUUID();
         em.createNativeQuery("""
-            INSERT INTO exam_sessions (id, exam_id, candidate_id, paper_id, started_at, submitted_at,
+            INSERT INTO assessment_sessions (id, assessment_id, candidate_id, paper_id, started_at, submitted_at,
                                        status, flagged, grading_error, grading_retry_count)
-            VALUES (:id, :examId, :candidateId, :paperId, :startedAt, :submittedAt,
+            VALUES (:id, :assessmentId, :candidateId, :paperId, :startedAt, :submittedAt,
                     :status, FALSE, :error, :retryCount)
             """)
             .setParameter("id", id)
-            .setParameter("examId", examId)
-            .setParameter("candidateId", insertCandidate(examId))
+            .setParameter("assessmentId", assessmentId)
+            .setParameter("candidateId", insertCandidate(assessmentId))
             .setParameter("paperId", UUID.randomUUID())
             .setParameter("startedAt", submittedAt.minusSeconds(1800))
             .setParameter("submittedAt", submittedAt)
@@ -312,18 +322,21 @@ class JpaGradingFailureQueryRepositoryTests extends ContainerTestConfig {
         return id;
     }
 
-    /** Dòng kết quả PENDING_REVIEW mà HandOffGradingToHumanUseCase tạo ra khi giao bài cho người chấm. */
-    private void insertCandidateResult(UUID examId, UUID sessionId) {
-        var now = OffsetDateTime.now(ZoneOffset.UTC);
+    /**
+     * The PENDING_REVIEW result row that HandOffGradingToHumanUseCase creates when it gives the
+     * submission to a grader.
+     */
+    private void insertCandidateResult(UUID assessmentId, UUID sessionId) {
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         em.createNativeQuery("""
-            INSERT INTO exam_candidate_results (id, exam_id, session_id, candidate_id, assessment_policy_id,
+            INSERT INTO assessment_candidate_results (id, assessment_id, session_id, candidate_id, assessment_policy_id,
                                                 framework_version_id, rubric_version_id, target_framework_band_id,
                                                 policy_version, status, created_at, updated_at)
-            VALUES (:id, :examId, :sessionId, :candidateId, :policyId, :frameworkVersionId, :rubricVersionId,
+            VALUES (:id, :assessmentId, :sessionId, :candidateId, :policyId, :frameworkVersionId, :rubricVersionId,
                     :bandId, 1, 'PENDING_REVIEW', :now, :now)
             """)
             .setParameter("id", UUID.randomUUID())
-            .setParameter("examId", examId)
+            .setParameter("assessmentId", assessmentId)
             .setParameter("sessionId", sessionId)
             .setParameter("candidateId", UUID.randomUUID())
             .setParameter("policyId", UUID.randomUUID())

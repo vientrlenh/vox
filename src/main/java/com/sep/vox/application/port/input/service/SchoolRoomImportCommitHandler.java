@@ -49,9 +49,9 @@ public class SchoolRoomImportCommitHandler implements ImportCommitHandler {
 
     @Override
     public ImportCommitResult commit(ImportSession session, List<ImportRow> rows) {
-        var schoolId = session.getSchoolId();
-        var currentUserId = session.getCreatedBy();
-        var mapping = jsonSerializationPort.toStringMap(session.getConfirmedMappingJson());
+        UUID schoolId = session.getSchoolId();
+        UUID currentUserId = session.getCreatedBy();
+        Map<String, String> mapping = jsonSerializationPort.toStringMap(session.getConfirmedMappingJson());
         validateMappingKeys(rows, mapping);
         return processRows(rows, mapping, schoolId, currentUserId);
     }
@@ -60,14 +60,14 @@ public class SchoolRoomImportCommitHandler implements ImportCommitHandler {
         if (rows.isEmpty()) {
             return;
         }
-        var validHeaders = jsonSerializationPort.toStringMap(rows.get(0).getRawDataJson()).keySet();
-        var invalidKeys = confirmedMapping.keySet().stream()
+        Set<String> validHeaders = jsonSerializationPort.toStringMap(rows.get(0).getRawDataJson()).keySet();
+        List<String> invalidKeys = confirmedMapping.keySet().stream()
             .filter(key -> !validHeaders.contains(key))
             .toList();
         if (!invalidKeys.isEmpty()) {
             throw new IllegalArgumentException("Mapping chứa cột không tồn tại trong file: " + String.join(", ", invalidKeys));
         }
-        var invalidValues = confirmedMapping.values().stream()
+        List<String> invalidValues = confirmedMapping.values().stream()
             .map(value -> value == null ? null : value.strip())
             .filter(value -> value != null && !value.isEmpty() && !SUPPORTED_FIELDS.contains(value))
             .toList();
@@ -77,28 +77,28 @@ public class SchoolRoomImportCommitHandler implements ImportCommitHandler {
     }
 
     private ImportCommitResult processRows(List<ImportRow> rows, Map<String, String> confirmedMapping, UUID schoolId, UUID currentUserId) {
-        var createdRows = 0L;
-        var updatedRows = 0L;
-        var invalidRows = 0L;
-        var seenCodes = new HashSet<String>();
-        var rowContexts = new ArrayList<RowContext>();
-        var codes = new HashSet<String>();
+        long createdRows = 0L;
+        long updatedRows = 0L;
+        long invalidRows = 0L;
+        Set<String> seenCodes = new HashSet<String>();
+        List<RowContext> rowContexts = new ArrayList<RowContext>();
+        Set<String> codes = new HashSet<String>();
 
-        for (var row : rows) {
-            var rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
-            var mappedData = mapRawData(rawData, confirmedMapping);
-            var normalized = normalize(mappedData);
+        for (ImportRow row : rows) {
+            Map<String, String> rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
+            Map<String, String> mappedData = mapRawData(rawData, confirmedMapping);
+            Map<String, String> normalized = normalize(mappedData);
             row.setMappedDataJson(jsonSerializationPort.toJson(normalized));
             rowContexts.add(new RowContext(row, normalized));
             addIfPresent(codes, normalized.get("code"));
         }
 
-        var existingByCode = findExistingByCode(schoolId, codes);
+        Map<String, SchoolRoom> existingByCode = findExistingByCode(schoolId, codes);
 
-        for (var rowContext : rowContexts) {
-            var row = rowContext.row();
-            var normalized = rowContext.normalized();
-            var errors = validateRow(normalized, seenCodes);
+        for (RowContext rowContext : rowContexts) {
+            ImportRow row = rowContext.row();
+            Map<String, String> normalized = rowContext.normalized();
+            List<Map<String, String>> errors = validateRow(normalized, seenCodes);
 
             if (!errors.isEmpty()) {
                 row.setErrorsJson(jsonSerializationPort.toJson(errors));
@@ -107,7 +107,7 @@ public class SchoolRoomImportCommitHandler implements ImportCommitHandler {
                 continue;
             }
 
-            var existing = existingByCode.get(normalized.get("code"));
+            SchoolRoom existing = existingByCode.get(normalized.get("code"));
 
             try {
                 if (existing != null) {
@@ -134,7 +134,7 @@ public class SchoolRoomImportCommitHandler implements ImportCommitHandler {
     }
 
     private void createRoom(Map<String, String> data, UUID schoolId, UUID currentUserId) {
-        var now = Instant.now();
+        Instant now = Instant.now();
         schoolRoomRepository.save(new SchoolRoom(
                 schoolId,
                 data.get("code"),
@@ -151,7 +151,7 @@ public class SchoolRoomImportCommitHandler implements ImportCommitHandler {
     }
 
     private void updateRoom(SchoolRoom existing, Map<String, String> data, UUID currentUserId) {
-        var now = Instant.now();
+        Instant now = Instant.now();
         existing.setName(data.get("name"));
         existing.setDescription(data.get("description"));
         // Import lại mã phòng đang inactive = khôi phục phòng đó, vì không có API nào bật lại
@@ -163,16 +163,16 @@ public class SchoolRoomImportCommitHandler implements ImportCommitHandler {
     }
 
     private Map<String, SchoolRoom> findExistingByCode(UUID schoolId, Set<String> codes) {
-        var existingByCode = new LinkedHashMap<String, SchoolRoom>();
+        Map<String, SchoolRoom> existingByCode = new LinkedHashMap<String, SchoolRoom>();
         schoolRoomRepository.findBySchoolIdAndCodeIn(schoolId, codes)
             .forEach(room -> existingByCode.putIfAbsent(room.getCode(), room));
         return existingByCode;
     }
 
     private Map<String, String> mapRawData(Map<String, String> rawData, Map<String, String> confirmedMapping) {
-        var mappedData = new LinkedHashMap<String, String>();
+        Map<String, String> mappedData = new LinkedHashMap<String, String>();
         rawData.forEach((originalHeader, value) -> {
-            var systemField = confirmedMapping.get(originalHeader);
+            String systemField = confirmedMapping.get(originalHeader);
             if (systemField != null) {
                 systemField = systemField.strip();
             }
@@ -184,7 +184,7 @@ public class SchoolRoomImportCommitHandler implements ImportCommitHandler {
     }
 
     private Map<String, String> normalize(Map<String, String> mappedData) {
-        var normalized = new LinkedHashMap<String, String>();
+        Map<String, String> normalized = new LinkedHashMap<String, String>();
         normalized.put("code", StringNormalization.normalizeCode(mappedData.get("code")));
         normalized.put("name", StringNormalization.trimAndCollapseSpaces(mappedData.get("name")));
         normalized.put("description", StringNormalization.trimAndCollapseSpaces(mappedData.get("description")));
@@ -192,12 +192,12 @@ public class SchoolRoomImportCommitHandler implements ImportCommitHandler {
     }
 
     private List<Map<String, String>> validateRow(Map<String, String> data, Set<String> seenCodes) {
-        var errors = new ArrayList<Map<String, String>>();
+        List<Map<String, String>> errors = new ArrayList<Map<String, String>>();
 
         addMissingError(errors, data, "code", "Mã phòng không được để trống");
         addMissingError(errors, data, "name", "Tên phòng không được để trống");
 
-        var code = data.get("code");
+        String code = data.get("code");
         if (isPresent(code) && !seenCodes.add(code)) {
             errors.add(error("code", "Mã phòng bị trùng trong file import"));
         }

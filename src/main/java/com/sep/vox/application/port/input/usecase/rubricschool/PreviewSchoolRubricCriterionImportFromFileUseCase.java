@@ -1,5 +1,9 @@
 package com.sep.vox.application.port.input.usecase.rubricschool;
 
+import com.sep.vox.domain.model.rubric.Rubric;
+import com.sep.vox.domain.model.rubric.RubricVersion;
+import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.domain.model.user.User;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -77,14 +81,14 @@ public class PreviewSchoolRubricCriterionImportFromFileUseCase implements IUseCa
 
         // Bước 1: Kiểm tra trạng thái tài khoản đang đăng nhập
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = userRepository.findById(currentUserId)
+        User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("Tài khoản bị khóa.");
         }
 
         // Bước 2: Kiểm tra liên kết giữa tài khoản và trường học (Gác cổng bảo mật)
-        var schoolUser = schoolUserRepository.findByUserId(currentUserId)
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Bạn không thuộc trường học nào để thực hiện chức năng này."));
 
         // Chống hack: Đổi schoolId trên URL khác với id trường của chính mình
@@ -93,9 +97,9 @@ public class PreviewSchoolRubricCriterionImportFromFileUseCase implements IUseCa
         }
 
         // Bước 3: Kiểm tra tính tồn tại và quyền sở hữu bộ Rubric
-        var version = rubricVersionRepository.findById(command.rubricVersionId())
+        RubricVersion version = rubricVersionRepository.findById(command.rubricVersionId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản (Version) yêu cầu."));
-        var rubric = rubricRepository.findById(version.getRubricId())
+        Rubric rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
 
         // Chống hack: Cố tình truyền Id của một Rubric thuộc về System hoặc của một trường khác vào URL trường mình

@@ -1,17 +1,21 @@
 package com.sep.vox.domain.dto;
 
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
+
+import com.sep.vox.domain.model.user.Gender;
 
 public record UserDto(
     UUID id, 
     String email, 
     String phone, 
     String fullName, 
-    String gender, 
-    String dateOfBirth, 
+    Gender gender,
+    LocalDate dateOfBirth, 
     String address, 
     String avatarUrl, 
-    String createdAt, 
-    String updatedAt 
+    Instant createdAt, 
+    Instant updatedAt 
 ) {
 }

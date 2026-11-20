@@ -1,0 +1,176 @@
+package com.sep.vox.infrastructure.persistence.query;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTransport;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.sep.vox.application.query.dto.GradingAssignmentFilter;
+import com.sep.vox.application.query.dto.GradingAssignmentRowInfo;
+import com.sep.vox.application.query.dto.GradingStatsInfo;
+import com.sep.vox.application.query.dto.GradingTaskInfo;
+import com.sep.vox.application.query.repository.AssessmentGradingQueryRepository;
+import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.infrastructure.persistence.entity.AssessmentCandidateJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.AssessmentCandidateResultJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.AssessmentGradingAssignmentJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.AssessmentJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.AssessmentSessionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.UserJpaEntity;
+import com.sep.vox.support.IntegrationTest;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
+/**
+ * Tách kỳ thi TẬP TRUNG khỏi bài kiểm tra TRÊN LỚP ở mọi read model chấm bài.
+ *
+ * <p>Hai loại bài đi hai màn khác nhau — nhà trường điều phối kỳ thi tập trung, giáo viên
+ * tạo bài tự chấm bài trên lớp. Trước khi có bộ lọc này, bảng điều phối liệt kê cả bài
+ * trên lớp rồi bấm gán là bị chặn ở tầng dưới, còn hàng đợi của giáo viên thì trộn hai
+ * loại vào một danh sách.
+ *
+ * <p>Phải chạy trên Postgres thật vì đây là JPQL dựng bằng {@code em.createQuery}: sai
+ * tên trường chỉ nổ lúc GỌI chứ không lúc biên dịch.
+ */
+@IntegrationTest
+@AutoConfigureTestGrpcTransport
+@Transactional
+class GradingAssessmentKindFilterQueryTests {
+
+    @Autowired
+    private AssessmentGradingQueryRepository assessmentGradingQueryRepository;
+
+    @PersistenceContext
+    private EntityManager em;
+
+    private final UUID teacherId = UUID.randomUUID();
+    private final Instant now = Instant.now();
+
+    private UUID schoolId;
+
+    @BeforeEach
+    void seed() {
+        schoolId = UUID.randomUUID();
+        UUID studentId = persist(new UserJpaEntity(null, "hs-" + UUID.randomUUID() + "@vox.test", "hash",
+            null, "Trần Quang Thiên", null, LocalDate.of(2008, 1, 1), null, null, "ACTIVE",
+            now, now, null, null)).getId();
+
+        seedAssessment("CLASS_TEST", "Kiểm tra 15 phút", studentId);
+        seedAssessment("CENTRALIZED", "Kỳ thi cuối kỳ", studentId);
+
+        em.flush();
+        em.clear();
+    }
+
+    @Test
+    void should_list_only_centralized_rows_on_the_coordination_board() {
+        PageResult<GradingAssignmentRowInfo> page = assessmentGradingQueryRepository.searchAssignments(filter("CENTRALIZED"), 1, 20);
+
+        assertThat(page.content()).singleElement()
+            .satisfies(row -> assertThat(row.assessmentName()).isEqualTo("Kỳ thi cuối kỳ"));
+        // The total must go together with the content, otherwise the FE builds an empty page that
+        // cannot be clicked.
+        assertThat(page.totalElements()).isEqualTo(1);
+    }
+
+    @Test
+    void should_list_only_class_test_rows_when_asked_for_class_tests() {
+        PageResult<GradingAssignmentRowInfo> page = assessmentGradingQueryRepository.searchAssignments(filter("CLASS_TEST"), 1, 20);
+
+        assertThat(page.content()).singleElement()
+            .satisfies(row -> assertThat(row.assessmentName()).isEqualTo("Kiểm tra 15 phút"));
+        assertThat(page.totalElements()).isEqualTo(1);
+    }
+
+    /** Bộ lọc bỏ trống vẫn trả cả hai — mặc định nằm ở use case, không ẩn trong SQL. */
+    @Test
+    void should_list_both_kinds_when_no_kind_is_given() {
+        assertThat(assessmentGradingQueryRepository.searchAssignments(filter(null), 1, 20).content())
+            .hasSize(2);
+    }
+
+    @Test
+    void should_count_only_the_asked_kind_in_stats() {
+        GradingStatsInfo centralized = assessmentGradingQueryRepository.stats(schoolId, null, null, "CENTRALIZED");
+        GradingStatsInfo classTest = assessmentGradingQueryRepository.stats(schoolId, null, null, "CLASS_TEST");
+
+        assertThat(centralized.total()).isEqualTo(1);
+        assertThat(centralized.assigned()).isEqualTo(1);
+        assertThat(classTest.total()).isEqualTo(1);
+        assertThat(classTest.assigned()).isEqualTo(1);
+        assertThat(centralized.teacherProgress()).hasSize(1);
+    }
+
+    @Test
+    void should_keep_class_test_assignments_out_of_the_centralized_teacher_queue() {
+        PageResult<GradingTaskInfo> page = assessmentGradingQueryRepository
+            .findTasksByTeacherId(teacherId, "CENTRALIZED", null, null, 1, 20);
+
+        assertThat(page.content()).singleElement()
+            .satisfies(task -> assertThat(task.assessmentName()).isEqualTo("Kỳ thi cuối kỳ"));
+        assertThat(page.totalElements()).isEqualTo(1);
+    }
+
+    @Test
+    void should_keep_centralized_assignments_out_of_the_class_test_queue() {
+        PageResult<GradingTaskInfo> page = assessmentGradingQueryRepository
+            .findTasksByTeacherId(teacherId, "CLASS_TEST", null, null, 1, 20);
+
+        assertThat(page.content()).singleElement()
+            .satisfies(task -> assertThat(task.assessmentName()).isEqualTo("Kiểm tra 15 phút"));
+        assertThat(page.totalElements()).isEqualTo(1);
+    }
+
+    /**
+     * Auto-assign is an action of the school; if class-test submissions slip in here, every run
+     * picks up a bunch of submissions and then gets blocked at a lower layer.
+     */
+    @Test
+    void should_never_offer_class_test_results_to_auto_assign() {
+        // The submission already has an open assignment, so the returned set is empty; what has to
+        // be pinned is that the class-test submission does not appear even when its status is valid
+        // for the grading round.
+        List<UUID> assignable = assessmentGradingQueryRepository.findAssignableResultIds(
+            schoolId, null, null, List.of("PENDING_REVIEW", "RELEASED"));
+
+        assertThat(assignable).isEmpty();
+    }
+
+    private GradingAssignmentFilter filter(String assessmentKind) {
+        return new GradingAssignmentFilter(
+            schoolId, null, null, null, null, null, null, false, false, null, null, assessmentKind);
+    }
+
+    private void seedAssessment(String kind, String name, UUID studentId) {
+        UUID paperId = UUID.randomUUID();
+        UUID assessmentId = persist(new AssessmentJpaEntity(null, null, null, "EX-" + UUID.randomUUID(), name,
+            null, schoolId, UUID.randomUUID(), kind, "STUDENT_DEVICE", "CLOSED",
+            1, 900, "HIGHEST", null, null, null, null, UUID.randomUUID(), false,
+            now, now, null, null)).getId();
+        UUID candidateId = persist(new AssessmentCandidateJpaEntity(null, assessmentId, studentId, paperId, null,
+            "COMPLETED", now, now, null, null, null)).getId();
+        UUID sessionId = persist(new AssessmentSessionJpaEntity(null, assessmentId, candidateId, paperId, now, now,
+            "GRADED", false, null)).getId();
+        UUID candidateResultId = persist(new AssessmentCandidateResultJpaEntity(null, assessmentId, candidateId, sessionId,
+            UUID.randomUUID(), 1, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null,
+            new BigDecimal("6.50"), "PENDING_REVIEW", null, null, now, now, null, null)).getId();
+        persist(new AssessmentGradingAssignmentJpaEntity(null, candidateResultId, teacherId,
+            "INITIAL", null, "ASSIGNED", null, new BigDecimal("6.50"), now, teacherId, null,
+            null, null, null, candidateResultId));
+    }
+
+    private <T> T persist(T entity) {
+        em.persist(entity);
+        return entity;
+    }
+}

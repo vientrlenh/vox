@@ -33,7 +33,7 @@ public final class PracticeSessionMapper {
 
     public static PracticeSessionJpaEntity toJpa(
             PracticeSession session) {
-        var entity = new PracticeSessionJpaEntity(
+        PracticeSessionJpaEntity entity = new PracticeSessionJpaEntity(
             session.getId(),
             session.getStudentId(),
             session.getPracticePaperId(),

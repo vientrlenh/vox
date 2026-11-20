@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.service;
 
+import com.sep.vox.domain.model.personalization.PracticeSession;
 import java.util.List;
 import java.util.UUID;
 
@@ -99,7 +100,7 @@ public class ResolveNextPracticeQuestionClaimService {
     public Claim claim(UUID sessionId) {
         // FOR UPDATE: chỉ còn cần bảo vệ đúng đoạn đọc/kiểm tra ngắn này -- khoá JVM ở
         // ResolveNextPracticeQuestionUseCase mới là thứ serialize xuyên suốt cuộc gọi ngoài chậm.
-        var session = practiceSessionRepository.findByIdForUpdate(sessionId)
+        PracticeSession session = practiceSessionRepository.findByIdForUpdate(sessionId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên luyện."));
         if (!"IN_PROGRESS".equals(session.getStatus())) {
             throw new IllegalStateException("Phiên luyện không còn hoạt động.");
@@ -107,20 +108,20 @@ public class ResolveNextPracticeQuestionClaimService {
 
         // Tính SỚM, trước cả nhánh idempotent: mọi nhánh trả về đều phải mang được cặp số cho
         // thanh tiến độ, kể cả nhánh trả lại nguyên câu cũ sau một lần gọi bị timeout.
-        var spokenSeconds = session.getGradedSeconds();
-        var targetBandOrder = enrichmentService.bandOrder(session.getTargetFrameworkBandId());
-        var targetBandCount = enrichmentService.frameworkBandCountOfBand(session.getTargetFrameworkBandId());
-        var targetFrameworkVersionId =
+        int spokenSeconds = session.getGradedSeconds();
+        int targetBandOrder = enrichmentService.bandOrder(session.getTargetFrameworkBandId());
+        int targetBandCount = enrichmentService.frameworkBandCountOfBand(session.getTargetFrameworkBandId());
+        UUID targetFrameworkVersionId =
             enrichmentService.frameworkVersionIdOfBand(session.getTargetFrameworkBandId());
-        var budgetSeconds = enrichmentService.sessionBudgetSeconds(
+        int budgetSeconds = enrichmentService.sessionBudgetSeconds(
             session.getStudentId(), targetBandOrder
         );
 
-        var alreadyChosenIds = paperItemRepository.findQuestionIdsForPaper(session.getPracticePaperId());
+        List<UUID> alreadyChosenIds = paperItemRepository.findQuestionIdsForPaper(session.getPracticePaperId());
         if (!alreadyChosenIds.isEmpty()) {
-            var latestQuestionId = alreadyChosenIds.getLast();
+            UUID latestQuestionId = alreadyChosenIds.getLast();
             if (!practiceItemResponseRepository.existsResponse(sessionId, latestQuestionId)) {
-                var latestQuestion = questionRepository.findById(latestQuestionId)
+                PracticeQuestion latestQuestion = questionRepository.findById(latestQuestionId)
                     .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi luyện."));
                 return new Claim(
                     session.getStudentId(), session.getPracticePaperId(), null, null, null,
@@ -153,10 +154,10 @@ public class ResolveNextPracticeQuestionClaimService {
             );
         }
 
-        var topic = topicRepository.findTopicById(session.getChosenPracticeTopicId())
+        PracticeTopic topic = topicRepository.findTopicById(session.getChosenPracticeTopicId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề luyện tập."));
-        var focus = selectionService.resolveFocus(session.getStudentId(), null);
-        var alreadyChosen = questionRepository.findByIds(alreadyChosenIds);
+        PracticeFocusInfo focus = selectionService.resolveFocus(session.getStudentId(), null);
+        List<PracticeQuestion> alreadyChosen = questionRepository.findByIds(alreadyChosenIds);
 
         return new Claim(
             session.getStudentId(), session.getPracticePaperId(), topic, focus, alreadyChosen,

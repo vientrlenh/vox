@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.RegisterFormDocumentJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -29,8 +30,8 @@ public class RegisterFormDocumentRepositoryImpl implements RegisterFormDocumentR
 
     @Override
     public RegisterFormDocument save(RegisterFormDocument document) {
-        var entity = RegisterFormDocumentMapper.toJpa(document);
-        var saved = springDataRegisterFormDocumentRepository.save(entity);
+        RegisterFormDocumentJpaEntity entity = RegisterFormDocumentMapper.toJpa(document);
+        RegisterFormDocumentJpaEntity saved = springDataRegisterFormDocumentRepository.save(entity);
         return RegisterFormDocumentMapper.toDomain(saved);
     }
 
@@ -44,16 +45,16 @@ public class RegisterFormDocumentRepositoryImpl implements RegisterFormDocumentR
 
     @Override
     public List<RegisterFormDocument> saveAll(Collection<RegisterFormDocument> documents) {
-        var entities = documents.stream()
+        List<RegisterFormDocumentJpaEntity> entities = documents.stream()
             .map(RegisterFormDocumentMapper::toJpa)
             .toList();
-        var saved = springDataRegisterFormDocumentRepository.saveAll(entities);
+        List<RegisterFormDocumentJpaEntity> saved = springDataRegisterFormDocumentRepository.saveAll(entities);
         return saved.stream().map(RegisterFormDocumentMapper::toDomain).toList();
     }
 
     @Override
     public List<RegisterFormDocument> findByRegisterFormIdIn(Collection<UUID> registerFormIds) {
-        var entities = springDataRegisterFormDocumentRepository.findByRegisterFormIdIn(registerFormIds);
+        List<RegisterFormDocumentJpaEntity> entities = springDataRegisterFormDocumentRepository.findByRegisterFormIdIn(registerFormIds);
         return entities.stream()
             .map(RegisterFormDocumentMapper::toDomain)
             .toList();

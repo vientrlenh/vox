@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.auth;
 
+import com.sep.vox.domain.model.user.User;
 import java.time.Instant;
 
 import org.springframework.stereotype.Service;
@@ -31,16 +32,16 @@ public class SetUpPasswordUseCase implements IUseCase<SetUpPasswordCommand, Void
     @Override
     @Transactional
     public Void execute(SetUpPasswordCommand input) {
-        var now = Instant.now();
-        var hashedToken = passwordSetUpTokenPort.hash(input.token());
+        Instant now = Instant.now();
+        String hashedToken = passwordSetUpTokenPort.hash(input.token());
         
-        var updatedTokenRows = passwordSetUpTokenRepository.updateUsedToken(input.userId(), hashedToken, now);
+        int updatedTokenRows = passwordSetUpTokenRepository.updateUsedToken(input.userId(), hashedToken, now);
         if (updatedTokenRows == 0) {
             throw new IllegalArgumentException("Token không hợp lệ hoặc đã hết hạn");
         }
 
-        var passwordHash = passwordEncoderPort.hash(input.password());
-        var user = userRepository.findById(input.userId())
+        String passwordHash = passwordEncoderPort.hash(input.password());
+        User user = userRepository.findById(input.userId())
             .orElseThrow(() -> new NotFoundException("Không tỉm thấy người dùng"));
         user.updatePasswordAndActivate(passwordHash, now);
         userRepository.save(user);

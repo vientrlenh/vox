@@ -3,30 +3,30 @@ package com.sep.vox.application.query.dto;
 import java.util.UUID;
 
 /**
- * Bộ lọc bảng phân công của school admin.
+ * The filter of the school admin's assignment table.
  *
- * <p>Gom thành record thay vì 11 tham số rời: bảng này lọc theo rất nhiều chiều
- * (bản cũ chỉ có 6 vì nó bị khoá cứng ở PENDING_REVIEW), và một danh sách tham số
- * dài toàn {@code UUID}/{@code String} là chỗ dễ truyền nhầm thứ tự nhất.
+ * <p>Gathered into a record instead of 11 loose parameters: this table filters on many dimensions
+ * (the old version had only 6 because it was hard-locked to PENDING_REVIEW), and a long parameter list
+ * of {@code UUID}/{@code String} is the easiest place to pass things in the wrong order.
  *
- * @param resultStatus   trạng thái bài; {@code null} = mọi trạng thái. Bỏ ràng buộc
- *                       cứng PENDING_REVIEW của bản cũ là mục tiêu chính của rework.
- * @param roundType      lọc theo vòng chấm của dòng phân công
- * @param assignmentStatus {@code ASSIGNED} / {@code COMPLETED}; {@code null} = cả hai
- *                       và cả bài chưa gán ai
- * @param unassignedOnly chỉ bài chưa có phân công đang mở
- * @param overdueOnly    chỉ phân công còn mở đã quá hạn
- * @param hasOpenAppeal  {@code TRUE} = chỉ bài có đơn phúc khảo chưa kết thúc,
- *                       {@code FALSE} = chỉ bài không có, {@code null} = không lọc
- * @param keyword        khớp tên giáo viên, tên học sinh hoặc mã bài
- * @param examKind       {@code CENTRALIZED} / {@code CLASS_TEST}; {@code null} = cả hai.
- *                       Hai loại bài đi hai màn khác nhau — nhà trường điều phối kỳ thi
- *                       tập trung, còn bài trên lớp do chính giáo viên tạo bài tự chấm —
- *                       nên bảng nào cũng phải chốt loại bài của mình thay vì trộn chung.
+ * @param resultStatus   status of the attempt; {@code null} = every status. Dropping the hard
+ *                       PENDING_REVIEW constraint of the old version was the main goal of the rework.
+ * @param roundType      filter by the grading round of the assignment row
+ * @param assignmentStatus {@code ASSIGNED} / {@code COMPLETED}; {@code null} = both
+ *                       and also attempts nobody has been assigned
+ * @param unassignedOnly only attempts with no open assignment
+ * @param overdueOnly    only open assignments that are past due
+ * @param hasOpenAppeal  {@code TRUE} = only attempts with an unfinished appeal,
+ *                       {@code FALSE} = only attempts without one, {@code null} = no filter
+ * @param keyword        matches teacher name, student name or attempt code
+ * @param assessmentKind {@code CENTRALIZED} / {@code CLASS_TEST}; {@code null} = both.
+ *                       The two kinds go to two different screens -- the school coordinates the centralized
+ *                       assessment, while a class test is graded by its own creating teacher --
+ *                       so every table must fix its own kind instead of mixing them.
  */
 public record GradingAssignmentFilter(
     UUID schoolId,
-    UUID examId,
+    UUID assessmentId,
     UUID scheduleId,
     UUID teacherId,
     String resultStatus,
@@ -36,6 +36,6 @@ public record GradingAssignmentFilter(
     boolean overdueOnly,
     Boolean hasOpenAppeal,
     String keyword,
-    String examKind
+    String assessmentKind
 ) {
 }

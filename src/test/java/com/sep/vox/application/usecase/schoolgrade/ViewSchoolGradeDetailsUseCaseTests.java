@@ -20,6 +20,7 @@ import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewSchoolGradeDetailsQuery;
 import com.sep.vox.application.port.input.usecase.schoolgrade.ViewSchoolGradeDetailsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.domain.dto.SchoolGradeDto;
 import com.sep.vox.domain.model.school.SchoolGrade;
 import com.sep.vox.domain.model.school.SchoolGradeStatus;
 import com.sep.vox.domain.model.user.UserStatus;
@@ -64,7 +65,7 @@ class ViewSchoolGradeDetailsUseCaseTests {
         grantAccess();
         when(schoolGradeRepository.findById(gradeId)).thenReturn(Optional.of(grade()));
 
-        var result = useCase.execute(new ViewSchoolGradeDetailsQuery(schoolId, gradeId));
+        SchoolGradeDto result = useCase.execute(new ViewSchoolGradeDetailsQuery(schoolId, gradeId));
 
         assertThat(result.id()).isEqualTo(gradeId);
         assertThat(result.code()).isEqualTo("NH2024");
@@ -132,7 +133,7 @@ class ViewSchoolGradeDetailsUseCaseTests {
     }
 
     private SchoolGrade grade(UUID ownerSchoolId) {
-        var now = Instant.now();
+        Instant now = Instant.now();
         return new SchoolGrade(
             gradeId, ownerSchoolId, gradeLevelId, "NH2024", "Năm học 2024", "desc",
             LocalDate.of(2024, 9, 1), LocalDate.of(2025, 6, 30), SchoolGradeStatus.ACTIVE,

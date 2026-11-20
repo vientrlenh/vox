@@ -3,6 +3,8 @@ package com.sep.vox.application.port.input.usecase.subscription;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -47,16 +49,16 @@ public class CreateSubscriptionPlanUseCase implements IUseCase<CreateSubscriptio
             throw new IllegalArgumentException("Gói phải có ít nhất một hạn mức");
         }
 
-        var command = normalize(input);
+        CreateSubscriptionPlanCommand command = normalize(input);
 
-        var periodType = periodTypeOf(command.periodType());
+        SubscriptionPlanPeriod periodType = periodTypeOf(command.periodType());
 
         // Gom định mức đã kiểm vào map thay vì chỉ kiểm rồi bỏ: chuỗi quotaType chỉ phải parse MỘT
         // lần, và chính cái map là bộ phát hiện trùng nên không cần Set riêng. LinkedHashMap để
         // dòng hạn mức lưu xuống đúng thứ tự admin nhập.
-        var includedAmountByQuotaType = new LinkedHashMap<QuotaType, BigDecimal>();
-        for (var quota : command.quotas()) {
-            var quotaType = quotaTypeOf(quota.quotaType());
+        Map<QuotaType, BigDecimal> includedAmountByQuotaType = new LinkedHashMap<QuotaType, BigDecimal>();
+        for (CreateSubscriptionPlanQuotaCommand quota : command.quotas()) {
+            QuotaType quotaType = quotaTypeOf(quota.quotaType());
             // subscription_plan_quotas CHƯA có unique (subscription_plan_id, quota_type), nên DB
             // không chặn giúp: gửi hai dòng GRADING sẽ lưu cả hai và mọi chỗ đọc hạn mức về sau lấy
             // trúng dòng nào là tùy thứ tự trả về của Postgres.
@@ -77,15 +79,15 @@ public class CreateSubscriptionPlanUseCase implements IUseCase<CreateSubscriptio
             includedAmountByQuotaType.put(quotaType, quota.includedAmountVnd());
         }
 
-        var now = Instant.now();
-        var userId = userContextPort.getCurrentAuthenticatedUserId();
-        var plan = SubscriptionPlan.create(command.name(), command.tagline(), command.priceVnd(), periodType, command.periodCount(), command.maxTimePerAttemptMin(), now, userId);
-        var savedPlan = subscriptionPlanRepository.save(plan);
+        Instant now = Instant.now();
+        UUID userId = userContextPort.getCurrentAuthenticatedUserId();
+        SubscriptionPlan plan = SubscriptionPlan.create(command.name(), command.tagline(), command.priceVnd(), periodType, command.periodCount(), command.maxTimePerAttemptMin(), now, userId);
+        SubscriptionPlan savedPlan = subscriptionPlanRepository.save(plan);
 
         // Dòng hạn mức chỉ khai ĐỊNH MỨC, không kèm đơn giá nào. Tỷ giá USD->VND được ghi theo từng
         // lượt dùng (SchoolBalanceEntry.fxRateUsed) còn phí dịch vụ là một dòng riêng trên đơn hàng,
         // nên gói không cần và không được đóng băng một tỷ giá của riêng nó.
-        var quotas = includedAmountByQuotaType.entrySet().stream()
+        List<SubscriptionPlanQuota> quotas = includedAmountByQuotaType.entrySet().stream()
             .map(entry -> new SubscriptionPlanQuota(savedPlan.getId(), entry.getKey(), entry.getValue()))
             .toList();
         subscriptionPlanQuotaRepository.saveAll(quotas);

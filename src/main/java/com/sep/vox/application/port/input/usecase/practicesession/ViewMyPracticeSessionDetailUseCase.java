@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.practicesession;
 
+import com.sep.vox.domain.model.personalization.PracticeSession;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -39,8 +40,8 @@ public class ViewMyPracticeSessionDetailUseCase {
 
     @Transactional(readOnly = true)
     public TeacherPracticeSessionDetail execute(UUID sessionId) {
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
-        var session = practiceSessionRepository.findById(sessionId)
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
+        PracticeSession session = practiceSessionRepository.findById(sessionId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên luyện."));
         // hasRole('STUDENT') mới chỉ nói người gọi LÀ học sinh, chưa nói phiên này của ai --
         // thiếu bước dưới thì bất kỳ học sinh nào cũng đọc được bài của bạn cùng lớp qua id.

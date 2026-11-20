@@ -4,39 +4,41 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
+import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
+
 /**
- * Hàng đợi của giáo viên — MỘT danh sách cho cả bốn vòng, phân biệt bằng
+ * The teacher's queue -- ONE list for all four rounds, told apart by
  * {@code roundType}.
  *
- * <p><strong>Ẩn danh là luật của kỳ thi {@code CENTRALIZED}</strong>, không phải luật
- * chung: ở đó {@code studentName}/{@code className} luôn {@code null} để bảo đảm chấm
- * mù. Bài kiểm tra trên lớp thì ngược lại — người chấm chính là giáo viên dạy lớp đó,
- * họ cần biết đang chấm ai. Xem {@code JpaExamGradingQueryRepository}.
+ * <p><strong>Anonymity is a rule of {@code CENTRALIZED} assessments</strong>, not a general
+ * rule: there {@code studentName}/{@code className} are always {@code null} to guarantee blind
+ * grading. A class test is the opposite -- the grader is the very teacher who teaches that class,
+ * and they need to know whom they are grading. See {@code JpaAssessmentGradingQueryRepository}.
  */
 public record GradingTaskInfo(
     UUID assignmentId,
     UUID candidateResultId,
     String resultCode,
-    String examName,
+    String assessmentName,
     int partCount,
     String roundType,
     String status,
-    String resultStatus,
-    /** Điểm bài đang có — ở vòng hậu kiểm/phúc khảo đây là điểm đã công bố. */
+    AssessmentCandidateResultStatus resultStatus,
+    /** The current score of the attempt — in the spot-check/appeal rounds this is the published score. */
     BigDecimal currentScore,
     boolean flagged,
     Instant assignedAt,
     Instant deadlineAt,
     boolean overdue,
-    /** Chỉ có giá trị với bài kiểm tra trên lớp; kỳ thi tập trung luôn null. */
+    /** Only has a value for class tests; always null for a centralized assessment. */
     String studentName,
-    /** Chỉ có giá trị với bài kiểm tra trên lớp; kỳ thi tập trung luôn null. */
+    /** Only has a value for class tests; always null for a centralized assessment. */
     String className,
-    /** Phiên thi sinh ra bài này. Hai lượt của cùng một em khác nhau ở đây. */
+    /** The session that produced this attempt. Two attempts of the same student differ here. */
     UUID sessionId,
-    /** Lượt thi thứ mấy, đếm từ 1 theo thời điểm bắt đầu làm bài. */
+    /** Which attempt this is, counted from 1 by the time the student started the assessment. */
     int attemptNo,
-    /** Tổng số lượt em đó đã làm ở bài thi này. Bằng 1 nghĩa là không có thi lại. */
+    /** Total number of attempts that student has made on this assessment. 1 means no retake. */
     int attemptCount
 ) {
 }

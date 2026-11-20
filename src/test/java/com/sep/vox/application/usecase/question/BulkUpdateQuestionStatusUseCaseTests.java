@@ -24,6 +24,8 @@ import com.sep.vox.application.port.input.service.QuestionStatusActorResolver;
 import com.sep.vox.application.port.input.usecase.question.BulkUpdateQuestionStatusUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.response.input.question.BulkUpdateQuestionStatusFailure;
+import com.sep.vox.application.response.input.question.BulkUpdateQuestionStatusResponse;
 import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionBank;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
@@ -84,11 +86,11 @@ class BulkUpdateQuestionStatusUseCaseTests {
 
     @Test
     void should_return_partial_success_when_some_questions_fail() {
-        var draftQuestion = question(QuestionStatus.DRAFT);
-        var alreadySubmitted = question(QuestionStatus.SUBMITTED_FOR_REVIEW);
+        Question draftQuestion = question(QuestionStatus.DRAFT);
+        Question alreadySubmitted = question(QuestionStatus.SUBMITTED_FOR_REVIEW);
         mockQuestions(draftQuestion, alreadySubmitted);
 
-        var response = useCase.execute(new BulkUpdateQuestionStatusCommand(
+        BulkUpdateQuestionStatusResponse response = useCase.execute(new BulkUpdateQuestionStatusCommand(
             List.of(draftQuestion.getId(), alreadySubmitted.getId()), "SUBMIT", null));
 
         assertThat(response.updated()).hasSize(1);
@@ -102,19 +104,19 @@ class BulkUpdateQuestionStatusUseCaseTests {
     }
 
     /**
-     * Màn hình duyệt hàng loạt phải liệt kê được "câu nào, đang ở đâu, vì sao" ngay từ response.
-     * Trước đây chỉ có {@code questionId} nên client phải tự tra ngược sang danh sách đang xem —
-     * câu nào không nằm trên trang hiện tại thì biến mất khỏi thông báo.
+     * The bulk review screen must be able to list "which question, where it is, and why" straight
+     * from the response. Previously there was only {@code questionId}, so the client had to look it
+     * up in the list being viewed -- a question not on the current page vanished from the message.
      */
     @Test
     void should_describe_each_skipped_question_with_its_code_status_and_reason_code() {
-        var alreadySubmitted = question(QuestionStatus.SUBMITTED_FOR_REVIEW);
+        Question alreadySubmitted = question(QuestionStatus.SUBMITTED_FOR_REVIEW);
         mockQuestions(alreadySubmitted);
 
-        var response = useCase.execute(new BulkUpdateQuestionStatusCommand(
+        BulkUpdateQuestionStatusResponse response = useCase.execute(new BulkUpdateQuestionStatusCommand(
             List.of(alreadySubmitted.getId()), "SUBMIT", null));
 
-        var failure = response.failed().getFirst();
+        BulkUpdateQuestionStatusFailure failure = response.failed().getFirst();
         assertThat(failure.questionCode()).isEqualTo(alreadySubmitted.getCode());
         assertThat(failure.currentStatus()).isEqualTo(QuestionStatus.SUBMITTED_FOR_REVIEW.name());
         assertThat(failure.reasonCode()).isEqualTo(RejectionCode.INVALID_STATUS.name());
@@ -122,11 +124,11 @@ class BulkUpdateQuestionStatusUseCaseTests {
 
     @Test
     void should_report_missing_question_without_aborting_the_batch() {
-        var draftQuestion = question(QuestionStatus.DRAFT);
-        var missingQuestionId = UUID.randomUUID();
+        Question draftQuestion = question(QuestionStatus.DRAFT);
+        UUID missingQuestionId = UUID.randomUUID();
         mockQuestions(draftQuestion);
 
-        var response = useCase.execute(new BulkUpdateQuestionStatusCommand(
+        BulkUpdateQuestionStatusResponse response = useCase.execute(new BulkUpdateQuestionStatusCommand(
             List.of(draftQuestion.getId(), missingQuestionId), "SUBMIT", null));
 
         assertThat(response.updated()).hasSize(1);
@@ -139,11 +141,11 @@ class BulkUpdateQuestionStatusUseCaseTests {
 
     @Test
     void should_report_a_missing_bank_without_aborting_the_batch() {
-        var orphanQuestion = question(QuestionStatus.DRAFT);
+        Question orphanQuestion = question(QuestionStatus.DRAFT);
         when(questionRepository.findByIdIn(anyCollection())).thenReturn(List.of(orphanQuestion));
         when(questionBankRepository.findByIdIn(anyCollection())).thenReturn(List.of());
 
-        var response = useCase.execute(new BulkUpdateQuestionStatusCommand(
+        BulkUpdateQuestionStatusResponse response = useCase.execute(new BulkUpdateQuestionStatusCommand(
             List.of(orphanQuestion.getId()), "SUBMIT", null));
 
         assertThat(response.updated()).isEmpty();
@@ -151,15 +153,18 @@ class BulkUpdateQuestionStatusUseCaseTests {
         assertThat(response.failed().getFirst().reason()).isEqualTo("Không tìm thấy ngân hàng câu hỏi");
     }
 
-    /** Kịch bản người dùng hay gặp nhất: chọn cả trang rồi bấm duyệt, phần lớn sai trạng thái. */
+    /**
+     * The most common user scenario: select the whole page and click approve, and most of them are
+     * in the wrong status.
+     */
     @Test
     void should_not_throw_when_every_question_in_the_batch_fails() {
-        var first = question(QuestionStatus.DRAFT);
-        var second = question(QuestionStatus.DRAFT);
+        Question first = question(QuestionStatus.DRAFT);
+        Question second = question(QuestionStatus.DRAFT);
         mockQuestions(first, second);
 
         assertThatCode(() -> {
-            var response = useCase.execute(new BulkUpdateQuestionStatusCommand(
+            BulkUpdateQuestionStatusResponse response = useCase.execute(new BulkUpdateQuestionStatusCommand(
                 List.of(first.getId(), second.getId()), "APPROVE", null));
 
             assertThat(response.updated()).isEmpty();
@@ -169,11 +174,11 @@ class BulkUpdateQuestionStatusUseCaseTests {
 
     @Test
     void should_reject_questions_the_actor_may_not_touch() {
-        var otherAuthorQuestion = question(QuestionStatus.DRAFT);
+        Question otherAuthorQuestion = question(QuestionStatus.DRAFT);
         otherAuthorQuestion.setCreatedBy(UUID.randomUUID());
         mockQuestions(otherAuthorQuestion);
 
-        var response = useCase.execute(new BulkUpdateQuestionStatusCommand(
+        BulkUpdateQuestionStatusResponse response = useCase.execute(new BulkUpdateQuestionStatusCommand(
             List.of(otherAuthorQuestion.getId()), "SUBMIT", null));
 
         assertThat(response.updated()).isEmpty();
@@ -183,31 +188,34 @@ class BulkUpdateQuestionStatusUseCaseTests {
 
     @Test
     void should_treat_an_editor_collaborator_as_allowed_to_submit() {
-        var otherAuthorQuestion = question(QuestionStatus.DRAFT);
+        Question otherAuthorQuestion = question(QuestionStatus.DRAFT);
         otherAuthorQuestion.setCreatedBy(UUID.randomUUID());
         mockQuestions(otherAuthorQuestion);
         when(questionCollaboratorRepository.findByQuestionIdIn(anyCollection())).thenReturn(List.of(
             new QuestionCollaborator(UUID.randomUUID(), currentUserId, otherAuthorQuestion.getId(),
                 QuestionCollaboratorPermission.CAN_EDIT, Instant.now())));
 
-        var response = useCase.execute(new BulkUpdateQuestionStatusCommand(
+        BulkUpdateQuestionStatusResponse response = useCase.execute(new BulkUpdateQuestionStatusCommand(
             List.of(otherAuthorQuestion.getId()), "SUBMIT", null));
 
         assertThat(response.updated()).hasSize(1);
         assertThat(response.failed()).isEmpty();
     }
 
-    /** Quyền của collaborator khác không được rò sang người đang thao tác. */
+    /**
+     * The permissions of another collaborator must not leak onto the person performing the
+     * operation.
+     */
     @Test
     void should_ignore_edit_permission_granted_to_another_user() {
-        var otherAuthorQuestion = question(QuestionStatus.DRAFT);
+        Question otherAuthorQuestion = question(QuestionStatus.DRAFT);
         otherAuthorQuestion.setCreatedBy(UUID.randomUUID());
         mockQuestions(otherAuthorQuestion);
         when(questionCollaboratorRepository.findByQuestionIdIn(anyCollection())).thenReturn(List.of(
             new QuestionCollaborator(UUID.randomUUID(), UUID.randomUUID(), otherAuthorQuestion.getId(),
                 QuestionCollaboratorPermission.CAN_EDIT, Instant.now())));
 
-        var response = useCase.execute(new BulkUpdateQuestionStatusCommand(
+        BulkUpdateQuestionStatusResponse response = useCase.execute(new BulkUpdateQuestionStatusCommand(
             List.of(otherAuthorQuestion.getId()), "SUBMIT", null));
 
         assertThat(response.updated()).isEmpty();
@@ -217,10 +225,10 @@ class BulkUpdateQuestionStatusUseCaseTests {
 
     @Test
     void should_skip_duplicate_ids() {
-        var draftQuestion = question(QuestionStatus.DRAFT);
+        Question draftQuestion = question(QuestionStatus.DRAFT);
         mockQuestions(draftQuestion);
 
-        var response = useCase.execute(new BulkUpdateQuestionStatusCommand(
+        BulkUpdateQuestionStatusResponse response = useCase.execute(new BulkUpdateQuestionStatusCommand(
             List.of(draftQuestion.getId(), draftQuestion.getId()), "SUBMIT", null));
 
         assertThat(response.updated()).hasSize(1);
@@ -228,13 +236,13 @@ class BulkUpdateQuestionStatusUseCaseTests {
     }
 
     /**
-     * Bối cảnh người dùng và dữ liệu câu hỏi phải nạp theo lô, không phải mỗi câu một vòng query —
-     * đây là phần N+1 đi kèm bug rollback.
+     * The user context and the question data must be loaded in batches, not one query round per
+     * question -- this is the N+1 part that came along with the rollback bug.
      */
     @Test
     void should_load_context_once_and_save_in_one_batch() {
-        var first = question(QuestionStatus.DRAFT);
-        var second = question(QuestionStatus.DRAFT);
+        Question first = question(QuestionStatus.DRAFT);
+        Question second = question(QuestionStatus.DRAFT);
         mockQuestions(first, second);
 
         useCase.execute(new BulkUpdateQuestionStatusCommand(
@@ -266,7 +274,7 @@ class BulkUpdateQuestionStatusUseCaseTests {
     }
 
     private Question question(QuestionStatus status) {
-        var now = Instant.now();
+        Instant now = Instant.now();
         return new Question(
             UUID.randomUUID(), bankId, UUID.randomUUID(), "Q-1", null, "Câu hỏi", null, null,
             QuestionType.SHORT_ANSWER, 10, 10, 60, QuestionSharing.PRIVATE, null, false,
@@ -274,7 +282,7 @@ class BulkUpdateQuestionStatusUseCaseTests {
     }
 
     private QuestionBank bank() {
-        var now = Instant.now();
+        Instant now = Instant.now();
         return new QuestionBank(
             bankId, UUID.randomUUID(), null, "BANK-1", "Ngân hàng", null,
             QuestionBankOwnerType.SYSTEM, QuestionBankStatus.PUBLISHED, now, now, currentUserId, currentUserId);

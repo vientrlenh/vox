@@ -4,27 +4,27 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Một phiên chấm lỗi trong danh sách của một nhóm.
+ * One failed grading session in the list of a group.
  *
- * <p>KHÔNG có điểm: phiên {@code GRADING_FAILED} không có dòng {@code exam_candidate_results} nào để
- * lấy điểm ra — xem javadoc của {@code HandOffGradingToHumanUseCase}. Thứ thay thế là những trường
- * giúp phân loại: đã thử mấy lần, chấm lại được không, đã có người nhận chưa.
+ * <p>NO score: a {@code GRADING_FAILED} session has no {@code assessment_candidate_results} row to take a score
+ * from -- see the javadoc of {@code HandOffGradingToHumanUseCase}. What replaces it are the fields that
+ * help triage: how many times it was tried, whether it can be regraded, whether someone has taken it.
  *
- * @param schoolName  {@code null} với kỳ thi cấp hệ thống ({@code exams.school_id} cho phép null)
- * @param retryable   kỳ thi chưa công bố điểm, tức {@code RetryGradingExamSessionUseCase} sẽ nhận;
- *                    kỳ đã ở {@code RESULTS_PUBLISHED} thì nó ném lỗi
- * @param handedOff   đã có dòng kết quả trỏ về phiên này, tức bài ĐÃ được đẩy sang hàng đợi người
- *                    chấm. Phiên vẫn ở {@code GRADING_FAILED} vì hand-off cố ý không đổi trạng thái,
- *                    nên nếu không đọc cờ này thì thao tác hàng loạt sẽ chấm đè lên bài giáo viên
- *                    đang chấm dở
+ * @param schoolName  {@code null} for a system-level assessment ({@code assessments.school_id} allows null)
+ * @param retryable   the assessment has not published scores, i.e. {@code RetryGradingAssessmentSessionUseCase} will accept it;
+ *                    one already in {@code RESULTS_PUBLISHED} makes it throw
+ * @param handedOff   there is already a result row pointing back to this session, i.e. the attempt HAS been pushed to the grader
+ *                    queue. The session stays {@code GRADING_FAILED} because the hand-off deliberately does not change the status,
+ *                    so without reading this flag a bulk operation would grade over an attempt a teacher
+ *                    is halfway through grading
  */
 public record GradingFailureSessionDto(
     UUID sessionId,
     UUID schoolId,
     String schoolName,
     String schoolCode,
-    UUID examId,
-    String examName,
+    UUID assessmentId,
+    String assessmentName,
     String candidateName,
     Instant failedAt,
     Integer retryCount,

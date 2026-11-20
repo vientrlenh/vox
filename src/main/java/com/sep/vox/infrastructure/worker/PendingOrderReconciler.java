@@ -2,6 +2,7 @@ package com.sep.vox.infrastructure.worker;
 
 import java.time.Instant;
 
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -70,25 +71,25 @@ public class PendingOrderReconciler {
     }
 
     /**
-     * KHÔNG {@code @Transactional} ở đây. Một lượt quét có thể kéo dài nhiều phút vì phải gọi ra
-     * mạng ngoài, mà gói tất cả vào một transaction thì giữ kết nối DB suốt quãng đó và một đơn lỗi
-     * sẽ cuốn theo mọi đơn đã chốt thành công trước nó. Mỗi đơn tự chốt trong transaction riêng của
+     * NOT {@code @Transactional} here. A sweep can take several minutes because it has to call out to the external network, and
+     * wrapping everything in one transaction would hold a DB connection for that whole time and one failing order
+     * would drag down every order already settled successfully before it. Each order settles itself in its own transaction in
      * OrderSettlementService.
      */
     @Scheduled(fixedDelay = 300_000, initialDelay = 60_000)
     public void reconcile() {
-        var now = Instant.now();
-        var pendingOrders = orderRepository.findByStatus(OrderStatus.PENDING);
+        Instant now = Instant.now();
+        List<Order> pendingOrders = orderRepository.findByStatus(OrderStatus.PENDING);
         if (pendingOrders.isEmpty()) {
             return;
         }
 
-        var remoteCalls = 0;
-        var settled = 0;
-        var expired = 0;
+        int remoteCalls = 0;
+        int settled = 0;
+        int expired = 0;
 
-        for (var order : pendingOrders) {
-            var pendingAttempt = paymentRecordRepository.findPendingByOrderId(order.getId()).orElse(null);
+        for (Order order : pendingOrders) {
+            PaymentRecord pendingAttempt = paymentRecordRepository.findPendingByOrderId(order.getId()).orElse(null);
 
             if (pendingAttempt != null) {
                 if (remoteCalls >= MAX_REMOTE_CALLS_PER_RUN) {
@@ -96,22 +97,22 @@ public class PendingOrderReconciler {
                         MAX_REMOTE_CALLS_PER_RUN);
                     break;
                 }
-                // Giãn nhịp TRƯỚC mỗi lời gọi (trừ lần đầu) thay vì sau: vòng lặp thoát sớm thì cũng
-                // không phải trả giá bằng một lần ngủ vô ích.
+                // Pace BEFORE each call (except the first) instead of after: if the loop exits early it also
+                // does not pay for a useless sleep.
                 if (remoteCalls > 0 && !throttle()) {
                     break;
                 }
                 remoteCalls++;
                 if (reconcileAttempt(order, pendingAttempt)) {
                     settled++;
-                    // Đơn vừa được chốt PAID thì không còn là đơn quá hạn nữa -- sang đơn kế tiếp.
+                    // An order just settled as PAID is no longer overdue -- move on to the next order.
                     continue;
                 }
             }
 
-            // Thử đóng đơn nếu đã quá hạn. KHÔNG giả định ở đây rằng đơn không còn lần thử treo:
-            // reconcileAttempt trả false cho cả ca "cổng nói vẫn đang chờ trả" lẫn ca gọi cổng hỏng.
-            // expireIfOverdue tự kiểm tra lại dưới row lock và tự từ chối khi còn dòng PENDING.
+            // Try to close the order if it is overdue. Do NOT assume here that the order has no pending attempt left:
+            // reconcileAttempt returns false both for "the gateway says it is still waiting for payment" and for a failed gateway call.
+            // expireIfOverdue re-checks under a row lock and refuses by itself while a PENDING row remains.
             if (expireOverdue(order, now)) {
                 expired++;
             }
@@ -124,13 +125,13 @@ public class PendingOrderReconciler {
     }
 
     /**
-     * Hỏi cổng về một lần thử đang treo và chốt nó.
+     * Ask the gateway about a pending attempt and settle it.
      *
-     * @return true nếu tiền đã về và đơn vừa được giao hàng
+     * @return true if the money has arrived and the order was just fulfilled
      */
     private boolean reconcileAttempt(Order order, PaymentRecord attempt) {
         try {
-            var remoteStatus = paymentProcessResolver.resolve(attempt.getProvider())
+            PaymentLinkRemoteStatus remoteStatus = paymentProcessResolver.resolve(attempt.getProvider())
                 .getPaymentLinkStatus(attempt.getProviderOrderRef())
                 .status();
 
@@ -141,8 +142,8 @@ public class PendingOrderReconciler {
                 return true;
             }
 
-            // Chỉ đóng LẦN THỬ chứ không đóng đơn -- cùng lý do như ở callback: trường phải bấm trả
-            // lại được mà không cần đặt đơn mới. Xem OrderSettlementService.failAttempt.
+            // Close only the ATTEMPT, not the order -- same reason as in the callback: the school must be able to press pay
+            // again without placing a new order. See OrderSettlementService.failAttempt.
             if (isFinalFailure(remoteStatus, attempt)) {
                 LOGGER.info("[RECONCILER] Chốt lần thanh toán {} (orderRef={}) thành FAILED do cổng {} báo {}",
                     attempt.getId(), attempt.getProviderOrderRef(), attempt.getProvider(), remoteStatus);
@@ -150,8 +151,8 @@ public class PendingOrderReconciler {
             }
             return false;
         } catch (Exception e) {
-            // Nuốt lỗi của TỪNG đơn: một cổng đang hỏng không được phép chặn việc đối soát các đơn
-            // còn lại trong cùng lượt quét.
+            // Swallow the error of EACH order: a failing gateway must not be allowed to block reconciling the remaining
+            // orders in the same sweep.
             LOGGER.warn("Lỗi khi đối soát đơn {} provider={} orderRef={}",
                 order.getId(), attempt.getProvider(), attempt.getProviderOrderRef(), e);
             return false;

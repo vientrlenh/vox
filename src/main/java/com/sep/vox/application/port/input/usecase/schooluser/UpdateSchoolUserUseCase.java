@@ -1,7 +1,11 @@
 package com.sep.vox.application.port.input.usecase.schooluser;
 
+import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.domain.model.user.User;
 import java.time.Instant;
 
+import java.util.Optional;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -48,29 +52,29 @@ public class UpdateSchoolUserUseCase implements IUseCase<UpdateSchoolUserCommand
             throw new IllegalArgumentException("Cần cung cấp ít nhất một trường để cập nhật");
         }
 
-        var now = Instant.now();
-        var callerId = userContextPort.getCurrentAuthenticatedUserId();
+        Instant now = Instant.now();
+        UUID callerId = userContextPort.getCurrentAuthenticatedUserId();
 
-        var caller = userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)
+        User caller = userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
 
-        var callerSchoolUser = schoolUserRepository.findByUserId(caller.getId())
+        SchoolUser callerSchoolUser = schoolUserRepository.findByUserId(caller.getId())
             .orElseThrow(() -> new IllegalArgumentException("Không có quyền thực hiện thao tác này"));
         if (!input.schoolId().equals(callerSchoolUser.getSchoolId())) {
             throw new IllegalArgumentException("Không có quyền thực hiện thao tác này");
         }
 
-        var target = userRepository.findByIdForUpdate(input.userId())
+        User target = userRepository.findByIdForUpdate(input.userId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
 
-        var targetSchoolUser = schoolUserRepository.findByUserId(input.userId())
+        SchoolUser targetSchoolUser = schoolUserRepository.findByUserId(input.userId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
         if (!input.schoolId().equals(targetSchoolUser.getSchoolId())) {
             throw new NotFoundException("Không tìm thấy người dùng");
         }
 
         if (input.fullNameProvided()) {
-            var normalized = StringNormalization.trimAndCollapseSpaces(input.fullName());
+            String normalized = StringNormalization.trimAndCollapseSpaces(input.fullName());
             if (normalized == null || normalized.isBlank()) {
                 throw new IllegalArgumentException("Họ tên không được để trống");
             }
@@ -78,11 +82,11 @@ public class UpdateSchoolUserUseCase implements IUseCase<UpdateSchoolUserCommand
         }
 
         if (input.phoneProvided()) {
-            var normalized = StringNormalization.normalizePhone(input.phone());
+            String normalized = StringNormalization.normalizePhone(input.phone());
             if (normalized == null || normalized.isBlank()) {
                 throw new IllegalArgumentException("Số điện thoại không được để trống");
             }
-            var existing = userRepository.findByPhone(normalized);
+            Optional<User> existing = userRepository.findByPhone(normalized);
             if (existing.isPresent() && !existing.get().getId().equals(target.getId())) {
                 throw new DuplicatedException("Số điện thoại đã tồn tại");
             }

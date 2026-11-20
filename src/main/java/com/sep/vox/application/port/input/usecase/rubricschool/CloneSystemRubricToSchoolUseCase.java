@@ -1,5 +1,10 @@
 package com.sep.vox.application.port.input.usecase.rubricschool;
 
+import com.sep.vox.domain.model.rubric.Rubric;
+import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
+import com.sep.vox.domain.model.rubric.RubricVersion;
+import com.sep.vox.domain.model.school.SchoolUser;
+import com.sep.vox.domain.model.user.User;
 import java.util.List;
 import java.util.UUID;
 
@@ -90,22 +95,22 @@ public class CloneSystemRubricToSchoolUseCase implements IUseCase<CloneSystemRub
     @Override
     @Transactional
     public UUID execute(CloneSystemRubricToSchoolCommand command) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = userRepository.findById(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = userRepository.findById(currentUserId)
             .orElseThrow(() -> new UnauthorizedException("Lỗi tài khoản."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("Tài khoản bị khóa.");
         }
 
-        var schoolUser = schoolUserRepository.findByUserId(currentUserId)
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
             .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
         if (!schoolUser.getSchoolId().equals(command.schoolId())) {
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền sao chép về trường khác.");
         }
 
-        var sourceVersion = rubricVersionRepository.findById(command.sourceRubricVersionId())
+        RubricVersion sourceVersion = rubricVersionRepository.findById(command.sourceRubricVersionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản Rubric mẫu."));
-        var sourceRubric = rubricRepository.findById(sourceVersion.getRubricId())
+        Rubric sourceRubric = rubricRepository.findById(sourceVersion.getRubricId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy Rubric gốc của bản mẫu."));
 
         if (sourceRubric.getOwnerType() != RubricOwnerType.SYSTEM) {
@@ -124,9 +129,9 @@ public class CloneSystemRubricToSchoolUseCase implements IUseCase<CloneSystemRub
 
         // Cùng cách chuẩn hoá với CreateSchoolRubricUseCase: hai đường cùng ghi vào một ràng buộc
         // unique, nên chúng phải hiểu "mã trùng nhau" theo đúng một nghĩa.
-        var safeCode = StringNormalization.trimAndCollapseSpaces(command.code());
-        var safeName = StringNormalization.trimAndCollapseSpaces(command.name());
-        var safeDescription = command.description() == null
+        String safeCode = StringNormalization.trimAndCollapseSpaces(command.code());
+        String safeName = StringNormalization.trimAndCollapseSpaces(command.name());
+        String safeDescription = command.description() == null
             ? null
             : StringNormalization.trimAndCollapseSpaces(command.description());
         if (safeCode == null || safeCode.isBlank()) {
@@ -138,7 +143,7 @@ public class CloneSystemRubricToSchoolUseCase implements IUseCase<CloneSystemRub
 
         // Kiểm sớm để báo lỗi đọc được, thay vì để ràng buộc unique của DB ném ra một thông báo mà
         // người dùng không hiểu phải sửa gì.
-        var isCodeTaken = rubricRepository.existsByOwnerTypeAndSchoolIdAndLanguageIdAndFrameworkIdAndCode(
+        boolean isCodeTaken = rubricRepository.existsByOwnerTypeAndSchoolIdAndLanguageIdAndFrameworkIdAndCode(
             RubricOwnerType.SCHOOL.toString(),
             command.schoolId(),
             sourceRubric.getLanguageId(),
@@ -150,11 +155,11 @@ public class CloneSystemRubricToSchoolUseCase implements IUseCase<CloneSystemRub
                 + " ENG-K10, ENG-K11).");
         }
 
-        var targetMethod = command.totalScoreMethod() == null
+        RubricTotalScoreMethod targetMethod = command.totalScoreMethod() == null
             ? sourceVersion.getTotalScoreMethod()
             : command.totalScoreMethod();
 
-        var clonedVersion = rubricCloneService.cloneToSchoolAsDraft(
+        RubricVersion clonedVersion = rubricCloneService.cloneToSchoolAsDraft(
             sourceRubric,
             sourceVersion,
             command.schoolId(),
@@ -180,7 +185,7 @@ public class CloneSystemRubricToSchoolUseCase implements IUseCase<CloneSystemRub
     private void createPoliciesFromTemplates(
             CloneSystemRubricToSchoolCommand command, UUID sourceVersionId, UUID clonedVersionId) {
 
-        var requested = command.policies();
+        List<CloneSystemRubricToSchoolCommand.PolicyToClone> requested = command.policies();
         if (requested == null || requested.isEmpty()) {
             // Sao bộ tiêu chí "trần": hợp lệ, nhưng phiên bản này sẽ nằm DRAFT tới khi trường tự gắn
             // một chính sách cho nó.
@@ -193,7 +198,7 @@ public class CloneSystemRubricToSchoolUseCase implements IUseCase<CloneSystemRub
         List<AssessmentPolicy> templates = assessmentPolicyRepository
                 .findPublishedSystemWideByRubricVersionId(sourceVersionId);
 
-        var policyCommands = requested.stream()
+        List<CreateAssessmentPolicyCommand> policyCommands = requested.stream()
                 .map(choice -> toCreateCommand(command, choice, templates, clonedVersionId))
                 .toList();
 
@@ -212,7 +217,7 @@ public class CloneSystemRubricToSchoolUseCase implements IUseCase<CloneSystemRub
 
         // Tra trong danh sách của ĐÚNG phiên bản đang sao, nên tự nó đã chặn việc gửi lên id của một
         // chính sách mẫu thuộc phiên bản khác -- bản sao sẽ mang thông số soạn cho bộ tiêu chí khác.
-        var template = templates.stream()
+        AssessmentPolicy template = templates.stream()
                 .filter(candidate -> candidate.getId().equals(choice.sourcePolicyId()))
                 .findFirst()
                 .orElseThrow(() -> new NotFoundException(
@@ -221,7 +226,7 @@ public class CloneSystemRubricToSchoolUseCase implements IUseCase<CloneSystemRub
             throw new IllegalStateException("Chỉ được sao từ chính sách mẫu đã được ban hành (PUBLISHED).");
         }
 
-        var scope = resolveScope(template, choice);
+        TargetScope scope = resolveScope(template, choice);
 
         return new CreateAssessmentPolicyCommand(
                 command.schoolId(),

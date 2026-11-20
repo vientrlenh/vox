@@ -39,7 +39,7 @@ public class PracticeItemResponseRepositoryImpl implements PracticeItemResponseR
             String audioUrl,
             String transcript,
             boolean questionComplete) {
-        var existing = repository
+        PracticeItemResponseJpaEntity existing = repository
             .findByPracticeSessionIdAndPracticeQuestionId(sessionId, questionId)
             .orElse(null);
         if (existing != null) {
@@ -48,13 +48,13 @@ public class PracticeItemResponseRepositoryImpl implements PracticeItemResponseR
                 (existing.getTranscript() == null ? "" : existing.getTranscript())
                     + " " + (transcript == null ? "" : transcript)
             );
-            // Chỉ đi MỘT chiều false -> true. Câu đã xong thì xong; một lượt nộp lại
-            // (retry mạng) mang questionComplete=false không được phép mở lại nó, nếu không
-            // câu đó lại rơi vào diện "chưa chấm" và bị xả chấm lần hai.
+            // Only moves ONE way, false -> true. A finished question stays finished; a resubmission
+            // (network retry) carrying questionComplete=false must not reopen it, otherwise the
+            // question would fall back into the "not graded yet" set and be graded a second time.
             existing.setQuestionComplete(existing.isQuestionComplete() || questionComplete);
             return repository.save(existing).getId();
         }
-        var saved = repository.save(new PracticeItemResponseJpaEntity(
+        PracticeItemResponseJpaEntity saved = repository.save(new PracticeItemResponseJpaEntity(
             UUID.randomUUID(),
             sessionId,
             questionId,

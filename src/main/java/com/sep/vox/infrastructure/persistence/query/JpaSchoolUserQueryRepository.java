@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 import com.sep.vox.application.query.dto.SchoolUserInfo;
 import com.sep.vox.application.query.repository.SchoolUserQueryRepository;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -21,7 +22,7 @@ public class JpaSchoolUserQueryRepository implements SchoolUserQueryRepository {
     @Override
     public PageResult<SchoolUserInfo> findBySchoolIdAndRoleCodes(UUID schoolId, List<String> roleCodes, int page, int size) {
 
-        var content = em.createQuery("""
+        List<SchoolUserInfo> content = em.createQuery("""
             SELECT DISTINCT new com.sep.vox.application.query.dto.SchoolUserInfo(
                 su.id,
                 u.email,
@@ -48,11 +49,11 @@ public class JpaSchoolUserQueryRepository implements SchoolUserQueryRepository {
         """, SchoolUserInfo.class)
             .setParameter("schoolId", schoolId)
             .setParameter("roleCodes", roleCodes)
-            .setFirstResult((page - 1) * size)
+            .setFirstResult(OneBasedPaging.toFirstResult(page, size))
             .setMaxResults(size)
             .getResultList();
 
-        var totalElements = em.createQuery("""
+        Long totalElements = em.createQuery("""
             SELECT COUNT(DISTINCT su.id)
             FROM SchoolUserJpaEntity su
             JOIN UserRoleJpaEntity ur
@@ -66,7 +67,7 @@ public class JpaSchoolUserQueryRepository implements SchoolUserQueryRepository {
             .setParameter("roleCodes", roleCodes)
             .getSingleResult();
 
-        var totalPages = totalElements == 0
+        int totalPages = totalElements == 0
             ? 0
             : (int) Math.ceil((double) totalElements / size);
 

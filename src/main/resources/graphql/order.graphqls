@@ -1,28 +1,29 @@
 type Order {
     id: ID! 
     schoolId: ID 
-    type: String!
+    type: OrderType!
     description: String 
     subtotalAmountVnd: Float 
     totalAmountVnd: Float 
     chargedFeeVnd: Float 
     discountAmountVnd: Float 
-    status: String
-    createdAt: String
-    updatedAt: String
+    status: OrderStatus
+    createdAt: DateTime
+    updatedAt: DateTime
     """
-    Hạn chót trả tiền, chốt lúc tạo đơn. FE dùng để đếm ngược cho đơn PENDING -- KHÔNG tự tính từ
-    updatedAt + hằng số: updatedAt đổi khi admin sửa ghi chú, và đây còn là hạn đã gửi sang cổng.
+    The payment deadline, fixed when the order is created. The frontend uses it to count down for a
+    PENDING order -- do NOT compute it from updatedAt + a constant: updatedAt changes when an admin
+    edits a note, and this is also the deadline that was sent to the gateway.
     """
-    expiresAt: String
-    "Rỗng với đơn TOPUP -- nạp tiền không mua món nào để liệt kê."
+    expiresAt: DateTime
+    "Empty for a TOPUP order -- a top-up buys no item to list."
     items: [OrderItem!]
 }
 
 type OrderItem {
     id: ID! 
     orderId: ID! 
-    type: String 
+    type: OrderItemType 
     itemId: ID! 
     unitPriceVnd: Float 
     amountVnd: Float 
@@ -39,9 +40,13 @@ type OrderPage {
 
 enum OrderType {
     SUBSCRIPTION_REQUEST
-    "Đơn đăng ký của trường đang dùng một gói KHÁC. Gia hạn đúng gói cũ vẫn là SUBSCRIPTION_REQUEST."
+    "An order from a school that is currently on a DIFFERENT plan. Renewing the same old plan is still SUBSCRIPTION_REQUEST."
     SUBSCRIPTION_UPGRADE
     TOPUP
+}
+
+enum OrderItemType {
+    SUBSCRIPTION
 }
 
 enum OrderStatus {
@@ -54,19 +59,20 @@ enum OrderStatus {
 
 extend type Query {
     """
-    Lịch sử đơn của chính trường đang đăng nhập (SCHOOL_ADMIN). Không nhận schoolId -- lấy từ token.
+    The order history of the school the caller belongs to (SCHOOL_ADMIN). It takes no schoolId -- it comes from the token.
 
-    GỒM CẢ đơn PENDING và đó là bắt buộc, không phải lựa chọn hiển thị: đặt đơn đăng ký mới bị từ
-    chối khi trường còn một đơn treo, nên giấu đơn treo đi là bảo trường hủy một thứ họ không thấy.
+    It INCLUDES PENDING orders, and that is mandatory, not a display choice: placing a new
+    subscription order is rejected while the school still has a pending one, so hiding the pending
+    order amounts to telling the school to cancel something they cannot see.
     """
     myOrders(page: Int! = 1, size: Int! = 20): OrderPage!
 
-    "Đơn toàn hệ thống (SYSTEM_ADMIN). Bỏ trống bộ lọc nào thì không lọc theo tiêu chí đó."
+    "Orders across the whole system (SYSTEM_ADMIN). A filter that is left empty does not filter by that criterion."
     orders(
         schoolId: ID,
         status: OrderStatus,
         type: OrderType,
-        "Tìm theo TÊN TRƯỜNG."
+        "Search by SCHOOL NAME."
         keyword: String,
         page: Int! = 1,
         size: Int! = 20

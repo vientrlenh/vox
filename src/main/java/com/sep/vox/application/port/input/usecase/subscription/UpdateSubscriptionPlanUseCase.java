@@ -1,8 +1,12 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
+import com.sep.vox.application.port.input.command.UpdateSubscriptionPlanQuotaCommand;
+import com.sep.vox.domain.model.subscription.SubscriptionPlan;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -48,7 +52,7 @@ public class UpdateSubscriptionPlanUseCase implements IUseCase<UpdateSubscriptio
     @Override
     @Transactional
     public UUID execute(UpdateSubscriptionPlanCommand input) {
-        var plan = subscriptionPlanRepository.findById(input.subscriptionPlanId())
+        SubscriptionPlan plan = subscriptionPlanRepository.findById(input.subscriptionPlanId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
 
         // Gói đã publish (ACTIVE/ARCHIVED) bị khóa sửa hoàn toàn, kể cả field không liên quan
@@ -65,12 +69,12 @@ public class UpdateSubscriptionPlanUseCase implements IUseCase<UpdateSubscriptio
         // Kiểm TOÀN BỘ đầu vào trước khi đụng vào plan: nửa chừng mà ném lỗi thì transaction rollback
         // nhưng object plan trong bộ nhớ đã bị sửa dở, và bộ hạn mức thì được xóa-ghi lại ở dưới --
         // gom phần kiểm lên đầu để không bao giờ có trạng thái sửa một nửa.
-        var name = normalizedName(input.name());
-        var tagline = normalizedTagline(input.tagline());
+        String name = normalizedName(input.name());
+        String tagline = normalizedTagline(input.tagline());
         validatePriceVnd(input.priceVnd());
         validatePeriodCount(input.periodCount());
         validateMaxTimePerAttemptMin(input.maxTimePerAttemptMin());
-        var includedAmountByQuotaType = validatedQuotas(input);
+        Map<QuotaType, BigDecimal> includedAmountByQuotaType = validatedQuotas(input);
 
         if (name != null) {
             plan.setName(name);
@@ -94,14 +98,14 @@ public class UpdateSubscriptionPlanUseCase implements IUseCase<UpdateSubscriptio
         // bị coi là ghi đè lên bản cũ và ném OptimisticLockException.
         plan.setUpdatedAt(Instant.now());
         plan.setUpdatedBy(userContextPort.getCurrentAuthenticatedUserId());
-        var savedPlan = subscriptionPlanRepository.save(plan);
+        SubscriptionPlan savedPlan = subscriptionPlanRepository.save(plan);
 
         if (includedAmountByQuotaType != null) {
             // Thay TOÀN BỘ bộ hạn mức chứ không sửa từng dòng: dòng hạn mức không có khóa nghiệp vụ
             // nào ngoài (plan, quotaType), và gói còn DRAFT nên chưa có gì tham chiếu tới id của
             // chúng -- xóa hết rồi ghi lại là cách duy nhất diễn đạt được "bỏ hẳn loại hạn mức này".
             subscriptionPlanQuotaRepository.deleteBySubscriptionPlanId(savedPlan.getId());
-            var quotas = includedAmountByQuotaType.entrySet().stream()
+            List<SubscriptionPlanQuota> quotas = includedAmountByQuotaType.entrySet().stream()
                 .map(entry -> new SubscriptionPlanQuota(savedPlan.getId(), entry.getKey(), entry.getValue()))
                 .toList();
             subscriptionPlanQuotaRepository.saveAll(quotas);
@@ -123,7 +127,7 @@ public class UpdateSubscriptionPlanUseCase implements IUseCase<UpdateSubscriptio
         if (name == null) {
             return null;
         }
-        var normalized = StringNormalization.trimAndCollapseSpaces(name);
+        String normalized = StringNormalization.trimAndCollapseSpaces(name);
         if (normalized.isEmpty()) {
             throw new IllegalArgumentException("Tên gói không được để trống");
         }
@@ -137,7 +141,7 @@ public class UpdateSubscriptionPlanUseCase implements IUseCase<UpdateSubscriptio
         if (tagline == null) {
             return null;
         }
-        var normalized = StringNormalization.trimAndCollapseSpaces(tagline);
+        String normalized = StringNormalization.trimAndCollapseSpaces(tagline);
         if (normalized.isEmpty()) {
             throw new IllegalArgumentException("Mô tả gói không được để trống");
         }
@@ -198,9 +202,9 @@ public class UpdateSubscriptionPlanUseCase implements IUseCase<UpdateSubscriptio
             throw new IllegalArgumentException("Gói phải có ít nhất một hạn mức");
         }
 
-        var includedAmountByQuotaType = new LinkedHashMap<QuotaType, BigDecimal>();
-        for (var quota : input.quotas()) {
-            var quotaType = quotaTypeOf(quota.quotaType());
+        LinkedHashMap<QuotaType, BigDecimal> includedAmountByQuotaType = new LinkedHashMap<QuotaType, BigDecimal>();
+        for (UpdateSubscriptionPlanQuotaCommand quota : input.quotas()) {
+            QuotaType quotaType = quotaTypeOf(quota.quotaType());
             // subscription_plan_quotas CHƯA có unique (subscription_plan_id, quota_type), nên DB
             // không chặn giúp: gửi hai dòng GRADING sẽ lưu cả hai và mọi chỗ đọc hạn mức về sau lấy
             // trúng dòng nào là tùy thứ tự trả về của Postgres.

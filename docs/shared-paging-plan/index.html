@@ -1,0 +1,608 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shared paging plan</title>
+<style>
+  :root {
+    --bg: #fafaf8; --surface: #ffffff; --text: #1d1d1b; --muted: #5f5f5a; --border: #e2e1dc;
+    --accent: #1f5fbf; --accent-soft: #e8f0fc; --warn: #8a5a00; --warn-soft: #fdf3dc;
+    --ok: #17673a; --ok-soft: #e3f4ea; --bad: #9b1c1c; --bad-soft: #fbe6e6; --code-bg: #f3f2ee;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #151514; --surface: #1d1d1b; --text: #ecebe6; --muted: #a2a19a; --border: #33332f;
+      --accent: #7fb0f5; --accent-soft: #1b2a40; --warn: #f0c36a; --warn-soft: #3a2f14;
+      --ok: #7fd3a0; --ok-soft: #14301f; --bad: #f19a9a; --bad-soft: #3d1b1b; --code-bg: #262623;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #151514; --surface: #1d1d1b; --text: #ecebe6; --muted: #a2a19a; --border: #33332f;
+    --accent: #7fb0f5; --accent-soft: #1b2a40; --warn: #f0c36a; --warn-soft: #3a2f14;
+    --ok: #7fd3a0; --ok-soft: #14301f; --bad: #f19a9a; --bad-soft: #3d1b1b; --code-bg: #262623;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 32px 16px 96px; }
+  h1 { font-size: 1.9rem; line-height: 1.2; margin: 0 0 8px; }
+  h2 { font-size: 1.35rem; margin: 48px 0 12px; padding-top: 16px; border-top: 1px solid var(--border); }
+  h3 { font-size: 1.05rem; margin: 28px 0 8px; }
+  p, li { max-width: 72ch; }
+  .meta { color: var(--muted); font-size: .92rem; margin-bottom: 20px; }
+  .status { display: inline-block; border-radius: 999px; padding: 2px 12px; font-size: .8rem;
+    font-weight: 600; white-space: nowrap; background: var(--code-bg); color: var(--muted); }
+  .status.draft, .status.open { background: var(--warn-soft); color: var(--warn); }
+  .status.approved, .status.progress { background: var(--accent-soft); color: var(--accent); }
+  .status.done, .status.answered { background: var(--ok-soft); color: var(--ok); }
+  .status.blocked { background: var(--bad-soft); color: var(--bad); }
+  nav { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 18px; margin: 20px 0; }
+  nav ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 32px; }
+  nav a, td a { color: var(--accent); text-decoration: none; }
+  code { background: var(--code-bg); padding: 1px 6px; border-radius: 4px;
+    font: .88em ui-monospace, "SF Mono", Menlo, monospace; }
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; font: .85rem/1.5 ui-monospace, "SF Mono", Menlo, monospace; }
+  pre code { background: none; padding: 0; }
+  .table-scroll { overflow-x: auto; margin: 12px 0; }
+  table { border-collapse: collapse; width: 100%; background: var(--surface);
+    border: 1px solid var(--border); font-size: .92rem; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--code-bg); font-weight: 600; white-space: nowrap; }
+  td.indent { padding-left: 32px; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .callout { border-left: 4px solid var(--accent); background: var(--accent-soft);
+    padding: 10px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+  .callout.warn { border-color: var(--warn); background: var(--warn-soft); }
+  .callout.ok { border-color: var(--ok); background: var(--ok-soft); }
+  .callout p { margin: 4px 0; }
+  .decision, .phase { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 4px 18px 14px; margin: 14px 0; }
+  .decision h3, .phase h3 { margin-top: 14px; }
+  .rec { color: var(--ok); font-weight: 600; }
+  .answer { background: var(--code-bg); border-radius: 8px; padding: 8px 12px; margin: 10px 0 0; color: var(--muted); }
+  .decision[data-decision-state="answered"] .answer { background: var(--ok-soft); color: var(--text); }
+  .tag { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .jobs { list-style: none; padding: 0; margin: 10px 0; }
+  .job { border-top: 1px solid var(--border); padding: 10px 0; }
+  .job > .title { font-weight: 600; }
+  .status-log { font-size: .85rem; color: var(--muted); margin: 8px 0 0; padding-left: 20px; }
+  .status-log:empty { display: none; }
+  @media (max-width: 600px) { nav ol { columns: 1; } h1 { font-size: 1.5rem; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Shared paging plan</h1>
+<div class="meta">
+  Repository: <code>vox</code> &middot; Branch: <code>refactor/rewritten</code> &middot; Written 2026-11-20 &middot;
+  Plan status: <span class="status done" id="plan-status" data-plan-status="done">Done</span>
+</div>
+
+<p>Every paged request enters the system 1-based and must be rejected when <code>page &lt; 1</code>. Today that rule is
+re-implemented in about 30 places, and the conversion to and from Spring Data's 0-based pages is written by hand in
+every adapter (<code>page - 1</code> on the way in, <code>getNumber() + 1</code> on the way out, and in 8 places the
+<code>+ 1</code> is missing). This plan puts each of the three steps behind one shared method: <strong>validate</strong>
+the request page at the boundary, <strong>subtract 1</strong> when calling Spring Data or building an offset, and
+<strong>add 1 back</strong> when building the response. Then a guard test keeps it that way.</p>
+
+<nav aria-label="Contents">
+  <ol>
+    <li><a href="#progress">Progress</a></li>
+    <li><a href="#current">Current state</a></li>
+    <li><a href="#decisions">Decisions</a></li>
+    <li><a href="#phases">Phases</a></li>
+    <li><a href="#risks">Risks</a></li>
+    <li><a href="#scope">Out of scope</a></li>
+    <li><a href="#verify">Verification</a></li>
+    <li><a href="#changelog">Change log</a></li>
+    <li><a href="#notes">Implementation notes</a></li>
+  </ol>
+</nav>
+
+<h2 id="progress">Progress</h2>
+<p id="overview-summary" class="meta"></p>
+<div class="table-scroll"><table>
+  <thead><tr><th>Phase / job</th><th>Status</th></tr></thead>
+  <tbody id="overview-body"></tbody>
+</table></div>
+
+<h2 id="current">1. Current state (measured)</h2>
+<p>Measured on 2026-11-20 on branch <code>refactor/rewritten</code> (clean tree). <code>./gradlew compileJava</code> passes,
+so the plan takes on no existing compile failure. The unit and integration suites were <strong>not run</strong> for a
+baseline (not checked).</p>
+
+<h3>Request side (validation)</h3>
+<ul>
+  <li><code>interfaces/shared/PageArguments.validate(Integer page, Integer size)</code> already exists. It rejects
+      <code>page == null || page &lt;= 0</code> and a size outside 1..200 with <code>IllegalArgumentException</code>, and it has
+      <code>PageArgumentsTests</code>. It is called from 5 controllers (<code>AssessmentAppeal</code>,
+      <code>AssessmentDirectory</code>, <code>Dashboard</code>, <code>Grading</code>, REST <code>AssessmentController</code>).
+      Command: <code>grep -rn PageArguments src --include='*.java'</code>.</li>
+  <li>The other controllers do not use it. There are <strong>17 private validator methods in 16 controller files</strong>
+      (<code>validatePage</code>, <code>validatePageSize</code>, <code>validatePaging</code>, <code>requireValidPaging</code>),
+      plus <strong>33 ad-hoc <code>page &lt;= 0 / &lt; 1 / &lt; 0</code> lines</strong> under <code>interfaces/</code>
+      (<code>grep -rnE "page *(&lt;=|&lt;) *(0|1)\b" src/main/java/com/sep/vox/interfaces</code>). Their size rules differ
+      (most accept any size &gt; 0, only <code>PageArguments</code> caps at 200).</li>
+  <li>They do not agree on the rule: <strong>4 validators accept <code>page == 0</code></strong>
+      (<code>page &lt; 0</code> in <code>AssessmentController</code>, <code>AssessmentBlueprintController</code>,
+      <code>QuestionController</code>, <code>QuestionBankController</code>); those requests would later fail inside Spring Data
+      with <code>PageRequest.of(-1, ...)</code>. <strong>2 controllers silently clamp</strong> a bad page to 1
+      (<code>ScoringRuleController</code>, 8 lines in 4 methods; <code>SchoolController</code>, 2 lines). They throw a mix
+      of <code>IllegalArgumentException</code> and <code>IllegalStateException</code> (both become BAD_REQUEST in
+      <code>GlobalExceptionResolver</code>) with different Vietnamese messages.</li>
+  <li><code>RoleController.roleUsers</code> passes <code>page</code> into a DataLoader key with no check at all.</li>
+  <li>Entry points: 23 GraphQL controller files, 112 <code>@Argument(name = "page")</code> parameters, 132
+      <code>page: Int</code> arguments in <code>src/main/resources/graphql/*.graphqls</code>. REST has exactly 1 paged
+      endpoint (<code>GET /api/v1/assessments</code>), and it already validates.</li>
+</ul>
+
+<h3>Subtract side (to Spring Data / SQL offset)</h3>
+<ul>
+  <li><strong>51 hand-written <code>PageRequest.of(page - 1, ...)</code> calls in 32 adapter files</strong> under
+      <code>infrastructure/persistence/adapter</code> (<code>grep -hE "(page|pageNumber) - 1" adapter/*.java | wc -l</code>
+      gives 52 lines: the 52nd is <code>UserRoleRepositoryImpl.findByRoleIdIn</code>, which builds a 1-based row range with
+      <code>(page - 1) * size + 1</code>). Calls of the form <code>PageRequest.of(0, limit)</code> are "top N", not paging, and stay.</li>
+  <li>Query repositories compute offsets by hand: 11 matching lines in 9 files under
+      <code>infrastructure/persistence/query</code>: 6 <code>setFirstResult((page - 1) * size)</code> and 4 native
+      <code>.setParameter("offset", (long) (page - 1) * size)</code> (<code>SchoolAiCost</code>, <code>SchoolWorkload</code>,
+      <code>SchoolsAtRisk</code>, <code>GradingFailure</code>). <code>JpaAssessmentGradingQueryRepository</code> has two matching
+      lines; the job inspects each. Two of them (<code>Directory</code>, <code>StudentAssessment</code>) also clamp with
+      <code>Math.max(page, 1)</code>.</li>
+</ul>
+
+<h3>Response side (add 1 back)</h3>
+<ul>
+  <li><code>PageResult</code> (<code>domain/common</code>) is constructed 120 times in 91 files. Most adapters echo the
+      request's 1-based <code>page</code>, which is already correct. 15 sites read Spring's 0-based
+      <code>getNumber()</code>: <strong>7 add 1</strong> (<code>School</code> 1, <code>Framework</code> 2,
+      <code>FrameworkVersion</code> 2, <code>Rubric</code> 2) and <strong>8 do not</strong>
+      (<code>RubricCriterion</code> 2, <code>RubricVersion</code> 2, <code>RubricResultBand</code> 2, <code>Rubric</code> 2).
+      So the first page of those Rubric queries answers <code>page: 0</code> while the schema is 1-based.</li>
+</ul>
+
+<h3>Guardrail and tests that exist</h3>
+<ul>
+  <li><code>PagingConventionTests</code> scans source text: adapters must contain <code>PageRequest.of(x - 1</code> (needs
+      &gt;30 scanned methods), query repositories must contain <code>setFirstResult(... - 1</code> (needs &gt;4), GraphQL
+      <code>page</code> defaults must not be 0. It nails the convention but also <strong>hard-codes the hand-written
+      <code>- 1</code></strong>, so it must be retargeted when the subtraction moves into a helper (D6).</li>
+  <li>Only 3 adapter tests exist (<code>src/test/.../infrastructure/persistence/adapter</code>) and 20 query tests (most are
+      <code>@RepositoryTest</code>, need Docker). Controller tests exist for <code>Question</code>, <code>School</code>,
+      <code>MyClass</code>, <code>SupportedLanguage</code>, <code>AssessmentAppeal</code>, <code>Import</code>.</li>
+  <li>Layering: <code>LayeredArchitectureTests</code> forbids <code>interfaces -&gt; infrastructure</code> and
+      <code>application -&gt; infrastructure/interfaces</code>. The application layer does not convert pages (only comments mention
+      it), so the shared subtract/add-1 code belongs in infrastructure, and the validator stays in <code>interfaces/shared</code>.</li>
+</ul>
+
+<h2 id="decisions">2. Decisions</h2>
+
+<div class="decision" id="d1" data-decision-state="answered">
+  <h3>D1. Where the three rules live <span class="status answered">Answered</span></h3>
+  <p>Already decided by the request: the request page must be validated at the boundary (<code>page &gt;= 1</code>) by
+     one shared method; the page is converted to Spring's 0-based value by one shared method; the response page is
+     converted back to 1-based by one shared method.</p>
+  <div class="answer"><strong>Answer (2026-11-20):</strong> Decided in the request &ndash; "the page should not be lower than 1 &hellip;
+    it will be subtract by 1 using a shared method as well (the response must plus 1 back using a shared method as well)".</div>
+</div>
+
+<div class="decision" id="d2" data-decision-state="answered">
+  <h3>D2. Where does the subtract / add-1 helper live? (new file outside the usual patterns) <span class="status answered">Answered</span></h3>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) One new final class
+     <code>infrastructure/persistence/paging/OneBasedPaging</code> with static methods
+     <code>toPageRequest(page, size)</code>, <code>toPageRequest(page, size, sort)</code>, <code>toOffset(page, size)</code>
+     and <code>toPageResult(springPage, content)</code>. Cohesive, the only place that knows Spring's 0-based convention,
+     allowed by <code>LayeredArchitectureTests</code> (adapters and query repositories both live in infrastructure). Costs one
+     new file that fits no <code>X + Command/Query/...</code> pattern.</p>
+  <p><strong>B.</strong> No new file: add static int helpers to the existing <code>domain/common/PageResult</code> and keep
+     <code>PageRequest.of(...)</code> written out in each adapter. Smaller footprint, but the Spring conversion is still
+     repeated 51 times, so "one place" is only half true.</p>
+  <div class="answer"><strong>Answer (2026-11-20):</strong> A &ndash; New OneBasedPaging class</div>
+</div>
+
+<div class="decision" id="d3" data-decision-state="answered">
+  <h3>D3. Does the shared request validator also take over the <code>size</code> rule? <span class="status answered">Answered</span></h3>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Page only. Add
+     <code>PageArguments.validatePage(Integer page)</code> (rejects null and values below 1) and make the existing
+     <code>validate(page, size)</code> call it. Each controller keeps its own size check. Matches the request and changes no
+     size behavior.</p>
+  <p><strong>B.</strong> Page and size: route every controller through the existing <code>PageArguments.validate(page, size)</code>.
+     Removes more duplication, but introduces the 200-row cap on the ~12 controllers that have none today. That is a
+     public API contract change.</p>
+  <div class="answer"><strong>Answer (2026-11-20):</strong> B &ndash; Page and size. Every controller calls
+    <code>PageArguments.validate(page, size)</code>; a size above 200 or a null size is now rejected everywhere.</div>
+</div>
+
+<div class="decision" id="d4" data-decision-state="answered">
+  <h3>D4. What happens to requests that are accepted today with a bad page? (API behavior change) <span class="status answered">Answered</span></h3>
+  <p>Affected: the 4 controllers that accept <code>page = 0</code> and <code>ScoringRuleController</code> /
+     <code>SchoolController</code> (2 sites) that clamp a missing or non-positive page to 1. All errors become
+     <code>IllegalArgumentException</code> with the <code>PageArguments</code> message.</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Reject everywhere. One rule for the whole API, as the
+     <code>PageArguments</code> Javadoc already argues (clamping hides wrong input). Clients that send 0 or omit page on the
+     clamping queries will now get BAD_REQUEST; the frontend must be checked.</p>
+  <p><strong>B.</strong> Reject only where a validator already throws; keep the clamping in <code>ScoringRuleController</code>
+     and the two <code>SchoolController</code> sites, and still reject 0 in the 4 controllers. No new break for clamping
+     clients, but "page &lt; 1 is invalid" is no longer true everywhere.</p>
+  <div class="answer"><strong>Answer (2026-11-20):</strong> A &ndash; Reject everywhere</div>
+</div>
+
+<div class="decision" id="d5" data-decision-state="answered">
+  <h3>D5. Which response sites use the shared add-1 method? (API behavior change) <span class="status answered">Answered</span></h3>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Every site that reads Spring's 0-based
+     <code>getNumber()</code> (15) goes through <code>toPageResult</code>. That fixes the 8 Rubric sites so the
+     <code>page</code> field of the response becomes 1-based (first page answers <code>1</code>, not <code>0</code>), as the
+     schema promises. Adapters that echo the request page (already 1-based) are left alone. A regression test proves the fix.
+     The frontend must not depend on the 0 value.</p>
+  <p><strong>B.</strong> Only wrap the 7 sites that already add 1, and leave the 8 Rubric sites returning 0-based.
+     No client-visible change, but the inconsistency stays and the shared method does not cover the whole response side.</p>
+  <div class="answer"><strong>Answer (2026-11-20):</strong> A &ndash; All getNumber() sites, fix the 8</div>
+</div>
+
+<div class="decision" id="d6" data-decision-state="answered">
+  <h3>D6. How is the guardrail <code>PagingConventionTests</code> changed? (architecture rules are never loosened) <span class="status answered">Answered</span></h3>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Retarget it to a stricter form of the same convention: adapters
+     and query repositories must use <code>OneBasedPaging</code> and must contain no hand-written <code>- 1</code> /
+     <code>PageRequest.of(</code> / <code>getNumber()</code>; a new boundary rule requires every method with a
+     <code>page</code> argument to call <code>PageArguments</code>, and forbids ad-hoc <code>page &lt;= 0</code> checks. The
+     "scanned &gt; N" self-checks stay. The test must change either way, because the old rules look for the hand-written
+     subtraction that this plan removes.</p>
+  <p><strong>B.</strong> Keep the old regexes and make them accept either form (helper or manual <code>- 1</code>). Simpler,
+     but looser: a new adapter could bring back a hand-written subtraction and still pass.</p>
+  <div class="answer"><strong>Answer (2026-11-20):</strong> A &ndash; Retarget, stricter</div>
+</div>
+
+<div class="decision" id="d7" data-decision-state="answered">
+  <h3>D7. Record the new convention in <code>AGENTS.md</code>? (changing <code>AGENTS.md</code> needs your confirmation) <span class="status answered">Answered</span></h3>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Yes: edit the "Pagination is 1-based at every boundary" bullet to
+     name <code>PageArguments</code> and <code>OneBasedPaging</code> as the only places allowed to validate and convert. It is
+     the tracked place for this decision, so it is not lost.</p>
+  <p><strong>B.</strong> No: leave <code>AGENTS.md</code> as it is and rely on the guard test and this plan.</p>
+  <div class="answer"><strong>Answer (2026-11-20):</strong> A &ndash; Yes, update the bullet</div>
+</div>
+
+<h2 id="phases">3. Phases</h2>
+<p>Each phase is independently reviewable and leaves the build green. Inside a phase the guard test may be red between
+jobs; it is retargeted by the last job of the phase that breaks it. Vietnamese comments inside code a job edits (the edited
+method, and the Javadoc of an edited class or test class) are translated to English in the same change.</p>
+
+<div class="phase" id="phase-1" data-status="done">
+  <h3><span class="title">Phase 1 &ndash; Shared persistence helper</span>
+    <span class="tag">small &middot; mechanical &middot; needs D2</span>
+    <span class="status done">Done</span></h3>
+  <p><strong>Goal:</strong> the only code that knows Spring's 0-based convention exists and is tested, with no caller yet.
+     <strong>Depends on:</strong> D2.</p>
+  <ul class="jobs">
+    <li class="job" id="job-1-1" data-status="done">
+      <span class="title">1.1 Create <code>OneBasedPaging</code></span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> the class compiles with <code>toPageRequest(int, int)</code>,
+         <code>toPageRequest(int, int, Sort)</code>, <code>toOffset(int, int)</code> (returns <code>long</code>) and
+         <code>toPageResult(Page&lt;?&gt;, List&lt;T&gt;)</code> (page = <code>getNumber() + 1</code>); every method rejects
+         <code>page &lt; 1</code> with <code>IllegalArgumentException</code> through one private
+         <code>toZeroBasedIndex(int)</code>; each method is at most 25 lines.
+         <strong>Files:</strong> <code>src/main/java/com/sep/vox/infrastructure/persistence/paging/OneBasedPaging.java</code></p>
+      <ul class="status-log"><li>2026-11-20 &middot; In progress &middot; Started. Baseline <code>./gradlew compileJava</code> exit 0. Applies D2-A.</li><li>2026-11-20 &middot; Done &middot; Class created with the four methods and one private <code>toZeroBasedIndex</code>; longest method is 8 lines. <code>./gradlew compileJava</code> exit 0; <code>OneBasedPagingTests</code> 10 passed (OneBasedPaging.java:1).</li></ul>
+    </li>
+    <li class="job" id="job-1-2" data-status="done">
+      <span class="title">1.2 Unit tests for <code>OneBasedPaging</code></span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> <code>OneBasedPagingTests</code> (plain AssertJ, no Spring context) proves
+         page 1 &rarr; index 0, page 3 &rarr; index 2, offset of page 3 size 20 is 40, page 0 and negative page throw, sort is
+         kept, and a Spring <code>PageImpl</code> with number 0 becomes <code>PageResult.page() == 1</code>.
+         <strong>Files:</strong> <code>src/test/java/com/sep/vox/infrastructure/persistence/paging/OneBasedPagingTests.java</code></p>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; <code>OneBasedPagingTests</code> written with plain AssertJ, no Spring context; also covers offset of page 1, no overflow for a large page, and page 3 of a Spring page. <code>./gradlew test --tests '*OneBasedPagingTests'</code> &rarr; 10 tests, 0 failures.</li></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*OneBasedPagingTests'</code>,
+     <code>./gradlew test --tests '*LayeredArchitectureTests'</code></p>
+  <ul class="status-log"><li>2026-11-20 &middot; In progress &middot; First job started; plan moved to in-progress.</li><li>2026-11-20 &middot; Done &middot; Both jobs done. Verify: <code>./gradlew compileJava</code> exit 0; <code>*OneBasedPagingTests</code> 10 passed; <code>*LayeredArchitectureTests</code> 3 passed; <code>*PagingConventionTests</code> still passes (run together with the Layered tests, BUILD SUCCESSFUL).</li></ul>
+</div>
+
+<div class="phase" id="phase-2" data-status="done">
+  <h3><span class="title">Phase 2 &ndash; Adapters use the shared subtract and add-1</span>
+    <span class="tag">large &middot; mechanical &middot; needs D2, D5, D6</span>
+    <span class="status done">Done</span></h3>
+  <p><strong>Goal:</strong> none of the 33 adapter files subtracts or adds 1 by hand. <strong>Depends on:</strong> Phase 1,
+     D5, D6. Each job replaces <code>PageRequest.of(page - 1, ...)</code> with <code>OneBasedPaging.toPageRequest(...)</code>
+     and each <code>getNumber()</code> / <code>getNumber() + 1</code> with <code>OneBasedPaging.toPageResult(...)</code>,
+     keeping sort, size and content mapping exactly as they are.</p>
+  <ul class="jobs">
+    <li class="job" id="job-2-1" data-status="done">
+      <span class="title">2.1 Assessment, policy, grade-level and import adapters (6 files)</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> no <code>- 1</code> page arithmetic remains in these files.
+         <strong>Files:</strong> <code>AssessmentBlueprintRepositoryImpl</code>, <code>AssessmentRepositoryImpl</code>,
+         <code>AssessmentPolicyRepositoryImpl</code> (2 sites), <code>GradeLevelRepositoryImpl</code>,
+         <code>ImportRowRepositoryImpl</code>, <code>ImportSessionRepositoryImpl</code> (all under
+         <code>infrastructure/persistence/adapter</code>)</p>
+      <ul class="status-log"><li>2026-11-20 &middot; In progress &middot; Phase 2 started. Baseline <code>./gradlew compileJava</code> exit 0; 52 hand-written sites found in adapters by grep. Applies D5-A, D6-A.</li><li>2026-11-20 &middot; Done &middot; 7 request sites in the 6 files now call <code>OneBasedPaging.toPageRequest</code>; these adapters echo the request page, so no response site changed. <code>./gradlew compileJava</code> exit 0; grep for <code>(page|pageNumber) - 1|getNumber()</code> in the 6 files prints nothing.</li></ul>
+    </li>
+    <li class="job" id="job-2-2" data-status="done">
+      <span class="title">2.2 Framework adapters (2 files, 4 request and 4 response sites)</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> <code>FrameworkRepositoryImpl</code> and <code>FrameworkVersionRepositoryImpl</code> use
+         both helpers and the returned <code>page</code> is unchanged (they already added 1).
+         <strong>Files:</strong> <code>FrameworkRepositoryImpl</code>, <code>FrameworkVersionRepositoryImpl</code></p>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; 4 request sites use <code>OneBasedPaging.toPageRequest</code> and 4 response sites use <code>OneBasedPaging.toPageResult</code>; the returned <code>page</code> is the same value as before (<code>getNumber() + 1</code>). <code>./gradlew compileJava</code> exit 0; grep for hand-written <code>- 1</code> / <code>getNumber()</code> in both files prints nothing.</li></ul>
+    </li>
+    <li class="job" id="job-2-3" data-status="done">
+      <span class="title">2.3 Rubric adapters: fix the 8 missing "+ 1" with a regression test (needs D5-A)</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> for a mocked Spring Data page whose <code>getNumber()</code> is 0, each paged method of
+         <code>RubricRepositoryImpl</code> (4 request sites, 4 response sites), <code>RubricCriterionRepositoryImpl</code>,
+         <code>RubricVersionRepositoryImpl</code> and <code>RubricResultBandRepositoryImpl</code> returns
+         <code>PageResult.page() == 1</code>; the tests fail before the change for the 8 formerly 0-based sites.
+         If D5 is answered B, this job only wraps the sites that already add 1 and the regression test is skipped.
+         <strong>Files:</strong> the 4 adapters above,
+         <code>src/test/java/com/sep/vox/infrastructure/persistence/adapter/Rubric*RepositoryImplPagingTests.java</code>
+         (plain Mockito, <code>@ExtendWith(MockitoExtension.class)</code>)</p>
+      <ul class="status-log"><li>2026-11-20 &middot; In progress &middot; Regression tests written first (4 classes, 10 tests, plain Mockito). Run before the fix: 8 failed with <code>expected: 1 but was: 0</code> (the 8 formerly 0-based sites), 2 passed (the 2 <code>RubricRepositoryImpl</code> search methods that already added 1). Applies D5-A.</li><li>2026-11-20 &middot; Done &middot; 10 request sites use <code>toPageRequest</code> and 10 response sites use <code>toPageResult</code> in the 4 adapters (Rubric 4+4, Criterion 2+2, Version 2+2, ResultBand 2+2); 8 of the response sites were 0-based before and are now fixed, 2 already added 1.<code>./gradlew test --tests '*Rubric*RepositoryImplPagingTests'</code> &rarr; 10 passed, 0 failed; <code>./gradlew compileJava</code> exit 0. CHANGED (small): the 5 search sites that cast <code>(int) getTotalElements()</code> now pass the <code>long</code> through <code>toPageResult</code>, so the cast is gone (<code>PageResult.totalElements</code> is already a <code>long</code>). Vietnamese comments in the 4 changed <code>RubricRepositoryImpl</code> methods were translated.</li></ul>
+    </li>
+    <li class="job" id="job-2-4" data-status="done">
+      <span class="title">2.4 Order, question, register-form and role adapters (6 files)</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> no <code>- 1</code> page arithmetic remains in these files.
+         <strong>Files:</strong> <code>OrderRepositoryImpl</code> (2), <code>QuestionRepositoryImpl</code> (2),
+         <code>QuestionBankRepositoryImpl</code> (2), <code>QuestionTopicRepositoryImpl</code> (2),
+         <code>RegisterFormRepositoryImpl</code>, <code>RoleRepositoryImpl</code></p>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; 10 request sites use <code>OneBasedPaging.toPageRequest</code>; these adapters echo the request page, so no response site changed. CHANGED (small): 3 English comments that explained the hand-written subtraction were removed because the subtraction no longer exists at that line (2 in <code>OrderRepositoryImpl</code>, 1 block in <code>QuestionTopicRepositoryImpl</code>); the contract is in the <code>OneBasedPaging</code> Javadoc. <code>./gradlew compileJava</code> exit 0; grep for hand-written <code>- 1</code> / <code>getNumber()</code> in the 6 files prints nothing.</li></ul>
+    </li>
+    <li class="job" id="job-2-5" data-status="done">
+      <span class="title">2.5 School-family adapters (10 files, includes the 1 response site in <code>SchoolRepositoryImpl</code>)</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> no <code>- 1</code> page arithmetic remains in these files.
+         <strong>Files:</strong> <code>SchoolRepositoryImpl</code>, <code>SchoolBalanceEntryRepositoryImpl</code>,
+         <code>SchoolClassRepositoryImpl</code> (3 sites, multi-line with sort), <code>SchoolClassUserRepositoryImpl</code> (2),
+         <code>SchoolDebtEventRepositoryImpl</code>, <code>SchoolDirectoryRepositoryImpl</code>,
+         <code>SchoolGradeRepositoryImpl</code>, <code>SchoolRoomRepositoryImpl</code>,
+         <code>SchoolSubscriptionRepositoryImpl</code>, <code>SchoolUserRepositoryImpl</code> (3)</p>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; 13 request sites use <code>toPageRequest</code> (including 2 multi-line sorted ones in <code>SchoolClassRepositoryImpl</code>), the 1 response site in <code>SchoolRepositoryImpl</code> uses <code>toPageResult</code>, and the 2 row ranges in <code>SchoolClassRepositoryImpl.findBySchoolIdIn</code> and <code>SchoolUserRepositoryImpl.findBySchoolIdIn</code> use <code>Math.toIntExact(OneBasedPaging.toOffset(page, size)) + 1</code> (the same form job 2.6 specifies; <code>Math.toIntExact</code> because the Spring Data methods take <code>int</code>). CHANGED (small): 3 stale English comments that explained the hand-written subtraction were removed (<code>SchoolBalanceEntry</code>, <code>SchoolDebtEvent</code>, <code>SchoolSubscription</code>). <code>./gradlew compileJava</code> exit 0; grep for hand-written <code>- 1</code> / <code>getNumber()</code> in the 10 files prints nothing.</li></ul>
+    </li>
+    <li class="job" id="job-2-6" data-status="done">
+      <span class="title">2.6 Remaining adapters (5 files, includes the user-role row range)</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> no <code>- 1</code> page arithmetic remains; <code>UserRoleRepositoryImpl.findByRoleIdIn</code> computes
+         <code>fromRow</code> as <code>OneBasedPaging.toOffset(page, size) + 1</code> and <code>toRow</code> is unchanged, with
+         identical row ranges for pages 1 and 2.
+         <strong>Files:</strong> <code>ScoringRuleRepositoryImpl</code>, <code>SubscriptionPlanRepositoryImpl</code> (2),
+         <code>SupportedLanguageRepositoryImpl</code>, <code>UserRepositoryImpl</code>, <code>UserRoleRepositoryImpl</code></p>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; 5 request sites use <code>toPageRequest</code>; <code>UserRoleRepositoryImpl.findByRoleIdIn</code> computes <code>fromRow</code> as <code>Math.toIntExact(OneBasedPaging.toOffset(page, size)) + 1</code> and <code>toRow</code> is unchanged (page 1, size 20 &rarr; rows 1..20; page 2 &rarr; 21..40, same as <code>(page - 1) * size + 1</code>). CHANGED (small): the 2 Vietnamese comments in the changed <code>SubscriptionPlanRepositoryImpl</code> methods were translated to English, not removed (AGENTS.md); the English comment in <code>ScoringRuleRepositoryImpl</code> that explained the removed subtraction was removed. <code>./gradlew compileJava</code> exit 0; grep for <code>(page|pageNumber) - 1|getNumber()</code> over the whole adapter directory prints nothing.</li></ul>
+    </li>
+    <li class="job" id="job-2-7" data-status="done">
+      <span class="title">2.7 Retarget the adapter rule in <code>PagingConventionTests</code> (needs D6)</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> the adapter test fails if a paged adapter method does not call <code>OneBasedPaging</code>, or contains
+         <code>PageRequest.of(</code> with arithmetic, <code>getNumber()</code> or a manual <code>- 1</code>; its "scanned" self-check
+         is still above 30; the class Javadoc is translated to English and describes the new convention.
+         <strong>Files:</strong> <code>src/test/java/com/sep/vox/architecture/PagingConventionTests.java</code></p>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; The adapter test is now <code>adapters_must_convert_pages_only_through_one_based_paging</code>: per adapter file it forbids <code>PageRequest.of(</code> unless the first argument is the literal 0, <code>.getNumber()</code> and a manual <code>page - 1</code> / <code>pageNumber - 1</code> (comments stripped first), and it requires every paged method (<code>PageResult</code> return, <code>page</code>/<code>pageNumber</code> parameter) to call <code>OneBasedPaging</code>. The "scanned" self-check is still <code>&gt; 30</code>. The class Javadoc and the changed test's text are in English and describe the new convention; the query-repository and GraphQL tests are untouched (job 3.3). Applies D6-A. CHANGED (small): a paged method that only delegates to a same-named overload (<code>return findByUserId(...)</code>, 2 in <code>SchoolClassRepositoryImpl</code>) also passes, because the overload it delegates to is scanned on its own; without that the rule failed on correct code. Proven to bite: with <code>GradeLevelRepositoryImpl</code> temporarily broken (<code>PageRequest.of(page - 1, size)</code> and <code>getNumber()</code>), the test failed with 4 offenders; restored, it passes. <code>./gradlew test --tests '*PagingConventionTests'</code> &rarr; 3 passed.</li></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*PagingConventionTests'</code>,
+     <code>./gradlew test --tests '*LayeredArchitectureTests'</code>,
+     <code>grep -rnE "(page|pageNumber) - 1|getNumber\(\)" src/main/java/com/sep/vox/infrastructure/persistence/adapter</code> prints nothing.
+     <code>./gradlew integrationTest</code> (Docker) if available, otherwise say it was not run.</p>
+  <ul class="status-log"><li>2026-11-20 &middot; In progress &middot; Phase 2 started with job 2.1.</li><li>2026-11-20 &middot; Done &middot; All 7 jobs done. Verify: <code>./gradlew compileJava</code> exit 0; <code>*PagingConventionTests</code> 3 passed; <code>*LayeredArchitectureTests</code> 3 passed; grep for <code>(page|pageNumber) - 1|getNumber()</code> over <code>infrastructure/persistence/adapter</code> prints nothing; <code>./gradlew test integrationTest --continue</code> &rarr; BUILD SUCCESSFUL (unit 2046 tests, integration 367 tests, 0 failed, 0 skipped; Docker was available).</li></ul>
+</div>
+
+<div class="phase" id="phase-3" data-status="done">
+  <h3><span class="title">Phase 3 &ndash; Query repositories use the shared offset</span>
+    <span class="tag">medium &middot; mechanical &middot; needs D2, D6</span>
+    <span class="status done">Done</span></h3>
+  <p><strong>Goal:</strong> no query repository computes <code>(page - 1) * size</code> by hand. <strong>Depends on:</strong> Phase 1, D6.
+     The <code>Math.max(page, 1)</code> and size clamps in two of these files are left as they are (out of scope).</p>
+  <ul class="jobs">
+    <li class="job" id="job-3-1" data-status="done">
+      <span class="title">3.1 <code>setFirstResult</code> sites (5 files)</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> each <code>setFirstResult((page - 1) * size)</code> becomes
+         <code>setFirstResult(Math.toIntExact(OneBasedPaging.toOffset(page, size)))</code> (or the file's existing normalized values),
+         returning the same rows for pages 1 and 2.
+         <strong>Files:</strong> <code>JpaAssessmentAppealQueryRepository</code> (2), <code>JpaAssessmentDirectoryQueryRepository</code>,
+         <code>JpaSchoolUserQueryRepository</code>, <code>JpaAssessmentGradingQueryRepository</code>,
+         <code>JpaStudentAssessmentQueryRepository</code> (under <code>infrastructure/persistence/query</code>)</p>
+      <ul class="status-log"><li>2026-11-20 &middot; In progress &middot; Phase 3 started. Baseline <code>./gradlew compileJava</code> exit 0; 11 hand-written offset lines found in 9 files under <code>infrastructure/persistence/query</code>. Applies D2-A, D6-A.</li><li>2026-11-20 &middot; Done &middot; 8 <code>setFirstResult</code> sites in the 5 files now use <code>Math.toIntExact(OneBasedPaging.toOffset(&hellip;))</code>: 6 with <code>page, size</code> (Appeal 2, SchoolUser 1, AssessmentGrading 2 &ndash; both <code>searchAssignments</code> and the teacher-queue method, each a public paged method) and 2 with the file's existing <code>normalizedPage, normalizedSize</code> (Directory, StudentAssessment), so their <code>Math.max</code> clamps are untouched. The <code>OneBasedPaging</code> import was added to all 9 query files (the 4 native-offset files are for job 3.2). <code>./gradlew compileJava</code> exit 0.</li><li>2026-11-20 &middot; Done &middot; Correction to the line above: the count is 7 <code>setFirstResult</code> sites, not 8 (5 with <code>page, size</code>: Appeal 2, SchoolUser 1, AssessmentGrading 2; and 2 with <code>normalizedPage, normalizedSize</code>). Confirmed by <code>git diff</code>: 5 + 2 lines replaced.</li></ul>
+    </li>
+    <li class="job" id="job-3-2" data-status="done">
+      <span class="title">3.2 Native <code>OFFSET</code> sites (4 files)</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> each <code>.setParameter("offset", (long) (page - 1) * size)</code> uses
+         <code>OneBasedPaging.toOffset(page, size)</code> with the same SQL and parameter name.
+         <strong>Files:</strong> <code>JpaSchoolAiCostQueryRepository</code>, <code>JpaSchoolWorkloadQueryRepository</code>,
+         <code>JpaSchoolsAtRiskQueryRepository</code>, <code>JpaGradingFailureQueryRepository</code></p>
+      <ul class="status-log"><li>2026-11-20 &middot; In progress &middot; Started. <code>./gradlew compileJava</code> exit 0 after job 3.1; 4 native <code>(long) (page - 1) * size</code> sites found. Applies D2-A.</li><li>2026-11-20 &middot; Done &middot; 4 native sites (<code>JpaSchoolAiCost</code>, <code>JpaSchoolWorkload</code>, <code>JpaSchoolsAtRisk</code>, <code>JpaGradingFailure</code> query repositories) now pass <code>OneBasedPaging.toOffset(page, size)</code> (a <code>long</code>, as the old <code>(long)</code> cast was); SQL and the <code>"offset"</code> parameter name are unchanged, and no <code>Math.toIntExact</code> is needed. <code>./gradlew compileJava</code> exit 0; <code>grep -rnE "(page|normalizedPage) - 1" src/main/java/com/sep/vox/infrastructure/persistence/query</code> prints nothing.</li></ul>
+    </li>
+    <li class="job" id="job-3-3" data-status="done">
+      <span class="title">3.3 Retarget the query-repository rule in <code>PagingConventionTests</code> (needs D6)</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> the query test fails if a paged query method computes an offset without
+         <code>OneBasedPaging.toOffset</code> or contains <code>(page - 1)</code>; its "scanned" self-check is still above 4.
+         <strong>Files:</strong> <code>src/test/java/com/sep/vox/architecture/PagingConventionTests.java</code></p>
+      <ul class="status-log"><li>2026-11-20 &middot; In progress &middot; Started. Applies D6-A.</li><li>2026-11-20 &middot; Done &middot; The query test is now <code>query_repositories_must_compute_offsets_only_through_one_based_paging</code>: per query file (comments stripped first) it forbids a hand-written <code>page - 1</code> / <code>pageNumber - 1</code> / <code>normalizedPage - 1</code>, and it requires every paged query method that computes an offset (<code>setFirstResult(</code> or an <code>"offset"</code> parameter) to call <code>OneBasedPaging.toOffset(</code>. The scanned self-check is still <code>&gt; 4</code>. CHANGED (small): the hand-written-conversion pattern of job 2.7 is reused for query files (so <code>PageRequest.of(</code> and <code>getNumber()</code> are also forbidden there; none exist) and gained <code>normalizedPage</code>, so the rule lives in one place; the old <code>OFFSET_SUBTRACTS_ONE</code> pattern was deleted. The Vietnamese text of the changed test and of <code>PAGED_QUERY_METHOD</code>'s Javadoc was translated to English; the GraphQL test was not touched. Proven to bite: with <code>JpaAssessmentAppealQueryRepository</code> (<code>setFirstResult((page - 1) * size)</code>) and <code>JpaSchoolAiCostQueryRepository</code> (<code>(long) (page - 1) * size</code>) temporarily broken, the test failed; restored, it passes. <code>./gradlew test --tests '*PagingConventionTests'</code> &rarr; 3 passed.</li></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*PagingConventionTests'</code>,
+     <code>grep -rnE "(page|normalizedPage) - 1" src/main/java/com/sep/vox/infrastructure/persistence/query</code> prints nothing,
+     <code>./gradlew integrationTest --tests '*Jpa*QueryRepositoryTests'</code> (Docker) if available, otherwise say it was not run.</p>
+  <ul class="status-log"><li>2026-11-20 &middot; In progress &middot; Phase 3 started with job 3.1.</li><li>2026-11-20 &middot; Done &middot; All 3 jobs done. Verify: <code>./gradlew compileJava</code> exit 0; <code>*PagingConventionTests</code> + <code>*LayeredArchitectureTests</code> BUILD SUCCESSFUL; <code>grep -rnE "(page|normalizedPage) - 1" src/main/java/com/sep/vox/infrastructure/persistence/query</code> prints nothing; <code>./gradlew integrationTest --tests 'com.sep.vox.infrastructure.persistence.query.*'</code> (Docker available) &rarr; 170 tests, 0 failed, 0 skipped. Note: no integration test calls the appeal or school-user query sites directly, so those 3 sites are covered only by compile and the guard test.</li></ul>
+</div>
+
+<div class="phase" id="phase-4" data-status="done">
+  <h3><span class="title">Phase 4 &ndash; One shared request validation</span>
+    <span class="tag">large &middot; mechanical, API behavior change &middot; needs D3, D4, D6</span>
+    <span class="status done">Done</span></h3>
+  <p><strong>Goal:</strong> every controller method that takes a <code>page</code> argument calls
+     <code>PageArguments.validate(page, size)</code> (page below 1 or null, size null, below 1 or above 200 are rejected), and no controller
+     has its own page or size check. <strong>Depends on:</strong> D3-B, D4-A, D6.
+     Error messages come from <code>PageArguments</code> (user-facing Vietnamese strings stay as they are).</p>
+  <ul class="jobs">
+    <li class="job" id="job-4-1" data-status="done">
+      <span class="title">4.1 Make <code>PageArguments.validate</code> the single entry and cover it (D3-B)</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> <code>PageArgumentsTests</code> covers page null, 0 and -1, size null, 0 and 201 (all
+         <code>IllegalArgumentException</code>) and page 1 with size 1 and size 200 (accepted), adding only the cases the current
+         tests lack; the <code>PageArguments</code> Javadoc and the test class Javadoc are translated to English.
+         <strong>Files:</strong> <code>interfaces/shared/PageArguments.java</code>,
+         <code>src/test/java/com/sep/vox/interfaces/shared/PageArgumentsTests.java</code></p>
+      <ul class="status-log"><li>2026-11-20 &middot; In progress &middot; Phase 4 started. Baseline <code>./gradlew compileJava</code> exit 0. Applies D3-B, D4-A, D6-A.</li><li>2026-11-20 &middot; Done &middot; <code>PageArgumentsTests</code> already covered page null/0/-1, size null/0/201 and size 200; added <code>should_accept_the_smallest_size</code> (page 1, size 1). The Javadoc of <code>PageArguments</code> (class, <code>validate</code>) and of the test class and 2 tests were translated to English; the Vietnamese message literals are unchanged. <code>./gradlew test --tests '*PageArgumentsTests'</code> &rarr; passed (PageArgumentsTests.java).</li></ul>
+    </li>
+    <li class="job" id="job-4-2" data-status="done">
+      <span class="title">4.2 Controllers with a private validator method (16 files)</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> each private validator method (<code>validatePage</code>, <code>validatePageSize</code>,
+         <code>validatePaging</code>, <code>requireValidPaging</code>) is deleted and its callers call
+         <code>PageArguments.validate(page, size)</code> directly; no private paging validator remains in any controller.
+         <strong>Files (under <code>interfaces/graphql/controller</code>):</strong> <code>AssessmentAppeal</code>,
+         <code>AssessmentBlueprint</code>, <code>Assessment</code>, <code>AssessmentPolicy</code>, <code>Framework</code>,
+         <code>Grading</code>, <code>Import</code>, <code>MyClass</code>, <code>Order</code>, <code>Question</code>,
+         <code>QuestionBank</code>, <code>QuestionTopic</code>, <code>Rubric</code>, <code>SchoolBalance</code>,
+         <code>Subscription</code> (2 validators), <code>SupportedLanguage</code> (all suffixed <code>Controller</code>)</p>
+      <ul class="status-log"><li>2026-11-20 &middot; In progress &middot; Started. Applies D3-B, D4-A.</li><li>2026-11-20 &middot; Done &middot; 17 private validators deleted in 16 controllers (<code>Subscription</code> had 2) and all callers now call <code>PageArguments.validate(page, size)</code> (<code>Grading</code> and <code>AssessmentAppeal</code> only wrapped it). Behavior changes (accepted by D3-B/D4-A): page 0 is now rejected in <code>Assessment</code>, <code>AssessmentBlueprint</code>, <code>Question</code>, <code>QuestionBank</code>; size above 200 is rejected in the 12 controllers that had no cap; <code>IllegalStateException</code> became <code>IllegalArgumentException</code> there. CHANGED (small): the Vietnamese comments sitting directly above the deleted validators (Order, SchoolBalance, Subscription x4, plus the Javadoc of the Grading and AssessmentAppeal wrappers) were deleted with them, because they only explained those methods; their rationale (the boundary is the only place that rejects bad paging) is in the translated <code>PageArguments</code> Javadoc. One existing assertion changed: <code>MyClassControllerTests.my_classes_should_reject_invalid_paging</code> now expects the <code>PageArguments</code> message. <code>./gradlew compileJava</code> exit 0; <code>grep -rnE "validatePage|validatePaging|requireValidPaging" src/main/java/com/sep/vox/interfaces</code> prints nothing; <code>./gradlew test --tests '*ControllerTests' --tests '*GraphQlTests'</code> &rarr; BUILD SUCCESSFUL.</li></ul>
+    </li>
+    <li class="job" id="job-4-3" data-status="done">
+      <span class="title">4.3 Controllers with inline guards or no guard (4 files)</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> every inline <code>if (page == null || size == null || page &lt;= 0 || size &lt;= 0)</code> is replaced by
+         <code>PageArguments.validate(page, size)</code>, and <code>RoleController.roleUsers</code> (currently unchecked) validates before
+         building its DataLoader key.
+         <strong>Files:</strong> <code>SchoolController</code> (11 guard sites), <code>UserController</code>,
+         <code>RoleController</code> (2 methods), <code>RegisterFormController</code></p>
+      <ul class="status-log"><li>2026-11-20 &middot; In progress &middot; Started. Applies D3-B, D4-A.</li><li>2026-11-20 &middot; Done &middot; 16 inline guards replaced by <code>PageArguments.validate(page, size);</code>: <code>SchoolController</code> 13 (the plan said 11; the grep found 13), <code>UserController</code> 1, <code>RoleController.roles</code> 1, <code>RegisterFormController</code> 1. <code>RoleController.roleUsers</code> now validates before it builds the <code>RoleUsersKey</code> (it had no check). Behavior change (D3-B/D4-A): the guards that threw <code>IllegalStateException</code> (<code>RegisterForm</code>, part of <code>School</code>) now throw <code>IllegalArgumentException</code>, and size above 200 is rejected. 4 existing <code>SchoolControllerTests</code> assertions changed to the new exception type and <code>PageArguments</code> message. <code>./gradlew compileJava</code> exit 0; <code>./gradlew test --tests '*ControllerTests' --tests '*GraphQlTests'</code> &rarr; BUILD SUCCESSFUL.</li></ul>
+    </li>
+    <li class="job" id="job-4-4" data-status="done">
+      <span class="title">4.4 Replace silent clamping with rejection (needs D4-A)</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> <code>ScoringRuleController</code> (4 methods) and the 2 <code>validPage</code> sites in
+         <code>SchoolController</code> call <code>PageArguments.validate(page, size)</code> instead of
+         <code>(page != null &amp;&amp; page &gt; 0) ? page : 1</code>. The <code>validSize</code> fallback of 10 in
+         <code>ScoringRuleController</code> goes too (a null size is now rejected; the schema already defaults size to 10).
+         <strong>Files:</strong> <code>ScoringRuleController</code>, <code>SchoolController</code></p>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; Applies D4-A. <code>ScoringRuleController</code>: the 4 <code>validPage</code>/<code>validSize</code> pairs (including the fallback of 10) are replaced by <code>PageArguments.validate(page, size)</code> and the query records receive <code>page</code> and <code>size</code>. <code>SchoolController</code>: the 2 clamps were in <code>schoolRooms</code> and <code>schoolGrades</code> (named <code>pageNumber</code>/<code>pageSize</code>, not <code>validPage</code> as the plan said) and are replaced the same way. A missing or non-positive page or size is now BAD_REQUEST on these 6 methods instead of falling back to 1 and 10. <code>./gradlew compileJava</code> exit 0; <code>grep -rnE "page *(&lt;=|&lt;) *(0|1)\b" src/main/java/com/sep/vox/interfaces</code> prints only <code>PageArguments.java</code> (no output outside it).</li></ul>
+    </li>
+    <li class="job" id="job-4-5" data-status="done">
+      <span class="title">4.5 Regression tests for the behavior that changes</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> for the 4 controllers that accepted <code>page = 0</code> (<code>Assessment</code>,
+         <code>AssessmentBlueprint</code>, <code>Question</code>, <code>QuestionBank</code>) a test calls the query with page 0 and
+         expects <code>IllegalArgumentException</code> and no use-case call (each fails before the change); the same is proven for
+         <code>ScoringRule</code> and <code>School</code> (page 0 and null), and for <code>School</code> and <code>Rubric</code> with
+         <code>size = 201</code> (these had no cap before D3-B). Extend the existing
+         <code>QuestionControllerTests</code> and <code>SchoolControllerTests</code>; create <code>XxxControllerTests</code> in the
+         mirrored package for the others (Mockito, direct call, strict stubs).
+         <strong>Files:</strong> <code>src/test/java/com/sep/vox/interfaces/graphql/controller/*ControllerTests.java</code></p>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; Applies D3-B, D4-A. Created <code>AssessmentControllerTests</code> (2 paged methods), <code>AssessmentBlueprintControllerTests</code>, <code>QuestionBankControllerTests</code>, <code>ScoringRuleControllerTests</code> (4 methods, page 0 and null page/size) and <code>RubricControllerTests</code> (<code>viewSystemRubrics</code> with size 201; one representative of the 22 paged Rubric methods, all of which share the same call), all <code>@ExtendWith(MockitoExtension.class)</code> with <code>@Mock</code>/<code>@InjectMocks</code>. Extended <code>QuestionControllerTests</code> (page 0, and it now keeps the <code>ViewQuestionsUseCase</code> mock in a field to prove it is never called) and <code>SchoolControllerTests</code> (<code>schools</code> with page 0, null and size 201; <code>schoolRooms</code> and <code>schoolGrades</code> with page 0 and null page/size). Each test also proves no use-case call. Proven to fail before the change: with the 20 controllers temporarily restored from <code>HEAD</code>, 17 tests failed (the 11 new ones and the 6 existing assertions changed in 4.2/4.3), then the files were put back byte-identical (checksum compared). With the change: <code>./gradlew test --tests '*ControllerTests' --tests '*GraphQlTests'</code> &rarr; BUILD SUCCESSFUL; the 7 classes above ran 2+1+1+4+1+3+24 tests, 0 failed.</li></ul>
+    </li>
+    <li class="job" id="job-4-6" data-status="done">
+      <span class="title">4.6 Boundary rule in <code>PagingConventionTests</code> (needs D6)</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> a new test fails if a controller method with a <code>name = "page"</code> argument does not call
+         <code>PageArguments</code>, or if any file under <code>interfaces/</code> other than <code>PageArguments</code> contains
+         <code>page &lt;= 0</code> / <code>page &lt; 1</code> / <code>page &lt; 0</code>; it scans more than 100 page arguments (self-check).
+         <strong>Files:</strong> <code>src/test/java/com/sep/vox/architecture/PagingConventionTests.java</code></p>
+      <ul class="status-log"><li>2026-11-20 &middot; In progress &middot; Started. Applies D6-A.</li><li>2026-11-20 &middot; Done &middot; Two new tests in <code>PagingConventionTests</code>: <code>controller_methods_with_a_page_argument_must_validate_it</code> (every method with a <code>name = "page"</code> argument under <code>interfaces/</code> must call <code>PageArguments.validate(</code>; comments stripped first) and <code>interfaces_must_not_check_the_page_range_by_hand</code> (no <code>page &lt;= 0</code> / <code>page &lt; 1</code> / <code>page &lt; 0</code> outside <code>PageArguments.java</code>). CHANGED (small): the self-check is <code>&gt; 80</code>, not <code>&gt; 100</code>: the source has exactly 88 <code>name = "page"</code> arguments (87 GraphQL, 1 REST; <code>grep -rE 'name *= *"page"' src/main/java | wc -l</code>). The plan's 112 and the 132 in "Current state" were wrong: the 132 <code>page: Int</code> schema lines include the <code>page</code> field of the response page types, and no source has 112 arguments. The Javadoc of the query test that cited the deleted <code>validatePageSize</code> guard now names <code>PageArguments</code>. Proven to bite: with the <code>validate</code> call removed from <code>RoleController.roleUsers</code> the first test failed naming it, and with <code>if (page &lt; 1)</code> added to <code>OrderController</code> the second failed naming it; both files were restored byte-identical (checksum compared). <code>./gradlew test --tests '*PagingConventionTests'</code> &rarr; 5 passed.</li></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*PageArgumentsTests' --tests '*PagingConventionTests'</code>,
+     <code>grep -rnE "validatePage|validatePaging|requireValidPaging" src/main/java/com/sep/vox/interfaces</code> prints nothing,
+     <code>./gradlew test --tests '*ControllerTests' --tests '*GraphQlTests'</code>,
+     <code>grep -rnE "page *(&lt;=|&lt;) *(0|1)\b" src/main/java/com/sep/vox/interfaces</code> prints only <code>PageArguments.java</code>.</p>
+  <ul class="status-log"><li>2026-11-20 &middot; In progress &middot; Phase 4 started with job 4.1.</li><li>2026-11-20 &middot; Done &middot; All 6 jobs done. Verify: <code>./gradlew compileJava</code> exit 0; <code>*PageArgumentsTests</code>, <code>*PagingConventionTests</code>, <code>*LayeredArchitectureTests</code>, <code>*OneBasedPagingTests</code> BUILD SUCCESSFUL; <code>grep -rnE "validatePage|validatePaging|requireValidPaging" src/main/java/com/sep/vox/interfaces</code> prints nothing; <code>grep -rnE "page *(&lt;=|&lt;) *(0|1)\b" src/main/java/com/sep/vox/interfaces</code> prints only <code>PageArguments.java:34</code>; <code>./gradlew test integrationTest --continue</code> &rarr; BUILD SUCCESSFUL (unit 2065 tests, integration 367 tests, 0 failed, 0 skipped; Docker was available).</li></ul>
+</div>
+
+<div class="phase" id="phase-5" data-status="done">
+  <h3><span class="title">Phase 5 &ndash; Record the convention</span>
+    <span class="tag">small &middot; needs D7</span>
+    <span class="status done">Done</span></h3>
+  <p><strong>Goal:</strong> the decision survives in a tracked file. <strong>Depends on:</strong> Phases 1&ndash;4, D7.</p>
+  <ul class="jobs">
+    <li class="job" id="job-5-1" data-status="done">
+      <span class="title">5.1 Update the pagination bullet in <code>AGENTS.md</code> (needs D7-A)</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> the "Pagination is 1-based at every boundary" bullet names <code>PageArguments</code> (validation at the
+         boundary) and <code>OneBasedPaging</code> (the only subtract and add-1 code) and no longer says adapters convert by hand.
+         If D7 is answered B, this job is skipped.
+         <strong>Files:</strong> <code>AGENTS.md</code></p>
+      <ul class="status-log"><li>2026-11-20 &middot; In progress &middot; Started. Baseline <code>./gradlew compileJava</code> exit 0. Applies D7-A.</li><li>2026-11-20 &middot; Done &middot; The pagination bullet in <code>AGENTS.md</code> now names <code>PageArguments.validate(page, size)</code> (boundary validation, size 1..200) and <code>OneBasedPaging</code> (<code>toPageRequest</code>, <code>toOffset</code>, <code>toPageResult</code>) as the only places that validate or convert, and no longer says adapters convert by hand (AGENTS.md:75-80). <code>./gradlew compileJava</code> exit 0.</li></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, then the full list in section 6.</p>
+  <ul class="status-log"><li>2026-11-20 &middot; In progress &middot; Phase 5 started with job 5.1.</li><li>2026-11-20 &middot; Done &middot; Job 5.1 done. Verify: <code>./gradlew compileJava</code> exit 0; <code>*OneBasedPagingTests</code>, <code>*PageArgumentsTests</code>, <code>*PagingConventionTests</code>, <code>*LayeredArchitectureTests</code> BUILD SUCCESSFUL; the persistence grep prints only <code>OneBasedPaging.java</code> (lines 55, 66); the interfaces grep prints only <code>PageArguments.java:34</code>.</li></ul>
+</div>
+
+<h2 id="risks">4. Risks</h2>
+<ul>
+  <li><strong>Client-visible changes.</strong> D4-A makes page 0 and "missing page on a clamping query" return BAD_REQUEST, D3-B makes a
+      <code>size</code> above 200 or a null size return BAD_REQUEST on every controller (about 12 had no cap; the schema defaults are 10 or 20 and no
+      in-repo caller asks for more than 200), and D5-A changes the <code>page</code> field of 4 Rubric queries from 0-based to 1-based.
+      The final report lists all three as cross-system impact for the frontend and desktop app.</li>
+  <li><strong>Error text and type change.</strong> Controllers that threw <code>IllegalStateException</code> or their own message now throw
+      <code>IllegalArgumentException</code> with the <code>PageArguments</code> message. Both map to BAD_REQUEST in GraphQL; the only paged REST endpoint
+      already uses <code>PageArguments</code>. The frontend must not match on the old text.</li>
+  <li><strong>Silent wrong page.</strong> A missed or wrong conversion returns the wrong rows with no error (this is why
+      <code>PagingConventionTests</code> exists). Mitigation: <code>OneBasedPaging</code> throws on page &lt; 1, the guard test is retargeted
+      in the same phase that makes the old one obsolete, and each phase greps for leftover <code>- 1</code>.</li>
+  <li><strong>Text-scanning guard.</strong> Regex rules can miss unusual formatting. Their "scanned &gt; N" self-checks stay so a broken regex fails loudly.</li>
+  <li><strong>Docker.</strong> Query and repository tests are <code>@RepositoryTest</code>. If Docker is not available, Phases 2 and 3 are verified only by
+      <code>compileJava</code>, unit tests and the grep checks, and the report says so.</li>
+  <li><strong>Size of the diff.</strong> About 33 adapter, 9 query and 20 controller files, mostly mechanical. The jobs are grouped so that each is reviewable alone.</li>
+</ul>
+
+<h2 id="scope">5. Out of scope</h2>
+<ul>
+  <li>The <code>Math.max(page, 1)</code> and size clamps inside <code>JpaAssessmentDirectoryQueryRepository</code> and
+      <code>JpaStudentAssessmentQueryRepository</code>. They are reported, not changed. The size cap value (200) itself is not changed.</li>
+  <li><code>PageRequest.of(0, limit)</code> / <code>PageRequest.ofSize(1)</code> "top N" calls, and adapters that echo the request's 1-based
+      <code>page</code> into <code>PageResult</code> (already correct; D5-A).</li>
+  <li>The 120 <code>PageResult</code> constructions in use cases and mappers, the GraphQL schema (<code>page</code> defaults), proto and Kafka contracts.</li>
+  <li>The stale Javadoc in <code>ViewMyAssessmentsQuery</code> ("numbered from 0") is wrong for the 1-based convention but sits in a file the plan does not
+      otherwise edit; it is reported in the final report.</li>
+  <li>Translating Vietnamese comments in files this plan does not edit.</li>
+</ul>
+
+<h2 id="verify">6. Verification</h2>
+<p>The plan is finished when all of these hold (run the <code>verify-plan</code> skill after the last phase):</p>
+<ul>
+  <li><code>./gradlew compileJava</code> and <code>./gradlew test</code> are green (unit suite); <code>./gradlew integrationTest</code> is green if Docker is available, otherwise reported as not run.</li>
+  <li><code>./gradlew test --tests '*OneBasedPagingTests' --tests '*PageArgumentsTests' --tests '*PagingConventionTests' --tests '*LayeredArchitectureTests'</code> is green.</li>
+  <li><code>grep -rnE "(page|pageNumber|normalizedPage) - 1|getNumber\(\)" src/main/java/com/sep/vox/infrastructure/persistence</code> prints only <code>OneBasedPaging.java</code>.</li>
+  <li><code>grep -rnE "page *(&lt;=|&lt;) *(0|1)\b" src/main/java/com/sep/vox/interfaces</code> prints only <code>PageArguments.java</code>.</li>
+  <li>The 8 Rubric regression tests fail on the commit before Phase 2.3 and pass after (D5-A).</li>
+</ul>
+
+<h2 id="changelog">7. Change log</h2>
+<div class="table-scroll"><table>
+  <thead><tr><th>Date</th><th>Change</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>2026-11-20</td><td>Plan written (Draft)</td><td>First version</td></tr>
+    <tr><td>2026-11-20</td><td>Approved</td><td>User approved the plan as written after all decisions were answered</td></tr>
+    <tr><td>2026-11-20</td><td>D6-A and D7-A answered (all decisions answered)</td><td>Guard test is retargeted stricter; <code>AGENTS.md</code> bullet will be updated in job 5.1</td></tr>
+    <tr><td>2026-11-20</td><td>D2&ndash;D5 answered (D2-A, D3-B, D4-A, D5-A); Phase 4 now validates page and size through <code>PageArguments.validate</code> (job 4.1 rewritten, 4.2&ndash;4.5 and the risk list updated)</td><td>D3-B widens the validator to size</td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="notes">8. Implementation notes</h2>
+<p>Filled in by <code>implement-plan</code>: deviations from the plan, results of <code>verify-plan</code>, and
+problems noticed but not fixed.</p>
+<ul id="notes-list">
+  <li>2026-11-20 &middot; Phase 2: 33 adapter files now use <code>OneBasedPaging</code>; no hand-written <code>- 1</code> or <code>getNumber()</code> remains in <code>infrastructure/persistence/adapter</code>. The 8 Rubric response sites that returned a 0-based <code>page</code> now return 1-based (D5-A); this is client-visible and goes in the final cross-system report.</li>
+  <li>2026-11-20 &middot; Deviations (small, behavior unchanged): (a) the 5 <code>(int) getTotalElements()</code> casts in the Rubric adapters went away with <code>toPageResult</code>; (b) <code>fromRow</code> in 3 row-range methods uses <code>Math.toIntExact(OneBasedPaging.toOffset(page, size)) + 1</code>, which now throws on <code>int</code> overflow instead of silently wrapping; (c) the adapter guard accepts a paged method that only delegates to a same-named overload; (d) 7 English comments describing the removed subtraction were deleted, 2 Vietnamese ones in <code>SubscriptionPlanRepositoryImpl</code> were translated and kept (they are now slightly stale) and 6 in <code>RubricRepositoryImpl</code> were translated.</li>
+  <li>2026-11-20 &middot; Problems noticed, not fixed: the <code>fromRow</code>/<code>toRow</code> row-range logic is now repeated in 3 adapters (<code>SchoolClass</code>, <code>SchoolUser</code>, <code>UserRole</code>); Vietnamese comments remain outside the changed methods (the <code>NEWEST_FIRST</code> comment in <code>SubscriptionPlanRepositoryImpl</code>, 3 comments in the Rubric adapters).</li>
+    <li>2026-11-20 &middot; Phase 3: 7 <code>setFirstResult</code> and 4 native <code>offset</code> sites in 9 query repositories now use <code>OneBasedPaging.toOffset</code>; the query guard test was retargeted (job 3.3). The <code>Math.max(page, 1)</code> clamps in Directory and StudentAssessment were left as they are (out of scope): they still hide a bad page there, but <code>toOffset</code> now sees the already-clamped value. Problem noticed, not fixed: <code>Math.toIntExact(OneBasedPaging.toOffset(page, size))</code> is now written 7 times across query repositories and 3 times in adapters; a shared int-offset helper would remove it, but the plan did not ask for one.</li>
+  <li>2026-11-20 &middot; Phase 4: 20 controllers (<code>interfaces/graphql/controller</code>) now call <code>PageArguments.validate(page, size)</code> and no controller has its own page or size check (17 private validators deleted, 16 inline guards and 6 clamps replaced, <code>RoleController.roleUsers</code> now validated). Client-visible changes for the cross-system report: (a) page 0 is rejected (BAD_REQUEST) in <code>assessments</code>, <code>classTests</code>, <code>assessmentBlueprints</code>, <code>questions</code>, <code>questionBanks</code> (D4-A); (b) a missing or non-positive page or size is rejected, not replaced by 1 and 10, in the 4 <code>ScoringRuleController</code> queries and in <code>schoolRooms</code> and <code>schoolGrades</code> (D4-A); (c) <code>size</code> above 200 or a null size is rejected in every paged query, which had no cap in about 12 controllers (D3-B); (d) the exception for a bad page is now always <code>IllegalArgumentException</code> with the <code>PageArguments</code> message, no longer <code>IllegalStateException</code> or a controller-specific text. Deviations (small): the counts in the plan were off (13 <code>SchoolController</code> guards, not 11; the 2 <code>SchoolController</code> clamps are named <code>pageNumber</code>/<code>pageSize</code>; 88 page arguments, not 112), and the Vietnamese comments that sat directly above the deleted validators were deleted with them. Problem noticed, not fixed: <code>AssessmentDirectoryController</code> and <code>DashboardController</code> (4 page arguments each) already validated and were not touched; the Vietnamese guard comment in <code>PagingConventionTests.graphql_page_arguments_must_default_to_one</code> was left because job 4.6 does not edit that test.</li>
+  <li>2026-11-20 &middot; Phase 5 and verify-plan: PASS. Job 5.1 updated the pagination bullet in <code>AGENTS.md</code> (D7-A). Full run: <code>./gradlew test integrationTest --continue</code> &rarr; BUILD SUCCESSFUL (unit 2065 tests, integration 367 tests, 0 failed, 0 skipped; the integration task was up to date from the Phase 4 run on identical code). Section 6 greps: persistence prints only <code>OneBasedPaging.java</code> (lines 55, 66), interfaces prints only <code>PageArguments.java:34</code>. Diff audit: 21 controllers (not 20 as the Phase 4 note says: <code>ScoringRuleController</code> was added by job 4.4), 42 infrastructure files, 5 test files changed and 11 new test files, plus <code>AGENTS.md</code>; no unrequested file. Problems noticed, not fixed: the <code>Math.toIntExact(OneBasedPaging.toOffset(...))</code> pattern is repeated 10 times; fromRow/toRow logic is repeated in 3 adapters; stale Javadoc in <code>ViewMyAssessmentsQuery</code>; Vietnamese comments remain outside the changed methods.</li>
+</ul>
+
+</div>
+<script>
+  (function () {
+    var labels = { todo: "Not started", progress: "In progress", done: "Done", blocked: "Blocked", skipped: "Deferred" };
+    var body = document.getElementById("overview-body");
+    var summary = document.getElementById("overview-summary");
+    var phaseCounts = {};
+    document.querySelectorAll(".phase[data-status], .job[data-status]").forEach(function (element) {
+      var status = element.getAttribute("data-status");
+      if (element.classList.contains("phase")) { phaseCounts[status] = (phaseCounts[status] || 0) + 1; }
+      var row = body.insertRow();
+      var nameCell = row.insertCell();
+      if (element.classList.contains("job")) { nameCell.className = "indent"; }
+      var link = document.createElement("a");
+      link.href = "#" + element.id;
+      link.textContent = element.querySelector(".title").textContent;
+      nameCell.appendChild(link);
+      var pill = document.createElement("span");
+      pill.className = "status " + status;
+      pill.textContent = labels[status] || status;
+      row.insertCell().appendChild(pill);
+    });
+    var parts = Object.keys(labels).filter(function (key) { return phaseCounts[key]; })
+      .map(function (key) { return phaseCounts[key] + " " + labels[key].toLowerCase(); });
+    summary.textContent = parts.length ? "Phases: " + parts.join(" · ") : "";
+  })();
+</script>
+</body>
+</html>

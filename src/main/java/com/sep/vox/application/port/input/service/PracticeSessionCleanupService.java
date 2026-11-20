@@ -1,7 +1,9 @@
 package com.sep.vox.application.port.input.service;
 
+import com.sep.vox.domain.model.personalization.PracticeSession;
 import java.time.Instant;
 
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -30,8 +32,8 @@ public class PracticeSessionCleanupService {
 
     @Transactional
     public int cleanupStaleSessions(Instant staleBefore) {
-        var stale = practiceSessionRepository.findStaleInProgress(staleBefore);
-        for (var session : stale) {
+        List<PracticeSession> stale = practiceSessionRepository.findStaleInProgress(staleBefore);
+        for (PracticeSession session : stale) {
             // Phiên rớt mạng là diện DỄ có câu dở nhất -- học sinh không tự bấm kết thúc thì
             // gần như chắc chắn đang nói dở một câu. Không xả ở đây thì đúng nhóm cần nhất
             // lại là nhóm mất trắng.
@@ -42,8 +44,8 @@ public class PracticeSessionCleanupService {
             // Riêng ở đây có sắc thái thêm: phiên tới được job dọn nghĩa là học sinh KHÔNG
             // tự bấm kết thúc (rớt mạng, đóng app). Nhưng nếu em ấy đã nói thật thì công sức
             // đó vẫn phải được tính -- lượt nói đã ghi, đã chấm, đã vào hồ sơ điểm yếu.
-            var spoke = session.getGradedSeconds() > 0;
-            var status = spoke ? "COMPLETED" : "ABANDONED";
+            boolean spoke = session.getGradedSeconds() > 0;
+            String status = spoke ? "COMPLETED" : "ABANDONED";
             // UNKNOWN thẳng, KHÔNG gọi SessionDiagnosisPolicy.
             //
             // Phiên tới được job dọn nghĩa là client không kịp gửi gì -- ta không có
@@ -57,7 +59,7 @@ public class PracticeSessionCleanupService {
             // điểm quan tâm của chủ đề dựa trên bằng chứng không tồn tại.
             //
             // Không biết thì nói không biết. UNKNOWN không sinh sự kiện nào cả.
-            var diagnosis = spoke ? null : "UNKNOWN";
+            String diagnosis = spoke ? null : "UNKNOWN";
             practiceSessionRepository.save(session.closedAsStale(
                 status,
                 diagnosis,

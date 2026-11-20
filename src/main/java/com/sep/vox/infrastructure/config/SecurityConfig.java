@@ -22,6 +22,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -88,7 +89,7 @@ public class SecurityConfig {
         "/graphql",
         "/graphiql/**",
         "/internal/practice-sessions/**",
-        "/internal/exam-turns/**",
+        "/internal/assessment-turns/**",
         "/actuator/**"
     };
 
@@ -170,13 +171,6 @@ public class SecurityConfig {
     // Origin theo chuẩn trình duyệt: scheme://host[:port], không path, không '/' cuối.
     private static final Pattern ORIGIN_PATTERN = Pattern.compile("^https?://[^/\\s]+$");
 
-    private static final int ARGON2_SALT_LENGTH = 16;
-    private static final int ARGON2_HASH_LENGTH = 32;
-    private static final int ARGON2_PARALLELISM = 1;
-    private static final int ARGON2_MEMORY = 1 << 12;
-    private static final int ARGON2_ITERATION = 3;
-
-    
     /**
      * Chain CHỈ dành cho lời gọi đăng ký của SBA client: {@code POST /admin/instances}.
      *
@@ -215,46 +209,46 @@ public class SecurityConfig {
     }
 
     /**
-     * Chain cho trang Spring Boot Admin mà NGƯỜI thật mở bằng trình duyệt.
+     * The chain for the Spring Boot Admin page that a real PERSON opens in a browser.
      *
-     * <p>Cố ý KHÔNG có httpBasic -- xem {@link #adminRegistrationFilterChain(HttpSecurity)}.
-     * Ở đây chỉ có formLogin, vì trang UI của SBA tự mang sẵn màn đăng nhập riêng:
-     * {@code UiController} chỉ khai {@code @GetMapping("/login")} để RENDER trang đó, còn phần
-     * nhận POST là do formLogin của Spring Security cung cấp. Thiếu formLogin thì form hiện ra
-     * bình thường nhưng bấm đăng nhập là 405 Method Not Supported.
+     * <p>Deliberately NO httpBasic -- see {@link #adminRegistrationFilterChain(HttpSecurity)}.
+     * Only formLogin here, because the SBA UI page brings its own login screen:
+     * {@code UiController} only declares {@code @GetMapping("/login")} to RENDER that page, and the part
+     * that receives the POST is provided by Spring Security's formLogin. Without formLogin the form shows up
+     * normally but pressing login gives 405 Method Not Supported.
      *
-     * <p>Vì có formLogin nên KHÔNG đặt STATELESS ở đây: đăng nhập cần session để nhớ. Chain
-     * chính không bị ảnh hưởng, nó vẫn STATELESS như cũ.
+     * <p>Because there is formLogin, STATELESS is NOT set here: logging in needs a session to remember. The main
+     * chain is not affected, it stays STATELESS as before.
      *
-     * <p>Có session và cookie thì CSRF trở lại có nghĩa, và bản thân UI cũng đã được viết sẵn để
-     * dùng nó -- nút đăng xuất là một form POST tự đọc cookie {@code XSRF-TOKEN}, còn mọi lời gọi
-     * XHR đi qua axios với {@code xsrfCookieName: 'XSRF-TOKEN'}. Hai lựa chọn dưới đây bắt buộc
-     * phải đúng, sai cái nào cũng hỏng theo kiểu khó lần:
+     * <p>With a session and a cookie, CSRF makes sense again, and the UI itself is already written to
+     * use it -- the logout button is a POST form that reads the {@code XSRF-TOKEN} cookie by itself, and every
+     * XHR call goes through axios with {@code xsrfCookieName: 'XSRF-TOKEN'}. The two choices below must be
+     * right, getting either one wrong breaks things in a hard-to-trace way:
      * <ul>
-     *   <li>{@link CookieCsrfTokenRepository} chứ không phải bản mặc định lưu trong session --
-     *       UI đọc token từ cookie, session repository không bao giờ ghi ra cookie nào.</li>
-     *   <li>{@link CsrfTokenRequestAttributeHandler} TRẦN, không phải bản Xor mặc định. Bản Xor
-     *       chờ nhận token đã che theo BREACH rồi giải mã ngược; UI gửi lại đúng giá trị thô
-     *       trong cookie nên giải mã ra rác và mọi thao tác ghi đều 403.</li>
+     *   <li>{@link CookieCsrfTokenRepository} and not the default one stored in the session --
+     *       the UI reads the token from the cookie, and the session repository never writes any cookie.</li>
+     *   <li>The PLAIN {@link CsrfTokenRequestAttributeHandler}, not the default Xor one. The Xor one
+     *       waits to receive a token masked against BREACH and then unmasks it; the UI sends back exactly the raw value
+     *       from the cookie so unmasking produces garbage and every write returns 403.</li>
      * </ul>
      *
-     * <p>{@code setCsrfRequestAttributeName(null)} không phải chi tiết thừa: nó ép
-     * {@code handle()} gọi {@code getParameterName()} ngay trong CsrfFilter, tức là token được
-     * sinh và ghi cookie TRƯỚC khi controller chạy. Để mặc định thì token sinh kiểu lười, và
-     * template sba-settings.js đọc {@code ${_csrf.parameterName}} giữa chừng lúc render -- lúc đó
-     * response đã commit, ghi cookie không còn tác dụng (trước đây với session repository thì còn
-     * tệ hơn: ném thẳng "Cannot create a session after the response has been committed").
+     * <p>{@code setCsrfRequestAttributeName(null)} is not a superfluous detail: it forces
+     * {@code handle()} to call {@code getParameterName()} inside CsrfFilter itself, i.e. the token is
+     * generated and the cookie written BEFORE the controller runs. Left at the default the token is generated lazily, and the
+     * sba-settings.js template reads {@code ${_csrf.parameterName}} midway through rendering -- by then the
+     * response is already committed and writing the cookie no longer has any effect (previously with the session repository it was even
+     * worse: it threw "Cannot create a session after the response has been committed" outright).
      */
     @Bean
     @Order(2)
     public SecurityFilterChain adminConsoleFilterChain(HttpSecurity http) throws Exception {
-        var csrfRequestHandler = new CsrfTokenRequestAttributeHandler();
+        CsrfTokenRequestAttributeHandler csrfRequestHandler = new CsrfTokenRequestAttributeHandler();
         csrfRequestHandler.setCsrfRequestAttributeName(null);
 
-        // UI gắn sẵn đích quay lại vào tham số "redirectTo" khi đá người dùng sang trang đăng
-        // nhập. Không khai tên tham số này thì đăng nhập xong luôn rơi về trang chủ, mất đúng
-        // trang instance mà người ta đang mở dở.
-        var loginSuccessHandler = new SavedRequestAwareAuthenticationSuccessHandler();
+        // The UI attaches the return target to the "redirectTo" parameter when it kicks the user to the login
+        // page. Without declaring this parameter name, logging in always falls back to the home page, losing exactly
+        // the instance page the person had open.
+        SavedRequestAwareAuthenticationSuccessHandler loginSuccessHandler = new SavedRequestAwareAuthenticationSuccessHandler();
         loginSuccessHandler.setTargetUrlParameter(ADMIN_CONSOLE_REDIRECT_PARAMETER);
         loginSuccessHandler.setDefaultTargetUrl(ADMIN_CONSOLE_HOME);
 
@@ -262,9 +256,9 @@ public class SecurityConfig {
             .securityMatcher(ADMIN_CONSOLE_PATTERN)
             .authenticationManager(new ProviderManager(adminConsoleAuthenticationProvider()))
             .authorizeHttpRequests(auth -> auth
-                // Trang đăng nhập và những gì nó cần để hiện ra được. sba-settings.js nằm trong
-                // danh sách vì chính trang login cũng đọc SBA.csrf.parameterName từ đó -- chặn
-                // nó lại là form đăng nhập không kèm được token và không ai vào nổi.
+                // The login page and what it needs in order to render. sba-settings.js is in the
+                // list because the login page itself also reads SBA.csrf.parameterName from it -- blocking
+                // it means the login form cannot carry a token and nobody can get in.
                 .requestMatchers(ADMIN_CONSOLE_PUBLIC_PATTERNS)
                 .permitAll()
                 .anyRequest()
@@ -283,32 +277,32 @@ public class SecurityConfig {
     }
 
     /**
-     * Cookie XSRF-TOKEN cho chain API, có khai Domain khi {@code app.cookie.domain} được đặt.
+     * The XSRF-TOKEN cookie for the API chain, with a Domain when {@code app.cookie.domain} is set.
      *
-     * <p>Không có Domain thì cookie là HOST-ONLY, tức chỉ thuộc về đúng host đã trả nó. Trên
-     * deployment backend là api.voxenta.net còn frontend là voxenta.net, nên
-     * {@code document.cookie} bên frontend KHÔNG đọc thấy cookie của api.voxenta.net -- axios
-     * không có gì để gắn vào header X-XSRF-TOKEN và /api/v1/auth/refresh trả 403 mãi mãi. Đã xảy
-     * ra thật 2026-09-01, xác nhận bằng response header:
-     * {@code Set-Cookie: XSRF-TOKEN=...; Path=/; Secure} -- không có Domain.
+     * <p>Without Domain the cookie is HOST-ONLY, i.e. it belongs only to the exact host that returned it. On a
+     * deployment where the backend is api.voxenta.net and the frontend is voxenta.net,
+     * {@code document.cookie} on the frontend can NOT see the cookie of api.voxenta.net -- axios
+     * has nothing to attach to the X-XSRF-TOKEN header and /api/v1/auth/refresh returns 403 forever. This really
+     * happened on 2026-09-01, confirmed by the response header:
+     * {@code Set-Cookie: XSRF-TOKEN=...; Path=/; Secure} -- no Domain.
      *
-     * <p>Đặt {@code app.cookie.domain=voxenta.net} thì cả voxenta.net, www.voxenta.net và
-     * api.voxenta.net cùng đọc được. Đánh đổi: MỌI subdomain của voxenta.net đọc được token này.
-     * Chấp nhận được vì token CSRF không phải bí mật đăng nhập -- nó tồn tại để chứng minh
-     * request do chính trang của mình phát ra, và trang của mình thì buộc phải đọc được nó.
+     * <p>Setting {@code app.cookie.domain=voxenta.net} lets voxenta.net, www.voxenta.net and
+     * api.voxenta.net all read it. Trade-off: EVERY subdomain of voxenta.net can read this token.
+     * Acceptable because the CSRF token is not a login secret -- it exists to prove that a
+     * request was issued by our own page, and our own page must be able to read it.
      *
-     * <p>KHÔNG có dấu chấm đầu. Kiểu ".voxenta.net" là cú pháp RFC 2109 cũ; RFC 6265 bỏ hẳn nó
-     * và quy định Domain=voxenta.net vốn đã phủ mọi subdomain. Tomcat theo đúng RFC 6265 và ném
+     * <p>NO leading dot. The ".voxenta.net" form is old RFC 2109 syntax; RFC 6265 dropped it entirely
+     * and specifies that Domain=voxenta.net already covers every subdomain. Tomcat follows RFC 6265 and throws
      * {@code IllegalArgumentException: An invalid domain [.voxenta.net] was specified for this
-     * cookie} -- không phải lúc khởi động mà ở TỪNG request, nên mọi endpoint trả 500. Vì thế
-     * chỗ này chặn ngay lúc dựng filter chain thay vì để app lên rồi hỏng toàn bộ.
+     * cookie} -- not at startup but on EVERY request, so every endpoint returns 500. That is why
+     * this is blocked right when the filter chain is built instead of letting the app start and then break completely.
      *
-     * <p>Để TRỐNG khi chạy local: localhost:5173 và localhost:8081 cùng host "localhost" (cookie
-     * không phân biệt cổng) nên host-only đã đủ. Khai "localhost" ở đây lại hỏng, vì cookie có
-     * Domain thì không áp dụng cho host thuần trong một số trình duyệt.
+     * <p>Leave it EMPTY when running locally: localhost:5173 and localhost:8081 share the same host "localhost" (cookies
+     * do not distinguish ports) so host-only is enough. Setting "localhost" here actually breaks it, because a cookie with
+     * a Domain does not apply to a bare host in some browsers.
      */
     private CookieCsrfTokenRepository apiCsrfTokenRepository() {
-        var repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+        CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
         if (StringUtils.hasText(cookieDomain)) {
             if (cookieDomain.startsWith(".")) {
                 throw new InfrastructureException(
@@ -323,26 +317,26 @@ public class SecurityConfig {
     }
 
     /**
-     * Tài khoản dùng chung cho hai chain admin ở trên. Dựng mới mỗi lần gọi thay vì làm bean:
-     * JwtAuthenticationFilter và JwtGrpcServerInterceptor cùng inject UserDetailsService THEO
-     * KIỂU, nên thêm một InMemoryUserDetailsManager vào context là hai chỗ đó không phân giải
-     * được nữa và app chết ngay lúc khởi động.
+     * The account shared by the two admin chains above. Built fresh on each call instead of being a bean:
+     * JwtAuthenticationFilter and JwtGrpcServerInterceptor both inject UserDetailsService BY
+     * TYPE, so adding an InMemoryUserDetailsManager to the context means those two places can no longer resolve
+     * it and the app dies right at startup.
      */
     private DaoAuthenticationProvider adminConsoleAuthenticationProvider() {
-        var username = requireConfigured(adminConsoleProperties.username(), "app.admin.username", "SBA_ADMIN_USERNAME");
-        var password = requireConfigured(adminConsoleProperties.password(), "app.admin.password", "SBA_ADMIN_PASSWORD");
+        String username = requireConfigured(adminConsoleProperties.username(), "app.admin.username", "SBA_ADMIN_USERNAME");
+        String password = requireConfigured(adminConsoleProperties.password(), "app.admin.password", "SBA_ADMIN_PASSWORD");
 
-        // BCrypt chứ không dùng lại bean Argon2PasswordEncoder của app: SBA client đăng ký lại
-        // mỗi 10 giây (ClientProperties.period), nên hàm băm này chạy suốt vòng đời process.
-        // Argon2 với tham số đang đặt ở dưới ngốn 4MB bộ nhớ mỗi lần gọi, đổi lấy đúng số 0 giá
-        // trị an ninh -- mật khẩu thô vốn đã nằm sẵn trong cấu hình để client dùng.
-        var passwordHasher = new BCryptPasswordEncoder();
+        // BCrypt and not the app's Argon2PasswordEncoder bean: the SBA client re-registers every
+        // 10 seconds (ClientProperties.period), so this hash function runs for the whole life of the process.
+        // Argon2 with the parameters set below eats 4MB of memory per call, in exchange for exactly zero
+        // security value -- the raw password is already sitting in the configuration for the client to use.
+        BCryptPasswordEncoder passwordHasher = new BCryptPasswordEncoder();
 
-        var adminUser = User.withUsername(username)
+        UserDetails adminUser = User.withUsername(username)
             .password(passwordHasher.encode(password))
             .roles(ADMIN_CONSOLE_ROLE)
             .build();
-        var authenticationProvider = new DaoAuthenticationProvider(new InMemoryUserDetailsManager(adminUser));
+        DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider(new InMemoryUserDetailsManager(adminUser));
         authenticationProvider.setPasswordEncoder(passwordHasher);
         return authenticationProvider;
     }
@@ -350,12 +344,12 @@ public class SecurityConfig {
     @Bean
     @Order(3)
     public SecurityFilterChain configure(HttpSecurity http) {
-        // Xem khối chú thích ở CSRF_PROTECTED_API_PATHS. Đọc LƯỜI là cookie chỉ được ghi ở đúng
-        // request /refresh -- tức là muộn hơn một nhịp so với lúc client cần nó.
-        var apiCsrfRequestHandler = new CsrfTokenRequestAttributeHandler();
+        // See the comment block at CSRF_PROTECTED_API_PATHS. Reading LAZILY means the cookie is only written on exactly the
+        // /refresh request -- which is one beat later than when the client needs it.
+        CsrfTokenRequestAttributeHandler apiCsrfRequestHandler = new CsrfTokenRequestAttributeHandler();
         apiCsrfRequestHandler.setCsrfRequestAttributeName(null);
 
-        var csrfProtectedMatchers = Arrays.stream(CSRF_PROTECTED_API_PATHS)
+        List<RequestMatcher> csrfProtectedMatchers = Arrays.stream(CSRF_PROTECTED_API_PATHS)
             .map(path -> (RequestMatcher) PathPatternRequestMatcher.withDefaults()
                 .matcher(HttpMethod.POST, path))
             .toList();
@@ -364,10 +358,10 @@ public class SecurityConfig {
             .csrf(csrf -> csrf
                 .csrfTokenRepository(apiCsrfTokenRepository())
                 .csrfTokenRequestHandler(apiCsrfRequestHandler)
-                // ĐẢO NGƯỢC mặc định: mặc định là "chặn tất cả trừ danh sách bỏ qua", ở đây là
-                // "chỉ chặn đúng những path này". requireCsrfProtectionMatcher thay THẲNG matcher
-                // mặc định, kể cả luật bỏ qua GET/HEAD/TRACE/OPTIONS -- nên phải tự ghim METHOD,
-                // để trống là GET trên path đó cũng bị đòi token.
+                // REVERSES the default: the default is "protect everything except the skip list", here it is
+                // "protect only exactly these paths". requireCsrfProtectionMatcher replaces the default matcher
+                // DIRECTLY, including the rule that skips GET/HEAD/TRACE/OPTIONS -- so the METHOD must be pinned by hand,
+                // leaving it empty means a GET on those paths is also asked for a token.
                 .requireCsrfProtectionMatcher(new OrRequestMatcher(csrfProtectedMatchers)))
             .formLogin(fl -> fl.disable())
             .httpBasic(hb -> hb.disable())
@@ -411,12 +405,12 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        var allowedOrigins = validatedAllowedOrigins();
+        List<String> allowedOrigins = validatedAllowedOrigins();
 
-        var config = new CorsConfiguration();
-        // setAllowedOrigins chứ không phải setAllowedOriginPatterns: bản pattern so khớp
-        // bằng wildcard nên một dấu '*' lọt vào cấu hình là mở API cho toàn bộ internet
-        // kèm cookie đăng nhập, mà vẫn khởi động bình thường không báo gì.
+        CorsConfiguration config = new CorsConfiguration();
+        // setAllowedOrigins and not setAllowedOriginPatterns: the pattern version matches
+        // by wildcard, so a stray '*' in the configuration opens the API to the whole internet
+        // together with the login cookie, while the app still starts normally without any warning.
         config.setAllowedOrigins(allowedOrigins);
         config.setAllowedMethods(CORS_ALLOWED_METHODS);
         config.setAllowCredentials(CORS_ALLOW_CREDENTIALS);
@@ -424,7 +418,7 @@ public class SecurityConfig {
         config.setExposedHeaders(CORS_EXPOSED_HEADERS);
         config.setMaxAge(CORS_MAX_AGE);
 
-        var urlBasedSource = new UrlBasedCorsConfigurationSource();
+        UrlBasedCorsConfigurationSource urlBasedSource = new UrlBasedCorsConfigurationSource();
         urlBasedSource.registerCorsConfiguration("/**", config);
         return urlBasedSource;
     }
@@ -446,12 +440,12 @@ public class SecurityConfig {
     }
 
     /**
-     * Chặn ngay lúc khởi động các cấu hình origin sai -- khi đã chạy rồi thì mọi lỗi ở đây
-     * đều hiện ra dưới dạng "thiếu header Access-Control-Allow-Origin" ở phía trình duyệt,
-     * không kèm chút manh mối nào trong log server.
+     * Block wrong origin configurations right at startup -- once running, every error here
+     * shows up on the browser side as "missing Access-Control-Allow-Origin header",
+     * with not a single clue in the server log.
      */
     private List<String> validatedAllowedOrigins() {
-        var allowedOrigins = corsProperties.allowedOrigins();
+        List<String> allowedOrigins = corsProperties.allowedOrigins();
 
         if (allowedOrigins.isEmpty()) {
             throw new InfrastructureException(
@@ -459,7 +453,7 @@ public class SecurityConfig {
                     + "Đặt biến môi trường CORS_ALLOWED_ORIGINS.");
         }
 
-        var malformed = allowedOrigins.stream()
+        List<String> malformed = allowedOrigins.stream()
             .filter(origin -> !ORIGIN_PATTERN.matcher(origin).matches())
             .toList();
         if (!malformed.isEmpty()) {
@@ -473,13 +467,7 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new Argon2PasswordEncoder(
-            ARGON2_SALT_LENGTH, 
-            ARGON2_HASH_LENGTH, 
-            ARGON2_PARALLELISM, 
-            ARGON2_MEMORY, 
-            ARGON2_ITERATION
-        );
+        return Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8();
     }
 
 

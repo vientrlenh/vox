@@ -1,7 +1,9 @@
 package com.sep.vox.application.port.input.usecase.practicesession;
 
+import com.sep.vox.application.query.dto.PracticeDashboardCountsInfo;
 import java.time.LocalDate;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,9 +28,9 @@ public class ViewPracticeDashboardStatsUseCase implements IUseCase<Void, Practic
     @Override
     @Transactional(readOnly = true)
     public PracticeDashboardStats execute(Void input) {
-        var studentId = userContextPort.getCurrentAuthenticatedUserId();
-        var counts = practiceSessionQueryRepository.findDashboardCounts(studentId);
-        var streak = computeStreak(
+        UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
+        PracticeDashboardCountsInfo counts = practiceSessionQueryRepository.findDashboardCounts(studentId);
+        int streak = computeStreak(
             practiceSessionQueryRepository.findCompletedSessionDatesDesc(studentId)
         );
         return new PracticeDashboardStats(
@@ -42,10 +44,10 @@ public class ViewPracticeDashboardStatsUseCase implements IUseCase<Void, Practic
         if (completedDatesDesc.isEmpty()) {
             return 0;
         }
-        var today = LocalDate.now();
-        var expected = completedDatesDesc.get(0).equals(today) ? today : today.minusDays(1);
-        var streak = 0;
-        for (var date : completedDatesDesc) {
+        LocalDate today = LocalDate.now();
+        LocalDate expected = completedDatesDesc.get(0).equals(today) ? today : today.minusDays(1);
+        int streak = 0;
+        for (LocalDate date : completedDatesDesc) {
             if (!date.equals(expected)) {
                 break;
             }

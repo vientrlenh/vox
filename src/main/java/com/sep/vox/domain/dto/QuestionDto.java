@@ -1,5 +1,6 @@
 package com.sep.vox.domain.dto;
 
+import java.time.Instant;
 import java.util.UUID;
 
 public record QuestionDto(
@@ -21,8 +22,8 @@ public record QuestionDto(
     String status,
     String confidentiality,
     UUID securePoolId,
-    String createdAt,
-    String updatedAt,
+    Instant createdAt,
+    Instant updatedAt,
     UUID createdBy,
     UUID updatedBy
 ) {

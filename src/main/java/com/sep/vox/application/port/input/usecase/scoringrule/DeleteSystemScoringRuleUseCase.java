@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.scoringrule;
 
+import com.sep.vox.domain.model.user.User;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -43,7 +44,7 @@ public class DeleteSystemScoringRuleUseCase implements IUseCase<DeleteScoringRul
     public Void execute(DeleteScoringRuleCommand command) {
         // 1. Kiểm tra tài khoản System Admin
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var currentUser = userRepository.findById(currentUserId)
+        User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("Tài khoản đã bị khóa.");

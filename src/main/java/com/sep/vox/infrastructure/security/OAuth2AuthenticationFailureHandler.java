@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.security;
 
+import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
@@ -9,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -31,10 +33,10 @@ public class OAuth2AuthenticationFailureHandler implements AuthenticationFailure
             AuthenticationException exception) throws IOException, ServletException {
         clearSession(request);
 
-        var message = resolveMessage(exception);
+        String message = resolveMessage(exception);
         LOGGER.warn("OAuth2 login failed: {}", exception.getMessage());
 
-        var url = UriComponentsBuilder.fromUriString(returnUrl)
+        String url = UriComponentsBuilder.fromUriString(returnUrl)
                 .queryParam("error", message)
                 .encode(StandardCharsets.UTF_8)
                 .build()
@@ -44,7 +46,7 @@ public class OAuth2AuthenticationFailureHandler implements AuthenticationFailure
 
     private String resolveMessage(AuthenticationException e) {
         if (e instanceof OAuth2AuthenticationException oae) {
-            var error = oae.getError();
+            OAuth2Error error = oae.getError();
             if (KNOWN_CODES.contains(error.getErrorCode())) {
                 return error.getErrorCode();
             }
@@ -53,7 +55,7 @@ public class OAuth2AuthenticationFailureHandler implements AuthenticationFailure
     }
 
     private void clearSession(HttpServletRequest request) {
-        var session = request.getSession(false);
+        HttpSession session = request.getSession(false);
         if (session != null) {
             session.removeAttribute("oauth2_device_id");
             session.removeAttribute("oauth2_device_name");

@@ -42,18 +42,18 @@ public class GradingDeadlineReminderJob {
 
     @Scheduled(fixedDelay = 900000)
     public void remind() {
-        // Ngưỡng chốt MỘT lần cho cả lượt: tính lại mỗi lô sẽ làm cửa sổ trôi dần và
-        // kéo vào những phân công chưa tới lúc nhắc.
-        var threshold = Instant.now().plus(Duration.ofHours(REMIND_BEFORE_HOURS));
-        var total = 0;
+        // The cutoff is fixed ONCE for the whole run: recomputing it per batch would make the window drift and
+        // pull in assignments that are not yet due for a reminder.
+        Instant threshold = Instant.now().plus(Duration.ofHours(REMIND_BEFORE_HOURS));
+        int total = 0;
 
-        for (var pass = 0; pass < MAX_PASSES_PER_RUN; pass++) {
+        for (int pass = 0; pass < MAX_PASSES_PER_RUN; pass++) {
             int reminded;
             try {
                 reminded = gradingDeadlineReminderBatch.remindOnce(threshold);
             } catch (Exception e) {
-                // Lô sau cũng sẽ hỏng vì cùng nguyên nhân; dừng và để lượt 15 phút sau
-                // thử lại thay vì quay vòng trên một lỗi.
+                // The next batch will also fail for the same cause; stop and let the run 15 minutes later
+                // try again instead of spinning on one error.
                 log.error("Lỗi khi gửi nhắc hạn chấm, dừng lượt này", e);
                 break;
             }

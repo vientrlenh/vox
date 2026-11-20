@@ -42,9 +42,9 @@ public class SchoolSubscriptionSuspensionNotificationService {
     }
 
     public void publishSuspended(UUID subscriptionId, UUID schoolId, String reason, Instant now) {
-        var schoolAdminIds = schoolAdminIdsOf(schoolId);
+        List<UUID> schoolAdminIds = schoolAdminIdsOf(schoolId);
 
-        var payload = jsonSerializationPort.toJson(new SchoolSubscriptionSuspendedPayloadV1(
+        String payload = jsonSerializationPort.toJson(new SchoolSubscriptionSuspendedPayloadV1(
             schoolAdminIds, schoolId, subscriptionId, reason, now
         ));
 
@@ -55,9 +55,9 @@ public class SchoolSubscriptionSuspensionNotificationService {
     }
 
     public void publishUnsuspended(UUID subscriptionId, UUID schoolId, Instant now) {
-        var schoolAdminIds = schoolAdminIdsOf(schoolId);
+        List<UUID> schoolAdminIds = schoolAdminIdsOf(schoolId);
 
-        var payload = jsonSerializationPort.toJson(new SchoolSubscriptionUnsuspendedPayloadV1(
+        String payload = jsonSerializationPort.toJson(new SchoolSubscriptionUnsuspendedPayloadV1(
             schoolAdminIds, schoolId, subscriptionId, now
         ));
 

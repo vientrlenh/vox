@@ -20,8 +20,8 @@ public class ImportQueueService {
 
     @Transactional
     public List<UUID> claimQueued(UUID worker, int limit, Duration lease) {
-        var now = Instant.now();
-        var ids = importSessionRepository.lockQueueIds(limit);
+        Instant now = Instant.now();
+        List<UUID> ids = importSessionRepository.lockQueueIds(limit);
         if (!ids.isEmpty()) {
             importSessionRepository.markClaimed(ids, worker, now, now.plus(lease));
         }

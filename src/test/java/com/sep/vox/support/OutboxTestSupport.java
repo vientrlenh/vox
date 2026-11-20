@@ -28,9 +28,12 @@ public final class OutboxTestSupport {
         return new JacksonJsonSerializationService(JSON_MAPPER);
     }
 
-    /** Dòng outbox đầu tiên có đúng {@code eventType}; ném {@link AssertionError} nếu không có. */
+    /**
+     * The first outbox row with exactly this {@code eventType}; throws {@link AssertionError} if
+     * there is none.
+     */
     public static Outbox captureOutbox(OutboxRepository outboxRepository, String eventType) {
-        var captor = ArgumentCaptor.forClass(Outbox.class);
+        ArgumentCaptor<Outbox> captor = ArgumentCaptor.forClass(Outbox.class);
         verify(outboxRepository, atLeastOnce()).save(captor.capture());
         return captor.getAllValues().stream()
             .filter(outbox -> eventType.equals(outbox.getEventType()))

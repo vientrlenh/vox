@@ -10,15 +10,15 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 
 /**
- * Phải có {@code examId} hoặc {@code scheduleId} — ràng buộc "ít nhất một" nằm ở
- * use case vì Bean Validation không diễn đạt được nó gọn hơn. Ràng buộc
- * "{@code percent} bắt buộc khi chế độ là RANDOM_PERCENT" cũng vậy.
+ * Either {@code assessmentId} or {@code scheduleId} must be present -- the "at least one" constraint lives in the
+ * use case because Bean Validation cannot express it more concisely. The same goes for the constraint
+ * "{@code percent} is required when the mode is RANDOM_PERCENT".
  *
  * @param selectionMode {@code ALL} | {@code RANDOM_PERCENT} | {@code RISK_BASED} |
- *                      {@code MANUAL_LIST}; bỏ trống = {@code ALL}
+ *                      {@code MANUAL_LIST}; empty = {@code ALL}
  */
 public record AutoAssignGradingRequest(
-    UUID examId,
+    UUID assessmentId,
 
     UUID scheduleId,
 

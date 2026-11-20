@@ -22,6 +22,7 @@ import com.sep.vox.application.mapper.importfile.ImportRowResponseMapper;
 import com.sep.vox.application.port.input.query.ViewImportRowsQuery;
 import com.sep.vox.application.port.input.usecase.importfile.ViewImportRowsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.response.input.importfile.ImportRowResponse;
 import com.sep.vox.application.support.FakeJsonSerializationPort;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.importfile.ImportRow;
@@ -77,14 +78,14 @@ class ViewImportRowsUseCaseTests {
 
     @Test
     void execute_should_return_rows_for_current_school_with_status_filter() {
-        var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var sessionId = UUID.randomUUID();
-        var row = row(sessionId, ImportRowStatus.INVALID, jsonSerializationPort);
-        var page = new PageResult<>(List.of(row), 1, 20, 1L, 1);
+        UUID userId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
+        ImportRow row = row(sessionId, ImportRowStatus.INVALID, jsonSerializationPort);
+        PageResult<ImportRow> page = new PageResult<>(List.of(row), 1, 20, 1L, 1);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        var _user = activeUser(userId, schoolId);
+        User _user = activeUser(userId, schoolId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(_user));
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of(schoolAdminRoleInfo(userId)));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
@@ -92,7 +93,7 @@ class ViewImportRowsUseCaseTests {
         when(importRowRepository.findBySessionId(sessionId, ImportRowStatus.INVALID, 1, 20))
             .thenReturn(page);
 
-        var response = useCase.execute(new ViewImportRowsQuery(sessionId, 1, 20, "INVALID"));
+        PageResult<ImportRowResponse> response = useCase.execute(new ViewImportRowsQuery(sessionId, 1, 20, ImportRowStatus.INVALID));
 
         assertThat(response.content()).hasSize(1);
         assertThat(response.content().get(0).rawData()).extracting("key").containsExactly("Mã lớp");
@@ -102,13 +103,13 @@ class ViewImportRowsUseCaseTests {
     }
 
     @Test
-    void execute_should_pass_null_status_when_status_blank() {
-        var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var sessionId = UUID.randomUUID();
+    void execute_should_pass_null_status_when_status_absent() {
+        UUID userId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        var _user1 = activeUser(userId, schoolId);
+        User _user1 = activeUser(userId, schoolId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(_user1));
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of(schoolAdminRoleInfo(userId)));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
@@ -116,19 +117,19 @@ class ViewImportRowsUseCaseTests {
         when(importRowRepository.findBySessionId(sessionId, null, 2, 10))
             .thenReturn(new PageResult<>(List.of(), 2, 10, 0L, 0));
 
-        useCase.execute(new ViewImportRowsQuery(sessionId, 2, 10, " "));
+        useCase.execute(new ViewImportRowsQuery(sessionId, 2, 10, null));
 
         verify(importRowRepository).findBySessionId(sessionId, null, 2, 10);
     }
 
     @Test
     void execute_should_throw_when_session_belongs_to_other_school() {
-        var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var sessionId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        var _user2 = activeUser(userId, schoolId);
+        User _user2 = activeUser(userId, schoolId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(_user2));
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of(schoolAdminRoleInfo(userId)));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
@@ -139,12 +140,12 @@ class ViewImportRowsUseCaseTests {
 
     @Test
     void execute_should_throw_when_session_not_found() {
-        var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var sessionId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        var _user3 = activeUser(userId, schoolId);
+        User _user3 = activeUser(userId, schoolId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(_user3));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.empty());
@@ -159,16 +160,11 @@ class ViewImportRowsUseCaseTests {
     }
 
     @Test
-    void execute_should_throw_when_status_invalid() {
-        assertThrows(IllegalArgumentException.class, () -> useCase.execute(new ViewImportRowsQuery(UUID.randomUUID(), 1, 20, "UNKNOWN")));
-    }
-
-    @Test
     void execute_should_throw_when_current_user_inactive() {
-        var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        var _user4 = inactiveUser(userId, schoolId);
+        User _user4 = inactiveUser(userId, schoolId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(_user4));
 
         assertThrows(IllegalStateException.class, () -> useCase.execute(new ViewImportRowsQuery(UUID.randomUUID(), 1, 20, null)));
@@ -176,10 +172,10 @@ class ViewImportRowsUseCaseTests {
 
     @Test
     void execute_should_throw_when_current_user_has_no_school() {
-        var userId = UUID.randomUUID();
-        var sessionId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        var _user5 = activeUser(userId, null);
+        User _user5 = activeUser(userId, null);
         when(userRepository.findById(userId)).thenReturn(Optional.of(_user5));
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of(schoolAdminRoleInfo(userId)));
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session(sessionId, UUID.randomUUID())));
@@ -189,11 +185,11 @@ class ViewImportRowsUseCaseTests {
 
     @Test
     void execute_should_throw_when_school_inactive() {
-        var userId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var sessionId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        var _user6 = activeUser(userId, schoolId);
+        User _user6 = activeUser(userId, schoolId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(_user6));
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of(schoolAdminRoleInfo(userId)));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(inactiveSchool(schoolId)));
@@ -244,7 +240,7 @@ class ViewImportRowsUseCaseTests {
     }
 
     private User activeUser(UUID id, UUID schoolId) {
-        var user = new User();
+        User user = new User();
         user.setId(id);
         user.setStatus(UserStatus.ACTIVE);
         when(schoolUserRepository.findByUserId(id)).thenReturn(
@@ -254,20 +250,20 @@ class ViewImportRowsUseCaseTests {
     }
 
     private User inactiveUser(UUID id, UUID schoolId) {
-        var user = activeUser(id, schoolId);
+        User user = activeUser(id, schoolId);
         user.setStatus(UserStatus.INACTIVE);
         return user;
     }
 
     private static School activeSchool(UUID id) {
-        var school = new School();
+        School school = new School();
         school.setId(id);
         school.setActive(true);
         return school;
     }
 
     private static School inactiveSchool(UUID id) {
-        var school = activeSchool(id);
+        School school = activeSchool(id);
         school.setActive(false);
         return school;
     }

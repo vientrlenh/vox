@@ -1,3 +1,39 @@
+enum ImportType {
+    USER
+    SCHOOL_CLASS
+    QUESTION
+    SCHOOL_CLASS_USER
+    SCHOOL_DIRECTORY
+    SCHOOL_GRADE
+    SCHOOL_ROOM
+    RUBRIC_VERSION
+    RUBRIC_CRITERION
+    RUBRIC_RESULT_BAND
+    ASSESSMENT_POLICY
+    QUESTION_BANK
+    QUESTION_TOPIC
+}
+
+enum ImportSessionStatus {
+    PREVIEWED
+    VALIDATING
+    IMPORTING
+    QUEUED
+    COMPLETED
+    FAILED
+    EXPIRED
+    CANCELLED
+}
+
+enum ImportRowStatus {
+    PENDING
+    VALID
+    INVALID
+    IMPORTED
+    SKIPPED
+    FAILED
+}
+
 type ImportMappingEntry {
     originalHeader: String!
     systemField: String!
@@ -15,11 +51,11 @@ type ImportRowError {
 
 type ImportSession {
     id: ID!
-    # Phiên import phạm vi hệ thống (System Admin tạo) không gắn trường nào, nên
-    # schoolId phải nullable - nếu khai ID! thì null-bubbling sẽ làm cả
-    # ImportSession trả về null.
+    # A system-wide import session (created by a System Admin) belongs to no school, so
+    # schoolId must be nullable - declaring it as ID! would let null-bubbling turn the whole
+    # ImportSession into null.
     schoolId: ID
-    type: String!
+    type: ImportType!
     fileName: String!
     originalHeaders: [String!]!
     suggestedMapping: [ImportMappingEntry!]!
@@ -30,27 +66,27 @@ type ImportSession {
     skippedRows: Int!
     totalRows: Int!
     failureReason: String
-    status: String!
+    status: ImportSessionStatus!
     importedEntityId: ID
-    expiresAt: String
-    createdAt: String
-    updatedAt: String
+    expiresAt: DateTime
+    createdAt: DateTime
+    updatedAt: DateTime
 }
 
 type ImportSessionSummary {
     id: ID!
     schoolId: ID
-    type: String!
+    type: ImportType!
     fileName: String!
     totalRows: Int!
     validRows: Int!
     invalidRows: Int!
     importedRows: Int!
     skippedRows: Int!
-    status: String!
-    expiresAt: String
-    createdAt: String
-    updatedAt: String
+    status: ImportSessionStatus!
+    expiresAt: DateTime
+    createdAt: DateTime
+    updatedAt: DateTime
 }
 
 type ImportSessionPage {
@@ -68,7 +104,7 @@ type ImportRow {
     rawData: [ImportDataEntry!]!
     mappedData: [ImportDataEntry!]!
     errors: [ImportRowError!]!
-    status: String!
+    status: ImportRowStatus!
 }
 
 type ImportRowPage {
@@ -81,6 +117,6 @@ type ImportRowPage {
 
 extend type Query {
     importSession(id: ID!): ImportSession
-    importSessions(page: Int = 1, size: Int = 20, type: String, status: String): ImportSessionPage!
-    importRows(sessionId: ID!, page: Int = 1, size: Int = 20, status: String): ImportRowPage!
+    importSessions(page: Int = 1, size: Int = 20, type: ImportType, status: ImportSessionStatus): ImportSessionPage!
+    importRows(sessionId: ID!, page: Int = 1, size: Int = 20, status: ImportRowStatus): ImportRowPage!
 }

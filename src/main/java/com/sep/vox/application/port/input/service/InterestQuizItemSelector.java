@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.service;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.springframework.stereotype.Service;
@@ -36,8 +37,8 @@ public class InterestQuizItemSelector {
     }
 
     public List<InterestQuizSeedItem> select(List<InterestQuizSeedItem> pool, int count) {
-        var eligible = Set.copyOf(interestQuizScorer.quizDimensionCodes());
-        var usable = pool.stream()
+        Set<String> eligible = Set.copyOf(interestQuizScorer.quizDimensionCodes());
+        List<InterestQuizSeedItem> usable = pool.stream()
             .filter(item -> item.getDimensionPerStatement() != null
                 && item.getDimensionPerStatement().size() == 3
                 && eligible.containsAll(item.getDimensionPerStatement()))
@@ -46,14 +47,14 @@ public class InterestQuizItemSelector {
             return usable;
         }
 
-        var coverage = new HashMap<String, Integer>();
-        var remaining = new ArrayList<>(usable);
-        var selected = new ArrayList<InterestQuizSeedItem>();
+        Map<String, Integer> coverage = new HashMap<String, Integer>();
+        List<InterestQuizSeedItem> remaining = new ArrayList<>(usable);
+        List<InterestQuizSeedItem> selected = new ArrayList<InterestQuizSeedItem>();
         while (selected.size() < count && !remaining.isEmpty()) {
-            var best = remaining.get(0);
-            var bestScore = coverageScore(best, coverage);
-            for (var candidate : remaining) {
-                var score = coverageScore(candidate, coverage);
+            InterestQuizSeedItem best = remaining.get(0);
+            double bestScore = coverageScore(best, coverage);
+            for (InterestQuizSeedItem candidate : remaining) {
+                double score = coverageScore(candidate, coverage);
                 if (score > bestScore) {
                     best = candidate;
                     bestScore = score;
@@ -61,7 +62,7 @@ public class InterestQuizItemSelector {
             }
             remaining.remove(best);
             selected.add(best);
-            for (var dimension : best.getDimensionPerStatement()) {
+            for (String dimension : best.getDimensionPerStatement()) {
                 coverage.merge(dimension, 1, (current, delta) -> current + delta);
             }
         }
@@ -73,8 +74,8 @@ public class InterestQuizItemSelector {
     private static double coverageScore(
             InterestQuizSeedItem item,
             java.util.Map<String, Integer> coverage) {
-        var score = 0.0;
-        for (var dimension : item.getDimensionPerStatement()) {
+        double score = 0.0;
+        for (String dimension : item.getDimensionPerStatement()) {
             score += 1.0 / (1 + coverage.getOrDefault(dimension, 0));
         }
         return score;

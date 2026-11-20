@@ -8,6 +8,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 import com.sep.vox.application.exception.UnauthorizedException;
@@ -25,47 +27,50 @@ class GoogleIdTokenProviderTests {
     private static final String DESKTOP_CLIENT_ID = "222-desktop.apps.googleusercontent.com";
 
     /**
-     * Phép kiểm quan trọng nhất của cả lớp.
+     * The most important check of the whole class.
      *
-     * <p>Token trong test này là token THẬT theo mọi nghĩa còn lại -- Google ký, Google phát, còn
-     * hạn -- chỉ khác ở chỗ nó được cấp cho ứng dụng của người khác. Không có phép kiểm {@code aud}
-     * thì chữ ký, {@code iss} và hạn dùng đều nói "hợp lệ", và bất kỳ ai có một app Google bất kỳ
-     * cũng đăng nhập được vào mọi tài khoản chỉ cần biết email.
+     * <p>The token in this test is a REAL token in every other sense -- signed by Google, issued by
+     * Google, not expired -- it differs only in that it was issued to someone else's application.
+     * Without the {@code aud} check, the signature, {@code iss} and expiry all say "valid", and
+     * anyone with any Google app could log into any account just by knowing the email.
      */
     @Test
     void should_reject_a_token_minted_for_someone_elses_google_app() {
-        var validator = GoogleIdTokenProvider.audienceValidator(List.of(WEB_CLIENT_ID, DESKTOP_CLIENT_ID));
+        OAuth2TokenValidator<Jwt> validator = GoogleIdTokenProvider.audienceValidator(List.of(WEB_CLIENT_ID, DESKTOP_CLIENT_ID));
 
-        var result = validator.validate(jwt().audience(List.of("999-attacker.apps.googleusercontent.com")).build());
+        OAuth2TokenValidatorResult result = validator.validate(jwt().audience(List.of("999-attacker.apps.googleusercontent.com")).build());
 
         assertThat(result.hasErrors()).isTrue();
     }
 
-    /** Cả hai client đều phải qua: Flutter gửi aud của client WEB, WPF gửi aud của client DESKTOP. */
+    /**
+     * Both clients must pass: Flutter sends the aud of the WEB client, WPF sends the aud of the
+     * DESKTOP client.
+     */
     @Test
     void should_accept_every_configured_client_id() {
-        var validator = GoogleIdTokenProvider.audienceValidator(List.of(WEB_CLIENT_ID, DESKTOP_CLIENT_ID));
+        OAuth2TokenValidator<Jwt> validator = GoogleIdTokenProvider.audienceValidator(List.of(WEB_CLIENT_ID, DESKTOP_CLIENT_ID));
 
         assertThat(validator.validate(jwt().audience(List.of(WEB_CLIENT_ID)).build()).hasErrors()).isFalse();
         assertThat(validator.validate(jwt().audience(List.of(DESKTOP_CLIENT_ID)).build()).hasErrors()).isFalse();
     }
 
-    /** Chưa cấu hình thì không có client nào hợp lệ -- KHÔNG phải "mọi client đều hợp lệ". */
+    /** Not configured means no client is valid -- NOT "every client is valid". */
     @Test
     void should_reject_everything_when_no_audience_is_configured() {
-        var validator = GoogleIdTokenProvider.audienceValidator(List.of());
+        OAuth2TokenValidator<Jwt> validator = GoogleIdTokenProvider.audienceValidator(List.of());
 
         assertThat(validator.validate(jwt().audience(List.of(WEB_CLIENT_ID)).build()).hasErrors()).isTrue();
     }
 
     /**
-     * Google phát {@code iss} theo HAI dạng cho cùng một token, có và không có {@code https://}.
-     * Chấp nhận đúng một dạng là từ chối ngẫu nhiên một phần số lần đăng nhập thật -- triệu chứng
-     * ("thỉnh thoảng sai") che mất nguyên nhân.
+     * Google issues {@code iss} in TWO forms for the same token, with and without {@code https://}.
+     * Accepting only one form randomly rejects a share of real logins -- and the symptom
+     * ("sometimes wrong") hides the cause.
      */
     @Test
     void should_accept_both_issuer_spellings_google_actually_uses() {
-        var validator = GoogleIdTokenProvider.issuerValidator(
+        OAuth2TokenValidator<Jwt> validator = GoogleIdTokenProvider.issuerValidator(
             List.of("https://accounts.google.com", "accounts.google.com"));
 
         assertThat(validator.validate(jwt().issuer("https://accounts.google.com").build()).hasErrors()).isFalse();
@@ -74,44 +79,44 @@ class GoogleIdTokenProviderTests {
 
     @Test
     void should_reject_a_token_from_another_issuer() {
-        var validator = GoogleIdTokenProvider.issuerValidator(List.of("https://accounts.google.com"));
+        OAuth2TokenValidator<Jwt> validator = GoogleIdTokenProvider.issuerValidator(List.of("https://accounts.google.com"));
 
         assertThat(validator.validate(jwt().issuer("https://accounts.evil.example").build()).hasErrors()).isTrue();
     }
 
     /**
-     * Chưa cấu hình aud thì từ chối NGAY, trước cả khi chạm tới Google.
+     * If aud is not configured, reject IMMEDIATELY, even before touching Google.
      *
-     * <p>Không phải tối ưu tốc độ: nếu để token đi tiếp thì phép kiểm aud với danh sách rỗng vẫn
-     * trượt, nhưng người vận hành sẽ đọc được "token không hợp lệ" cho một token hoàn toàn hợp lệ.
-     * Đây là lỗi CẤU HÌNH và thông báo phải nói đúng như vậy.
+     * <p>This is not a speed optimization: if the token were allowed to continue, the aud check
+     * against an empty list would still fail, but the operator would read "invalid token" for a
+     * completely valid token. This is a CONFIGURATION error and the message must say exactly that.
      */
     @Test
     void should_fail_loudly_when_the_feature_is_not_configured() {
-        var provider = new GoogleIdTokenProvider(properties(List.of()));
+        GoogleIdTokenProvider provider = new GoogleIdTokenProvider(properties(List.of()));
 
         assertThatThrownBy(() -> provider.verify("bat-ky-chuoi-nao"))
             .isInstanceOf(UnauthorizedException.class)
             .hasMessageContaining("chưa được cấu hình");
     }
 
-    /** Token rỗng không đáng một vòng mạng ra Google. */
+    /** An empty token is not worth a network round trip to Google. */
     @Test
     void should_reject_a_blank_token_without_calling_google() {
-        var provider = new GoogleIdTokenProvider(properties(List.of(WEB_CLIENT_ID)));
+        GoogleIdTokenProvider provider = new GoogleIdTokenProvider(properties(List.of(WEB_CLIENT_ID)));
 
         assertThatThrownBy(() -> provider.verify("  ")).isInstanceOf(UnauthorizedException.class);
     }
 
     /**
-     * iss/jwk-set-uri là hằng số của Google, không phải thứ mỗi môi trường tự đặt.
+     * iss/jwk-set-uri are Google's constants, not something each environment sets for itself.
      *
-     * <p>Danh sách đầu vào cố ý bẩn: {@code Arrays.asList} chứ không phải {@code List.of} vì nó CHO
-     * PHÉP null, đúng thứ mà một biến môi trường thừa dấu phẩy sinh ra.
+     * <p>The input list is deliberately dirty: {@code Arrays.asList} rather than {@code List.of}
+     * because it ALLOWS null, exactly what an environment variable with a stray comma produces.
      */
     @Test
     void should_default_the_google_constants_so_only_audiences_need_configuring() {
-        var properties = new GoogleIdTokenProperties(
+        GoogleIdTokenProperties properties = new GoogleIdTokenProperties(
             Arrays.asList(" " + WEB_CLIENT_ID + " ", "", null), null, null);
 
         assertThat(properties.allowedAudiences()).containsExactly(WEB_CLIENT_ID);
@@ -125,11 +130,12 @@ class GoogleIdTokenProviderTests {
     }
 
     /**
-     * Dựng {@link Jwt} bằng builder thay vì ký thật: hai validator đang test chỉ đọc claim, nên một
-     * cặp khoá RSA và một JWK set chạy tại chỗ chỉ để chốt một phép so chuỗi là công vô ích.
+     * Builds the {@link Jwt} with the builder instead of signing for real: the two validators under
+     * test only read claims, so running an RSA key pair and a JWK set locally just to pin a string
+     * comparison is wasted effort.
      */
     private static Jwt.Builder jwt() {
-        var now = Instant.now();
+        Instant now = Instant.now();
         return Jwt.withTokenValue("token")
             .header("alg", "RS256")
             .subject("google-sub-1")

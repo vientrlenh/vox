@@ -6,8 +6,8 @@ public interface MailTemplatePort {
     String renderRejectRegisterFormEmail(String reason);
     String renderResetPasswordOtpEmail(String otp, String expiresIn);
     String renderRegisterVerificationOtpEmail(String otp, String expiresIn);
-    String renderAppealRejectedEmail(String examName, String reason);
-    String renderAppealPublishedEmail(String examName, String scoreBefore, String scoreAfter);
+    String renderAppealRejectedEmail(String assessmentName, String reason);
+    String renderAppealPublishedEmail(String assessmentName, String scoreBefore, String scoreAfter);
 
     // ---- thông báo vòng đời điểm ------------------------------------------
     //
@@ -17,26 +17,26 @@ public interface MailTemplatePort {
     // Chữ nghĩa vẫn nằm ở tầng render, không rò xuống listener.
 
     /** Điểm được công bố lần đầu. */
-    String renderResultReleasedEmail(String examName, String totalScore);
+    String renderResultReleasedEmail(String assessmentName, String totalScore);
 
     /** Điểm ĐÃ công bố nay thay đổi (hậu kiểm hoặc phúc khảo). */
-    String renderResultRegradedEmail(String examName, String roundLabel, String scoreBefore, String scoreAfter);
+    String renderResultRegradedEmail(String assessmentName, String roundLabel, String scoreBefore, String scoreAfter);
 
-    String renderResultInvalidatedEmail(String examName, String reason);
+    String renderResultInvalidatedEmail(String assessmentName, String reason);
 
-    String renderResultInvalidClearedEmail(String examName, String reason);
+    String renderResultInvalidClearedEmail(String assessmentName, String reason);
 
     /** Đơn phúc khảo đã được duyệt và đã có người chấm. */
-    String renderAppealApprovedEmail(String examName, String deadline);
+    String renderAppealApprovedEmail(String assessmentName, String deadline);
 
     /** Kết quả chốt PASSED/FAILED sau khi kỳ thi công bố. */
-    String renderResultOutcomeDecidedEmail(String examName, String outcomeLabel, String totalScore);
+    String renderResultOutcomeDecidedEmail(String assessmentName, String outcomeLabel, String totalScore);
 
     /** Nhắc giáo viên phân công sắp/đã tới hạn. */
-    String renderGradingDeadlineReminderEmail(String examName, String roundLabel, String deadline);
+    String renderGradingDeadlineReminderEmail(String assessmentName, String roundLabel, String deadline);
 
     /** Báo admin có giáo viên trả lại phân công. */
-    String renderGradingDeclinedEmail(String examName, String teacherName, String reason);
+    String renderGradingDeclinedEmail(String assessmentName, String teacherName, String reason);
 
     /**
      * Hóa đơn thanh toán PayOS thành công (subscription mới/gia hạn/mua thêm token).

@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 public record ReportAiUsageCommand(
-    UUID examSessionId,
+    UUID assessmentSessionId,
     List<RecordAiUsageCommand> usageEvents
 ) {
 }

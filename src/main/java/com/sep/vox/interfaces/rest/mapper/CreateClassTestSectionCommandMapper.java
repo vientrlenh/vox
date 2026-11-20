@@ -10,9 +10,9 @@ public final class CreateClassTestSectionCommandMapper {
     private CreateClassTestSectionCommandMapper() {
     }
 
-    public static CreateClassTestSectionCommand fromRequest(UUID examId, CreateClassTestSectionRequest request) {
+    public static CreateClassTestSectionCommand fromRequest(UUID assessmentId, CreateClassTestSectionRequest request) {
         return new CreateClassTestSectionCommand(
-            examId,
+            assessmentId,
             request.paperId(),
             request.title(),
             request.instruction(),

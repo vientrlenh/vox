@@ -7,9 +7,9 @@ public record DateOfBirth(
 ) {
     public DateOfBirth {
         if (value != null) {
-            final var ageThresHold = 14;
-            final var now = LocalDate.now();
-            final var age = now.getYear() - value.getYear();
+            final int ageThresHold = 14;
+            final LocalDate now = LocalDate.now();
+            final int age = now.getYear() - value.getYear();
             if (age < ageThresHold) {
                 throw new IllegalArgumentException("Bạn chưa đủ tuổi để thực hiện đăng ký");
             }

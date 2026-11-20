@@ -2,6 +2,9 @@ package com.sep.vox.application.port.input.usecase.rubricsystem;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sep.vox.domain.model.rubric.Rubric;
+import com.sep.vox.domain.model.rubric.RubricCriterion;
+import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.service.rubric.RubricOrderValidator;
 import com.sep.vox.domain.service.rubric.ScoreRangeValidator;
 import com.sep.vox.application.common.StringNormalization;
@@ -65,18 +68,18 @@ public class UpdateSystemRubricCriterionUseCase implements IUseCase<UpdateSystem
         }
 
         // 2. Lấy Criterion
-        var criterion = rubricCriterionRepository.findById(command.criterionId())
+        RubricCriterion criterion = rubricCriterionRepository.findById(command.criterionId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Tiêu chí (Criterion) này."));
 
         // 3. Lấy Version và kiểm tra DRAFT
-        var version = rubricVersionRepository.findById(criterion.getRubricVersionId())
+        RubricVersion version = rubricVersionRepository.findById(criterion.getRubricVersionId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Rubric Version chứa tiêu chí này."));
         if (version.getStatus() != RubricStatus.DRAFT) {
             throw new IllegalStateException("Chỉ có thể sửa tiêu chí khi phiên bản Rubric đang ở trạng thái DRAFT.");
         }
 
         // 4. Lấy Rubric gốc và kiểm tra quyền SYSTEM
-        var rubric = rubricRepository.findById(version.getRubricId())
+        Rubric rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             throw new ForbiddenException("Hành động bị từ chối: Tiêu chí này thuộc về Trường học.");

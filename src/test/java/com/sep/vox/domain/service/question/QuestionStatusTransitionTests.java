@@ -34,7 +34,7 @@ class QuestionStatusTransitionTests {
 
     @Test
     void should_allow_the_owner_to_submit_a_draft() {
-        var rejection = QuestionStatusTransition.rejectionFor(
+        QuestionStatusTransition.Rejection rejection = QuestionStatusTransition.rejectionFor(
             question(QuestionStatus.DRAFT), systemBank(), false, owner(), "SUBMIT", null);
 
         assertThat(rejection).isNull();
@@ -42,7 +42,7 @@ class QuestionStatusTransitionTests {
 
     @Test
     void should_allow_the_owner_to_submit_a_question_sent_back_for_revision() {
-        var rejection = QuestionStatusTransition.rejectionFor(
+        QuestionStatusTransition.Rejection rejection = QuestionStatusTransition.rejectionFor(
             question(QuestionStatus.REVISION_REQUESTED), systemBank(), false, owner(), "SUBMIT", null);
 
         assertThat(rejection).isNull();
@@ -50,9 +50,9 @@ class QuestionStatusTransitionTests {
 
     @Test
     void should_reject_submit_from_a_stranger() {
-        var stranger = new Actor(UUID.randomUUID(), schoolId, false, false);
+        QuestionStatusTransition.Actor stranger = new Actor(UUID.randomUUID(), schoolId, false, false);
 
-        var rejection = QuestionStatusTransition.rejectionFor(
+        QuestionStatusTransition.Rejection rejection = QuestionStatusTransition.rejectionFor(
             question(QuestionStatus.DRAFT), systemBank(), false, stranger, "SUBMIT", null);
 
         assertThat(rejection).isNotNull();
@@ -62,7 +62,7 @@ class QuestionStatusTransitionTests {
 
     @Test
     void should_reject_submit_when_the_question_is_already_under_review() {
-        var rejection = QuestionStatusTransition.rejectionFor(
+        QuestionStatusTransition.Rejection rejection = QuestionStatusTransition.rejectionFor(
             question(QuestionStatus.SUBMITTED_FOR_REVIEW), systemBank(), false, owner(), "SUBMIT", null);
 
         assertThat(rejection).isNotNull();
@@ -71,15 +71,15 @@ class QuestionStatusTransitionTests {
     }
 
     /**
-     * Lý do phải tự nó nói được vì sao câu này bị bỏ qua: đang ở trạng thái nào và cần trạng thái
-     * nào. Màn hình duyệt hàng loạt hiển thị thẳng chuỗi này cho hàng chục câu cùng lúc, nên một
-     * câu chung chung kiểu "trạng thái không hợp lệ" là vô dụng với người dùng.
+     * The reason must say by itself why this question was skipped: which status it is in and which
+     * status it needs. The bulk review screen shows this string directly for dozens of questions at
+     * once, so a generic message such as "invalid status" is useless to the user.
      */
     @Test
     void should_name_the_current_and_required_status_when_the_status_blocks_the_action() {
-        var systemAdmin = new Actor(UUID.randomUUID(), null, true, false);
+        QuestionStatusTransition.Actor systemAdmin = new Actor(UUID.randomUUID(), null, true, false);
 
-        var rejection = QuestionStatusTransition.rejectionFor(
+        QuestionStatusTransition.Rejection rejection = QuestionStatusTransition.rejectionFor(
             question(QuestionStatus.APPROVED), systemBank(), false, systemAdmin, "APPROVE", null);
 
         assertThat(rejection).isNotNull();
@@ -90,7 +90,7 @@ class QuestionStatusTransitionTests {
 
     @Test
     void should_list_every_allowed_status_when_more_than_one_is_accepted() {
-        var rejection = QuestionStatusTransition.rejectionFor(
+        QuestionStatusTransition.Rejection rejection = QuestionStatusTransition.rejectionFor(
             question(QuestionStatus.PUBLISHED), systemBank(), false, owner(), "SUBMIT", null);
 
         assertThat(rejection).isNotNull();
@@ -99,10 +99,13 @@ class QuestionStatusTransitionTests {
                 + "thao tác này chỉ áp dụng cho câu hỏi ở trạng thái \"Bản nháp\" hoặc \"Yêu cầu sửa\"");
     }
 
-    /** Tự duyệt bài của chính mình là lỗ hổng review — chặn kể cả khi là collaborator có quyền sửa. */
+    /**
+     * Approving your own work is a review hole -- block it even when the author is a collaborator
+     * with edit permission.
+     */
     @Test
     void should_reject_approve_from_the_author_even_when_they_can_edit() {
-        var rejection = QuestionStatusTransition.rejectionFor(
+        QuestionStatusTransition.Rejection rejection = QuestionStatusTransition.rejectionFor(
             question(QuestionStatus.SUBMITTED_FOR_REVIEW), systemBank(), true, owner(), "APPROVE", null);
 
         assertThat(rejection).isNotNull();
@@ -114,9 +117,9 @@ class QuestionStatusTransitionTests {
 
     @Test
     void should_allow_another_editor_collaborator_to_approve() {
-        var reviewer = new Actor(UUID.randomUUID(), schoolId, false, false);
+        QuestionStatusTransition.Actor reviewer = new Actor(UUID.randomUUID(), schoolId, false, false);
 
-        var rejection = QuestionStatusTransition.rejectionFor(
+        QuestionStatusTransition.Rejection rejection = QuestionStatusTransition.rejectionFor(
             question(QuestionStatus.SUBMITTED_FOR_REVIEW), systemBank(), true, reviewer, "APPROVE", null);
 
         assertThat(rejection).isNull();
@@ -124,9 +127,9 @@ class QuestionStatusTransitionTests {
 
     @Test
     void should_allow_a_system_admin_to_approve_on_a_system_bank() {
-        var systemAdmin = new Actor(UUID.randomUUID(), null, true, false);
+        QuestionStatusTransition.Actor systemAdmin = new Actor(UUID.randomUUID(), null, true, false);
 
-        var rejection = QuestionStatusTransition.rejectionFor(
+        QuestionStatusTransition.Rejection rejection = QuestionStatusTransition.rejectionFor(
             question(QuestionStatus.SUBMITTED_FOR_REVIEW), systemBank(), false, systemAdmin, "APPROVE", null);
 
         assertThat(rejection).isNull();
@@ -134,9 +137,9 @@ class QuestionStatusTransitionTests {
 
     @Test
     void should_reject_a_school_admin_reviewing_a_bank_of_another_school() {
-        var schoolAdmin = new Actor(UUID.randomUUID(), UUID.randomUUID(), false, true);
+        QuestionStatusTransition.Actor schoolAdmin = new Actor(UUID.randomUUID(), UUID.randomUUID(), false, true);
 
-        var rejection = QuestionStatusTransition.rejectionFor(
+        QuestionStatusTransition.Rejection rejection = QuestionStatusTransition.rejectionFor(
             question(QuestionStatus.SUBMITTED_FOR_REVIEW), schoolBank(), false, schoolAdmin, "APPROVE", null);
 
         assertThat(rejection).isNotNull();
@@ -148,9 +151,9 @@ class QuestionStatusTransitionTests {
 
     @Test
     void should_allow_a_school_admin_to_approve_on_their_own_school_bank() {
-        var schoolAdmin = new Actor(UUID.randomUUID(), schoolId, false, true);
+        QuestionStatusTransition.Actor schoolAdmin = new Actor(UUID.randomUUID(), schoolId, false, true);
 
-        var rejection = QuestionStatusTransition.rejectionFor(
+        QuestionStatusTransition.Rejection rejection = QuestionStatusTransition.rejectionFor(
             question(QuestionStatus.SUBMITTED_FOR_REVIEW), schoolBank(), false, schoolAdmin, "APPROVE", null);
 
         assertThat(rejection).isNull();
@@ -158,9 +161,9 @@ class QuestionStatusTransitionTests {
 
     @Test
     void should_require_a_note_when_rejecting() {
-        var systemAdmin = new Actor(UUID.randomUUID(), null, true, false);
+        QuestionStatusTransition.Actor systemAdmin = new Actor(UUID.randomUUID(), null, true, false);
 
-        var rejection = QuestionStatusTransition.rejectionFor(
+        QuestionStatusTransition.Rejection rejection = QuestionStatusTransition.rejectionFor(
             question(QuestionStatus.SUBMITTED_FOR_REVIEW), systemBank(), false, systemAdmin, "REJECT", "  ");
 
         assertThat(rejection).isNotNull();
@@ -171,9 +174,9 @@ class QuestionStatusTransitionTests {
 
     @Test
     void should_require_a_note_when_requesting_revision() {
-        var systemAdmin = new Actor(UUID.randomUUID(), null, true, false);
+        QuestionStatusTransition.Actor systemAdmin = new Actor(UUID.randomUUID(), null, true, false);
 
-        var rejection = QuestionStatusTransition.rejectionFor(
+        QuestionStatusTransition.Rejection rejection = QuestionStatusTransition.rejectionFor(
             question(QuestionStatus.SUBMITTED_FOR_REVIEW), systemBank(), false, systemAdmin, "REQUEST_REVISION", null);
 
         assertThat(rejection).isNotNull();
@@ -183,16 +186,18 @@ class QuestionStatusTransitionTests {
 
     @Test
     void should_allow_the_owner_to_publish_an_approved_question() {
-        var rejection = QuestionStatusTransition.rejectionFor(
+        QuestionStatusTransition.Rejection rejection = QuestionStatusTransition.rejectionFor(
             question(QuestionStatus.APPROVED), systemBank(), false, owner(), "PUBLISH", null);
 
         assertThat(rejection).isNull();
     }
 
-    /** Đưa một câu đã lưu trữ trở lại lưu thông là thao tác của admin, không phải của tác giả. */
+    /**
+     * Putting an archived question back into circulation is an admin action, not an author action.
+     */
     @Test
     void should_reject_the_owner_republishing_an_archived_question() {
-        var rejection = QuestionStatusTransition.rejectionFor(
+        QuestionStatusTransition.Rejection rejection = QuestionStatusTransition.rejectionFor(
             question(QuestionStatus.ARCHIVED), systemBank(), false, owner(), "PUBLISH", null);
 
         assertThat(rejection).isNotNull();
@@ -202,7 +207,7 @@ class QuestionStatusTransitionTests {
 
     @Test
     void should_reject_archive_from_a_non_admin() {
-        var rejection = QuestionStatusTransition.rejectionFor(
+        QuestionStatusTransition.Rejection rejection = QuestionStatusTransition.rejectionFor(
             question(QuestionStatus.PUBLISHED), systemBank(), true, owner(), "ARCHIVE", null);
 
         assertThat(rejection).isNotNull();
@@ -214,11 +219,11 @@ class QuestionStatusTransitionTests {
 
     @Test
     void should_reject_locking_a_question_that_is_already_locked() {
-        var systemAdmin = new Actor(UUID.randomUUID(), null, true, false);
-        var question = question(QuestionStatus.PUBLISHED);
+        QuestionStatusTransition.Actor systemAdmin = new Actor(UUID.randomUUID(), null, true, false);
+        Question question = question(QuestionStatus.PUBLISHED);
         question.setLocked(true);
 
-        var rejection = QuestionStatusTransition.rejectionFor(
+        QuestionStatusTransition.Rejection rejection = QuestionStatusTransition.rejectionFor(
             question, systemBank(), false, systemAdmin, "LOCK", null);
 
         assertThat(rejection).isNotNull();
@@ -228,9 +233,9 @@ class QuestionStatusTransitionTests {
 
     @Test
     void should_reject_unlocking_a_question_that_is_not_locked() {
-        var systemAdmin = new Actor(UUID.randomUUID(), null, true, false);
+        QuestionStatusTransition.Actor systemAdmin = new Actor(UUID.randomUUID(), null, true, false);
 
-        var rejection = QuestionStatusTransition.rejectionFor(
+        QuestionStatusTransition.Rejection rejection = QuestionStatusTransition.rejectionFor(
             question(QuestionStatus.PUBLISHED), systemBank(), false, systemAdmin, "UNLOCK", null);
 
         assertThat(rejection).isNotNull();
@@ -240,7 +245,7 @@ class QuestionStatusTransitionTests {
 
     @Test
     void should_report_an_unknown_action_instead_of_throwing() {
-        var rejection = QuestionStatusTransition.rejectionFor(
+        QuestionStatusTransition.Rejection rejection = QuestionStatusTransition.rejectionFor(
             question(QuestionStatus.DRAFT), systemBank(), false, owner(), "DEMOLISH", null);
 
         assertThat(rejection).isNotNull();
@@ -251,7 +256,7 @@ class QuestionStatusTransitionTests {
 
     @Test
     void should_move_the_question_to_the_target_status_when_applied() {
-        var question = question(QuestionStatus.DRAFT);
+        Question question = question(QuestionStatus.DRAFT);
 
         QuestionStatusTransition.apply(question, "SUBMIT");
 
@@ -260,7 +265,7 @@ class QuestionStatusTransitionTests {
 
     @Test
     void should_only_flip_the_lock_flag_for_lock_actions() {
-        var question = question(QuestionStatus.PUBLISHED);
+        Question question = question(QuestionStatus.PUBLISHED);
 
         QuestionStatusTransition.apply(question, "LOCK");
 
@@ -273,7 +278,7 @@ class QuestionStatusTransitionTests {
     }
 
     private Question question(QuestionStatus status) {
-        var now = Instant.now();
+        Instant now = Instant.now();
         return new Question(
             UUID.randomUUID(), bankId, UUID.randomUUID(), "Q-1", null, "Câu hỏi", null, null,
             QuestionType.SHORT_ANSWER, 10, 10, 60, QuestionSharing.PRIVATE, null, false,
@@ -289,7 +294,7 @@ class QuestionStatusTransitionTests {
     }
 
     private QuestionBank bank(QuestionBankOwnerType ownerType, UUID bankSchoolId) {
-        var now = Instant.now();
+        Instant now = Instant.now();
         return new QuestionBank(
             bankId, UUID.randomUUID(), bankSchoolId, "BANK-1", "Ngân hàng", null,
             ownerType, QuestionBankStatus.PUBLISHED, now, now, ownerId, ownerId);

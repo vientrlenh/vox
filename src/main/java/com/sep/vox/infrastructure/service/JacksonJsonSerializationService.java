@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.output.JsonSerializationPort;
 
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 @Service
@@ -78,9 +79,9 @@ public class JacksonJsonSerializationService implements JsonSerializationPort {
         if (json == null || json.isBlank()) {
             return List.of();
         }
-        var root = jsonMapper.readTree(json);
-        var result = new java.util.ArrayList<String>();
-        for (var node : root.path(field)) {
+        JsonNode root = jsonMapper.readTree(json);
+        List<String> result = new java.util.ArrayList<String>();
+        for (JsonNode node : root.path(field)) {
             if (!node.asString().isBlank()) {
                 result.add(node.asString());
             }
@@ -89,7 +90,7 @@ public class JacksonJsonSerializationService implements JsonSerializationPort {
     }
 
     private Map<String, String> toStringMap(Map<?, ?> raw) {
-        var result = new LinkedHashMap<String, String>();
+        Map<String, String> result = new LinkedHashMap<String, String>();
         raw.forEach((key, value) -> result.put(
             key == null ? null : key.toString(),
             value == null ? null : value.toString()

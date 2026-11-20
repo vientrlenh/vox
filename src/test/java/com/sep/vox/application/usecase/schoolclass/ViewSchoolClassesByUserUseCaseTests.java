@@ -19,6 +19,7 @@ import com.sep.vox.application.port.input.query.ViewSchoolClassesByUserQuery;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassesByUserUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
@@ -53,8 +54,8 @@ class ViewSchoolClassesByUserUseCaseTests {
 
     @Test
     void list_should_return_page_of_school_classes() {
-        var schoolClass = schoolClass(schoolId);
-        var page = new PageResult<>(List.of(schoolClass), 1, 20, 1, 1);
+        SchoolClass schoolClass = schoolClass(schoolId);
+        PageResult<SchoolClass> page = new PageResult<>(List.of(schoolClass), 1, 20, 1, 1);
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(true);
@@ -62,7 +63,7 @@ class ViewSchoolClassesByUserUseCaseTests {
         when(schoolUserRepository.existsBySchoolIdAndUserId(schoolId, targetUserId)).thenReturn(true);
         when(schoolClassRepository.findByUserId(schoolId, targetUserId, null, 1, 20)).thenReturn(page);
 
-        var result = useCase.execute(new ViewSchoolClassesByUserQuery(schoolId, targetUserId, null, 1, 20));
+        PageResult<SchoolClassDto> result = useCase.execute(new ViewSchoolClassesByUserQuery(schoolId, targetUserId, null, 1, 20));
 
         assertThat(result).isNotNull();
         assertThat(result.content()).hasSize(1);
@@ -106,7 +107,7 @@ class ViewSchoolClassesByUserUseCaseTests {
     }
 
     private SchoolClass schoolClass(UUID schoolId) {
-        var schoolClass = SchoolClass.create(
+        SchoolClass schoolClass = SchoolClass.create(
             schoolId,
             UUID.randomUUID(),
             UUID.randomUUID(),

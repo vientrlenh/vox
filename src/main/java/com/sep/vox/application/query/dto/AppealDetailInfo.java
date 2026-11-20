@@ -5,13 +5,15 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import com.sep.vox.domain.model.assessment.AssessmentAppealStatus;
+
 public record AppealDetailInfo(
     UUID id,
     String studentName,
     String className,
-    String examName,
+    String assessmentName,
     BigDecimal originalScore,
-    String status,
+    AssessmentAppealStatus status,
     Instant requestedAt,
     Instant deadline,
     String reason,
@@ -21,14 +23,14 @@ public record AppealDetailInfo(
     Instant approvedAt,
     Instant resolvedAt,
     Instant withdrawnAt,
-    /** Lý do admin giao cho người đã từng chấm bài này; null khi không override. */
+    /** The reason the admin assigned someone who had already graded this attempt; null when there is no override. */
     String reviewerOverrideReason,
-    /** Các phần thi được phúc khảo, mỗi phần kèm điểm gốc và lượt nói của riêng nó. */
+    /** The parts being appealed, each with its original score and its own spoken turns. */
     List<AppealItemInfo> items,
-    /** Chỉ MỘT người chấm; null khi chưa phân công. */
+    /** Only ONE grader; null when nobody is assigned yet. */
     AppealReviewerInfo reviewer,
     boolean overdue,
-    /** Thang điểm rubric — khoảng BE dùng để validate điểm tiêu chí khi chấm lại. */
+    /** The rubric scoring scale — the range the BE uses to validate criterion scores when regrading. */
     BigDecimal scoringScaleMin,
     BigDecimal scoringScaleMax
 ) {

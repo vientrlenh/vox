@@ -1,5 +1,7 @@
 package com.sep.vox.application.response.input.interestdimension;
 
+import java.time.Instant;
+
 public final class InterestDimensionResponses {
 
     private InterestDimensionResponses() {
@@ -12,7 +14,7 @@ public final class InterestDimensionResponses {
             boolean active,
             boolean quizEligible,
             int displayOrder,
-            String createdAt,
-            String updatedAt) {
+            Instant createdAt,
+            Instant updatedAt) {
     }
 }

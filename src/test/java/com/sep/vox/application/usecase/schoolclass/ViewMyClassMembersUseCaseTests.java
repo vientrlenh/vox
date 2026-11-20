@@ -23,6 +23,7 @@ import com.sep.vox.application.port.input.usecase.schoolclass.MyClassAccessGuard
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewMyClassMembersUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.dto.SchoolClassUserDto;
 import com.sep.vox.domain.model.school.SchoolClassUser;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
@@ -57,13 +58,13 @@ class ViewMyClassMembersUseCaseTests {
 
     @Test
     void should_return_members_of_the_class() {
-        var member = member(UUID.randomUUID());
+        SchoolClassUser member = member(UUID.randomUUID());
         givenActiveCaller();
         givenMembership();
         when(schoolClassUserRepository.findBySchoolClassId(classId, null, null, 1, 20))
             .thenReturn(new PageResult<>(List.of(member), 1, 20, 1, 1));
 
-        var result = useCase.execute(new ViewMyClassMembersQuery(classId, null, null, 1, 20));
+        PageResult<SchoolClassUserDto> result = useCase.execute(new ViewMyClassMembersQuery(classId, null, null, 1, 20));
 
         assertThat(result.content()).hasSize(1);
         assertThat(result.content().getFirst().userId()).isEqualTo(member.getUserId());
@@ -87,7 +88,7 @@ class ViewMyClassMembersUseCaseTests {
         when(schoolClassUserRepository.findByUserIdAndSchoolClassId(callerId, classId))
             .thenReturn(Optional.empty());
 
-        var exception = assertThrows(
+        NotFoundException exception = assertThrows(
             NotFoundException.class,
             () -> useCase.execute(new ViewMyClassMembersQuery(classId, null, null, 1, 20))
         );

@@ -1,10 +1,13 @@
 package com.sep.vox.application.port.input.usecase.stream;
 
+import com.sep.vox.domain.model.assessment.Assessment;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -16,12 +19,12 @@ import com.sep.vox.application.port.input.command.IssueMonitorTokenCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.StreamTokenProvider;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.model.exam.ExamMemberRole;
-import com.sep.vox.domain.model.exam.ExamSchedule;
-import com.sep.vox.domain.repository.ExamMemberRepository;
-import com.sep.vox.domain.repository.ExamRepository;
-import com.sep.vox.domain.repository.ExamScheduleProctorRepository;
-import com.sep.vox.domain.repository.ExamScheduleRepository;
+import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
+import com.sep.vox.domain.model.assessment.AssessmentSchedule;
+import com.sep.vox.domain.repository.AssessmentMemberRepository;
+import com.sep.vox.domain.repository.AssessmentRepository;
+import com.sep.vox.domain.repository.AssessmentScheduleProctorRepository;
+import com.sep.vox.domain.repository.AssessmentScheduleRepository;
 
 
 @Service
@@ -31,61 +34,61 @@ public class IssueMonitorTokenUseCase implements IUseCase<IssueMonitorTokenComma
     private static final long CLOCK_SKEW_SECONDS = 30;
 
     private static final String SCOPE_SCHOOL_ADMIN = "SCHOOL_ADMIN";
-    private static final String SCOPE_EXAM_CHAIR = "EXAM_CHAIR";
+    private static final String SCOPE_ASSESSMENT_CHAIR = "ASSESSMENT_CHAIR";
     private static final String SCOPE_SCHEDULE_PROCTOR = "SCHEDULE_PROCTOR";
 
-    private final ExamRepository examRepository;
-    private final ExamScheduleRepository examScheduleRepository;
-    private final ExamScheduleProctorRepository examScheduleProctorRepository;
-    private final ExamMemberRepository examMemberRepository;
+    private final AssessmentRepository assessmentRepository;
+    private final AssessmentScheduleRepository assessmentScheduleRepository;
+    private final AssessmentScheduleProctorRepository assessmentScheduleProctorRepository;
+    private final AssessmentMemberRepository assessmentMemberRepository;
     private final UserContextPort userContextPort;
     private final StreamTokenProvider streamTokenProvider;
 
     public IssueMonitorTokenUseCase(
-        ExamRepository examRepository,  
-        ExamScheduleRepository examScheduleRepository, 
-        ExamScheduleProctorRepository examScheduleProctorRepository, 
-        ExamMemberRepository examMemberRepository, 
+        AssessmentRepository assessmentRepository,  
+        AssessmentScheduleRepository assessmentScheduleRepository, 
+        AssessmentScheduleProctorRepository assessmentScheduleProctorRepository, 
+        AssessmentMemberRepository assessmentMemberRepository, 
         UserContextPort userContextPort, 
         StreamTokenProvider streamTokenProvider 
     ) {
-        this.examRepository = examRepository;
-        this.examScheduleRepository = examScheduleRepository;
-        this.examScheduleProctorRepository = examScheduleProctorRepository; 
-        this.examMemberRepository = examMemberRepository;
+        this.assessmentRepository = assessmentRepository;
+        this.assessmentScheduleRepository = assessmentScheduleRepository;
+        this.assessmentScheduleProctorRepository = assessmentScheduleProctorRepository; 
+        this.assessmentMemberRepository = assessmentMemberRepository;
         this.userContextPort = userContextPort; 
         this.streamTokenProvider = streamTokenProvider;
     }
 
     @Override
     public String execute(IssueMonitorTokenCommand input) {
-        var userId = userContextPort.getCurrentAuthenticatedUserId();
-        var schoolId = userContextPort.getCurrentSchoolId();
-        var now = Instant.now();
+        UUID userId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID schoolId = userContextPort.getCurrentSchoolId();
+        Instant now = Instant.now();
 
-        var exam = examRepository.findById(input.examId())
+        Assessment assessment = assessmentRepository.findById(input.assessmentId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy kỳ thi"));
 
-        if (schoolId == null || !exam.getSchoolId().equals(schoolId)) {
+        if (schoolId == null || !assessment.getSchoolId().equals(schoolId)) {
             throw new ForbiddenException("Bạn không có quyền giám sát kỳ thi của trường được yêu cầu");
         }
 
-        if (exam.getRequiredStreamType() == null) {
+        if (assessment.getRequiredStreamType() == null) {
             throw new IllegalArgumentException("Kỳ thi không hỗ trợ chức năng giám sát stream");
         }
 
-        var activeSchedules = examScheduleRepository.findByExamIdAndInSchedule(exam.getId(), now);
+        List<AssessmentSchedule> activeSchedules = assessmentScheduleRepository.findByAssessmentIdAndInSchedule(assessment.getId(), now);
 
         if (activeSchedules.isEmpty()) {
             throw new NotFoundException("Kỳ thi đang không có ca thi diễn ra");
         }
 
-        var requestedIds = normalizeScheduleIds(input.scheduleIds());
+        List<UUID> requestedIds = normalizeScheduleIds(input.scheduleIds());
 
-        var activeScheduleByIds = activeSchedules.stream()
+        Map<UUID, AssessmentSchedule> activeScheduleByIds = activeSchedules.stream()
             .collect(Collectors.toMap(s -> s.getId(), s -> s));
 
-        List<ExamSchedule> selectedSchedules;
+        List<AssessmentSchedule> selectedSchedules;
 
         if (requestedIds.isEmpty()) {
             selectedSchedules = activeSchedules;
@@ -107,10 +110,10 @@ public class IssueMonitorTokenUseCase implements IUseCase<IssueMonitorTokenComma
         } else if (userContextPort.isTeacher()) {
             role = "TEACHER";
 
-            var isChair = examMemberRepository.existsByExamIdAndUserIdAndRole(exam.getId(), userId, ExamMemberRole.CHAIR);
+            boolean isChair = assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessment.getId(), userId, AssessmentMemberRole.CHAIR);
 
             if (isChair) {
-                monitorScope = SCOPE_EXAM_CHAIR;
+                monitorScope = SCOPE_ASSESSMENT_CHAIR;
             } else {
                 monitorScope = SCOPE_SCHEDULE_PROCTOR;
 
@@ -124,17 +127,17 @@ public class IssueMonitorTokenUseCase implements IUseCase<IssueMonitorTokenComma
             throw new ForbiddenException("Bạn không được phân công vào ca thi đang diễn ra nào");
         }
 
-        var scheduleIds = selectedSchedules.stream()
+        List<String> scheduleIds = selectedSchedules.stream()
             .map(s -> s.getId().toString())
             .distinct()
             .toList();
 
-        var tokenExpiry = selectedSchedules.stream()
+        Instant tokenExpiry = selectedSchedules.stream()
             .map(s -> s.getEndDate())
             .max(Comparator.naturalOrder())
             .orElseThrow();
 
-        var ttlExpiry = now.plus(MONITOR_TOKEN_TTL);
+        Instant ttlExpiry = now.plus(MONITOR_TOKEN_TTL);
         if (tokenExpiry.isAfter(ttlExpiry)) {
             tokenExpiry = ttlExpiry;
         }
@@ -142,7 +145,7 @@ public class IssueMonitorTokenUseCase implements IUseCase<IssueMonitorTokenComma
         return streamTokenProvider.generateMonitorToken(
             userId.toString(), 
             schoolId.toString(), 
-            exam.getId().toString(), 
+            assessment.getId().toString(), 
             monitorScope, 
             scheduleIds, 
             List.of(role), 
@@ -151,9 +154,9 @@ public class IssueMonitorTokenUseCase implements IUseCase<IssueMonitorTokenComma
         );
     }
 
-    private List<ExamSchedule> restrictToProctoredSchedules(List<ExamSchedule> schedules, List<UUID> explicityRequestedIds, UUID teacherId) {
-        var scheduleIds = schedules.stream().map(s -> s.getId()).toList();
-        var proctoredIds = new HashSet<>(examScheduleProctorRepository.findScheduleIdsByTeacherIdAndScheduleIdIn(teacherId, scheduleIds));
+    private List<AssessmentSchedule> restrictToProctoredSchedules(List<AssessmentSchedule> schedules, List<UUID> explicityRequestedIds, UUID teacherId) {
+        List<UUID> scheduleIds = schedules.stream().map(s -> s.getId()).toList();
+        Set<UUID> proctoredIds = new HashSet<>(assessmentScheduleProctorRepository.findScheduleIdsByTeacherIdAndScheduleIdIn(teacherId, scheduleIds));
         if (!explicityRequestedIds.isEmpty() && !proctoredIds.containsAll(explicityRequestedIds)) {
             throw new ForbiddenException("Bạn không được phân công vào một hoặc nhiều ca thi được yêu cầu");
         }

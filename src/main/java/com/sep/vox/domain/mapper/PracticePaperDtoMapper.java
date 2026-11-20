@@ -21,7 +21,7 @@ public final class PracticePaperDtoMapper {
             PracticePaper paper,
             List<PracticeQuestion> questions,
             int sessionBudgetSeconds) {
-        var responseQuestions = java.util.stream.IntStream
+        List<PracticePaperQuestionDto> responseQuestions = java.util.stream.IntStream
             .range(0, questions.size())
             .mapToObj(index -> toDto(questions.get(index), index + 1))
             .toList();

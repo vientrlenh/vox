@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.service;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.common.RoleConstant;
@@ -35,12 +36,12 @@ public class QuestionStatusActorResolver {
     }
 
     public QuestionStatusTransition.Actor resolve() {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        var systemAdmin = userContextPort.isSystemAdmin();
-        var currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        boolean systemAdmin = userContextPort.isSystemAdmin();
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
-        var schoolAdmin = !systemAdmin
+        boolean schoolAdmin = !systemAdmin
             && userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
                 .anyMatch(role -> RoleConstant.SCHOOL_ADMIN_ROLE.equals(role.roleCode()));
 

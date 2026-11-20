@@ -44,7 +44,7 @@ public record GoogleIdTokenProperties(
     public GoogleIdTokenProperties {
         allowedAudiences = trimmed(allowedAudiences);
         jwkSetUri = jwkSetUri == null || jwkSetUri.isBlank() ? DEFAULT_JWK_SET_URI : jwkSetUri.trim();
-        var issuers = trimmed(allowedIssuers);
+        List<String> issuers = trimmed(allowedIssuers);
         allowedIssuers = issuers.isEmpty() ? DEFAULT_ISSUERS : issuers;
     }
 

@@ -1,7 +1,9 @@
 package com.sep.vox.domain.dto;
 
-
+import java.time.LocalDate;
 import java.util.UUID;
+
+import com.sep.vox.domain.model.registerform.RegisterFormStatus;
 
 public record RegisterFormDto(
     UUID id,
@@ -15,14 +17,14 @@ public record RegisterFormDto(
     String identityNumber, 
     String contactPhone, 
     String contactEmail, 
-    String dateOfBirth, 
+    LocalDate dateOfBirth, 
     String contactAddress, 
     String postalCode, 
     String position, 
     int studentCount, 
     String verificationMethod, 
     String rejectedReason,
-    String status
+    RegisterFormStatus status
 ) {
     
 }

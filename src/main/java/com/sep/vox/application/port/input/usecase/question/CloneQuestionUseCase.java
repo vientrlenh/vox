@@ -1,5 +1,8 @@
 package com.sep.vox.application.port.input.usecase.question;
 
+import com.sep.vox.domain.model.question.Question;
+import com.sep.vox.domain.model.question.QuestionBank;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,26 +44,26 @@ public class CloneQuestionUseCase implements IUseCase<CloneQuestionCommand, Ques
     @Override
     @Transactional
     public QuestionDto execute(CloneQuestionCommand input) {
-        var currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
-        var question = questionRepository.findById(input.questionId())
+        Question question = questionRepository.findById(input.questionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi"));
-        var bank = questionBankRepository.findById(question.getQuestionBankId())
+        QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
-        var owner = currentUserId.equals(question.getCreatedBy());
-        var usableCollaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId)
+        boolean owner = currentUserId.equals(question.getCreatedBy());
+        boolean usableCollaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId)
             .filter(collaborator -> collaborator.getPermission() == QuestionCollaboratorPermission.CAN_EDIT
                 || collaborator.getPermission() == QuestionCollaboratorPermission.CAN_USE)
             .isPresent();
-        var systemAdminOnSystemBank = userContextPort.isSystemAdmin()
+        boolean systemAdminOnSystemBank = userContextPort.isSystemAdmin()
             && bank.getOwnerType() == QuestionBankOwnerType.SYSTEM;
 
         if (!systemAdminOnSystemBank && !usableCollaborator && !owner) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        var cloned = questionCloneService.cloneAsDraftWithDetails(question, currentUserId);
+        Question cloned = questionCloneService.cloneAsDraftWithDetails(question, currentUserId);
         return QuestionDtoMapper.toQuestionDto(cloned);
     }
 }

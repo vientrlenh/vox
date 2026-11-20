@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.QuestionJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -7,6 +8,7 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
@@ -18,6 +20,7 @@ import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.model.question.QuestionType;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.infrastructure.persistence.mapper.QuestionMapper;
+import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataQuestionRepository;
 
 @Repository
@@ -33,8 +36,8 @@ public class QuestionRepositoryImpl implements QuestionRepository {
 
     @Override
     public Question save(Question question) {
-        var entity = QuestionMapper.toJpa(question);
-        var saved = springDataQuestionRepository.save(entity);
+        QuestionJpaEntity entity = QuestionMapper.toJpa(question);
+        QuestionJpaEntity saved = springDataQuestionRepository.save(entity);
         return QuestionMapper.toDomain(saved);
     }
 
@@ -43,7 +46,7 @@ public class QuestionRepositoryImpl implements QuestionRepository {
         if (questions.isEmpty()) {
             return List.of();
         }
-        var entities = questions.stream()
+        List<QuestionJpaEntity> entities = questions.stream()
             .map(QuestionMapper::toJpa)
             .toList();
         return springDataQuestionRepository.saveAll(entities).stream()
@@ -62,8 +65,8 @@ public class QuestionRepositoryImpl implements QuestionRepository {
         if (ids.isEmpty()) {
             return List.of();
         }
-        var startedAt = System.nanoTime();
-        var result = springDataQuestionRepository.findAllById(ids).stream()
+        long startedAt = System.nanoTime();
+        List<Question> result = springDataQuestionRepository.findAllById(ids).stream()
             .map(QuestionMapper::toDomain)
             .toList();
         LOGGER.info("[blueprint-perf] repo QuestionRepositoryImpl.findByIdIn ids={} tookMs={}",
@@ -99,8 +102,8 @@ public class QuestionRepositoryImpl implements QuestionRepository {
     }
 
     @Override
-    public boolean existsUsedInExam(UUID id) {
-        return springDataQuestionRepository.existsUsedInExam(id);
+    public boolean existsUsedInAssessment(UUID id) {
+        return springDataQuestionRepository.existsUsedInAssessment(id);
     }
 
     @Override
@@ -139,8 +142,8 @@ public class QuestionRepositoryImpl implements QuestionRepository {
             boolean schoolAdmin, UUID questionBankId, UUID questionTopicId, String topicName, QuestionStatus status,
             QuestionType type, QuestionSharing sharing, String assetType, String scope, String keyword,
             int pageNumber, int size) {
-        var pageable = PageRequest.of(pageNumber - 1, size);
-        var page = springDataQuestionRepository.findAccessible(
+        PageRequest pageable = OneBasedPaging.toPageRequest(pageNumber, size);
+        Page<QuestionJpaEntity> page = springDataQuestionRepository.findAccessible(
             currentUserId,
             currentSchoolId,
             systemAdmin,
@@ -168,12 +171,12 @@ public class QuestionRepositoryImpl implements QuestionRepository {
     }
 
     @Override
-    public PageResult<Question> findAccessibleForExamPaper(UUID currentUserId, UUID currentSchoolId, boolean systemAdmin,
+    public PageResult<Question> findAccessibleForAssessmentPaper(UUID currentUserId, UUID currentSchoolId, boolean systemAdmin,
             boolean schoolAdmin, UUID questionBankId, UUID questionTopicId, String topicName, QuestionStatus status,
             QuestionType type, QuestionSharing sharing, String assetType, String scope, String keyword,
             int pageNumber, int size) {
-        var pageable = PageRequest.of(pageNumber - 1, size);
-        var page = springDataQuestionRepository.findAccessibleForExamPaper(
+        PageRequest pageable = OneBasedPaging.toPageRequest(pageNumber, size);
+        Page<QuestionJpaEntity> page = springDataQuestionRepository.findAccessibleForAssessmentPaper(
             currentUserId,
             currentSchoolId,
             systemAdmin,
@@ -218,8 +221,8 @@ public class QuestionRepositoryImpl implements QuestionRepository {
         if (ids.isEmpty()) {
             return List.of();
         }
-        var startedAt = System.nanoTime();
-        var result = springDataQuestionRepository.findAccessibleByIdIn(
+        long startedAt = System.nanoTime();
+        List<Question> result = springDataQuestionRepository.findAccessibleByIdIn(
             ids,
             currentUserId,
             currentSchoolId,

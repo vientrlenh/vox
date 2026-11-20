@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.schooldirectory;
 
+import com.sep.vox.domain.model.school.SchoolDirectory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +23,7 @@ public class ViewSchoolDirectoryDetailsUseCase implements IUseCase<ViewSchoolDir
     @Override
     @Transactional(readOnly = true)
     public SchoolDirectoryDto execute(ViewSchoolDirectoryDetailsQuery input) {
-        var directory = schoolDirectoryRepository.findById(input.id()).orElseThrow(() -> new NotFoundException("Không tìm thấy danh mục trường theo yêu cầu"));
+        SchoolDirectory directory = schoolDirectoryRepository.findById(input.id()).orElseThrow(() -> new NotFoundException("Không tìm thấy danh mục trường theo yêu cầu"));
         return SchoolDirectoryDtoMapper.toSchoolDirectoryDto(directory);
     }
     

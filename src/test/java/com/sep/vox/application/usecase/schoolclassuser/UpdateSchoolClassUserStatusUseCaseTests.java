@@ -22,6 +22,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateSchoolClassUserStatusCommand;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.UpdateSchoolClassUserStatusUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.application.response.input.schoolclassuser.UpdateSchoolClassUserStatusResponse;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
@@ -66,18 +67,18 @@ class UpdateSchoolClassUserStatusUseCaseTests {
 
     @Test
     void update_should_activate_inactive_membership_and_clear_left_at() {
-        var currentUserId = UUID.randomUUID();
-        var targetUserId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var classId = UUID.randomUUID();
-        var membership = membership(targetUserId, classId, false, Instant.now().minus(1, ChronoUnit.DAYS), currentUserId);
+        UUID currentUserId = UUID.randomUUID();
+        UUID targetUserId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        UUID classId = UUID.randomUUID();
+        SchoolClassUser membership = membership(targetUserId, classId, false, Instant.now().minus(1, ChronoUnit.DAYS), currentUserId);
         mockValidContext(currentUserId, schoolId, classId, targetUserId);
         when(schoolClassUserRepository.findByUserIdAndSchoolClassId(targetUserId, classId)).thenReturn(Optional.of(membership));
 
-        var response = useCase.execute(new UpdateSchoolClassUserStatusCommand(schoolId, classId, targetUserId, true));
+        UpdateSchoolClassUserStatusResponse response = useCase.execute(new UpdateSchoolClassUserStatusCommand(schoolId, classId, targetUserId, true));
 
         assertThat(response.schoolClassId()).isEqualTo(classId);
-        var captor = ArgumentCaptor.forClass(SchoolClassUser.class);
+        ArgumentCaptor<SchoolClassUser> captor = ArgumentCaptor.forClass(SchoolClassUser.class);
         verify(schoolClassUserRepository).save(captor.capture());
         assertThat(captor.getValue().isActive()).isTrue();
         assertThat(captor.getValue().getLeftAt()).isNull();
@@ -85,18 +86,18 @@ class UpdateSchoolClassUserStatusUseCaseTests {
 
     @Test
     void update_should_deactivate_active_membership() {
-        var currentUserId = UUID.randomUUID();
-        var targetUserId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var classId = UUID.randomUUID();
-        var membership = membership(targetUserId, classId, true, null, currentUserId);
+        UUID currentUserId = UUID.randomUUID();
+        UUID targetUserId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        UUID classId = UUID.randomUUID();
+        SchoolClassUser membership = membership(targetUserId, classId, true, null, currentUserId);
         mockValidContext(currentUserId, schoolId, classId, targetUserId);
         when(schoolClassUserRepository.findByUserIdAndSchoolClassId(targetUserId, classId)).thenReturn(Optional.of(membership));
 
-        var response = useCase.execute(new UpdateSchoolClassUserStatusCommand(schoolId, classId, targetUserId, false));
+        UpdateSchoolClassUserStatusResponse response = useCase.execute(new UpdateSchoolClassUserStatusCommand(schoolId, classId, targetUserId, false));
 
         assertThat(response.schoolClassId()).isEqualTo(classId);
-        var captor = ArgumentCaptor.forClass(SchoolClassUser.class);
+        ArgumentCaptor<SchoolClassUser> captor = ArgumentCaptor.forClass(SchoolClassUser.class);
         verify(schoolClassUserRepository).save(captor.capture());
         assertThat(captor.getValue().isActive()).isFalse();
         assertThat(captor.getValue().getLeftAt()).isNotNull();
@@ -104,16 +105,16 @@ class UpdateSchoolClassUserStatusUseCaseTests {
 
     @Test
     void update_should_be_idempotent_when_status_is_already_inactive() {
-        var currentUserId = UUID.randomUUID();
-        var targetUserId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var classId = UUID.randomUUID();
-        var leftAt = Instant.now().minus(1, ChronoUnit.DAYS);
-        var membership = membership(targetUserId, classId, false, leftAt, currentUserId);
+        UUID currentUserId = UUID.randomUUID();
+        UUID targetUserId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        UUID classId = UUID.randomUUID();
+        Instant leftAt = Instant.now().minus(1, ChronoUnit.DAYS);
+        SchoolClassUser membership = membership(targetUserId, classId, false, leftAt, currentUserId);
         mockValidContext(currentUserId, schoolId, classId, targetUserId);
         when(schoolClassUserRepository.findByUserIdAndSchoolClassId(targetUserId, classId)).thenReturn(Optional.of(membership));
 
-        var response = useCase.execute(new UpdateSchoolClassUserStatusCommand(schoolId, classId, targetUserId, false));
+        UpdateSchoolClassUserStatusResponse response = useCase.execute(new UpdateSchoolClassUserStatusCommand(schoolId, classId, targetUserId, false));
 
         assertThat(response.schoolClassId()).isEqualTo(classId);
         assertThat(membership.getLeftAt()).isEqualTo(leftAt);
@@ -122,10 +123,10 @@ class UpdateSchoolClassUserStatusUseCaseTests {
 
     @Test
     void update_should_throw_when_membership_not_found() {
-        var currentUserId = UUID.randomUUID();
-        var targetUserId = UUID.randomUUID();
-        var schoolId = UUID.randomUUID();
-        var classId = UUID.randomUUID();
+        UUID currentUserId = UUID.randomUUID();
+        UUID targetUserId = UUID.randomUUID();
+        UUID schoolId = UUID.randomUUID();
+        UUID classId = UUID.randomUUID();
         mockValidContext(currentUserId, schoolId, classId, targetUserId);
         when(schoolClassUserRepository.findByUserIdAndSchoolClassId(targetUserId, classId)).thenReturn(Optional.empty());
 
@@ -151,27 +152,27 @@ class UpdateSchoolClassUserStatusUseCaseTests {
     }
 
     private static SchoolClassUser membership(UUID userId, UUID classId, boolean isActive, Instant leftAt, UUID assignedBy) {
-        var membership = new SchoolClassUser(userId, classId, isActive, Instant.now().minus(2, ChronoUnit.DAYS), leftAt, assignedBy);
+        SchoolClassUser membership = new SchoolClassUser(userId, classId, isActive, Instant.now().minus(2, ChronoUnit.DAYS), leftAt, assignedBy);
         membership.setId(UUID.randomUUID());
         return membership;
     }
 
     private static User activeUser(UUID id, UUID schoolId) {
-        var user = new User();
+        User user = new User();
         user.setId(id);
         user.setStatus(UserStatus.ACTIVE);
         return user;
     }
 
     private static School activeSchool(UUID id) {
-        var school = new School();
+        School school = new School();
         school.setId(id);
         school.setActive(true);
         return school;
     }
 
     private static SchoolClass activeSchoolClass(UUID id, UUID schoolId) {
-        var schoolClass = new SchoolClass();
+        SchoolClass schoolClass = new SchoolClass();
         schoolClass.setId(id);
         schoolClass.setSchoolId(schoolId);
         schoolClass.setCode(new ClassCode("ENG-01"));

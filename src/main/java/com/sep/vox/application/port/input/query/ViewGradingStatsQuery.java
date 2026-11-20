@@ -8,7 +8,7 @@ import java.util.UUID;
  *             không bao giờ đếm trên hai tập khác nhau.
  */
 public record ViewGradingStatsQuery(
-    UUID examId,
+    UUID assessmentId,
     UUID scheduleId,
     String kind
 ) {

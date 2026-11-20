@@ -5,10 +5,10 @@ import org.springframework.stereotype.Component;
 
 import com.sep.vox.application.port.input.service.QuotaPricingCalibrationService;
 
-// Trước đây estimatedCostPerExamSecondUsd (ClassTestTokenQuotaGuardService) là hằng số tĩnh phải
-// tự tay đoán/sửa .env (xem AI_COST_CALIBRATION_LOG.md) -- job này tự động chạy lại đúng phép
-// tính đó định kỳ trên dữ liệu ai_usage_record/exam_item_responses thật, để guard tự thích nghi
-// theo chi phí AI thật tế mà không cần con người can thiệp liên tục.
+// Previously estimatedCostPerAssessmentSecondUsd (ClassTestTokenQuotaGuardService) was a static constant that had to be
+// guessed/edited in .env by hand (see AI_COST_CALIBRATION_LOG.md) -- this job automatically reruns exactly that
+// computation periodically on the real ai_usage_record/assessment_item_responses data, so the guard adapts
+// to the real AI cost without constant human intervention.
 @Component
 public class QuotaPricingCalibrationJob {
 
@@ -20,12 +20,12 @@ public class QuotaPricingCalibrationJob {
 
     @Scheduled(cron = "0 0 3 * * MON")
     public void run() {
-        quotaPricingCalibrationService.recalibrateExam();
+        quotaPricingCalibrationService.recalibrateAssessment();
     }
 
-    // Tách @Scheduled riêng (không gộp vào run() gọi tuần tự) để lỗi ở nguồn này không chặn nguồn
-    // kia -- mỗi bucket rate xử lý độc lập, đúng tinh thần EXAM/PRACTICE tách riêng ở
-    // CompleteExamSessionGradingUseCase.
+    // A separate @Scheduled (not merged into a sequential run() call) so that a failure in this source does not block the
+    // other -- each rate bucket is handled independently, in the spirit of ASSESSMENT/PRACTICE being separate in
+    // CompleteAssessmentSessionGradingUseCase.
     @Scheduled(cron = "0 0 3 * * MON")
     public void runPractice() {
         quotaPricingCalibrationService.recalibratePractice();

@@ -6,6 +6,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import javax.crypto.SecretKey;
@@ -25,12 +26,12 @@ public class JwtStreamTokenProvider implements StreamTokenProvider {
     private String secret;
 
     @Override
-    public String generateStreamToken(String userId, String candidateId, String scheduleId, String examId, String sessionId,
+    public String generateStreamToken(String userId, String candidateId, String scheduleId, String assessmentId, String sessionId,
             List<String> streamTypes, Instant windowStart, Instant windowEnd) {
-        var claims = new HashMap<String, Object>();
+        Map<String, Object> claims = new HashMap<String, Object>();
         claims.put("candidateId", candidateId);
         claims.put("scheduleId", scheduleId);
-        claims.put("examId", examId);
+        claims.put("assessmentId", assessmentId);
         claims.put("sessionId", sessionId);
         claims.put("streamTypes", streamTypes);
         claims.put("tokenUse", "stream");
@@ -45,18 +46,18 @@ public class JwtStreamTokenProvider implements StreamTokenProvider {
                 .compact();
     }
 
-    public String generateMonitorToken(String userId, String schoolId, String examId, String monitorScope, List<String> scheduleIds, List<String> roles, Instant windowStart, Instant windowEnd) {
+    public String generateMonitorToken(String userId, String schoolId, String assessmentId, String monitorScope, List<String> scheduleIds, List<String> roles, Instant windowStart, Instant windowEnd) {
 
-        // Hạn của ca thi, tách khỏi expiresAt của token
-        // Giúp trả lời "bao lâu thì dữ liệu đã ghi vẫn còn đẩy lên được service streaming"
-        // Dùng để đặt hạn upload credentials. Giúp nới thời gian cứu dữ liệu upload record
-        var scheduleEndAt = windowEnd.getEpochSecond();
+        // The assessment shift's deadline, separate from the token's expiresAt.
+        // Helps answer "how long after can data already recorded still be pushed to the streaming service".
+        // Used to set the expiry of the upload credentials. Helps extend the time available to rescue the upload record data.
+        long scheduleEndAt = windowEnd.getEpochSecond();
 
-        var tokenExpiry = windowEnd.isBefore(Instant.now().plus(15, ChronoUnit.MINUTES)) ? windowEnd : Instant.now().plus(15, ChronoUnit.MINUTES);
-        var claims = new HashMap<String, Object>();
+        Instant tokenExpiry = windowEnd.isBefore(Instant.now().plus(15, ChronoUnit.MINUTES)) ? windowEnd : Instant.now().plus(15, ChronoUnit.MINUTES);
+        Map<String, Object> claims = new HashMap<String, Object>();
         claims.put("userId", userId);
         claims.put("schoolId", schoolId);
-        claims.put("examId", examId);
+        claims.put("assessmentId", assessmentId);
         claims.put("monitorScope", monitorScope);
         claims.put("scheduleIds", scheduleIds);
         claims.put("roles", roles);

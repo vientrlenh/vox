@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import com.sep.vox.infrastructure.persistence.entity.SchoolSubscriptionEventJpaEntity;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,7 +23,7 @@ public class SchoolSubscriptionEventRepositoryImpl implements SchoolSubscription
 
     @Override
     public SchoolSubscriptionEvent save(SchoolSubscriptionEvent event) {
-        var saved = springDataRepository.save(SchoolSubscriptionEventMapper.toJpa(event));
+        SchoolSubscriptionEventJpaEntity saved = springDataRepository.save(SchoolSubscriptionEventMapper.toJpa(event));
         return SchoolSubscriptionEventMapper.toDomain(saved);
     }
 

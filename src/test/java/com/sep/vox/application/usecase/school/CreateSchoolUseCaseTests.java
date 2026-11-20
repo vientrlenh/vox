@@ -67,10 +67,11 @@ class CreateSchoolUseCaseTests {
             "THPT-A", "Trường THPT A", "01", "Hà Nội", "Ba Đình",
             "thpta.edu.vn", "12 Phố A", Instant.now(), currentUserId));
 
-        // Phần tự khai bên dưới cố tình khác hẳn danh mục -- không được lọt vào kết quả.
+        // The self-declared part below deliberately differs from the catalog -- it must not make it
+        // into the result.
         useCase.execute(commandWith(directoryId, "TU-KHAI", "Tên tự khai", "Địa chỉ tự khai", "tukhai.vn"));
 
-        var provisioned = captureProvisioned();
+        ProvisionSchoolCommand provisioned = captureProvisioned();
         assertThat(provisioned.schoolCode()).isEqualTo("THPT-A");
         assertThat(provisioned.schoolName()).isEqualTo("Trường THPT A");
         assertThat(provisioned.schoolAddress()).isEqualTo("12 Phố A");
@@ -79,7 +80,7 @@ class CreateSchoolUseCaseTests {
 
     @Test
     void should_create_from_unverified_directory_and_mark_it_verified() {
-        var unverified = SchoolDirectory.createByUserSubmitted(
+        SchoolDirectory unverified = SchoolDirectory.createByUserSubmitted(
             "THPT-B", "Trường THPT B", "02", "Huế", "Phú Vang",
             "thptb.edu.vn", "34 Phố B", Instant.now(), currentUserId);
         assertThat(unverified.isVerified()).isFalse();
@@ -107,7 +108,7 @@ class CreateSchoolUseCaseTests {
         useCase.execute(commandWith(null, "  thpt-d  ", "  Trường   THPT D ", " 78 Phố D ", " THPTD.EDU.VN "));
 
         verify(schoolDirectoryRepository, never()).findById(any());
-        var provisioned = captureProvisioned();
+        ProvisionSchoolCommand provisioned = captureProvisioned();
         assertThat(provisioned.schoolCode()).isEqualTo("THPT-D");
         assertThat(provisioned.schoolName()).isEqualTo("Trường THPT D");
         assertThat(provisioned.schoolAddress()).isEqualTo("78 Phố D");
@@ -145,17 +146,19 @@ class CreateSchoolUseCaseTests {
 
     @Test
     void should_pass_valid_avatar_url_through_to_provisioning() {
-        var command = commandWith(null, "THPT-A", "THPT A", "1 Phố A", "thpta.edu.vn", VALID_AVATAR_URL);
+        CreateSchoolCommand command = commandWith(null, "THPT-A", "THPT A", "1 Phố A", "thpta.edu.vn", VALID_AVATAR_URL);
 
         useCase.execute(command);
 
         assertThat(captureProvisioned().avatarUrl()).isEqualTo(VALID_AVATAR_URL);
     }
 
-    /** Ô này trước đây nhận URL bất kỳ -- chính là lỗ mà AvatarUrlPolicy sinh ra để bịt. */
+    /**
+     * This field used to accept any URL -- exactly the hole AvatarUrlPolicy was created to plug.
+     */
     @Test
     void should_reject_avatar_url_from_foreign_host() {
-        var command = commandWith(null, "THPT-A", "THPT A", "1 Phố A", "thpta.edu.vn",
+        CreateSchoolCommand command = commandWith(null, "THPT-A", "THPT A", "1 Phố A", "thpta.edu.vn",
             "https://evil.example/pixel.gif");
 
         assertThatThrownBy(() -> useCase.execute(command))
@@ -165,7 +168,7 @@ class CreateSchoolUseCaseTests {
 
     @Test
     void should_create_school_when_avatar_url_is_blank() {
-        var command = commandWith(null, "THPT-A", "THPT A", "1 Phố A", "thpta.edu.vn", "   ");
+        CreateSchoolCommand command = commandWith(null, "THPT-A", "THPT A", "1 Phố A", "thpta.edu.vn", "   ");
 
         useCase.execute(command);
 
@@ -177,7 +180,7 @@ class CreateSchoolUseCaseTests {
     }
 
     private ProvisionSchoolCommand captureProvisioned() {
-        var captor = ArgumentCaptor.forClass(ProvisionSchoolCommand.class);
+        ArgumentCaptor<ProvisionSchoolCommand> captor = ArgumentCaptor.forClass(ProvisionSchoolCommand.class);
         verify(provisionSchoolService).provision(captor.capture());
         return captor.getValue();
     }

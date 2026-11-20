@@ -46,8 +46,8 @@ public class ViewProctorBusySlotsUseCase
         }
         AssessmentSchedule schedule = assessmentScheduleRepository.findById(input.scheduleId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi"));
-        // Cùng luật quyền với danh bạ giám thị: người xem được danh sách giáo viên thì cũng được
-        // biết ai trong số đó đang bận.
+        // Same permission rule as the proctor directory: whoever can see the teacher list may also
+        // know which of them are busy.
         assessmentDirectoryAccessService.resolveByAssessmentId(schedule.getAssessmentId());
 
         return assessmentScheduleProctorRepository.findConflictsForTeachers(
@@ -55,8 +55,8 @@ public class ViewProctorBusySlotsUseCase
             .map(conflict -> new ProctorBusySlotResponse(
                 conflict.teacherId(),
                 conflict.scheduleId(),
-                conflict.startDate() == null ? null : conflict.startDate().toString(),
-                conflict.endDate() == null ? null : conflict.endDate().toString()))
+                conflict.startDate(),
+                conflict.endDate()))
             .toList();
     }
 }

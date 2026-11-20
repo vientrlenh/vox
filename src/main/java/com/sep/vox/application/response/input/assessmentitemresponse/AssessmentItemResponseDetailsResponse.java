@@ -1,5 +1,6 @@
 package com.sep.vox.application.response.input.assessmentitemresponse;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -10,7 +11,7 @@ public record AssessmentItemResponseDetailsResponse(
     String audioUrl,
     Integer durationSeconds,
     String transcript,
-    String submittedAt,
+    Instant submittedAt,
     List<AssessmentItemResponseTurnResponse> turns
 ) {
 }

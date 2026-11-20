@@ -58,7 +58,7 @@ public class ViewAssessmentBlueprintsUseCase implements IUseCase<ViewAssessmentB
             input.schoolId(),
             input.isActive(),
             input.languageId(),
-            input.assessmentKind(),
+            input.assessmentKind() == null ? null : input.assessmentKind().name(),
             input.keyword(),
             input.page(),
             input.size()

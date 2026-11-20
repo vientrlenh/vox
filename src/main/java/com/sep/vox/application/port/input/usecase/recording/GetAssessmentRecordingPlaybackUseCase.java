@@ -76,8 +76,8 @@ public class GetAssessmentRecordingPlaybackUseCase
         return records.stream()
             .map(recording -> new AssessmentRecordingPlaybackResponse(
                 recording.getId(),
-                recording.getStreamType().name(),
-                recording.getStatus().name(),
+                recording.getStreamType(),
+                recording.getStatus(),
                 recording.getSource(),
                 recording.getDurationSeconds(),
                 canonicalIds.contains(recording.getId()),

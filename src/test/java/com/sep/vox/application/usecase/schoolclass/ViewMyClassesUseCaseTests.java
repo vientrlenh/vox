@@ -77,7 +77,7 @@ class ViewMyClassesUseCaseTests {
                 eq(schoolId), eq(callerId), any(), any(), eq(2), eq(20)))
             .thenReturn(new PageResult<>(List.of(), 2, 20, 0, 0));
 
-        useCase.execute(new ViewMyClassesQuery(schoolId, "  eng 01 ", "ACTIVE", 2, 20));
+        useCase.execute(new ViewMyClassesQuery(schoolId, "  eng 01 ", SchoolClassStatus.ACTIVE, 2, 20));
 
         verify(schoolClassRepository)
             .findByUserId(schoolId, callerId, "eng 01", SchoolClassStatus.ACTIVE, 2, 20);
@@ -104,17 +104,6 @@ class ViewMyClassesUseCaseTests {
             ForbiddenException.class,
             () -> useCase.execute(new ViewMyClassesQuery(schoolId, null, null, 1, 10))
         );
-    }
-
-    @Test
-    void should_reject_unknown_status() {
-        givenActiveCallerInSchool();
-
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () -> useCase.execute(new ViewMyClassesQuery(schoolId, null, "KHONG_TON_TAI", 1, 10))
-        );
-        assertThat(exception.getMessage()).isEqualTo("Trạng thái lớp học không hợp lệ");
     }
 
     private void givenActiveCallerInSchool() {

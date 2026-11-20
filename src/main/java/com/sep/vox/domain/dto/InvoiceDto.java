@@ -1,32 +1,36 @@
 package com.sep.vox.domain.dto;
 
+import java.time.Instant;
+
 import com.sep.vox.domain.model.invoice.Invoice;
 
 /**
- * Chứng từ của một đơn đã thu đủ tiền. Chỉ có hai trường, và đó là toàn bộ những gì hóa đơn tự nó
- * biết -- số tiền, mua gì, trả bằng cách nào đều nằm ở Order và PaymentRecord. Vì vậy DTO này KHÔNG
- * đứng một mình được: nó luôn xuất hiện như một trường của đơn (xem {@code Order.invoice}).
+ * The receipt of an order that has been fully paid. It has only two fields, and that is everything
+ * the invoice knows by itself -- the amount, what was bought and how it was paid all live on Order
+ * and PaymentRecord. That is why this DTO is NOT able to stand alone: it always appears as a field
+ * of an order (see {@code Order.invoice}).
  *
- * <p>KHÔNG có {@code orderId}: hóa đơn nằm lồng trong chính đơn của nó, chép lại id của cha là thừa.
- * Đây là chỗ khác {@link OrderItemDto} -- dòng hàng phải giữ {@code orderId} vì batch loader gom
- * nhóm theo nó, còn hóa đơn là quan hệ 1-1 nên gom bằng chính domain model trước khi map sang DTO.
+ * <p>There is NO {@code orderId}: the invoice is nested inside its own order, so copying the id of
+ * the parent is redundant. This is where it differs from {@link OrderItemDto} -- an order line has to
+ * keep {@code orderId} because the batch loader groups by it, while the invoice is a 1-1 relation, so
+ * it is grouped by the domain model itself before being mapped to the DTO.
  *
- * <p>KHÔNG có {@code paymentId}: người đọc không cần một con trỏ, họ cần các dữ kiện của lần thanh
- * toán -- {@code Order.payments} trả lời việc đó.
+ * <p>There is NO {@code paymentId}: the reader does not need a pointer, they need the facts of the
+ * payment -- {@code Order.payments} answers that.
  *
- * <p>KHÔNG có {@code id}: {@code invoiceNumber} vốn đã duy nhất và là thứ người ta đọc cho nhau qua
- * điện thoại, nên nếu sau này có đường tải chứng từ thì khóa của nó nên là số hóa đơn
- * ({@code InvoiceRepository.findByInvoiceNumber} đã sẵn) chứ không phải một UUID.
+ * <p>There is NO {@code id}: {@code invoiceNumber} is already unique and is what people read out to
+ * each other over the phone, so if a document download path appears later, its key should be the
+ * invoice number ({@code InvoiceRepository.findByInvoiceNumber} is already there) rather than a UUID.
  */
 public record InvoiceDto(
     String invoiceNumber,
-    String issueDate
+    Instant issueDate
 ) {
 
     public static InvoiceDto toDto(Invoice invoice) {
         return new InvoiceDto(
             invoice.getInvoiceNumber(),
-            invoice.getIssueDate() == null ? null : invoice.getIssueDate().toString()
+            invoice.getIssueDate()
         );
     }
 }

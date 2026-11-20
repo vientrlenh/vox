@@ -13,13 +13,13 @@ public record SubscriptionPlanDto(
     String name,
     String tagline,
     BigDecimal priceVnd, 
-    String periodType, 
+    SubscriptionPlanPeriod periodType, 
     Integer periodCount,
     Integer maxTimePerAttemptMin,
-    String status,
+    SubscriptionPlanStatus status,
     Long version,
-    String createdAt, 
-    String updatedAt, 
+    Instant createdAt, 
+    Instant updatedAt, 
     UUID createdBy, 
     UUID updatedBy, 
     UUID replacedByPlanId
@@ -31,28 +31,16 @@ public record SubscriptionPlanDto(
             plan.getName(), 
             plan.getTagline(), 
             plan.getPriceVnd(), 
-            valueOf(plan.getPeriodType()), 
+            plan.getPeriodType(), 
             plan.getPeriodCount(), 
             plan.getMaxTimePerAttemptMin(), 
-            valueOf(plan.getStatus()), 
+            plan.getStatus(), 
             plan.getVersion(), 
-            fromInstant(plan.getCreatedAt()), 
-            fromInstant(plan.getUpdatedAt()), 
+            plan.getCreatedAt(), 
+            plan.getUpdatedAt(), 
             plan.getCreatedBy(), 
             plan.getUpdatedBy(), 
             plan.getReplacedByPlanId()
         );
-    }
-
-    private static String valueOf(SubscriptionPlanPeriod period) {
-        return period == null ? null : period.name();
-    }
-
-    private static String valueOf(SubscriptionPlanStatus status) {
-        return status == null ? null : status.name();
-    }
-
-    private static String fromInstant(Instant instant) {
-        return instant == null ? null : instant.toString();
     }
 }

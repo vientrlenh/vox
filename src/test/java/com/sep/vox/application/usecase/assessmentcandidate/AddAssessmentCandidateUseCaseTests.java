@@ -29,6 +29,7 @@ import com.sep.vox.application.port.input.usecase.assessmentcandidate.AddAssessm
 import com.sep.vox.application.query.dto.UserRoleInfo;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.AssessmentCandidateDto;
+import com.sep.vox.domain.model.assessment.AssessmentCandidateStatus;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentCandidate;
 import com.sep.vox.domain.model.assessment.AssessmentKind;
@@ -93,7 +94,7 @@ class AddAssessmentCandidateUseCaseTests {
         assertThat(result.assessmentId()).isEqualTo(assessmentId);
         assertThat(result.scheduleId()).isNull();
         assertThat(result.assignedPaperId()).isNull();
-        assertThat(result.status()).isEqualTo("ASSIGNED");
+        assertThat(result.status()).isEqualTo(AssessmentCandidateStatus.ASSIGNED);
         verify(assessmentCandidateRepository).save(any(AssessmentCandidate.class));
     }
 

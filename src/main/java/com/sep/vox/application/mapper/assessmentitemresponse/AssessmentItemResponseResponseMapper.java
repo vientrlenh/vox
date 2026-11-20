@@ -22,7 +22,7 @@ public final class AssessmentItemResponseResponseMapper {
             response.getAudioUrl(),
             response.getDurationSeconds(),
             response.getTranscript(),
-            response.getSubmittedAt() == null ? null : response.getSubmittedAt().toString(),
+            response.getSubmittedAt(),
             turns.stream().map(AssessmentItemResponseResponseMapper::toTurnResponse).toList()
         );
     }
@@ -32,14 +32,14 @@ public final class AssessmentItemResponseResponseMapper {
             turn.getId(),
             turn.getAssessmentItemResponseId(),
             turn.getTurnOrder(),
-            turn.getTurnType().name(),
+            turn.getTurnType(),
             turn.getPromptText(),
             turn.getAudioUrl(),
             turn.getTranscript(),
             turn.getDurationSeconds(),
             turn.getWordCount(),
-            turn.getAnsweredAt() == null ? null : turn.getAnsweredAt().toString(),
-            turn.getCreatedAt() == null ? null : turn.getCreatedAt().toString()
+            turn.getAnsweredAt(),
+            turn.getCreatedAt()
         );
     }
 }

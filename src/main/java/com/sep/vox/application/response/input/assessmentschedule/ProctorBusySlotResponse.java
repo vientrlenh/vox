@@ -1,16 +1,17 @@
 package com.sep.vox.application.response.input.assessmentschedule;
 
+import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Một giáo viên đang vướng lịch: đã gác ca {@code scheduleId} chạy từ {@code startDate} đến
- * {@code endDate}. Giao diện dùng để làm mờ giáo viên bận trong danh sách chọn kèm lý do, thay vì
- * để người dùng bấm rồi ăn lỗi.
+ * A teacher who is already booked: they proctor session {@code scheduleId}, which runs from {@code startDate} to
+ * {@code endDate}. The UI uses it to grey out busy teachers in the picker list together with the reason, instead of
+ * letting the user click and run into an error.
  */
 public record ProctorBusySlotResponse(
     UUID teacherId,
     UUID scheduleId,
-    String startDate,
-    String endDate
+    Instant startDate,
+    Instant endDate
 ) {
 }

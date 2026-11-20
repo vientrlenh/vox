@@ -27,16 +27,17 @@ import com.sep.vox.application.query.dto.AppealStatsInfo;
 import com.sep.vox.application.query.dto.AppealSummaryInfo;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.UserDto;
+import com.sep.vox.domain.model.assessment.AssessmentAppealStatus;
 import com.sep.vox.interfaces.shared.PageArguments;
 
 import graphql.schema.DataFetchingEnvironment;
 
 /**
- * Chỉ còn góc nhìn của school admin.
+ * Only the school admin's point of view remains.
  *
- * <p>{@code myAppealTasks} / {@code appealTaskDetail} đã bị gỡ: vòng phúc khảo giờ là
- * một dòng phân công như ba vòng kia, nên giáo viên xem ở {@code myGradingTasks} và
- * chấm ở {@code gradingTaskDetail} — đúng mục tiêu "một hàng đợi duy nhất".
+ * <p>{@code myAppealTasks} / {@code appealTaskDetail} have been removed: the appeal round is now
+ * an assignment row like the other three rounds, so the teacher views it in {@code myGradingTasks} and
+ * grades it in {@code gradingTaskDetail} — exactly the "one single queue" goal.
  */
 @Controller("graphqlAssessmentAppealController")
 public class AssessmentAppealController {
@@ -69,7 +70,7 @@ public class AssessmentAppealController {
     @QueryMapping(name = "appeals")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<AppealSummaryInfo> appeals(
-            @Argument(name = "status") String status,
+            @Argument(name = "status") AssessmentAppealStatus status,
             @Argument(name = "keyword") String keyword,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
@@ -82,7 +83,7 @@ public class AssessmentAppealController {
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public PageResult<AppealSummaryInfo> assessmentAppeals(
             @Argument(name = "assessmentId") UUID assessmentId,
-            @Argument(name = "status") String status,
+            @Argument(name = "status") AssessmentAppealStatus status,
             @Argument(name = "keyword") String keyword,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
@@ -106,7 +107,7 @@ public class AssessmentAppealController {
     @QueryMapping(name = "myAppeals")
     @PreAuthorize("hasRole('STUDENT')")
     public PageResult<AppealSummaryInfo> myAppeals(
-            @Argument(name = "status") String status,
+            @Argument(name = "status") AssessmentAppealStatus status,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
         PageArguments.validate(page, size);

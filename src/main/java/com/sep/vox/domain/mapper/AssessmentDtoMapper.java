@@ -1,6 +1,5 @@
 package com.sep.vox.domain.mapper;
 
-import java.time.Instant;
 import java.util.List;
 
 import com.sep.vox.domain.common.PageResult;
@@ -26,21 +25,21 @@ public final class AssessmentDtoMapper {
             domain.getDescription(),
             domain.getSchoolId(),
             domain.getLanguageId(),
-            domain.getKind().name(),
-            domain.getDeliveryMode() == null ? null : domain.getDeliveryMode().name(),
-            domain.getStatus().name(),
+            domain.getKind(),
+            domain.getDeliveryMode(),
+            domain.getStatus(),
             domain.getMaxAttempt(),
             domain.getAssessmentTimeDurationSecond(),
-            domain.getResultDecisionMethod() == null ? null : domain.getResultDecisionMethod().name(),
-            valueOf(domain.getOpenAt()),
-            valueOf(domain.getCloseAt()),
+            domain.getResultDecisionMethod(),
+            domain.getOpenAt(),
+            domain.getCloseAt(),
             domain.getAssessmentPolicyId(),
             domain.isRequiresOtp(),
-            domain.getRequiredStreamType() == null ? null : domain.getRequiredStreamType().name(),
-            domain.getStreamTypePermission() == null ? null : domain.getStreamTypePermission().name(),
+            domain.getRequiredStreamType(),
+            domain.getStreamTypePermission(),
             papersLocked,
-            valueOf(domain.getCreatedAt()),
-            valueOf(domain.getUpdatedAt()),
+            domain.getCreatedAt(),
+            domain.getUpdatedAt(),
             domain.getCreatedBy(),
             domain.getUpdatedBy(),
             domain.getAiConfidenceThresholdPercent()
@@ -61,9 +60,5 @@ public final class AssessmentDtoMapper {
         return domains.stream()
             .map(AssessmentDtoMapper::toDto)
             .toList();
-    }
-
-    private static String valueOf(Instant value) {
-        return value == null ? null : value.toString();
     }
 }

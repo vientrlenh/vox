@@ -109,7 +109,7 @@ class UpdateAssessmentPaperStatusUseCaseTests {
 
         AssessmentPaperDto result = useCase.execute(new UpdateAssessmentPaperStatusCommand(PAPER_ID, "LOCK", null));
 
-        assertThat(result.status()).isEqualTo(AssessmentPaperStatus.LOCKED.name());
+        assertThat(result.status()).isEqualTo(AssessmentPaperStatus.LOCKED);
     }
 
     @Test
@@ -119,7 +119,7 @@ class UpdateAssessmentPaperStatusUseCaseTests {
 
         AssessmentPaperDto result = useCase.execute(new UpdateAssessmentPaperStatusCommand(PAPER_ID, "LOCK", null));
 
-        assertThat(result.status()).isEqualTo(AssessmentPaperStatus.LOCKED.name());
+        assertThat(result.status()).isEqualTo(AssessmentPaperStatus.LOCKED);
     }
 
     @Test
@@ -143,7 +143,7 @@ class UpdateAssessmentPaperStatusUseCaseTests {
 
         AssessmentPaperDto result = useCase.execute(new UpdateAssessmentPaperStatusCommand(PAPER_ID, "REOPEN", null));
 
-        assertThat(result.status()).isEqualTo(AssessmentPaperStatus.DRAFT.name());
+        assertThat(result.status()).isEqualTo(AssessmentPaperStatus.DRAFT);
     }
 
     // --- Khoá mã đề cuối cùng là lúc phân đề tự động chạy được ---
@@ -218,7 +218,7 @@ class UpdateAssessmentPaperStatusUseCaseTests {
 
         AssessmentPaperDto result = useCase.execute(new UpdateAssessmentPaperStatusCommand(PAPER_ID, "LOCK", null));
 
-        assertThat(result.status()).isEqualTo(AssessmentPaperStatus.LOCKED.name());
+        assertThat(result.status()).isEqualTo(AssessmentPaperStatus.LOCKED);
     }
 
     @Test
@@ -227,7 +227,7 @@ class UpdateAssessmentPaperStatusUseCaseTests {
 
         AssessmentPaperDto result = useCase.execute(new UpdateAssessmentPaperStatusCommand(PAPER_ID, "APPROVE", null));
 
-        assertThat(result.status()).isEqualTo(AssessmentPaperStatus.APPROVED.name());
+        assertThat(result.status()).isEqualTo(AssessmentPaperStatus.APPROVED);
     }
 
     /** Chốt hồi quy cho maker-checker: đường tắt chỉ nới nhánh LOCK, không nới nhánh duyệt. */
@@ -259,7 +259,7 @@ class UpdateAssessmentPaperStatusUseCaseTests {
 
         AssessmentPaperDto result = useCase.execute(new UpdateAssessmentPaperStatusCommand(PAPER_ID, "SUBMIT", null));
 
-        assertThat(result.status()).isEqualTo(AssessmentPaperStatus.IN_REVIEW.name());
+        assertThat(result.status()).isEqualTo(AssessmentPaperStatus.IN_REVIEW);
     }
 
     @Test

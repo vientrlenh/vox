@@ -82,7 +82,7 @@ class ViewAssessmentSchedulesUseCaseTests {
         List<AssessmentScheduleDto> result = useCase.execute(new ViewAssessmentSchedulesQuery(assessmentId, AssessmentScheduleStatus.DRAFT, null, null));
 
         assertThat(result).hasSize(2);
-        assertThat(result).allMatch(s -> "DRAFT".equals(s.status()));
+        assertThat(result).allMatch(s -> s.status() == AssessmentScheduleStatus.DRAFT);
     }
 
     @Test

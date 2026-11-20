@@ -11,7 +11,6 @@ import com.sep.vox.domain.dto.RubricVersionDto;
 import com.sep.vox.domain.mapper.RubricVersionDtoMapper;
 import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
-import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.school.SchoolUser;
@@ -54,13 +53,13 @@ public class ViewSchoolRubricVersionsUseCase implements IUseCase<ViewSchoolRubri
     @Override
     @Transactional(readOnly = true)
     public PageResult<RubricVersionDto> execute(ViewSchoolRubricVersionsQuery query) {
-        // 1. Xác thực User
+        // 1. Authenticate the user
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
         }
 
-        // 2. Chốt chặn an ninh bằng SchoolUser
+        // 2. Security checkpoint via SchoolUser
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Tài khoản chưa liên kết với trường học."));
         if (!schoolUser.getSchoolId().equals(query.schoolId())) {
@@ -73,7 +72,7 @@ public class ViewSchoolRubricVersionsUseCase implements IUseCase<ViewSchoolRubri
             throw new ForbiddenException("Trường học này đang bị vô hiệu hóa.");
         }
 
-        // 3. Lấy Rubric gốc và kiểm tra quyền SCHOOL (Đảm bảo Rubric này thuộc về trường học đang truy cập)
+        // 3. Load the root Rubric and check SCHOOL ownership (make sure this Rubric belongs to the school being accessed)
         Rubric rubric = rubricRepository.findById(query.rubricId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
 
@@ -81,17 +80,9 @@ public class ViewSchoolRubricVersionsUseCase implements IUseCase<ViewSchoolRubri
             throw new ForbiddenException("Hành động bị từ chối: Bộ Rubric này không thuộc về trường học của bạn.");
         }
 
-        String safeStatus = null;
-        if (query.status() != null && !query.status().isBlank()) {
-            try {
-                // Ép kiểu thử sang Enum, nếu sai nó sẽ văng IllegalArgumentException
-                safeStatus = RubricStatus.valueOf(query.status().trim().toUpperCase()).name();
-            } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Trạng thái (status) không hợp lệ. Chỉ chấp nhận DRAFT, PUBLISHED, ARCHIVED.");
-            }
-        }
+        String safeStatus = query.status() == null ? null : query.status().name();
 
-        // 4. Lấy danh sách Version phân trang từ Database
+        // 4. Fetch the paged version list from the database
         PageResult<RubricVersion> versionPage = rubricVersionRepository.findAllByRubricIdAndStatus(
                 query.rubricId(),
                 safeStatus,
@@ -99,7 +90,7 @@ public class ViewSchoolRubricVersionsUseCase implements IUseCase<ViewSchoolRubri
                 query.size()
         );
 
-        // 5. Sử dụng hàm toRubricVersionPage tui đã viết sẵn ở bước trước để trả về
+        // 5. Return using the toRubricVersionPage function written in the previous step
         return RubricVersionDtoMapper.toRubricVersionPage(versionPage);
     }
 }

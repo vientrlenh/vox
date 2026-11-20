@@ -1,6 +1,9 @@
 package com.sep.vox.domain.dto;
 
+import java.time.Instant;
 import java.util.UUID;
+
+import com.sep.vox.domain.model.school.SchoolClassStatus;
 
 public record SchoolClassDto(
         UUID id,
@@ -10,8 +13,8 @@ public record SchoolClassDto(
         String code,
         String name,
         String description,
-        String status,
-        String createdAt,
-        String updatedAt
+        SchoolClassStatus status,
+        Instant createdAt,
+        Instant updatedAt
 ) {
 }

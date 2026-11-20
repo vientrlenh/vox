@@ -1,3 +1,14 @@
+"""
+An instant in time as an ISO-8601 timestamp with an offset, for example 2026-07-28T09:30:00+07:00.
+Input requires an offset (Z or +HH:MM); output is always UTC, for example 2026-07-28T02:30:00Z.
+"""
+scalar DateTime
+
+"""
+A calendar date without time zone in the format yyyy-MM-dd, for example 2026-07-28.
+"""
+scalar Date
+
 type Query {
     _empty: String
 }

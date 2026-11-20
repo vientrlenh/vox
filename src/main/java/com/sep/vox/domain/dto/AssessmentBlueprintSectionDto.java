@@ -1,5 +1,6 @@
 package com.sep.vox.domain.dto;
 
+import java.time.Instant;
 import java.math.BigDecimal;
 import java.util.UUID;
 
@@ -11,8 +12,8 @@ public record AssessmentBlueprintSectionDto(
     String instruction,
     Integer sectionTimeLimitSeconds,
     BigDecimal sectionWeight,
-    String createdAt,
-    String updatedAt,
+    Instant createdAt,
+    Instant updatedAt,
     UUID createdBy,
     UUID updatedBy
 ) {

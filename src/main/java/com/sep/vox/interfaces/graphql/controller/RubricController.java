@@ -18,6 +18,7 @@ import com.sep.vox.application.port.input.usecase.rubricsystem.*;
 import com.sep.vox.application.port.input.usecase.rubricteacher.*;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.*;
+import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.interfaces.graphql.dto.request.*;
 import com.sep.vox.interfaces.graphql.mapper.*;
 import com.sep.vox.interfaces.shared.PageArguments;
@@ -111,7 +112,7 @@ public class RubricController {
 
 
     //============================== RUBRIC ========================================
-    //Update Rubric của hệ thống
+    // Update the system Rubric
     @MutationMapping(name = "updateSystemRubric")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public UUID updateSystemRubric(
@@ -124,7 +125,7 @@ public class RubricController {
     }
 
 
-    //Update Rubric của trường học
+    // Update the school Rubric
     @MutationMapping(name = "updateSchoolRubric")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public UUID updateSchoolRubric(
@@ -137,7 +138,7 @@ public class RubricController {
     }
 
 
-    //View Rubric của hệ thống
+    // View the system Rubric
     @QueryMapping(name = "viewSystemRubric")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public RubricDto viewSystemRubricById(@Argument(name = "id") UUID id) {
@@ -146,7 +147,7 @@ public class RubricController {
     }
 
 
-    //View Rubric của trường học
+    // View the school Rubric
     @QueryMapping(name = "viewSchoolRubric")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public RubricDto viewSchoolRubricById(
@@ -158,7 +159,7 @@ public class RubricController {
     }
 
 
-    //View Rubrics của hệ thống
+    // View the system Rubrics
     @QueryMapping(name = "viewSystemRubrics")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<RubricDto> viewSystemRubrics(
@@ -173,7 +174,7 @@ public class RubricController {
     }
 
 
-    //View Rubrics của trường học
+    // View the school Rubrics
     @QueryMapping(name = "viewSchoolRubrics")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<RubricDto> viewSchoolRubrics(
@@ -214,16 +215,16 @@ public class RubricController {
     }
 
 
-    //Lấy tất cẩ Rubric Version của trường
-    // Ko thể tách ra được do dùng chung 1 type bên scheme
-    // Xử lý Role
+    // Get all Rubric Versions of the school
+    // Cannot be split because one type in the schema is shared
+    // Handle roles
     @SchemaMapping(typeName = "Rubric", field = "versions")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public CompletableFuture<PageResult<RubricVersionDto>> getRubricVersions(
             RubricDto rubric,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size,
-            @Argument(name = "status") String status,
+            @Argument(name = "status") RubricStatus status,
             DataFetchingEnvironment env) {
 
         PageArguments.validate(page, size);
@@ -233,7 +234,7 @@ public class RubricController {
     }
 
 
-    //Search Rubric theo code, name của hệ thống
+    // Search system Rubrics by code, name
     @QueryMapping(name = "searchSystemRubrics")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<RubricDto> searchSystemRubrics(
@@ -258,19 +259,19 @@ public class RubricController {
 
 
     /**
-     * Danh mục bộ tiêu chí MẪU của hệ thống, cho trường duyệt trước khi sao về.
+     * Catalog of the system's TEMPLATE criteria sets, for schools to browse before copying them.
      *
-     * <p>Trả về đúng kiểu {@code Rubric} như mọi cổng khác, nên phần đi sâu xuống phiên bản / tiêu
-     * chí / dải kết quả dùng lại nguyên các resolver đã có -- vốn đã gộp truy vấn qua DataLoader và
-     * đã mở cho SCHOOL_ADMIN. Trường lọc bản đã ban hành bằng chính đối số sẵn có:
-     * {@code versions(status: "PUBLISHED")}.
+     * <p>Returns the same {@code Rubric} type as every other entry point, so going deeper into versions /
+     * criteria / result bands reuses the existing resolvers as they are -- which already batch queries through DataLoader and
+     * are already open to SCHOOL_ADMIN. A school filters for published versions with the existing argument:
+     * {@code versions(status: PUBLISHED)}.
      *
-     * <p>Tách khỏi {@link #searchSystemRubrics} thay vì nới quyền của nó: hai cổng phục vụ hai vai
-     * khác nhau, gộp lại thì lần sau ai đó siết hoặc nới một bên sẽ vô tình đổi luôn bên kia.
+     * <p>Kept separate from {@link #searchSystemRubrics} instead of widening its permissions: the two entry points serve two roles,
+     * and if merged, the next person who tightens or loosens one side would accidentally change the other.
      *
-     * <p>Bản nháp của hệ thống vẫn nhìn thấy được nếu trường không truyền bộ lọc trạng thái. Chấp
-     * nhận được, vì cửa chặn thật nằm ở hành động chứ không ở tầm nhìn:
-     * {@code CloneSystemRubricToSchoolUseCase} từ chối sao chép mọi phiên bản chưa PUBLISHED.
+     * <p>System drafts are still visible if the school passes no status filter. That is
+     * acceptable, because the real gate is on the action, not on visibility:
+     * {@code CloneSystemRubricToSchoolUseCase} refuses to copy any version that is not PUBLISHED.
      */
     @QueryMapping(name = "systemRubricTemplates")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
@@ -292,7 +293,7 @@ public class RubricController {
     }
 
 
-    //Search Rubric theo code, name của trường
+    // Search school Rubrics by code, name
     @QueryMapping(name = "searchSchoolRubrics")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<RubricDto> searchSchoolRubrics(
@@ -316,7 +317,7 @@ public class RubricController {
         return searchSchoolRubricsUseCase.execute(query);
     }
 
-    //Search Rubric theo code, name của Teacher (chỉ rubric thuộc trường của Teacher)
+    // Search Rubrics by code, name for a Teacher (only rubrics belonging to the Teacher's school)
     @QueryMapping(name = "searchTeacherRubrics")
     @PreAuthorize("hasRole('TEACHER')")
     public PageResult<RubricDto> searchTeacherRubrics(
@@ -340,7 +341,7 @@ public class RubricController {
     }
 
     //========================== RUBRIC VERSION ===============================================
-    // Update Rubric Version của hệ thống
+    // Update the system Rubric Version
     @MutationMapping(name = "updateSystemRubricVersion")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public UUID updateSystemRubricVersion(
@@ -353,7 +354,7 @@ public class RubricController {
     }
 
 
-    // Update Rubric Version của school Admin
+    // Update the Rubric Version of the school Admin
     @MutationMapping(name = "updateSchoolRubricVersion")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public UUID updateSchoolRubricVersion(
@@ -366,7 +367,7 @@ public class RubricController {
         return updateSchoolRubricVersionUseCase.execute(command);
     }
 
-    //View School Rubric Version Details của trường
+    // View the school Rubric Version details
     @QueryMapping(name = "viewSchoolRubricVersion")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public RubricVersionDto viewSchoolRubricVersion(
@@ -377,7 +378,7 @@ public class RubricController {
         return viewSchoolRubricVersionDetailsUseCase.execute(query);
     }
 
-    //View School Rubric Version Details của hệ thống
+    // View the system Rubric Version details
     @QueryMapping(name = "viewSystemRubricVersion")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public RubricVersionDto viewSystemRubricVersion(
@@ -388,13 +389,13 @@ public class RubricController {
     }
 
 
-    //View School Rubric Versions của trường
+    // View the school Rubric Versions
     @QueryMapping(name = "viewSchoolRubricVersions")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<RubricVersionDto> viewSchoolRubricVersions(
             @Argument(name = "schoolId") UUID schoolId,
             @Argument(name = "rubricId") UUID rubricId,
-            @Argument(name = "status") String status,
+            @Argument(name = "status") RubricStatus status,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size
     ) {
@@ -405,12 +406,12 @@ public class RubricController {
     }
 
 
-    //View System Rubric Versions của hệ thống
+    // View the system Rubric Versions
     @QueryMapping(name = "viewSystemRubricVersions")
     @PreAuthorize("isAuthenticated()")
     public PageResult<RubricVersionDto> viewSystemRubricVersions(
             @Argument(name = "rubricId") UUID rubricId,
-            @Argument(name = "status") String status,
+            @Argument(name = "status") RubricStatus status,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size
     ) {
@@ -420,7 +421,7 @@ public class RubricController {
         return viewSystemRubricVersionsUseCase.execute(query);
     }
 
-    //View Rubric Versions cho Teacher (chỉ PUBLISHED, chỉ rubric thuộc trường của Teacher)
+    // View Rubric Versions for a Teacher (only PUBLISHED, only rubrics belonging to the Teacher's school)
     @QueryMapping(name = "viewTeacherRubricVersions")
     @PreAuthorize("hasRole('TEACHER')")
     public PageResult<RubricVersionDto> viewTeacherRubricVersions(
@@ -434,7 +435,7 @@ public class RubricController {
         return viewTeacherRubricVersionsUseCase.execute(query);
     }
 
-    // Lấy các tiêu chí(rubric criterions của rubric version
+    // Get the criteria (rubric criteria) of the rubric version
     @SchemaMapping(typeName = "RubricVersion", field = "criteria")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public CompletableFuture<PageResult<RubricCriterionDto>> getRubricCriteria(
@@ -454,7 +455,7 @@ public class RubricController {
     }
 
 
-    // Lấy Rubric ResultBand từ rubric version
+    // Get the Rubric ResultBands from the rubric version
     @SchemaMapping(typeName = "RubricVersion", field = "resultBands")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public CompletableFuture<PageResult<RubricResultBandDto>> getRubricResultBands(
@@ -474,7 +475,7 @@ public class RubricController {
     }
 
 
-    //Search Rubric version của hệ thống
+    // Search system Rubric versions
     @QueryMapping(name = "searchSystemRubricVersions")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<RubricVersionDto> searchSystemRubricVersions(
@@ -498,7 +499,7 @@ public class RubricController {
         return searchSystemRubricVersionsUseCase.execute(query);
     }
 
-    // Search Rubric Version của school
+    // Search school Rubric Versions
     @QueryMapping(name = "searchSchoolRubricVersions")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<RubricVersionDto> searchSchoolRubricVersions(
@@ -526,7 +527,7 @@ public class RubricController {
 
     //========================== RUBRIC CRITERION =======================
 
-    //Update Rubric Criterion của hệ thống
+    // Update the system Rubric Criterion
     @MutationMapping(name = "updateSystemRubricCriterion")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public UUID updateSystemRubricCriterion(
@@ -537,7 +538,7 @@ public class RubricController {
         return updateSystemRubricCriterionUseCase.execute(command);
     }
 
-    //Update Rubric Criterion của trường học
+    // Update the school Rubric Criterion
     @MutationMapping(name = "updateSchoolRubricCriterion")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public UUID updateSchoolRubricCriterion(
@@ -549,7 +550,7 @@ public class RubricController {
         return updateSchoolRubricCriterionUseCase.execute(command);
     }
 
-    //View Rubric Criterion của hệ thống
+    // View the system Rubric Criterion
     @QueryMapping(name = "viewSystemRubricCriterion")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public RubricCriterionDto viewSystemRubricCriterion(
@@ -559,7 +560,7 @@ public class RubricController {
         return viewSystemRubricCriterionDetailsUseCase.execute(query);
     }
 
-    // View Rubric Criterion của trường học
+    // View the school Rubric Criterion
     @QueryMapping(name = "viewSchoolRubricCriterion")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public RubricCriterionDto viewSchoolRubricCriterion(
@@ -571,7 +572,7 @@ public class RubricController {
     }
 
 
-    //View Danh sách Rubric Criterion của hệ thống
+    // View the system Rubric Criterion list
     @QueryMapping(name = "viewSystemRubricCriteria")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<RubricCriterionDto> viewSystemRubricCriteria(
@@ -585,7 +586,7 @@ public class RubricController {
         return viewSystemRubricCriteriaUseCase.execute(query);
     }
 
-    //View Danh sách Rubric Criterion của trường học
+    // View the school Rubric Criterion list
     @QueryMapping(name = "viewSchoolRubricCriteria")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<RubricCriterionDto> viewSchoolRubricCriteria(
@@ -642,7 +643,7 @@ public class RubricController {
     }
 
     // ====================RUBRIC RESULT BAND =====================
-    //Update Rubric Result Band của hệ thống
+    // Update the system Rubric Result Band
     @MutationMapping(name = "updateSystemRubricResultBand")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public UUID updateSystemRubricResultBand(
@@ -653,7 +654,7 @@ public class RubricController {
         return updateSystemRubricResultBandUseCase.execute(command);
     }
 
-    //Update school rubric result band của trường
+    // Update the school rubric result band
     @MutationMapping(name = "updateSchoolRubricResultBand")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public UUID updateSchoolRubricResultBand(
@@ -665,7 +666,7 @@ public class RubricController {
         return updateSchoolRubricResultBandUseCase.execute(command);
     }
 
-    //View Rubric Result Band của hệ thống
+    // View the system Rubric Result Band
     @QueryMapping(name = "viewSystemRubricResultBand")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public RubricResultBandDto viewSystemRubricResultBand(
@@ -675,7 +676,7 @@ public class RubricController {
         return viewSystemRubricResultBandDetailsUseCase.execute(query);
     }
 
-    //View Rubric Result Band của trường
+    // View the school Rubric Result Band
     @QueryMapping(name = "viewSchoolRubricResultBand")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public RubricResultBandDto viewSchoolRubricResultBand(
@@ -686,7 +687,7 @@ public class RubricController {
         return viewSchoolRubricResultBandDetailsUseCase.execute(query);
     }
 
-    //View Rubric Result Bands của hệ thống
+    // View the system Rubric Result Bands
     @QueryMapping(name = "viewSystemRubricResultBands")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<RubricResultBandDto> viewSystemRubricResultBands(
@@ -701,7 +702,7 @@ public class RubricController {
         return viewSystemRubricResultBandsUseCase.execute(query);
     }
 
-    //View Rubric Result Bands của trường học
+    // View the school Rubric Result Bands
     @QueryMapping(name = "viewSchoolRubricResultBands")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<RubricResultBandDto> viewSchoolRubricResultBands(
@@ -717,7 +718,7 @@ public class RubricController {
         return viewSchoolRubricResultBandsUseCase.execute(query);
     }
 
-    // GraphQL: TÌM KIẾM THANG ĐIỂM KẾT QUẢ CHO SYSTEM ADMIN
+    // GraphQL: SEARCH RESULT BANDS FOR SYSTEM ADMIN
     @QueryMapping(name = "searchSystemRubricResultBands")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<RubricResultBandDto> searchSystemRubricResultBands(
@@ -733,7 +734,7 @@ public class RubricController {
         return searchSystemRubricResultBandsUseCase.execute(query);
     }
 
-    // GraphQL: TÌM KIẾM THANG ĐIỂM KẾT QUẢ CHO SCHOOL ADMIN
+    // GraphQL: SEARCH RESULT BANDS FOR SCHOOL ADMIN
     @QueryMapping(name = "searchSchoolRubricResultBands")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<RubricResultBandDto> searchSchoolRubricResultBands(

@@ -59,10 +59,10 @@ public class ViewMyAssessmentResultsUseCase implements IUseCase<Void, List<Stude
     public List<StudentAssessmentResultSummaryResponse> execute(Void input) {
         UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
         List<AssessmentCandidate> candidates = assessmentCandidateRepository.findByStudentId(studentId);
-        // Nhớ theo rubricVersionId trong đúng lượt gọi này. Một học sinh thường thi nhiều lượt
-        // trên cùng một kỳ, tức cùng một rubric version -- tra lại từng dòng là hỏi DB đúng một
-        // câu giống hệt nhau nhiều lần. (Vòng lặp này vốn đã N+1 sẵn với session/result/band;
-        // không mở rộng thêm chỗ đó ở đây, chỉ không làm nó tệ hơn.)
+        // Cached by rubricVersionId within this very call. A student usually takes several attempts
+        // of the same assessment, i.e. the same rubric version -- looking it up per row asks the DB the exact same
+        // question many times. (This loop already had an N+1 on session/result/band; it is not widened
+        // here, just not made worse.)
         Map<UUID, RubricVersion> rubricVersionCache = new HashMap<java.util.UUID, com.sep.vox.domain.model.rubric.RubricVersion>();
         Map<UUID, Assessment> assessmentsById = new HashMap<>(assessmentRepository.findByIdIn(candidates.stream()
             .map(candidate -> candidate.getAssessmentId())
@@ -89,8 +89,8 @@ public class ViewMyAssessmentResultsUseCase implements IUseCase<Void, List<Stude
                 RubricResultBand rubricBand = result.getRubricResultBandId() == null
                     ? null
                     : rubricResultBandRepository.findById(result.getRubricResultBandId()).orElse(null);
-                // Query này gác hasRole('STUDENT') và chỉ quét candidate của chính người
-                // gọi, nên mọi dòng ở đây đều là bài của họ — không cần kiểm chính chủ.
+                // This query is guarded by hasRole('STUDENT') and only scans the caller's own
+                // candidates, so every row here is theirs -- no ownership check is needed.
                 boolean scoreVisible = AssessmentCandidateResultStatus.isVisibleToCandidate(result.getStatus());
                 RubricVersion rubricVersion = !scoreVisible || result.getRubricVersionId() == null
                     ? null
@@ -106,14 +106,14 @@ public class ViewMyAssessmentResultsUseCase implements IUseCase<Void, List<Stude
                     assessment.getKind().name(),
                     session.getId(),
                     session.getPaperId(),
-                    session.getStatus().name(),
+                    session.getStatus(),
                     session.isFlagged(),
-                    session.getStartedAt() == null ? null : session.getStartedAt().toString(),
-                    session.getSubmittedAt() == null ? null : session.getSubmittedAt().toString(),
+                    session.getStartedAt(),
+                    session.getSubmittedAt(),
                     scoreVisible ? result.getTotalScore() : null,
                     rubricVersion == null ? null : rubricVersion.getScoringScaleMin(),
                     rubricVersion == null ? null : rubricVersion.getScoringScaleMax(),
-                    result.getStatus().name(),
+                    result.getStatus(),
                     scoreVisible ? result.getRubricResultBandId() : null,
                     scoreVisible && rubricBand != null ? rubricBand.getCode() : null,
                     scoreVisible && rubricBand != null ? rubricBand.getName() : null

@@ -1,6 +1,5 @@
 package com.sep.vox.domain.mapper;
 
-import java.time.Instant;
 import java.util.List;
 
 import com.sep.vox.domain.common.PageResult;
@@ -14,8 +13,8 @@ public final class SchoolUserDtoMapper {
             schoolUser.getId(),  
             schoolUser.getSchoolId(), 
             schoolUser.getUserId(),
-            valueOf(schoolUser.getStartDate()),
-            valueOf(schoolUser.getEndDate())
+            schoolUser.getStartDate(),
+            schoolUser.getEndDate()
         );
     }
 
@@ -33,9 +32,5 @@ public final class SchoolUserDtoMapper {
             schoolUserPage.totalElements(), 
             schoolUserPage.totalPages()
         );
-    }
-
-    private static String valueOf(Instant dateTime) {
-        return dateTime == null ? null : dateTime.toString();
     }
 }

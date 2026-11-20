@@ -1,9 +1,12 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -11,6 +14,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.graphql.execution.ErrorType;
 import org.springframework.graphql.test.tester.GraphQlTester;
@@ -45,6 +49,8 @@ import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolTeachersB
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUserDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUsersBySchoolUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUsersForRequesterUseCase;
+import com.sep.vox.application.port.input.command.UpdateSchoolUserCommand;
+import com.sep.vox.application.response.input.schooluser.UpdateSchoolUserResponse;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.support.GraphQlControllerTest;
 
@@ -97,6 +103,8 @@ class SchoolAuthorizationGraphQlTests {
     private ListSchoolsWithOnGoingAssessmentUseCase listSchoolsWithOnGoingAssessmentUseCase;
     @MockitoBean
     private ViewSchoolDirectoryPageUseCase viewSchoolDirectoryPageUseCase;
+    @Autowired
+    private UpdateSchoolUserUseCase updateSchoolUserUseCase;
 
     private static <T> PageResult<T> emptyPage() {
         return new PageResult<>(List.of(), 1, 20, 0L, 0);
@@ -247,5 +255,34 @@ class SchoolAuthorizationGraphQlTests {
         when(viewSchoolDirectoryPageUseCase.execute(any())).thenReturn(emptyPage());
 
         assertTotalElementsIsZero(SCHOOL_DIRECTORY_PAGE_QUERY, "schoolDirectoryPage");
+    }
+
+    private static final String UPDATE_SCHOOL_USER_WITH_DATE_OF_BIRTH = """
+        mutation($dateOfBirth: Date) {
+            updateSchoolUser(schoolId: "%s", userId: "%s", input: { dateOfBirth: $dateOfBirth }) { __typename }
+        }""".formatted(ID, ID);
+
+    @Test
+    @WithMockUser(roles = "SCHOOL_ADMIN")
+    void update_school_user_should_deliver_a_date_of_birth_variable_as_a_local_date() {
+        when(updateSchoolUserUseCase.execute(any())).thenReturn(new UpdateSchoolUserResponse(ID));
+
+        graphQlTester.document(UPDATE_SCHOOL_USER_WITH_DATE_OF_BIRTH).variable("dateOfBirth", "2008-05-01").execute()
+            .errors().verify();
+
+        ArgumentCaptor<UpdateSchoolUserCommand> captor = ArgumentCaptor.forClass(UpdateSchoolUserCommand.class);
+        verify(updateSchoolUserUseCase).execute(captor.capture());
+        assertThat(captor.getValue().dateOfBirth()).isEqualTo(LocalDate.of(2008, 5, 1));
+        assertThat(captor.getValue().dateOfBirthProvided()).isTrue();
+    }
+
+    @Test
+    @WithMockUser(roles = "SCHOOL_ADMIN")
+    void update_school_user_should_reject_a_date_of_birth_that_is_not_yyyy_mm_dd() {
+        graphQlTester.document(UPDATE_SCHOOL_USER_WITH_DATE_OF_BIRTH).variable("dateOfBirth", "01/05/2008").execute()
+            .errors().expect(error -> error.getMessage() != null && error.getMessage().contains("dateOfBirth"))
+            .verify();
+
+        verifyNoInteractions(updateSchoolUserUseCase);
     }
 }

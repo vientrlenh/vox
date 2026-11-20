@@ -115,7 +115,7 @@ class UpdateAssessmentScheduleStatusUseCaseTests {
         AssessmentScheduleDto result = useCase.execute(command("PUBLISH", null));
 
         assertThat(schedule.getStatus()).isEqualTo(AssessmentScheduleStatus.PUBLISHED);
-        assertThat(result.status()).isEqualTo(AssessmentScheduleStatus.PUBLISHED.name());
+        assertThat(result.status()).isEqualTo(AssessmentScheduleStatus.PUBLISHED);
     }
 
     /**

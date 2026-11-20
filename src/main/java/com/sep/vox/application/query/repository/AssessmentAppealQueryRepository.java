@@ -9,6 +9,7 @@ import com.sep.vox.application.query.dto.AppealReviewerLiteInfo;
 import com.sep.vox.application.query.dto.AppealStatsInfo;
 import com.sep.vox.application.query.dto.AppealSummaryInfo;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.model.assessment.AssessmentAppealStatus;
 
 /**
  * The read side for appeals. All of it is cross-aggregate joins
@@ -26,10 +27,10 @@ public interface AssessmentAppealQueryRepository {
 
     /** {@code assessmentId} null = the whole school (the school admin's screen); with a value = one class test. */
     PageResult<AppealSummaryInfo> searchAppeals(
-        UUID schoolId, UUID assessmentId, String status, String keyword, int page, int size);
+        UUID schoolId, UUID assessmentId, AssessmentAppealStatus status, String keyword, int page, int size);
 
     PageResult<AppealSummaryInfo> searchAppealsByStudentId(
-        UUID studentId, String status, int page, int size);
+        UUID studentId, AssessmentAppealStatus status, int page, int size);
 
     AppealStatsInfo countByStatus(UUID schoolId);
 

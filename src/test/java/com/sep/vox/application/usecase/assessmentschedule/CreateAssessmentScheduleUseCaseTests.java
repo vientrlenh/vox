@@ -89,7 +89,7 @@ class CreateAssessmentScheduleUseCaseTests {
 
         AssessmentScheduleDto result = useCase.execute(new CreateAssessmentScheduleCommand(assessmentId, roomId, start, end));
 
-        assertThat(result.status()).isEqualTo(AssessmentScheduleStatus.DRAFT.name());
+        assertThat(result.status()).isEqualTo(AssessmentScheduleStatus.DRAFT);
         assertThat(result.schoolRoomId()).isEqualTo(roomId);
         verify(assessmentScheduleRepository).save(any(AssessmentSchedule.class));
     }
@@ -149,7 +149,7 @@ class CreateAssessmentScheduleUseCaseTests {
 
         AssessmentScheduleDto result = useCase.execute(new CreateAssessmentScheduleCommand(assessmentId, roomId, start, end));
 
-        assertThat(result.status()).isEqualTo(AssessmentScheduleStatus.DRAFT.name());
+        assertThat(result.status()).isEqualTo(AssessmentScheduleStatus.DRAFT);
         verify(assessmentScheduleRepository).save(any(AssessmentSchedule.class));
     }
 
@@ -196,7 +196,7 @@ class CreateAssessmentScheduleUseCaseTests {
 
         AssessmentScheduleDto result = useCase.execute(new CreateAssessmentScheduleCommand(assessmentId, roomId, start, end));
 
-        assertThat(result.status()).isEqualTo(AssessmentScheduleStatus.DRAFT.name());
+        assertThat(result.status()).isEqualTo(AssessmentScheduleStatus.DRAFT);
         verify(assessmentScheduleRepository).save(any(AssessmentSchedule.class));
     }
 

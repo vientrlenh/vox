@@ -69,9 +69,7 @@ public class JpaLearnerProfileQueryRepository
             target == null ? null : target.getCode(),
             target == null ? null : label(target),
             current == null || current.isAutoUpdateInterest(),
-            current == null || current.getQuizCompletedAt() == null
-                ? null
-                : current.getQuizCompletedAt().toString()
+            current == null ? null : current.getQuizCompletedAt()
         );
     }
 

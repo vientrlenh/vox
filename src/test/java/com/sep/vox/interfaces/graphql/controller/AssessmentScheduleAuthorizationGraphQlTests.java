@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import com.sep.vox.domain.model.assessment.AssessmentScheduleStatus;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -66,7 +67,7 @@ class AssessmentScheduleAuthorizationGraphQlTests {
     private ViewStudentBusySlotsUseCase viewStudentBusySlotsUseCase;
 
     private static AssessmentScheduleDto scheduleWithOnlyId() {
-        return new AssessmentScheduleDto(ID, UUID.randomUUID(), null, null, null, "DRAFT", null);
+        return new AssessmentScheduleDto(ID, UUID.randomUUID(), null, null, null, AssessmentScheduleStatus.DRAFT, null);
     }
 
     private void assertErrorType(String document, ErrorType expectedErrorType) {

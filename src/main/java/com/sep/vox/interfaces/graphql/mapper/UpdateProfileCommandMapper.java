@@ -6,12 +6,15 @@ import java.util.Map;
 import com.sep.vox.application.port.input.command.UpdateProfileCommand;
 
 /**
- * Nhận {@code Map} thô chứ không phải record: đó là cách DUY NHẤT phân biệt "client không gửi
- * trường" với "client gửi null" trong GraphQL -- record đã bind xong thì hai trường hợp đó đều ra
- * null. Cặp {@code containsKey} + giá trị chính là thứ làm nên ngữ nghĩa PATCH, và nhờ nó
- * {@code avatarUrl: null} mới mang nghĩa GỠ ảnh thay vì bị bỏ qua.
+ * Takes a raw {@code Map} instead of a record: that is the ONLY way to tell "the client did not send the
+ * field" from "the client sent null" in GraphQL -- once a record is bound, both cases come out as null.
+ * The pair {@code containsKey} + value is what gives PATCH semantics, and thanks to it
+ * {@code avatarUrl: null} means REMOVE the avatar instead of being ignored.
  *
- * <p>Cùng khuôn với {@link UpdateSchoolUserCommandMapper} -- sửa một bên thì ngó sang bên kia.
+ * <p>{@code dateOfBirth} arrives already coerced by the {@code Date} scalar, so it is a
+ * {@link LocalDate} or null and needs no parsing here.
+ *
+ * <p>Same shape as {@link UpdateSchoolUserCommandMapper} -- when you change one, look at the other.
  */
 public final class UpdateProfileCommandMapper {
 
@@ -26,7 +29,7 @@ public final class UpdateProfileCommandMapper {
             input.containsKey("phone"),
             valueOf(input.get("address")),
             input.containsKey("address"),
-            parseDateOfBirth(input.get("dateOfBirth")),
+            (LocalDate) input.get("dateOfBirth"),
             input.containsKey("dateOfBirth"),
             valueOf(input.get("avatarUrl")),
             input.containsKey("avatarUrl")
@@ -35,10 +38,5 @@ public final class UpdateProfileCommandMapper {
 
     private static String valueOf(Object value) {
         return value == null ? null : value.toString();
-    }
-
-    private static LocalDate parseDateOfBirth(Object value) {
-        if (value == null) return null;
-        return LocalDate.parse(value.toString());
     }
 }

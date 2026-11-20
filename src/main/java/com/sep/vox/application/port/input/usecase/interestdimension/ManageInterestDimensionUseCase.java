@@ -134,8 +134,8 @@ public class ManageInterestDimensionUseCase {
             dimension.isActive(),
             dimension.isQuizEligible(),
             dimension.getDisplayOrder(),
-            dimension.getCreatedAt() == null ? null : dimension.getCreatedAt().toString(),
-            dimension.getUpdatedAt() == null ? null : dimension.getUpdatedAt().toString()
+            dimension.getCreatedAt(),
+            dimension.getUpdatedAt()
         );
     }
 }

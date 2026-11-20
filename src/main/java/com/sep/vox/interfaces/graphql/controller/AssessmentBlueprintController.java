@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import com.sep.vox.domain.model.assessment.AssessmentKind;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
@@ -65,7 +66,7 @@ public class AssessmentBlueprintController {
             @Argument(name = "schoolId") UUID schoolId,
             @Argument(name = "isActive") Boolean isActive,
             @Argument(name = "languageId") UUID languageId,
-            @Argument(name = "assessmentKind") String assessmentKind,
+            @Argument(name = "assessmentKind") AssessmentKind assessmentKind,
             @Argument(name = "keyword") String keyword,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
@@ -107,7 +108,7 @@ public class AssessmentBlueprintController {
             .toList();
         return status == null
             ? versions
-            : versions.stream().filter(version -> status.name().equals(version.status())).toList();
+            : versions.stream().filter(version -> version.status() == status).toList();
     }
 
     @SchemaMapping(typeName = "AssessmentBlueprint", field = "versionCount")

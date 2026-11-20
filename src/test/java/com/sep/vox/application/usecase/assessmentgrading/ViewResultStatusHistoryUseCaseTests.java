@@ -94,7 +94,7 @@ class ViewResultStatusHistoryUseCaseTests {
 
         when(assessmentResultAuditQueryRepository.findHistory(candidateResultId)).thenReturn(List.of(
             new ResultStatusHistoryInfo(UUID.randomUUID(), candidateResultId,
-                "PENDING_REVIEW", "RELEASED", null, null,
+                AssessmentCandidateResultStatus.PENDING_REVIEW, AssessmentCandidateResultStatus.RELEASED, null, null,
                 "TEACHER_INITIAL", teacherId, "Cô Lan", "AI chấm đúng", Instant.now())));
     }
 

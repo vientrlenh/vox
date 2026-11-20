@@ -64,8 +64,8 @@ public class ViewStudentBusySlotsUseCase
                     conflict.studentId(),
                     schedule.getId(),
                     conflict.scheduleId(),
-                    conflict.startDate() == null ? null : conflict.startDate().toString(),
-                    conflict.endDate() == null ? null : conflict.endDate().toString())));
+                    conflict.startDate(),
+                    conflict.endDate())));
         }
         return slots;
     }

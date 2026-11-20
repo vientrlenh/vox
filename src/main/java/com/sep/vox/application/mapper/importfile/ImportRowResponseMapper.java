@@ -11,7 +11,6 @@ import com.sep.vox.application.response.input.importfile.ImportRowErrorResponse;
 import com.sep.vox.application.response.input.importfile.ImportRowResponse;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.importfile.ImportRow;
-import com.sep.vox.domain.model.importfile.ImportRowStatus;
 
 @Component
 public class ImportRowResponseMapper {
@@ -30,7 +29,7 @@ public class ImportRowResponseMapper {
             toDataEntries(jsonSerializationPort.toStringMap(row.getRawDataJson())),
             toDataEntries(jsonSerializationPort.toStringMap(row.getMappedDataJson())),
             toErrors(jsonSerializationPort.toStringMapList(row.getErrorsJson())),
-            valueOf(row.getStatus())
+            row.getStatus()
         );
     }
 
@@ -57,9 +56,5 @@ public class ImportRowResponseMapper {
         return errors.stream()
             .map(error -> new ImportRowErrorResponse(error.get("field"), error.get("message")))
             .toList();
-    }
-
-    private String valueOf(ImportRowStatus status) {
-        return status == null ? null : status.name();
     }
 }

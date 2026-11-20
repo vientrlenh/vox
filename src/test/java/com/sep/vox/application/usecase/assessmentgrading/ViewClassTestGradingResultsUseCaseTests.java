@@ -24,6 +24,7 @@ import com.sep.vox.application.port.input.usecase.assessmentgrading.ViewClassTes
 import com.sep.vox.application.query.dto.GradingAssignmentFilter;
 import com.sep.vox.application.query.repository.AssessmentGradingQueryRepository;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
 
 /**
  * Danh sách MỌI bài của một bài kiểm tra trên lớp — kể cả bài chưa có phân công.
@@ -83,7 +84,8 @@ class ViewClassTestGradingResultsUseCaseTests {
 
     @Test
     void should_pass_the_unassigned_only_filter_through() {
-        useCase.execute(new ViewClassTestGradingResultsQuery(assessmentId, "RELEASED", true, "thiên", 0, 20));
+        useCase.execute(new ViewClassTestGradingResultsQuery(
+            assessmentId, AssessmentCandidateResultStatus.RELEASED, true, "thiên", 0, 20));
 
         ArgumentCaptor<GradingAssignmentFilter> filter = ArgumentCaptor.forClass(GradingAssignmentFilter.class);
         verify(assessmentGradingQueryRepository).searchAssignments(filter.capture(), anyInt(), anyInt());

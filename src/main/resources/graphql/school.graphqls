@@ -1,3 +1,33 @@
+enum SchoolClassStatus {
+    INACTIVE
+    ACTIVE
+    ARCHIVED
+}
+
+enum SchoolGradeStatus {
+    INACTIVE
+    ACTIVE
+    ARCHIVED
+}
+
+enum GradeLevelStatus {
+    ACTIVE
+    INACTIVE
+}
+
+enum SchoolDirectoryOrigin {
+    OFFICIAL_IMPORT
+    ADMIN_CREATED
+    USER_SUBMITTED
+}
+
+enum UserStatus {
+    ACTIVE
+    INACTIVE
+    LOCKED
+    DISABLED
+}
+
 type School {
     id: ID!
     code: String!
@@ -9,15 +39,15 @@ type School {
     address: String
     studentCount: Int
     isActive: Boolean
-    createdAt: String
-    updatedAt: String
+    createdAt: DateTime
+    updatedAt: DateTime
     classes(page: Int = 1, size: Int = 10): [SchoolClass!]
     users(page: Int = 1, size: Int = 10): [SchoolUser!]
 }
 
 
 
-# Đổi tên cho đồng bộ với GraphQL (dùng Input thay vì Request)
+# Renamed to match GraphQL naming (Input instead of Request)
 input UpdateSchoolInput {
     name: String
     description: String
@@ -47,9 +77,9 @@ type SchoolRoom {
     name: String!
     description: String
     isActive: Boolean!
-    createdAt: String
+    createdAt: DateTime
     createdBy: String
-    updatedAt: String
+    updatedAt: DateTime
     updateBy: String
 }
 
@@ -77,9 +107,9 @@ type SchoolClass {
     code: String!
     name: String!
     description: String
-    status: String!
-    createdAt: String
-    updatedAt: String
+    status: SchoolClassStatus!
+    createdAt: DateTime
+    updatedAt: DateTime
     school: School
     schoolGrade: SchoolGrade
     language: SupportedLanguage
@@ -91,11 +121,11 @@ type SchoolGrade {
     code: String
     name: String
     description: String
-    startDate: String
-    endDate: String
-    status: String
-    createdAt: String
-    updatedAt: String
+    startDate: Date
+    endDate: Date
+    status: SchoolGradeStatus
+    createdAt: DateTime
+    updatedAt: DateTime
 }
 
 type SchoolClassPage {
@@ -111,8 +141,8 @@ type SchoolClassUser {
     userId: ID!
     schoolClassId: ID!
     isActive: Boolean!
-    joinedAt: String
-    leftAt: String
+    joinedAt: DateTime
+    leftAt: DateTime
     assignedBy: ID
     user: User
 }
@@ -132,7 +162,7 @@ type UpdateSchoolClassResponse {
 input UpdateSchoolClassInput {
     name: String
     description: String
-    status: String
+    status: SchoolClassStatus
 }
 
 type UpdateSchoolUserResponse {
@@ -143,11 +173,11 @@ input UpdateSchoolUserInput {
     fullName: String
     phone: String
     address: String
-    dateOfBirth: String
+    dateOfBirth: Date
     """
-    Đường dẫn ảnh đại diện do hệ thống cấp; null để gỡ ảnh.
-    Đây là đường DUY NHẤT đặt ảnh cho học sinh -- updateProfile từ chối học sinh tự đổi ảnh,
-    vì ảnh chân dung ở đây là dữ liệu định danh dùng khi giám thị điểm danh.
+    Avatar path issued by the system; null to remove the avatar.
+    This is the ONLY way to set a student's avatar -- updateProfile refuses to let students change it,
+    because the portrait here is identity data that proctors use when taking attendance.
     """
     avatarUrl: String
 }
@@ -156,8 +186,8 @@ type SchoolUser {
     id: ID!
     schoolId: ID
     userId: ID
-    startDate: String
-    endDate: String
+    startDate: DateTime
+    endDate: DateTime
     user: User
 }
 
@@ -172,8 +202,8 @@ type SchoolUserPage {
 input UpdateSchoolGradeInput {
     name: String
     description: String
-    startDate: String
-    endDate: String
+    startDate: Date
+    endDate: Date
 }
 
 type SchoolGradePage {
@@ -184,16 +214,16 @@ type SchoolGradePage {
     totalPages: Int!
 }
 
-# Catalog khối lớp dùng chung toàn hệ thống -- không còn schoolId.
+# Grade level catalog shared by the whole system -- no longer has a schoolId.
 type GradeLevel {
     id: ID!
     code: String!
     name: String!
     description: String
     order: Int!
-    status: String!
-    createdAt: String
-    updatedAt: String
+    status: GradeLevelStatus!
+    createdAt: DateTime
+    updatedAt: DateTime
 }
 
 type GradeLevelPage {
@@ -220,10 +250,10 @@ type SchoolDirectory {
     districtName: String
     domain: String
     address: String
-    origin: String
+    origin: SchoolDirectoryOrigin
     verified: Boolean
-    createdAt: String
-    updatedAt: String
+    createdAt: DateTime
+    updatedAt: DateTime
 }
 
 type SchoolDirectoryCursorPage {
@@ -240,34 +270,35 @@ type SchoolDirectoryPage {
     totalPages: Int!
 }
 
-# Nợ hạn mức AI (SchoolDebtEventType / SchoolDebtEvent / SchoolDebtEventPage / schoolDebtEvents) đã
-# chuyển sang school-balance.graphqls: nợ là mặt trái của số dư ví -- cùng một cái ví, một bên kể
-# tiền đi đâu, một bên kể vì sao trường bị khoá -- nên hai thứ đó đọc chung một chỗ thì dễ hiểu hơn.
-# Schema sau khi Spring GraphQL gộp file KHÔNG đổi, nên không có bên gọi nào phải sửa.
+# AI quota debt (SchoolDebtEventType / SchoolDebtEvent / SchoolDebtEventPage / schoolDebtEvents) moved to
+# school-balance.graphqls: debt is the other side of the wallet balance -- the same wallet, one side tells
+# where the money went and the other tells why the school is locked -- so reading the two together is
+# easier to understand. The schema after Spring GraphQL merges the files does NOT change, so no caller
+# has to be updated.
 
 extend type Query {
     schoolRoom(id: ID!): SchoolRoom
     schoolRooms(schoolId: ID!, page: Int, size: Int): SchoolRoomPageResult
     schools(page: Int = 1, size: Int = 20, search: String, isActive: Boolean): SchoolPage!
     school(id: ID!): School
-    schoolClasses(page: Int = 1, size: Int = 20, search: String, status: String, languageId: ID, schoolGradeId: ID): SchoolClassPage!
-    schoolUsersBySchool(schoolId: ID!, page: Int! = 1, size: Int! = 20, search: String, roleId: ID, roleCode: String, status: String, excludeClassId: ID): SchoolUserPage!
-    schoolUsersForRequester(schoolId: ID!, page: Int! = 1, size: Int! = 20, search: String, roleId: ID, status: String): SchoolUserPage!
-    schoolStudentsBySchool(schoolId: ID!, page: Int! = 1, size: Int! = 20, search: String, status: String): SchoolUserPage!
-    schoolTeachersBySchool(schoolId: ID!, page: Int! = 1, size: Int! = 20, search: String, status: String): SchoolUserPage!
+    schoolClasses(page: Int = 1, size: Int = 20, search: String, status: SchoolClassStatus, languageId: ID, schoolGradeId: ID): SchoolClassPage!
+    schoolUsersBySchool(schoolId: ID!, page: Int! = 1, size: Int! = 20, search: String, roleId: ID, roleCode: String, status: UserStatus, excludeClassId: ID): SchoolUserPage!
+    schoolUsersForRequester(schoolId: ID!, page: Int! = 1, size: Int! = 20, search: String, roleId: ID, status: UserStatus): SchoolUserPage!
+    schoolStudentsBySchool(schoolId: ID!, page: Int! = 1, size: Int! = 20, search: String, status: UserStatus): SchoolUserPage!
+    schoolTeachersBySchool(schoolId: ID!, page: Int! = 1, size: Int! = 20, search: String, status: UserStatus): SchoolUserPage!
     schoolUser(schoolId: ID!, userId: ID!): SchoolUser
     schoolClass(id: ID!): SchoolClass
     schoolClassUsers(schoolClassId: ID!, page: Int = 1, size: Int = 20): SchoolClassUserPage!
-    schoolClassesByUser(schoolId: ID!, userId: ID!, status: String, page: Int = 1, size: Int = 20): SchoolClassPage!
-    mySchoolClasses(schoolId: ID!, status: String, page: Int! = 1, size: Int! = 10): SchoolClassPage!
-    schoolGrades(schoolId: ID!, gradeLevelId: ID, status: String, page: Int, size: Int): SchoolGradePage
+    schoolClassesByUser(schoolId: ID!, userId: ID!, status: SchoolClassStatus, page: Int = 1, size: Int = 20): SchoolClassPage!
+    mySchoolClasses(schoolId: ID!, status: SchoolClassStatus, page: Int! = 1, size: Int! = 10): SchoolClassPage!
+    schoolGrades(schoolId: ID!, gradeLevelId: ID, status: SchoolGradeStatus, page: Int, size: Int): SchoolGradePage
     schoolGrade(schoolId: ID!, id: ID!): SchoolGrade
-    gradeLevels(page: Int! = 1, size: Int! = 20, search: String, status: String): GradeLevelPage!
+    gradeLevels(page: Int! = 1, size: Int! = 20, search: String, status: GradeLevelStatus): GradeLevelPage!
     gradeLevel(gradeLevelId: ID!): GradeLevel
     schoolDirectoryCursorPage(cursor: ID, limit: Int! = 10): SchoolDirectoryCursorPage
     schoolDirectoryPage(page: Int! = 1, size: Int! = 20): SchoolDirectoryPage
     schoolDirectory(id: ID!): SchoolDirectory 
-    "Id các trường đang có ca thi diễn ra — dùng để chặn trước nút đình chỉ gói."
+    "Ids of the schools that currently have an assessment running -- used to disable the suspend-plan button up front."
     schoolsWithOngoingAssessment: [ID!]
 }
 

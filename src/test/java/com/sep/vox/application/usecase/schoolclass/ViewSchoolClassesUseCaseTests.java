@@ -91,7 +91,7 @@ class ViewSchoolClassesUseCaseTests {
             20
         )).thenReturn(page);
 
-        PageResult<SchoolClassDto> result = useCase.execute(new ViewSchoolClassesQuery(1, 20, "  English   01  ", "ACTIVE", languageId, gradeId));
+        PageResult<SchoolClassDto> result = useCase.execute(new ViewSchoolClassesQuery(1, 20, "  English   01  ", SchoolClassStatus.ACTIVE, languageId, gradeId));
 
         assertThat(result.content()).hasSize(1);
         assertThat(result.content().getFirst().id()).isEqualTo(schoolClass.getId());
@@ -105,22 +105,6 @@ class ViewSchoolClassesUseCaseTests {
             gradeId,
             1, 
             20
-        );
-    }
-
-    @Test
-    void view_should_throw_when_status_is_invalid() {
-        UUID userId = UUID.randomUUID();
-        UUID schoolId = UUID.randomUUID();
-
-        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
-        User _user1 = user(userId, schoolId, UserStatus.ACTIVE);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(_user1));
-        when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
-
-        assertThrows(
-            IllegalArgumentException.class,
-            () -> useCase.execute(new ViewSchoolClassesQuery(1, 20, null, "DELETED", null, null))
         );
     }
 

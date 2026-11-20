@@ -27,7 +27,10 @@ import com.sep.vox.application.query.dto.AppealSummaryInfo;
 import com.sep.vox.application.query.dto.AppealTurnInfo;
 import com.sep.vox.application.query.repository.AssessmentAppealQueryRepository;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.model.assessment.AssessmentAppealStatus;
 import com.sep.vox.domain.model.assessment.GradingAssignmentStatus;
+import com.sep.vox.domain.model.assessment.GradingOutcome;
+import com.sep.vox.domain.model.assessment.TurnType;
 import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 
 import jakarta.persistence.EntityManager;
@@ -38,7 +41,8 @@ import jakarta.persistence.Tuple;
 public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQueryRepository {
 
     /** Trạng thái đơn còn đang xử lý — deadline chỉ có ý nghĩa ở đây. */
-    private static final Set<String> IN_PROGRESS_STATUSES = Set.of("APPROVED", "GRADING");
+    private static final Set<AssessmentAppealStatus> IN_PROGRESS_STATUSES =
+        Set.of(AssessmentAppealStatus.APPROVED, AssessmentAppealStatus.GRADING);
 
     @PersistenceContext
     private EntityManager em;
@@ -47,7 +51,7 @@ public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQuery
 
     @Override
     public PageResult<AppealSummaryInfo> searchAppeals(
-            UUID schoolId, UUID assessmentId, String status, String keyword, int page, int size) {
+            UUID schoolId, UUID assessmentId, AssessmentAppealStatus status, String keyword, int page, int size) {
         String normalizedKeyword = keyword == null || keyword.isBlank() ? null : "%" + keyword.trim().toLowerCase() + "%";
 
         // Do NOT join to the assessment slots here: one appeal has N slots, and a to-many join would multiply rows
@@ -67,7 +71,7 @@ public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQuery
         """, Tuple.class)
             .setParameter("schoolId", schoolId)
             .setParameter("assessmentId", assessmentId)
-            .setParameter("status", status)
+            .setParameter("status", statusName(status))
             .setParameter("keyword", normalizedKeyword)
             .setFirstResult(OneBasedPaging.toFirstResult(page, size))
             .setMaxResults(size);
@@ -83,7 +87,7 @@ public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQuery
         for (Tuple row : rows) {
             UUID appealId = row.get(0, UUID.class);
             AppealReviewerInfo reviewer = reviewersByAppeal.get(appealId);
-            String appealStatus = row.get(4, String.class);
+            AssessmentAppealStatus appealStatus = AssessmentAppealStatus.valueOf(row.get(4, String.class));
             Instant deadline = row.get(6, Instant.class);
             content.add(new AppealSummaryInfo(
                 appealId,
@@ -114,7 +118,7 @@ public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQuery
         """, Long.class)
             .setParameter("schoolId", schoolId)
             .setParameter("assessmentId", assessmentId)
-            .setParameter("status", status)
+            .setParameter("status", statusName(status))
             .setParameter("keyword", normalizedKeyword)
             .getSingleResult();
 
@@ -131,7 +135,7 @@ public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQuery
      */
     @Override
     public PageResult<AppealSummaryInfo> searchAppealsByStudentId(
-            UUID studentId, String status, int page, int size) {
+            UUID studentId, AssessmentAppealStatus status, int page, int size) {
         List<Tuple> rows = em.createQuery("""
             SELECT a.id, u.fullName, e.name, a.scoreBefore, a.status, a.requestedAt, a.deadline
             FROM AssessmentResultAppealJpaEntity a
@@ -144,7 +148,7 @@ public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQuery
             ORDER BY a.requestedAt DESC
         """, Tuple.class)
             .setParameter("studentId", studentId)
-            .setParameter("status", status)
+            .setParameter("status", statusName(status))
             .setFirstResult(OneBasedPaging.toFirstResult(page, size))
             .setMaxResults(size)
             .getResultList();
@@ -158,7 +162,7 @@ public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQuery
         for (Tuple row : rows) {
             UUID appealId = row.get(0, UUID.class);
             AppealReviewerInfo reviewer = reviewersByAppeal.get(appealId);
-            String appealStatus = row.get(4, String.class);
+            AssessmentAppealStatus appealStatus = AssessmentAppealStatus.valueOf(row.get(4, String.class));
             Instant deadline = row.get(6, Instant.class);
             content.add(new AppealSummaryInfo(
                 appealId,
@@ -184,7 +188,7 @@ public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQuery
             AND (:status IS NULL OR a.status = :status)
         """, Long.class)
             .setParameter("studentId", studentId)
-            .setParameter("status", status)
+            .setParameter("status", statusName(status))
             .getSingleResult();
         int totalPages = (int) Math.ceil((double) total / size);
         return new PageResult<>(content, page, size, total, totalPages);
@@ -208,18 +212,19 @@ public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQuery
         Instant now = Instant.now();
         Map<UUID, AppealReviewerInfo> map = new LinkedHashMap<UUID, AppealReviewerInfo>();
         for (Tuple row : rows) {
-            String assignmentStatus = row.get(4, String.class);
+            GradingAssignmentStatus assignmentStatus = GradingAssignmentStatus.valueOf(row.get(4, String.class));
+            String outcome = row.get(5, String.class);
             Instant deadlineAt = row.get(8, Instant.class);
             map.putIfAbsent(row.get(0, UUID.class), new AppealReviewerInfo(
                 row.get(1, UUID.class),
                 row.get(2, UUID.class),
                 row.get(3, String.class),
                 assignmentStatus,
-                row.get(5, String.class),
+                outcome == null ? null : GradingOutcome.valueOf(outcome),
                 row.get(6, Instant.class),
                 row.get(7, Instant.class),
                 deadlineAt,
-                GradingAssignmentStatus.ASSIGNED.name().equals(assignmentStatus)
+                assignmentStatus == GradingAssignmentStatus.ASSIGNED
                     && deadlineAt != null && deadlineAt.isBefore(now)
             ));
         }
@@ -341,7 +346,7 @@ public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQuery
             return Optional.empty();
         }
         Tuple row = rows.get(0);
-        String status = row.get(4, String.class);
+        AssessmentAppealStatus status = AssessmentAppealStatus.valueOf(row.get(4, String.class));
         Instant deadline = row.get(6, Instant.class);
 
         return Optional.of(new AppealDetailInfo(
@@ -397,7 +402,7 @@ public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQuery
             return Optional.empty();
         }
         Tuple row = rows.get(0);
-        String status = row.get(4, String.class);
+        AssessmentAppealStatus status = AssessmentAppealStatus.valueOf(row.get(4, String.class));
         Instant deadline = row.get(6, Instant.class);
         return Optional.of(new AppealDetailInfo(
             row.get(0, UUID.class),
@@ -564,7 +569,7 @@ public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQuery
                 .add(new AppealTurnInfo(
                     row.get(1, UUID.class),
                     row.get(2, Integer.class),
-                    row.get(3, String.class),
+                    TurnType.valueOf(row.get(3, String.class)),
                     row.get(4, String.class),
                     row.get(5, String.class),
                     row.get(6, String.class),
@@ -658,7 +663,11 @@ public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQuery
         return map;
     }
 
-    private boolean isOverdue(Instant deadline, String status, Instant now) {
+    private static String statusName(AssessmentAppealStatus status) {
+        return status == null ? null : status.name();
+    }
+
+    private boolean isOverdue(Instant deadline, AssessmentAppealStatus status, Instant now) {
         return deadline != null && deadline.isBefore(now) && IN_PROGRESS_STATUSES.contains(status);
     }
 }

@@ -2,6 +2,8 @@ package com.sep.vox.application.port.input.query;
 
 import java.util.UUID;
 
+import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
+
 /**
  * 0-based paging, in line with the other queries of the same assessment-appeal domain.
  *
@@ -16,7 +18,7 @@ public record SearchGradingAssignmentsQuery(
     UUID assessmentId,
     UUID scheduleId,
     UUID teacherId,
-    String resultStatus,
+    AssessmentCandidateResultStatus resultStatus,
     String roundType,
     String status,
     boolean unassignedOnly,

@@ -1,5 +1,6 @@
 package com.sep.vox.domain.dto;
 
+import java.time.Instant;
 import java.util.UUID;
 
 public record FrameworkDto(
@@ -8,7 +9,7 @@ public record FrameworkDto(
     String name,
     String description,
     boolean isActive,
-    String createdAt,
-    String updatedAt
+    Instant createdAt,
+    Instant updatedAt
 ) {
 }

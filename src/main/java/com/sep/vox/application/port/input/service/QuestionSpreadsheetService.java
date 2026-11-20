@@ -177,7 +177,7 @@ public class QuestionSpreadsheetService {
                     topicNameOf(question.questionTopicId(), topicCache),
                     question.status(),
                     createdByNameOf(question.createdBy(), userCache),
-                    question.createdAt()
+                    question.createdAt() == null ? null : question.createdAt().toString()
                 ));
             }
             autoSize(sheet, fullExportHeaders().size());

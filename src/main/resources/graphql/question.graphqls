@@ -74,7 +74,7 @@ type QuestionBankGrade {
     id: ID!
     questionBankId: ID!
     schoolGradeId: ID!
-    attachedAt: String
+    attachedAt: DateTime
     attachedBy: ID
     schoolGrade: SchoolGrade
 }
@@ -88,8 +88,8 @@ type QuestionBank {
     description: String
     ownerType: QuestionBankOwnerType!
     status: QuestionBankStatus!
-    createdAt: String
-    updatedAt: String
+    createdAt: DateTime
+    updatedAt: DateTime
     createdBy: ID
     updatedBy: ID
     grades: [QuestionBankGrade!]!
@@ -110,8 +110,8 @@ type QuestionTopic {
     name: String!
     description: String
     status: QuestionTopicStatus!
-    createdAt: String
-    updatedAt: String
+    createdAt: DateTime
+    updatedAt: DateTime
     createdBy: ID
     updatedBy: ID
     bank: QuestionBank!
@@ -154,7 +154,7 @@ type QuestionCollaborator {
     userId: ID!
     questionId: ID!
     permission: QuestionCollaboratorPermission!
-    assignedAt: String
+    assignedAt: DateTime
     user: User
 }
 
@@ -177,8 +177,8 @@ type Question {
     status: QuestionStatus!
     confidentiality: QuestionConfidentiality!
     securePoolId: ID
-    createdAt: String
-    updatedAt: String
+    createdAt: DateTime
+    updatedAt: DateTime
     createdBy: ID
     updatedBy: ID
     createdByUser: User
@@ -198,9 +198,9 @@ type QuestionPage {
     totalPages: Int!
 }
 
-# Một dòng cho mỗi QuestionStatus, kể cả status không có câu nào (count = 0) -- client cần
-# một trục ổn định để vẽ, không phải danh sách co giãn theo dữ liệu. Thứ tự bám theo thứ tự
-# khai báo của enum, cũng chính là thứ tự vòng đời câu hỏi.
+# One row per QuestionStatus, including statuses with no questions (count = 0) -- the client needs
+# a stable axis to draw, not a list that stretches with the data. The order follows the order in
+# which the enum is declared, which is also the question lifecycle order.
 type QuestionStatusCount {
     status: QuestionStatus!
     count: Int!
@@ -235,7 +235,7 @@ extend type Query {
         status: QuestionStatus,
         type: QuestionType,
         sharing: QuestionSharing,
-        "Tên enum QuestionAssetType, hoặc NONE để lấy câu KHÔNG có tài nguyên. Bỏ trống = không lọc."
+        "Name of a QuestionAssetType value, or NONE to get questions WITHOUT assets. Leave empty = no filter."
         assetType: String,
         scope: QuestionScope = ALL,
         keyword: String,
@@ -249,7 +249,7 @@ extend type Query {
         status: QuestionStatus,
         type: QuestionType,
         sharing: QuestionSharing,
-        "Tên enum QuestionAssetType, hoặc NONE để lấy câu KHÔNG có tài nguyên. Bỏ trống = không lọc."
+        "Name of a QuestionAssetType value, or NONE to get questions WITHOUT assets. Leave empty = no filter."
         assetType: String,
         scope: QuestionScope = ALL,
         keyword: String,
@@ -258,8 +258,8 @@ extend type Query {
     ): QuestionPage!
     question(id: ID!): Question
 
-    # Cùng bộ lọc với questions, trừ status (đó là chiều đang nhóm) và phân trang.
-    # Phạm vi đếm bám đúng quyền xem của người gọi, giống hệt questions.
+    # Same filters as questions, except status (that is the dimension being grouped) and paging.
+    # The counting scope follows the caller's viewing permissions exactly, the same as questions.
     questionStatusCounts(
         questionBankId: ID,
         questionTopicId: ID,

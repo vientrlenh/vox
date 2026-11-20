@@ -86,7 +86,7 @@ class UpdateAssessmentDeliveryModeUseCaseTests {
         AssessmentDto result = useCase.execute(new UpdateAssessmentDeliveryModeCommand(assessmentId, "STUDENT_DEVICE"));
 
         assertThat(assessment.getDeliveryMode()).isEqualTo(AssessmentDeliveryMode.STUDENT_DEVICE);
-        assertThat(result.deliveryMode()).isEqualTo("STUDENT_DEVICE");
+        assertThat(result.deliveryMode()).isEqualTo(AssessmentDeliveryMode.STUDENT_DEVICE);
         assertThat(result.papersLocked()).isTrue();
         verify(assessmentRepository).save(assessment);
     }
@@ -108,7 +108,7 @@ class UpdateAssessmentDeliveryModeUseCaseTests {
         AssessmentDto result = useCase.execute(new UpdateAssessmentDeliveryModeCommand(assessmentId, "LAB"));
 
         assertThat(assessment.getDeliveryMode()).isEqualTo(AssessmentDeliveryMode.LAB);
-        assertThat(result.deliveryMode()).isEqualTo("LAB");
+        assertThat(result.deliveryMode()).isEqualTo(AssessmentDeliveryMode.LAB);
         verify(assessmentRepository).save(assessment);
     }
 

@@ -1,5 +1,6 @@
 package com.sep.vox.domain.dto;
 
+import java.time.Instant;
 import java.util.UUID;
 
 public record AssessmentBlueprintDto(
@@ -11,8 +12,8 @@ public record AssessmentBlueprintDto(
     String name,
     String description,
     boolean isActive,
-    String createdAt,
-    String updatedAt,
+    Instant createdAt,
+    Instant updatedAt,
     UUID createdBy,
     UUID updatedBy
 ) {

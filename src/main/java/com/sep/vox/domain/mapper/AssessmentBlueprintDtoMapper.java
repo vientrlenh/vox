@@ -1,6 +1,5 @@
 package com.sep.vox.domain.mapper;
 
-import java.time.Instant;
 import java.util.List;
 
 import com.sep.vox.domain.common.PageResult;
@@ -22,8 +21,8 @@ public final class AssessmentBlueprintDtoMapper {
             domain.getName(),
             domain.getDescription(),
             domain.isActive(),
-            valueOf(domain.getCreatedAt()),
-            valueOf(domain.getUpdatedAt()),
+            domain.getCreatedAt(),
+            domain.getUpdatedAt(),
             domain.getCreatedBy(),
             domain.getUpdatedBy()
         );
@@ -43,9 +42,5 @@ public final class AssessmentBlueprintDtoMapper {
             page.totalElements(),
             page.totalPages()
         );
-    }
-
-    private static String valueOf(Instant value) {
-        return value == null ? null : value.toString();
     }
 }

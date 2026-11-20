@@ -15,7 +15,6 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.mapper.SchoolClassDtoMapper;
-import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
@@ -57,7 +56,7 @@ public class ViewSchoolClassesUseCase implements IUseCase<ViewSchoolClassesQuery
         PageResult<SchoolClass> result = schoolClassRepository.findBySchoolId(
             schoolId,
             StringNormalization.trimAndCollapseSpaces(input.search()),
-            parseStatus(input.status()),
+            input.status(),
             input.languageId(),
             input.schoolGradeId(),
             input.page(), 
@@ -90,18 +89,6 @@ public class ViewSchoolClassesUseCase implements IUseCase<ViewSchoolClassesQuery
             .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
             throw new IllegalStateException("Trường học không hoạt động");
-        }
-    }
-
-    private SchoolClassStatus parseStatus(String status) {
-        String normalized = StringNormalization.trimAndCollapseSpaces(status);
-        if (normalized == null) {
-            return null;
-        }
-        try {
-            return SchoolClassStatus.valueOf(normalized);
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Trạng thái lớp học không hợp lệ");
         }
     }
 }

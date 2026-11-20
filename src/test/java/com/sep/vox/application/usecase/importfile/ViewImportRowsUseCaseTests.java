@@ -93,7 +93,7 @@ class ViewImportRowsUseCaseTests {
         when(importRowRepository.findBySessionId(sessionId, ImportRowStatus.INVALID, 1, 20))
             .thenReturn(page);
 
-        PageResult<ImportRowResponse> response = useCase.execute(new ViewImportRowsQuery(sessionId, 1, 20, "INVALID"));
+        PageResult<ImportRowResponse> response = useCase.execute(new ViewImportRowsQuery(sessionId, 1, 20, ImportRowStatus.INVALID));
 
         assertThat(response.content()).hasSize(1);
         assertThat(response.content().get(0).rawData()).extracting("key").containsExactly("Mã lớp");
@@ -103,7 +103,7 @@ class ViewImportRowsUseCaseTests {
     }
 
     @Test
-    void execute_should_pass_null_status_when_status_blank() {
+    void execute_should_pass_null_status_when_status_absent() {
         UUID userId = UUID.randomUUID();
         UUID schoolId = UUID.randomUUID();
         UUID sessionId = UUID.randomUUID();
@@ -117,7 +117,7 @@ class ViewImportRowsUseCaseTests {
         when(importRowRepository.findBySessionId(sessionId, null, 2, 10))
             .thenReturn(new PageResult<>(List.of(), 2, 10, 0L, 0));
 
-        useCase.execute(new ViewImportRowsQuery(sessionId, 2, 10, " "));
+        useCase.execute(new ViewImportRowsQuery(sessionId, 2, 10, null));
 
         verify(importRowRepository).findBySessionId(sessionId, null, 2, 10);
     }
@@ -157,11 +157,6 @@ class ViewImportRowsUseCaseTests {
     void execute_should_throw_when_page_or_size_invalid() {
         assertThrows(IllegalArgumentException.class, () -> useCase.execute(new ViewImportRowsQuery(UUID.randomUUID(), 0, 20, null)));
         assertThrows(IllegalArgumentException.class, () -> useCase.execute(new ViewImportRowsQuery(UUID.randomUUID(), 1, 0, null)));
-    }
-
-    @Test
-    void execute_should_throw_when_status_invalid() {
-        assertThrows(IllegalArgumentException.class, () -> useCase.execute(new ViewImportRowsQuery(UUID.randomUUID(), 1, 20, "UNKNOWN")));
     }
 
     @Test

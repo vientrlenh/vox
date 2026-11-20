@@ -113,7 +113,7 @@ class UpdateSchoolClassUseCaseTests {
             eq(userId)
         )).thenReturn(1);
 
-        UpdateSchoolClassResponse response = useCase.execute(new UpdateSchoolClassCommand(classId, null, false, null, false, "INACTIVE", true));
+        UpdateSchoolClassResponse response = useCase.execute(new UpdateSchoolClassCommand(classId, null, false, null, false, SchoolClassStatus.INACTIVE, true));
 
         assertThat(response.schoolClassId()).isEqualTo(classId);
     }
@@ -178,10 +178,10 @@ class UpdateSchoolClassUseCaseTests {
     }
 
     @Test
-    void update_should_throw_when_status_is_invalid() {
+    void update_should_throw_when_status_is_provided_without_a_value() {
         assertThrows(
             IllegalArgumentException.class,
-            () -> useCase.execute(new UpdateSchoolClassCommand(UUID.randomUUID(), null, false, null, false, "DELETED", true))
+            () -> useCase.execute(new UpdateSchoolClassCommand(UUID.randomUUID(), null, false, null, false, null, true))
         );
 
         verifyNoInteractions(userContextPort, userRepository, schoolRepository, schoolClassRepository);

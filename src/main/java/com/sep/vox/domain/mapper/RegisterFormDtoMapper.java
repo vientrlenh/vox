@@ -1,13 +1,13 @@
 package com.sep.vox.domain.mapper;
 
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.RegisterFormDto;
 import com.sep.vox.domain.model.registerform.RegisterForm;
-import com.sep.vox.domain.model.registerform.RegisterFormStatus;
 import com.sep.vox.domain.model.registerform.RegisterFormVerificationMethod;
 import com.sep.vox.domain.valueobject.DateOfBirth;
 import com.sep.vox.domain.valueobject.Email;
@@ -41,7 +41,7 @@ public class RegisterFormDtoMapper {
             valueOf(registerForm.getStudentCount()), 
             valueOf(registerForm.getVerificationMethod()), 
             registerForm.getRejectedReason(), 
-            valueOf(registerForm.getStatus())
+            registerForm.getStatus()
         );
     }
 
@@ -89,15 +89,11 @@ public class RegisterFormDtoMapper {
         return studentCount == null ? 0 : studentCount.value();
     }
 
-    private static String valueOf(DateOfBirth dateOfBirth) {
-        return dateOfBirth == null ? null : dateOfBirth.value().toString();
+    private static LocalDate valueOf(DateOfBirth dateOfBirth) {
+        return dateOfBirth == null ? null : dateOfBirth.value();
     }
 
     private static String valueOf(RegisterFormVerificationMethod method) {
         return method == null ? null : method.name();
-    }
-
-    private static String valueOf(RegisterFormStatus status) {
-        return status == null ? null : status.name();
     }
 }

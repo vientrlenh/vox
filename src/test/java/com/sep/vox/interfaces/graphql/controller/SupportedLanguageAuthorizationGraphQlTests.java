@@ -145,6 +145,19 @@ class SupportedLanguageAuthorizationGraphQlTests {
 
     @Test
     @WithMockUser(roles = "SYSTEM_ADMIN")
+    void detail_should_return_created_and_updated_at_as_date_time() {
+        when(viewSupportedLanguageDetailsUseCase.execute(any())).thenReturn(new SupportedLanguageDto(ID, "en",
+            "English", null, true, Instant.parse("2026-07-28T02:30:00Z"), Instant.parse("2026-07-29T00:00:00Z")));
+
+        graphQlTester.document("{ supportedLanguage(id: \"%s\") { createdAt updatedAt } }".formatted(ID))
+            .execute()
+            .errors().verify()
+            .path("supportedLanguage.createdAt").entity(String.class).isEqualTo("2026-07-28T02:30:00Z")
+            .path("supportedLanguage.updatedAt").entity(String.class).isEqualTo("2026-07-29T00:00:00Z");
+    }
+
+    @Test
+    @WithMockUser(roles = "SYSTEM_ADMIN")
     void list_detail_and_update_should_return_data_for_system_admin() {
         when(updateSupportedLanguageUseCase.execute(any())).thenReturn(new UpdateSupportedLanguageResponse(ID));
         assertListReturnsData();

@@ -19,8 +19,8 @@ import com.sep.vox.domain.repository.GradeLevelRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 /**
- * Đọc catalog khối lớp: mọi user đang hoạt động đều xem được (không còn giới hạn theo trường,
- * vì dữ liệu đã dùng chung). Chỉ thao tác ghi mới giới hạn system admin.
+ * Reads the grade level catalog: every active user can view it (no longer limited by school,
+ * because the data is shared). Only write operations are limited to the system admin.
  */
 @Service
 public class ViewGradeLevelsUseCase implements IUseCase<ViewGradeLevelsQuery, PageResult<GradeLevelDto>> {
@@ -46,9 +46,9 @@ public class ViewGradeLevelsUseCase implements IUseCase<ViewGradeLevelsQuery, Pa
             throw new UnauthorizedException("Tài khoản không tồn tại hoặc đã bị khóa.");
         }
 
-        // Mặc định ẩn Khối đã xóa mềm: khi không lọc theo trạng thái thì chỉ trả về ACTIVE.
-        // Admin vẫn xem được Khối đã xóa bằng cách truyền status=INACTIVE.
-        GradeLevelStatus status = parseStatus(input.status());
+        // Soft-deleted grade levels are hidden by default: without a status filter only ACTIVE is returned.
+        // Admins can still see deleted grade levels by passing status=INACTIVE.
+        GradeLevelStatus status = input.status();
         GradeLevelStatus effectiveStatus = status == null ? GradeLevelStatus.ACTIVE : status;
 
         PageResult<GradeLevel> result = gradeLevelRepository.findAll(
@@ -64,17 +64,5 @@ public class ViewGradeLevelsUseCase implements IUseCase<ViewGradeLevelsQuery, Pa
             result.totalElements(),
             result.totalPages()
         );
-    }
-
-    private GradeLevelStatus parseStatus(String status) {
-        String normalized = StringNormalization.trimAndCollapseSpaces(status);
-        if (normalized == null) {
-            return null;
-        }
-        try {
-            return GradeLevelStatus.valueOf(normalized.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Trạng thái khối học không hợp lệ");
-        }
     }
 }

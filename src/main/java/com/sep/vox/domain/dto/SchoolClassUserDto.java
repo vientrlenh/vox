@@ -1,5 +1,6 @@
 package com.sep.vox.domain.dto;
 
+import java.time.Instant;
 import java.util.UUID;
 
 public record SchoolClassUserDto(
@@ -7,8 +8,8 @@ public record SchoolClassUserDto(
     UUID userId,
     UUID schoolClassId,
     boolean isActive,
-    String joinedAt,
-    String leftAt,
+    Instant joinedAt,
+    Instant leftAt,
     UUID assignedBy
 ) {
 

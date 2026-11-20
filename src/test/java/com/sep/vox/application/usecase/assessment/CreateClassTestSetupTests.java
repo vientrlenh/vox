@@ -153,7 +153,7 @@ class CreateClassTestSetupTests {
     void should_stop_at_draft_so_teacher_can_author_papers_and_schedule() {
         CreateClassTestResponse result = useCase.execute(command(null, null, null, null));
 
-        assertThat(result.assessment().status()).isEqualTo(AssessmentStatus.DRAFT.name());
+        assertThat(result.assessment().status()).isEqualTo(AssessmentStatus.DRAFT);
     }
 
     /**

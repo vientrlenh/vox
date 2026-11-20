@@ -1,23 +1,26 @@
 package com.sep.vox.domain.dto;
 
+import com.sep.vox.domain.model.assessment.AssessmentRecordingAssemblyStatus;
+import com.sep.vox.domain.model.assessment.AssessmentRequiredStreamType;
+import java.time.Instant;
 import java.util.UUID;
 
 public record AssessmentRecordingDto(
     UUID id, 
     UUID assessmentSessionId, 
     UUID candidateId, 
-    String streamType, 
-    String status, 
+    AssessmentRequiredStreamType streamType, 
+    AssessmentRecordingAssemblyStatus status, 
     Long sizeBytes,
     Integer durationSeconds,
     String source,
-    // Bản được coi là chuẩn cho streamType này. Mỗi nguồn ingest giữ một hàng riêng, nên một
-    // phiên thi có thể có nhiều bản ghi cùng loại; cờ này nói bản nào nên mở trước, mà không
-    // giấu đi các bản còn lại -- bản WebRTC là bản duy nhất không đi qua máy thí sinh, nên nó
-    // phải luôn với tới được kể cả khi không phải bản chuẩn.
+    // The recording regarded as canonical for this streamType. Every ingest source keeps its own row, so one
+    // assessment session can have several recordings of the same kind; this flag says which one to open first without
+    // hiding the others -- the WebRTC recording is the only one that does not pass through the candidate's machine, so it
+    // must always stay reachable even when it is not the canonical one.
     boolean canonical,
-    String createdAt,
-    String assembledAt
+    Instant createdAt,
+    Instant assembledAt
 ) {
     
 }

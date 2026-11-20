@@ -2,6 +2,8 @@ package com.sep.vox.application.query.dto;
 
 import java.util.UUID;
 
+import com.sep.vox.domain.model.assessment.TurnType;
+
 /**
  * One question-answer turn in a part of the assessment. A part has MANY turns, each with its own audio.
  *
@@ -12,7 +14,7 @@ import java.util.UUID;
 public record GradingTurnInfo(
     UUID id,
     Integer turnOrder,
-    String turnType,
+    TurnType turnType,
     String promptText,
     String audioUrl,
     String transcript,

@@ -1,13 +1,14 @@
 package com.sep.vox.domain.dto;
 
+import java.time.Instant;
 import java.util.UUID;
 
 public record SchoolUserDto(
     UUID id,
     UUID schoolId, 
     UUID userId, 
-    String startDate, 
-    String endDate
+    Instant startDate, 
+    Instant endDate
 ) {
     
 }

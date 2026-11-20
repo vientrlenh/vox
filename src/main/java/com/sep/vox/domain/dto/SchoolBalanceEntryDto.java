@@ -1,5 +1,6 @@
 package com.sep.vox.domain.dto;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import com.sep.vox.domain.common.DecimalText;
@@ -22,7 +23,7 @@ public record SchoolBalanceEntryDto(
     String entryType,
     String amountVnd,
     String balanceAfterVnd,
-    String occurredAt,
+    Instant occurredAt,
     UUID subscriptionId,
     UUID orderId,
     UUID assessmentSessionId,
@@ -41,12 +42,12 @@ public record SchoolBalanceEntryDto(
             entry.getEntryType() == null ? null : entry.getEntryType().name(),
             DecimalText.of(entry.getAmountVnd()),
             DecimalText.of(entry.getBalanceAfterVnd()),
-            entry.getOccurredAt() == null ? null : entry.getOccurredAt().toString(),
+            entry.getOccurredAt(),
             entry.getSubscriptionId(),
             entry.getOrderId(),
             entry.getAssessmentSessionId(),
             entry.getPracticeSessionId(),
-            // Nullable ở tầng DB: chỉ OVERAGE_CHARGE mới bắt buộc có quota_type.
+            // Nullable at the DB level: only OVERAGE_CHARGE requires a quota_type.
             entry.getQuotaType() == null ? null : entry.getQuotaType().name(),
             DecimalText.of(entry.getCostUsd()),
             DecimalText.of(entry.getFxRateUsed()),

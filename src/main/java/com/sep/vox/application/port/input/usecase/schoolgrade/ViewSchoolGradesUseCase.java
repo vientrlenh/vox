@@ -5,7 +5,6 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
@@ -16,7 +15,6 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolGradeDto;
 
 import com.sep.vox.domain.model.school.SchoolGrade;
-import com.sep.vox.domain.model.school.SchoolGradeStatus;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
@@ -55,18 +53,18 @@ public class ViewSchoolGradesUseCase implements IUseCase<ViewSchoolGradesQuery, 
             throw new NotFoundException("Không tìm thấy trường học.");
         }
 
-        // 1. Gọi DB lấy danh sách phân trang (PageResult<SchoolGrade>)
-        //    status null/blank → mặc định ẩn Năm học đã xóa mềm (ARCHIVED).
-        //    Truyền status=ARCHIVED để lấy đúng bản đã xóa mềm.
+        // 1. Query the database for the paged list (PageResult<SchoolGrade>)
+        //    status null -> by default hides soft-deleted school years (ARCHIVED).
+        //    Pass status=ARCHIVED to get exactly the soft-deleted ones.
         PageResult<SchoolGrade> pageResult = schoolGradeRepository.findBySchoolId(
                 query.schoolId(),
                 query.gradeLevelId(),
-                parseStatus(query.status()),
+                query.status() == null ? null : query.status().name(),
                 query.page(),
                 query.size()
         );
 
-        // 2. Chuyển đổi sang DTO và trả về
+        // 2. Convert to DTOs and return
         return new PageResult<>(
                 pageResult.content().stream()
                         .map(SchoolGradeDto::toDto)
@@ -88,18 +86,6 @@ public class ViewSchoolGradesUseCase implements IUseCase<ViewSchoolGradesQuery, 
             if (!userSchoolId.equals(targetSchoolId)) {
                 throw new ForbiddenException("Bạn không có quyền xem năm học của trường khác.");
             }
-        }
-    }
-
-    private String parseStatus(String status) {
-        String normalized = StringNormalization.trimAndCollapseSpaces(status);
-        if (normalized == null || normalized.isBlank()) {
-            return null;
-        }
-        try {
-            return SchoolGradeStatus.valueOf(normalized.toUpperCase()).name();
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Trạng thái năm học không hợp lệ");
         }
     }
 }

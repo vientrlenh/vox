@@ -28,8 +28,10 @@ import com.sep.vox.domain.dto.SchoolClassUserDto;
 import com.sep.vox.domain.dto.SchoolGradeDto;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
 import com.sep.vox.domain.dto.UserDto;
+import com.sep.vox.domain.model.school.SchoolClassStatus;
 
 import graphql.schema.DataFetchingEnvironment;
+import com.sep.vox.domain.model.school.SchoolGradeStatus;
 
 class MyClassControllerTests {
 
@@ -56,10 +58,10 @@ class MyClassControllerTests {
     @Test
     void my_classes_should_forward_arguments_to_use_case() {
         PageResult<SchoolClassDto> expected = new PageResult<>(List.of(schoolClassDto()), 1, 10, 1, 1);
-        when(viewMyClassesUseCase.execute(new ViewMyClassesQuery(schoolId, "eng", "ACTIVE", 1, 10)))
+        when(viewMyClassesUseCase.execute(new ViewMyClassesQuery(schoolId, "eng", SchoolClassStatus.ACTIVE, 1, 10)))
             .thenReturn(expected);
 
-        PageResult<SchoolClassDto> result = controller.myClasses(schoolId, "eng", "ACTIVE", 1, 10);
+        PageResult<SchoolClassDto> result = controller.myClasses(schoolId, "eng", SchoolClassStatus.ACTIVE, 1, 10);
 
         assertThat(result).isEqualTo(expected);
     }
@@ -105,8 +107,8 @@ class MyClassControllerTests {
     void my_class_school_grade_field_should_reuse_the_shared_loader() {
         UUID gradeId = UUID.randomUUID();
         SchoolClassDto schoolClass = new SchoolClassDto(classId, schoolId, UUID.randomUUID(), gradeId,
-            "ENG-01", "English 01", null, "ACTIVE", null, null);
-        SchoolGradeDto expected = new SchoolGradeDto(gradeId, schoolId, UUID.randomUUID(), "G10", "Grade 10", null, null, null, "ACTIVE", null, null);
+            "ENG-01", "English 01", null, SchoolClassStatus.ACTIVE, null, null);
+        SchoolGradeDto expected = new SchoolGradeDto(gradeId, schoolId, UUID.randomUUID(), "G10", "Grade 10", null, null, null, SchoolGradeStatus.ACTIVE, null, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader<UUID, SchoolGradeDto> loader = mock(DataLoader.class);
         when(env.<UUID, SchoolGradeDto>getDataLoader("schoolGradeByClass")).thenReturn(loader);
@@ -121,7 +123,7 @@ class MyClassControllerTests {
     void my_class_language_field_should_reuse_the_shared_loader() {
         UUID languageId = UUID.randomUUID();
         SchoolClassDto schoolClass = new SchoolClassDto(classId, schoolId, languageId, UUID.randomUUID(),
-            "ENG-01", "English 01", null, "ACTIVE", null, null);
+            "ENG-01", "English 01", null, SchoolClassStatus.ACTIVE, null, null);
         SupportedLanguageDto expected = new SupportedLanguageDto(languageId, "EN", "English", null, true, null, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader<UUID, SupportedLanguageDto> loader = mock(DataLoader.class);
@@ -179,7 +181,7 @@ class MyClassControllerTests {
 
     private SchoolClassDto schoolClassDto() {
         return new SchoolClassDto(classId, schoolId, UUID.randomUUID(), UUID.randomUUID(),
-            "ENG-01", "English 01", "Starter", "ACTIVE", null, null);
+            "ENG-01", "English 01", "Starter", SchoolClassStatus.ACTIVE, null, null);
     }
 
     private SchoolClassUserDto memberDto(UUID userId) {

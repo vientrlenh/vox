@@ -44,7 +44,7 @@ public class SearchSystemRubricVersionsUseCase implements IUseCase<SearchSystemR
     @Override
     @Transactional(readOnly = true)
     public PageResult<RubricVersionDto> execute(SearchSystemRubricVersionsQuery query) {
-        // 1. Xác thực tài khoản System Admin
+        // 1. Authenticate the System Admin account
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
@@ -53,7 +53,7 @@ public class SearchSystemRubricVersionsUseCase implements IUseCase<SearchSystemR
             throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
         }
 
-        // 2. Chốt chặn bảo mật hệ thống: Chống xem chéo Rubric của Trường học
+        // 2. System security checkpoint: prevent cross-viewing school Rubrics
         Rubric rubric = rubricRepository.findById(query.rubricId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric yêu cầu."));
 
@@ -61,16 +61,16 @@ public class SearchSystemRubricVersionsUseCase implements IUseCase<SearchSystemR
             throw new ForbiddenException("BẢO MẬT: Bộ Rubric này thuộc về Trường học. System Admin không được quyền tìm kiếm các phiên bản của nó.");
         }
 
-        // 3. Gọi DB xử lý tìm kiếm phân trang (DÙNG CHUNG HÀM REPO)
+        // 3. Call the database for the paged search (SHARED REPO FUNCTION)
         PageResult<RubricVersion> pageResult = rubricVersionRepository.searchRubricVersions(
                 query.rubricId(),
                 query.keyword(),
-                query.status(),
+                query.status() == null ? null : query.status().name(),
                 query.page(),
                 query.size()
         );
 
-        // 4. Đóng gói map ngược sang DTO trả ra bên ngoài
+        // 4. Map back to DTOs to return to the caller
         return new PageResult<>(
                 pageResult.content().stream()
                         .map(RubricVersionDtoMapper::toRubricVersionDto)

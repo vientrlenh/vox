@@ -3,6 +3,9 @@ package com.sep.vox.application.query.dto;
 import java.time.Instant;
 import java.util.UUID;
 
+import com.sep.vox.domain.model.assessment.GradingAssignmentStatus;
+import com.sep.vox.domain.model.assessment.GradingOutcome;
+
 /**
  * The appeal grader of an appeal -- only ONE person, and the data is taken from the
  * {@code assessment_grading_assignments} row of the {@code APPEAL} round, not from a separate table.
@@ -14,10 +17,9 @@ public record AppealReviewerInfo(
     UUID assignmentId,
     UUID reviewerId,
     String reviewerName,
-    /** ASSIGNED | COMPLETED */
-    String status,
-    /** UPHELD | REGRADED | DECLINED; null khi chưa nộp. */
-    String outcome,
+    GradingAssignmentStatus status,
+    /** UPHELD | REGRADED | DECLINED; null until submitted. */
+    GradingOutcome outcome,
     Instant assignedAt,
     Instant completedAt,
     Instant deadlineAt,

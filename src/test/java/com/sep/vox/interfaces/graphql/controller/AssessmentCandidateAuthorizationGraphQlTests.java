@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import com.sep.vox.domain.model.assessment.AssessmentCandidateStatus;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -55,7 +56,7 @@ class AssessmentCandidateAuthorizationGraphQlTests {
     private UpdateAssessmentCandidatesAttendanceUseCase updateAssessmentCandidatesAttendanceUseCase;
 
     private static AssessmentCandidateDto candidateWithOnlyId() {
-        return new AssessmentCandidateDto(ID, UUID.randomUUID(), UUID.randomUUID(), null, null, "ATTENDED", null, null,
+        return new AssessmentCandidateDto(ID, UUID.randomUUID(), UUID.randomUUID(), null, null, AssessmentCandidateStatus.ATTENDED, null, null,
             null);
     }
 

@@ -14,6 +14,8 @@ import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTra
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.query.dto.MonitoredAssessmentSummary;
+import com.sep.vox.domain.model.assessment.AssessmentKind;
+import com.sep.vox.domain.model.assessment.AssessmentStatus;
 import com.sep.vox.application.query.repository.MonitoredAssessmentQueryRepository;
 import com.sep.vox.support.IntegrationTest;
 
@@ -66,6 +68,8 @@ class MonitoredAssessmentQuerySmokeTests {
         assertThat(found).singleElement().satisfies(assessment -> {
             assertThat(assessment.assessmentId()).isEqualTo(assessmentId);
             assertThat(assessment.code()).isEqualTo("SMOKE-" + assessmentId);
+            assertThat(assessment.kind()).isEqualTo(AssessmentKind.CENTRALIZED);
+            assertThat(assessment.status()).isEqualTo(AssessmentStatus.IN_PROGRESS);
             // SUM(CASE ...) only runs when there are rows: an empty combination cannot prove that
             // it maps to long.
             assertThat(assessment.liveScheduleCount()).isEqualTo(1L);

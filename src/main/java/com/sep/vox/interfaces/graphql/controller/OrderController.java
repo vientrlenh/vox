@@ -22,6 +22,8 @@ import com.sep.vox.domain.dto.InvoiceDto;
 import com.sep.vox.domain.dto.OrderDto;
 import com.sep.vox.domain.dto.OrderItemDto;
 import com.sep.vox.domain.dto.PaymentDto;
+import com.sep.vox.domain.model.order.OrderStatus;
+import com.sep.vox.domain.model.order.OrderType;
 import com.sep.vox.interfaces.shared.PageArguments;
 
 import graphql.schema.DataFetchingEnvironment;
@@ -51,16 +53,16 @@ public class OrderController {
     }
 
     /**
-     * @PreAuthorize ở đây là thứ DUY NHẤT chặn quyền: ViewOrdersUseCase không tự kiểm role, và nó đọc
-     * đơn của MỌI trường. Thiếu annotation này thì bất kỳ ai đăng nhập được -- kể cả học sinh -- cũng
-     * đọc được toàn bộ lịch sử giao dịch của tất cả các trường.
+     * @PreAuthorize here is the ONLY thing that restricts access: ViewOrdersUseCase does not check the
+     * role itself, and it reads the orders of EVERY school. Without this annotation anyone who can log
+     * in -- students included -- could read the whole transaction history of all schools.
      */
     @QueryMapping(name = "orders")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<OrderDto> orders(
             @Argument(name = "schoolId") UUID schoolId,
-            @Argument(name = "status") String status,
-            @Argument(name = "type") String type,
+            @Argument(name = "status") OrderStatus status,
+            @Argument(name = "type") OrderType type,
             @Argument(name = "keyword") String keyword,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
@@ -85,13 +87,15 @@ public class OrderController {
     }
 
     /**
-     * Hóa đơn là TRƯỜNG của đơn chứ không phải một danh sách riêng để hỏi. Nó quan hệ 1-1 với đơn và
-     * tự nó chỉ biết đúng hai dữ kiện (số, ngày phát hành) -- tiền, mua gì, trả thế nào đều nằm ở
-     * chính đơn này. Hỏi riêng thì client phải tự ghép lại, mà myOrders vốn đã là lịch sử giao dịch
-     * với đúng phân trang và phân quyền cần có.
+     * The invoice is a FIELD of the order, not a separate list to query. It has a 1-1 relation with the
+     * order and by itself knows only two facts (the number and the issue date) -- the money, what was
+     * bought and how it was paid all live on the order itself. Asking for it separately would make the
+     * client stitch the pieces together, and myOrders is already the transaction history with exactly
+     * the pagination and authorization that are needed.
      *
-     * <p>Không cần kiểm quyền lại ở đây: muốn tới được trường này thì phải qua myOrders/orders/order,
-     * và cả ba đều đã chặn ở @PreAuthorize cùng kiểm chủ sở hữu trong use case.
+     * <p>No second authorization check is needed here: reaching this field requires going through
+     * myOrders/orders/order, and all three already restrict access with @PreAuthorize and check the
+     * owner in the use case.
      */
     @SchemaMapping(typeName = "Order", field = "invoice")
     public CompletableFuture<InvoiceDto> invoice(OrderDto order, DataFetchingEnvironment env) {

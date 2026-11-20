@@ -21,8 +21,8 @@ public final class AssessmentProctoringAlertDtoMapper {
             alert.getSource(),
             alert.getDetail(),
             alert.getConfidence(),
-            alert.getCapturedAt() == null ? null : alert.getCapturedAt().toString(),
-            alert.getRaisedAt() == null ? null : alert.getRaisedAt().toString()
+            alert.getCapturedAt(),
+            alert.getRaisedAt()
         );
     }
 }

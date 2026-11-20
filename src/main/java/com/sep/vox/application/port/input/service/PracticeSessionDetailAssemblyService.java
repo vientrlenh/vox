@@ -81,16 +81,16 @@ public class PracticeSessionDetailAssemblyService {
         return PracticeSessionResponseMapper.toResponse(new TeacherPracticeSessionDetailDto(
             sessionId,
             summary.getTopicName(),
-            summary.getStartedAt().toString(),
+            summary.getStartedAt(),
             duration,
             itemCount,
             summary.getOverallScore(),
             scores,
             "COMPLETED".equals(summary.getStatus()),
             practiceItemResponseRepository.countAwaitingEvaluation(sessionId),
-            // Số câu ĐÃ BỎ CUỘC. Tách khỏi "đang chờ" vì hai chuyện khác hẳn nhau: chờ thì rồi
-            // sẽ có, bỏ cuộc thì không bao giờ. Gộp làm một là bắt học sinh ngồi quay vòng chờ
-            // một kết quả sẽ không tới.
+            // Count of answers that were GIVEN UP on. Kept apart from "awaiting" because the two are very
+            // different: a waiting answer will get a result eventually, a given-up one never will. Merging
+            // them would make the student wait in a loop for a result that will not arrive.
             practiceItemResponseRepository.countGradingGaveUp(
                 sessionId, PracticeGradingFlushService.MAX_GRADING_ATTEMPTS
             ),

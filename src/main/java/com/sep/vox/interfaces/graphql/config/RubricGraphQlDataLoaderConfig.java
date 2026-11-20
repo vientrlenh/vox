@@ -38,7 +38,7 @@ public class RubricGraphQlDataLoaderConfig {
                             Map<RubricVersionsKey, PageResult<RubricVersionDto>> result = new HashMap<>();
                             keys.forEach(k -> result.put(k, new PageResult<>(List.of(), k.page(), k.size(), 0, 0)));
                             Map<String, List<RubricVersionsKey>> keysByStatus = keys.stream()
-                                    .collect(Collectors.groupingBy(k -> k.status() == null ? "NULL" : k.status()));
+                                    .collect(Collectors.groupingBy(k -> k.status() == null ? "NULL" : k.status().name()));
 
                             for (Map.Entry<String, List<RubricVersionsKey>> entry : keysByStatus.entrySet()) {
                                 String status = "NULL".equals(entry.getKey()) ? null : entry.getKey();

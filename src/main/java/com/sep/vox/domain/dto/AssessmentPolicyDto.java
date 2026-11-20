@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
+import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
+
 public record AssessmentPolicyDto(
         UUID id,
         UUID schoolId,
@@ -17,7 +19,7 @@ public record AssessmentPolicyDto(
         BigDecimal passingScore,
         String strictness,
         int version,
-        String status,
+        AssessmentPolicyStatus status,
         Instant effectiveFrom,
         Instant effectiveTo,
         Instant createdAt,

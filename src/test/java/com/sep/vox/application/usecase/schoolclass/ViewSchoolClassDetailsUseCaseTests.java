@@ -22,6 +22,7 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.school.SchoolClass;
+import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
@@ -78,7 +79,7 @@ class ViewSchoolClassDetailsUseCaseTests {
         assertThat(result.schoolGradeId()).isEqualTo(gradeId);
         assertThat(result.code()).isEqualTo("ENG-01");
         assertThat(result.name()).isEqualTo("English 01");
-        assertThat(result.status()).isEqualTo("ACTIVE");
+        assertThat(result.status()).isEqualTo(SchoolClassStatus.ACTIVE);
     }
 
     @Test

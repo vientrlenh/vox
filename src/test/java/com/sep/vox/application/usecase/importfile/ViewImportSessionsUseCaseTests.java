@@ -1,7 +1,6 @@
 package com.sep.vox.application.usecase.importfile;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -77,7 +76,7 @@ class ViewImportSessionsUseCaseTests {
             20
         )).thenReturn(page);
 
-        PageResult<ImportSessionSummaryResponse> response = useCase.execute(new ViewImportSessionsQuery(1, 20, "SCHOOL_CLASS", "COMPLETED"));
+        PageResult<ImportSessionSummaryResponse> response = useCase.execute(new ViewImportSessionsQuery(1, 20, ImportType.SCHOOL_CLASS, ImportSessionStatus.COMPLETED));
 
         assertThat(response.content()).isEmpty();
         verify(importSessionRepository).findBySchoolId(
@@ -87,11 +86,6 @@ class ViewImportSessionsUseCaseTests {
             1, 
             20
         );
-    }
-
-    @Test
-    void execute_should_throw_when_status_invalid() {
-        assertThrows(IllegalArgumentException.class, () -> useCase.execute(new ViewImportSessionsQuery(1, 20, null, "UNKNOWN")));
     }
 
     private User activeUser(UUID id, UUID schoolId) {

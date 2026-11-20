@@ -10,7 +10,6 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.AssessmentPolicyDto;
 import com.sep.vox.domain.mapper.AssessmentPolicyDtoMapper;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
-import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
@@ -67,14 +66,7 @@ public class ViewSchoolAssessmentPoliciesUseCase implements IUseCase<ViewSchoolA
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa.");
         }
 
-        String safeStatus = null;
-        if (query.status() != null && !query.status().isBlank()) {
-            try {
-                safeStatus = AssessmentPolicyStatus.valueOf(query.status().trim().toUpperCase()).name();
-            } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Trạng thái (status) không hợp lệ. Chỉ chấp nhận DRAFT, PUBLISHED, ARCHIVED.");
-            }
-        }
+        String safeStatus = query.status() == null ? null : query.status().name();
 
         if (query.effectiveFrom() != null && query.effectiveTo() != null && query.effectiveFrom().isAfter(query.effectiveTo())) {
             throw new IllegalArgumentException("Khoảng thời gian effectiveFrom/effectiveTo không hợp lệ.");

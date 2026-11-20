@@ -28,11 +28,11 @@ type AppealCriterionScore {
     rationale: String
 }
 
-"Một lượt hỏi-đáp trong bài nói. Mỗi lượt có audio/transcript riêng."
+"One question-answer turn in the speaking assessment. Each turn has its own audio/transcript."
 type AppealTurn {
     id: ID!
     turnOrder: Int!
-    turnType: String!
+    turnType: TurnType!
     promptText: String
     audioUrl: String
     transcript: String
@@ -65,11 +65,11 @@ type AppealReviewer {
     reviewerName: String
     "ASSIGNED | COMPLETED"
     status: GradingAssignmentStatus!
-    "UPHELD | REGRADED | DECLINED; null khi chưa nộp"
+    "UPHELD | REGRADED | DECLINED; null until submitted"
     outcome: GradingOutcome
-    assignedAt: String
-    completedAt: String
-    deadlineAt: String
+    assignedAt: DateTime
+    completedAt: DateTime
+    deadlineAt: DateTime
     overdue: Boolean!
 }
 
@@ -78,16 +78,16 @@ type AppealSummary {
     studentName: String!
     className: String
     assessmentName: String!
-    "Nhãn các phần thi được phúc khảo"
+    "Labels of the parts being appealed"
     partLabels: [String!]!
     originalScore: Float
     status: AppealStatus!
-    requestedAt: String!
-    deadline: String
-    "Người chấm duy nhất; null khi chưa phân công"
+    requestedAt: DateTime!
+    deadline: DateTime
+    "The only grader; null when nobody is assigned yet"
     reviewerName: String
     reviewerStatus: GradingAssignmentStatus
-    "Đơn còn đang xử lý và đã quá hạn deadline"
+    "The appeal is still being processed and is past its deadline"
     overdue: Boolean!
 }
 
@@ -106,25 +106,25 @@ type AppealDetail {
     assessmentName: String!
     originalScore: Float
     status: AppealStatus!
-    requestedAt: String!
-    deadline: String
+    requestedAt: DateTime!
+    deadline: DateTime
     reason: String!
     notes: String
     decisionNote: String
-    "score_after — chỉ có khi đã PUBLISHED"
+    "score_after — only present once PUBLISHED"
     finalScore: Float
-    approvedAt: String
-    resolvedAt: String
-    withdrawnAt: String
-    "Lý do admin giao cho người đã từng chấm bài này; null khi không override"
+    approvedAt: DateTime
+    resolvedAt: DateTime
+    withdrawnAt: DateTime
+    "The reason the admin assigned someone who had already graded this attempt; null when there is no override"
     reviewerOverrideReason: String
-    "Các phần thi được phúc khảo, mỗi phần kèm điểm gốc và lượt nói riêng"
+    "The parts being appealed, each with its original score and its own spoken turns"
     items: [AppealItem!]!
-    "Chỉ MỘT người chấm; null khi chưa phân công"
+    "Only ONE grader; null when nobody is assigned yet"
     reviewer: AppealReviewer
-    "Đơn còn đang xử lý và đã quá hạn deadline"
+    "The appeal is still being processed and is past its deadline"
     overdue: Boolean!
-    "Thang điểm rubric — khoảng BE validate điểm tiêu chí khi chấm lại"
+    "The rubric scoring scale — the range the BE validates criterion scores against when regrading"
     scoringScaleMin: Float!
     scoringScaleMax: Float!
 }

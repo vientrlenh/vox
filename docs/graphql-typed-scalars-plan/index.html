@@ -1,0 +1,712 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GraphQL typed scalars and enums plan</title>
+<style>
+  :root {
+    --bg: #fafaf8; --surface: #ffffff; --text: #1d1d1b; --muted: #5f5f5a; --border: #e2e1dc;
+    --accent: #1f5fbf; --accent-soft: #e8f0fc; --warn: #8a5a00; --warn-soft: #fdf3dc;
+    --ok: #17673a; --ok-soft: #e3f4ea; --bad: #9b1c1c; --bad-soft: #fbe6e6; --code-bg: #f3f2ee;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #151514; --surface: #1d1d1b; --text: #ecebe6; --muted: #a2a19a; --border: #33332f;
+      --accent: #7fb0f5; --accent-soft: #1b2a40; --warn: #f0c36a; --warn-soft: #3a2f14;
+      --ok: #7fd3a0; --ok-soft: #14301f; --bad: #f19a9a; --bad-soft: #3d1b1b; --code-bg: #262623;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #151514; --surface: #1d1d1b; --text: #ecebe6; --muted: #a2a19a; --border: #33332f;
+    --accent: #7fb0f5; --accent-soft: #1b2a40; --warn: #f0c36a; --warn-soft: #3a2f14;
+    --ok: #7fd3a0; --ok-soft: #14301f; --bad: #f19a9a; --bad-soft: #3d1b1b; --code-bg: #262623;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 32px 16px 96px; }
+  h1 { font-size: 1.9rem; line-height: 1.2; margin: 0 0 8px; }
+  h2 { font-size: 1.35rem; margin: 48px 0 12px; padding-top: 16px; border-top: 1px solid var(--border); }
+  h3 { font-size: 1.05rem; margin: 28px 0 8px; }
+  p, li { max-width: 72ch; }
+  .meta { color: var(--muted); font-size: .92rem; margin-bottom: 20px; }
+  .status { display: inline-block; border-radius: 999px; padding: 2px 12px; font-size: .8rem;
+    font-weight: 600; white-space: nowrap; background: var(--code-bg); color: var(--muted); }
+  .status.draft, .status.open { background: var(--warn-soft); color: var(--warn); }
+  .status.approved, .status.progress { background: var(--accent-soft); color: var(--accent); }
+  .status.done, .status.answered { background: var(--ok-soft); color: var(--ok); }
+  .status.blocked { background: var(--bad-soft); color: var(--bad); }
+  nav { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 18px; margin: 20px 0; }
+  nav ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 32px; }
+  nav a, td a { color: var(--accent); text-decoration: none; }
+  code { background: var(--code-bg); padding: 1px 6px; border-radius: 4px;
+    font: .88em ui-monospace, "SF Mono", Menlo, monospace; }
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; font: .85rem/1.5 ui-monospace, "SF Mono", Menlo, monospace; }
+  pre code { background: none; padding: 0; }
+  .table-scroll { overflow-x: auto; margin: 12px 0; }
+  table { border-collapse: collapse; width: 100%; background: var(--surface);
+    border: 1px solid var(--border); font-size: .92rem; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--code-bg); font-weight: 600; white-space: nowrap; }
+  td.indent { padding-left: 32px; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .callout { border-left: 4px solid var(--accent); background: var(--accent-soft);
+    padding: 10px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+  .callout.warn { border-color: var(--warn); background: var(--warn-soft); }
+  .callout.ok { border-color: var(--ok); background: var(--ok-soft); }
+  .callout p { margin: 4px 0; }
+  .decision, .phase { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 4px 18px 14px; margin: 14px 0; }
+  .decision h3, .phase h3 { margin-top: 14px; }
+  .rec { color: var(--ok); font-weight: 600; }
+  .answer { background: var(--code-bg); border-radius: 8px; padding: 8px 12px; margin: 10px 0 0; color: var(--muted); }
+  .decision[data-decision-state="answered"] .answer { background: var(--ok-soft); color: var(--text); }
+  .tag { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .jobs { list-style: none; padding: 0; margin: 10px 0; }
+  .job { border-top: 1px solid var(--border); padding: 10px 0; }
+  .job > .title { font-weight: 600; }
+  .status-log { font-size: .85rem; color: var(--muted); margin: 8px 0 0; padding-left: 20px; }
+  .status-log:empty { display: none; }
+  @media (max-width: 600px) { nav ol { columns: 1; } h1 { font-size: 1.5rem; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>GraphQL typed scalars and enums plan</h1>
+<div class="meta">
+  Repository: <code>vox</code> &middot; Branch: <code>refactor/rewritten</code> &middot; Written 2026-11-20 &middot;
+  Plan status: <span class="status progress" id="plan-status" data-plan-status="in-progress">In progress</span>
+</div>
+
+<p>Today every GraphQL schema file in <code>src/main/resources/graphql</code> declares timestamps, dates and
+status/type values as <code>String</code>, and the Java side mirrors that with <code>String</code> fields in DTOs and
+responses, plus hand-written parsing in controllers. This plan makes the schema say what the data is:
+<code>Instant</code> becomes a <code>DateTime</code> scalar, <code>LocalDate</code> becomes a <code>Date</code> scalar,
+status/type values become schema enums, and <code>BigDecimal</code> money values stay <code>String</code>. The DTOs, responses,
+inputs and controller arguments that carry these values change to the real Java types in the same slices, so the
+string parsing and <code>.toString()</code> glue can be deleted.</p>
+
+<nav aria-label="Contents">
+  <ol>
+    <li><a href="#progress">Progress</a></li>
+    <li><a href="#current">Current state</a></li>
+    <li><a href="#decisions">Decisions</a></li>
+    <li><a href="#phases">Phases</a></li>
+    <li><a href="#risks">Risks</a></li>
+    <li><a href="#scope">Out of scope</a></li>
+    <li><a href="#verify">Verification</a></li>
+    <li><a href="#changelog">Change log</a></li>
+    <li><a href="#notes">Implementation notes</a></li>
+  </ol>
+</nav>
+
+<h2 id="progress">Progress</h2>
+<p id="overview-summary" class="meta"></p>
+<div class="table-scroll"><table>
+  <thead><tr><th>Phase / job</th><th>Status</th></tr></thead>
+  <tbody id="overview-body"></tbody>
+</table></div>
+
+<h2 id="current">1. Current state (measured)</h2>
+
+<h3>Schema side</h3>
+<ul>
+  <li>28 schema files, 4,945 lines (<code>wc -l src/main/resources/graphql/*.graphqls</code>). No <code>scalar</code>
+      declaration exists anywhere (<code>grep -n '^scalar'</code> prints nothing).</li>
+  <li>41 enums are already declared (<code>grep -c '^enum '</code>), 40 of them are referenced by a field. The unused one is
+      <code>GradingSampleSelectionMode</code> (<code>assessment-grading.graphqls:36</code>). Most status/type fields still
+      use <code>String</code> next to them, for example <code>status: String</code> at <code>assessment.graphqls:389</code>.</li>
+  <li>About 197 temporal-looking and about 96 enum-looking <code>String</code> fields, found with a name-based grep
+      (<code>*At</code>, <code>*Date</code>, <code>effectiveFrom/To</code>, <code>status</code>, <code>*Type</code>, ...). This is a
+      heuristic: job 2.x to 8.x each produce the exact per-field list for their module. Per file:</li>
+</ul>
+<div class="table-scroll"><table>
+  <thead><tr><th>Schema file</th><th class="num">Temporal</th><th class="num">Enum-like</th><th>Phase</th></tr></thead>
+  <tbody>
+    <tr><td>notification, myclass, user</td><td class="num">4 + 4 + 7</td><td class="num">3 + 2 + 0</td><td>2</td></tr>
+    <tr><td>import, registerform, interest-dimension, supportedlanguage, practice, practice-session, practice-planning, topic-suggestion, scoringrule</td><td class="num">6 + 2 + 2 + 2 + 1 + 3 + 0 + 0 + 2</td><td class="num">7 + 1 + 0 + 0 + 0 + 3 + 3 + 0 + 4</td><td>3</td></tr>
+    <tr><td>invoice, payment, order, school-balance, subscription</td><td class="num">1 + 2 + 3 + 3 + 8</td><td class="num">0 + 3 + 3 + 0 + 0</td><td>4</td></tr>
+    <tr><td>school, framework, assessmentpolicy, rubric, question</td><td class="num">21 + 8 + 9 + 9 + 8</td><td class="num">14 + 1 + 3 + 8 + 2</td><td>5</td></tr>
+    <tr><td>assessment (914 lines), assessmentdirectory</td><td class="num">53 + 0</td><td class="num">25 + 3</td><td>6</td></tr>
+    <tr><td>assessment-grading, assessment-appeal</td><td class="num">7 + 10</td><td class="num">9 + 1</td><td>7</td></tr>
+    <tr><td>dashboard (699 lines)</td><td class="num">22</td><td class="num">1</td><td>8</td></tr>
+  </tbody>
+</table></div>
+
+<h3>Java side</h3>
+<ul>
+  <li>Spring Boot 4.1.0, Spring GraphQL 2.0.4, graphql-java 25.0 (<code>build.gradle</code> and the Gradle cache). Only
+      <code>spring-boot-starter-graphql</code> is a dependency. No <code>RuntimeWiringConfigurer</code>, no
+      <code>GraphQLScalarType</code>, no extended-scalars library in <code>src</code> (<code>grep -rln</code> prints nothing).</li>
+  <li>String carriers of temporal values, counted as lines matching <code>String \w*(At|Date|From|To|Until|Deadline)</code>:
+      <code>domain/dto</code> 81 (65 files), <code>application/response</code> 45, <code>interfaces/graphql</code> 32,
+      <code>application/port/input/command</code> 12, <code>application/query/dto</code> 7. For comparison the same
+      packages already hold typed temporals in 30 / 12 / 7 / 48 / 51 places, so the typed form is the existing majority in
+      <code>application</code>.</li>
+  <li>Domain DTOs convert on the way out by hand, for example <code>instant == null ? null : instant.toString()</code> in
+      <code>PaymentDto</code>, <code>OrderDto</code>, <code>SubscriptionPlanDto</code>, <code>SchoolBalanceEntryDto</code>,
+      <code>InvoiceDto</code>.</li>
+  <li><code>domain/dto</code> is shared: 38 files under <code>interfaces/graphql</code> import it, and 9 files under
+      <code>interfaces/rest</code> do too. Changing a DTO field type therefore also reaches REST (see D4).</li>
+  <li>Input side: 27 input/request records in <code>interfaces/graphql/dto/request</code> (for example
+      <code>UpdateAssessmentScheduleInput(String startDate, String endDate)</code>); 52 controller
+      <code>@Argument</code> parameters named like <code>status</code>, <code>type</code>, <code>kind</code>, <code>dateFrom</code>,
+      <code>dateTo</code> are <code>String</code>; <code>DateMapper</code> is referenced by 41 files and called 42 times under
+      <code>interfaces/graphql</code>; 3 hand-rolled parses exist (<code>SchoolBalanceController.parseInstant</code>,
+      <code>UpdateProfileCommandMapper</code>, <code>UpdateSchoolUserCommandMapper</code>).</li>
+  <li>91 Java enums in <code>src/main/java</code>, most under <code>domain/model</code>. The existing test
+      <code>GraphQlEnumParityTests</code> (an <code>@IntegrationTest</code>) already requires every SDL enum to list exactly
+      the constants of the Java enum with the same simple name, so new SDL enums must reuse Java enum names.</li>
+  <li><code>DateMapper.toInstant</code> accepts offset timestamps and, through a documented temporary compatibility
+      branch, offset-less date-time and date-only strings (the web client still sends <code>2026-07-28</code> for
+      <code>effectiveFrom/To</code>). <code>DateMapper.toLocalDate</code> accepts four formats
+      (<code>yyyy-MM-dd</code>, <code>yyyy/MM/dd</code>, <code>dd-MM-yyyy</code>, <code>dd/MM/yyyy</code>). Both matter for D3.</li>
+  <li>GraphQL tests: 8 <code>@GraphQlControllerTest</code> authorization classes plus <code>GraphQlEnumParityTests</code>. Once the
+      schema declares a scalar, every one of them needs the scalar wiring or the schema will not build (job 1.2).</li>
+  <li>Baseline: <code>./gradlew compileJava</code> succeeds on branch <code>refactor/rewritten</code> (2026-11-20), so there are no existing compile failures to inherit.</li>
+  <li>Not checked: the Spring GraphQL 2.0 and graphql-java 25 reference pages (scalar registration, enum binding of
+      <code>@Argument</code>, how a Java <code>String</code> serializes through an SDL enum). Job 1.1 starts with reading them and
+      records what it finds in the implementation notes. Test runs of the existing suites were not done while planning.</li>
+</ul>
+
+<div class="callout warn">
+  <p><strong>Wire-format impact.</strong> Output values keep the same JSON text (ISO-8601 for <code>Instant</code>, constant
+  name for enums), so a query that only selects fields keeps working. What breaks is every client operation that
+  declares a variable with the old type, for example <code>$status: String</code> passed to an argument that becomes
+  <code>AppealStatus</code>, or <code>$from: String</code> passed to a <code>DateTime</code> argument: GraphQL validation rejects it.
+  That is a public API contract change (D6).</p>
+</div>
+
+<h2 id="decisions">2. Decisions</h2>
+
+<div class="decision" id="d1" data-decision-state="answered">
+  <h3>D1. Target type for each kind of value <span class="status answered">Answered</span></h3>
+  <p>Decided by the user in the request: <code>Instant</code> and <code>LocalDate</code> get scalars, enums are declared in
+  the schema, <code>BigDecimal</code> stays <code>String</code>, and DTOs/responses change with them.</p>
+  <div class="answer"><strong>Answer (2026-11-20):</strong> Scalars <code>DateTime</code> (Instant) and <code>Date</code> (LocalDate); schema enums
+  for status/type values; <code>BigDecimal</code> stays <code>String</code>; DTOs, responses, inputs change as well.</div>
+</div>
+
+<div class="decision" id="d2" data-decision-state="answered">
+  <h3>D2. How to implement the scalars <span class="status answered">Answered</span></h3>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Write two small <code>GraphQLScalarType</code> definitions in
+  <code>interfaces/graphql/config</code> and register them with a <code>RuntimeWiringConfigurer</code>. No new dependency. Parsing can reuse
+  <code>DateMapper</code>, so the existing input rules stay in one place. Needs a new config class, which is a new file shape (approval is this decision).</p>
+  <p><strong>B.</strong> Add <code>com.graphql-java:graphql-java-extended-scalars</code> and use its <code>DateTime</code> and <code>Date</code>. Less code, standard
+  behaviour, but it is a new dependency (Ask first), it is not managed by the Spring Boot BOM so the latest release must be pinned, and its input
+  is strict, which collides with the compatibility behaviour described in D3.</p>
+  <div class="answer"><strong>Answer (2026-11-20):</strong> Mixed: <code>graphql-java-extended-scalars</code> for <code>LocalDate</code> (its <code>Date</code> scalar) and a hand-written scalar for <code>Instant</code> (<code>DateTime</code>). The library's own <code>DateTime</code> maps to <code>OffsetDateTime</code>, so it is not used. Adds a new dependency, approved here: latest release that works with graphql-java 25.0, pinned by hand (job 1.1).</div>
+</div>
+
+<div class="decision" id="d3" data-decision-state="answered">
+  <h3>D3. How strict scalar input parsing is <span class="status answered">Answered</span></h3>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Output is strict ISO-8601 (<code>Instant</code> in UTC with <code>Z</code>,
+  <code>LocalDate</code> as <code>yyyy-MM-dd</code>). Input delegates to <code>DateMapper.toInstant</code> / <code>DateMapper.toLocalDate</code>, so the
+  web client's date-only and offset-less values and the extra date formats keep working until the existing compatibility branch is removed on its own schedule.
+  The schema description says the strict form is the contract. Only possible with D2 = A.</p>
+  <p><strong>B.</strong> Strict input: <code>DateTime</code> requires an offset, <code>Date</code> requires <code>yyyy-MM-dd</code>. Cleanest contract, but the policy and framework
+  forms that send <code>effectiveFrom: "2026-07-28"</code> fail with a coercion error on day one, so the frontend must ship first or together.</p>
+  <div class="answer"><strong>Answer (2026-11-20):</strong> Strict ISO only. <code>DateTime</code> input needs an offset (<code>Z</code> or <code>&plusmn;HH:MM</code>), <code>Date</code> input is <code>yyyy-MM-dd</code>. GraphQL no longer goes through <code>DateMapper</code>'s compatibility branch, so date-only values such as <code>2026-07-28</code> are rejected: the frontend must send full timestamps at the same time as the cutover (D6).</div>
+</div>
+
+<div class="decision" id="d4" data-decision-state="answered">
+  <h3>D4. DTOs shared with REST <span class="status answered">Answered</span></h3>
+  <p>Many <code>domain/dto</code> records are used by both GraphQL (38 files) and REST (9 files) and currently hold <code>String</code> dates and statuses.</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Change the shared DTOs in place to <code>Instant</code>, <code>LocalDate</code> and the Java enums, after pinning the current REST JSON with
+  characterization tests (job 1.3). One source of truth, and it deletes the <code>toString()</code> glue the user wants gone. Jackson writes <code>Instant</code> as ISO-8601 and enums by name,
+  which should equal today's text, but that is not yet measured: job 1.3 proves it or stops the plan.</p>
+  <p><strong>B.</strong> Keep the shared DTOs as they are and add GraphQL-only view records plus mappers. REST is untouched for certain, but it duplicates about 65 DTOs and contradicts the goal of fixing the DTOs.</p>
+  <div class="answer"><strong>Answer (2026-11-20):</strong> Change in place, pin REST first. Job 1.3 pins today's REST JSON before any shared DTO changes.</div>
+</div>
+
+<div class="decision" id="d5" data-decision-state="answered">
+  <h3>D5. String fields that have no matching Java enum <span class="status answered">Answered</span></h3>
+  <p>Some enum-looking fields hold open values or values from an external system (for example <code>engineType</code>, <code>alertType</code>, <code>level</code>, <code>source</code>, <code>turnType</code>, payment <code>method</code>), and a few have no Java enum at all.</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Convert a field to an SDL enum only when a Java enum with exactly the same value set already exists. List the others in the implementation notes and leave them <code>String</code>. No new domain types, no guessing at value sets.</p>
+  <p><strong>B.</strong> Also create new Java enums (domain) and SDL enums for the closed ones. More complete, but it adds domain files that fit no pattern, needs the closed value set verified against the database for each, and enlarges every phase.</p>
+  <div class="answer"><strong>Answer (2026-11-20):</strong> Only convert when a Java enum with exactly the same value set exists. Everything else stays <code>String</code> and is listed in the implementation notes.</div>
+</div>
+
+<div class="decision" id="d6" data-decision-state="answered">
+  <h3>D6. Rolling out the schema contract change <span class="status answered">Answered</span></h3>
+  <p>Changing argument and input types is breaking for the frontend, the desktop app and anything else sending GraphQL variables (see the warning under Current state).</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Do all phases on this branch and merge once, together with one frontend change list produced by job 9.3. One coordinated cutover, nothing half-migrated in production.</p>
+  <p><strong>B.</strong> Merge phase by phase and have the frontend migrate module by module. Smaller releases, but the schema is in a mixed state for a long time and each merge needs its own frontend change.</p>
+  <div class="answer"><strong>Answer (2026-11-20):</strong> One coordinated cutover. All phases on this branch, one merge, one frontend change list from job 9.3.</div>
+</div>
+
+<div class="decision" id="d7" data-decision-state="answered">
+  <h3>D7. Touching billing and quota files <span class="status answered">Answered</span></h3>
+  <p>Phase 4 changes the types of display fields in <code>invoice</code>, <code>payment</code>, <code>order</code>, <code>school-balance</code> and <code>subscription</code> and in their DTOs/controllers. AGENTS.md lists anything that moves money (orders, payments, quota, school balance) under Ask first. No amounts, no use-case logic and no money-moving code change, and amounts stay <code>String</code>/<code>BigDecimal</code>.</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Allow Phase 4 as described: only field types, argument types and the manual date parsing in the controller change.</p>
+  <p><strong>B.</strong> Skip Phase 4; those five modules stay <code>String</code> and are listed as follow-up work.</p>
+  <div class="answer"><strong>Answer (2026-11-20):</strong> Allow Phase 4 as described: only field types, argument types and manual date parsing change; no amounts, quota or balance logic.</div>
+</div>
+
+<div class="decision" id="d8" data-decision-state="answered">
+  <h3>D8. A guard test against falling back to String <span class="status answered">Answered</span></h3>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Add one test that loads the schema and fails when a field or argument named <code>*At</code>, <code>*Date</code>, <code>effectiveFrom/To</code>, <code>status</code> is a <code>String</code>, with an explicit allow-list (for example <code>month</code> and the JSON-in-string fields). This is the same kind of guardrail as <code>GraphQlEnumParityTests</code>: a wrong type passes every behavioural test.</p>
+  <p><strong>B.</strong> No guard. Smaller change, but the next schema edit can quietly reintroduce <code>createdAt: String</code>.</p>
+  <div class="answer"><strong>Answer (2026-11-20):</strong> Add the guard test (job 9.2).</div>
+</div>
+
+<div class="decision" id="a1" data-decision-state="answered" data-scope="plan" data-topic="extended-scalars-version">
+  <h3>A1. Which graphql-java-extended-scalars version, given only 24.0 exists (built for graphql-java 24.1, project runs 25.0)? <span class="status answered">Answered</span></h3>
+  <p class="meta">Asked while implementing job 1.1. Scope: whole plan. Reused by: none yet.</p>
+  <div class="answer"><strong>Answer (2026-11-20):</strong> Use 24.0 and verify on 25.0 &ndash; pin <code>graphql-java-extended-scalars:24.0</code>; a unit test must prove the Date scalar works on graphql-java 25.0. If that test fails, stop and ask again.</div>
+</div>
+
+<div class="decision" id="a2" data-decision-state="answered" data-scope="plan" data-topic="pilot-pattern">
+  <h3>A2. Is the pilot pattern (notification, myclass, user) the one to repeat in Phases 3 to 9? <span class="status answered">Answered</span></h3>
+  <p class="meta">Asked at job 2.4. Scope: whole plan (phases 3 to 9). Reused by: none yet. Pattern: shared domain DTOs change in place to <code>Instant</code>/<code>LocalDate</code>/Java enums; the SDL enum is named after the Java enum and declared in the owning module's schema file; a controller argument becomes the enum or scalar type and the hand-written parse code is deleted; each module gets an <code>@GraphQlControllerTest</code> that checks typed output, typed variables and a rejected bad value.</p>
+  <div class="answer"><strong>Answer (2026-11-20):</strong> Confirmed (Recommended) &ndash; the pattern is accepted as is.</div>
+</div>
+
+<div class="decision" id="a3" data-decision-state="answered" data-scope="job-4-1" data-topic="invoice-issuedate-type">
+  <h3>A3. Which scalar for <code>Invoice.issueDate</code>, which is an <code>Instant</code> in the domain model although job 4.1 says <code>Date</code>? <span class="status answered">Answered</span></h3>
+  <p class="meta">Asked while implementing job 4.1. Scope: job 4.1 (this one field). Reused by: none yet.</p>
+  <div class="answer"><strong>Answer (2026-11-20):</strong> DateTime (Recommended) &ndash; follows the mapping rule (Java type decides); output text unchanged; <code>InvoiceDto</code> carries <code>Instant</code>.</div>
+</div>
+<div class="decision" id="a4" data-decision-state="answered" data-scope="job-6-4" data-topic="recording-stream-type">
+  <h3>A4. Which type does the schema output use for AssessmentRecording.streamType and AssessmentRecordingPlayback.streamType? <span class="status answered">Answered</span></h3>
+  <p class="meta">Asked while implementing job 6.4. Scope: job 6.4 (these two fields). Reused by: none yet. Job 6.4 names the SDL enum AssessmentRecordingStreamType (CAMERA, SCREEN) but no Java enum has exactly that value set: the domain model uses AssessmentRequiredStreamType (adds CAMERA_AND_SCREEN) and the database check constraint on assessment_recordings.stream_type allows only CAMERA and SCREEN.</p>
+  <div class="answer"><strong>Answer (2026-11-20):</strong> SDL enum, Java carrier AssessmentRequiredStreamType (Recommended) &ndash; both schema fields become AssessmentRecordingStreamType; AssessmentRecordingDto and AssessmentRecordingPlaybackResponse hold the domain enum AssessmentRequiredStreamType.</div>
+</div>
+
+<h2 id="phases">3. Phases</h2>
+<p>Each phase is independently reviewable and leaves the build green. Mapping rule used by every module job, so it is written once here:</p>
+<ul>
+  <li>A field gets <code>DateTime</code> when the Java value is an <code>Instant</code> (or a String that is parsed with <code>DateMapper.toInstant</code>), and <code>Date</code> when it is a <code>LocalDate</code> (or parsed with <code>DateMapper.toLocalDate</code> / <code>LocalDate.parse</code>). A name like <code>startDate</code> does not decide it; the Java type does. If the Java type is unclear, stop and ask.</li>
+  <li>A field becomes an SDL enum named after the Java enum's simple name (required by <code>GraphQlEnumParityTests</code>), following D5. The enum is declared once, in the schema file of the module that owns it, and values are copied from the Java enum.</li>
+  <li>Money amounts (<code>*Vnd</code>, <code>costUsd</code>, <code>fxRateUsed</code> and other <code>BigDecimal</code> values) stay <code>String</code>. <code>month: "YYYY-MM"</code> and JSON-in-string fields stay <code>String</code>.</li>
+  <li>In every job the Java carriers (<code>domain/dto</code>, <code>application/response</code>, <code>application/query/dto</code>, <code>interfaces/graphql/dto/request</code>, commands/queries), the controller arguments and mappers change with the schema, <code>@Argument</code> and input records take the real types, and manual <code>parse</code>/<code>toString()</code> glue that this makes dead is deleted. Vietnamese comments and schema descriptions in edited code are translated to English, and descriptions that say "ISO string" or "format YYYY-MM-DD" are rewritten to match the new type.</li>
+  <li>Each module job adds or extends a test that sends a query through the real schema with a typed variable and asserts a <code>DateTime</code>/<code>Date</code>/enum value in the response (an <code>@GraphQlControllerTest</code> with the use case mocked), and a wrong enum or date value is rejected as a GraphQL validation/coercion error rather than a 500.</li>
+</ul>
+
+<!-- ===== Phase 1 ===== -->
+<div class="phase" id="phase-1" data-status="done">
+  <h3><span class="title">Phase 1 &ndash; Scalar infrastructure</span>
+    <span class="tag">medium &middot; needs D2, D3, D4</span>
+    <span class="status done">Done</span></h3>
+  <p><strong>Goal:</strong> The schema can declare <code>DateTime</code> and <code>Date</code>, they behave as decided, and REST output for shared DTOs is pinned. No schema field changes type yet.
+     <strong>Depends on:</strong> D2, D3, D4.</p>
+  <ul class="jobs">
+    <li class="job" id="job-1-1" data-status="done">
+      <span class="title">1.1 Add the extended-scalars dependency, define DateTime, register both scalars</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> <code>build.gradle</code> has <code>com.graphql-java:graphql-java-extended-scalars</code> at the latest release that supports graphql-java 25.0 (looked up at this point; if the latest release needs a different graphql-java than the Spring Boot BOM provides, stop and ask); a unit test shows the hand-written <code>DateTime</code> serializes an <code>Instant</code> as ISO-8601 UTC (<code>2026-07-28T02:30:00Z</code>) and parses only strict ISO-8601 with an offset (<code>Z</code> or <code>+07:00</code>), rejecting <code>2026-07-28</code> and <code>2026-07-28T09:30:00</code> with a coercion error rather than an unchecked exception; <code>ExtendedScalars.Date</code> is registered under the name <code>Date</code> and a test shows it serializes <code>LocalDate</code> as <code>2026-07-28</code> and rejects <code>28/07/2026</code>. The library's own <code>DateTime</code> (an <code>OffsetDateTime</code> scalar) is not registered. First read the Spring GraphQL 2.0 scalar section, the graphql-java 25 <code>GraphQLScalarType</code> API and the extended-scalars README for the chosen version, and note the findings in the implementation notes.
+         <strong>Files:</strong> <code>build.gradle</code>, <code>src/main/java/com/sep/vox/interfaces/graphql/config/DateScalarsGraphQlConfig.java</code> (new, name follows <code>*GraphQlDataLoaderConfig</code>), <code>src/test/java/com/sep/vox/interfaces/graphql/config/DateScalarsGraphQlConfigTests.java</code> (new). Verify: <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*DateScalarsGraphQlConfigTests'</code>.</p>
+      <ul class="status-log">
+        <li>2026-11-20 &middot; Done &middot; all three jobs done. <code>./gradlew compileJava</code> ok; <code>*DateScalarsGraphQlConfigTests</code>, 8 <code>*AuthorizationGraphQlTests</code> classes, <code>*LayeredArchitectureTests</code> and <code>com.sep.vox.interfaces.rest*</code> pass together (196 tests, 0 failures)</li>
+        <li>2026-11-20 &middot; Done &middot; applies A1 (extended-scalars 24.0). <code>./gradlew test --tests '*DateScalarsGraphQlConfigTests'</code> passed (21 tests); <code>DateScalarsGraphQlConfig.java</code>, <code>build.gradle:24</code></li></ul>
+    </li>
+    <li class="job" id="job-1-2" data-status="done">
+      <span class="title">1.2 Declare the scalars in the schema and keep every GraphQL test context building</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> <code>scalar DateTime</code> and <code>scalar Date</code> (with descriptions stating the format) are in the schema, the assembled schema exposes both, and all 8 <code>*AuthorizationGraphQlTests</code> classes still pass. If the slice annotation does not pick up the wiring, import the config in <code>GraphQlControllerTest</code>.
+         <strong>Files:</strong> <code>src/main/resources/graphql/schema.graphqls</code>, <code>src/test/java/com/sep/vox/support/GraphQlControllerTest.java</code> (only if needed). Verify: <code>./gradlew test --tests '*AuthorizationGraphQlTests'</code>.</p>
+      <ul class="status-log">
+        <li>2026-11-20 &middot; Done &middot; <code>schema.graphqls:5,10</code> declare both scalars. Without wiring the 8 slice contexts failed with &ldquo;There is no scalar implementation for the named 'DateTime' / 'Date' scalar type&rdquo;; after importing <code>DateScalarsGraphQlConfig</code> in <code>GraphQlControllerTest.java</code> <code>./gradlew test --tests '*AuthorizationGraphQlTests'</code> passes. <code>./gradlew integrationTest --tests '*GraphQlEnumParityTests'</code> passes (full app context, Docker)</li>
+        <li>2026-11-20 &middot; In progress &middot; started</li></ul>
+    </li>
+    <li class="job" id="job-1-3" data-status="done">
+      <span class="title">1.3 Pin the REST JSON of shared DTOs before changing them</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> a test (or tests extending the existing REST controller tests) records today's JSON text for the temporal and status fields of every domain DTO that the 9 REST files return (<code>grep -rl 'com.sep.vox.domain.dto' src/main/java/com/sep/vox/interfaces/rest</code>) and passes on the unchanged code. If the same test later fails after a type change, the change is wrong, not the test. Skipped if D4 = B.
+         <strong>Files:</strong> tests under <code>src/test/java/com/sep/vox/interfaces/rest</code> (mirrored package, <code>XxxControllerTests</code> pattern). Verify: <code>./gradlew test --tests 'com.sep.vox.interfaces.rest*'</code>.</p>
+      <ul class="status-log">
+        <li>2026-11-20 &middot; Done &middot; 9 new <code>*ControllerTests</code> classes (20 tests) in <code>src/test/java/com/sep/vox/interfaces/rest/controller</code> pass on the unchanged DTOs: <code>./gradlew test --tests 'com.sep.vox.interfaces.rest*'</code>. Changing one expected value on purpose made <code>AssessmentPaperControllerTests</code> fail (reverted)</li>
+        <li>2026-11-20 &middot; In progress &middot; started</li></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*DateScalarsGraphQlConfigTests'</code>, <code>./gradlew test --tests '*AuthorizationGraphQlTests'</code>, <code>./gradlew test --tests '*LayeredArchitectureTests'</code>.</p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ===== Phase 2 ===== -->
+<div class="phase" id="phase-2" data-status="done">
+  <h3><span class="title">Phase 2 &ndash; Pilot modules: notification, myclass, user</span>
+    <span class="tag">medium &middot; needs D4, D5</span>
+    <span class="status done">Done</span></h3>
+  <p><strong>Goal:</strong> Three small modules are fully converted end to end, so the user can review the real pattern before it is repeated 25 more times. <strong>Depends on:</strong> Phase 1, D4, D5.</p>
+  <ul class="jobs">
+    <li class="job" id="job-2-1" data-status="done">
+      <span class="title">2.1 notification</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> in <code>notification.graphqls</code> no inventoried field is <code>String</code> (<code>readAt</code>, <code>createdAt</code>, <code>lastSeenAt</code> become <code>DateTime</code>; <code>platform</code> and <code>category</code> become enums if D5 allows), and the module test passes.
+         <strong>Files:</strong> <code>notification.graphqls</code>, <code>application/query/dto/NotificationDeviceDto.java</code>, related notification DTOs, <code>NotificationController</code>, its test. Verify: <code>./gradlew test --tests '*Notification*'</code>.</p>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; <code>notification.graphqls</code> has no inventoried <code>String</code> left except <code>eventType</code> (D5: no Java enum); new enums <code>NotificationDevicePlatform</code>, <code>NotificationCategory</code>. <code>NotificationGraphQlTests</code> (2 tests) and <code>./gradlew test --tests '*Notification*'</code> pass</li><li>2026-11-20 &middot; In progress &middot; started. Applies D5 (enum only where a Java enum exists: <code>NotificationDevicePlatform</code>, <code>NotificationCategory</code>); <code>eventType</code> stays <code>String</code> (no Java enum)</li></ul>
+    </li>
+    <li class="job" id="job-2-2" data-status="done">
+      <span class="title">2.2 myclass</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> <code>myclass.graphqls</code> returns <code>DateTime</code> for <code>createdAt/updatedAt/joinedAt/leftAt</code> and an enum for <code>status</code> (<code>GradeLevelStatus</code> or the Java enum the code actually uses; confirmed in the job), and <code>MyClassAuthorizationGraphQlTests</code> plus a typed-value test pass.
+         <strong>Files:</strong> <code>myclass.graphqls</code>, <code>domain/dto/SchoolClassDto.java</code>, <code>domain/dto/SchoolClassUserDto.java</code>, <code>MyClassController</code>, tests. Verify: <code>./gradlew test --tests '*MyClass*'</code>.</p>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; <code>myclass.graphqls</code> uses <code>DateTime</code> and <code>SchoolClassStatus</code> (also the <code>myClasses(status)</code> argument, so <code>ViewMyClassesQuery</code> and <code>ViewMyClassesUseCase</code> lost <code>parseStatus</code>). <code>MyClassGraphQlTests</code> (4 tests, includes an unknown status rejected by validation) and <code>--tests '*MyClass*' '*SchoolClass*' '*SchoolControllerTests' '*AssessmentDirectory*' '*AssessmentPolicy*' '*SchoolAuthorizationGraphQlTests'</code> pass</li><li>2026-11-20 &middot; In progress &middot; started. Enum is <code>SchoolClassStatus</code> (confirmed in <code>SchoolClassDtoMapper</code>), declared in <code>school.graphqls</code> (owning module)</li></ul>
+    </li>
+    <li class="job" id="job-2-3" data-status="done">
+      <span class="title">2.3 user (including the profile input)</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> <code>user.graphqls</code> uses <code>Date</code> for <code>dateOfBirth</code> and <code>DateTime</code> for audit timestamps; <code>UpdateProfileCommandMapper</code> and <code>UpdateSchoolUserCommandMapper</code> no longer call <code>LocalDate.parse(value.toString())</code> while still telling "field absent" from "field null" (the <code>Map&lt;String,Object&gt;</code> input stays), proven by a test that sends <code>dateOfBirth: null</code> and an absent field.
+         <strong>Files:</strong> <code>user.graphqls</code>, <code>domain/dto/UserDto.java</code>, <code>interfaces/graphql/mapper/UpdateProfileCommandMapper.java</code>, <code>interfaces/graphql/mapper/UpdateSchoolUserCommandMapper.java</code>, <code>UserController</code>, tests. Verify: <code>./gradlew test --tests '*UpdateProfileCommandMapper*' --tests '*UserController*'</code>.</p>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; <code>user.graphqls</code> uses <code>Date</code>/<code>DateTime</code> (<code>User</code>, <code>Role</code>, <code>UserRole</code>, <code>UpdateProfileInput</code>); both command mappers cast the coerced <code>LocalDate</code> and keep <code>containsKey</code>. <code>UserGraphQlTests</code> (4), <code>UpdateProfileCommandMapperTests</code> (3), <code>UpdateSchoolUserCommandMapperTests</code> (3) and 2 new tests in <code>SchoolAuthorizationGraphQlTests</code> pass (explicit null vs absent, <code>01/05/2008</code> rejected). <code>./gradlew test</code> 2118 tests, 0 failures; <code>integrationTest --tests '*GraphQlEnumParityTests'</code> 3 tests pass</li><li>2026-11-20 &middot; In progress &middot; started</li></ul>
+    </li>
+    <li class="job" id="job-2-4" data-status="done">
+      <span class="title">2.4 Pilot review checkpoint</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> the user has seen the diff of 2.1 to 2.3, confirmed in chat that the pattern (scalar use, enum naming, DTO changes, test shape) is the one to repeat, and the confirmation is written into the implementation notes. Nothing in Phase 3 or later starts before this. <strong>Files:</strong> none.</p>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; user confirmed the pilot pattern in chat (&ldquo;Confirmed (Recommended)&rdquo;), recorded as A2 and in Implementation notes</li></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, the filters above, <code>./gradlew test --tests '*LayeredArchitectureTests'</code>, and <code>./gradlew test --tests 'com.sep.vox.interfaces.rest*'</code> (REST JSON unchanged).</p>
+  <ul class="status-log"><li>2026-11-20 &middot; Done &middot; jobs 2.1 to 2.4 done. <code>./gradlew compileJava</code> ok; <code>./gradlew test</code> 2118 tests, 0 failures (includes <code>LayeredArchitectureTests</code> and the REST tests); <code>integrationTest --tests '*GraphQlEnumParityTests'</code> 3 tests pass</li></ul>
+</div>
+
+<!-- ===== Phase 3 ===== -->
+<div class="phase" id="phase-3" data-status="done">
+  <h3><span class="title">Phase 3 &ndash; Small modules</span>
+    <span class="tag">medium &middot; mechanical, needs D4, D5</span>
+    <span class="status done">Done</span></h3>
+  <p><strong>Goal:</strong> The nine smallest remaining schema files use typed values. <strong>Depends on:</strong> Phase 2 (including 2.4).</p>
+  <ul class="jobs">
+    <li class="job" id="job-3-1" data-status="done">
+      <span class="title">3.1 import</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> <code>import.graphqls</code> uses <code>DateTime</code> for <code>expiresAt/createdAt/updatedAt</code> and enums <code>ImportType</code>, <code>ImportSessionStatus</code>, <code>ImportRowStatus</code> for <code>type</code>/<code>status</code> fields and for the <code>importSessions(type, status)</code> arguments; <code>ImportAuthorizationGraphQlTests</code> and a typed-value test pass.
+         <strong>Files:</strong> <code>import.graphqls</code>, import DTOs/responses, <code>ImportController</code>, tests. Verify: <code>./gradlew test --tests '*Import*'</code>.</p>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; <code>import.graphqls</code> uses <code>DateTime</code> plus new enums <code>ImportType</code>, <code>ImportSessionStatus</code>, <code>ImportRowStatus</code> (also the <code>importSessions</code>/<code>importRows</code> arguments, so <code>ViewImportSessionsQuery</code>/<code>ViewImportRowsQuery</code> carry the enums and both use cases lost <code>parseType</code>/<code>parseStatus</code> with their invalid-status tests; an unknown value is now a validation error). <code>ImportGraphQlTests</code> (5) and <code>./gradlew test --tests '*Import*'</code> pass. Applies A2</li><li>2026-11-20 &middot; Done &middot; jobs 3.1 to 3.5 done. <code>./gradlew compileJava</code> ok; <code>./gradlew test</code> 2132 tests, 0 failures (includes <code>LayeredArchitectureTests</code>, <code>PagingConventionTests</code> and the REST characterization tests from job 1.3); <code>./gradlew integrationTest --tests '*GraphQlEnumParityTests'</code> 3 tests pass with the new SDL enums</li></ul>
+    </li>
+    <li class="job" id="job-3-2" data-status="done">
+      <span class="title">3.2 registerform</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> <code>dateOfBirth</code> is <code>Date</code>, <code>createdAt</code> is <code>DateTime</code>, <code>status</code> is the <code>RegisterFormStatus</code> enum, and a test asserts them.
+         <strong>Files:</strong> <code>registerform.graphqls</code>, <code>domain/dto/RegisterFormDocumentDto.java</code> and related, <code>RegisterFormController</code>, tests. Verify: <code>./gradlew test --tests '*RegisterForm*'</code>.</p>
+      <ul class="status-log"><li>2026-11-20 &middot; In progress &middot; started</li><li>2026-11-20 &middot; Done &middot; <code>registerform.graphqls</code>: <code>dateOfBirth</code> is <code>Date</code>, <code>createdAt</code> (documents) is <code>DateTime</code>, <code>status</code> is the new enum <code>RegisterFormStatus</code>; <code>RegisterFormDto</code>, <code>RegisterFormDocumentDto</code> and their two mappers hold <code>LocalDate</code>/<code>Instant</code>/enum. <code>RegisterFormGraphQlTests</code> (2, imports <code>RegisterFormGraphQlDataLoaderConfig</code> so the batched documents resolve) and <code>--tests '*RegisterForm*'</code> pass. Applies A2</li></ul>
+    </li>
+    <li class="job" id="job-3-3" data-status="done">
+      <span class="title">3.3 interest-dimension and supportedlanguage</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> <code>createdAt/updatedAt</code> in both files are <code>DateTime</code> and <code>SupportedLanguageAuthorizationGraphQlTests</code> still passes with a typed-value assertion added.
+         <strong>Files:</strong> <code>interest-dimension.graphqls</code>, <code>supportedlanguage.graphqls</code>, their DTOs and controllers, tests. Verify: <code>./gradlew test --tests '*InterestDimension*' --tests '*SupportedLanguage*'</code>.</p>
+      <ul class="status-log"><li>2026-11-20 &middot; In progress &middot; started</li><li>2026-11-20 &middot; Done &middot; <code>interest-dimension.graphqls</code> and <code>supportedlanguage.graphqls</code> <code>createdAt</code>/<code>updatedAt</code> are <code>DateTime</code>; <code>InterestDimensionResponse</code> holds <code>Instant</code> (the <code>toString()</code> glue in <code>ManageInterestDimensionUseCase.toResponse</code> is gone); <code>SupportedLanguageDto</code> already held <code>Instant</code>. New <code>InterestDimensionGraphQlTests</code> (1) and a typed-value test in <code>SupportedLanguageAuthorizationGraphQlTests</code> (13 total) pass: <code>--tests '*InterestDimension*' '*SupportedLanguage*'</code>. Vietnamese schema descriptions in <code>interest-dimension.graphqls</code> translated. Applies A2</li></ul>
+    </li>
+    <li class="job" id="job-3-4" data-status="done">
+      <span class="title">3.4 practice, practice-session, practice-planning, topic-suggestion</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> <code>startedAt/endedAt/quizCompletedAt</code> are <code>DateTime</code>; <code>status</code>, <code>origin</code>, goal/bucket fields use enums only where a Java enum with the same values exists (<code>PracticeGoalType</code>, <code>PracticePaperDraftStatus</code>, <code>TopicOfferBucket</code> are already declared; unused String twins are switched to them); anything else is listed in the notes (D5).
+         <strong>Files:</strong> the four <code>.graphqls</code> files, practice DTOs/responses, <code>PracticeController</code>, <code>PracticeSessionController</code>, <code>PracticePlanningController</code>, <code>TopicSuggestionController</code>, the inputs <code>StartPracticeSessionInput</code>, <code>EndPracticeSessionInput</code>, tests. Verify: <code>./gradlew test --tests '*Practice*' --tests '*TopicSuggestion*'</code>.</p>
+      <ul class="status-log"><li>2026-11-20 &middot; In progress &middot; started</li><li>2026-11-20 &middot; Done &middot; Only the timestamps converted: <code>LearnerProfile.quizCompletedAt</code>, <code>PracticeSession.startedAt/endedAt</code>, <code>TeacherPracticeSessionDetail.startedAt</code> are <code>DateTime</code>; <code>LearnerProfileInfo</code>, <code>PracticeSessionDto</code>, <code>TeacherPracticeSessionDetailDto</code> and the three response records hold <code>Instant</code>, and the <code>toString()</code> glue in <code>SessionRowMapper</code>, <code>PracticeSessionDetailAssemblyService</code> and <code>JpaLearnerProfileQueryRepository.findCurrent</code> is gone. CHANGED (D5): no Java enum exists for session <code>origin</code>/<code>status</code>, <code>TurnCorrection.category</code> or for <code>PracticeGoalType</code>, <code>PracticePaperDraftStatus</code>, <code>TopicOfferBucket</code> (the SDL enums are SDL-only), so there was no String twin to switch and those stay as they are. <code>practice-planning.graphqls</code>, <code>topic-suggestion.graphqls</code> and their controllers have no temporal field and were not changed. New <code>PracticeSessionGraphQlTests</code> (2) and <code>PracticeLearnerProfileGraphQlTests</code> (2); <code>--tests '*Practice*' '*TopicSuggestion*'</code> pass. Vietnamese descriptions in <code>practice.graphqls</code>, <code>practice-session.graphqls</code> translated. Applies A2, D5</li></ul>
+    </li>
+    <li class="job" id="job-3-5" data-status="done">
+      <span class="title">3.5 scoringrule</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> <code>scoringrule.graphqls</code> timestamps are <code>DateTime</code> and the action/condition type fields use enums where a Java enum exists (for example <code>ScoringRuleActionType</code>), with <code>UpdateScoringRuleInput</code> updated.
+         <strong>Files:</strong> <code>scoringrule.graphqls</code>, <code>UpdateScoringRuleInput.java</code>, <code>ScoringRuleController</code>, DTOs, tests. Verify: <code>./gradlew test --tests '*ScoringRule*'</code>.</p>
+      <ul class="status-log"><li>2026-11-20 &middot; In progress &middot; started</li><li>2026-11-20 &middot; Done &middot; <code>scoringrule.graphqls</code>: <code>createdAt</code>/<code>updatedAt</code> are <code>DateTime</code>; <code>conditionType</code>, <code>actionType</code>, <code>severity</code> use new enums <code>ScoringRuleConditionType</code>, <code>ScoringRuleActionType</code>, <code>ScoringRuleSeverity</code> on <code>ScoringRule</code> and <code>UpdateScoringRuleInput</code>. <code>ScoringRuleDto</code>, <code>UpdateScoringRuleInput</code> carry the Java enums; <code>UpdateScoringRuleGraphQLMapper</code> lost its three <code>parse*</code> methods (unknown values are now GraphQL validation errors). <code>ScoringRuleController</code> needed no change. New <code>ScoringRuleGraphQlTests</code> (3) and <code>--tests '*ScoringRule*'</code> pass. Vietnamese schema comments and the DTO/input comments translated. Applies A2</li></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, the filters above, <code>./gradlew test --tests '*LayeredArchitectureTests'</code>, REST tests as in Phase 2.</p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ===== Phase 4 ===== -->
+<div class="phase" id="phase-4" data-status="done">
+  <h3><span class="title">Phase 4 &ndash; Billing-adjacent modules</span>
+    <span class="tag">medium &middot; needs D4, D5, D7</span>
+    <span class="status done">Done</span></h3>
+  <p><strong>Goal:</strong> Dates and status values in invoice, payment, order, school-balance and subscription are typed; amounts stay <code>String</code> and no money logic is touched. <strong>Depends on:</strong> Phase 3, D7 = A.</p>
+  <ul class="jobs">
+    <li class="job" id="job-4-1" data-status="done">
+      <span class="title">4.1 invoice and payment</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> <code>invoice.issueDate</code> is <code>Date</code>; <code>payment.paidAt/createdAt</code> are <code>DateTime</code>; <code>payment.status/method/provider</code> use <code>PaymentStatus</code>, <code>PaymentMethod</code>, <code>PaymentProvider</code>; <code>InvoiceDto</code> and <code>PaymentDto</code> no longer call <code>.toString()</code> on temporals; a test asserts the typed values and REST JSON for these DTOs is unchanged.
+         <strong>Files:</strong> <code>invoice.graphqls</code>, <code>payment.graphqls</code>, <code>domain/dto/InvoiceDto.java</code>, <code>domain/dto/PaymentDto.java</code>, their controllers, tests. Verify: <code>./gradlew test --tests '*Invoice*' --tests '*Payment*'</code>.</p>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; <code>invoice.graphqls</code>: <code>issueDate</code> is <code>DateTime!</code> (CHANGED from the job text <code>Date</code>, per A3: the domain value is an <code>Instant</code>); <code>payment.graphqls</code>: <code>paidAt/createdAt</code> are <code>DateTime</code>, <code>method/provider/status</code> use the new enums <code>PaymentMethod</code>, <code>PaymentProvider</code>, <code>PaymentStatus</code>. <code>InvoiceDto</code> and <code>PaymentDto</code> carry <code>Instant</code>/Java enums and lost their <code>toString()</code>/<code>valueOf</code> glue. Typed values asserted through <code>Order.invoice</code>/<code>Order.payments</code> in <code>OrderGraphQlTests</code> (4 tests, <code>--tests '*OrderGraphQlTests' '*Order*' '*Invoice*' '*Payment*'</code> pass). Neither DTO is used by REST, so no REST JSON is affected. Applies A2, A3, D5, D7</li><li>2026-11-20 &middot; In progress &middot; started. Applies A2, D5, D7; A3 (<code>issueDate</code> is <code>DateTime</code>)</li></ul>
+    </li>
+    <li class="job" id="job-4-2" data-status="done">
+      <span class="title">4.2 order</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> <code>order.graphqls</code> uses <code>OrderType</code> and <code>OrderStatus</code> (already declared as enums) for <code>type</code>/<code>status</code> including the arguments, and <code>DateTime</code> for <code>createdAt/updatedAt/expiresAt</code>; <code>OrderDto</code> loses its <code>toString()</code> helper.
+         <strong>Files:</strong> <code>order.graphqls</code>, <code>domain/dto/OrderDto.java</code>, <code>OrderController</code>, tests. Verify: <code>./gradlew test --tests '*Order*'</code>.</p>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; <code>order.graphqls</code>: <code>Order.type/status</code> use <code>OrderType</code>/<code>OrderStatus</code>, <code>createdAt/updatedAt/expiresAt</code> are <code>DateTime</code>; also <code>OrderItem.type</code> uses the new enum <code>OrderItemType</code> (Java enum exists, D5). The <code>orders(status, type)</code> arguments were already SDL enums, so <code>OrderController</code> now takes <code>OrderStatus</code>/<code>OrderType</code>, <code>ViewOrdersQuery</code> carries them and <code>ViewOrdersUseCase</code> lost <code>statusOf/typeOf</code> (unknown values are validation errors, proven in <code>OrderGraphQlTests</code>). <code>OrderDto</code> and <code>OrderItemDto</code> lost their <code>valueOf</code> helpers. Applies A2, D5, D7</li></ul>
+    </li>
+    <li class="job" id="job-4-3" data-status="done">
+      <span class="title">4.3 school-balance</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> <code>occurredAt</code>/<code>updatedAt</code> are <code>DateTime</code>; the date-range arguments of the debt/ledger queries take <code>DateTime</code> and <code>SchoolBalanceController.parseInstant</code> is deleted; <code>balanceVnd</code>, <code>amountVnd</code>, <code>balanceAfterVnd</code>, <code>costUsd</code>, <code>fxRateUsed</code> are still <code>String</code>; the existing enum for entry type keeps passing <code>GraphQlEnumParityTests</code>.
+         <strong>Files:</strong> <code>school-balance.graphqls</code>, <code>SchoolBalanceEntryDto</code>, <code>SchoolBalanceDto</code>, <code>SchoolDebtEventDto</code>, <code>SchoolBalanceController</code>, tests. Verify: <code>./gradlew test --tests '*SchoolBalance*'</code>.</p>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; <code>school-balance.graphqls</code>: <code>SchoolBalance.updatedAt</code>, <code>SchoolBalanceEntry.occurredAt</code>, <code>SchoolDebtEvent.occurredAt</code> are <code>DateTime</code>; <code>schoolBalanceSummary(from, to)</code> take <code>DateTime</code>, so <code>SchoolBalanceController.parseInstant</code> is deleted and the arguments are <code>Instant</code>. <code>SchoolBalanceDto</code>, <code>SchoolBalanceEntryDto</code>, <code>SchoolDebtEventDto</code> hold <code>Instant</code>. All money fields (<code>balanceVnd</code>, <code>amountVnd</code>, <code>balanceAfterVnd</code>, <code>costUsd</code>, <code>fxRateUsed</code>, debt amounts) are still <code>String</code>; no use case logic changed. <code>SchoolBalanceGraphQlTests</code> (5, includes <code>2026-07-01</code> rejected as a coercion error) and <code>--tests '*SchoolBalance*' '*Balance*'</code> pass. Vietnamese comments in the schema, the three DTOs and the controller translated. Applies A2, D5, D7</li><li>2026-11-20 &middot; In progress &middot; started. Applies A2, D5, D7</li></ul>
+    </li>
+    <li class="job" id="job-4-4" data-status="done">
+      <span class="title">4.4 subscription</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> <code>startDate/endDate/startsAt</code> use the scalar matching their Java type, <code>cancelledAt/suspendedAt/createdAt/updatedAt</code> are <code>DateTime</code>, status fields use the existing subscription enums, and <code>SubscriptionPlanDto</code>, <code>SubscriptionRequestDto</code>, <code>UpdateSubscriptionPlanInput</code>, <code>SubscriptionPlanQuotaInput</code> carry real types; plan quota numbers are not touched.
+         <strong>Files:</strong> <code>subscription.graphqls</code>, the DTOs and inputs above, <code>SubscriptionController</code>, tests. Verify: <code>./gradlew test --tests '*Subscription*'</code>.</p>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; <code>subscription.graphqls</code>: <code>SubscriptionPlan.createdAt/updatedAt</code>, <code>SchoolSubscription.startDate/endDate/cancelledAt/createdAt/suspendedAt</code> and <code>SchoolSubscriptionRenewalPreview.startsAt</code> are <code>DateTime</code> (the Java values are <code>Instant</code>, so <code>startDate/endDate</code> are not <code>Date</code>). The status/period fields were already SDL enums; <code>SchoolSubscriptionDto</code> and <code>SubscriptionPlanDto</code> now carry <code>SchoolSubscriptionStatus</code>, <code>SubscriptionPlanStatus</code>, <code>SubscriptionPlanPeriod</code> and <code>Instant</code>, and lost their <code>valueOf</code> glue. <code>SubscriptionRequestDto</code> (unused record) holds <code>Instant</code> for <code>submittedAt/reviewedAt</code>. <code>UpdateSubscriptionPlanInput</code> and <code>SubscriptionPlanQuotaInput</code> already had real types and no temporal field, so they and <code>SubscriptionController</code> needed no change. No quota number touched. <code>SubscriptionGraphQlTests</code> (5) and <code>./gradlew test</code> pass. Vietnamese descriptions in <code>subscription.graphqls</code> and the DTO comments translated. Applies A2, D5, D7</li><li>2026-11-20 &middot; In progress &middot; started. Applies A2, D5, D7</li></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, the filters above, <code>./gradlew test --tests '*LayeredArchitectureTests'</code>, REST tests as in Phase 2, and a diff review showing no change to amount, quota or balance calculations.</p>
+  <ul class="status-log"><li>2026-11-20 &middot; Done &middot; jobs 4.1 to 4.4 done. <code>./gradlew compileJava</code> ok; <code>./gradlew test</code> 2146 tests, 0 failures (includes <code>LayeredArchitectureTests</code>, <code>PagingConventionTests</code> and the REST characterization tests from job 1.3); <code>./gradlew integrationTest --tests '*GraphQlEnumParityTests'</code> 3 tests pass with the new SDL enums. Diff review: only field types, argument types and glue changed; no amount, quota or balance logic</li></ul>
+</div>
+
+<!-- ===== Phase 5 ===== -->
+<div class="phase" id="phase-5" data-status="done">
+  <h3><span class="title">Phase 5 &ndash; School, framework, policy, rubric, question</span>
+    <span class="tag">large &middot; needs D3, D4, D5</span>
+    <span class="status done">Done</span></h3>
+  <p><strong>Goal:</strong> The configuration-style modules are typed, including the inputs that take <code>effectiveFrom/To</code>. <strong>Depends on:</strong> Phase 4 (or Phase 3 if D7 = B).</p>
+  <ul class="jobs">
+    <li class="job" id="job-5-1" data-status="done">
+      <span class="title">5.1 school</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> <code>school.graphqls</code> (21 temporal, 14 enum-like fields, about 285 lines) uses <code>DateTime</code>/<code>Date</code> and the school/grade/room/class status enums; <code>UpdateSchoolRequest</code>, <code>UpdateSchoolGradeRequest</code>, <code>UpdateSchoolRoomRequest</code>, <code>UpdateGradeLevelRequest</code> take typed values (<code>SchoolGradeDto</code> already holds <code>LocalDate</code>); <code>SchoolAuthorizationGraphQlTests</code> and a typed-value test pass.
+         <strong>Files:</strong> <code>school.graphqls</code>, <code>domain/dto/SchoolGradeDto.java</code>, <code>SchoolClassDto</code>, <code>GradeLevelDto</code> and the four request records, <code>SchoolController</code>, tests. Verify: <code>./gradlew test --tests '*School*'</code>.</p>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; <code>school.graphqls</code>: <code>createdAt/updatedAt/joinedAt/leftAt</code> are <code>DateTime</code>; <code>SchoolGrade.startDate/endDate</code> and <code>UpdateSchoolGradeInput</code> are <code>Date</code>; <code>SchoolUser.startDate/endDate</code> are <code>DateTime</code> (Instant in the domain); new enums <code>SchoolGradeStatus</code>, <code>GradeLevelStatus</code>, <code>SchoolDirectoryOrigin</code>, <code>UserStatus</code> plus the existing <code>SchoolClassStatus</code> on all 14 enum-like fields (9 query arguments, <code>UpdateSchoolClassInput.status</code>, three output fields, <code>SchoolDirectory.origin</code>). DTOs and queries carry the real types; the <code>parseStatus</code>/<code>validateStatus</code> glue and their invalid-value tests are gone (unknown values are now validation errors). New <code>SchoolGraphQlTests</code> (15) pass; <code>--tests *School* *GradeLevel* *MyClass* *AuthorizationGraphQlTests *LayeredArchitectureTests com.sep.vox.interfaces.rest*</code> 575 tests, 0 failures; <code>integrationTest --tests *GraphQlEnumParityTests</code> 3 pass. Applies A2, D3, D5</li><li>2026-11-20 &middot; In progress &middot; started. Applies A2, D3, D5</li></ul>
+    </li>
+    <li class="job" id="job-5-2" data-status="done">
+      <span class="title">5.2 framework</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> <code>effectiveFrom/effectiveTo/createdAt/updatedAt</code> are <code>DateTime</code>, <code>SignalImportance</code> and <code>FrameworkVersionStatus</code> are used where the fields are still <code>String</code>, and the <code>UpdateFramework*Input</code> records (version, criterion, band, result band) take typed values.
+         <strong>Files:</strong> <code>framework.graphqls</code>, <code>UpdateFrameworkVersionInput.java</code> and the other three <code>UpdateFramework*Input.java</code>, <code>domain/dto/FrameworkDto.java</code>, <code>FrameworkCriterionDto.java</code>, <code>FrameworkController</code>, tests. Verify: <code>./gradlew test --tests '*Framework*'</code>.</p>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; <code>framework.graphqls</code>: <code>Framework</code>/<code>FrameworkVersion</code> <code>createdAt/updatedAt/effectiveTo</code> are <code>DateTime</code>, <code>effectiveFrom</code> is <code>DateTime!</code> (also in <code>UpdateFrameworkVersionInput</code>), and <code>frameworkVersions(status)</code> takes the existing <code>FrameworkVersionStatus</code>. <code>FrameworkDto</code>/<code>FrameworkVersionDto</code> carry <code>Instant</code>/<code>FrameworkVersionStatus</code>; <code>UpdateFrameworkVersionInput</code> carries <code>Instant</code> and its mapper no longer calls <code>DateMapper</code>; <code>ViewFrameworkVersionsUseCase.parseStatus</code> and its invalid-status test are gone. <code>SignalImportance</code> was already used by <code>Signal</code>/<code>SignalInput</code>, so no SDL change (the Java <code>SignalInput.importance</code> stays <code>String</code>: the Java enum is named <code>FrameworkCriterionSignalImportance</code>). New <code>FrameworkGraphQlTests</code> (5); <code>--tests *Framework* *Rubric* *AssessmentPolicy* *AuthorizationGraphQlTests *LayeredArchitectureTests com.sep.vox.interfaces.rest*</code> pass. Applies A2, D3, D5</li><li>2026-11-20 &middot; In progress &middot; started. Applies A2, D3, D5</li></ul>
+    </li>
+    <li class="job" id="job-5-3" data-status="done">
+      <span class="title">5.3 assessmentpolicy</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> <code>effectiveFrom/effectiveTo/createdAt/updatedAt</code> are <code>DateTime</code>, <code>status</code> is <code>AssessmentPolicyStatus</code>, <code>UpdateAssessmentPolicyInput</code> carries <code>Instant</code>, and a test sends <code>effectiveFrom: "2026-07-28"</code> and gets a coercion error (strict input, D3), while <code>"2026-07-28T00:00:00+07:00"</code> is accepted.
+         <strong>Files:</strong> <code>assessmentpolicy.graphqls</code>, <code>UpdateAssessmentPolicyInput.java</code>, <code>UpdateAssessmentPolicyGraphQLMapper.java</code>, <code>AssessmentPolicyController</code>, tests. Verify: <code>./gradlew test --tests '*AssessmentPolicy*'</code>.</p>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; <code>assessmentpolicy.graphqls</code>: new enum <code>AssessmentPolicyStatus</code> on <code>AssessmentPolicy.status</code> and on the <code>status</code> argument of <code>viewSystemAssessmentPolicies</code>/<code>viewSchoolAssessmentPolicies</code>; <code>effectiveFrom/effectiveTo</code> are <code>DateTime</code> in <code>UpdateAssessmentPolicyInput</code>, in the three <code>view*AssessmentPolicies</code> arguments and on the type; <code>createdAt/updatedAt</code> are <code>DateTime</code>. <code>AssessmentPolicyDto.status</code> is the Java enum, <code>UpdateAssessmentPolicyInput</code> carries <code>Instant</code>, the controller and <code>UpdateAssessmentPolicyGraphQLMapper</code> lost their <code>DateMapper.toInstant</code> calls, and both view use cases lost the status parsing. New <code>AssessmentPolicyGraphQlTests</code> (6): <code>2026-07-28</code> is a coercion error, <code>2026-07-28T00:00:00+07:00</code> is delivered as <code>2026-07-27T17:00:00Z</code>. <code>--tests *AssessmentPolicy*</code> pass. Applies A2, D3, D5</li><li>2026-11-20 &middot; In progress &middot; started. Applies A2, D3, D5</li></ul>
+    </li>
+    <li class="job" id="job-5-4" data-status="done">
+      <span class="title">5.4 rubric</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> <code>effectiveFrom/To</code> and audit timestamps are <code>DateTime</code>; <code>status</code>, <code>ownerType</code>, <code>totalScoreMethod</code> become enums where the Java enum exists (for example <code>RubricOwnerType</code> for <code>ownerType</code>); the <code>status</code> filter arguments of <code>versions(...)</code> and the <code>SearchRubric*FilterRequest</code> records take the enum; <code>examplesJson</code> stays <code>String</code>.
+         <strong>Files:</strong> <code>rubric.graphqls</code>, <code>SearchRubric*FilterRequest.java</code> (4), <code>UpdateRubric*Input.java</code> (4), <code>RubricCriterionGraphQLMapper</code>, <code>RubricResultBandGraphQLMapper</code>, <code>RubricController</code>, tests. Verify: <code>./gradlew test --tests '*Rubric*'</code>.</p>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; <code>rubric.graphqls</code>: new enums <code>RubricStatus</code>, <code>RubricOwnerType</code>, <code>RubricTotalScoreMethod</code> (Java enums with the same names) on <code>Rubric.ownerType</code>, <code>RubricVersion.status/totalScoreMethod</code>, the <code>status</code> arguments of <code>Rubric.versions</code>, <code>viewSchoolRubricVersions</code>, <code>viewSystemRubricVersions</code>, <code>SearchRubricVersionFilter.status</code> and <code>UpdateRubricVersionInput.totalScoreMethod</code>; <code>DateTime</code> for <code>RubricVersion.effectiveFrom/effectiveTo/createdAt</code>, <code>UpdateRubricVersionInput.effectiveFrom/effectiveTo</code> and the criterion/result band <code>createdAt/updatedAt</code>; <code>examplesJson</code> stays <code>String</code>. <code>RubricDto</code>/<code>RubricVersionDto</code>, the four version queries, <code>RubricVersionsKey</code>, <code>SearchRubricVersionFilterRequest</code>, <code>UpdateRubricVersionInput</code> and both <code>Update*RubricVersionCommand</code> carry the real types; <code>parseOptionalTotalScoreMethod</code> (2 use cases) and the status parsing in <code>ViewSystem/SchoolRubricVersionsUseCase</code> are gone, <code>UpdateRubricVersionGraphQLMapper</code> lost <code>DateMapper</code>. New <code>RubricGraphQlTests</code> (7); <code>--tests *Rubric*</code> pass. Applies A2, D3, D5</li><li>2026-11-20 &middot; In progress &middot; started. Applies A2, D3, D5</li></ul>
+    </li>
+    <li class="job" id="job-5-5" data-status="done">
+      <span class="title">5.5 question</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> <code>attachedAt/assignedAt/createdAt/updatedAt</code> are <code>DateTime</code>; <code>assetType</code> arguments and similar string filters use an enum only if a Java enum matches (D5); existing enums (<code>QuestionStatus</code>, <code>QuestionBankStatus</code>, ...) are used by any remaining <code>String</code> twin.
+         <strong>Files:</strong> <code>question.graphqls</code>, <code>domain/dto/QuestionDto.java</code>, <code>QuestionBankDto.java</code>, <code>QuestionCollaboratorDto.java</code>, <code>QuestionController</code>, <code>QuestionBankController</code>, <code>QuestionTopicController</code>, tests. Verify: <code>./gradlew test --tests '*Question*'</code>.</p>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; <code>question.graphqls</code>: <code>createdAt/updatedAt</code> (QuestionBank, QuestionTopic, Question), <code>QuestionBankGrade.attachedAt</code> and <code>QuestionCollaborator.assignedAt</code> are <code>DateTime</code>. All status/type/sharing fields and arguments were already SDL enums, so no enum change; the two <code>assetType: String</code> arguments stay <code>String</code> (D5: the value set is <code>QuestionAssetType</code> plus <code>NONE</code>, so no Java enum matches). <code>QuestionDto</code>, <code>QuestionBankDto</code>, <code>QuestionTopicDto</code>, <code>QuestionBankGradeDto</code>, <code>QuestionCollaboratorDto</code> carry <code>Instant</code> and their five mappers lost the <code>valueOf(Instant)</code> glue. CHANGED (outside the job file list, same behavior): <code>QuestionSpreadsheetService</code> writes <code>createdAt</code> with <code>toString()</code> as before; the three REST <code>Question*ControllerTests</code> constructor calls now pass <code>Instant.parse(...)</code> while the expected JSON text is unchanged and still passes. New <code>QuestionGraphQlTests</code> (3); <code>--tests *Question* com.sep.vox.interfaces.rest*</code> pass. Applies A2, D5</li><li>2026-11-20 &middot; In progress &middot; started. Applies A2, D3, D5</li></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, the filters above, <code>./gradlew test --tests '*LayeredArchitectureTests'</code>, REST tests as in Phase 2.</p>
+  <ul class="status-log"><li>2026-11-20 &middot; Done &middot; jobs 5.1 to 5.5 done. <code>./gradlew compileJava</code> ok; <code>./gradlew test</code> 2179 tests, 0 failures (includes <code>LayeredArchitectureTests</code>, <code>PagingConventionTests</code>, the 9 REST characterization classes from job 1.3 and all <code>*AuthorizationGraphQlTests</code>); <code>./gradlew integrationTest --tests *GraphQlEnumParityTests</code> 3 tests pass with the new SDL enums</li></ul>
+</div>
+
+<!-- ===== Phase 6 ===== -->
+<div class="phase" id="phase-6" data-status="done">
+  <h3><span class="title">Phase 6 &ndash; Assessment core</span>
+    <span class="tag">large &middot; needs D3, D4, D5</span>
+    <span class="status done">Done</span></h3>
+  <p><strong>Goal:</strong> <code>assessment.graphqls</code> (914 lines, about 53 temporal and 25 enum-like fields) and <code>assessmentdirectory.graphqls</code> are typed. Split into four jobs by area so each is reviewable. <strong>Depends on:</strong> Phase 5.</p>
+  <ul class="jobs">
+    <li class="job" id="job-6-1" data-status="done">
+      <span class="title">6.1 Assessment, members, blueprint, paper (about lines 100-310)</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> grant/embargo/release/open/close/effective/created/updated fields are <code>DateTime</code>; <code>targetBandLevel</code> and similar stay <code>String</code> unless a Java enum exists; blueprint, paper and member status/type fields use <code>AssessmentBlueprintVersionStatus</code>, <code>AssessmentPaperStatus</code>, <code>AssessmentMemberRole</code>, <code>AssessmentBlueprintSlotType</code>; <code>AssessmentBlueprintSectionDto</code>, <code>AssessmentBlueprintVersionDto</code>, <code>AssessmentBlueprintSlotDto</code>, <code>AssessmentPaperDto</code>, <code>AssessmentMemberDto</code>, <code>AssessmentDto</code> hold real types.
+         <strong>Files:</strong> <code>assessment.graphqls</code> (this range), the DTOs above, <code>AssessmentController</code>, <code>AssessmentBlueprintController</code>, tests. Verify: <code>./gradlew test --tests '*Assessment*Controller*' --tests '*AssessmentBlueprint*'</code>.</p>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; <code>assessment.graphqls</code> 6.1 range: grantedAt, embargoUntil, releasedAt, openAt, closeAt, effectiveFrom/To and every createdAt/updatedAt in AssessmentMember, AssessmentSecurePool, AssessmentPaperSection, AssessmentPaper, Assessment, AssessmentBlueprint*, are <code>DateTime</code>; the enum fields were already SDL enums and their DTO carriers now hold the Java enums. Tests: <code>AssessmentGraphQlTests</code> (5), <code>AssessmentBlueprintGraphQlTests</code> (3); <code>./gradlew test</code> 2187 tests, 0 failures. Regression found while changing types: <code>papers(status)</code> and <code>versions(status)</code> compared <code>status.name().equals(dto.status())</code>, which compiles and would always be false once the DTO holds an enum; fixed and covered by the two filter tests.</li></ul>
+    </li>
+    <li class="job" id="job-6-2" data-status="done">
+      <span class="title">6.2 Schedules, candidates, proctoring summaries (about lines 320-470)</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> <code>startDate/endDate/windowStart/windowEnd/assignedAt/blockedAt/startedAt/submittedAt</code> are <code>DateTime</code> (these are <code>Instant</code> in Java, parsed with <code>DateMapper.toInstant</code>, so the name <code>Date</code> does not make them <code>Date</code>); <code>status</code>/<code>kind</code>/<code>sessionStatus</code> use <code>AssessmentScheduleStatus</code>, <code>AssessmentCandidateStatus</code>, <code>AssessmentSessionStatus</code>, <code>AssessmentKind</code>; <code>UpdateAssessmentScheduleInput</code> and the schedule controller arguments take <code>Instant</code>; <code>DateMapper.toInstant</code> calls in <code>AssessmentScheduleController</code> disappear.
+         <strong>Files:</strong> <code>assessment.graphqls</code> (this range), <code>AssessmentScheduleDto</code>, <code>AssessmentCandidateDto</code>, <code>UpdateAssessmentScheduleInput.java</code>, <code>UpdateAssessmentScheduleCommandMapper.java</code>, <code>AssessmentScheduleController</code>, <code>AssessmentCandidateController</code>, <code>ProctorAttendanceController</code>, tests. Verify: <code>./gradlew test --tests '*AssessmentSchedule*' --tests '*AssessmentCandidate*'</code>.</p>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; <code>assessment.graphqls</code>: AssessmentSchedule, ProctorBusySlot, StudentBusySlot, AssessmentCandidate, ProctorScheduleSummary, MonitoredAssessmentSummary, ProctorCandidateSummary and AssessmentAttemptSummary dates are <code>DateTime</code>; ProctorScheduleSummary.status, MonitoredAssessmentSummary.kind/status and ProctorCandidateSummary.status/sessionStatus are now the enums <code>AssessmentScheduleStatus</code>, <code>AssessmentKind</code>, <code>AssessmentStatus</code>, <code>AssessmentCandidateStatus</code>, <code>AssessmentSessionStatus</code> (they were String). assessmentSchedules/myAssessmentSchedules(startDate, endDate) and UpdateAssessmentScheduleInput take <code>DateTime</code>; <code>DateMapper</code> is gone from AssessmentScheduleController and UpdateAssessmentScheduleCommandMapper. Tests: <code>AssessmentScheduleGraphQlTests</code> (7), <code>AssessmentCandidateGraphQlTests</code> (4), <code>ProctorAttendanceGraphQlTests</code> (3), <code>ProctorCandidateSummaryTests</code> (3); <code>./gradlew integrationTest --tests *MonitoredAssessmentQuerySmokeTests --tests *JpaProctorScheduleQuerySmokeTests</code> pass (real Postgres, proves the JPQL SELECT NEW resolves the String constructors); <code>./gradlew test</code> 2204 tests, 0 failures.</li></ul>
+    </li>
+    <li class="job" id="job-6-3" data-status="done">
+      <span class="title">6.3 Sessions, turns, results, evaluations (about lines 480-650)</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> <code>answeredAt/createdAt/evaluatedAt/submittedAt/startedAt</code> are <code>DateTime</code>; <code>sessionStatus</code> is <code>AssessmentSessionStatus</code>, <code>resultStatus</code>/<code>status</code> are <code>AssessmentCandidateResultStatus</code> or the evaluation enum the Java side uses (confirmed in the job); <code>turnType</code> and <code>engineType</code> use <code>TurnType</code> and <code>AssessmentEvaluationEngineType</code> only if D5 accepts the match; JSON strings (<code>signals</code>, <code>wordFeedback</code>, <code>suggestions</code>) stay <code>String</code>.
+         <strong>Files:</strong> <code>assessment.graphqls</code> (this range), response/DTO types used by <code>AssessmentSessionController</code>, tests. Verify: <code>./gradlew test --tests '*AssessmentSession*'</code>.</p>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; <code>assessment.graphqls</code>: AssessmentSession, AssessmentItemResponseTurn, AssessmentItemResponseDetails, AssessmentItemAiEvaluationContext, AssessmentItemEvaluationDetails and StudentAssessmentResultSummary dates are <code>DateTime</code>; new SDL enums <code>TurnType</code>, <code>AssessmentEvaluationEngineType</code>, <code>AssessmentItemEvaluationStatus</code> (Java enums exist with the same value sets and the domain models already hold them, so D5 accepts the match); StudentAssessmentResultSummary.sessionStatus/resultStatus use <code>AssessmentSessionStatus</code>/<code>AssessmentCandidateResultStatus</code>. JSON strings (signals, validity, suggestions, wordFeedback, pronunciationOverall) stay String. Tests: <code>AssessmentSessionGraphQlTests</code> (4); REST pins written BEFORE the change and unchanged after: <code>AssessmentSessionControllerTests</code>, <code>AssessmentItemResponseControllerTests</code>; <code>./gradlew test</code> 2210 tests, 0 failures.</li></ul>
+    </li>
+    <li class="job" id="job-6-4" data-status="done">
+      <span class="title">6.4 Recordings, secure pools, proctoring alerts, search arguments (about lines 650-914) and assessmentdirectory</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> <code>createdAt/assembledAt/capturedAt/raisedAt</code> are <code>DateTime</code>; <code>streamType</code>, pool <code>status</code> use <code>AssessmentRecordingStreamType</code>, <code>AssessmentSecurePoolStatus</code>; the <code>dateFrom/dateTo/assessmentKind</code> arguments at <code>AssessmentController</code> (lines about 132-133) take <code>DateTime</code> and <code>AssessmentKind</code>; the three <code>status: String!</code> fields in <code>assessmentdirectory.graphqls</code> use enums; <code>AssessmentDirectoryAuthorizationGraphQlTests</code> passes.
+         <strong>Files:</strong> <code>assessment.graphqls</code> (this range), <code>assessmentdirectory.graphqls</code>, <code>AssessmentRecordingDto</code>, <code>AssessmentSecurePoolDto</code>, <code>AssessmentProctoringAlertDto</code>, <code>AssessmentController</code>, <code>AssessmentDirectoryController</code>, tests. Verify: <code>./gradlew test --tests '*AssessmentDirectory*' --tests '*Recording*'</code>.</p>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; applies A4 (recording stream type). <code>assessment.graphqls</code>: AssessmentRecording createdAt/assembledAt, AssessmentProctoringAlert capturedAt/raisedAt are <code>DateTime</code>; recording streamType is <code>AssessmentRecordingStreamType</code> (carrier AssessmentRequiredStreamType), recording status is the new SDL enum <code>AssessmentRecordingAssemblyStatus</code> (Java enum with the same five values); assessmentStatusCounts(dateFrom, dateTo) take <code>DateTime</code>; assessmentBlueprints(assessmentKind) takes <code>AssessmentKind</code>; the three <code>status: String!</code> fields of assessmentdirectory.graphqls are <code>SchoolClassStatus</code>, <code>SchoolGradeStatus</code>, <code>UserStatus</code>. Tests: <code>AssessmentDirectoryGraphQlTests</code> (3), 4 recording/alert tests in <code>AssessmentSessionGraphQlTests</code>, 2 status-counts tests in <code>AssessmentGraphQlTests</code>, 2 assessmentKind tests in <code>AssessmentBlueprintGraphQlTests</code>; <code>JpaAssessmentDirectoryQueryRepositoryTests</code> and <code>GraphQlEnumParityTests</code> pass on real Postgres.</li></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, the filters above, <code>./gradlew test --tests '*LayeredArchitectureTests'</code>, REST tests as in Phase 2.</p>
+  <ul class="status-log"><li>2026-11-20 &middot; Done &middot; jobs 6.1 to 6.4 done. <code>./gradlew compileJava</code> ok; <code>./gradlew test</code> 2221 tests, 0 failures (includes <code>LayeredArchitectureTests</code>, <code>PagingConventionTests</code>, the REST characterization classes); <code>./gradlew integrationTest</code> 367 tests, 0 failures (includes <code>GraphQlEnumParityTests</code>, the two proctoring query smoke tests, <code>JpaAssessmentDirectoryQueryRepositoryTests</code>).</li></ul>
+</div>
+
+<!-- ===== Phase 7 ===== -->
+<div class="phase" id="phase-7" data-status="done">
+  <h3><span class="title">Phase 7 &ndash; Grading and appeals</span>
+    <span class="tag">medium &middot; needs D4, D5</span>
+    <span class="status done">Done</span></h3>
+  <p><strong>Goal:</strong> <code>assessment-grading.graphqls</code> (506 lines) and <code>assessment-appeal.graphqls</code> (197 lines) are typed. <strong>Depends on:</strong> Phase 6.</p>
+  <ul class="jobs">
+    <li class="job" id="job-7-1" data-status="done">
+      <span class="title">7.1 assessment-grading</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> <code>assignedAt/completedAt/deadlineAt/createdAt</code> are <code>DateTime</code>; <code>status</code>, <code>fromStatus</code>, <code>toStatus</code>, <code>resultStatus</code> (including the <code>resultStatus: String</code> arguments near lines 406 and 475) use <code>GradingAssignmentStatus</code> and <code>AssessmentCandidateResultStatus</code>; the declared but unused <code>GradingSampleSelectionMode</code> is wired to the field it was meant for or reported in the notes; <code>transcript</code>, <code>rationale</code>, <code>aiSignals</code> stay <code>String</code>.
+         <strong>Files:</strong> <code>assessment-grading.graphqls</code>, <code>GradingController</code> and the use-case response types it returns, tests. Verify: <code>./gradlew test --tests '*Grading*'</code>.</p>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; <code>assessment-grading.graphqls</code>: assignedAt/completedAt/deadlineAt (GradingTask, GradingAssignmentRow), deadlineAt (GradingTaskDetail) and ResultStatusHistoryEntry.createdAt are <code>DateTime</code> (their Java carriers already held <code>Instant</code>); every resultStatus field and the two <code>resultStatus</code> arguments (<code>gradingAssignments</code>, <code>classTestGradingResults</code>), <code>GradingResultStatusCount.status</code> and <code>ResultStatusHistoryEntry.fromStatus/toStatus</code> are <code>AssessmentCandidateResultStatus</code>; <code>GradingTurn.turnType</code> is <code>TurnType</code> (D5: same value set, DB check constraint MAIN/FOLLOWUP). The Info records, <code>SearchGradingAssignmentsQuery</code>, <code>ViewClassTestGradingResultsQuery</code> and the two repositories hold/produce the Java enums; <code>GradingAssignmentFilter</code> stays String because the REST score export also builds it (the two use cases convert with <code>name()</code>). New <code>GradingGraphQlTests</code> (8); <code>./gradlew test --tests *Grading* *ResultStatusHistory* *ExportAssessmentScores* *LayeredArchitectureTests com.sep.vox.interfaces.rest*</code> and <code>./gradlew integrationTest --tests *Grading* *TeacherGradingAssessmentPicker* *GraphQlEnumParityTests</code> (58 tests) pass. <code>GradingSampleSelectionMode</code> is reported, not wired: no GraphQL field takes it (it belongs to the auto-assign command). Applies A2, D5</li><li>2026-11-20 &middot; In progress &middot; started. Applies A2, D5</li></ul>
+    </li>
+    <li class="job" id="job-7-2" data-status="done">
+      <span class="title">7.2 assessment-appeal</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> <code>assignedAt/completedAt/deadlineAt/requestedAt/deadline/approvedAt/resolvedAt/withdrawnAt</code> are <code>DateTime</code>; <code>appeals</code>, <code>assessmentAppeals</code>, <code>myAppeals</code> take <code>AppealStatus</code> instead of <code>String status</code>, and <code>SearchAssessmentAppealsQuery</code>/<code>SearchAppealsByAssessmentQuery</code> carry the Java enum <code>AssessmentAppealStatus</code>; <code>AppealSummaryInfo.status</code> and <code>reviewerStatus</code> (documented as <code>ASSIGNED | COMPLETED</code>) are typed; <code>AssessmentAppealAuthorizationGraphQlTests</code> passes.
+         <strong>Files:</strong> <code>assessment-appeal.graphqls</code>, <code>application/query/dto/AppealSummaryInfo.java</code>, <code>AppealDetailInfo.java</code>, the two query records, <code>AssessmentAppealController</code>, tests. Verify: <code>./gradlew test --tests '*Appeal*'</code>.</p>
+      <ul class="status-log"><li>2026-11-20 &middot; Done &middot; <code>assessment-appeal.graphqls</code>: AppealSummary requestedAt/deadline, AppealDetail requestedAt/deadline/approvedAt/resolvedAt/withdrawnAt and AppealReviewer assignedAt/completedAt/deadlineAt are <code>DateTime</code> (Java carriers already held <code>Instant</code>); <code>AppealTurn.turnType</code> is <code>TurnType</code> (D5). The status/reviewerStatus/outcome fields and the three <code>status</code> arguments were already SDL enums (<code>AppealStatus</code>, <code>GradingAssignmentStatus</code>, <code>GradingOutcome</code>): their Java carriers are now <code>AssessmentAppealStatus</code>, <code>GradingAssignmentStatus</code>, <code>GradingOutcome</code> in <code>AppealSummaryInfo</code>, <code>AppealDetailInfo</code>, <code>AppealReviewerInfo</code>, <code>SearchAssessmentAppealsQuery</code>, <code>SearchAppealsByAssessmentQuery</code>, <code>AssessmentAppealQueryRepository</code> and its JPA implementation. The SDL enum keeps its existing name <code>AppealStatus</code> (no Java enum has that name, so GraphQlEnumParityTests does not cover it; same shape as A4). New <code>AssessmentAppealGraphQlTests</code> (6) and <code>JpaAssessmentAppealQueryRepositoryTests</code> (4, real Postgres rows: status, reviewer status, filter, overdue); <code>AssessmentAppealAuthorizationGraphQlTests</code> (21) passes. Applies A2, D5</li><li>2026-11-20 &middot; In progress &middot; started. Applies A2, D5</li></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, the filters above, <code>./gradlew test --tests '*LayeredArchitectureTests'</code>, REST tests as in Phase 2.</p>
+  <ul class="status-log"><li>2026-11-20 &middot; Done &middot; jobs 7.1 and 7.2 done. <code>./gradlew compileJava</code> ok; <code>./gradlew test</code> 2235 tests, 0 failures (includes <code>LayeredArchitectureTests</code>, <code>PagingConventionTests</code>, the REST characterization classes and all <code>*AuthorizationGraphQlTests</code>); <code>./gradlew integrationTest</code> 371 tests, 0 failures, 0 errors (includes <code>GraphQlEnumParityTests</code>).</li></ul>
+</div>
+
+<!-- ===== Phase 8 ===== -->
+<div class="phase" id="phase-8" data-status="todo">
+  <h3><span class="title">Phase 8 &ndash; Dashboard</span>
+    <span class="tag">medium &middot; needs D3, D5</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> <code>dashboard.graphqls</code> (699 lines) is typed, with money and month strings left alone. <strong>Depends on:</strong> Phase 7.</p>
+  <ul class="jobs">
+    <li class="job" id="job-8-1" data-status="todo">
+      <span class="title">8.1 Date-range arguments</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> every <code>dateFrom/dateTo</code> argument in the schema (about lines 607-670) is <code>DateTime</code>, the <code>@Argument String dateFrom/dateTo</code> parameters in <code>DashboardController</code> (lines about 136-190) become <code>Instant</code>, and the <code>DateMapper.toInstant(...)</code> calls there are gone; a test passes a date-range and asserts the use-case query receives the expected <code>Instant</code>s.
+         <strong>Files:</strong> <code>dashboard.graphqls</code>, <code>DashboardController.java</code>, tests. Verify: <code>./gradlew test --tests '*Dashboard*'</code>.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-8-2" data-status="todo">
+      <span class="title">8.2 Output fields</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>openAt/closeAt/failedAt/firstFailedAt/lastFailedAt/recordedFrom</code> and the other temporal outputs are <code>DateTime</code>; <code>endDate</code> of <code>SubscriptionRenewal</code> and <code>day</code> (backed by <code>GradingOutcomeBucketDto.day</code>, a <code>LocalDate</code>) are <code>Date</code>; <code>SchoolRiskBucket</code> and <code>AiCostGranularity</code> are used where a <code>String</code> twin exists; <code>month</code> (YYYY-MM), every <code>*Vnd</code> amount, <code>error</code>, <code>signature</code> stay <code>String</code>.
+         <strong>Files:</strong> <code>dashboard.graphqls</code>, <code>application/query/dto/*</code> dashboard records (for example <code>GradingOutcomeBucketDto</code>), tests. Verify: <code>./gradlew test --tests '*Dashboard*'</code>.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*Dashboard*'</code>, <code>./gradlew test --tests '*LayeredArchitectureTests'</code>.</p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ===== Phase 9 ===== -->
+<div class="phase" id="phase-9" data-status="todo">
+  <h3><span class="title">Phase 9 &ndash; Cleanup, guard, full check, frontend change list</span>
+    <span class="tag">small &middot; needs D6, D8</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> Nothing dead is left behind, the typing cannot silently regress, and the contract change is documented for the people who consume it. <strong>Depends on:</strong> Phases 1 to 8.</p>
+  <ul class="jobs">
+    <li class="job" id="job-9-1" data-status="todo">
+      <span class="title">9.1 Remove glue made dead by this plan</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>grep -rn 'DateMapper\.' src/main/java/com/sep/vox/interfaces/graphql</code> and <code>grep -rn 'toString()' src/main/java/com/sep/vox/domain/dto</code> list only calls with a reason that is written down in the notes; <code>DateMapper.toIsoString</code> and similar helpers are deleted only if no caller is left anywhere. Nothing unrelated is cleaned.
+         <strong>Files:</strong> whichever files the greps list. Verify: <code>./gradlew compileJava</code>.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-9-2" data-status="todo">
+      <span class="title">9.2 Schema typing guard test</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> a test fails if a schema field or argument named <code>*At</code>, <code>*Date</code>, <code>effectiveFrom/To</code>, <code>status</code> is a <code>String</code> and is not on a written allow-list, and a deliberately mistyped field in a temporary local edit makes it fail (shown in the notes, then reverted). Skipped if D8 = B.
+         <strong>Files:</strong> <code>src/test/java/com/sep/vox/interfaces/graphql/GraphQlSchemaTypingTests.java</code> (new, <code>@IntegrationTest</code> like <code>GraphQlEnumParityTests</code>). Verify: <code>./gradlew integrationTest --tests '*GraphQlSchemaTypingTests'</code>.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-9-3" data-status="todo">
+      <span class="title">9.3 Cross-system impact report</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the implementation notes list, per module, every argument and input field whose type changed (old type, new type), every scalar/enum introduced, and the fields intentionally left as <code>String</code> with the reason, so the frontend, desktop app and AI grading service owners can update variable types. Written to this plan's notes (git-tracked), not to local memory. <strong>Files:</strong> this plan file only.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-9-4" data-status="todo">
+      <span class="title">9.4 Full verification</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>./gradlew clean build --no-daemon</code> passes, or the notes state plainly which suites were not run (for example <code>integrationTest</code> without Docker) and why. Then run <code>verify-plan</code>.
+         <strong>Files:</strong> none.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew test</code>, <code>./gradlew integrationTest</code> (needs Docker), <code>./gradlew clean build --no-daemon</code>.</p>
+  <ul class="status-log"></ul>
+</div>
+
+<h2 id="risks">4. Risks</h2>
+<ul>
+  <li><strong>Breaking client operations.</strong> Variables declared as <code>String</code> stop validating once an argument is an enum or scalar. Limited by D6 (one coordinated cutover) and the change list in job 9.3.</li>
+  <li><strong>Enum drift.</strong> An SDL enum that misses a Java constant fails at serialization time, not at startup; a Java <code>String</code> value that is not an SDL enum constant fails the same way. <code>GraphQlEnumParityTests</code> catches the first class and every module job tests a real value; both rely on the parity test running, which needs Docker (<code>integrationTest</code>).</li>
+  <li><strong>Silent REST change.</strong> Changing shared DTOs could alter REST JSON or the OpenAPI schema. Limited by job 1.3 (pinned before the change) and the REST test run in every phase. The OpenAPI document does change shape (string to enum/date-time format); that is not a JSON change but it is visible to REST consumers.</li>
+  <li><strong>Timezone.</strong> <code>Instant</code> output is UTC. Tests must not depend on the default timezone (AGENTS.md); date-only compatibility input is resolved in the business zone by <code>DateMapper</code>, not by the JVM default.</li>
+  <li><strong>Strict input breaks existing forms.</strong> Because D3 is strict, the web client's date-only <code>effectiveFrom/To</code> values (the reason <code>DateMapper</code> has a temporary compatibility branch) and any <code>dd/MM/yyyy</code> input are rejected on GraphQL after the cutover. REST still goes through <code>DateMapper</code> and is unchanged. The frontend change list in job 9.3 must call this out first.</li>
+  <li><strong>New dependency compatibility.</strong> <code>graphql-java-extended-scalars</code> versions track graphql-java versions; a mismatch with the 25.0 that Spring Boot 4.1.0 brings fails at startup. Job 1.1 checks the release against graphql-java 25.0 and stops if none fits.</li>
+  <li><strong>Existing slice tests stop building</strong> once the schema declares a scalar with no wiring. Covered by job 1.2 before any field changes.</li>
+  <li><strong>Mapping mistakes from field names.</strong> A field named <code>startDate</code> can be an <code>Instant</code>. The mapping rule follows the Java type, and an unclear case stops the work.</li>
+  <li><strong>Size.</strong> Roughly 290 schema fields, 65 domain DTOs and 27 input records across 28 schema files. Limited by module-sized jobs, a pilot checkpoint (2.4) and a green build after every phase.</li>
+  <li><strong>Public API and money-adjacent files</strong> are on the AGENTS.md Ask-first list; they are decisions D6 and D7, not assumptions.</li>
+</ul>
+
+<h2 id="scope">5. Out of scope</h2>
+<ul>
+  <li><code>BigDecimal</code> values stay <code>String</code> (<code>*Vnd</code>, <code>costUsd</code>, <code>fxRateUsed</code>); no decimal scalar is added. <code>Float</code> amounts such as <code>amount: Float!</code> in the dashboard are not touched.</li>
+  <li>Year-month strings (<code>month: "YYYY-MM"</code>), JSON-in-string fields (<code>examplesJson</code>, <code>signals</code>, <code>wordFeedbackJson</code>, <code>payload</code>) and free text.</li>
+  <li>Enum-like fields without a matching Java enum, unless D5 = B. They are listed in the notes.</li>
+  <li>REST request/response shapes, OpenAPI contracts beyond what a shared DTO type change implies, gRPC, Kafka events and payloads, JWT claims.</li>
+  <li>Database and Flyway migrations: no schema change is needed.</li>
+  <li>Renaming fields, restructuring types, adding queries, changing authorization, or removing <code>DateMapper</code>'s compatibility branch (it has its own removal condition).</li>
+  <li>Converting Mockito <code>mock(...)</code> tests to <code>@Mock</code> or any other test migration (AGENTS.md says not to as a drive-by).</li>
+</ul>
+
+<h2 id="verify">6. Verification</h2>
+<ul>
+  <li><code>grep -n '^scalar' src/main/resources/graphql/*.graphqls</code> prints exactly <code>scalar DateTime</code> and <code>scalar Date</code>.</li>
+  <li>A schema inspection (the job 9.2 test, or <code>grep -nE '(At|Date|effectiveFrom|effectiveTo): *String'</code> if D8 = B) lists only the allow-listed fields.</li>
+  <li><code>./gradlew test</code> passes, including every <code>*AuthorizationGraphQlTests</code>, <code>LayeredArchitectureTests</code>, <code>PagingConventionTests</code> and the REST characterization tests from job 1.3.</li>
+  <li><code>./gradlew integrationTest</code> passes with Docker, including <code>GraphQlEnumParityTests</code>; otherwise the notes say it was not run.</li>
+  <li>The cross-system change list from job 9.3 exists in this file. Run <code>verify-plan</code> after the last phase.</li>
+</ul>
+
+<h2 id="changelog">7. Change log</h2>
+<div class="table-scroll"><table>
+  <thead><tr><th>Date</th><th>Change</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>2026-11-20</td><td>Plan written (Draft)</td><td>First version</td></tr>
+    <tr><td>2026-11-20</td><td>D2&ndash;D8 answered. Job 1.1 now adds the extended-scalars dependency (Date) and hand-writes DateTime; strict input (D3) written into jobs 1.1 and 5.3; risks updated</td><td>User answers: mixed scalar implementation, strict ISO input, all other recommendations accepted</td></tr>
+    <tr><td>2026-11-20</td><td>Approved</td><td>User approved the plan as written after all decisions were answered</td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="notes">8. Implementation notes</h2>
+<p>Filled in by <code>implement-plan</code>: deviations from the plan, results of <code>verify-plan</code>, and
+problems noticed but not fixed.</p>
+<ul id="notes-list">
+  <li><strong>Job 1.1 &ndash; library version (A1).</strong> The latest <code>graphql-java-extended-scalars</code> on Maven Central is 24.0 (2025-07-06), built against graphql-java 24.1 (runtime scope in its POM). The project runs 25.0. The user chose to pin 24.0 and verify on 25.0. <code>./gradlew dependencies --configuration compileClasspath</code> shows graphql-java stays at 25.0, and <code>DateScalarsGraphQlConfigTests</code> passes on it (serialize, strict parse, rejection of <code>28/07/2026</code>, <code>28-07-2026</code>, <code>2026/07/28</code> and a full timestamp for <code>Date</code>).</li>
+  <li><strong>Job 1.1 &ndash; API findings.</strong> graphql-java 25.0 <code>Coercing</code>: the one-argument <code>serialize/parseValue/parseLiteral/valueToLiteral</code> methods are deprecated since 2022-08-22, so the scalar overrides the non-deprecated forms that take <code>GraphQLContext</code> and <code>Locale</code> (and <code>CoercedVariables</code> for literals). Spring Boot picks up a <code>RuntimeWiringConfigurer</code> bean to register scalars. A bad variable value is reported as a GraphQL error (&ldquo;Variable 'v' has an invalid value: ...&rdquo;), not an exception; the library <code>Date</code> message says &ldquo;Invalid RFC3339 full date value&rdquo;. <code>ExtendedScalars.Date</code> is the name <code>Date</code>; the library <code>DateTime</code> (OffsetDateTime) is not registered. The scalar descriptions in the schema (job 1.2) are separate from the descriptions set on the Java scalar.</li>
+  <li><strong>Job 1.2 &ndash; deviation (allowed by the plan).</strong> <code>@GraphQlTest</code> does not load <code>@Configuration</code> classes, so <code>GraphQlControllerTest</code> now imports <code>DateScalarsGraphQlConfig</code>. Any future GraphQL slice annotation must do the same.</li>
+  <li><strong>Job 1.3 &ndash; what is pinned.</strong> One test class per REST controller that imports a shared DTO, driven through <code>@RestControllerTest</code> with every use case as <code>@MockitoBean</code> and <code>any()</code> matching on the command, so only the serialized <code>$.data</code> is asserted (<code>containsAllEntriesOf</code> on the temporal, status, type, role and permission fields). Covered DTOs: AssessmentPaperDto, AssessmentCandidateDto, AssessmentScheduleDto, AssessmentDto (via ClassTestController and AssessmentController), AssessmentMemberDto, AssessmentSecurePoolDto, AssessmentBlueprintDto, AssessmentBlueprintVersionDto, AssessmentBlueprintSectionDto, AssessmentBlueprintSlotDto, QuestionDto, QuestionCollaboratorDto, QuestionAssetDto, QuestionTopicDto, QuestionBankDto, QuestionBankGradeDto. Not covered because they have no temporal, status or type field: AssessmentPaperItemDto, AssessmentPaperSectionDto, AssessmentScheduleProctorDto, QuestionEvaluationGuideDto. When a later phase changes a DTO field type, the test only needs the DTO constructor call updated (for example <code>Instant.parse(...)</code>); the expected JSON text must stay the same.</li>
+  <li><strong>Job 1.3 &ndash; limits.</strong> Each DTO is pinned through one endpoint that returns it, not through every list or nested use. The tests use <code>any()</code> for commands, so they do not check request-to-command mapping. These classes are named <code>XxxControllerTests</code> as the plan says; when authorization tests are added later for the same controllers they belong in the same class.</li>
+  <li><strong>Phase 2 &ndash; files outside the job file lists (CHANGED, same behavior and contract the plan describes).</strong> Job 2.2: <code>SchoolClassStatus</code> is declared in <code>school.graphqls</code> (the owning module, per the enum rule in section 3) and used from <code>myclass.graphqls</code>; the <code>myClasses(status)</code> argument became the enum, so <code>ViewMyClassesQuery.status</code> is <code>SchoolClassStatus</code> and <code>ViewMyClassesUseCase.parseStatus</code> was deleted together with its test <code>should_reject_unknown_status</code> (an unknown value is now a GraphQL validation error, proven in <code>MyClassGraphQlTests</code>). Job 2.3: <code>UpdateSchoolUserInput.dateOfBirth</code> in <code>school.graphqls</code> became <code>Date</code>, because <code>UpdateSchoolUserCommandMapper</code> no longer parses; it is tested in <code>SchoolAuthorizationGraphQlTests</code>. The shared <code>SchoolClassDto</code>, <code>SchoolClassUserDto</code>, <code>UserDto</code>, <code>RoleDto</code>, <code>UserRoleDto</code> are used by modules that still declare <code>String</code> (<code>SchoolClass.status/createdAt</code>, assessment policy, assessment directory). A temporary test confirmed GraphQL <code>String</code> serializes a Java enum and an <code>Instant</code> to the same text as before, so those fields do not change until their own phase.</li>
+  <li><strong>Phase 2 &ndash; left as <code>String</code> (D5).</strong> <code>Notification.eventType</code> (no Java enum, free event type name). <code>User.gender</code> was not converted: it is not in the job 2.3 done-when, and a Java <code>Gender</code> enum exists, so it is a candidate for the user to decide. <code>roleCode</code> and <code>roleCodes</code> are role codes, not an enum. The schema types <code>NotificationDevice</code> and <code>NotificationPreference</code> are not reachable from any query, so <code>NotificationDeviceDto</code> and <code>NotificationPreferenceDto</code> (unused Java records) were typed but cannot be exercised through the schema.</li>
+  <li><strong>Pitfall for later phases.</strong> A test such as <code>assertThat(dto.status()).isEqualTo("ACTIVE")</code> still compiles after the field becomes an enum and fails at run time (<code>ViewSchoolClassDetailsUseCaseTests</code> was one). Run the unit suite after every DTO type change, not only <code>compileTestJava</code>.</li>
+  <li><strong>Phase 2 &ndash; tests added.</strong> <code>NotificationGraphQlTests</code>, <code>MyClassGraphQlTests</code>, <code>UserGraphQlTests</code> (<code>@GraphQlControllerTest</code>, use cases mocked), <code>UpdateProfileCommandMapperTests</code>, <code>UpdateSchoolUserCommandMapperTests</code>, plus two tests in <code>SchoolAuthorizationGraphQlTests</code>. Names follow <code>XxxGraphQlTests</code> next to the existing <code>XxxAuthorizationGraphQlTests</code>.</li>
+  <li><strong>Job 2.4 &ndash; pilot confirmation.</strong> On 2026-11-20 the user confirmed in chat that the pilot pattern is the one to repeat in Phases 3 to 9 (answer A2).</li>
+  <li><strong>Phase 3 &ndash; left as String (D5).</strong> Session <code>origin</code>/<code>status</code>, <code>TurnCorrection.category</code>, <code>PracticePaper.origin</code>, <code>StartPracticeSessionInput.origin</code>: the domain model keeps them as <code>String</code> and no Java enum exists. <code>RegisterForm.verificationMethod</code> is not in the schema (the Java enum <code>RegisterFormVerificationMethod</code> exists but the field is not exposed), so it was not touched. <code>ImportSession</code> <code>originalHeaders</code>, mapping keys and <code>failureReason</code> are free text. <code>ScoringRule.conditionParamsJson</code>/<code>actionParamsJson</code> are JSON-in-string.</li>
+  <li><strong>Phase 3 &ndash; job 3.4 CHANGED (same behavior and contract).</strong> The plan said the unused String twins of <code>PracticeGoalType</code>, <code>PracticePaperDraftStatus</code> and <code>TopicOfferBucket</code> would be switched to the enums. Those three SDL enums have no Java enum (<code>grep 'enum PracticeGoalType|TopicOfferBucket|PracticePaperDraftStatus'</code> finds nothing), so under D5 the Java side stays <code>String</code> (<code>PracticeController.setPracticeGoal(String goalType)</code>, <code>PracticePlanningController.practiceTopicOffers(String bucket)</code>). They already bind correctly because the SDL enum value arrives as its name. <code>practice-planning.graphqls</code> and <code>topic-suggestion.graphqls</code> have no temporal field and were not edited.</li>
+  <li><strong>Phase 3 &ndash; files outside the job file lists.</strong> Job 3.1: <code>ViewImportSessionsQuery</code>, <code>ViewImportRowsQuery</code>, <code>ViewImportSessionsUseCase</code>, <code>ViewImportRowsUseCase</code>, <code>ImportSessionResponseMapper</code>, <code>ImportRowResponseMapper</code> (the use cases dropped <code>parseType</code>/<code>parseStatus</code> and their invalid-value tests, as in job 2.2). Job 3.4: <code>JpaLearnerProfileQueryRepository.findCurrent</code> (infrastructure, only the <code>toString()</code> removal), <code>SessionRowMapper</code>, <code>PracticeSessionDetailAssemblyService</code>, <code>LearnerProfileInfo</code>. Job 3.5: <code>ScoringRuleDtoMapper</code>, <code>UpdateScoringRuleGraphQLMapper</code>.</li>
+  <li><strong>Phase 3 &ndash; client-visible contract changes (input for job 9.3).</strong> <code>importSessions(type: String, status: String)</code> now <code>(type: ImportType, status: ImportSessionStatus)</code>; <code>importRows(status: String)</code> now <code>ImportRowStatus</code>; <code>UpdateScoringRuleInput.conditionType/actionType/severity</code> from <code>String!</code> to <code>ScoringRuleConditionType!</code>/<code>ScoringRuleActionType!</code>/<code>ScoringRuleSeverity!</code>. Output-only changes: <code>DateTime</code> for import session <code>expiresAt/createdAt/updatedAt</code>, register form document <code>createdAt</code>, interest dimension and supported language <code>createdAt/updatedAt</code>, <code>LearnerProfile.quizCompletedAt</code>, <code>PracticeSession.startedAt/endedAt</code>, <code>TeacherPracticeSessionDetail.startedAt</code>, scoring rule <code>createdAt/updatedAt</code>; <code>Date</code> for <code>RegisterForm.dateOfBirth</code>; enums <code>ImportType</code>, <code>ImportSessionStatus</code>, <code>ImportRowStatus</code>, <code>RegisterFormStatus</code>, <code>ScoringRule*</code> on output fields (same JSON text as before).</li>
+  <li><strong>Phase 3 &ndash; tests added.</strong> <code>ImportGraphQlTests</code>, <code>RegisterFormGraphQlTests</code> (imports <code>RegisterFormGraphQlDataLoaderConfig</code> with a mocked <code>RegisterFormDocumentRepository</code> so the batched <code>documents</code> field resolves), <code>InterestDimensionGraphQlTests</code>, <code>PracticeSessionGraphQlTests</code>, <code>PracticeLearnerProfileGraphQlTests</code>, <code>ScoringRuleGraphQlTests</code>, plus one typed-value test in <code>SupportedLanguageAuthorizationGraphQlTests</code>. Removed tests: the two <code>execute_should_throw_when_status_invalid</code> tests in the import use case tests (behavior moved to schema validation, proven in <code>ImportGraphQlTests</code>).</li>
+  <li><strong>Phase 4 &ndash; job 4.1 CHANGED (A3).</strong> The job said <code>invoice.issueDate</code> becomes <code>Date</code>, but <code>Invoice.issueDate</code> is an <code>Instant</code> and today's output is a full timestamp. The user chose <code>DateTime</code> (answer A3): same JSON text, no domain change. The schema description now says the year in <code>invoiceNumber</code> is taken in Vietnam time and matches the date when this timestamp is read in Vietnam time.</li>
+  <li><strong>Phase 4 &ndash; files and fields outside the job lists.</strong> Job 4.2: <code>OrderItem.type</code> now uses the new SDL enum <code>OrderItemType</code> (Java enum exists, D5) with <code>OrderItemDto</code>; <code>ViewOrdersQuery</code> and <code>ViewOrdersUseCase</code> (the <code>orders(status, type)</code> arguments were already SDL enums, so the Java side now takes the enums and the use case lost <code>statusOf/typeOf</code>; no test existed for them). The plan text called <code>OrderType</code>/<code>OrderStatus</code> "already declared" and they were, but the Payment enums and <code>OrderItemType</code> had to be declared (<code>payment.graphqls</code>, <code>order.graphqls</code>).</li>
+  <li><strong>Phase 4 &ndash; left as it was.</strong> <code>SchoolBalanceEntry.entryType</code>, <code>quotaType</code> and <code>SchoolDebtEvent.eventType/quotaType</code> are already SDL enums; their Java carriers (<code>SchoolBalanceEntryDto</code>, <code>SchoolDebtEventDto</code>, <code>ViewSchoolBalanceEntriesQuery.entryType</code>, <code>SchoolSubscriptionQuotaRecordDto.quotaType</code>) are still <code>String</code> with a <code>parseEntryType</code> in <code>ViewSchoolBalanceEntriesUseCase</code>, because the schema type does not change and the job text does not list them. Candidate follow-up for the user. <code>SubscriptionRequestDto.requestType/status</code> have no Java enum. Money fields stay <code>String</code>/<code>Float</code> as planned.</li>
+  <li><strong>Phase 4 &ndash; client-visible contract changes (input for job 9.3).</strong> Input side: <code>schoolBalanceSummary(from: String, to: String)</code> now <code>(from: DateTime, to: DateTime)</code>, so a value without an offset such as <code>2026-08-01</code> is a coercion error. Output only (same JSON text, new type names): <code>Invoice.issueDate</code> <code>DateTime!</code>; <code>Payment.paidAt/createdAt</code> <code>DateTime</code>; <code>Payment.method/provider/status</code> now <code>PaymentMethod/PaymentProvider/PaymentStatus!</code> (new enums); <code>Order.type</code> <code>OrderType!</code>, <code>Order.status</code> <code>OrderStatus</code>, <code>Order.createdAt/updatedAt/expiresAt</code> <code>DateTime</code>, <code>OrderItem.type</code> <code>OrderItemType</code> (new enum); <code>SchoolBalance.updatedAt</code>, <code>SchoolBalanceEntry.occurredAt</code>, <code>SchoolDebtEvent.occurredAt</code> <code>DateTime</code>; <code>SubscriptionPlan.createdAt/updatedAt</code>, <code>SchoolSubscription.startDate/endDate/cancelledAt/createdAt/suspendedAt</code>, <code>SchoolSubscriptionRenewalPreview.startsAt</code> <code>DateTime</code>. Clients that declare a variable of the old <code>String</code> type for an enum or date argument must change it; none of the changed output fields is an argument except <code>from/to</code>.</li>
+  <li><strong>Phase 4 &ndash; tests added.</strong> <code>OrderGraphQlTests</code> (4; also covers <code>Order.invoice</code>, <code>Order.payments</code>, <code>Order.items</code> through the real data loaders with mocked repositories), <code>SchoolBalanceGraphQlTests</code> (5), <code>SubscriptionGraphQlTests</code> (5). No REST controller returns these DTOs, so no REST characterization test changed.</li>
+  <li><strong>Phase 5 &ndash; left as String (D5).</strong> <code>question.graphqls</code> <code>questions/questionsForAssessmentPaper(assetType: String)</code>: the accepted values are the <code>QuestionAssetType</code> names plus <code>NONE</code>, so no Java enum has exactly that value set. <code>SchoolRoom.createdBy/updateBy</code> are <code>String</code> in the schema but <code>UUID</code> in Java (an ID type question, not a date or enum, so not touched). <code>SignalInput.importance</code> and <code>AssessmentPolicyDto.strictness</code> (Java <code>String</code>) are already SDL enums, so their Java carriers still use <code>String</code> (candidate follow-up for the user, same as the phase 4 note). <code>User.gender</code> is still <code>String</code> (see the Phase 2 note).</li>
+  <li><strong>Phase 5 &ndash; CHANGED / files outside the job lists (same behavior and contract).</strong> Job 5.1: the status filter arguments of the school queries became enums, so <code>ViewSchoolClassesQuery</code>, <code>ViewSchoolClassesByUserQuery</code>, <code>ViewMySchoolClassesQuery</code>, <code>ViewSchoolGradesQuery</code>, <code>ViewGradeLevelsQuery</code>, <code>ViewSchoolUsersBySchoolQuery</code>, <code>ViewSchoolStudentsBySchoolQuery</code>, <code>ViewSchoolTeachersBySchoolQuery</code>, <code>UpdateSchoolClassCommand</code> and the matching use cases changed (<code>parseStatus</code>/<code>validateStatus</code> deleted; where a repository still takes a <code>String</code> the use case passes <code>status.name()</code>); <code>UpdateSchoolClassUseCase</code> still rejects a provided-but-null status. A new SDL enum <code>UserStatus</code> (Java <code>UserStatus</code>) is declared in <code>school.graphqls</code> for the four school-user queries. Job 5.2: <code>ViewFrameworkVersionsUseCase</code>, <code>ViewFrameworkVersionsQuery</code>, <code>FrameworkVersionDtoMapper</code>, <code>FrameworkDtoMapper</code>; <code>schoolFrameworkVersions</code> now passes <code>FrameworkVersionStatus.PUBLISHED</code>. Job 5.3: <code>AssessmentPolicyDtoMapper</code>, <code>ViewSystemAssessmentPoliciesUseCase</code>, <code>ViewSchoolAssessmentPoliciesUseCase</code>, <code>ViewSystemAssessmentPoliciesQuery</code>, <code>ViewSchoolAssessmentPoliciesQuery</code>. Job 5.4: <code>RubricVersionsKey</code>, <code>RubricGraphQlDataLoaderConfig</code> (groups by <code>status.name()</code>), the four rubric version query records, <code>ViewSystem/SchoolRubricVersionsUseCase</code>, <code>SearchSystem/SchoolRubricVersionsUseCase</code>, <code>UpdateSystem/SchoolRubricVersionUseCase</code>, both <code>Update*RubricVersionCommand</code> records, <code>RubricDtoMapper</code>, <code>RubricVersionDtoMapper</code>. Job 5.5: <code>QuestionSpreadsheetService</code> (writes <code>createdAt</code> with <code>toString()</code> as before) and the five question DTO mappers. Removed tests (behavior moved to schema validation, proven in the new GraphQL tests): <code>ViewSchoolGradesUseCaseTests.should_reject_invalid_status</code>, <code>ViewSchoolClassesUseCaseTests.view_should_throw_when_status_is_invalid</code>, <code>ViewFrameworkVersionsUseCaseTests.should_throw_when_status_invalid</code>; the <code>UpdateSchoolClassUseCaseTests</code> invalid-status test now covers a provided-but-null status. Behavior note: filters that used to accept lower-case values (<code>"archived"</code>, <code>"published"</code>) now need the exact enum name, as in earlier phases.</li>
+  <li><strong>Phase 5 &ndash; client-visible contract changes (input for job 9.3).</strong> Input side, argument and input-field types: <code>schoolClasses(status)</code>, <code>schoolClassesByUser(status)</code>, <code>mySchoolClasses(status)</code> <code>String</code> &rarr; <code>SchoolClassStatus</code>; <code>schoolGrades(status)</code> &rarr; <code>SchoolGradeStatus</code>; <code>gradeLevels(status)</code> &rarr; <code>GradeLevelStatus</code>; <code>schoolUsersBySchool</code>, <code>schoolUsersForRequester</code>, <code>schoolStudentsBySchool</code>, <code>schoolTeachersBySchool</code> <code>(status)</code> &rarr; <code>UserStatus</code>; <code>UpdateSchoolClassInput.status</code> &rarr; <code>SchoolClassStatus</code>; <code>UpdateSchoolGradeInput.startDate/endDate</code> <code>String</code> &rarr; <code>Date</code> (<code>yyyy-MM-dd</code> only); <code>frameworkVersions(status)</code> &rarr; <code>FrameworkVersionStatus</code>; <code>UpdateFrameworkVersionInput.effectiveFrom/effectiveTo</code> &rarr; <code>DateTime!</code>/<code>DateTime</code> (offset required); <code>viewSystemAssessmentPolicies(status)</code> and <code>viewSchoolAssessmentPolicies(status)</code> &rarr; <code>AssessmentPolicyStatus</code>; <code>viewSystemAssessmentPolicies</code>, <code>viewSchoolAssessmentPolicies</code>, <code>viewTeacherAssessmentPolicies</code> <code>(effectiveFrom, effectiveTo)</code> and <code>UpdateAssessmentPolicyInput.effectiveFrom/effectiveTo</code> &rarr; <code>DateTime</code> (the web client's date-only <code>effectiveFrom: "2026-07-28"</code> is now a coercion error); <code>Rubric.versions(status)</code>, <code>viewSchoolRubricVersions(status)</code>, <code>viewSystemRubricVersions(status)</code>, <code>SearchRubricVersionFilter.status</code> &rarr; <code>RubricStatus</code>; <code>UpdateRubricVersionInput.effectiveFrom/effectiveTo</code> &rarr; <code>DateTime</code> and <code>totalScoreMethod</code> &rarr; <code>RubricTotalScoreMethod</code>. Output only (same JSON text, new type names): every <code>createdAt/updatedAt/joinedAt/leftAt</code> in <code>school.graphqls</code>, <code>SchoolUser.startDate/endDate</code> (<code>DateTime</code>), <code>SchoolGrade.startDate/endDate</code> (<code>Date</code>), <code>SchoolClass.status</code> (<code>SchoolClassStatus!</code>), <code>SchoolGrade.status</code> (<code>SchoolGradeStatus</code>), <code>GradeLevel.status</code> (<code>GradeLevelStatus!</code>), <code>SchoolDirectory.origin</code> (<code>SchoolDirectoryOrigin</code>); <code>Framework</code> and <code>FrameworkVersion</code> timestamps and <code>effectiveFrom/effectiveTo</code>; <code>AssessmentPolicy.status</code> (<code>AssessmentPolicyStatus!</code>) and its four timestamps; <code>Rubric.ownerType</code> (<code>RubricOwnerType!</code>), <code>RubricVersion.status/totalScoreMethod</code> and the rubric timestamps; question bank, topic, question, grade and collaborator timestamps. New SDL enums: <code>SchoolGradeStatus</code>, <code>GradeLevelStatus</code>, <code>SchoolDirectoryOrigin</code>, <code>UserStatus</code>, <code>AssessmentPolicyStatus</code>, <code>RubricStatus</code>, <code>RubricOwnerType</code>, <code>RubricTotalScoreMethod</code>.</li>
+  <li><strong>Phase 5 &ndash; tests added.</strong> <code>SchoolGraphQlTests</code> (15), <code>FrameworkGraphQlTests</code> (5), <code>AssessmentPolicyGraphQlTests</code> (6), <code>RubricGraphQlTests</code> (7), <code>QuestionGraphQlTests</code> (3). The REST characterization tests from job 1.3 for question bank, topic, question and collaborator now construct the DTOs with <code>Instant.parse(...)</code> and still assert the same JSON text, which proves REST output did not change.</li>
+  <li><strong>Phase 6 &ndash; left as String (D5).</strong> <code>QuestionSelectionSpec.targetBandLevel/skillCode</code> (no Java enum). <code>AssessmentRecording.source</code>, <code>AssessmentProctoringAlert.streamId/streamType/alertType/level/source</code> (open values from the proctoring and streaming sources; alert streamType was not verified to be only CAMERA/SCREEN). JSON strings in the evaluation types (signals, validity, suggestions, wordFeedback, pronunciationOverall). <code>assessmentMyRole: String</code> (a Java enum <code>AssessmentMemberRole</code> exists but the job text does not list it, candidate follow-up). Java carriers whose SDL type did not change were left as they are (same as phases 4 and 5): <code>StudentAssessmentResultSummaryResponse.kind</code> (SDL already AssessmentKind), <code>AssessmentCandidateResultResponse.status</code>, <code>GetAssessmentRecordsQuery.streamType</code>. <code>AssessmentPaperSection.createdAt/updatedAt/createdBy/updatedBy</code> are typed in the schema but <code>AssessmentPaperSectionDto</code> has no such fields, so they always resolve to null (existing behavior, not touched).</li>
+  <li><strong>Phase 6 &ndash; CHANGED / files outside the job lists (same behavior and contract).</strong> Job 6.1: <code>AssessmentSecurePoolDto</code> and its mapper were included because the job text lists the embargo/release fields; <code>CanViewAssessmentBlueprintDataQuery.assessmentStatus</code> and <code>CanViewAssessmentBlueprintDataUseCase</code> now use <code>AssessmentStatus</code> instead of comparing names. Job 6.2: <code>ProctorBusySlotResponse</code>, <code>StudentBusySlotResponse</code> and the two busy-slot use cases lost their <code>toString()</code> glue. <code>ProctorScheduleSummary</code>, <code>MonitoredAssessmentSummary</code> and <code>ProctorCandidateSummary</code> (application/query/dto) now hold enums and got an auxiliary String constructor for the JPQL <code>SELECT NEW</code> projections, the pattern already in <code>AssessmentAttemptSummary</code>; <code>AssessmentDirectoryGradeInfo</code> and <code>AssessmentDirectoryUserInfo</code> (job 6.4) use the same pattern. <code>AssessmentSession</code> (schema line ~460, <code>AssessmentSessionResponse</code>) was moved from 6.2 to 6.3 because its carrier belongs to AssessmentSessionController. Job 6.3: three new SDL enums <code>TurnType</code>, <code>AssessmentEvaluationEngineType</code>, <code>AssessmentItemEvaluationStatus</code> (D5: Java enums exist with the same values and the domain models already hold them); the responses <code>AssessmentSessionResponse</code>, <code>AssessmentItemResponseTurnResponse</code>, <code>AssessmentItemResponseDetailsResponse</code>, <code>AssessmentItemEvaluationTurnResponse</code>, <code>AssessmentItemAiEvaluationContextResponse</code>, <code>AssessmentItemEvaluationDetailsResponse</code>, <code>StudentAssessmentResultSummaryResponse</code> and the use cases/mapper that build them changed. Job 6.4: <code>AssessmentRecordingAssemblyStatus</code> is a new SDL enum (the job text said &ldquo;pool status&rdquo;, the Java enum with the exact value set is the recording assembly status); <code>ViewAssessmentBlueprintsQuery.assessmentKind</code> is now <code>AssessmentKind</code> and <code>ViewAssessmentBlueprintsUseCase</code> passes <code>.name()</code> to the repository, which still takes a String (as in phase 5).</li>
+  <li><strong>Phase 6 &ndash; silent traps found.</strong> Two filters compared <code>status.name().equals(dto.status())</code> (<code>Assessment.papers(status)</code>, <code>AssessmentBlueprint.versions(status)</code>): they compile after the DTO field becomes an enum and would always return an empty list. Fixed to <code>==</code> and covered by <code>AssessmentGraphQlTests</code> / <code>AssessmentBlueprintGraphQlTests</code> (the blueprint one was seen failing against the old code). 30 existing unit tests and 2 integration smoke tests asserted <code>isEqualTo("X")</code> or <code>isEqualTo(Enum.X.name())</code> on a DTO field and failed at run time after the type change; they were updated. <code>myAssessmentResults</code> is now sorted by <code>Instant</code> instead of the ISO string; the order only differs for timestamps with different fractional-second lengths, where the old string order was the wrong one. The REST characterization tests for AssessmentDto used the values <code>ONLINE</code> and <code>BEST_ATTEMPT</code>, which are not members of <code>AssessmentDeliveryMode</code> / <code>ResultDecisionMethod</code>; they were replaced by <code>LAB</code> and <code>HIGHEST</code> (those two fields are not in the asserted JSON).</li>
+  <li><strong>Phase 6 &ndash; client-visible contract changes (input for job 9.3).</strong> Input side, argument and input-field types: <code>assessmentSchedules(startDate, endDate)</code> and <code>myAssessmentSchedules(startDate, endDate)</code> <code>String</code> &rarr; <code>DateTime</code>; <code>UpdateAssessmentScheduleInput.startDate/endDate</code> <code>String</code> &rarr; <code>DateTime</code>; <code>assessmentStatusCounts(dateFrom, dateTo)</code> <code>String</code> &rarr; <code>DateTime</code>; <code>assessmentBlueprints(assessmentKind)</code> <code>String</code> &rarr; <code>AssessmentKind</code>. A date-only value such as <code>2026-08-01</code> is now a coercion error (D3). Output only (same JSON text, new type names): every createdAt/updatedAt/grantedAt/openAt/closeAt/effectiveFrom/effectiveTo/embargoUntil/releasedAt/assignedAt/blockedAt/startDate/endDate/windowStart/windowEnd/startedAt/submittedAt/answeredAt/evaluatedAt/assembledAt/capturedAt/raisedAt in assessment.graphqls is <code>DateTime</code>; new or newly used enums on output fields: ProctorScheduleSummary.status (AssessmentScheduleStatus), MonitoredAssessmentSummary.kind/status (AssessmentKind, AssessmentStatus), ProctorCandidateSummary.status/sessionStatus (AssessmentCandidateStatus, AssessmentSessionStatus), AssessmentItemResponseTurn.turnType and AssessmentItemEvaluationTurn.turnType (TurnType), engineType (AssessmentEvaluationEngineType), AssessmentItemEvaluationDetails.status (AssessmentItemEvaluationStatus), StudentAssessmentResultSummary.sessionStatus/resultStatus (AssessmentSessionStatus, AssessmentCandidateResultStatus), AssessmentRecording and AssessmentRecordingPlayback streamType/status (AssessmentRecordingStreamType, AssessmentRecordingAssemblyStatus), AssessmentDirectoryClass/Grade/User.status (SchoolClassStatus, SchoolGradeStatus, UserStatus). Clients that declare a variable of the old String type for one of the four arguments above must change it.</li>
+  <li><strong>Phase 6 &ndash; tests added.</strong> GraphQL: <code>AssessmentGraphQlTests</code> (7), <code>AssessmentBlueprintGraphQlTests</code> (5), <code>AssessmentScheduleGraphQlTests</code> (7), <code>AssessmentCandidateGraphQlTests</code> (4), <code>ProctorAttendanceGraphQlTests</code> (3), <code>AssessmentSessionGraphQlTests</code> (8), <code>AssessmentDirectoryGraphQlTests</code> (3). Unit: <code>ProctorCandidateSummaryTests</code> (3). REST pins written before the change: <code>AssessmentSessionControllerTests</code>, <code>AssessmentItemResponseControllerTests</code>; the existing job 1.3 classes now build their DTOs with enums and <code>Instant.parse(...)</code> and still assert the same JSON text. Smoke tests <code>MonitoredAssessmentQuerySmokeTests</code> and <code>JpaProctorScheduleQuerySmokeTests</code> now assert the enum values, which proves the <code>SELECT NEW</code> String constructors resolve on real Postgres.</li>
+  <li><strong>Phase 7 &ndash; left as String / not wired (D5).</strong> <code>GradingSampleSelectionMode</code> (<code>assessment-grading.graphqls:36</code>) is still declared and still unused: no GraphQL field or argument takes a selection mode (it belongs to <code>AutoAssignGradingCommand.selectionMode</code>, which has no schema field), so there is nothing to wire it to without adding a new field, which is a public contract change outside the plan. <code>GradingTaskItem.aiReviewReasonCode</code> and <code>GradingTaskDetail.flagReason</code> have no Java enum. <code>GradingTaskItem.aiSignals/aiValidity</code>, <code>transcript</code>, <code>rationale</code>, <code>pronunciationOverall</code> and <code>wordFeedback</code> stay String as the plan says.</li>
+  <li><strong>Phase 7 &ndash; CHANGED / outside the job done-when (same behavior and contract).</strong> (1) <code>GradingTurn.turnType</code> and <code>AppealTurn.turnType</code> became <code>TurnType</code>: the plan does not name them, but the same Java enum and DB check constraint (MAIN, FOLLOWUP) were accepted in job 6.3. (2) <code>GradingAssignmentFilter.resultStatus</code> stays String because the REST score export (<code>AssessmentScoreExportSupport</code>) also builds the filter from a query-string value; <code>ViewGradingAssignmentsUseCase</code> and <code>ViewClassTestGradingResultsUseCase</code> convert the enum with <code>name()</code>. (3) The SDL enum for appeals keeps its existing name <code>AppealStatus</code> while the Java carrier is <code>AssessmentAppealStatus</code>; <code>GraphQlEnumParityTests</code> matches by simple name, so it does not compare these two. A test of mine (<code>AssessmentAppealGraphQlTests</code>) pins every value by binding a variable. (4) <code>AppealReviewerInfo.outcome</code> became <code>GradingOutcome</code> (schema already <code>GradingOutcome</code>).</li>
+  <li><strong>Phase 7 &ndash; client-visible contract changes (input for job 9.3).</strong> Input side: <code>gradingAssignments(resultStatus: String)</code> and <code>classTestGradingResults(resultStatus: String)</code> now take <code>AssessmentCandidateResultStatus</code>, so a client variable declared <code>$resultStatus: String</code> fails GraphQL validation; an unknown value is now a validation error instead of an empty result. Output side, field types only (JSON text unchanged): <code>GradingTask/GradingTaskDetail/GradingAssignmentRow.resultStatus</code>, <code>GradingResultStatusCount.status</code>, <code>ResultStatusHistoryEntry.fromStatus/toStatus</code> are enums; <code>GradingTurn.turnType</code> and <code>AppealTurn.turnType</code> are <code>TurnType</code>; every <code>assignedAt/completedAt/deadlineAt/createdAt/requestedAt/deadline/approvedAt/resolvedAt/withdrawnAt</code> in the two files is <code>DateTime</code> (output only, no argument of these types exists in either file). The <code>appeals/assessmentAppeals/myAppeals(status: AppealStatus)</code> arguments did not change in the schema.</li>
+  <li><strong>Phase 7 &ndash; tests added.</strong> <code>GradingGraphQlTests</code> (8: assignments typed output, enum variable binding, unknown status rejected, class-test variable binding, my tasks, task detail with turn type, status history, stats), <code>AssessmentAppealGraphQlTests</code> (6), <code>JpaAssessmentAppealQueryRepositoryTests</code> (4, real Postgres rows). Two existing unit tests were updated for the new carrier types (<code>ViewClassTestGradingResultsUseCaseTests</code>, <code>ViewResultStatusHistoryUseCaseTests</code>) and two appeal controller tests (<code>AssessmentAppealControllerTests</code>, <code>AssessmentAppealAuthorizationGraphQlTests</code>).</li>
+</ul>
+
+</div>
+<script>
+  (function () {
+    var labels = { todo: "Not started", progress: "In progress", done: "Done", blocked: "Blocked", skipped: "Deferred" };
+    var body = document.getElementById("overview-body");
+    var summary = document.getElementById("overview-summary");
+    var phaseCounts = {};
+    document.querySelectorAll(".phase[data-status], .job[data-status]").forEach(function (element) {
+      var status = element.getAttribute("data-status");
+      if (element.classList.contains("phase")) { phaseCounts[status] = (phaseCounts[status] || 0) + 1; }
+      var row = body.insertRow();
+      var nameCell = row.insertCell();
+      if (element.classList.contains("job")) { nameCell.className = "indent"; }
+      var link = document.createElement("a");
+      link.href = "#" + element.id;
+      link.textContent = element.querySelector(".title").textContent;
+      nameCell.appendChild(link);
+      var pill = document.createElement("span");
+      pill.className = "status " + status;
+      pill.textContent = labels[status] || status;
+      row.insertCell().appendChild(pill);
+    });
+    var parts = Object.keys(labels).filter(function (key) { return phaseCounts[key]; })
+      .map(function (key) { return phaseCounts[key] + " " + labels[key].toLowerCase(); });
+    summary.textContent = parts.length ? "Phases: " + parts.join(" · ") : "";
+  })();
+</script>
+</body>
+</html>

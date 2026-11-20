@@ -1,5 +1,8 @@
 package com.sep.vox.application.response.input.assessmentsession;
 
+import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
+import com.sep.vox.domain.model.assessment.AssessmentSessionStatus;
+import java.time.Instant;
 import java.math.BigDecimal;
 import java.util.UUID;
 
@@ -11,10 +14,10 @@ public record StudentAssessmentResultSummaryResponse(
     String kind,
     UUID sessionId,
     UUID paperId,
-    String sessionStatus,
+    AssessmentSessionStatus sessionStatus,
     boolean sessionFlagged,
-    String startedAt,
-    String submittedAt,
+    Instant startedAt,
+    Instant submittedAt,
     BigDecimal totalScore,
     /**
      * The scoring scale of the rubric that graded this attempt -- added 2026-08-11, for the same reason as
@@ -25,7 +28,7 @@ public record StudentAssessmentResultSummaryResponse(
      */
     BigDecimal scoringScaleMin,
     BigDecimal scoringScaleMax,
-    String resultStatus,
+    AssessmentCandidateResultStatus resultStatus,
     UUID rubricResultBandId,
     String rubricResultBandCode,
     String rubricResultBandName

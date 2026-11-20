@@ -93,7 +93,7 @@ class ViewMyAssessmentResultsUseCaseTests {
         assertThat(summaries.get(0).totalScore()).isNull();
         assertThat(summaries.get(0).rubricResultBandId()).isNull();
         // The status is still returned so the list can show "waiting for grading".
-        assertThat(summaries.get(0).resultStatus()).isEqualTo("PENDING_REVIEW");
+        assertThat(summaries.get(0).resultStatus()).isEqualTo(AssessmentCandidateResultStatus.PENDING_REVIEW);
     }
 
     @Test

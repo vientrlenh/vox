@@ -41,6 +41,7 @@ import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
 import com.sep.vox.domain.model.assessment.GradingAssignmentStatus;
 import com.sep.vox.domain.model.assessment.GradingRoundPolicy;
 import com.sep.vox.domain.model.assessment.GradingRoundType;
+import com.sep.vox.domain.model.assessment.TurnType;
 import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 
 import jakarta.persistence.EntityManager;
@@ -143,7 +144,7 @@ public class JpaAssessmentGradingQueryRepository implements AssessmentGradingQue
                 row.get(1, String.class),
                 classNames.get(candidateResultId),
                 row.get(2, String.class),
-                row.get(3, String.class),
+                AssessmentCandidateResultStatus.valueOf(row.get(3, String.class)),
                 row.get(4, BigDecimal.class),
                 Boolean.TRUE.equals(row.get(5, Boolean.class)),
                 assignment == null ? null : assignment.id(),
@@ -434,7 +435,8 @@ public class JpaAssessmentGradingQueryRepository implements AssessmentGradingQue
         int total = 0;
         for (Tuple row : statusRows) {
             int count = row.get(1, Long.class).intValue();
-            byResultStatus.add(new GradingStatsInfo.ResultStatusCount(row.get(0, String.class), count));
+            byResultStatus.add(new GradingStatsInfo.ResultStatusCount(
+                AssessmentCandidateResultStatus.valueOf(row.get(0, String.class)), count));
             total += count;
         }
 
@@ -603,7 +605,7 @@ public class JpaAssessmentGradingQueryRepository implements AssessmentGradingQue
                 partCounts.getOrDefault(candidateResultId, 0),
                 row.get(3, String.class),
                 assignmentStatus,
-                row.get(5, String.class),
+                AssessmentCandidateResultStatus.valueOf(row.get(5, String.class)),
                 row.get(6, BigDecimal.class),
                 Boolean.TRUE.equals(row.get(7, Boolean.class)),
                 row.get(8, Instant.class),
@@ -745,7 +747,7 @@ public class JpaAssessmentGradingQueryRepository implements AssessmentGradingQue
         UUID candidateResultId = row.get(1, UUID.class);
         String roundType = row.get(3, String.class);
         String assignmentStatus = row.get(4, String.class);
-        String resultStatus = row.get(5, String.class);
+        AssessmentCandidateResultStatus resultStatus = AssessmentCandidateResultStatus.valueOf(row.get(5, String.class));
         Instant deadlineAt = row.get(10, Instant.class);
         boolean isClassTest = CLASS_TEST_KIND.equals(row.get(14, String.class));
         UUID sessionId = row.get(12, UUID.class);
@@ -757,7 +759,7 @@ public class JpaAssessmentGradingQueryRepository implements AssessmentGradingQue
         // rules live in GradingRoundPolicy, and re-deriving them in the FE means the two sides will drift apart sooner or later.
         GradingRoundType round = GradingRoundType.valueOf(roundType);
         boolean editable = !GradingAssignmentStatus.COMPLETED.name().equals(assignmentStatus)
-            && GradingRoundPolicy.isAssignable(round, AssessmentCandidateResultStatus.valueOf(resultStatus));
+            && GradingRoundPolicy.isAssignable(round, resultStatus);
         List<String> allowedOutcomes = editable
             ? GradingRoundPolicy.allowedOutcomes(round).stream().map(outcome -> outcome.name()).sorted().toList()
             : List.<String>of();
@@ -1088,7 +1090,7 @@ public class JpaAssessmentGradingQueryRepository implements AssessmentGradingQue
                 .add(new GradingTurnInfo(
                     row.get(1, UUID.class),
                     row.get(2, Integer.class),
-                    row.get(3, String.class),
+                    TurnType.valueOf(row.get(3, String.class)),
                     row.get(4, String.class),
                     row.get(5, String.class),
                     row.get(6, String.class),
@@ -1123,7 +1125,7 @@ public class JpaAssessmentGradingQueryRepository implements AssessmentGradingQue
                 .add(new GradingTurnInfo(
                     row.get(1, UUID.class),
                     row.get(2, Integer.class),
-                    row.get(3, String.class),
+                    TurnType.valueOf(row.get(3, String.class)),
                     row.get(4, String.class),
                     row.get(5, String.class),
                     row.get(6, String.class),

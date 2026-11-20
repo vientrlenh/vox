@@ -104,6 +104,32 @@ enum AssessmentRecordingStreamType {
     SCREEN
 }
 
+enum AssessmentRecordingAssemblyStatus {
+    PROCESSING
+    READY
+    PARTIAL
+    FAILED
+    ABANDONED
+}
+
+enum TurnType {
+    MAIN
+    FOLLOWUP
+}
+
+enum AssessmentEvaluationEngineType {
+    AI_SINGLE
+    AI_ENSEMBLE
+    HUMAN
+}
+
+enum AssessmentItemEvaluationStatus {
+    AUTO_GRADED
+    UNDER_REVIEW
+    FINALIZED
+    SUPERSEDED
+}
+
 type QuestionSelectionSpec {
     questionType: QuestionType
     difficulty: QuestionDifficulty
@@ -116,7 +142,7 @@ type AssessmentMember {
     id: ID!
     userId: ID!
     role: AssessmentMemberRole!
-    grantedAt: String
+    grantedAt: DateTime
     grantedBy: ID
     user: User
 }
@@ -126,8 +152,8 @@ type AssessmentSecurePool {
     assessmentId: ID!
     status: AssessmentSecurePoolStatus!
     releaseMode: AssessmentSecurePoolReleaseMode!
-    embargoUntil: String
-    releasedAt: String
+    embargoUntil: DateTime
+    releasedAt: DateTime
     releasedBy: ID
 }
 
@@ -157,8 +183,8 @@ type AssessmentPaperSection {
     instruction: String
     weight: Float
     sectionTimeLimitSeconds: Int
-    createdAt: String
-    updatedAt: String
+    createdAt: DateTime
+    updatedAt: DateTime
     createdBy: ID
     updatedBy: ID
     items: [AssessmentPaperItem!]!
@@ -172,8 +198,8 @@ type AssessmentPaper {
     variant: Int!
     status: AssessmentPaperStatus!
     timeDurationSeconds: Int
-    createdAt: String
-    updatedAt: String
+    createdAt: DateTime
+    updatedAt: DateTime
     createdBy: ID
     updatedBy: ID
     sections: [AssessmentPaperSection!]!
@@ -196,17 +222,17 @@ type Assessment {
     maxAttempt: Int
     assessmentTimeDurationSecond: Int
     resultDecisionMethod: ResultDecisionMethod
-    openAt: String
-    closeAt: String
+    openAt: DateTime
+    closeAt: DateTime
     assessmentPolicyId: ID
     requiresOtp: Boolean!
-    """Ngưỡng tin cậy AI (phần trăm 0-100). null = không đặt, hệ thống dùng luật cứng."""
+    """AI confidence threshold (percentage 0-100). null = not set, the system uses the hard rules."""
     aiConfidenceThresholdPercent: Float
     requiredStreamType: AssessmentRequiredStreamType
     streamTypePermission: AssessmentStreamTypePermission
     papersLocked: Boolean
-    createdAt: String
-    updatedAt: String
+    createdAt: DateTime
+    updatedAt: DateTime
     createdBy: ID
     updatedBy: ID
     members: [AssessmentMember!]!
@@ -248,8 +274,8 @@ type AssessmentBlueprintSlot {
     slotType: AssessmentBlueprintSlotType!
     fixedQuestionId: ID
     selectionSpec: QuestionSelectionSpec
-    createdAt: String
-    updatedAt: String
+    createdAt: DateTime
+    updatedAt: DateTime
     createdBy: ID
     updatedBy: ID
     fixedQuestion: Question
@@ -263,8 +289,8 @@ type AssessmentBlueprintSection {
     instruction: String
     sectionTimeLimitSeconds: Int
     sectionWeight: Float
-    createdAt: String
-    updatedAt: String
+    createdAt: DateTime
+    updatedAt: DateTime
     createdBy: ID
     updatedBy: ID
     slots: [AssessmentBlueprintSlot!]!
@@ -278,10 +304,10 @@ type AssessmentBlueprintVersion {
     description: String
     status: AssessmentBlueprintVersionStatus!
     totalTimeLimitSeconds: Int
-    effectiveFrom: String
-    effectiveTo: String
-    createdAt: String
-    updatedAt: String
+    effectiveFrom: DateTime
+    effectiveTo: DateTime
+    createdAt: DateTime
+    updatedAt: DateTime
     createdBy: ID
     updatedBy: ID
     sections: [AssessmentBlueprintSection!]!
@@ -299,8 +325,8 @@ type AssessmentBlueprint {
     name: String!
     description: String
     isActive: Boolean!
-    createdAt: String
-    updatedAt: String
+    createdAt: DateTime
+    updatedAt: DateTime
     createdBy: ID
     updatedBy: ID
     versions(status: AssessmentBlueprintVersionStatus): [AssessmentBlueprintVersion!]!
@@ -329,8 +355,8 @@ type AssessmentSchedule {
     assessment: Assessment
     schoolRoomId: ID
     room: SchoolRoom
-    startDate: String
-    endDate: String
+    startDate: DateTime
+    endDate: DateTime
     status: AssessmentScheduleStatus!
     movedToScheduleId: ID
     proctors: [AssessmentScheduleProctor!]!
@@ -338,24 +364,24 @@ type AssessmentSchedule {
     requiredProctorCount: Int!
 }
 
-# Một giáo viên đang vướng lịch: đã gác ca `scheduleId` chạy [startDate, endDate).
-# Chỉ để làm mờ sẵn người bận ở màn chọn giám thị — luật chặn thật chạy lúc ghi.
+# A teacher who is already booked: they proctor session `scheduleId`, which runs [startDate, endDate).
+# Only used to grey out busy people on the proctor picker screen -- the real blocking rule runs at write time.
 type ProctorBusySlot {
     teacherId: ID!
     scheduleId: ID!
-    startDate: String
-    endDate: String
+    startDate: DateTime
+    endDate: DateTime
 }
 
-# Một học sinh đang vướng lịch khi cân nhắc xếp vào `targetScheduleId`: đã được xếp ca
-# `busyScheduleId` chạy [startDate, endDate).
-# Chỉ để làm mờ sẵn lựa chọn bị trùng ở màn xếp thí sinh — luật chặn thật chạy lúc ghi.
+# A student who is already booked when being considered for `targetScheduleId`: they are already assigned to session
+# `busyScheduleId`, which runs [startDate, endDate).
+# Only used to grey out clashing choices on the candidate assignment screen -- the real blocking rule runs at write time.
 type StudentBusySlot {
     studentId: ID!
     targetScheduleId: ID!
     busyScheduleId: ID!
-    startDate: String
-    endDate: String
+    startDate: DateTime
+    endDate: DateTime
 }
 
 type AssessmentCandidate {
@@ -369,9 +395,9 @@ type AssessmentCandidate {
     assignedPaperId: ID
     scheduleId: ID
     status: AssessmentCandidateStatus!
-    assignedAt: String
-    updatedAt: String
-    blockedAt: String
+    assignedAt: DateTime
+    updatedAt: DateTime
+    blockedAt: DateTime
     student: User
     assignedPaper: AssessmentPaper
     schedule: AssessmentSchedule
@@ -384,9 +410,9 @@ type ProctorScheduleSummary {
     assessmentName: String
     schoolRoomId: ID
     roomName: String
-    startDate: String
-    endDate: String
-    status: String
+    startDate: DateTime
+    endDate: DateTime
+    status: AssessmentScheduleStatus
 }
 
 """
@@ -397,12 +423,12 @@ type MonitoredAssessmentSummary {
     assessmentId: ID!
     code: String
     name: String
-    kind: String
-    status: String
-    "Mốc bắt đầu sớm nhất trong các ca người xem giám sát được — KHÔNG phải openAt của kỳ thi."
-    windowStart: String
-    windowEnd: String
-    "Số ca đang chạy ngay lúc này. 0 nghĩa là kỳ thi lọt vào danh sách vì sắp bắt đầu."
+    kind: AssessmentKind
+    status: AssessmentStatus
+    "The earliest start among the sessions the viewer can monitor -- NOT the assessment's openAt."
+    windowStart: DateTime
+    windowEnd: DateTime
+    "Number of sessions running right now. 0 means the assessment is in the list because it is about to start."
     liveScheduleCount: Int!
 }
 
@@ -411,25 +437,25 @@ type ProctorCandidateSummary {
     studentId: ID!
     studentName: String
     studentEmail: String
-    status: String
-    blockedAt: String
+    status: AssessmentCandidateStatus
+    blockedAt: DateTime
     sessionId: ID
-    sessionStatus: String
+    sessionStatus: AssessmentSessionStatus
     sessionFlagged: Boolean!
 }
 
 type AssessmentAttemptSummary {
     sessionId: ID!
-    startedAt: String
-    submittedAt: String
+    startedAt: DateTime
+    submittedAt: DateTime
     status: AssessmentSessionStatus!
     flagged: Boolean!
     flagReason: String
     totalScore: Float
     """
-    Thang điểm của rubric đã chấm lượt này. Danh sách trộn nhiều kỳ thi, mỗi kỳ có thể
-    dùng rubric khác thang -- client PHẢI đọc theo từng dòng, không suy từ cấu hình chung.
-    Null khi chưa có kết quả hoặc điểm đang bị che.
+    Scoring scale of the rubric that graded this attempt. The list mixes several assessments, and each
+    may use a rubric with a different scale -- the client MUST read it per row, not infer it from a shared configuration.
+    Null when there is no result yet or the score is hidden.
     """
     scoringScaleMin: Float
     scoringScaleMax: Float
@@ -437,8 +463,8 @@ type AssessmentAttemptSummary {
     rubricResultBandName: String
     resultStatus: AssessmentCandidateResultStatus
     """
-    Lý do lượt thi bị xoá, đi cùng `status = DELETED`. Chỉ quản trị trường và chủ tịch hội
-    đồng đọc được lượt đã xoá; đường của học sinh không trả về những lượt này.
+    Reason the attempt was deleted, delivered together with `status = DELETED`. Only the school admin and the
+    chair of the assessment board can read deleted attempts; the student path does not return them.
     """
     deletedReason: String
 }
@@ -462,8 +488,8 @@ type AssessmentSession {
     assessmentId: ID!
     candidateId: ID!
     paperId: ID!
-    startedAt: String
-    submittedAt: String
+    startedAt: DateTime
+    submittedAt: DateTime
     status: AssessmentSessionStatus!
     flagged: Boolean!
     flagReason: String
@@ -527,14 +553,14 @@ type AssessmentItemResponseTurn {
     id: ID!
     assessmentItemResponseId: ID!
     turnOrder: Int!
-    turnType: String!
+    turnType: TurnType!
     promptText: String
     audioUrl: String
     transcript: String
     durationSeconds: Int
     wordCount: Int
-    answeredAt: String
-    createdAt: String
+    answeredAt: DateTime
+    createdAt: DateTime
 }
 
 type AssessmentItemResponseDetails {
@@ -544,7 +570,7 @@ type AssessmentItemResponseDetails {
     audioUrl: String
     durationSeconds: Int
     transcript: String
-    submittedAt: String
+    submittedAt: DateTime
     turns: [AssessmentItemResponseTurn!]!
 }
 
@@ -563,7 +589,7 @@ type AssessmentItemCriterionScore {
 type AssessmentItemEvaluationTurn {
     id: ID!
     turnOrder: Int
-    turnType: String
+    turnType: TurnType
     promptText: String
     audioUrl: String
     transcript: String
@@ -575,15 +601,15 @@ type AssessmentItemEvaluationTurn {
 }
 
 """
-Bằng chứng của bản chấm AI, giữ lại kể cả khi giáo viên đã chấm lại (lúc đó bản AI mang
-SUPERSEDED). Điểm và rationale hiển thị vẫn là của bản đang có hiệu lực ở cấp trên — khối
-này chỉ là NGỮ CẢNH, không phải phán quyết. `null` khi bài chưa từng có bản AI.
+Evidence of the AI grading, kept even after a teacher has re-graded (the AI version then carries
+SUPERSEDED). The displayed score and rationale still belong to the version in force one level up -- this
+block is only CONTEXT, not a verdict. `null` when the answer never had an AI version.
 
-Báo cáo phúc khảo `UNDER_REVIEW` (chưa công bố) không bao giờ lọt vào đây.
+An `UNDER_REVIEW` appeal report (not yet published) never ends up here.
 """
 type AssessmentItemAiEvaluationContext {
     evaluationId: ID!
-    engineType: String
+    engineType: AssessmentEvaluationEngineType
     gradedByModel: String
     promptVersion: String
     overallConfidence: Float
@@ -591,7 +617,7 @@ type AssessmentItemAiEvaluationContext {
     reviewReasonCode: String
     markedInvalid: Boolean!
     requiresRetake: Boolean!
-    evaluatedAt: String
+    evaluatedAt: DateTime
     feedbackSummary: String
     "JSON string — EvaluationSignals"
     signals: String
@@ -602,11 +628,11 @@ type AssessmentItemAiEvaluationContext {
 }
 
 type AssessmentItemEvaluationDetails {
-    "Null khi câu CHƯA có bản chấm nào -- lúc đó chỉ `turns` có dữ liệu, mọi field điểm đều trống."
+    "Null when the answer has NO grading yet -- then only `turns` carries data and every score field is empty."
     id: ID
     responseId: ID!
     paperItemId: ID!
-    engineType: String
+    engineType: AssessmentEvaluationEngineType
     gradedByModel: String
     promptVersion: String
     rawItemScore: Float
@@ -616,14 +642,14 @@ type AssessmentItemEvaluationDetails {
     requiresRetake: Boolean!
     requiresHumanReview: Boolean!
     reviewReasonCode: String
-    status: String
-    evaluatedAt: String
+    status: AssessmentItemEvaluationStatus
+    evaluatedAt: DateTime
     feedbackSummary: String
     signals: String
     validity: String
     suggestions: String
     criteria: [AssessmentItemCriterionScore!]!
-    "Luôn lấy từ bản AI — chỉ bản AI mới sinh lượt nói, bản chấm tay không có turn nào."
+    "Always taken from the AI version -- only the AI version produces speaking turns, a manual grading has no turns."
     turns: [AssessmentItemEvaluationTurn!]!
     ai: AssessmentItemAiEvaluationContext
 }
@@ -636,19 +662,19 @@ type StudentAssessmentResultSummary {
     kind: AssessmentKind!
     sessionId: ID
     paperId: ID
-    sessionStatus: String
+    sessionStatus: AssessmentSessionStatus
     sessionFlagged: Boolean!
-    startedAt: String
-    submittedAt: String
+    startedAt: DateTime
+    submittedAt: DateTime
     totalScore: Float
     """
-    Thang điểm của rubric đã chấm lượt này. Danh sách trộn nhiều kỳ thi, mỗi kỳ có thể
-    dùng rubric khác thang -- client PHẢI đọc theo từng dòng, không suy từ cấu hình chung.
-    Null khi chưa có kết quả hoặc điểm đang bị che.
+    Scoring scale of the rubric that graded this attempt. The list mixes several assessments, and each
+    may use a rubric with a different scale -- the client MUST read it per row, not infer it from a shared configuration.
+    Null when there is no result yet or the score is hidden.
     """
     scoringScaleMin: Float
     scoringScaleMax: Float
-    resultStatus: String
+    resultStatus: AssessmentCandidateResultStatus
     rubricResultBandId: ID
     rubricResultBandCode: String
     rubricResultBandName: String
@@ -657,61 +683,61 @@ type AssessmentRecording {
     id: ID!
     assessmentSessionId: ID!
     candidateId: ID
-    streamType: String
-    status: String
+    streamType: AssessmentRecordingStreamType
+    status: AssessmentRecordingAssemblyStatus
     sizeBytes: Int
     durationSeconds: Int
     source: String
     canonical: Boolean!
-    createdAt: String
-    assembledAt: String
+    createdAt: DateTime
+    assembledAt: DateTime
 }
 
 """
-Bản ghi kèm LINK PHÁT được, dành cho màn chấm bài.
+A recording WITH a playable LINK, for the grading screen.
 
-Tách khỏi `AssessmentRecording` thay vì thêm field vào đó: `records` là API của app giám thị trên
-desktop (`AssessmentRecordingService`), chạy trong lúc thi và không cần link phát. Nhét thêm vào đó
-nghĩa là mỗi lượt gọi của giám thị đều phải ký link cho mọi bản ghi, cho một thứ nó không dùng.
+Kept apart from `AssessmentRecording` instead of adding a field there: `records` is the API of the proctoring app on
+desktop (`AssessmentRecordingService`), runs during the assessment and does not need a playback link. Adding it there
+would mean every proctor call has to sign a link for every recording, for something it does not use.
 """
 type AssessmentRecordingPlayback {
     id: ID!
-    streamType: String
-    status: String
+    streamType: AssessmentRecordingStreamType
+    status: AssessmentRecordingAssemblyStatus
     source: String
     durationSeconds: Int
-    """Bản nên mở trước cho streamType này khi có nhiều nguồn cùng ghi."""
+    """The recording to open first for this streamType when several sources recorded it."""
     canonical: Boolean!
     """
-    Link phát trực tiếp trong thẻ <video>, ký sẵn và HẾT HẠN sau 2 giờ.
+    Direct playback link for a <video> tag, pre-signed and EXPIRES after 2 hours.
 
-    NULL khi bản ghi chưa có file trên S3 (đang PROCESSING, hoặc FAILED/ABANDONED) -- đó là
-    trạng thái bình thường, không phải lỗi. Vì link có hạn, đừng lưu lại hay chia sẻ: hỏi lại
-    query này mỗi lần mở trình phát.
+    NULL when the recording has no file on S3 yet (still PROCESSING, or FAILED/ABANDONED) -- that is a
+    normal state, not an error. Because the link expires, do not store or share it: ask this
+    query again every time the player is opened.
     """
     playbackUrl: String
 }
 
 """
-Một đợt vi phạm được phát hiện trong lúc giám sát thi.
+A violation detected while proctoring an assessment.
 
-Là BẰNG CHỨNG để người chấm tự phán đoán, không phải một con số tham gia tính điểm. Cảnh báo là
-phát hiện của AI kèm độ tin cậy, chạy trên webcam và có dương tính giả; còn điểm tiêu chí đo năng
-lực ngôn ngữ. Cho cảnh báo kéo điểm xuống nghĩa là phạt nghi vấn gian lận bằng cách giả vờ rằng
-học viên nói kém hơn thực tế. Cần cẩu đúng là quyết định uphold/regrade/invalidate và cờ nghi vấn
-trên phiên thi.
+It is EVIDENCE for the grader to judge, not a number that takes part in scoring. An alert is an AI
+detection with a confidence, running on the webcam, and it has false positives; a criterion score measures
+language ability. Letting an alert pull the score down would punish suspected cheating by pretending the
+student spoke worse than they did. The right lever is the uphold/regrade/invalidate decision and the suspicion flag
+on the assessment session.
 """
 type AssessmentProctoringAlert {
     id: ID!
-    """Định danh sự kiện gốc. Dùng để khử trùng khi gộp lịch sử này với luồng cảnh báo trực tiếp."""
+    """Identifier of the original event. Used to de-duplicate when merging this history with the live alert stream."""
     eventId: String!
     assessmentSessionId: ID!
     """
-    Thí sinh, nếu nguồn phát biết được.
+    The candidate, if the emitting source knows it.
 
-    NULL là câu trả lời hợp lệ chứ không phải dữ liệu hỏng: đường AI nối thẳng chỉ cầm id phiên thi
-    nên không có cách nào biết thí sinh nào. Để trống vẫn trung thực hơn là điền một id sai, vì id
-    sai sẽ gắn vi phạm này sang hồ sơ của người khác.
+    NULL is a valid answer, not corrupt data: the AI path that connects directly only holds the assessment session id,
+    so there is no way to know which candidate. Leaving it empty is still more honest than filling in a wrong id,
+    because a wrong id would attach this violation to someone else's record.
     """
     candidateId: ID
     streamId: String
@@ -722,19 +748,19 @@ type AssessmentProctoringAlert {
     detail: String
     confidence: Float
     """
-    Thời điểm SỰ VIỆC xảy ra, dạng ISO-8601 tuyệt đối -- KHÔNG phải mốc tua trong video.
+    The moment the EVENT happened, as an absolute instant -- NOT a seek position in the video.
 
-    Quy về offset cần thời điểm bắt đầu của bản ghi, thứ hiện chưa được lưu ở đâu.
+    Converting it to an offset needs the start time of the recording, which is not stored anywhere yet.
     """
-    capturedAt: String!
-    """Thời điểm cảnh báo được phát đi. Lệch với capturedAt chính là độ trễ của đường truyền."""
-    raisedAt: String!
+    capturedAt: DateTime!
+    """The moment the alert was emitted. The gap to capturedAt is the latency of the transport."""
+    raisedAt: DateTime!
 }
 
 input UpdateAssessmentScheduleInput {
     schoolRoomId: ID
-    startDate: String
-    endDate: String
+    startDate: DateTime
+    endDate: DateTime
 }
 
 """
@@ -803,7 +829,7 @@ extend type Query {
     "Cảnh báo (KHÔNG chặn) ước lượng worst-case chi phí AI + hạn mức còn lại -- xem lúc tạo/sửa bài trước khi publish"
     assessmentTokenEstimate(assessmentId: ID!): AssessmentTokenEstimate!
 
-    assessmentStatusCounts(schoolId: ID, kind: AssessmentKind, dateFrom: String, dateTo: String): AssessmentStatusCounts!
+    assessmentStatusCounts(schoolId: ID, kind: AssessmentKind, dateFrom: DateTime, dateTo: DateTime): AssessmentStatusCounts!
 
     classTests(
         status: AssessmentStatus,
@@ -817,7 +843,7 @@ extend type Query {
         schoolId: ID,
         isActive: Boolean,
         languageId: ID,
-        assessmentKind: String,
+        assessmentKind: AssessmentKind,
         keyword: String,
         page: Int = 1,
         size: Int = 20
@@ -826,8 +852,8 @@ extend type Query {
     assessmentBlueprint(id: ID!): AssessmentBlueprint
     assessmentBlueprintVersion(id: ID!): AssessmentBlueprintVersion
 
-    assessmentSchedules(assessmentId: ID, status: AssessmentScheduleStatus, startDate: String, endDate: String): [AssessmentSchedule!]!
-    myAssessmentSchedules(assessmentId: ID, status: AssessmentScheduleStatus, startDate: String, endDate: String): [AssessmentSchedule!]!
+    assessmentSchedules(assessmentId: ID, status: AssessmentScheduleStatus, startDate: DateTime, endDate: DateTime): [AssessmentSchedule!]!
+    myAssessmentSchedules(assessmentId: ID, status: AssessmentScheduleStatus, startDate: DateTime, endDate: DateTime): [AssessmentSchedule!]!
     proctorBusySlots(scheduleId: ID!, teacherIds: [ID!]!): [ProctorBusySlot!]!
     studentBusySlots(scheduleIds: [ID!]!, studentIds: [ID!]!): [StudentBusySlot!]!
 

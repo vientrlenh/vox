@@ -1,5 +1,7 @@
 package com.sep.vox.application.query.dto;
 
+import com.sep.vox.domain.model.assessment.AssessmentKind;
+import com.sep.vox.domain.model.assessment.AssessmentStatus;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -21,10 +23,26 @@ public record MonitoredAssessmentSummary(
     UUID assessmentId,
     String code,
     String name,
-    String kind,
-    String status,
+    AssessmentKind kind,
+    AssessmentStatus status,
     Instant windowStart,
     Instant windowEnd,
     long liveScheduleCount
 ) {
+    // Auxiliary constructor for the JPQL "SELECT NEW ...MonitoredAssessmentSummary(...)" projection: kind and status are plain String
+    // columns on the JPA entity, so this overload takes the raw strings and converts them here, keeping the record itself enum-typed.
+    public MonitoredAssessmentSummary(
+            UUID assessmentId,
+            String code,
+            String name,
+            String kind,
+            String status,
+            Instant windowStart,
+            Instant windowEnd,
+            long liveScheduleCount) {
+        this(assessmentId, code, name,
+            kind == null ? null : AssessmentKind.valueOf(kind),
+            status == null ? null : AssessmentStatus.valueOf(status),
+            windowStart, windowEnd, liveScheduleCount);
+    }
 }

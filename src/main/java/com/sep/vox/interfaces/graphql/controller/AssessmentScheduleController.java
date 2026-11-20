@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -14,7 +15,6 @@ import org.springframework.stereotype.Controller;
 
 import graphql.schema.DataFetchingEnvironment;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.query.ViewAssessmentSchedulesQuery;
 import com.sep.vox.application.port.input.query.ViewProctorBusySlotsQuery;
 import com.sep.vox.application.port.input.query.ViewStudentBusySlotsQuery;
@@ -70,14 +70,9 @@ public class AssessmentScheduleController {
     public List<AssessmentScheduleDto> myAssessmentSchedules(
             @Argument(name = "assessmentId") UUID assessmentId,
             @Argument(name = "status") AssessmentScheduleStatus status,
-            @Argument(name = "startDate") String startDate,
-            @Argument(name = "endDate") String endDate) {
-        return viewMyAssessmentSchedulesUseCase.execute(new ViewAssessmentSchedulesQuery(
-            assessmentId,
-            status,
-            DateMapper.toInstant(startDate),
-            DateMapper.toInstant(endDate)
-        ));
+            @Argument(name = "startDate") Instant startDate,
+            @Argument(name = "endDate") Instant endDate) {
+        return viewMyAssessmentSchedulesUseCase.execute(new ViewAssessmentSchedulesQuery(assessmentId, status, startDate, endDate));
     }
 
     @QueryMapping(name = "assessmentSchedules")
@@ -85,21 +80,14 @@ public class AssessmentScheduleController {
     public List<AssessmentScheduleDto> assessmentSchedules(
             @Argument(name = "assessmentId") UUID assessmentId,
             @Argument(name = "status") AssessmentScheduleStatus status,
-            @Argument(name = "startDate") String startDate,
-            @Argument(name = "endDate") String endDate) {
-        return viewAssessmentSchedulesUseCase.execute(
-            new ViewAssessmentSchedulesQuery(
-                assessmentId, 
-                status, 
-                DateMapper.toInstant(startDate), 
-                DateMapper.toInstant(endDate)
-            )
-        );
+            @Argument(name = "startDate") Instant startDate,
+            @Argument(name = "endDate") Instant endDate) {
+        return viewAssessmentSchedulesUseCase.execute(new ViewAssessmentSchedulesQuery(assessmentId, status, startDate, endDate));
     }
 
     /**
-     * Trong nhóm giáo viên đang hiển thị ở màn chọn giám thị, ai bận vào đúng khung giờ của ca này.
-     * Chỉ để làm mờ sẵn kèm lý do — luật chặn thật chạy lúc ghi.
+     * Which of the teachers shown on the proctor picker screen are busy during exactly this session's time window.
+     * Only used to grey them out with a reason -- the real blocking rule runs at write time.
      */
     @QueryMapping(name = "proctorBusySlots")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
@@ -110,8 +98,8 @@ public class AssessmentScheduleController {
     }
 
     /**
-     * Trong nhóm học sinh đang xét, ai bận vào đúng khung giờ của từng ca thi đang cân nhắc.
-     * Chỉ để làm mờ sẵn kèm lý do — luật chặn thật chạy lúc ghi.
+     * Which of the students under consideration are busy during exactly the time window of each session being considered.
+     * Only used to grey them out with a reason -- the real blocking rule runs at write time.
      */
     @QueryMapping(name = "studentBusySlots")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
@@ -133,8 +121,8 @@ public class AssessmentScheduleController {
     }
 
     /**
-     * Lịch thi của học sinh cần tên/loại kỳ thi ngay trên từng ca. Không có field này thì client
-     * phải gọi thêm danh sách bài thi chỉ để tra tên -- mà danh sách đó nay đã phân trang.
+     * A student's exam schedule needs the assessment name/kind right on each session. Without this field the client
+     * would have to call the assessment list just to look up the name -- and that list is now paginated.
      */
     @SchemaMapping(typeName = "AssessmentSchedule", field = "assessment")
     public CompletableFuture<AssessmentDto> assessment(AssessmentScheduleDto source, DataFetchingEnvironment env) {

@@ -1,5 +1,7 @@
 package com.sep.vox.domain.dto;
 
+import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlotType;
+import java.time.Instant;
 import java.math.BigDecimal;
 import java.util.UUID;
 
@@ -11,11 +13,11 @@ public record AssessmentBlueprintSlotDto(
     BigDecimal weight,
     Integer prepTimeSecondsOverride,
     Integer responseTimeSecondsOverride,
-    String slotType,
+    AssessmentBlueprintSlotType slotType,
     UUID fixedQuestionId,
     QuestionSelectionSpecDto selectionSpec,
-    String createdAt,
-    String updatedAt,
+    Instant createdAt,
+    Instant updatedAt,
     UUID createdBy,
     UUID updatedBy
 ) {

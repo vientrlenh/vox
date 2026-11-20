@@ -14,6 +14,7 @@ import org.springframework.stereotype.Repository;
 import com.sep.vox.application.query.dto.AiQualityReportInfo;
 import com.sep.vox.application.query.dto.ResultStatusHistoryInfo;
 import com.sep.vox.application.query.repository.AssessmentResultAuditQueryRepository;
+import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
 import com.sep.vox.domain.model.assessment.GradingAssignmentStatus;
 import com.sep.vox.domain.model.assessment.GradingOutcome;
 import com.sep.vox.domain.model.assessment.GradingRoundType;
@@ -45,11 +46,12 @@ public class JpaAssessmentResultAuditQueryRepository implements AssessmentResult
 
         List<ResultStatusHistoryInfo> result = new ArrayList<ResultStatusHistoryInfo>();
         for (Tuple row : rows) {
+            String fromStatus = row.get(2, String.class);
             result.add(new ResultStatusHistoryInfo(
                 row.get(0, UUID.class),
                 row.get(1, UUID.class),
-                row.get(2, String.class),
-                row.get(3, String.class),
+                fromStatus == null ? null : AssessmentCandidateResultStatus.valueOf(fromStatus),
+                AssessmentCandidateResultStatus.valueOf(row.get(3, String.class)),
                 row.get(4, BigDecimal.class),
                 row.get(5, BigDecimal.class),
                 row.get(6, String.class),

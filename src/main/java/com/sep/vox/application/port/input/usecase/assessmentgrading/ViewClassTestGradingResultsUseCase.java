@@ -52,7 +52,7 @@ public class ViewClassTestGradingResultsUseCase
             input.assessmentId(),
             null,
             null,
-            input.resultStatus(),
+            input.resultStatus() == null ? null : input.resultStatus().name(),
             null,
             null,
             input.unassignedOnly(),

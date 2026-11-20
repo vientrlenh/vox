@@ -11,46 +11,34 @@ import com.sep.vox.domain.model.order.OrderType;
 public record OrderDto(
     UUID id, 
     UUID schoolId, 
-    String type, 
+    OrderType type, 
     String description, 
     BigDecimal subtotalAmountVnd, 
     BigDecimal totalAmountVnd, 
     BigDecimal chargedFeeVnd, 
     BigDecimal discountAmountVnd, 
-    String status, 
+    OrderStatus status, 
     String notes, 
-    String createdAt, 
-    String updatedAt, 
-    String expiresAt
+    Instant createdAt, 
+    Instant updatedAt, 
+    Instant expiresAt
 ) {
 
     public static OrderDto toDto(Order order) {
         return new OrderDto(
             order.getId(), 
             order.getSchoolId(), 
-            valueOf(order.getType()), 
+            order.getType(), 
             order.getDescription(), 
             order.getSubtotalAmountVnd(), 
             order.getTotalAmountVnd(), 
             order.getChargedFeeVnd(), 
             order.getDiscountAmountVnd(), 
-            valueOf(order.getStatus()), 
+            order.getStatus(), 
             order.getNotes(), 
-            valueOf(order.getCreatedAt()), 
-            valueOf(order.getUpdatedAt()), 
-            valueOf(order.getExpiresAt())
+            order.getCreatedAt(), 
+            order.getUpdatedAt(), 
+            order.getExpiresAt()
         );
-    }
-
-    private static String valueOf(Instant instant) {
-        return instant == null ? null : instant.toString();
-    }
-
-    private static String valueOf(OrderType type) {
-        return type == null ? null : type.name();
-    }
-
-    private static String valueOf(OrderStatus status) {
-        return status == null ? null : status.name();
     }
 }

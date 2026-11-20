@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,8 +64,10 @@ import com.sep.vox.domain.dto.SchoolGradeDto;
 import com.sep.vox.domain.dto.SchoolUserDto;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
 import com.sep.vox.domain.dto.UserDto;
+import com.sep.vox.domain.model.school.SchoolClassStatus;
 
 import graphql.schema.DataFetchingEnvironment;
+import com.sep.vox.domain.model.school.SchoolGradeStatus;
 
 class SchoolControllerTests {
     private ViewSchoolsUseCase viewSchoolsUseCase;
@@ -165,10 +168,10 @@ class SchoolControllerTests {
         UUID languageId = UUID.randomUUID();
         UUID gradeId = UUID.randomUUID();
         PageResult<SchoolClassDto> expected = new PageResult<SchoolClassDto>(List.of(), 1, 20, 0, 0);
-        ViewSchoolClassesQuery query = new ViewSchoolClassesQuery(1, 20, "eng", "ACTIVE", languageId, gradeId);
+        ViewSchoolClassesQuery query = new ViewSchoolClassesQuery(1, 20, "eng", SchoolClassStatus.ACTIVE, languageId, gradeId);
         when(viewSchoolClassesUseCase.execute(query)).thenReturn(expected);
 
-        PageResult<SchoolClassDto> result = controller.schoolClasses(1, 20, "eng", "ACTIVE", languageId, gradeId);
+        PageResult<SchoolClassDto> result = controller.schoolClasses(1, 20, "eng", SchoolClassStatus.ACTIVE, languageId, gradeId);
 
         assertThat(result).isEqualTo(expected);
         verify(viewSchoolClassesUseCase).execute(query);
@@ -191,9 +194,9 @@ class SchoolControllerTests {
             "ENG-01",
             "English 01",
             "Starter class",
-            "ACTIVE",
-            "2026-06-06T12:00:00Z",
-            "2026-06-06T12:00:00Z"
+            SchoolClassStatus.ACTIVE,
+            Instant.parse("2026-06-06T12:00:00Z"),
+            Instant.parse("2026-06-06T12:00:00Z")
         );
         when(viewSchoolClassDetailsUseCase.execute(new ViewSchoolClassDetailsQuery(classId))).thenReturn(expected);
 
@@ -226,7 +229,7 @@ class SchoolControllerTests {
         UUID schoolId = UUID.randomUUID();
         UUID gradeId = UUID.randomUUID();
         SchoolClassDto response = schoolClassDto(schoolId, UUID.randomUUID(), gradeId);
-        SchoolGradeDto expected = new SchoolGradeDto(gradeId, schoolId, UUID.randomUUID(), "G10", "Grade 10", null, null, null, "ACTIVE", null, null);
+        SchoolGradeDto expected = new SchoolGradeDto(gradeId, schoolId, UUID.randomUUID(), "G10", "Grade 10", null, null, null, SchoolGradeStatus.ACTIVE, null, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader<UUID, SchoolGradeDto> loader = mock(DataLoader.class);
         when(env.<UUID, SchoolGradeDto>getDataLoader("schoolGradeByClass")).thenReturn(loader);
@@ -325,7 +328,7 @@ class SchoolControllerTests {
     void update_school_class_status_only_should_map_presence() {
         UUID classId = UUID.randomUUID();
         Map<String, Object> input = Map.<String, Object>of("status", "INACTIVE");
-        UpdateSchoolClassCommand command = new UpdateSchoolClassCommand(classId, null, false, null, false, "INACTIVE", true);
+        UpdateSchoolClassCommand command = new UpdateSchoolClassCommand(classId, null, false, null, false, SchoolClassStatus.INACTIVE, true);
         UpdateSchoolClassResponse expected = new UpdateSchoolClassResponse(classId);
         when(updateSchoolClassUseCase.execute(command)).thenReturn(expected);
 
@@ -433,9 +436,9 @@ class SchoolControllerTests {
             "ENG-01",
             "English 01",
             "Starter class",
-            "ACTIVE",
-            "2026-06-06T12:00:00Z",
-            "2026-06-06T12:00:00Z"
+            SchoolClassStatus.ACTIVE,
+            Instant.parse("2026-06-06T12:00:00Z"),
+            Instant.parse("2026-06-06T12:00:00Z")
         );
     }
 

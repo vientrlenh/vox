@@ -8,7 +8,6 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.mapper.importfile.ImportRowResponseMapper;
@@ -18,7 +17,6 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.importfile.ImportRowResponse;
 import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
@@ -69,7 +67,6 @@ public class ViewImportRowsUseCase implements IUseCase<ViewImportRowsQuery, Page
         if (input.page() <= 0 || input.size() <= 0) {
             throw new IllegalArgumentException("Số trang và kích thước trang không hợp lệ");
         }
-        ImportRowStatus status = parseStatus(input.status());
 
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = findCurrentUser(currentUserId);
@@ -87,7 +84,7 @@ public class ViewImportRowsUseCase implements IUseCase<ViewImportRowsQuery, Page
 
         PageResult<ImportRow> rows = importRowRepository.findBySessionId(
             session.getId(),
-            status,
+            input.status(),
             input.page(), 
             input.size()
         );
@@ -125,18 +122,6 @@ public class ViewImportRowsUseCase implements IUseCase<ViewImportRowsQuery, Page
     private void validateSessionBelongsToSchool(ImportSession session, UUID schoolId) {
         if (!Objects.equals(session.getSchoolId(), schoolId)) {
             throw new IllegalArgumentException("Phiên import không thuộc trường hiện tại");
-        }
-    }
-
-    private ImportRowStatus parseStatus(String status) {
-        String normalized = StringNormalization.trimAndCollapseSpaces(status);
-        if (normalized == null || normalized.isBlank()) {
-            return null;
-        }
-        try {
-            return ImportRowStatus.valueOf(normalized);
-        } catch (IllegalArgumentException exception) {
-            throw new IllegalArgumentException("Trạng thái dòng import không hợp lệ");
         }
     }
 }

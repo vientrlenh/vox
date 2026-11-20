@@ -1,17 +1,17 @@
 extend type Query {
-    "Danh mục chiều sở thích, kể cả đã tắt (SYSTEM_ADMIN)."
+    "Interest dimension catalog, including deactivated dimensions (SYSTEM_ADMIN)."
     interestDimensions: [InterestDimension!]!
 }
 
 extend type Mutation {
     createInterestDimension(input: UpsertInterestDimensionInput!): InterestDimension!
     updateInterestDimension(input: UpsertInterestDimensionInput!): InterestDimension!
-    "Tắt mềm -- giữ nguyên điểm số/chủ đề lịch sử đã gán chiều này."
+    "Soft deactivation -- keeps the historical scores and topics already assigned to this dimension."
     deactivateInterestDimension(code: String!): Boolean!
 }
 
 input UpsertInterestDimensionInput {
-    "UPPER_SNAKE, 3-32 ký tự. Không đổi được sau khi tạo (đã gán vào chủ đề/điểm số)."
+    "UPPER_SNAKE, 3-32 characters. Cannot be changed after creation (it is assigned to topics and scores)."
     code: String!
     label: String
     description: String
@@ -32,6 +32,6 @@ type InterestDimension {
     active: Boolean!
     quizEligible: Boolean!
     displayOrder: Int!
-    createdAt: String
-    updatedAt: String
+    createdAt: DateTime
+    updatedAt: DateTime
 }

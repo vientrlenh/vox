@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlotType;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -63,11 +64,11 @@ class AssessmentPaperItemSlotFieldTests {
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader loader = mock(DataLoader.class);
         when(env.<UUID, AssessmentBlueprintSlotDto>getDataLoader("assessmentBlueprintSlotById")).thenReturn(loader);
-        when(loader.load(SLOT_ID)).thenReturn(CompletableFuture.completedFuture(slot("SELECTION", null)));
+        when(loader.load(SLOT_ID)).thenReturn(CompletableFuture.completedFuture(slot(AssessmentBlueprintSlotType.SELECTION, null)));
 
-        CompletableFuture<String> result = controller.assessmentPaperItemSlotType(item(SLOT_ID), env);
+        CompletableFuture<AssessmentBlueprintSlotType> result = controller.assessmentPaperItemSlotType(item(SLOT_ID), env);
 
-        assertThat(result.join()).isEqualTo("SELECTION");
+        assertThat(result.join()).isEqualTo(AssessmentBlueprintSlotType.SELECTION);
     }
 
     @Test
@@ -77,7 +78,7 @@ class AssessmentPaperItemSlotFieldTests {
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader loader = mock(DataLoader.class);
         when(env.<UUID, AssessmentBlueprintSlotDto>getDataLoader("assessmentBlueprintSlotById")).thenReturn(loader);
-        when(loader.load(SLOT_ID)).thenReturn(CompletableFuture.completedFuture(slot("SELECTION", spec)));
+        when(loader.load(SLOT_ID)).thenReturn(CompletableFuture.completedFuture(slot(AssessmentBlueprintSlotType.SELECTION, spec)));
 
         CompletableFuture<QuestionSelectionSpecDto> result = controller.assessmentPaperItemSelectionSpec(item(SLOT_ID), env);
 
@@ -92,7 +93,7 @@ class AssessmentPaperItemSlotFieldTests {
     void should_return_null_slot_type_for_an_item_without_a_blueprint_slot() {
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
 
-        CompletableFuture<String> result = controller.assessmentPaperItemSlotType(item(null), env);
+        CompletableFuture<AssessmentBlueprintSlotType> result = controller.assessmentPaperItemSlotType(item(null), env);
 
         assertThat(result.join()).isNull();
         verify(env, never()).getDataLoader(any());
@@ -110,7 +111,7 @@ class AssessmentPaperItemSlotFieldTests {
         when(env.<UUID, AssessmentBlueprintSlotDto>getDataLoader("assessmentBlueprintSlotById")).thenReturn(loader);
         when(loader.load(SLOT_ID)).thenReturn(CompletableFuture.completedFuture(null));
 
-        CompletableFuture<String> result = controller.assessmentPaperItemSlotType(item(SLOT_ID), env);
+        CompletableFuture<AssessmentBlueprintSlotType> result = controller.assessmentPaperItemSlotType(item(SLOT_ID), env);
 
         assertThat(result.join()).isNull();
     }
@@ -119,7 +120,7 @@ class AssessmentPaperItemSlotFieldTests {
         return new AssessmentPaperItemDto(ITEM_ID, blueprintSlotId, SECTION_ID, PAPER_ID, null, 1, BigDecimal.ONE);
     }
 
-    private AssessmentBlueprintSlotDto slot(String slotType, QuestionSelectionSpecDto spec) {
+    private AssessmentBlueprintSlotDto slot(AssessmentBlueprintSlotType slotType, QuestionSelectionSpecDto spec) {
         return new AssessmentBlueprintSlotDto(
             SLOT_ID, SECTION_ID, UUID.randomUUID(), 1, BigDecimal.ONE,
             null, null, slotType, null, spec, null, null, null, null);

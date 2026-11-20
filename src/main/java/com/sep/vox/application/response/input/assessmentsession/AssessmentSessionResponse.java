@@ -1,5 +1,7 @@
 package com.sep.vox.application.response.input.assessmentsession;
 
+import com.sep.vox.domain.model.assessment.AssessmentSessionStatus;
+import java.time.Instant;
 import java.util.UUID;
 
 public record AssessmentSessionResponse(
@@ -7,9 +9,9 @@ public record AssessmentSessionResponse(
     UUID assessmentId,
     UUID candidateId,
     UUID paperId,
-    String startedAt,
-    String submittedAt,
-    String status,
+    Instant startedAt,
+    Instant submittedAt,
+    AssessmentSessionStatus status,
     boolean flagged,
     String flagReason,
     boolean candidateBlocked

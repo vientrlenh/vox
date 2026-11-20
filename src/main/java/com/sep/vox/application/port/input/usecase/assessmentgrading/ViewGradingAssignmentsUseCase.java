@@ -45,7 +45,7 @@ public class ViewGradingAssignmentsUseCase
             input.assessmentId(),
             input.scheduleId(),
             input.teacherId(),
-            input.resultStatus(),
+            input.resultStatus() == null ? null : input.resultStatus().name(),
             input.roundType(),
             input.status(),
             input.unassignedOnly(),

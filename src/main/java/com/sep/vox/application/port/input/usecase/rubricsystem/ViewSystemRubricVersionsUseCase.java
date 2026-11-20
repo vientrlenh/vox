@@ -11,7 +11,6 @@ import com.sep.vox.domain.dto.RubricVersionDto;
 import com.sep.vox.domain.mapper.RubricVersionDtoMapper;
 import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
-import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.RubricRepository;
@@ -43,13 +42,13 @@ public class ViewSystemRubricVersionsUseCase implements IUseCase<ViewSystemRubri
     @Override
     @Transactional(readOnly = true)
     public PageResult<RubricVersionDto> execute(ViewSystemRubricVersionsQuery query) {
-        // 1. Xác thực User
+        // 1. Authenticate the user
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
         }
 
-        // 2. Lấy Rubric gốc và kiểm tra quyền SYSTEM
+        // 2. Load the root Rubric and check SYSTEM ownership
         Rubric rubric = rubricRepository.findById(query.rubricId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
 
@@ -57,18 +56,10 @@ public class ViewSystemRubricVersionsUseCase implements IUseCase<ViewSystemRubri
             throw new ForbiddenException("Hành động bị từ chối: Bộ Rubric này không thuộc về Hệ thống.");
         }
 
-        // 3. Xử lý safeStatus
-        String safeStatus = null;
-        if (query.status() != null && !query.status().isBlank()) {
-            try {
-                // Ép kiểu thử sang Enum, nếu sai nó sẽ văng IllegalArgumentException
-                safeStatus = RubricStatus.valueOf(query.status().trim().toUpperCase()).name();
-            } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Trạng thái (status) không hợp lệ. Chỉ chấp nhận DRAFT, PUBLISHED, ARCHIVED.");
-            }
-        }
+        // 3. Resolve safeStatus
+        String safeStatus = query.status() == null ? null : query.status().name();
 
-        // 3. Lấy danh sách Version phân trang từ Database (Hàm này đã có sẵn sort giảm dần ở bài trước)
+        // 3. Fetch the paged version list from the database (this function already sorts descending, written in the previous task)
         PageResult<RubricVersion> versionPage = rubricVersionRepository.findAllByRubricIdAndStatus(
                 query.rubricId(),
                 safeStatus,
@@ -76,7 +67,7 @@ public class ViewSystemRubricVersionsUseCase implements IUseCase<ViewSystemRubri
                 query.size()
         );
 
-        // 4. Map sang DTO và trả về
+        // 4. Map to DTOs and return
         return RubricVersionDtoMapper.toRubricVersionPage(versionPage);
     }
 }

@@ -4,17 +4,19 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
+import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
+
 /**
- * Dòng bảng phân công của school admin. Admin thấy tên học sinh bình thường —
- * ẩn danh chỉ áp cho phía giáo viên.
+ * A row of the school admin's assignment table. The admin sees the student's name normally —
+ * anonymity only applies on the teacher's side.
  *
- * <p>{@code assignmentId} null nghĩa là bài chưa có phân công nào đang mở. Bài có
- * thể đã qua vài vòng trước đó; những vòng đã đóng nằm ở màn lịch sử, không chen vào
- * bảng điều phối này.
+ * <p>A null {@code assignmentId} means the attempt has no open assignment. The attempt may
+ * have gone through several earlier rounds; the closed rounds live on the history screen and do not
+ * crowd into this coordination table.
  *
- * <p>Một dòng là MỘT LƯỢT THI, không phải một học sinh: em nào thi lại thì có bấy nhiêu
- * dòng cùng tên. {@code attemptNo}/{@code attemptCount} là thứ duy nhất phân biệt được
- * chúng trên màn hình — không có nó thì người chấm nhìn hai dòng y hệt nhau.
+ * <p>One row is ONE ATTEMPT, not one student: a student who retakes has that many rows with the
+ * same name. {@code attemptNo}/{@code attemptCount} are the only thing that tells them apart
+ * on screen — without them the grader would see two identical rows.
  */
 public record GradingAssignmentRowInfo(
     UUID candidateResultId,
@@ -22,7 +24,7 @@ public record GradingAssignmentRowInfo(
     String studentName,
     String className,
     String assessmentName,
-    String resultStatus,
+    AssessmentCandidateResultStatus resultStatus,
     BigDecimal totalScore,
     boolean flagged,
     UUID assignmentId,
@@ -35,13 +37,13 @@ public record GradingAssignmentRowInfo(
     Instant completedAt,
     Instant deadlineAt,
     boolean overdue,
-    /** Còn đơn phúc khảo chưa kết thúc — admin cần biết trước khi giao vòng khác. */
+    /** There is an unfinished appeal — the admin needs to know before assigning another round. */
     boolean hasOpenAppeal,
-    /** Phiên thi sinh ra bài này. Hai lượt của cùng một em khác nhau ở đây. */
+    /** The session that produced this attempt. Two attempts of the same student differ here. */
     UUID sessionId,
-    /** Lượt thi thứ mấy, đếm từ 1 theo thời điểm bắt đầu làm bài. */
+    /** Which attempt this is, counted from 1 by the time the student started the assessment. */
     int attemptNo,
-    /** Tổng số lượt em đó đã làm ở bài thi này. Bằng 1 nghĩa là không có thi lại. */
+    /** Total number of attempts that student has made on this assessment. 1 means no retake. */
     int attemptCount
 ) {
 }

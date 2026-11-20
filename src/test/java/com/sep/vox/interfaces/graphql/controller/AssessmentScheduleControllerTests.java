@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import com.sep.vox.domain.model.assessment.AssessmentScheduleStatus;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -57,7 +58,7 @@ class AssessmentScheduleControllerTests {
     }
 
     private AssessmentScheduleDto schedule(UUID schoolRoomId) {
-        return new AssessmentScheduleDto(scheduleId, assessmentId, schoolRoomId, null, null, "DRAFT", null);
+        return new AssessmentScheduleDto(scheduleId, assessmentId, schoolRoomId, null, null, AssessmentScheduleStatus.DRAFT, null);
     }
 
     private SchoolRoomFromDto room(UUID roomId) {

@@ -1,6 +1,5 @@
 package com.sep.vox.domain.mapper;
 
-import java.time.Instant;
 import java.util.List;
 
 import com.sep.vox.domain.dto.AssessmentBlueprintSlotDto;
@@ -20,11 +19,11 @@ public final class AssessmentBlueprintSlotDtoMapper {
             domain.getWeight(),
             domain.getPrepTimeSecondsOverride(),
             domain.getResponseTimeSecondsOverride(),
-            domain.getSlotType().name(),
+            domain.getSlotType(),
             domain.getFixedQuestionId(),
             QuestionSelectionSpecDtoMapper.toDto(domain.getSelectionSpec()),
-            valueOf(domain.getCreatedAt()),
-            valueOf(domain.getUpdatedAt()),
+            domain.getCreatedAt(),
+            domain.getUpdatedAt(),
             domain.getCreatedBy(),
             domain.getUpdatedBy()
         );
@@ -34,9 +33,5 @@ public final class AssessmentBlueprintSlotDtoMapper {
         return domains.stream()
             .map(AssessmentBlueprintSlotDtoMapper::toDto)
             .toList();
-    }
-
-    private static String valueOf(Instant value) {
-        return value == null ? null : value.toString();
     }
 }

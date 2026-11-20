@@ -1,6 +1,5 @@
 package com.sep.vox.domain.mapper;
 
-import java.time.Instant;
 import java.util.List;
 
 import com.sep.vox.domain.dto.AssessmentCandidateDto;
@@ -18,10 +17,10 @@ public final class AssessmentCandidateDtoMapper {
             domain.getStudentId(),
             domain.getAssignedPaperId(),
             domain.getScheduleId(),
-            domain.getStatus() == null ? null : domain.getStatus().name(),
-            valueOf(domain.getAssignedAt()),
-            valueOf(domain.getUpdatedAt()),
-            valueOf(domain.getBlockedAt())
+            domain.getStatus(),
+            domain.getAssignedAt(),
+            domain.getUpdatedAt(),
+            domain.getBlockedAt()
         );
     }
 
@@ -29,9 +28,5 @@ public final class AssessmentCandidateDtoMapper {
         return domains.stream()
             .map(AssessmentCandidateDtoMapper::toDto)
             .toList();
-    }
-
-    private static String valueOf(Instant value) {
-        return value == null ? null : value.toString();
     }
 }

@@ -1,5 +1,10 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import com.sep.vox.domain.model.assessment.AssessmentScheduleStatus;
+import com.sep.vox.domain.model.assessment.AssessmentDeliveryMode;
+import com.sep.vox.domain.model.assessment.AssessmentKind;
+import com.sep.vox.domain.model.assessment.AssessmentPaperStatus;
+import com.sep.vox.domain.model.assessment.AssessmentStatus;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -51,7 +56,7 @@ class AssessmentCandidateControllerTests {
 
     private AssessmentCandidateDto candidate(UUID assignedPaperId, UUID scheduleId) {
         return new AssessmentCandidateDto(UUID.randomUUID(), assessmentId, studentId, assignedPaperId, scheduleId,
-            "ASSIGNED", null, null, null);
+            AssessmentCandidateStatus.ASSIGNED, null, null, null);
     }
 
     @Test
@@ -126,7 +131,7 @@ class AssessmentCandidateControllerTests {
     void should_resolve_assigned_paper_via_data_loader() {
         UUID paperId = UUID.randomUUID();
         AssessmentCandidateDto dto = candidate(paperId, scheduleId);
-        AssessmentPaperDto paper = new AssessmentPaperDto(paperId, assessmentId, null, "P1", 1, "LOCKED", null, null, null, null, null);
+        AssessmentPaperDto paper = new AssessmentPaperDto(paperId, assessmentId, null, "P1", 1, AssessmentPaperStatus.LOCKED, null, null, null, null, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader loader = mock(DataLoader.class);
         when(env.<UUID, AssessmentPaperDto>getDataLoader("assessmentPaperById")).thenReturn(loader);
@@ -142,7 +147,7 @@ class AssessmentCandidateControllerTests {
     @SuppressWarnings({"unchecked", "rawtypes"})
     void should_resolve_schedule_via_data_loader() {
         AssessmentCandidateDto dto = candidate(null, scheduleId);
-        AssessmentScheduleDto schedule = new AssessmentScheduleDto(scheduleId, assessmentId, UUID.randomUUID(), null, null, "DRAFT", null);
+        AssessmentScheduleDto schedule = new AssessmentScheduleDto(scheduleId, assessmentId, UUID.randomUUID(), null, null, AssessmentScheduleStatus.DRAFT, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader loader = mock(DataLoader.class);
         when(env.<UUID, AssessmentScheduleDto>getDataLoader("assessmentScheduleById")).thenReturn(loader);
@@ -170,7 +175,7 @@ class AssessmentCandidateControllerTests {
     void should_resolve_assessment_via_data_loader() {
         AssessmentCandidateDto dto = candidate(null, scheduleId);
         AssessmentDto assessment = new AssessmentDto(assessmentId, null, null, "E1", "Assessment", null, UUID.randomUUID(), UUID.randomUUID(),
-            "CENTRALIZED", "LAB", "DRAFT", null, null, null, null, null, null, false, null, null, null, null, null,
+            AssessmentKind.CENTRALIZED, AssessmentDeliveryMode.LAB, AssessmentStatus.DRAFT, null, null, null, null, null, null, false, null, null, null, null, null,
             null, null, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader loader = mock(DataLoader.class);

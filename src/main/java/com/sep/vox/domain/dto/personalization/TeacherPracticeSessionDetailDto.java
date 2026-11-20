@@ -1,12 +1,13 @@
 package com.sep.vox.domain.dto.personalization;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
 public record TeacherPracticeSessionDetailDto(
     UUID sessionId,
     String topicName,
-    String startedAt,
+    Instant startedAt,
     int durationSeconds,
     int itemCount,
     Double overallScore,

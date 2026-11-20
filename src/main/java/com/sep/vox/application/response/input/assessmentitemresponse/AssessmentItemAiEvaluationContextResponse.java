@@ -1,21 +1,23 @@
 package com.sep.vox.application.response.input.assessmentitemresponse;
 
+import com.sep.vox.domain.model.assessment.AssessmentEvaluationEngineType;
+import java.time.Instant;
 import java.math.BigDecimal;
 import java.util.UUID;
 
 /**
- * Bằng chứng của bản chấm AI, giữ lại kể cả khi giáo viên đã chấm lại (lúc đó bản AI mang
- * SUPERSEDED). Điểm và rationale hiển thị vẫn là của bản đang có hiệu lực ở cấp trên —
- * khối này chỉ là NGỮ CẢNH.
+ * Evidence of the AI grading, kept even after a teacher has re-graded (the AI version then carries
+ * SUPERSEDED). The displayed score and rationale still belong to the version in force one level up --
+ * this block is only CONTEXT.
  *
- * <p>Tách riêng thay vì điền bù vào chính field của bản chấm tay: một
- * {@code overallConfidence} gắn lên điểm do người chấm là vô nghĩa, và trộn lẫn thì người
- * đọc payload không còn cách nào biết con số đến từ bản nào. Cùng quy ước với
- * {@code GradingTaskItemInfo} ở màn chấm của giáo viên.
+ * <p>Kept separate instead of back-filling the fields of the manual grading: an
+ * {@code overallConfidence} attached to a score given by a person is meaningless, and once mixed the
+ * reader of the payload has no way to tell which version a number came from. Same convention as
+ * {@code GradingTaskItemInfo} on the teacher's grading screen.
  */
 public record AssessmentItemAiEvaluationContextResponse(
     UUID evaluationId,
-    String engineType,
+    AssessmentEvaluationEngineType engineType,
     String gradedByModel,
     String promptVersion,
     BigDecimal overallConfidence,
@@ -23,7 +25,7 @@ public record AssessmentItemAiEvaluationContextResponse(
     String reviewReasonCode,
     boolean markedInvalid,
     boolean requiresRetake,
-    String evaluatedAt,
+    Instant evaluatedAt,
     String feedbackSummary,
     String signals,
     String validity,

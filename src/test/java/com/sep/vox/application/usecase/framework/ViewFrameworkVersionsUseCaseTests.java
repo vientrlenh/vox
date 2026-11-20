@@ -140,7 +140,7 @@ public class ViewFrameworkVersionsUseCaseTests {
     @Test
     void should_filter_by_status_when_status_provided() {
         UUID frameworkId = UUID.randomUUID();
-        ViewFrameworkVersionsQuery query = new ViewFrameworkVersionsQuery(frameworkId, "published", 1, 20);
+        ViewFrameworkVersionsQuery query = new ViewFrameworkVersionsQuery(frameworkId, FrameworkVersionStatus.PUBLISHED, 1, 20);
 
         Framework framework = new Framework(
             frameworkId, new FrameworkCode("CEFR"), "CEFR", "Description",
@@ -162,19 +162,5 @@ public class ViewFrameworkVersionsUseCaseTests {
 
         assertThat(result.content()).hasSize(1);
         verify(frameworkVersionRepository).findByFrameworkIdAndStatus(frameworkId, FrameworkVersionStatus.PUBLISHED, 1, 20);
-    }
-
-    @Test
-    void should_throw_when_status_invalid() {
-        UUID frameworkId = UUID.randomUUID();
-        ViewFrameworkVersionsQuery query = new ViewFrameworkVersionsQuery(frameworkId, "NOT_A_STATUS", 1, 20);
-
-        Framework framework = new Framework(
-            frameworkId, new FrameworkCode("CEFR"), "CEFR", "Description",
-            true, now, now, null, null
-        );
-        when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
-
-        assertThrows(IllegalArgumentException.class, () -> useCase.execute(query));
     }
 }

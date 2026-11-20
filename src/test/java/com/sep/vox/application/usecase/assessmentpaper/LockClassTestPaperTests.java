@@ -91,7 +91,7 @@ class LockClassTestPaperTests {
 
         AssessmentPaperDto result = useCase.execute(new UpdateAssessmentPaperStatusCommand(PAPER_ID, "LOCK", null));
 
-        assertThat(result.status()).isEqualTo(AssessmentPaperStatus.LOCKED.name());
+        assertThat(result.status()).isEqualTo(AssessmentPaperStatus.LOCKED);
     }
 
     @Test
@@ -124,7 +124,7 @@ class LockClassTestPaperTests {
 
         AssessmentPaperDto result = useCase.execute(new UpdateAssessmentPaperStatusCommand(PAPER_ID, "REOPEN", null));
 
-        assertThat(result.status()).isEqualTo(AssessmentPaperStatus.DRAFT.name());
+        assertThat(result.status()).isEqualTo(AssessmentPaperStatus.DRAFT);
     }
 
     private Assessment classTest() {

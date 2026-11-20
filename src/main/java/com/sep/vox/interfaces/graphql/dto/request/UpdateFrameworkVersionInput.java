@@ -1,9 +1,11 @@
 package com.sep.vox.interfaces.graphql.dto.request;
 
+import java.time.Instant;
+
 public record UpdateFrameworkVersionInput(
     String code,
     String name,
     String description,
-    String effectiveFrom,
-    String effectiveTo
+    Instant effectiveFrom,
+    Instant effectiveTo
 ) {}

@@ -10,17 +10,18 @@ import org.springframework.context.annotation.Import;
 import org.springframework.core.annotation.AliasFor;
 
 import com.sep.vox.config.GraphQlTestSecurityConfiguration;
+import com.sep.vox.interfaces.graphql.config.DateScalarsGraphQlConfig;
 import com.sep.vox.interfaces.graphql.exception.GlobalExceptionResolver;
 
 /**
  * A GraphQL slice for one controller: the real schema from {@code src/main/resources/graphql}, the real
- * {@code GlobalExceptionResolver} and {@code @PreAuthorize}, with use cases supplied as
+ * {@code GlobalExceptionResolver}, the {@code DateTime}/{@code Date} scalar wiring and {@code @PreAuthorize}, with use cases supplied as
  * {@code @MockitoBean}. No database and no Docker, so it runs in {@code test}.
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @GraphQlTest
-@Import({ GraphQlTestSecurityConfiguration.class, GlobalExceptionResolver.class })
+@Import({ GraphQlTestSecurityConfiguration.class, GlobalExceptionResolver.class, DateScalarsGraphQlConfig.class })
 public @interface GraphQlControllerTest {
 
     @AliasFor(annotation = GraphQlTest.class, attribute = "controllers")

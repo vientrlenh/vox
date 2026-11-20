@@ -1,19 +1,21 @@
 package com.sep.vox.application.response.input.assessmentschedule;
 
+import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Một học sinh đang vướng lịch khi cân nhắc xếp vào ca {@code targetScheduleId}: họ đã được xếp ca
- * {@code busyScheduleId} chạy từ {@code startDate} đến {@code endDate}.
+ * A student who is already booked when being considered for session {@code targetScheduleId}: they are already
+ * assigned to session {@code busyScheduleId}, which runs from {@code startDate} to {@code endDate}.
  *
- * <p>Giao diện dùng để làm mờ sẵn lựa chọn bị trùng kèm lý do, thay vì để người dùng bấm rồi ăn lỗi.
- * Không kèm tên kỳ thi đang vướng: người xếp lịch kỳ này có thể không có quyền nhìn kỳ kia.
+ * <p>The UI uses it to grey out clashing choices together with the reason, instead of letting the user click and run
+ * into an error. The name of the clashing assessment is deliberately left out: whoever schedules this assessment may
+ * not have permission to see the other one.
  */
 public record StudentBusySlotResponse(
     UUID studentId,
     UUID targetScheduleId,
     UUID busyScheduleId,
-    String startDate,
-    String endDate
+    Instant startDate,
+    Instant endDate
 ) {
 }

@@ -104,7 +104,7 @@ class ViewAssessmentItemResponseEvaluationUseCaseTests {
 
         // The verdict still belongs to the teacher -- the AI block is only context and must not
         // encroach on it.
-        assertThat(response.engineType()).isEqualTo("HUMAN");
+        assertThat(response.engineType()).isEqualTo(AssessmentEvaluationEngineType.HUMAN);
         assertThat(response.itemScore()).isEqualByComparingTo("8.00");
         assertThat(response.feedbackSummary()).isEqualTo("GV: đạt yêu cầu");
         assertThat(response.overallConfidence()).isNull();

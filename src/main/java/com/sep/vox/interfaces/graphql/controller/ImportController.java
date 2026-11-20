@@ -17,6 +17,9 @@ import com.sep.vox.application.response.input.importfile.ImportRowResponse;
 import com.sep.vox.application.response.input.importfile.ImportSessionDetailsResponse;
 import com.sep.vox.application.response.input.importfile.ImportSessionSummaryResponse;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.model.importfile.ImportRowStatus;
+import com.sep.vox.domain.model.importfile.ImportSessionStatus;
+import com.sep.vox.domain.model.importfile.ImportType;
 import com.sep.vox.interfaces.shared.PageArguments;
 
 @Controller("graphqlImportController")
@@ -46,8 +49,8 @@ public class ImportController {
     public PageResult<ImportSessionSummaryResponse> importSessions(
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size,
-            @Argument(name = "type") String type,
-            @Argument(name = "status") String status) {
+            @Argument(name = "type") ImportType type,
+            @Argument(name = "status") ImportSessionStatus status) {
         PageArguments.validate(page, size);
         return viewImportSessionsUseCase.execute(new ViewImportSessionsQuery(page, size, type, status));
     }
@@ -58,7 +61,7 @@ public class ImportController {
             @Argument(name = "sessionId") UUID sessionId,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size,
-            @Argument(name = "status") String status) {
+            @Argument(name = "status") ImportRowStatus status) {
         PageArguments.validate(page, size);
         return viewImportRowsUseCase.execute(new ViewImportRowsQuery(sessionId, page, size, status));
     }

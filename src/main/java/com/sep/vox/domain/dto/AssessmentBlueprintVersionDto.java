@@ -1,5 +1,7 @@
 package com.sep.vox.domain.dto;
 
+import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersionStatus;
+import java.time.Instant;
 import java.util.UUID;
 
 public record AssessmentBlueprintVersionDto(
@@ -8,12 +10,12 @@ public record AssessmentBlueprintVersionDto(
     int version,
     String code,
     String description,
-    String status,
+    AssessmentBlueprintVersionStatus status,
     Integer totalTimeLimitSeconds,
-    String effectiveFrom,
-    String effectiveTo,
-    String createdAt,
-    String updatedAt,
+    Instant effectiveFrom,
+    Instant effectiveTo,
+    Instant createdAt,
+    Instant updatedAt,
     UUID createdBy,
     UUID updatedBy
 ) {

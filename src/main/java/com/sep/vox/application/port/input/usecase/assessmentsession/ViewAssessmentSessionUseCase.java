@@ -33,9 +33,9 @@ public class ViewAssessmentSessionUseCase implements IUseCase<ViewAssessmentSess
             session.getAssessmentId(),
             session.getCandidateId(),
             session.getPaperId(),
-            session.getStartedAt() == null ? null : session.getStartedAt().toString(),
-            session.getSubmittedAt() == null ? null : session.getSubmittedAt().toString(),
-            session.getStatus() == null ? null : session.getStatus().name(),
+            session.getStartedAt(),
+            session.getSubmittedAt(),
+            session.getStatus(),
             session.isFlagged(),
             session.getFlagReason(),
             candidateBlocked

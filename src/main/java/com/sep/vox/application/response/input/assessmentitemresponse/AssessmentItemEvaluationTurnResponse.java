@@ -1,11 +1,12 @@
 package com.sep.vox.application.response.input.assessmentitemresponse;
 
+import com.sep.vox.domain.model.assessment.TurnType;
 import java.util.UUID;
 
 public record AssessmentItemEvaluationTurnResponse(
     UUID id,
     Integer turnOrder,
-    String turnType,
+    TurnType turnType,
     String promptText,
     String audioUrl,
     String transcript,

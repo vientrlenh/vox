@@ -57,7 +57,7 @@ public class ViewFrameworkVersionDetailsUseCaseTests {
 
         assertThat(result.id()).isEqualTo(versionId);
         assertThat(result.code()).isEqualTo("V1_0");
-        assertThat(result.status()).isEqualTo(FrameworkVersionStatus.PUBLISHED.toString());
+        assertThat(result.status()).isEqualTo(FrameworkVersionStatus.PUBLISHED);
         assertThat(result.criteria()).isEmpty();
         assertThat(result.resultBands()).isEmpty();
         verify(frameworkVersionRepository).findById(versionId);

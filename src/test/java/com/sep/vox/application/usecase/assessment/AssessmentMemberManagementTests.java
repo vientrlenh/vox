@@ -90,7 +90,7 @@ class AssessmentMemberManagementTests {
     void should_let_the_chair_add_an_author() {
         AssessmentMemberDto result = createUseCase.execute(new CreateAssessmentMemberCommand(ASSESSMENT_ID, TARGET_USER_ID, "AUTHOR"));
 
-        assertThat(result.role()).isEqualTo(AssessmentMemberRole.AUTHOR.name());
+        assertThat(result.role()).isEqualTo(AssessmentMemberRole.AUTHOR);
         verify(assessmentMemberRepository).save(any(AssessmentMember.class));
     }
 
@@ -98,7 +98,7 @@ class AssessmentMemberManagementTests {
     void should_let_the_chair_add_a_reviewer() {
         AssessmentMemberDto result = createUseCase.execute(new CreateAssessmentMemberCommand(ASSESSMENT_ID, TARGET_USER_ID, "REVIEWER"));
 
-        assertThat(result.role()).isEqualTo(AssessmentMemberRole.REVIEWER.name());
+        assertThat(result.role()).isEqualTo(AssessmentMemberRole.REVIEWER);
     }
 
     @Test
@@ -115,7 +115,7 @@ class AssessmentMemberManagementTests {
 
         AssessmentMemberDto result = updateUseCase.execute(new UpdateAssessmentMemberCommand(ASSESSMENT_ID, MEMBER_ID, "REVIEWER"));
 
-        assertThat(result.role()).isEqualTo(AssessmentMemberRole.REVIEWER.name());
+        assertThat(result.role()).isEqualTo(AssessmentMemberRole.REVIEWER);
     }
 
     /** Vai đích không phải CHAIR nhưng vai đang bị gỡ thì có — bỏ sót vế này là chủ tịch hạ cấp nhau. */
@@ -155,7 +155,7 @@ class AssessmentMemberManagementTests {
 
         AssessmentMemberDto result = createUseCase.execute(new CreateAssessmentMemberCommand(ASSESSMENT_ID, TARGET_USER_ID, "CHAIR"));
 
-        assertThat(result.role()).isEqualTo(AssessmentMemberRole.CHAIR.name());
+        assertThat(result.role()).isEqualTo(AssessmentMemberRole.CHAIR);
     }
 
     @Test

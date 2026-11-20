@@ -119,7 +119,7 @@ class ViewAssessmentCandidatesUseCaseTests {
     void should_filter_by_status() {
         List<AssessmentCandidateDto> result = useCase.execute(new ViewAssessmentCandidatesQuery(assessmentId, null, AssessmentCandidateStatus.ABSENT));
         assertThat(result).hasSize(2);
-        assertThat(result).allMatch(c -> "ABSENT".equals(c.status()));
+        assertThat(result).allMatch(c -> c.status() == AssessmentCandidateStatus.ABSENT);
     }
 
     @Test

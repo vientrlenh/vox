@@ -1,5 +1,6 @@
 package com.sep.vox.domain.dto;
 
+import java.time.Instant;
 import java.math.BigDecimal;
 import java.util.UUID;
 
@@ -25,7 +26,7 @@ public record AssessmentProctoringAlertDto(
     String source,
     String detail,
     BigDecimal confidence,
-    String capturedAt,
-    String raisedAt
+    Instant capturedAt,
+    Instant raisedAt
 ) {
 }

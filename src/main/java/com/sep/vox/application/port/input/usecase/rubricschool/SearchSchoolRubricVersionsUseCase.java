@@ -54,7 +54,7 @@ public class SearchSchoolRubricVersionsUseCase implements IUseCase<SearchSchoolR
     @Override
     @Transactional(readOnly = true)
     public PageResult<RubricVersionDto> execute(SearchSchoolRubricVersionsQuery query) {
-        // 1. Xác thực tài khoản
+        // 1. Authenticate the account
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
@@ -63,7 +63,7 @@ public class SearchSchoolRubricVersionsUseCase implements IUseCase<SearchSchoolR
             throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
         }
 
-        // 2. Chốt chặn bảo mật 1: Kiểm tra School Admin có thuộc trường này không
+        // 2. Security checkpoint 1: check that the School Admin belongs to this school
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
 
@@ -71,14 +71,14 @@ public class SearchSchoolRubricVersionsUseCase implements IUseCase<SearchSchoolR
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền tìm kiếm Rubric của trường học khác.");
         }
 
-        // 3. Chốt chặn bảo mật 2: Kiểm tra trường học có đang hoạt động không
+        // 3. Security checkpoint 2: check that the school is active
         School school = schoolRepository.findById(query.schoolId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
         if (!school.isActive()) {
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa.");
         }
 
-        // 4. Chốt chặn bảo mật 3: Rubric này có phải của trường học không?
+        // 4. Security checkpoint 3: does this Rubric belong to the school?
         Rubric rubric = rubricRepository.findById(query.rubricId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric yêu cầu."));
 
@@ -86,11 +86,11 @@ public class SearchSchoolRubricVersionsUseCase implements IUseCase<SearchSchoolR
             throw new ForbiddenException("BẢO MẬT: Rubric này không thuộc về trường học của bạn.");
         }
 
-        // 5. Gọi Database lấy danh sách Version (DÙNG CHUNG HÀM REPO)
+        // 5. Call the database to fetch the Version list (SHARED REPO FUNCTION)
         PageResult<RubricVersion> pageResult = rubricVersionRepository.searchRubricVersions(
                 query.rubricId(),
                 query.keyword(),
-                query.status(),
+                query.status() == null ? null : query.status().name(),
                 query.page(),
                 query.size()
         );

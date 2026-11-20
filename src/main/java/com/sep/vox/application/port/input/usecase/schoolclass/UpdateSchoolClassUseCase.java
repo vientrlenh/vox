@@ -52,7 +52,7 @@ public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassComma
     public UpdateSchoolClassResponse execute(UpdateSchoolClassCommand input) {
         UpdateSchoolClassCommand command = normalize(input);
         validateCommand(command);
-        SchoolClassStatus status = command.statusProvided() ? parseStatus(command.status()) : null;
+        SchoolClassStatus status = command.status();
 
         Instant now = Instant.now();
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
@@ -88,7 +88,7 @@ public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassComma
                 ? StringNormalization.trimAndCollapseSpaces(input.description())
                 : null,
             input.descriptionProvided(),
-            input.statusProvided() ? StringNormalization.trimAndCollapseSpaces(input.status()) : null,
+            input.statusProvided() ? input.status() : null,
             input.statusProvided()
         );
     }
@@ -123,8 +123,8 @@ public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassComma
         }
     }
 
-    private void validateStatus(String status) {
-        if (status == null || status.isBlank()) {
+    private void validateStatus(SchoolClassStatus status) {
+        if (status == null) {
             throw new IllegalArgumentException("Trạng thái lớp học không hợp lệ");
         }
     }
@@ -153,14 +153,6 @@ public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassComma
             .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
             throw new IllegalStateException("Trường học không hoạt động");
-        }
-    }
-
-    private SchoolClassStatus parseStatus(String status) {
-        try {
-            return SchoolClassStatus.valueOf(status);
-        } catch (IllegalArgumentException | NullPointerException e) {
-            throw new IllegalArgumentException("Trạng thái lớp học không hợp lệ");
         }
     }
 }

@@ -11,7 +11,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolClassDto;
 import com.sep.vox.domain.mapper.SchoolClassDtoMapper;
-import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 
 @Service
@@ -36,23 +35,11 @@ public class ViewMyClassesUseCase implements IUseCase<ViewMyClassesQuery, PageRe
             input.schoolId(),
             callerId,
             StringNormalization.trimAndCollapseSpaces(input.search()),
-            parseStatus(input.status()),
+            input.status(),
             input.page(),
             input.size()
         );
 
         return SchoolClassDtoMapper.toDtoPage(schoolClassesPage);
-    }
-
-    private SchoolClassStatus parseStatus(String status) {
-        String normalized = StringNormalization.trimAndCollapseSpaces(status);
-        if (normalized == null) {
-            return null;
-        }
-        try {
-            return SchoolClassStatus.valueOf(normalized);
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Trạng thái lớp học không hợp lệ");
-        }
     }
 }

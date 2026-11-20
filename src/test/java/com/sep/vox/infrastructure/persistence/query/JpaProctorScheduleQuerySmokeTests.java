@@ -13,6 +13,7 @@ import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTra
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.query.repository.ProctorScheduleQueryRepository;
+import com.sep.vox.domain.model.assessment.AssessmentScheduleStatus;
 import com.sep.vox.support.IntegrationTest;
 
 import jakarta.persistence.EntityManager;
@@ -62,7 +63,7 @@ class JpaProctorScheduleQuerySmokeTests {
         assertThat(repository.findByTeacherId(teacherId)).singleElement().satisfies(schedule -> {
             assertThat(schedule.assessmentId()).isEqualTo(assessmentId);
             assertThat(schedule.assessmentName()).isEqualTo("Kỳ thi khói");
-            assertThat(schedule.status()).isEqualTo("PUBLISHED");
+            assertThat(schedule.status()).isEqualTo(AssessmentScheduleStatus.PUBLISHED);
             // LEFT JOIN phòng thi: ca chưa xếp phòng vẫn phải ra dòng, không bị join nuốt mất.
             assertThat(schedule.roomName()).isNull();
             assertThat(schedule.startDate()).isEqualTo(now.minus(Duration.ofMinutes(10)));
@@ -97,7 +98,7 @@ class JpaProctorScheduleQuerySmokeTests {
         seed("CANCELLED", "CANCELLED");
 
         assertThat(repository.findByTeacherId(teacherId)).singleElement()
-            .satisfies(schedule -> assertThat(schedule.status()).isEqualTo("CANCELLED"));
+            .satisfies(schedule -> assertThat(schedule.status()).isEqualTo(AssessmentScheduleStatus.CANCELLED));
         assertThat(repository.findBySchoolId(schoolId)).hasSize(1);
     }
 

@@ -10,14 +10,14 @@ public final class AssessmentRecordingDtoMapper {
             recording.getId(),
             recording.getAssessmentSessionId(),
             recording.getCandidateId(),
-            recording.getStreamType().name(),
-            recording.getStatus().name(),
+            recording.getStreamType(),
+            recording.getStatus(),
             recording.getSizeBytes(),
             recording.getDurationSeconds(),
             recording.getSource(),
             canonical,
-            recording.getCreatedAt().toString(),
-            recording.getAssembledAt() == null ? null : recording.getAssembledAt().toString()
+            recording.getCreatedAt(),
+            recording.getAssembledAt()
         );
     }
 }

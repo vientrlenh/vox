@@ -12,10 +12,11 @@ import com.sep.vox.domain.model.assessment.AssessmentStatus;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 /**
- * Trả lời "người dùng hiện tại có được xem blueprint/blueprintVersion gắn với
- * kỳ thi này không" cho SCHOOL_ADMIN cùng trường (hoặc bất kỳ ai cùng trường
- * sau khi kỳ thi đã đóng). Không bao gồm nhánh "là member của kỳ thi" -- nhánh
- * đó cần load danh sách member qua DataLoader nên vẫn nằm ở controller.
+ * Answers "may the current user view the blueprint/blueprintVersion attached to this
+ * assessment" for a SCHOOL_ADMIN of the same school (or anyone in the same school
+ * after the assessment has closed). It does not cover the "is a member of the
+ * assessment" branch -- that branch needs the member list through a DataLoader, so it
+ * stays in the controller.
  */
 @Service
 public class CanViewAssessmentBlueprintDataUseCase implements IUseCase<CanViewAssessmentBlueprintDataQuery, Boolean> {
@@ -54,8 +55,8 @@ public class CanViewAssessmentBlueprintDataUseCase implements IUseCase<CanViewAs
             return true;
         }
 
-        // Sau khi kỳ thi đã đóng, ai cùng trường cũng xem được liên kết blueprint -- không cần là member nữa.
-        return AssessmentStatus.CLOSED.name().equals(input.assessmentStatus())
-            || AssessmentStatus.RESULTS_PUBLISHED.name().equals(input.assessmentStatus());
+        // Once the assessment has closed, anyone in the same school may see the blueprint link -- membership is no longer required.
+        return input.assessmentStatus() == AssessmentStatus.CLOSED
+            || input.assessmentStatus() == AssessmentStatus.RESULTS_PUBLISHED;
     }
 }

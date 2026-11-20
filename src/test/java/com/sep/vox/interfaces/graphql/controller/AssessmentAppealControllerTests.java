@@ -24,6 +24,7 @@ import com.sep.vox.application.port.input.usecase.assessmentappeal.ViewMyAppeals
 import com.sep.vox.application.query.dto.AppealReviewerLiteInfo;
 import com.sep.vox.application.query.dto.AppealStatsInfo;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.model.assessment.AssessmentAppealStatus;
 
 public class AssessmentAppealControllerTests {
 
@@ -59,11 +60,11 @@ public class AssessmentAppealControllerTests {
         when(viewAssessmentAppealsUseCase.execute(any()))
             .thenReturn(new PageResult<>(List.of(), 1, 5, 1, 0));
 
-        controller.appeals("PENDING", "Nam", 1, 5);
+        controller.appeals(AssessmentAppealStatus.PENDING, "Nam", 1, 5);
 
         ArgumentCaptor<SearchAssessmentAppealsQuery> captor = ArgumentCaptor.forClass(SearchAssessmentAppealsQuery.class);
         org.mockito.Mockito.verify(viewAssessmentAppealsUseCase).execute(captor.capture());
-        assertThat(captor.getValue().status()).isEqualTo("PENDING");
+        assertThat(captor.getValue().status()).isEqualTo(AssessmentAppealStatus.PENDING);
         assertThat(captor.getValue().keyword()).isEqualTo("Nam");
         assertThat(captor.getValue().page()).isEqualTo(1);
     }

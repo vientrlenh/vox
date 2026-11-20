@@ -1,5 +1,12 @@
 package com.sep.vox.domain.dto;
 
+import com.sep.vox.domain.model.assessment.AssessmentKind;
+import com.sep.vox.domain.model.assessment.AssessmentDeliveryMode;
+import com.sep.vox.domain.model.assessment.AssessmentStatus;
+import com.sep.vox.domain.model.assessment.ResultDecisionMethod;
+import com.sep.vox.domain.model.assessment.AssessmentRequiredStreamType;
+import com.sep.vox.domain.model.assessment.AssessmentStreamTypePermission;
+import java.time.Instant;
 import java.util.UUID;
 
 public record AssessmentDto(
@@ -11,25 +18,25 @@ public record AssessmentDto(
     String description,
     UUID schoolId,
     UUID languageId,
-    String kind,
-    String deliveryMode,
-    String status,
+    AssessmentKind kind,
+    AssessmentDeliveryMode deliveryMode,
+    AssessmentStatus status,
     Integer maxAttempt,
     Integer assessmentTimeDurationSecond,
-    String resultDecisionMethod,
-    String openAt,
-    String closeAt,
+    ResultDecisionMethod resultDecisionMethod,
+    Instant openAt,
+    Instant closeAt,
     UUID assessmentPolicyId,
     boolean requiresOtp,
-    String requiredStreamType,
-    String streamTypePermission,
+    AssessmentRequiredStreamType requiredStreamType,
+    AssessmentStreamTypePermission streamTypePermission,
     Boolean papersLocked,
-    String createdAt,
-    String updatedAt,
+    Instant createdAt,
+    Instant updatedAt,
     UUID createdBy,
     UUID updatedBy,
 
-    /** Ngưỡng tin cậy AI theo phần trăm (0-100); null = nhà trường không đặt. */
+    /** AI confidence threshold as a percentage (0-100); null = the school did not set one. */
     java.math.BigDecimal aiConfidenceThresholdPercent
 ) {
 }

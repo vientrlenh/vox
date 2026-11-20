@@ -1,6 +1,5 @@
 package com.sep.vox.interfaces.graphql.controller;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.command.UpdateAssessmentPolicyCommand;
 import com.sep.vox.application.port.input.query.ViewSchoolAssessmentPoliciesQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolAssessmentPolicyDetailsQuery;
@@ -24,6 +23,7 @@ import com.sep.vox.domain.dto.SchoolDto;
 import com.sep.vox.domain.dto.SchoolGradeDto;
 import com.sep.vox.domain.dto.GradeLevelDto;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
+import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateAssessmentPolicyInput;
 import com.sep.vox.interfaces.graphql.mapper.UpdateAssessmentPolicyGraphQLMapper;
 import com.sep.vox.interfaces.shared.PageArguments;
@@ -36,6 +36,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import graphql.schema.DataFetchingEnvironment;
 
+import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -67,42 +68,42 @@ public class AssessmentPolicyController {
         this.viewSchoolAssessmentPolicyDetailsUseCase = viewSchoolAssessmentPolicyDetailsUseCase;
     }
 
-    // School Admin cũng đọc được: đây là kho chính sách MẪU để trường chọn rồi sao về, giống
-    // cách trường duyệt bộ tiêu chí mẫu của hệ thống. Use case tự ép chỉ trả bản PUBLISHED cho
-    // người không phải quản trị hệ thống.
+    // School Admin can read this too: it is the store of TEMPLATE policies a school picks from and
+    // copies, the same way a school browses the system's template criteria set. The use case itself
+    // forces only PUBLISHED versions for anyone who is not a system admin.
     @QueryMapping(name = "viewSystemAssessmentPolicies")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public PageResult<AssessmentPolicyDto> viewSystemAssessmentPolicies(
-            @Argument(name = "status") String status,
+            @Argument(name = "status") AssessmentPolicyStatus status,
             @Argument(name = "languageId") UUID languageId,
             @Argument(name = "rubricVersionId") UUID rubricVersionId,
-            @Argument(name = "effectiveFrom") String effectiveFrom,
-            @Argument(name = "effectiveTo") String effectiveTo,
+            @Argument(name = "effectiveFrom") Instant effectiveFrom,
+            @Argument(name = "effectiveTo") Instant effectiveTo,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
         PageArguments.validate(page, size);
         return viewSystemAssessmentPoliciesUseCase
                 .execute(new ViewSystemAssessmentPoliciesQuery(status, languageId, rubricVersionId,
-                        DateMapper.toInstant(effectiveFrom),
-                        DateMapper.toInstant(effectiveTo), page, size));
+                        effectiveFrom,
+                        effectiveTo, page, size));
     }
 
     @QueryMapping(name = "viewSchoolAssessmentPolicies")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<AssessmentPolicyDto> viewSchoolAssessmentPolicies(
             @Argument(name = "schoolId") UUID schoolId,
-            @Argument(name = "status") String status,
+            @Argument(name = "status") AssessmentPolicyStatus status,
             @Argument(name = "languageId") UUID languageId,
             @Argument(name = "rubricVersionId") UUID rubricVersionId,
-            @Argument(name = "effectiveFrom") String effectiveFrom,
-            @Argument(name = "effectiveTo") String effectiveTo,
+            @Argument(name = "effectiveFrom") Instant effectiveFrom,
+            @Argument(name = "effectiveTo") Instant effectiveTo,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
         PageArguments.validate(page, size);
         return viewSchoolAssessmentPoliciesUseCase
                 .execute(new ViewSchoolAssessmentPoliciesQuery(schoolId, status, languageId, rubricVersionId,
-                        DateMapper.toInstant(effectiveFrom),
-                        DateMapper.toInstant(effectiveTo),
+                        effectiveFrom,
+                        effectiveTo,
                         page, size));
     }
 
@@ -111,16 +112,16 @@ public class AssessmentPolicyController {
     public PageResult<AssessmentPolicyDto> viewTeacherAssessmentPolicies(
             @Argument(name = "languageId") UUID languageId,
             @Argument(name = "rubricVersionId") UUID rubricVersionId,
-            @Argument(name = "effectiveFrom") String effectiveFrom,
-            @Argument(name = "effectiveTo") String effectiveTo,
+            @Argument(name = "effectiveFrom") Instant effectiveFrom,
+            @Argument(name = "effectiveTo") Instant effectiveTo,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
         PageArguments.validate(page, size);
         return viewTeacherAssessmentPoliciesUseCase.execute(new ViewTeacherAssessmentPoliciesQuery(
                 languageId,
                 rubricVersionId,
-                DateMapper.toInstant(effectiveFrom),
-                DateMapper.toInstant(effectiveTo),
+                effectiveFrom,
+                effectiveTo,
                 page,
                 size));
     }

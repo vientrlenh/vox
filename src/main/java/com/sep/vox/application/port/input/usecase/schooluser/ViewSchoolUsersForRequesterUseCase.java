@@ -72,8 +72,8 @@ public class ViewSchoolUsersForRequesterUseCase implements IUseCase<ViewSchoolUs
             roleId = input.roleId();
             excludeUserId = null;
         } else {
-            // TEACHER bắt buộc phải có role TEACHER; nếu không, từ chối thay vì để roleId=null
-            // (roleId=null sẽ khiến truy vấn trả về mọi role, lộ danh sách học sinh).
+            // A TEACHER must hold the TEACHER role; otherwise reject instead of leaving roleId=null
+            // (roleId=null would make the query return every role and expose the student list).
             roleId = callerRoles.stream()
                 .filter(r -> "TEACHER".equals(r.roleCode()))
                 .map(r -> r.roleId())
@@ -82,7 +82,7 @@ public class ViewSchoolUsersForRequesterUseCase implements IUseCase<ViewSchoolUs
             excludeUserId = callerId;
         }
 
-        String status = validateStatus(input.status());
+        String status = input.status() == null ? null : input.status().name();
 
         PageResult<SchoolUser> schoolUsersPage = schoolUserRepository.searchBySchoolId(
             input.schoolId(),
@@ -95,17 +95,5 @@ public class ViewSchoolUsersForRequesterUseCase implements IUseCase<ViewSchoolUs
         );
 
         return SchoolUserDtoMapper.toSchoolUserPageDto(schoolUsersPage);
-    }
-
-    private String validateStatus(String status) {
-        String normalized = StringNormalization.trimAndCollapseSpaces(status);
-        if (normalized == null) {
-            return null;
-        }
-        try {
-            return UserStatus.valueOf(normalized.toUpperCase()).name();
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Trạng thái người dùng không hợp lệ");
-        }
     }
 }

@@ -1,17 +1,18 @@
 package com.sep.vox.domain.dto;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import com.sep.vox.domain.common.DecimalText;
 import com.sep.vox.domain.model.school.SchoolDebtEvent;
 
 /**
- * Một dòng nhật ký nợ hạn mức, dạng đọc. Ánh xạ 1-1 với {@link SchoolDebtEvent}.
+ * One row of the quota debt log, in read form. Maps 1-1 to {@link SchoolDebtEvent}.
  *
- * <p>Bốn cột tiền là String chứ không phải BigDecimal/Float -- xem {@link DecimalText} và khối chú
- * thích đầu {@code school-balance.graphqls}. Chúng là {@code numeric(18,6)} giống sổ cái ví, nên phải
- * nói cùng một thứ tiếng với nó: cùng một khoản nợ xuất hiện ở cả hai sổ, và hai sổ đối soát với nhau
- * thì không được phép lệch vì làm tròn nhị phân.
+ * <p>The four money columns are String rather than BigDecimal/Float -- see {@link DecimalText} and the
+ * comment block at the top of {@code school-balance.graphqls}. They are {@code numeric(18,6)} like the
+ * wallet ledger, so they must speak the same language as it: the same debt appears in both ledgers, and
+ * two ledgers that reconcile against each other must not drift because of binary rounding.
  */
 public record SchoolDebtEventDto(
     UUID id,
@@ -25,7 +26,7 @@ public record SchoolDebtEventDto(
     String totalAllocatedVnd,
     String usedAmountVnd,
     String overageVnd,
-    String occurredAt
+    Instant occurredAt
 ) {
 
     public static SchoolDebtEventDto toDto(SchoolDebtEvent event) {
@@ -37,12 +38,12 @@ public record SchoolDebtEventDto(
             event.getQuotaType() == null ? null : event.getQuotaType().name(),
             event.getTriggerAssessmentSessionId(),
             event.getTriggerPracticeSessionId(),
-            // null với dòng CLEARED: hết nợ không do một khoản trừ nào gây ra.
+            // null for a CLEARED row: clearing the debt is not caused by any single deduction.
             DecimalText.of(event.getTriggerAmountVnd()),
             DecimalText.of(event.getTotalAllocatedVnd()),
             DecimalText.of(event.getUsedAmountVnd()),
             DecimalText.of(event.getOverageVnd()),
-            event.getOccurredAt() == null ? null : event.getOccurredAt().toString()
+            event.getOccurredAt()
         );
     }
 }

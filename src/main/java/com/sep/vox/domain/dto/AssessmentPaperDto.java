@@ -1,5 +1,7 @@
 package com.sep.vox.domain.dto;
 
+import com.sep.vox.domain.model.assessment.AssessmentPaperStatus;
+import java.time.Instant;
 import java.util.UUID;
 
 public record AssessmentPaperDto(
@@ -8,10 +10,10 @@ public record AssessmentPaperDto(
     UUID blueprintVersionId,
     String code,
     int variant,
-    String status,
+    AssessmentPaperStatus status,
     Integer timeDurationSeconds,
-    String createdAt,
-    String updatedAt,
+    Instant createdAt,
+    Instant updatedAt,
     UUID createdBy,
     UUID updatedBy
 ) {

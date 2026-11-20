@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -12,7 +13,6 @@ import org.springframework.stereotype.Controller;
 
 import graphql.schema.DataFetchingEnvironment;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.query.CanViewAssessmentBlueprintDataQuery;
 import com.sep.vox.application.port.input.query.EstimateAssessmentTokenQuotaQuery;
 import com.sep.vox.application.port.input.query.ViewAssessmentDetailsQuery;
@@ -44,6 +44,7 @@ import com.sep.vox.application.response.input.assessment.AssessmentTokenEstimate
 import com.sep.vox.domain.dto.QuestionDto;
 import com.sep.vox.domain.dto.QuestionSelectionSpecDto;
 import com.sep.vox.domain.dto.UserDto;
+import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlotType;
 import com.sep.vox.domain.model.assessment.AssessmentKind;
 import com.sep.vox.domain.model.assessment.AssessmentPaperStatus;
 import com.sep.vox.domain.model.assessment.AssessmentStatus;
@@ -129,14 +130,9 @@ public class AssessmentController {
     public AssessmentStatusCountsDto assessmentStatusCounts(
             @Argument(name = "schoolId") UUID schoolId,
             @Argument(name = "kind") AssessmentKind kind,
-            @Argument(name = "dateFrom") String dateFrom,
-            @Argument(name = "dateTo") String dateTo) {
-        return viewAssessmentStatusCountsUseCase.execute(new ViewAssessmentStatusCountsQuery(
-            schoolId,
-            kind,
-            DateMapper.toInstant(dateFrom),
-            DateMapper.toInstant(dateTo)
-        ));
+            @Argument(name = "dateFrom") Instant dateFrom,
+            @Argument(name = "dateTo") Instant dateTo) {
+        return viewAssessmentStatusCountsUseCase.execute(new ViewAssessmentStatusCountsQuery(schoolId, kind, dateFrom, dateTo));
     }
 
     @SchemaMapping(typeName = "Assessment", field = "blueprint")
@@ -193,7 +189,7 @@ public class AssessmentController {
         DataLoader<UUID, List<AssessmentPaperDto>> loader = env.getDataLoader("assessmentPapersByAssessmentId");
         return loader.load(source.id()).thenApply(papers -> status == null
             ? papers
-            : papers.stream().filter(paper -> status.name().equals(paper.status())).toList());
+            : papers.stream().filter(paper -> paper.status() == status).toList());
     }
 
     @SchemaMapping(typeName = "AssessmentPaper", field = "sections")
@@ -236,7 +232,7 @@ public class AssessmentController {
     }
 
     @SchemaMapping(typeName = "AssessmentPaperItem", field = "slotType")
-    public CompletableFuture<String> assessmentPaperItemSlotType(AssessmentPaperItemDto source, DataFetchingEnvironment env) {
+    public CompletableFuture<AssessmentBlueprintSlotType> assessmentPaperItemSlotType(AssessmentPaperItemDto source, DataFetchingEnvironment env) {
         return loadBlueprintSlot(source, env)
             .thenApply(slot -> slot == null ? null : slot.slotType());
     }

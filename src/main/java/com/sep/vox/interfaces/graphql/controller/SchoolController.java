@@ -81,6 +81,10 @@ import com.sep.vox.domain.dto.SchoolRoomFromDto;
 import com.sep.vox.domain.dto.SchoolUserDto;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
 import com.sep.vox.domain.dto.UserDto;
+import com.sep.vox.domain.model.gradelevel.GradeLevelStatus;
+import com.sep.vox.domain.model.school.SchoolClassStatus;
+import com.sep.vox.domain.model.school.SchoolGradeStatus;
+import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateGradeLevelRequest;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateSchoolGradeRequest;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateSchoolRequest;
@@ -184,8 +188,8 @@ public class SchoolController {
 
 
 
-    // schoolDebtEvents đã chuyển sang SchoolBalanceController: nợ là mặt trái của ví trường -- số dư
-    // âm CHÍNH LÀ khoản nợ -- nên nó thuộc cùng nhóm với sao kê ví, không phải với lớp học và phòng thi.
+    // schoolDebtEvents moved to SchoolBalanceController: debt is the other side of the school wallet (a
+    // negative balance IS the debt), so it belongs with the wallet statement, not with classes and rooms.
 
     @QueryMapping(name = "schools")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
@@ -227,7 +231,7 @@ public class SchoolController {
             @Argument(name = "search") String search,
             @Argument(name = "roleId") UUID roleId,
             @Argument(name = "roleCode") String roleCode,
-            @Argument(name = "status") String status,
+            @Argument(name = "status") UserStatus status,
             @Argument(name = "excludeClassId") UUID excludeClassId) {
         PageArguments.validate(page, size);
         return viewSchoolUsersBySchoolUseCase.execute(new ViewSchoolUsersBySchoolQuery(
@@ -242,7 +246,7 @@ public class SchoolController {
             @Argument(name = "size") Integer size,
             @Argument(name = "search") String search,
             @Argument(name = "roleId") UUID roleId,
-            @Argument(name = "status") String status) {
+            @Argument(name = "status") UserStatus status) {
         PageArguments.validate(page, size);
         return viewSchoolUsersForRequesterUseCase.execute(new ViewSchoolUsersBySchoolQuery(schoolId, page, size, search, roleId, status));
     }
@@ -254,7 +258,7 @@ public class SchoolController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size,
             @Argument(name = "search") String search,
-            @Argument(name = "status") String status) {
+            @Argument(name = "status") UserStatus status) {
         PageArguments.validate(page, size);
         return viewSchoolStudentsBySchoolUseCase.execute(new ViewSchoolStudentsBySchoolQuery(schoolId, page, size, search, status));
     }
@@ -266,7 +270,7 @@ public class SchoolController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size,
             @Argument(name = "search") String search,
-            @Argument(name = "status") String status) {
+            @Argument(name = "status") UserStatus status) {
         PageArguments.validate(page, size);
         return viewSchoolTeachersBySchoolUseCase.execute(new ViewSchoolTeachersBySchoolQuery(schoolId, page, size, search, status));
     }
@@ -283,7 +287,7 @@ public class SchoolController {
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size,
             @Argument(name = "search") String search,
-            @Argument(name = "status") String status,
+            @Argument(name = "status") SchoolClassStatus status,
             @Argument(name = "languageId") UUID languageId,
             @Argument(name = "schoolGradeId") UUID schoolGradeId) {
         PageArguments.validate(page, size);
@@ -334,7 +338,7 @@ public class SchoolController {
     public PageResult<SchoolClassDto> schoolClassesByUser(
             @Argument(name = "schoolId") UUID schoolId,
             @Argument(name = "userId") UUID userId,
-            @Argument(name = "status") String status,
+            @Argument(name = "status") SchoolClassStatus status,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
         PageArguments.validate(page, size);
@@ -345,7 +349,7 @@ public class SchoolController {
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public PageResult<SchoolClassDto> mySchoolClasses(
             @Argument(name = "schoolId") UUID schoolId,
-            @Argument(name = "status") String status,
+            @Argument(name = "status") SchoolClassStatus status,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
         PageArguments.validate(page, size);
@@ -386,7 +390,7 @@ public class SchoolController {
         return updateSchoolUserUseCase.execute(command);
     }
 
-    //Nhập id school vào update gì đó => SchoolID => check
+    // Enter the school id to update something => SchoolID => check
     @MutationMapping(name = "updateSchool")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public UUID updateSchool(@Argument(name = "id") UUID id, @Argument(name = "input") UpdateSchoolRequest request) {
@@ -400,7 +404,7 @@ public class SchoolController {
 
 
     //============================SCHOOL ROOM===========================================
-    //Nhập id của roomId
+    // Enter the room id
     @QueryMapping(name = "schoolRoom")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public SchoolRoomFromDto schoolRoom(@Argument(name = "id") UUID id) {
@@ -408,8 +412,8 @@ public class SchoolController {
         return viewSchoolRoomDetailsUseCase.execute(query);
     }
 
-    // Nhập Id của schoolId. Mở cho cả TEACHER vì giáo viên cần chọn phòng khi tổ chức bài kiểm tra
-    // trên lớp; ViewSchoolRoomsUseCase tự chặn người gọi không thuộc trường được yêu cầu.
+    // Enter the school id. Also open to TEACHER because teachers need to pick a room when organizing a
+    // class test; ViewSchoolRoomsUseCase itself blocks callers who do not belong to the requested school.
     @QueryMapping(name = "schoolRooms")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public PageResult<SchoolRoomFromDto> schoolRooms(
@@ -423,7 +427,7 @@ public class SchoolController {
         return viewSchoolRoomsUseCase.execute(query);
     }
 
-    // nhập Id của room muốn đổi => update (200) trả về school Id
+    // Enter the id of the room to change => update (200) returns the school id
     @MutationMapping(name = "updateSchoolRoom")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public UUID updateSchoolRoom(
@@ -447,7 +451,7 @@ public class SchoolController {
         return updateSchoolGradeUseCase.execute(command);
     }
 
-    //Nhập id của gradeId
+    // Enter the grade id
     @QueryMapping(name = "schoolGrade")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public SchoolGradeDto schoolGrade(@Argument(name = "schoolId") UUID schoolId, @Argument(name = "id") UUID id) {
@@ -460,7 +464,7 @@ public class SchoolController {
     public PageResult<SchoolGradeDto> schoolGrades(
             @Argument(name = "schoolId") UUID schoolId,
             @Argument(name = "gradeLevelId") UUID gradeLevelId,
-            @Argument(name = "status") String status,
+            @Argument(name = "status") SchoolGradeStatus status,
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size) {
 
@@ -471,14 +475,14 @@ public class SchoolController {
         return viewSchoolGradesUseCase.execute(query);
     }
 
-    //======================== GRADE LEVEL (catalog toàn cục) =======================
-    // Đọc: mọi vai trò đã đăng nhập. Ghi: chỉ SYSTEM_ADMIN -- một bản ghi ảnh hưởng mọi trường.
+    //======================== GRADE LEVEL (global catalog) =======================
+    // Read: any signed-in role. Write: SYSTEM_ADMIN only -- one record affects every school.
     @QueryMapping(name = "gradeLevels")
     public PageResult<GradeLevelDto> gradeLevels(
             @Argument(name = "page") Integer page,
             @Argument(name = "size") Integer size,
             @Argument(name = "search") String search,
-            @Argument(name = "status") String status) {
+            @Argument(name = "status") GradeLevelStatus status) {
         PageArguments.validate(page, size);
         ViewGradeLevelsQuery query = new ViewGradeLevelsQuery(page, size, search, status);
         return viewGradeLevelsUseCase.execute(query);

@@ -70,14 +70,14 @@ public class ViewAssessmentItemResponseEvaluationUseCase
             return ungradedDetails(access.response());
         }
 
-        // Bản hiệu lực là bản chấm tay ⇒ mọi bằng chứng AI nằm ở bản AI đã bị SUPERSEDED,
-        // phải đi tìm riêng. Bản hiệu lực đã là AI thì chính nó — không tốn thêm query.
+        // The version in force is the manual grading => all AI evidence sits in the AI version that was SUPERSEDED
+        // and has to be looked up separately. If the version in force is already the AI one it is used as is -- no extra query.
         AssessmentItemEvaluation aiEvaluation = evaluation.getEngineType() == AssessmentEvaluationEngineType.HUMAN
             ? assessmentItemEvaluationRepository.findLatestAiByResponseId(input.answerId()).orElse(null)
             : evaluation;
 
-        // criteria vẫn theo bản hiệu lực: sau khi chấm lại thì đây là điểm và rationale của
-        // GIÁO VIÊN, đúng như thiết kế. Chỉ ngữ cảnh mới lấy từ bản AI.
+        // criteria still follow the version in force: after a re-grade these are the TEACHER's score and rationale,
+        // as designed. Only the context is taken from the AI version.
         List<AssessmentItemCriterionScoreResponse> criteria = assessmentItemCriterionScoreRepository.findByEvaluationId(evaluation.getId()).stream()
             .map(item -> {
                 RubricCriterion criterion = rubricCriterionRepository.findById(item.getRubricCriterionId()).orElse(null);
@@ -94,14 +94,14 @@ public class ViewAssessmentItemResponseEvaluationUseCase
                 );
             })
             .toList();
-        // Turn chỉ tồn tại ở bản AI. Đọc theo bản hiệu lực là mất audio/transcript/nội dung
-        // câu hỏi ngay sau lần chấm lại đầu tiên — chính là lỗi đang sửa.
+        // Turns only exist on the AI version. Reading them from the version in force loses the audio/transcript/question
+        // text right after the first re-grade -- which is exactly the bug being fixed.
         UUID turnSourceId = (aiEvaluation == null ? evaluation : aiEvaluation).getId();
         List<AssessmentItemEvaluationTurnResponse> turns = assessmentItemEvaluationTurnRepository.findByEvaluationId(turnSourceId).stream()
             .map(item -> new AssessmentItemEvaluationTurnResponse(
                 item.getId(),
                 item.getTurnOrder(),
-                item.getTurnType().name(),
+                item.getTurnType(),
                 item.getPromptText(),
                 item.getAudioUrl(),
                 item.getTranscript(),
@@ -127,7 +127,7 @@ public class ViewAssessmentItemResponseEvaluationUseCase
                 .map(item -> new AssessmentItemEvaluationTurnResponse(
                     item.getId(),
                     item.getTurnOrder(),
-                    item.getTurnType().name(),
+                    item.getTurnType(),
                     item.getPromptText(),
                     item.getAudioUrl(),
                     item.getTranscript(),
@@ -144,7 +144,7 @@ public class ViewAssessmentItemResponseEvaluationUseCase
             evaluation.getId(),
             evaluation.getResponseId(),
             evaluation.getPaperItemId(),
-            evaluation.getEngineType().name(),
+            evaluation.getEngineType(),
             evaluation.getGradedByModel(),
             evaluation.getPromptVersion(),
             evaluation.getRawItemScore(),
@@ -154,8 +154,8 @@ public class ViewAssessmentItemResponseEvaluationUseCase
             evaluation.getReviewReasonCode(),
             evaluation.isMarkedInvalid(),
             evaluation.isRequiresRetake(),
-            evaluation.getStatus().name(),
-            evaluation.getEvaluatedAt() == null ? null : evaluation.getEvaluatedAt().toString(),
+            evaluation.getStatus(),
+            evaluation.getEvaluatedAt(),
             evaluation.getFeedbackSummary(),
             jsonSerializationPort.toJson(evaluation.getSignals()),
             evaluation.getValidityJson(),
@@ -167,12 +167,12 @@ public class ViewAssessmentItemResponseEvaluationUseCase
     }
 
     /**
-     * Câu chưa có bản chấm nào: chỉ có bản ghi bài nói, không có điểm.
+     * An answer that has no grading at all: only the speech recording exists, no score.
      *
-     * <p>{@code id} null là tín hiệu để client biết "chưa chấm" mà không phải suy từ việc thiếu
-     * điểm -- điểm 0 hợp lệ cũng thiếu điểm theo nghĩa đó. Ba trường riêng của bản AI
-     * (asrConfidence, pronunciationOverall, wordFeedback) cũng null: bảng gốc không có chúng, và
-     * bịa giá trị còn tệ hơn để trống.
+     * <p>A null {@code id} tells the client "not graded yet" without having to infer it from a missing
+     * score -- a valid score of 0 is also "missing" in that sense. The three fields specific to the AI version
+     * (asrConfidence, pronunciationOverall, wordFeedback) are null too: the original table does not have them, and
+     * inventing a value is worse than leaving it empty.
      */
     private AssessmentItemEvaluationDetailsResponse ungradedDetails(
             com.sep.vox.domain.model.assessment.AssessmentItemResponse response) {
@@ -180,7 +180,7 @@ public class ViewAssessmentItemResponseEvaluationUseCase
             .map(item -> new AssessmentItemEvaluationTurnResponse(
                 item.getId(),
                 item.getTurnOrder(),
-                item.getTurnType().name(),
+                item.getTurnType(),
                 item.getPromptText(),
                 item.getAudioUrl(),
                 item.getTranscript(),
@@ -211,7 +211,7 @@ public class ViewAssessmentItemResponseEvaluationUseCase
         }
         return new AssessmentItemAiEvaluationContextResponse(
             aiEvaluation.getId(),
-            aiEvaluation.getEngineType().name(),
+            aiEvaluation.getEngineType(),
             aiEvaluation.getGradedByModel(),
             aiEvaluation.getPromptVersion(),
             aiEvaluation.getOverallConfidence(),
@@ -219,7 +219,7 @@ public class ViewAssessmentItemResponseEvaluationUseCase
             aiEvaluation.getReviewReasonCode(),
             aiEvaluation.isMarkedInvalid(),
             aiEvaluation.isRequiresRetake(),
-            aiEvaluation.getEvaluatedAt() == null ? null : aiEvaluation.getEvaluatedAt().toString(),
+            aiEvaluation.getEvaluatedAt(),
             aiEvaluation.getFeedbackSummary(),
             jsonSerializationPort.toJson(aiEvaluation.getSignals()),
             aiEvaluation.getValidityJson(),

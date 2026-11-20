@@ -1,17 +1,19 @@
 package com.sep.vox.application.response.input.recording;
 
+import com.sep.vox.domain.model.assessment.AssessmentRecordingAssemblyStatus;
+import com.sep.vox.domain.model.assessment.AssessmentRequiredStreamType;
 import java.util.UUID;
 
 /**
- * Một bản ghi buổi thi kèm link phát, cho màn chấm bài.
+ * One assessment recording together with a playback link, for the grading screen.
  *
- * <p>Cố tình KHÔNG chở {@code bucket} và {@code s3Key}: chúng là chi tiết lưu trữ, và phơi ra
- * ngoài thì client sẽ tự ghép URL -- đúng thứ khiến link mất hạn và mất kiểm soát quyền.
+ * <p>Deliberately does NOT carry {@code bucket} and {@code s3Key}: they are storage details, and once exposed
+ * clients would build URLs themselves -- exactly what makes links lose their expiry and lose permission control.
  */
 public record AssessmentRecordingPlaybackResponse(
     UUID id,
-    String streamType,
-    String status,
+    AssessmentRequiredStreamType streamType,
+    AssessmentRecordingAssemblyStatus status,
     String source,
     Integer durationSeconds,
     boolean canonical,

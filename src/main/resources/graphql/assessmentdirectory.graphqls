@@ -22,21 +22,21 @@ type AssessmentDirectoryClass {
     code: String!
     name: String!
     description: String
-    status: String!
+    status: SchoolClassStatus!
 }
 
 type AssessmentDirectoryGrade {
     id: ID!
     code: String!
     name: String!
-    status: String!
+    status: SchoolGradeStatus!
 }
 
 type AssessmentDirectoryUser {
     userId: ID!
     fullName: String
     email: String
-    status: String!
+    status: UserStatus!
 }
 
 type AssessmentDirectoryClassPage {
@@ -67,8 +67,8 @@ extend type Query {
     assessmentDirectoryClasses(assessmentId: ID!, search: String, page: Int! = 1, size: Int! = 20): AssessmentDirectoryClassPage!
     assessmentDirectoryGrades(assessmentId: ID!, search: String, page: Int! = 1, size: Int! = 20): AssessmentDirectoryGradePage!
     """
-    `excludeUserIds`: những người phía gọi ĐÃ CÓ rồi (thí sinh của kỳ thi, giám thị của ca) —
-    loại ngay trong SQL để `content`, `totalElements` và `totalPages` cùng nói một chuyện.
+    `excludeUserIds`: the people the caller ALREADY HAS (the candidates of the assessment, the proctors of the session) --
+    excluded right in SQL so `content`, `totalElements` and `totalPages` all tell the same story.
     """
     assessmentDirectoryStudents(assessmentId: ID!, search: String, page: Int! = 1, size: Int! = 20, excludeUserIds: [ID!]): AssessmentDirectoryUserPage!
     assessmentDirectoryProctors(assessmentId: ID!, search: String, page: Int! = 1, size: Int! = 20, excludeUserIds: [ID!]): AssessmentDirectoryUserPage!

@@ -165,7 +165,7 @@ class UpdateAssessmentStatusUseCaseTests {
 
         AssessmentDto result = useCase.execute(new UpdateAssessmentStatusCommand(assessmentId, "SCHEDULE", null));
 
-        assertThat(result.status()).isEqualTo(AssessmentStatus.SCHEDULED.name());
+        assertThat(result.status()).isEqualTo(AssessmentStatus.SCHEDULED);
         assertThat(schedule.getStatus()).isEqualTo(AssessmentScheduleStatus.PUBLISHED);
         verify(assessmentScheduleRepository, never()).save(any());
     }
@@ -330,7 +330,7 @@ class UpdateAssessmentStatusUseCaseTests {
 
         AssessmentDto result = useCase.execute(new UpdateAssessmentStatusCommand(assessmentId, "SCHEDULE", null));
 
-        assertThat(result.status()).isEqualTo(AssessmentStatus.SCHEDULED.name());
+        assertThat(result.status()).isEqualTo(AssessmentStatus.SCHEDULED);
     }
 
     /**
@@ -349,7 +349,7 @@ class UpdateAssessmentStatusUseCaseTests {
 
         AssessmentDto result = useCase.execute(new UpdateAssessmentStatusCommand(assessmentId, "SCHEDULE", null));
 
-        assertThat(result.status()).isEqualTo(AssessmentStatus.SCHEDULED.name());
+        assertThat(result.status()).isEqualTo(AssessmentStatus.SCHEDULED);
     }
 
     @Test
@@ -386,7 +386,7 @@ class UpdateAssessmentStatusUseCaseTests {
 
         AssessmentDto result = useCase.execute(new UpdateAssessmentStatusCommand(assessmentId, "SCHEDULE", null));
 
-        assertThat(result.status()).isEqualTo(AssessmentStatus.SCHEDULED.name());
+        assertThat(result.status()).isEqualTo(AssessmentStatus.SCHEDULED);
     }
 
     @Test
@@ -401,7 +401,7 @@ class UpdateAssessmentStatusUseCaseTests {
 
         AssessmentDto result = useCase.execute(new UpdateAssessmentStatusCommand(assessmentId, "SCHEDULE", null));
 
-        assertThat(result.status()).isEqualTo(AssessmentStatus.SCHEDULED.name());
+        assertThat(result.status()).isEqualTo(AssessmentStatus.SCHEDULED);
     }
 
     /**
@@ -433,7 +433,7 @@ class UpdateAssessmentStatusUseCaseTests {
 
         AssessmentDto result = useCase.execute(new UpdateAssessmentStatusCommand(assessmentId, "SCHEDULE", null));
 
-        assertThat(result.status()).isEqualTo(AssessmentStatus.SCHEDULED.name());
+        assertThat(result.status()).isEqualTo(AssessmentStatus.SCHEDULED);
     }
 
     @Test

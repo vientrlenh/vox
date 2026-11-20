@@ -39,6 +39,7 @@ import com.sep.vox.application.query.dto.GradingTaskInfo;
 import com.sep.vox.application.query.dto.ResultStatusHistoryInfo;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.UserDto;
+import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
 import com.sep.vox.interfaces.shared.PageArguments;
 
 import graphql.schema.DataFetchingEnvironment;
@@ -89,7 +90,7 @@ public class GradingController {
             @Argument(name = "assessmentId") UUID assessmentId,
             @Argument(name = "scheduleId") UUID scheduleId,
             @Argument(name = "teacherId") UUID teacherId,
-            @Argument(name = "resultStatus") String resultStatus,
+            @Argument(name = "resultStatus") AssessmentCandidateResultStatus resultStatus,
             @Argument(name = "roundType") String roundType,
             @Argument(name = "status") String status,
             @Argument(name = "unassignedOnly") Boolean unassignedOnly,
@@ -125,7 +126,7 @@ public class GradingController {
     @PreAuthorize("hasRole('TEACHER')")
     public PageResult<GradingAssignmentRowInfo> classTestGradingResults(
             @Argument(name = "assessmentId") UUID assessmentId,
-            @Argument(name = "resultStatus") String resultStatus,
+            @Argument(name = "resultStatus") AssessmentCandidateResultStatus resultStatus,
             @Argument(name = "unassignedOnly") Boolean unassignedOnly,
             @Argument(name = "search") String search,
             @Argument(name = "page") Integer page,

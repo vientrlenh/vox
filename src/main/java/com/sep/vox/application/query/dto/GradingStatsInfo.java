@@ -3,20 +3,22 @@ package com.sep.vox.application.query.dto;
 import java.util.List;
 import java.util.UUID;
 
+import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
+
 /**
- * Thẻ số đầu màn điều phối.
+ * The number cards at the top of the coordination screen.
  *
- * <p>Khác bản cũ ở chỗ mẫu số là <em>toàn bộ bài của phạm vi đang xem</em>, không
- * còn bị khoá ở PENDING_REVIEW: sau rework admin điều phối cả bốn vòng nên phải thấy
- * được bức tranh đầy đủ, gồm cả bài đã công bố đang được hậu kiểm.
+ * <p>Unlike the old version, the denominator is <em>every attempt in the scope being viewed</em>, no longer
+ * locked to PENDING_REVIEW: after the rework the admin coordinates all four rounds, so they must see the
+ * full picture, including published attempts that are being spot-checked.
  *
- * <p>{@code byResultStatus} là <em>list</em> chứ không phải map: GraphQL không có
- * kiểu map, và một list các cặp có tên trường rõ ràng thì FE đọc thẳng được.
+ * <p>{@code byResultStatus} is a <em>list</em> and not a map: GraphQL has no map type, and a list of
+ * pairs with clearly named fields can be read directly by the FE.
  *
- * @param unassigned      bài chưa có phân công đang mở
- * @param assigned        phân công đang mở
- * @param overdue         phân công đang mở đã quá hạn
- * @param teacherProgress tiến độ từng giáo viên, để admin biết ai đang nghẽn
+ * @param unassigned      attempts with no open assignment
+ * @param assigned        open assignments
+ * @param overdue         open assignments that are past due
+ * @param teacherProgress the progress of each teacher, so the admin knows who is the bottleneck
  */
 public record GradingStatsInfo(
     int total,
@@ -27,7 +29,7 @@ public record GradingStatsInfo(
     List<TeacherProgress> teacherProgress
 ) {
     public record ResultStatusCount(
-        String status,
+        AssessmentCandidateResultStatus status,
         int count
     ) {
     }

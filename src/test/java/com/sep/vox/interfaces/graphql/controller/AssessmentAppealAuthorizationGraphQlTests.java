@@ -29,6 +29,7 @@ import com.sep.vox.application.query.dto.AppealDetailInfo;
 import com.sep.vox.application.query.dto.AppealReviewerLiteInfo;
 import com.sep.vox.application.query.dto.AppealStatsInfo;
 import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.model.assessment.AssessmentAppealStatus;
 import com.sep.vox.support.GraphQlControllerTest;
 
 /**
@@ -72,7 +73,7 @@ class AssessmentAppealAuthorizationGraphQlTests {
     }
 
     private static AppealDetailInfo appealDetailWithOnlyId() {
-        return new AppealDetailInfo(ID, null, null, null, null, "PENDING", null, null, null, null, null, null,
+        return new AppealDetailInfo(ID, null, null, null, null, AssessmentAppealStatus.PENDING, null, null, null, null, null, null,
             null, null, null, null, List.of(), null, false, null, null);
     }
 

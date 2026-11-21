@@ -13,10 +13,13 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.graphql.test.tester.GraphQlTester;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import com.sep.vox.application.mapper.scoringrule.ScoringRuleParamsMapper;
 import com.sep.vox.application.port.input.command.UpdateScoringRuleCommand;
 import com.sep.vox.application.port.input.usecase.scoringrule.SearchSchoolScoringRuleUseCase;
 import com.sep.vox.application.port.input.usecase.scoringrule.SearchSystemScoringRuleUseCase;
@@ -26,6 +29,7 @@ import com.sep.vox.application.port.input.usecase.scoringrule.ViewAllSchoolScori
 import com.sep.vox.application.port.input.usecase.scoringrule.ViewAllSystemScoringRuleUseCase;
 import com.sep.vox.application.port.input.usecase.scoringrule.ViewSchoolScoringRuleDetailUseCase;
 import com.sep.vox.application.port.input.usecase.scoringrule.ViewSystemScoringRuleDetailUseCase;
+import com.sep.vox.application.support.FakeJsonSerializationPort;
 import com.sep.vox.domain.dto.ScoringRuleDto;
 import com.sep.vox.domain.model.scoringrule.ScoringRuleActionType;
 import com.sep.vox.domain.model.scoringrule.ScoringRuleConditionType;
@@ -42,6 +46,15 @@ class ScoringRuleGraphQlTests {
 
     private static final UUID POLICY_ID = UUID.randomUUID();
     private static final UUID RULE_ID = UUID.randomUUID();
+
+    @TestConfiguration
+    static class ScoringRuleParamsMapperConfiguration {
+
+        @Bean
+        ScoringRuleParamsMapper scoringRuleParamsMapper() {
+            return new ScoringRuleParamsMapper(new FakeJsonSerializationPort());
+        }
+    }
 
     @Autowired
     private GraphQlTester graphQlTester;

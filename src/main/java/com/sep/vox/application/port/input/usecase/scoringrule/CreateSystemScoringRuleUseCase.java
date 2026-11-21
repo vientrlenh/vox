@@ -9,10 +9,10 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
+import com.sep.vox.application.mapper.scoringrule.ScoringRuleParamsMapper;
 import com.sep.vox.application.port.input.command.CreateScoringRuleCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.mapper.ScoringRuleParamsMapper;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
 import com.sep.vox.domain.model.framework.FrameworkResultBand;
@@ -41,6 +41,7 @@ public class CreateSystemScoringRuleUseCase implements IUseCase<CreateScoringRul
     private final UserContextPort userContextPort;
     private final RubricCriterionRepository rubricCriterionRepository;
     private final FrameworkResultBandRepository frameworkResultBandRepository;
+    private final ScoringRuleParamsMapper scoringRuleParamsMapper;
 
     public CreateSystemScoringRuleUseCase(
             ScoringRuleRepository scoringRuleRepository,
@@ -48,13 +49,15 @@ public class CreateSystemScoringRuleUseCase implements IUseCase<CreateScoringRul
             UserRepository userRepository,
             UserContextPort userContextPort,
             RubricCriterionRepository rubricCriterionRepository,
-            FrameworkResultBandRepository frameworkResultBandRepository) {
+            FrameworkResultBandRepository frameworkResultBandRepository,
+            ScoringRuleParamsMapper scoringRuleParamsMapper) {
         this.scoringRuleRepository = scoringRuleRepository;
         this.assessmentPolicyRepository = assessmentPolicyRepository;
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
         this.rubricCriterionRepository = rubricCriterionRepository;
         this.frameworkResultBandRepository = frameworkResultBandRepository;
+        this.scoringRuleParamsMapper = scoringRuleParamsMapper;
     }
 
     @Override
@@ -94,10 +97,10 @@ public class CreateSystemScoringRuleUseCase implements IUseCase<CreateScoringRul
             throw new IllegalArgumentException("Độ ưu tiên (priority) phải lớn hơn 0.");
         }
 
-        // 6. Convert Map JSON thô -> Value Object cụ thể theo đúng conditionType/actionType đã chọn
-        // (nếu params không khớp cấu trúc mong đợi, ScoringRuleParamsMapper sẽ ném IllegalArgumentException)
-        ScoringRuleConditionParams conditionParams = ScoringRuleParamsMapper.toConditionParams(command.conditionType(), command.conditionParams());
-        ScoringRuleActionParams actionParams = ScoringRuleParamsMapper.toActionParams(command.actionType(), command.actionParams());
+        // 6. Convert the raw JSON Map -> the concrete Value Object matching the chosen conditionType/actionType
+        // (if the params do not match the expected structure, ScoringRuleParamsMapper throws IllegalArgumentException)
+        ScoringRuleConditionParams conditionParams = scoringRuleParamsMapper.toConditionParams(command.conditionType(), command.conditionParams());
+        ScoringRuleActionParams actionParams = scoringRuleParamsMapper.toActionParams(command.actionType(), command.actionParams());
 
         // 6b. Check that criterionCode/bandCode (if present) really exist in the Policy's Rubric Version
         validateCriterionReferences(policy.getRubricVersionId(), policy.getFrameworkVersionId(), conditionParams, actionParams);

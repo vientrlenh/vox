@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.output.JsonSerializationPort;
 
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -15,6 +16,7 @@ import tools.jackson.databind.json.JsonMapper;
 public class JacksonJsonSerializationService implements JsonSerializationPort {
 
     private final JsonMapper jsonMapper;
+    private final JsonMapper strictJsonMapper = new JsonMapper();
 
     public JacksonJsonSerializationService(JsonMapper jsonMapper) {
         this.jsonMapper = jsonMapper;
@@ -87,6 +89,23 @@ public class JacksonJsonSerializationService implements JsonSerializationPort {
             }
         }
         return result;
+    }
+
+    @Override
+    public <T> T convertValue(Object value, Class<T> targetType) {
+        return strictJsonMapper.convertValue(value, targetType);
+    }
+
+    @Override
+    public Map<String, Object> convertToObjectMap(Object value) {
+        return strictJsonMapper.convertValue(value, new TypeReference<Map<String, Object>>() {
+        });
+    }
+
+    @Override
+    public Map<String, Object> toObjectMap(String json) {
+        return strictJsonMapper.readValue(json, new TypeReference<Map<String, Object>>() {
+        });
     }
 
     private Map<String, String> toStringMap(Map<?, ?> raw) {

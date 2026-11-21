@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.graphql.config;
 
+import com.sep.vox.application.mapper.rubric.RubricCriterionDtoMapper;
 import com.sep.vox.application.port.input.query.key.RubricCriteriaKey;
 import com.sep.vox.application.port.input.query.key.RubricResultBandsKey;
 import com.sep.vox.application.port.input.query.key.RubricVersionsKey;
@@ -29,7 +30,8 @@ public class RubricGraphQlDataLoaderConfig {
             RubricCriterionRepository rubricCriterionRepository,
             RubricResultBandRepository rubricResultBandRepository,
             SupportedLanguageRepository supportedLanguageRepository,
-            FrameworkRepository frameworkRepository
+            FrameworkRepository frameworkRepository,
+            RubricCriterionDtoMapper rubricCriterionDtoMapper
     ) {
         // 1. School View Rubric Version
         registry.<RubricVersionsKey, PageResult<RubricVersionDto>>forName("rubricVersionsDataLoader")
@@ -94,7 +96,7 @@ public class RubricGraphQlDataLoaderConfig {
                                         // page - 1 -- see the comment on the version loader above.
                                         .skip((long) (key.page() - 1) * key.size())
                                         .limit(key.size())
-                                        .map(RubricCriterionDtoMapper::toDto)
+                                        .map(rubricCriterionDtoMapper::toDto)
                                         .toList();
 
                                 result.put(key, new PageResult<>(pagedDtos, key.page(), key.size(), totalElements, totalPages));

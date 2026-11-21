@@ -52,6 +52,14 @@ Hard rules (`src/test/.../architecture/LayeredArchitectureTests.java` fails the 
 - `application` imports nothing from `infrastructure`, `interfaces`. To reach the outside world, declare a port in
   `application/port/output` and implement it in `infrastructure` (`QuotaPricingPort` / `QuotaPricingService` is the model example).
 - `interfaces` never imports `infrastructure`. Controllers go through use cases.
+- `domain` is plain Java: it depends only on `java..` and on `domain` itself. No Spring, Lombok, Jackson or any other
+  library or framework type.
+- `application` depends only on plain Java, `domain`, `application`, slf4j, `@Service`, `@Transactional` (with its enums)
+  and the Lombok annotations `@RequiredArgsConstructor` and `@Slf4j`. Jackson, POI, Spring DAO/scheduling types and the like
+  go behind a port in `application/port/output` (`JsonSerializationPort` for JSON). The classes that still break this
+  are listed in `APPLICATION_EXEMPTIONS` (`LayeredArchitectureTests`) and `LombokUsageConventionTests`; those lists may
+  only shrink, so remove a class from them when you fix it, and never add to them.
+- `infrastructure` and `interfaces` have no restriction on libraries.
 
 ### Where things go when adding a feature
 
@@ -90,7 +98,8 @@ Look at an existing feature end to end before writing a new one (e.g. `CreateAss
   not by  editing `V1`. Outgoing events are written to an outbox table and relayed to Kafka by `OutboxEventScheduler`
   (disabled in tests via `app.outbox.scheduler.enabled=false`). The topic is set with the `@ExternalEventTopic` annotation
   on the event class. Kafka consumers live in `interfaces/kafka/consumer`.
-- **Dependency injection**: constructor injection with explicit constructors; fields are `private final`.
+- **Dependency injection**: constructor injection with explicit constructors (in `application`, `@RequiredArgsConstructor`
+  is also allowed); fields are `private final`.
 - **Types**: prefer explicit types over `var` in new code.
 - **Models and builders.** Every concrete class in `domain/model` has a nested `Builder` and
   `public static Builder builder()`, and is built with it. There are no all-args constructors; the public no-argument
@@ -164,6 +173,8 @@ Look at an existing feature end to end before writing a new one (e.g. `CreateAss
   `createdBy`/`updatedBy`, no `uuidv7()` in an entity, entities in feature sub-packages, no manual audit setters in
   `application/` and `infrastructure/worker/`). Its exemption lists name the classes that do not own the full audit set; an
   exemption that stops applying fails the test.
+- `LombokUsageConventionTests` guards the Lombok rule above by scanning source text, because Lombok annotations leave no
+  trace in the bytecode that `LayeredArchitectureTests` reads.
 - Tests marked as architecture rules (`src/test/.../architecture`) are guardrails: fix the code, never loosen the rule to get green.
 
 ## Scope

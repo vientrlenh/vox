@@ -3,12 +3,12 @@ package com.sep.vox.application.port.input.usecase.rubricsystem;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
+import com.sep.vox.application.mapper.rubric.RubricCriterionDtoMapper;
 import com.sep.vox.application.port.input.query.SearchSystemRubricCriteriaQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.RubricCriterionDto;
-import com.sep.vox.domain.mapper.RubricCriterionDtoMapper;
 import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
@@ -32,18 +32,21 @@ public class SearchSystemRubricCriteriaUseCase implements IUseCase<SearchSystemR
     private final RubricRepository rubricRepository;
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
+    private final RubricCriterionDtoMapper rubricCriterionDtoMapper;
 
     public SearchSystemRubricCriteriaUseCase(
             RubricCriterionRepository rubricCriterionRepository,
             RubricVersionRepository rubricVersionRepository,
             RubricRepository rubricRepository,
             UserContextPort userContextPort,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            RubricCriterionDtoMapper rubricCriterionDtoMapper) {
         this.rubricCriterionRepository = rubricCriterionRepository;
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
         this.userContextPort = userContextPort;
         this.userRepository = userRepository;
+        this.rubricCriterionDtoMapper = rubricCriterionDtoMapper;
     }
 
     @Override
@@ -75,7 +78,7 @@ public class SearchSystemRubricCriteriaUseCase implements IUseCase<SearchSystemR
 
         return new PageResult<>(
                 pageResult.content().stream()
-                        .map(RubricCriterionDtoMapper::toDto)
+                        .map(rubricCriterionDtoMapper::toDto)
                         .toList(),
                 pageResult.page(),
                 pageResult.size(),

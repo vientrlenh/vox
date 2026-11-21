@@ -2,9 +2,9 @@ package com.sep.vox.interfaces.graphql.mapper;
 
 import java.util.UUID;
 
+import com.sep.vox.application.mapper.scoringrule.ScoringRuleParamsMapper;
 import com.sep.vox.application.port.input.command.UpdateSchoolScoringRuleCommand;
 import com.sep.vox.application.port.input.command.UpdateScoringRuleCommand;
-import com.sep.vox.domain.mapper.ScoringRuleParamsMapper;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateScoringRuleInput;
 
 public final class UpdateScoringRuleGraphQLMapper {
@@ -12,16 +12,17 @@ public final class UpdateScoringRuleGraphQLMapper {
     private UpdateScoringRuleGraphQLMapper() {
     }
 
-    public static UpdateScoringRuleCommand fromInput(UUID policyId, UUID ruleId, UpdateScoringRuleInput input) {
+    public static UpdateScoringRuleCommand fromInput(
+            ScoringRuleParamsMapper scoringRuleParamsMapper, UUID policyId, UUID ruleId, UpdateScoringRuleInput input) {
         return new UpdateScoringRuleCommand(
                 ruleId,
                 policyId,
                 input.name(),
                 input.description(),
                 input.conditionType(),
-                ScoringRuleParamsMapper.fromJsonString(input.conditionParamsJson()),
+                scoringRuleParamsMapper.fromJsonString(input.conditionParamsJson()),
                 input.actionType(),
-                ScoringRuleParamsMapper.fromJsonString(input.actionParamsJson()),
+                scoringRuleParamsMapper.fromJsonString(input.actionParamsJson()),
                 input.priority(),
                 input.severity(),
                 input.stopProcessing(),
@@ -29,7 +30,9 @@ public final class UpdateScoringRuleGraphQLMapper {
         );
     }
 
-    public static UpdateSchoolScoringRuleCommand fromSchoolInput(UUID schoolId, UUID policyId, UUID ruleId, UpdateScoringRuleInput input) {
+    public static UpdateSchoolScoringRuleCommand fromSchoolInput(
+            ScoringRuleParamsMapper scoringRuleParamsMapper, UUID schoolId, UUID policyId, UUID ruleId,
+            UpdateScoringRuleInput input) {
         return new UpdateSchoolScoringRuleCommand(
                 schoolId,
                 policyId,
@@ -37,9 +40,9 @@ public final class UpdateScoringRuleGraphQLMapper {
                 input.name(),
                 input.description(),
                 input.conditionType(),
-                ScoringRuleParamsMapper.fromJsonString(input.conditionParamsJson()),
+                scoringRuleParamsMapper.fromJsonString(input.conditionParamsJson()),
                 input.actionType(),
-                ScoringRuleParamsMapper.fromJsonString(input.actionParamsJson()),
+                scoringRuleParamsMapper.fromJsonString(input.actionParamsJson()),
                 input.priority(),
                 input.severity(),
                 input.stopProcessing(),

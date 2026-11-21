@@ -1,6 +1,7 @@
 package com.sep.vox.infrastructure.serialization;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
@@ -15,6 +16,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 
 class JacksonJsonSerializationServiceTests {
+
+    private record SecondsParams(int seconds) {
+    }
 
     private JacksonJsonSerializationService service;
 
@@ -72,5 +76,39 @@ class JacksonJsonSerializationServiceTests {
         assertThrows(IllegalStateException.class, () -> service.toStringMap("{"));
         assertThrows(IllegalStateException.class, () -> service.toStringList("{"));
         assertThrows(IllegalStateException.class, () -> service.toStringMapList("{"));
+    }
+
+    @Test
+    void convertValue_should_bind_a_raw_map_to_a_record() {
+        SecondsParams params = service.convertValue(Map.of("seconds", 3), SecondsParams.class);
+
+        assertThat(params).isEqualTo(new SecondsParams(3));
+    }
+
+    @Test
+    void convertValue_should_keep_the_binding_error_in_the_message_when_a_value_is_invalid() {
+        Map<String, Object> raw = Map.of("seconds", "not a number");
+
+        assertThatThrownBy(() -> service.convertValue(raw, SecondsParams.class))
+            .hasMessageContaining("not a number");
+    }
+
+    @Test
+    void convertToObjectMap_should_turn_a_record_into_a_raw_map() {
+        Map<String, Object> map = service.convertToObjectMap(new SecondsParams(5));
+
+        assertThat(map).containsExactly(Map.entry("seconds", 5));
+    }
+
+    @Test
+    void toObjectMap_should_parse_a_json_object_into_a_raw_map() {
+        Map<String, Object> map = service.toObjectMap("{\"seconds\": 7}");
+
+        assertThat(map).containsExactly(Map.entry("seconds", 7));
+    }
+
+    @Test
+    void toObjectMap_should_throw_when_the_json_is_not_an_object() {
+        assertThrows(RuntimeException.class, () -> service.toObjectMap("[1, 2]"));
     }
 }

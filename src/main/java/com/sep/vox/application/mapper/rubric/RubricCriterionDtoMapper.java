@@ -1,19 +1,25 @@
-package com.sep.vox.domain.mapper;
+package com.sep.vox.application.mapper.rubric;
 
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+
+import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.RubricCriterionDto;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
 import com.sep.vox.domain.valueobject.rubric.RubricCriterionExamples;
 
-import tools.jackson.databind.json.JsonMapper;
-
-import java.util.List;
-
+@Service
 public class RubricCriterionDtoMapper {
 
-    private static final JsonMapper JSON_MAPPER = new JsonMapper();
+    private final JsonSerializationPort jsonSerializationPort;
 
-    public static RubricCriterionDto toDto(RubricCriterion criterion) {
+    public RubricCriterionDtoMapper(JsonSerializationPort jsonSerializationPort) {
+        this.jsonSerializationPort = jsonSerializationPort;
+    }
+
+    public RubricCriterionDto toDto(RubricCriterion criterion) {
         if (criterion == null) {
             return null;
         }
@@ -37,13 +43,13 @@ public class RubricCriterionDtoMapper {
         );
     }
 
-    public static List<RubricCriterionDto> toDtoList(List<RubricCriterion> criteria) {
+    public List<RubricCriterionDto> toDtoList(List<RubricCriterion> criteria) {
         return criteria.stream()
-                .map(RubricCriterionDtoMapper::toDto)
+                .map(this::toDto)
                 .toList();
     }
 
-    public static PageResult<RubricCriterionDto> toPage(PageResult<RubricCriterion> page) {
+    public PageResult<RubricCriterionDto> toPage(PageResult<RubricCriterion> page) {
         return new PageResult<>(
                 toDtoList(page.content()),
                 page.page(),
@@ -53,14 +59,10 @@ public class RubricCriterionDtoMapper {
         );
     }
 
-    private static String toExamplesJson(RubricCriterionExamples examples) {
+    private String toExamplesJson(RubricCriterionExamples examples) {
         if (examples == null) {
             return null;
         }
-        try {
-            return JSON_MAPPER.writeValueAsString(examples);
-        } catch (Exception e) {
-            throw new IllegalStateException("Lỗi serialize examplesJson", e);
-        }
+        return jsonSerializationPort.toJson(examples);
     }
 }

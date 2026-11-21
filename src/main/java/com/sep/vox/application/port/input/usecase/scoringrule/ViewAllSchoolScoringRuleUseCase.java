@@ -12,12 +12,12 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
+import com.sep.vox.application.mapper.scoringrule.ScoringRuleDtoMapper;
 import com.sep.vox.application.port.input.query.ViewAllSchoolScoringRuleQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.ScoringRuleDto;
-import com.sep.vox.domain.mapper.ScoringRuleDtoMapper;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.ScoringRuleRepository;
@@ -32,18 +32,21 @@ public class ViewAllSchoolScoringRuleUseCase implements IUseCase<ViewAllSchoolSc
     private final SchoolUserRepository schoolUserRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
+    private final ScoringRuleDtoMapper scoringRuleDtoMapper;
 
     public ViewAllSchoolScoringRuleUseCase(
             ScoringRuleRepository scoringRuleRepository,
             AssessmentPolicyRepository assessmentPolicyRepository,
             SchoolUserRepository schoolUserRepository,
             UserRepository userRepository,
-            UserContextPort userContextPort) {
+            UserContextPort userContextPort,
+            ScoringRuleDtoMapper scoringRuleDtoMapper) {
         this.scoringRuleRepository = scoringRuleRepository;
         this.assessmentPolicyRepository = assessmentPolicyRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
+        this.scoringRuleDtoMapper = scoringRuleDtoMapper;
     }
 
     @Override
@@ -71,12 +74,12 @@ public class ViewAllSchoolScoringRuleUseCase implements IUseCase<ViewAllSchoolSc
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền xem Scoring Rule của trường khác.");
         }
 
-        // 4. Lấy toàn bộ danh sách (có phân trang, không lọc keyword/isActive)
-        // Lưu ý: KHÔNG chặn theo status - cho phép xem kể cả khi Policy đã PUBLISHED/ARCHIVED
+        // 4. Fetch the whole list (paginated, no keyword/isActive filter)
+        // Note: do NOT block by status -- viewing is allowed even when the Policy is already PUBLISHED/ARCHIVED
         PageResult<ScoringRule> pageResult = scoringRuleRepository.searchByPolicyId(query.policyId(), null, null, query.page(), query.size());
 
         return new PageResult<>(
-                pageResult.content().stream().map(ScoringRuleDtoMapper::toDto).toList(),
+                pageResult.content().stream().map(scoringRuleDtoMapper::toDto).toList(),
                 pageResult.page(),
                 pageResult.size(),
                 pageResult.totalElements(),

@@ -6,6 +6,7 @@ import java.util.Map;
 
 import com.sep.vox.application.port.output.JsonSerializationPort;
 
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -84,6 +85,23 @@ public class FakeJsonSerializationPort implements JsonSerializationPort {
         } catch (Exception exception) {
             throw new IllegalStateException("Could not deserialize JSON field to string list", exception);
         }
+    }
+
+    @Override
+    public <T> T convertValue(Object value, Class<T> targetType) {
+        return objectMapper.convertValue(value, targetType);
+    }
+
+    @Override
+    public Map<String, Object> convertToObjectMap(Object value) {
+        return objectMapper.convertValue(value, new TypeReference<Map<String, Object>>() {
+        });
+    }
+
+    @Override
+    public Map<String, Object> toObjectMap(String json) {
+        return objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {
+        });
     }
 
     private Map<String, String> toStringMap(Map<?, ?> raw) {

@@ -16,6 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.PlanLimitExceededException;
+import com.sep.vox.application.mapper.practiceplanning.PracticePaperDtoMapper;
 import com.sep.vox.application.port.input.command.BuildPracticePaperCommand;
 import com.sep.vox.application.port.input.service.PracticePaperPersistenceService;
 import com.sep.vox.application.port.input.service.PracticeQuestionSelectionService;
@@ -30,8 +31,8 @@ import com.sep.vox.domain.repository.PracticeTopicRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
 /**
- * Guard chặn hết gói phải chạy TRƯỚC khi tốn công chọn câu hỏi AI -- xem lý do đầy đủ ở
- * SchoolSubscriptionActiveGuardService.
+ * The guard that blocks an expired plan must run BEFORE any effort goes into selecting AI questions -- see the full
+ * reason in SchoolSubscriptionActiveGuardService.
  */
 class BuildPracticePaperUseCaseTests {
 
@@ -59,7 +60,8 @@ class BuildPracticePaperUseCaseTests {
             userContextPort,
             mock(ViewPracticeTopicOffersUseCase.class),
             mock(QuotaPricingPort.class),
-            schoolSubscriptionActiveGuardService
+            schoolSubscriptionActiveGuardService,
+            mock(PracticePaperDtoMapper.class)
         );
     }
 

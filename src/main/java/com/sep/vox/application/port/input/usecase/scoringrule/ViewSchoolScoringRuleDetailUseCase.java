@@ -11,11 +11,11 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
+import com.sep.vox.application.mapper.scoringrule.ScoringRuleDtoMapper;
 import com.sep.vox.application.port.input.query.ViewSchoolScoringRuleDetailQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.ScoringRuleDto;
-import com.sep.vox.domain.mapper.ScoringRuleDtoMapper;
 import com.sep.vox.domain.model.scoringrule.ScoringRule;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
@@ -31,18 +31,21 @@ public class ViewSchoolScoringRuleDetailUseCase implements IUseCase<ViewSchoolSc
     private final SchoolUserRepository schoolUserRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
+    private final ScoringRuleDtoMapper scoringRuleDtoMapper;
 
     public ViewSchoolScoringRuleDetailUseCase(
             ScoringRuleRepository scoringRuleRepository,
             AssessmentPolicyRepository assessmentPolicyRepository,
             SchoolUserRepository schoolUserRepository,
             UserRepository userRepository,
-            UserContextPort userContextPort) {
+            UserContextPort userContextPort,
+            ScoringRuleDtoMapper scoringRuleDtoMapper) {
         this.scoringRuleRepository = scoringRuleRepository;
         this.assessmentPolicyRepository = assessmentPolicyRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.userRepository = userRepository;
         this.userContextPort = userContextPort;
+        this.scoringRuleDtoMapper = scoringRuleDtoMapper;
     }
 
     @Override
@@ -79,6 +82,6 @@ public class ViewSchoolScoringRuleDetailUseCase implements IUseCase<ViewSchoolSc
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền xem Scoring Rule của trường khác.");
         }
 
-        return ScoringRuleDtoMapper.toDto(rule);
+        return scoringRuleDtoMapper.toDto(rule);
     }
 }

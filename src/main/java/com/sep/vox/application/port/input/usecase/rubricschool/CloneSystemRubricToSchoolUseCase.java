@@ -18,6 +18,7 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CloneSystemRubricToSchoolCommand;
 import com.sep.vox.application.port.input.command.CreateAssessmentPolicyCommand;
+import com.sep.vox.application.port.input.service.RubricCloneService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentpolicyschool.CreateSchoolAssessmentPolicyUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -32,7 +33,6 @@ import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
-import com.sep.vox.domain.service.rubric.RubricCloneService;
 
 /**
  * Trường sao một bản mẫu đã ban hành của hệ thống về làm rubric riêng, kèm luôn các chính sách chấm

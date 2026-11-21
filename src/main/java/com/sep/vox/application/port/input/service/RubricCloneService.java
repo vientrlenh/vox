@@ -1,4 +1,4 @@
-package com.sep.vox.domain.service.rubric;
+package com.sep.vox.application.port.input.service;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -21,11 +21,11 @@ import com.sep.vox.domain.repository.RubricResultBandRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 
 /**
- * Sao một phiên bản rubric của hệ thống thành rubric riêng của một trường.
+ * Copies a system rubric version into a rubric owned by a school.
  *
- * <p>Sao sâu bốn tầng: {@link Rubric} -> {@link RubricVersion} -> {@link RubricCriterion} +
- * {@link RubricResultBand}. Bản sao là tài sản độc lập của trường ngay từ khoảnh khắc tạo ra: sửa nó
- * không đụng tới bản mẫu, và bản mẫu đổi về sau cũng không tự chảy sang.
+ * <p>The copy is deep across four levels: {@link Rubric} -> {@link RubricVersion} -> {@link RubricCriterion} +
+ * {@link RubricResultBand}. From the moment it is created the copy is an independent asset of the school:
+ * editing it never touches the template, and later changes to the template do not flow into it.
  */
 @Service
 public class RubricCloneService {
@@ -47,9 +47,9 @@ public class RubricCloneService {
     }
 
     /**
-     * @param targetMethod cách tính điểm trường chọn cho bản sao, có thể khác bản mẫu -- xem
-     *                     {@link #resolveWeight}.
-     * @return phiên bản vừa tạo, luôn ở trạng thái DRAFT.
+     * @param targetMethod the scoring method the school chose for the copy, which may differ from the template's
+     *                     -- see {@link #resolveWeight}.
+     * @return the version that was just created, always in DRAFT status.
      */
     @Transactional
     public RubricVersion cloneToSchoolAsDraft(
@@ -130,23 +130,23 @@ public class RubricCloneService {
     }
 
     /**
-     * Trọng số cho bản sao, theo cách tính mà trường chọn.
+     * Weight for the copy, according to the scoring method the school chose.
      *
-     * <p>Hai cách tính có hai quy ước trọng số khác nhau, và chỉ một chiều chuyển đổi được:
+     * <p>The two methods use two different weight conventions, and only one direction can be converted:
      *
      * <ul>
-     *   <li><b>Phân bổ (SUM)</b>: tổng trọng số bằng 100%, mỗi con số mang ý đồ về tầm quan trọng
-     *       tương đối giữa các tiêu chí.
-     *   <li><b>Trung bình (WEIGHTED_AVERAGE)</b>: mọi tiêu chí cân bằng ở 100%.
+     *   <li><b>Distributed (SUM)</b>: the weights add up to 100%, and every number carries an intent about the
+     *       relative importance of the criteria.
+     *   <li><b>Average (WEIGHTED_AVERAGE)</b>: every criterion is balanced at 100%.
      * </ul>
      *
-     * <p>Nên Trung bình suy được từ Phân bổ bằng cách san phẳng mọi trọng số về 1 -- đó là ý nghĩa
-     * của việc chọn Trung bình, chứ không phải mất mát ngoài ý muốn. Chiều ngược lại thì không: từ
-     * trạng thái mọi tiêu chí bằng nhau, không có cách nào tái tạo tỉ lệ mà bản mẫu định ra. Vì vậy
-     * bản mẫu nên được soạn ở dạng Phân bổ -- nó mang nhiều thông tin hơn.
+     * <p>So Average can be derived from Distributed by flattening every weight to 1 -- that is what choosing
+     * Average means, not an unintended loss. The opposite direction is impossible: from a state where all
+     * criteria are equal there is no way to rebuild the proportions the template defined. That is why the
+     * template should be authored as Distributed -- it carries more information.
      *
-     * <p>Kết quả luôn thoả {@link RubricScoringConsistencyValidator}, nên bản sao ban hành được ngay
-     * sau khi trường gắn xong chính sách.
+     * <p>The result always satisfies {@link com.sep.vox.domain.service.rubric.RubricScoringConsistencyValidator},
+     * so the copy can be published as soon as the school has attached a policy to it.
      */
     private BigDecimal resolveWeight(BigDecimal sourceWeight, RubricTotalScoreMethod targetMethod) {
         if (targetMethod == RubricTotalScoreMethod.WEIGHTED_AVERAGE) {

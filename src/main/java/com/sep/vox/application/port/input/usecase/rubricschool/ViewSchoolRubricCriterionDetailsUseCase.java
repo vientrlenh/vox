@@ -3,11 +3,11 @@ package com.sep.vox.application.port.input.usecase.rubricschool;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
+import com.sep.vox.application.mapper.rubric.RubricCriterionDtoMapper;
 import com.sep.vox.application.port.input.query.ViewSchoolRubricCriterionDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.RubricCriterionDto;
-import com.sep.vox.domain.mapper.RubricCriterionDtoMapper;
 import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
@@ -31,6 +31,7 @@ public class ViewSchoolRubricCriterionDetailsUseCase implements IUseCase<ViewSch
     private final UserContextPort userContextPort;
     private final SchoolRepository schoolRepository;
     private final SchoolUserRepository schoolUserRepository;
+    private final RubricCriterionDtoMapper rubricCriterionDtoMapper;
 
     public ViewSchoolRubricCriterionDetailsUseCase(
             RubricCriterionRepository rubricCriterionRepository,
@@ -39,7 +40,8 @@ public class ViewSchoolRubricCriterionDetailsUseCase implements IUseCase<ViewSch
             UserRepository userRepository,
             UserContextPort userContextPort,
             SchoolRepository schoolRepository,
-            SchoolUserRepository schoolUserRepository) {
+            SchoolUserRepository schoolUserRepository,
+            RubricCriterionDtoMapper rubricCriterionDtoMapper) {
         this.rubricCriterionRepository = rubricCriterionRepository;
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
@@ -47,6 +49,7 @@ public class ViewSchoolRubricCriterionDetailsUseCase implements IUseCase<ViewSch
         this.userContextPort = userContextPort;
         this.schoolRepository = schoolRepository;
         this.schoolUserRepository = schoolUserRepository;
+        this.rubricCriterionDtoMapper = rubricCriterionDtoMapper;
     }
 
     @Override
@@ -87,7 +90,7 @@ public class ViewSchoolRubricCriterionDetailsUseCase implements IUseCase<ViewSch
             throw new ForbiddenException("Hành động bị từ chối: Tiêu chí này không thuộc về trường học của bạn.");
         }
 
-        // 6. Map sang DTO và trả về
-        return RubricCriterionDtoMapper.toDto(criterion);
+        // 6. Map to a DTO and return
+        return rubricCriterionDtoMapper.toDto(criterion);
     }
 }

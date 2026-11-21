@@ -1,23 +1,25 @@
-package com.sep.vox.domain.mapper;
+package com.sep.vox.application.mapper.practiceplanning;
 
 import java.util.List;
 
-import tools.jackson.core.type.TypeReference;
-import tools.jackson.databind.json.JsonMapper;
+import org.springframework.stereotype.Service;
 
+import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.dto.personalization.PracticePaperDto;
 import com.sep.vox.domain.dto.personalization.PracticePaperQuestionDto;
 import com.sep.vox.domain.model.personalization.PracticePaper;
 import com.sep.vox.domain.model.personalization.PracticeQuestion;
 
-public final class PracticePaperDtoMapper {
+@Service
+public class PracticePaperDtoMapper {
 
-    private static final JsonMapper JSON_MAPPER = new JsonMapper();
+    private final JsonSerializationPort jsonSerializationPort;
 
-    private PracticePaperDtoMapper() {
+    public PracticePaperDtoMapper(JsonSerializationPort jsonSerializationPort) {
+        this.jsonSerializationPort = jsonSerializationPort;
     }
 
-    public static PracticePaperDto toDto(
+    public PracticePaperDto toDto(
             PracticePaper paper,
             List<PracticeQuestion> questions,
             int sessionBudgetSeconds) {
@@ -36,7 +38,7 @@ public final class PracticePaperDtoMapper {
         );
     }
 
-    private static PracticePaperQuestionDto toDto(
+    private PracticePaperQuestionDto toDto(
             PracticeQuestion question,
             int slot) {
         return new PracticePaperQuestionDto(
@@ -52,14 +54,10 @@ public final class PracticePaperDtoMapper {
         );
     }
 
-    private static List<String> parseIdeas(String value) {
-        if (value == null || value.isBlank()) {
-            return List.of();
-        }
+    private List<String> parseIdeas(String value) {
         try {
-            return JSON_MAPPER.readValue(value, new TypeReference<>() {
-            });
-        } catch (Exception exception) {
+            return jsonSerializationPort.toStringList(value);
+        } catch (IllegalStateException exception) {
             return List.of();
         }
     }

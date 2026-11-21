@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import com.sep.vox.application.mapper.scoringrule.ScoringRuleParamsMapper;
 import com.sep.vox.application.port.input.command.UpdateSchoolScoringRuleCommand;
 import com.sep.vox.application.port.input.command.UpdateScoringRuleCommand;
 import java.util.UUID;
@@ -27,7 +28,6 @@ import com.sep.vox.application.port.input.usecase.scoringrule.ViewSchoolScoringR
 import com.sep.vox.application.port.input.usecase.scoringrule.ViewSystemScoringRuleDetailUseCase;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.ScoringRuleDto;
-import com.sep.vox.domain.mapper.ScoringRuleParamsMapper;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateScoringRuleInput;
 import com.sep.vox.interfaces.graphql.mapper.UpdateScoringRuleGraphQLMapper;
 import com.sep.vox.interfaces.shared.PageArguments;
@@ -44,6 +44,7 @@ public class ScoringRuleController {
     private final ViewSchoolScoringRuleDetailUseCase viewSchoolScoringRuleDetailUseCase;
     private final UpdateSystemScoringRuleUseCase updateSystemScoringRuleUseCase;
     private final UpdateSchoolScoringRuleUseCase updateSchoolScoringRuleUseCase;
+    private final ScoringRuleParamsMapper scoringRuleParamsMapper;
 
     public ScoringRuleController(
             SearchSystemScoringRuleUseCase searchSystemScoringRuleUseCase,
@@ -53,7 +54,8 @@ public class ScoringRuleController {
             ViewSystemScoringRuleDetailUseCase viewSystemScoringRuleDetailUseCase,
             ViewSchoolScoringRuleDetailUseCase viewSchoolScoringRuleDetailUseCase,
             UpdateSystemScoringRuleUseCase updateSystemScoringRuleUseCase,
-            UpdateSchoolScoringRuleUseCase updateSchoolScoringRuleUseCase) {
+            UpdateSchoolScoringRuleUseCase updateSchoolScoringRuleUseCase,
+            ScoringRuleParamsMapper scoringRuleParamsMapper) {
         this.searchSystemScoringRuleUseCase = searchSystemScoringRuleUseCase;
         this.searchSchoolScoringRuleUseCase = searchSchoolScoringRuleUseCase;
         this.viewAllSystemScoringRuleUseCase = viewAllSystemScoringRuleUseCase;
@@ -62,6 +64,7 @@ public class ScoringRuleController {
         this.viewSchoolScoringRuleDetailUseCase = viewSchoolScoringRuleDetailUseCase;
         this.updateSystemScoringRuleUseCase = updateSystemScoringRuleUseCase;
         this.updateSchoolScoringRuleUseCase = updateSchoolScoringRuleUseCase;
+        this.scoringRuleParamsMapper = scoringRuleParamsMapper;
     }
 
     @QueryMapping(name = "searchSystemScoringRules")
@@ -141,7 +144,7 @@ public class ScoringRuleController {
             @Argument(name = "policyId") UUID policyId,
             @Argument(name = "ruleId") UUID ruleId,
             @Argument(name = "input") UpdateScoringRuleInput input) {
-        UpdateScoringRuleCommand command = UpdateScoringRuleGraphQLMapper.fromInput(policyId, ruleId, input);
+        UpdateScoringRuleCommand command = UpdateScoringRuleGraphQLMapper.fromInput(scoringRuleParamsMapper, policyId, ruleId, input);
         return updateSystemScoringRuleUseCase.execute(command);
     }
 
@@ -152,19 +155,19 @@ public class ScoringRuleController {
             @Argument(name = "policyId") UUID policyId,
             @Argument(name = "ruleId") UUID ruleId,
             @Argument(name = "input") UpdateScoringRuleInput input) {
-        UpdateSchoolScoringRuleCommand command = UpdateScoringRuleGraphQLMapper.fromSchoolInput(schoolId, policyId, ruleId, input);
+        UpdateSchoolScoringRuleCommand command = UpdateScoringRuleGraphQLMapper.fromSchoolInput(scoringRuleParamsMapper, schoolId, policyId, ruleId, input);
         return updateSchoolScoringRuleUseCase.execute(command);
     }
 
-    // conditionParams/actionParams trong ScoringRuleDto là Map<String,Object> (dùng cho REST),
-    // nhưng schema GraphQL không có scalar Map/JSON nên phải convert thành chuỗi JSON ở đây.
+    // conditionParams/actionParams in ScoringRuleDto are Map<String,Object> (used by REST), but the GraphQL
+    // schema has no Map/JSON scalar, so they have to be converted to a JSON string here.
     @SchemaMapping(typeName = "ScoringRule", field = "conditionParamsJson")
     public String getConditionParamsJson(ScoringRuleDto rule) {
-        return ScoringRuleParamsMapper.toJsonString(rule.conditionParams());
+        return scoringRuleParamsMapper.toJsonString(rule.conditionParams());
     }
 
     @SchemaMapping(typeName = "ScoringRule", field = "actionParamsJson")
     public String getActionParamsJson(ScoringRuleDto rule) {
-        return ScoringRuleParamsMapper.toJsonString(rule.actionParams());
+        return scoringRuleParamsMapper.toJsonString(rule.actionParams());
     }
 }

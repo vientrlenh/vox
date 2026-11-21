@@ -11,10 +11,10 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
+import com.sep.vox.application.mapper.scoringrule.ScoringRuleParamsMapper;
 import com.sep.vox.application.port.input.command.UpdateSchoolScoringRuleCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.domain.mapper.ScoringRuleParamsMapper;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
 import com.sep.vox.domain.model.framework.FrameworkResultBand;
@@ -47,6 +47,7 @@ public class UpdateSchoolScoringRuleUseCase implements IUseCase<UpdateSchoolScor
     private final UserContextPort userContextPort;
     private final RubricCriterionRepository rubricCriterionRepository;
     private final FrameworkResultBandRepository frameworkResultBandRepository;
+    private final ScoringRuleParamsMapper scoringRuleParamsMapper;
 
     public UpdateSchoolScoringRuleUseCase(
             ScoringRuleRepository scoringRuleRepository,
@@ -56,7 +57,8 @@ public class UpdateSchoolScoringRuleUseCase implements IUseCase<UpdateSchoolScor
             UserRepository userRepository,
             UserContextPort userContextPort,
             RubricCriterionRepository rubricCriterionRepository,
-            FrameworkResultBandRepository frameworkResultBandRepository) {
+            FrameworkResultBandRepository frameworkResultBandRepository,
+            ScoringRuleParamsMapper scoringRuleParamsMapper) {
         this.scoringRuleRepository = scoringRuleRepository;
         this.assessmentPolicyRepository = assessmentPolicyRepository;
         this.schoolRepository = schoolRepository;
@@ -65,6 +67,7 @@ public class UpdateSchoolScoringRuleUseCase implements IUseCase<UpdateSchoolScor
         this.userContextPort = userContextPort;
         this.rubricCriterionRepository = rubricCriterionRepository;
         this.frameworkResultBandRepository = frameworkResultBandRepository;
+        this.scoringRuleParamsMapper = scoringRuleParamsMapper;
     }
 
     @Override
@@ -117,9 +120,9 @@ public class UpdateSchoolScoringRuleUseCase implements IUseCase<UpdateSchoolScor
             throw new IllegalArgumentException("Độ ưu tiên (priority) phải lớn hơn 0.");
         }
 
-        // 8. Convert Map JSON thô -> Value Object cụ thể theo conditionType/actionType MỚI
-        ScoringRuleConditionParams conditionParams = ScoringRuleParamsMapper.toConditionParams(command.conditionType(), command.conditionParams());
-        ScoringRuleActionParams actionParams = ScoringRuleParamsMapper.toActionParams(command.actionType(), command.actionParams());
+        // 8. Convert the raw JSON Map -> the concrete Value Object matching the NEW conditionType/actionType
+        ScoringRuleConditionParams conditionParams = scoringRuleParamsMapper.toConditionParams(command.conditionType(), command.conditionParams());
+        ScoringRuleActionParams actionParams = scoringRuleParamsMapper.toActionParams(command.actionType(), command.actionParams());
 
         // 8b. Kiểm tra criterionCode/bandCode (nếu có) có thực sự tồn tại trong Rubric Version của Policy
         validateCriterionReferences(policy.getRubricVersionId(), policy.getFrameworkVersionId(), conditionParams, actionParams);

@@ -1,14 +1,20 @@
-package com.sep.vox.domain.mapper;
+package com.sep.vox.application.mapper.scoringrule;
+
+import org.springframework.stereotype.Service;
 
 import com.sep.vox.domain.dto.ScoringRuleDto;
 import com.sep.vox.domain.model.scoringrule.ScoringRule;
 
-public final class ScoringRuleDtoMapper {
+@Service
+public class ScoringRuleDtoMapper {
 
-    private ScoringRuleDtoMapper() {
+    private final ScoringRuleParamsMapper scoringRuleParamsMapper;
+
+    public ScoringRuleDtoMapper(ScoringRuleParamsMapper scoringRuleParamsMapper) {
+        this.scoringRuleParamsMapper = scoringRuleParamsMapper;
     }
 
-    public static ScoringRuleDto toDto(ScoringRule rule) {
+    public ScoringRuleDto toDto(ScoringRule rule) {
         return new ScoringRuleDto(
                 rule.getId(),
                 rule.getPolicyId(),
@@ -16,9 +22,9 @@ public final class ScoringRuleDtoMapper {
                 rule.getName(),
                 rule.getDescription(),
                 rule.getConditionType(),
-                ScoringRuleParamsMapper.toMap(rule.getConditionParams()),
+                scoringRuleParamsMapper.toMap(rule.getConditionParams()),
                 rule.getActionType(),
-                ScoringRuleParamsMapper.toMap(rule.getActionParams()),
+                scoringRuleParamsMapper.toMap(rule.getActionParams()),
                 rule.getPriority(),
                 rule.getSeverity(),
                 rule.isStopProcessing(),

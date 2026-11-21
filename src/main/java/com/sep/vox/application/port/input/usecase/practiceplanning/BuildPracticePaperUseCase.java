@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.practiceplanning;
 
+import com.sep.vox.application.mapper.practiceplanning.PracticePaperDtoMapper;
 import com.sep.vox.application.query.dto.PracticeFocusInfo;
 import com.sep.vox.domain.model.framework.FrameworkResultBand;
 import com.sep.vox.domain.model.personalization.PracticeQuestion;
@@ -24,7 +25,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.QuotaPricingPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticePaper;
-import com.sep.vox.domain.mapper.PracticePaperDtoMapper;
 import com.sep.vox.domain.model.personalization.PracticeTopic;
 import com.sep.vox.domain.repository.PracticePaperRepository;
 import com.sep.vox.domain.repository.PracticeTopicRepository;
@@ -52,6 +52,7 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
     private final ViewPracticeTopicOffersUseCase viewPracticeTopicOffersUseCase;
     private final QuotaPricingPort quotaPricingPort;
     private final SchoolSubscriptionActiveGuardService schoolSubscriptionActiveGuardService;
+    private final PracticePaperDtoMapper practicePaperDtoMapper;
 
     public BuildPracticePaperUseCase(
             PracticeTopicRepository topicRepository,
@@ -63,7 +64,8 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
             UserContextPort userContextPort,
             ViewPracticeTopicOffersUseCase viewPracticeTopicOffersUseCase,
             QuotaPricingPort quotaPricingPort,
-            SchoolSubscriptionActiveGuardService schoolSubscriptionActiveGuardService) {
+            SchoolSubscriptionActiveGuardService schoolSubscriptionActiveGuardService,
+            PracticePaperDtoMapper practicePaperDtoMapper) {
         this.viewPracticeTopicOffersUseCase = viewPracticeTopicOffersUseCase;
         this.topicRepository = topicRepository;
         this.paperRepository = paperRepository;
@@ -74,6 +76,7 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
         this.userContextPort = userContextPort;
         this.quotaPricingPort = quotaPricingPort;
         this.schoolSubscriptionActiveGuardService = schoolSubscriptionActiveGuardService;
+        this.practicePaperDtoMapper = practicePaperDtoMapper;
     }
 
     @Override
@@ -129,7 +132,7 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
             selection
         );
         return PracticePlanningResponseMapper.toResponse(
-            PracticePaperDtoMapper.toDto(
+            practicePaperDtoMapper.toDto(
                 paper,
                 List.of(question),
                 enrichmentService.sessionBudgetSeconds(studentId, chosenBandOrder)

@@ -119,7 +119,13 @@ class AssignSelectionSlotQuestionTests {
         when(assessmentPaperRepository.findById(PAPER_ID)).thenReturn(Optional.of(paper));
         when(assessmentRepository.findById(ASSESSMENT_ID)).thenReturn(Optional.of(centralizedAssessment()));
         when(assessmentMemberRepository.findByAssessmentIdAndUserId(ASSESSMENT_ID, TEACHER_ID)).thenReturn(Optional.of(
-            new AssessmentMember(ASSESSMENT_ID, TEACHER_ID, AssessmentMemberRole.AUTHOR, Instant.now(), TEACHER_ID)));
+            AssessmentMember.builder()
+                    .assessmentId(ASSESSMENT_ID)
+                    .userId(TEACHER_ID)
+                    .role(AssessmentMemberRole.AUTHOR)
+                    .grantedAt(Instant.now())
+                    .grantedBy(TEACHER_ID)
+                    .build()));
         when(assessmentBlueprintSlotRepository.findById(SLOT_ID))
             .thenReturn(Optional.of(slot(AssessmentBlueprintSlotType.SELECTION, null)));
         when(questionRepository.findAccessibleById(eq(QUESTION_ID), any(), any(), anyBoolean(), anyBoolean()))
@@ -265,7 +271,8 @@ class AssignSelectionSlotQuestionTests {
     }
 
     private AssessmentPaperItem item(UUID blueprintSlotId) {
-        return new AssessmentPaperItem(ITEM_ID, blueprintSlotId, UUID.randomUUID(), PAPER_ID, null, 1, BigDecimal.ONE);
+        return AssessmentPaperItem.builder().id(ITEM_ID).blueprintSlotId(blueprintSlotId).sectionId(UUID.randomUUID())
+                .paperId(PAPER_ID).order(1).weight(BigDecimal.ONE).build();
     }
 
     private AssessmentPaper paper(AssessmentPaperStatus status) {
@@ -311,7 +318,7 @@ class AssignSelectionSlotQuestionTests {
         Question question = new Question();
         question.setId(QUESTION_ID);
         question.setCode("Q-001");
-        question.setCreatedBy(TEACHER_ID);
+        question.setCreatedBy(TEACHER_ID.toString());
         question.setSharing(QuestionSharing.SCHOOL_SHARED);
         question.setStatus(status);
         question.setType(type);

@@ -110,7 +110,14 @@ public class BulkCreateSchoolClassUsersUseCase
                 existing.activate();
                 toSave.add(existing);
             } else {
-                toSave.add(new SchoolClassUser(userId, input.classId(), true, now, null, currentUserId));
+                toSave.add(SchoolClassUser.builder()
+                    .userId(userId)
+                    .schoolClassId(input.classId())
+                    .active(true)
+                    .joinedAt(now)
+                    .leftAt(null)
+                    .assignedBy(currentUserId)
+                    .build());
             }
             addedUserIds.add(userId);
         }

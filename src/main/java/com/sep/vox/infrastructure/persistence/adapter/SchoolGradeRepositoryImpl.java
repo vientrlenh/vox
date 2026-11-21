@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.SchoolGradeJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolGradeJpaEntity;
 import java.time.LocalDate;
 import java.time.Instant;
 import java.util.Collection;
@@ -124,7 +124,7 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
     }
 
     @Override
-    public int updateSchoolGradeAtomic(UUID id, String name, String description, LocalDate startDate, LocalDate endDate, Instant now, UUID updatedBy) {
+    public int updateSchoolGradeAtomic(UUID id, String name, String description, LocalDate startDate, LocalDate endDate, Instant now, String updatedBy) {
         return springDataSchoolGradeRepository.updateSchoolGradeAtomic(id, name, description, startDate, endDate, now, updatedBy);
     }
 

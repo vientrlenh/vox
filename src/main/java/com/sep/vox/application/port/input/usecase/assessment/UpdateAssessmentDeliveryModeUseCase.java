@@ -2,7 +2,6 @@ package com.sep.vox.application.port.input.usecase.assessment;
 
 import com.sep.vox.domain.model.assessment.AssessmentDeliveryMode;
 import com.sep.vox.domain.model.assessment.AssessmentPaper;
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -82,8 +81,6 @@ public class UpdateAssessmentDeliveryModeUseCase implements IUseCase<UpdateAsses
         }
 
         assessment.setDeliveryMode(deliveryMode);
-        assessment.setUpdatedAt(Instant.now());
-        assessment.setUpdatedBy(currentUserId);
 
         Assessment saved = assessmentRepository.save(assessment);
         return AssessmentDtoMapper.toDto(saved, papersLocked(saved.getId()));

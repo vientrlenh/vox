@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.assessment.AssessmentProctoringAlert;
-import com.sep.vox.infrastructure.persistence.entity.AssessmentProctoringAlertJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentProctoringAlertJpaEntity;
 
 public final class AssessmentProctoringAlertMapper {
 
@@ -9,42 +9,42 @@ public final class AssessmentProctoringAlertMapper {
     }
 
     public static AssessmentProctoringAlert toDomain(AssessmentProctoringAlertJpaEntity entity) {
-        return new AssessmentProctoringAlert(
-            entity.getId(),
-            entity.getEventId(),
-            entity.getAssessmentSessionId(),
-            entity.getCandidateId(),
-            entity.getStreamId(),
-            entity.getStreamType(),
-            entity.getAlertType(),
-            entity.getLevel(),
-            entity.getSource(),
-            entity.getDetail(),
-            entity.getConfidence(),
-            entity.getSequenceNo(),
-            entity.getCapturedAt(),
-            entity.getRaisedAt(),
-            entity.getCreatedAt()
-        );
+        return AssessmentProctoringAlert.builder()
+                .id(entity.getId())
+                .eventId(entity.getEventId())
+                .assessmentSessionId(entity.getAssessmentSessionId())
+                .candidateId(entity.getCandidateId())
+                .streamId(entity.getStreamId())
+                .streamType(entity.getStreamType())
+                .alertType(entity.getAlertType())
+                .level(entity.getLevel())
+                .source(entity.getSource())
+                .detail(entity.getDetail())
+                .confidence(entity.getConfidence())
+                .sequenceNo(entity.getSequenceNo())
+                .capturedAt(entity.getCapturedAt())
+                .raisedAt(entity.getRaisedAt())
+                .createdAt(entity.getCreatedAt())
+                .build();
     }
 
     public static AssessmentProctoringAlertJpaEntity toJpa(AssessmentProctoringAlert alert) {
-        AssessmentProctoringAlertJpaEntity entity = new AssessmentProctoringAlertJpaEntity();
-        entity.setId(alert.getId());
-        entity.setEventId(alert.getEventId());
-        entity.setAssessmentSessionId(alert.getAssessmentSessionId());
-        entity.setCandidateId(alert.getCandidateId());
-        entity.setStreamId(alert.getStreamId());
-        entity.setStreamType(alert.getStreamType());
-        entity.setAlertType(alert.getAlertType());
-        entity.setLevel(alert.getLevel());
-        entity.setSource(alert.getSource());
-        entity.setDetail(alert.getDetail());
-        entity.setConfidence(alert.getConfidence());
-        entity.setSequenceNo(alert.getSequenceNo());
-        entity.setCapturedAt(alert.getCapturedAt());
-        entity.setRaisedAt(alert.getRaisedAt());
-        entity.setCreatedAt(alert.getCreatedAt());
-        return entity;
+        return AssessmentProctoringAlertJpaEntity.builder()
+                .id(alert.getId())
+                .eventId(alert.getEventId())
+                .assessmentSessionId(alert.getAssessmentSessionId())
+                .candidateId(alert.getCandidateId())
+                .streamId(alert.getStreamId())
+                .streamType(alert.getStreamType())
+                .alertType(alert.getAlertType())
+                .level(alert.getLevel())
+                .source(alert.getSource())
+                .detail(alert.getDetail())
+                .confidence(alert.getConfidence())
+                .sequenceNo(alert.getSequenceNo())
+                .capturedAt(alert.getCapturedAt())
+                .raisedAt(alert.getRaisedAt())
+                .createdAt(alert.getCreatedAt())
+                .build();
     }
 }

@@ -7,7 +7,7 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.sep.vox.infrastructure.persistence.entity.RoleJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.user.RoleJpaEntity;
 
 public interface SpringDataRoleRepository extends JpaRepository<RoleJpaEntity, UUID> {
     Optional<RoleJpaEntity> findByCode(String code);

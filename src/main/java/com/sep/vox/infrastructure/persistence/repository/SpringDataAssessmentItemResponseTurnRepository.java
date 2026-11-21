@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.AssessmentItemResponseTurnJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentItemResponseTurnJpaEntity;
 
 public interface SpringDataAssessmentItemResponseTurnRepository extends JpaRepository<AssessmentItemResponseTurnJpaEntity, UUID> {
     List<AssessmentItemResponseTurnJpaEntity> findByAssessmentItemResponseIdOrderByTurnOrderAsc(UUID assessmentItemResponseId);

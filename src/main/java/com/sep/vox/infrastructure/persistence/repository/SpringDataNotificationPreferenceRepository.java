@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.sep.vox.infrastructure.persistence.entity.NotificationPreferenceJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.notification.NotificationPreferenceJpaEntity;
 
 public interface SpringDataNotificationPreferenceRepository extends JpaRepository<NotificationPreferenceJpaEntity, UUID> {
 

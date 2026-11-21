@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -16,7 +15,6 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateFrameworkResultBandsCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.framework.FrameworkResultBand;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
@@ -29,22 +27,17 @@ public class CreateFrameworkResultBandsUseCase
 
     private final FrameworkVersionRepository frameworkVersionRepository;
     private final FrameworkResultBandRepository frameworkResultBandRepository;
-    private final UserContextPort userContextPort;
 
     public CreateFrameworkResultBandsUseCase(
             FrameworkVersionRepository frameworkVersionRepository,
-            FrameworkResultBandRepository frameworkResultBandRepository,
-            UserContextPort userContextPort) {
+            FrameworkResultBandRepository frameworkResultBandRepository) {
         this.frameworkVersionRepository = frameworkVersionRepository;
         this.frameworkResultBandRepository = frameworkResultBandRepository;
-        this.userContextPort = userContextPort;
     }
 
     @Override
     @Transactional
     public List<UUID> execute(CreateFrameworkResultBandsCommand command) {
-        UUID userId = userContextPort.getCurrentAuthenticatedUserId();
-        Instant now = Instant.now();
 
         FrameworkVersion version = getVersion(command);
         validateRequest(command, version);
@@ -53,13 +46,13 @@ public class CreateFrameworkResultBandsUseCase
         for (CreateFrameworkResultBandsCommand.ResultBandItemCommand bandCmd : command.bands()) {
             String safeCode = StringNormalization.normalizeCode(bandCmd.code());
             String safeLabel = StringNormalization.trimAndCollapseSpaces(bandCmd.label());
-            bandsToSave.add(new FrameworkResultBand(
-                    command.versionId(),
-                    safeCode,
-                    safeLabel,
-                    StringNormalization.trimAndCollapseSpaces(bandCmd.description()),
-                    bandCmd.order(),
-                    now, now, userId, userId));
+            bandsToSave.add(FrameworkResultBand.builder()
+                .frameworkVersionId(command.versionId())
+                .code(safeCode)
+                .label(safeLabel)
+                .description(StringNormalization.trimAndCollapseSpaces(bandCmd.description()))
+                .order(bandCmd.order())
+                .build());
         }
 
         try {

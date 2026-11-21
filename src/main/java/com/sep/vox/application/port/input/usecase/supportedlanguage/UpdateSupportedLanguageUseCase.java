@@ -2,7 +2,6 @@ package com.sep.vox.application.port.input.usecase.supportedlanguage;
 
 import java.time.Instant;
 
-import java.util.UUID;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,7 +41,7 @@ public class UpdateSupportedLanguageUseCase implements IUseCase<UpdateSupportedL
         validateUniqueCode(command);
 
         Instant now = Instant.now();
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        String currentUserId = userContextPort.getCurrentAuthenticatedUserId().toString();
 
         try {
             int updatedRows = supportedLanguageRepository.updateMutableFields(

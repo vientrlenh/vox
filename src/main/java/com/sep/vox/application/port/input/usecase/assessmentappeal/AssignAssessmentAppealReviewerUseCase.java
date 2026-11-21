@@ -141,8 +141,6 @@ public class AssignAssessmentAppealReviewerUseCase implements IUseCase<AssignAss
 
         ResultStatusHistoryRecorder.Snapshot before = resultStatusHistoryRecorder.snapshot(candidateResult);
         candidateResult.setStatus(AssessmentCandidateResultStatus.RE_GRADING);
-        candidateResult.setUpdatedAt(now);
-        candidateResult.setUpdatedBy(currentUserId);
         assessmentCandidateResultRepository.save(candidateResult);
         resultStatusHistoryRecorder.record(
             before, candidateResult, ResultStatusChangeSource.TEACHER_APPEAL, currentUserId, overrideReason);

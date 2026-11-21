@@ -6,7 +6,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -120,7 +119,7 @@ class UpdateQuestionStatusUseCaseTests {
     @Test
     void should_throw_forbidden_when_the_actor_is_not_allowed() {
         Question question = question(QuestionStatus.DRAFT);
-        question.setCreatedBy(UUID.randomUUID());
+        question.setCreatedBy(UUID.randomUUID().toString());
         mockQuestion(question);
 
         assertThatThrownBy(() -> useCase.execute(new UpdateQuestionStatusCommand(question.getId(), "SUBMIT", null)))
@@ -155,17 +154,42 @@ class UpdateQuestionStatusUseCaseTests {
     }
 
     private Question question(QuestionStatus status) {
-        Instant now = Instant.now();
-        return new Question(
-            UUID.randomUUID(), bankId, UUID.randomUUID(), "Q-1", null, "Câu hỏi", null, null,
-            QuestionType.SHORT_ANSWER, 10, 10, 60, QuestionSharing.PRIVATE, null, false,
-            QuestionConfidentiality.OPEN, null, status, now, now, currentUserId, currentUserId);
+        return Question.builder()
+                .id(UUID.randomUUID())
+                .questionBankId(bankId)
+                .questionTopicId(UUID.randomUUID())
+                .code("Q-1")
+                .instructionText(null)
+                .questionText("Câu hỏi")
+                .promptText(null)
+                .preparationText(null)
+                .type(QuestionType.SHORT_ANSWER)
+                .preparationTimeSeconds(10)
+                .minResponseSeconds(10)
+                .maxResponseSeconds(60)
+                .sharing(QuestionSharing.PRIVATE)
+                .sourceQuestionId(null)
+                .locked(false)
+                .confidentiality(QuestionConfidentiality.OPEN)
+                .securePoolId(null)
+                .status(status)
+                .createdBy(currentUserId.toString())
+                .updatedBy(currentUserId.toString())
+                .build();
     }
 
     private QuestionBank bank() {
-        Instant now = Instant.now();
-        return new QuestionBank(
-            bankId, UUID.randomUUID(), null, "BANK-1", "Ngân hàng", null,
-            QuestionBankOwnerType.SYSTEM, QuestionBankStatus.PUBLISHED, now, now, currentUserId, currentUserId);
+        return QuestionBank.builder()
+                .id(bankId)
+                .languageId(UUID.randomUUID())
+                .schoolId(null)
+                .code("BANK-1")
+                .name("Ngân hàng")
+                .description(null)
+                .ownerType(QuestionBankOwnerType.SYSTEM)
+                .status(QuestionBankStatus.PUBLISHED)
+                .createdBy(currentUserId.toString())
+                .updatedBy(currentUserId.toString())
+                .build();
     }
 }

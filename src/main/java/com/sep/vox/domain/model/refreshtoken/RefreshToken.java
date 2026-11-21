@@ -15,27 +15,6 @@ public class RefreshToken {
 
     public RefreshToken() {}
 
-    public RefreshToken(UUID id, UUID sessionId, String tokenHash, Instant issuedAt, Instant expiredAt,
-            Instant usedAt, UUID replacedBy) {
-        this.id = id;
-        this.sessionId = sessionId;
-        this.tokenHash = tokenHash;
-        this.issuedAt = issuedAt;
-        this.expiredAt = expiredAt;
-        this.usedAt = usedAt;
-        this.replacedBy = replacedBy;
-    }
-
-    public RefreshToken(UUID sessionId, String tokenHash, Instant issuedAt, Instant expiredAt,
-            Instant usedAt, UUID replacedBy) {
-        this.sessionId = sessionId;
-        this.tokenHash = tokenHash;
-        this.issuedAt = issuedAt;
-        this.expiredAt = expiredAt;
-        this.usedAt = usedAt;
-        this.replacedBy = replacedBy;
-    }
-
     public UUID getId() {
         return id;
     }
@@ -95,14 +74,12 @@ public class RefreshToken {
     private static final int DAY_TILL_EXPIRES = 7;
 
     public static RefreshToken createFresh(UUID sessionId, String tokenHash, Instant now) {
-        return new RefreshToken(
-            sessionId, 
-            tokenHash, 
-            now,
-            now.plus(DAY_TILL_EXPIRES, ChronoUnit.DAYS), 
-            null, 
-            null
-        );
+        return builder()
+            .sessionId(sessionId)
+            .tokenHash(tokenHash)
+            .issuedAt(now)
+            .expiredAt(now.plus(DAY_TILL_EXPIRES, ChronoUnit.DAYS))
+            .build();
     }
 
     public boolean isUsed() {
@@ -111,5 +88,55 @@ public class RefreshToken {
 
     public boolean isExpired(Instant now) {
         return this.expiredAt.isBefore(now);
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private final RefreshToken target = new RefreshToken();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder sessionId(UUID sessionId) {
+            target.sessionId = sessionId;
+            return this;
+        }
+
+        public Builder tokenHash(String tokenHash) {
+            target.tokenHash = tokenHash;
+            return this;
+        }
+
+        public Builder issuedAt(Instant issuedAt) {
+            target.issuedAt = issuedAt;
+            return this;
+        }
+
+        public Builder expiredAt(Instant expiredAt) {
+            target.expiredAt = expiredAt;
+            return this;
+        }
+
+        public Builder usedAt(Instant usedAt) {
+            target.usedAt = usedAt;
+            return this;
+        }
+
+        public Builder replacedBy(UUID replacedBy) {
+            target.replacedBy = replacedBy;
+            return this;
+        }
+
+        public RefreshToken build() {
+            return target;
+        }
     }
 }

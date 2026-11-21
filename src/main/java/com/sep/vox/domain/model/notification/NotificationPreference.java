@@ -6,9 +6,9 @@ import java.util.UUID;
 public class NotificationPreference {
 
     /**
-     * Không có dòng trong notification_preferences nghĩa là "dùng mặc định". Hai hằng số
-     * này là nguồn duy nhất của giá trị mặc định đó, để phía Java và câu
-     * {@code COALESCE(np.push_enabled, TRUE)} phía SQL không bao giờ lệch nhau.
+     * A missing row in notification_preferences means "use the default". These two constants
+     * are the only source of that default value, so the Java side and the
+     * {@code COALESCE(np.push_enabled, TRUE)} clause on the SQL side can never drift apart.
      */
     public static final boolean DEFAULT_PUSH_ENABLED = true;
     public static final boolean DEFAULT_EMAIL_ENABLED = true;
@@ -21,25 +21,6 @@ public class NotificationPreference {
     private Instant updatedAt;
     
     public NotificationPreference() {}
-
-    public NotificationPreference(UUID id, UUID userId, NotificationCategory category, boolean pushEnabled,
-            boolean emailEnabled, Instant updatedAt) {
-        this.id = id;
-        this.userId = userId;
-        this.category = category;
-        this.pushEnabled = pushEnabled;
-        this.emailEnabled = emailEnabled;
-        this.updatedAt = updatedAt;
-    }
-
-    public NotificationPreference(UUID userId, NotificationCategory category, boolean pushEnabled,
-            boolean emailEnabled, Instant updatedAt) {
-        this.userId = userId;
-        this.category = category;
-        this.pushEnabled = pushEnabled;
-        this.emailEnabled = emailEnabled;
-        this.updatedAt = updatedAt;
-    }
 
     public UUID getId() {
         return id;
@@ -90,4 +71,51 @@ public class NotificationPreference {
     }
 
     
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final NotificationPreference target = new NotificationPreference();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder userId(UUID userId) {
+            target.userId = userId;
+            return this;
+        }
+
+        public Builder category(NotificationCategory category) {
+            target.category = category;
+            return this;
+        }
+
+        public Builder pushEnabled(boolean pushEnabled) {
+            target.pushEnabled = pushEnabled;
+            return this;
+        }
+
+        public Builder emailEnabled(boolean emailEnabled) {
+            target.emailEnabled = emailEnabled;
+            return this;
+        }
+
+        public Builder updatedAt(Instant updatedAt) {
+            target.updatedAt = updatedAt;
+            return this;
+        }
+
+        public NotificationPreference build() {
+            return target;
+        }
+
+    }
 }

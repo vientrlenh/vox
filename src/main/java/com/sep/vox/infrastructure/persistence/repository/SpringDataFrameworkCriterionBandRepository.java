@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.FrameworkCriterionBandJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.framework.FrameworkCriterionBandJpaEntity;
 
 public interface SpringDataFrameworkCriterionBandRepository extends JpaRepository<FrameworkCriterionBandJpaEntity, UUID> {
     List<FrameworkCriterionBandJpaEntity> findByFrameworkCriterionIdIn(Collection<UUID> frameworkCriterionIds);

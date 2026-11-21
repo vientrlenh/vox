@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.personalization.TopicInterestEvent;
 import com.sep.vox.domain.repository.TopicInterestEventRepository;
-import com.sep.vox.infrastructure.persistence.entity.TopicInterestEventJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.personalization.TopicInterestEventJpaEntity;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataTopicInterestEventRepository;
 
 @Repository
@@ -29,27 +29,27 @@ public class TopicInterestEventRepositoryImpl
             UUID sessionId,
             String eventType,
             double signal) {
-        repository.save(new TopicInterestEventJpaEntity(
-            UUID.randomUUID(),
-            studentId,
-            topicId,
-            sessionId,
-            eventType,
-            java.math.BigDecimal.valueOf(signal),
-            Instant.now()
-        ));
+        repository.save(TopicInterestEventJpaEntity.builder()
+                .id(UUID.randomUUID())
+                .studentId(studentId)
+                .practiceTopicId(topicId)
+                .practiceSessionId(sessionId)
+                .eventType(eventType)
+                .signal(java.math.BigDecimal.valueOf(signal))
+                .occurredAt(Instant.now())
+                .build());
     }
 
     @Override
     public List<TopicInterestEvent> findByStudent(UUID studentId) {
         return repository.findByStudentIdOrderByOccurredAtAscIdAsc(studentId).stream()
-            .map(entity -> new TopicInterestEvent(
-                entity.getPracticeTopicId(),
-                entity.getPracticeSessionId(),
-                entity.getEventType(),
-                entity.getSignal().doubleValue(),
-                entity.getOccurredAt()
-            ))
+            .map(entity -> TopicInterestEvent.builder()
+                    .topicId(entity.getPracticeTopicId())
+                    .sessionId(entity.getPracticeSessionId())
+                    .eventType(entity.getEventType())
+                    .signal(entity.getSignal().doubleValue())
+                    .occurredAt(entity.getOccurredAt())
+                    .build())
             .toList();
     }
 }

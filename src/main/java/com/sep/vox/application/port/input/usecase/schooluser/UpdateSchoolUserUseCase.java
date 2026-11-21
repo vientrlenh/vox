@@ -2,7 +2,6 @@ package com.sep.vox.application.port.input.usecase.schooluser;
 
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
-import java.time.Instant;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -52,7 +51,6 @@ public class UpdateSchoolUserUseCase implements IUseCase<UpdateSchoolUserCommand
             throw new IllegalArgumentException("Cần cung cấp ít nhất một trường để cập nhật");
         }
 
-        Instant now = Instant.now();
         UUID callerId = userContextPort.getCurrentAuthenticatedUserId();
 
         User caller = userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)
@@ -101,17 +99,15 @@ public class UpdateSchoolUserUseCase implements IUseCase<UpdateSchoolUserCommand
             target.setDateOfBirth(input.dateOfBirth() != null ? new DateOfBirth(input.dateOfBirth()) : null);
         }
 
-        // Đây là đường DUY NHẤT đặt ảnh đại diện cho học sinh: UpdateProfileUseCase từ chối học sinh
-        // tự đổi ảnh, vì ảnh chân dung ở sản phẩm này là dữ liệu định danh dùng lúc giám thị điểm
-        // danh. School admin đặt hộ thì tấm ảnh mới có người chịu trách nhiệm.
-        // Vẫn kiểm URL dù người gọi là school admin: nhận URL host lạ đồng nghĩa mọi giáo viên mở
-        // danh sách chấm sẽ tự gọi sang đó. Xem AvatarUrlPolicy.
+        // This is the ONLY way to set a student's avatar: UpdateProfileUseCase rejects students changing their own
+        // photo, because in this product the portrait is identity data used by proctors for roll call. When a school
+        // admin sets it on their behalf, someone is accountable for the photo.
+        // The URL is still checked even though the caller is a school admin: accepting a URL on a foreign host
+        // would make every teacher who opens the grading list call out to that host. See AvatarUrlPolicy.
         if (input.avatarUrlProvided()) {
             target.setAvatarUrl(AvatarUrlPolicy.normalizeOrThrow(allowedAvatarHosts, input.avatarUrl()));
         }
 
-        target.setUpdatedAt(now);
-        target.setUpdatedBy(callerId);
         try {
             userRepository.saveAndFlush(target);
         } catch (DataIntegrityViolationException e) {

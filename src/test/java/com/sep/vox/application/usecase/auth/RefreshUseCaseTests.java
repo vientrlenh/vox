@@ -260,90 +260,86 @@ class RefreshUseCaseTests {
     }
 
     private static DeviceSession activeSession(UUID sessionId, UUID userId, String deviceId) {
-        return new DeviceSession(
-            sessionId,
-            userId,
-            deviceId,
-            "Chrome on Windows",
-            SessionPlatform.WEB,
-            "203.0.113.10",
-            "JUnit User Agent",
-            null
-        );
+        return DeviceSession.builder()
+            .id(sessionId)
+            .userId(userId)
+            .deviceId(deviceId)
+            .deviceName("Chrome on Windows")
+            .platform(SessionPlatform.WEB)
+            .ipAddress("203.0.113.10")
+            .userAgent("JUnit User Agent")
+            .build();
     }
 
     private User activeUser(UUID userId, UUID schoolId) {
-        return new User(
-            userId,
-            new Email("test@example.com"),
-            "password-hash",
-            new Phone("0987654321"),
-            new FullName("Test User"),
-            null,
-            new DateOfBirth(LocalDate.of(2000, 1, 1)),
-            "Ho Chi Minh City",
-            null,
-            UserStatus.ACTIVE,
-            Instant.now(),
-            Instant.now(),
-            null,
-            null
-        );
+        return User.builder()
+            .id(userId)
+            .email(new Email("test@example.com"))
+            .passwordHash("password-hash")
+            .phone(new Phone("0987654321"))
+            .fullName(new FullName("Test User"))
+            .dateOfBirth(new DateOfBirth(LocalDate.of(2000, 1, 1)))
+            .address("Ho Chi Minh City")
+            .status(UserStatus.ACTIVE)
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
+            .build();
     }
 
     private DeviceSession revokedSession(UUID sessionId, String deviceId) {
-        return new DeviceSession(
-            sessionId,
-            UUID.randomUUID(),
-            deviceId,
-            "Chrome on Windows",
-            SessionPlatform.WEB,
-            "203.0.113.10",
-            "JUnit User Agent",
-            Instant.now()
-        );
+        return DeviceSession.builder()
+            .id(sessionId)
+            .userId(UUID.randomUUID())
+            .deviceId(deviceId)
+            .deviceName("Chrome on Windows")
+            .platform(SessionPlatform.WEB)
+            .ipAddress("203.0.113.10")
+            .userAgent("JUnit User Agent")
+            .revokedAt(Instant.now())
+            .build();
     }
 
     private RefreshToken activeRefreshToken(UUID tokenId, UUID sessionId, String tokenHash) {
         Instant now = Instant.now();
-        return new RefreshToken(
-            tokenId,
-            sessionId,
-            tokenHash,
-            now,
-            now.plus(7, ChronoUnit.DAYS),
-            null,
-            null
-        );
+        return RefreshToken.builder()
+            .id(tokenId)
+            .sessionId(sessionId)
+            .tokenHash(tokenHash)
+            .issuedAt(now)
+            .expiredAt(now.plus(7, ChronoUnit.DAYS))
+            .build();
     }
 
     private RefreshToken expiredRefreshToken(UUID tokenId, UUID sessionId, String tokenHash) {
         Instant now = Instant.now();
-        return new RefreshToken(
-            tokenId,
-            sessionId,
-            tokenHash,
-            now.minus(8, ChronoUnit.DAYS),
-            now.minus(1, ChronoUnit.DAYS),
-            null,
-            null
-        );
+        return RefreshToken.builder()
+            .id(tokenId)
+            .sessionId(sessionId)
+            .tokenHash(tokenHash)
+            .issuedAt(now.minus(8, ChronoUnit.DAYS))
+            .expiredAt(now.minus(1, ChronoUnit.DAYS))
+            .build();
     }
 
     private RefreshToken usedRefreshToken(UUID tokenId, UUID sessionId, String tokenHash) {
         Instant now = Instant.now();
-        return new RefreshToken(
-            tokenId,
-            sessionId,
-            tokenHash,
-            now.minus(1, ChronoUnit.DAYS),
-            now.plus(6, ChronoUnit.DAYS),
-            now,
-            UUID.randomUUID()
-        );
+        return RefreshToken.builder()
+            .id(tokenId)
+            .sessionId(sessionId)
+            .tokenHash(tokenHash)
+            .issuedAt(now.minus(1, ChronoUnit.DAYS))
+            .expiredAt(now.plus(6, ChronoUnit.DAYS))
+            .usedAt(now)
+            .replacedBy(UUID.randomUUID())
+            .build();
     }
 
     private SchoolUser activeSchoolUser(UUID userId, UUID schoolId) {
-        return new SchoolUser(schoolId, userId, Instant.now(), Instant.now());
+        return SchoolUser.builder()
+            .schoolId(schoolId)
+            .userId(userId)
+            .startDate(Instant.now())
+            .endDate(Instant.now())
+            .build();
     }
 }

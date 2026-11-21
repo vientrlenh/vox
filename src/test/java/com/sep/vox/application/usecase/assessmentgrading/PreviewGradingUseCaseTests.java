@@ -100,7 +100,16 @@ public class PreviewGradingUseCaseTests {
         when(assessmentGradingAccessService.requireActiveUserId()).thenReturn(teacherId);
         when(assessmentGradingAccessService.load(assignmentId)).thenReturn(context());
         when(assessmentItemResponseRepository.findBySessionId(sessionId)).thenReturn(List.of(
-            new AssessmentItemResponse(responseId, sessionId, paperItemId, null, null, null, null, null)));
+            AssessmentItemResponse.builder()
+                    .id(responseId)
+                    .sessionId(sessionId)
+                    .paperItemId(paperItemId)
+                    .audioUrl(null)
+                    .durationSeconds(null)
+                    .transcript(null)
+                    .terminationReason(null)
+                    .submittedAt(null)
+                    .build()));
         when(rubricCriterionRepository.findByRubricVersionId(rubricVersionId)).thenReturn(List.of(
             criterion(fluencyId, "FLU", "Trôi chảy", new BigDecimal("0.60")),
             criterion(pronunciationId, "PRO", "Phát âm", new BigDecimal("0.40"))));
@@ -110,8 +119,20 @@ public class PreviewGradingUseCaseTests {
     }
 
     private RubricCriterion criterion(UUID id, String code, String name, BigDecimal weight) {
-        return new RubricCriterion(id, rubricVersionId, null, code, name, null, null, weight,
-            new BigDecimal("0.00"), new BigDecimal("9.00"), 1, true, null, null, null, null);
+        return RubricCriterion.builder()
+                .id(id)
+                .rubricVersionId(rubricVersionId)
+                .frameworkCriterionId(null)
+                .code(code)
+                .name(name)
+                .description(null)
+                .examples(null)
+                .weight(weight)
+                .minScore(new BigDecimal("0.00"))
+                .maxScore(new BigDecimal("9.00"))
+                .order(1)
+                .required(true)
+                .build();
     }
 
     private RubricVersion rubricVersion() {
@@ -237,8 +258,26 @@ public class PreviewGradingUseCaseTests {
         // require full coverage (unlike /grade), so the total can build up while grading. The
         // calculator takes the old score for the part not yet entered.
         when(assessmentItemResponseRepository.findBySessionId(sessionId)).thenReturn(List.of(
-            new AssessmentItemResponse(responseId, sessionId, paperItemId, null, null, null, null, null),
-            new AssessmentItemResponse(UUID.randomUUID(), sessionId, UUID.randomUUID(), null, null, null, null, null)));
+            AssessmentItemResponse.builder()
+                    .id(responseId)
+                    .sessionId(sessionId)
+                    .paperItemId(paperItemId)
+                    .audioUrl(null)
+                    .durationSeconds(null)
+                    .transcript(null)
+                    .terminationReason(null)
+                    .submittedAt(null)
+                    .build(),
+            AssessmentItemResponse.builder()
+                    .id(UUID.randomUUID())
+                    .sessionId(sessionId)
+                    .paperItemId(UUID.randomUUID())
+                    .audioUrl(null)
+                    .durationSeconds(null)
+                    .transcript(null)
+                    .terminationReason(null)
+                    .submittedAt(null)
+                    .build()));
 
         GradingPreviewResponse response = useCase.execute(command("8.00", "6.00"));
 

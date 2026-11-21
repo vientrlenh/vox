@@ -12,27 +12,7 @@ public class SchoolClassUser {
     private Instant leftAt;
     private UUID assignedBy;
 
-    public SchoolClassUser() {}
-
-    public SchoolClassUser(UUID id, UUID userId, UUID schoolClassId, boolean isActive, Instant joinedAt,
-            Instant leftAt, UUID assignedBy) {
-        this.id = id;
-        this.userId = userId;
-        this.schoolClassId = schoolClassId;
-        this.isActive = isActive;
-        this.joinedAt = joinedAt;
-        this.leftAt = leftAt;
-        this.assignedBy = assignedBy;
-    }
-
-    public SchoolClassUser(UUID userId, UUID schoolClassId, boolean isActive, Instant joinedAt,
-            Instant leftAt, UUID assignedBy) {
-        this.userId = userId;
-        this.schoolClassId = schoolClassId;
-        this.isActive = isActive;
-        this.joinedAt = joinedAt;
-        this.leftAt = leftAt;
-        this.assignedBy = assignedBy;
+    public SchoolClassUser() {
     }
 
     public UUID getId() {
@@ -101,5 +81,53 @@ public class SchoolClassUser {
         this.leftAt = null;
     }
 
-    
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private final SchoolClassUser target = new SchoolClassUser();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder userId(UUID userId) {
+            target.userId = userId;
+            return this;
+        }
+
+        public Builder schoolClassId(UUID schoolClassId) {
+            target.schoolClassId = schoolClassId;
+            return this;
+        }
+
+        public Builder active(boolean isActive) {
+            target.isActive = isActive;
+            return this;
+        }
+
+        public Builder joinedAt(Instant joinedAt) {
+            target.joinedAt = joinedAt;
+            return this;
+        }
+
+        public Builder leftAt(Instant leftAt) {
+            target.leftAt = leftAt;
+            return this;
+        }
+
+        public Builder assignedBy(UUID assignedBy) {
+            target.assignedBy = assignedBy;
+            return this;
+        }
+
+        public SchoolClassUser build() {
+            return target;
+        }
+    }
 }

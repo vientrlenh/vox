@@ -16,12 +16,11 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Khối lớp là catalog TOÀN CỤC nên chỉ system admin được tạo -- trước đây use case này cho phép
- * school admin tạo khối riêng cho trường mình, nay một bản ghi ảnh hưởng mọi trường.
+ * The grade level is a GLOBAL catalog, so only a system admin may create one -- this use case used to let
+ * a school admin create a grade level just for their own school, but now one record affects every school.
  */
 @Service
 public class CreateGradeLevelUseCase implements IUseCase<CreateGradeLevelCommand, UUID> {
@@ -70,19 +69,17 @@ public class CreateGradeLevelUseCase implements IUseCase<CreateGradeLevelCommand
     }
 
     private UUID saveNewGradeLevel(CreateGradeLevelCommand command, String code, UUID creatorId) {
-        Instant now = Instant.now();
-        GradeLevel newGradeLevel = new GradeLevel(
-                code,
-                StringNormalization.trimAndCollapseSpaces(command.name()),
-                command.description() != null ? StringNormalization.trimAndCollapseSpaces(command.description()) : null,
-                command.order(),
-                GradeLevelStatus.ACTIVE,
-                now, now, creatorId, creatorId
-        );
+        GradeLevel newGradeLevel = GradeLevel.builder()
+            .code(code)
+            .name(StringNormalization.trimAndCollapseSpaces(command.name()))
+            .description(command.description() != null ? StringNormalization.trimAndCollapseSpaces(command.description()) : null)
+            .order(command.order())
+            .status(GradeLevelStatus.ACTIVE)
+            .build();
         try {
             return gradeLevelRepository.save(newGradeLevel).getId();
         } catch (DataIntegrityViolationException e) {
-            // Chống race-condition: hai request cùng tạo trùng mã/thứ tự vượt qua check exists rồi mới đụng unique index.
+            // Race-condition guard: two requests that create the same code/order both pass the exists check and only then hit the unique index.
             throw new DuplicatedException("Mã hoặc thứ tự khối học đã tồn tại.");
         }
     }

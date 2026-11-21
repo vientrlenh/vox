@@ -19,7 +19,6 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.PublishSubscriptionPlanCommand;
 import com.sep.vox.application.port.input.service.SubscriptionPlanReplacementValidator;
 import com.sep.vox.application.port.input.usecase.subscription.PublishSubscriptionPlanUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.subscription.SubscriptionPlan;
 import com.sep.vox.domain.model.subscription.SubscriptionPlanPeriod;
@@ -37,7 +36,6 @@ class PublishSubscriptionPlanUseCaseTests {
 
     private static final UUID PLAN_ID = UUID.randomUUID();
     private static final UUID REPLACED_PLAN_ID = UUID.randomUUID();
-    private static final UUID ADMIN_ID = UUID.randomUUID();
 
     private SubscriptionPlanRepository subscriptionPlanRepository;
     private SubscriptionPlanQuotaRepository subscriptionPlanQuotaRepository;
@@ -47,8 +45,6 @@ class PublishSubscriptionPlanUseCaseTests {
     void setUp() {
         subscriptionPlanRepository = mock(SubscriptionPlanRepository.class);
         subscriptionPlanQuotaRepository = mock(SubscriptionPlanQuotaRepository.class);
-        UserContextPort userContextPort = mock(UserContextPort.class);
-        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(ADMIN_ID);
         when(subscriptionPlanQuotaRepository.findBySubscriptionPlanId(PLAN_ID))
             .thenReturn(List.of(quota(QuotaType.ASSESSMENT, BigDecimal.valueOf(1_000_000))));
         when(subscriptionPlanRepository.save(any())).thenAnswer(call -> call.getArgument(0));
@@ -56,8 +52,7 @@ class PublishSubscriptionPlanUseCaseTests {
         useCase = new PublishSubscriptionPlanUseCase(
             subscriptionPlanRepository,
             subscriptionPlanQuotaRepository,
-            new SubscriptionPlanReplacementValidator(subscriptionPlanQuotaRepository),
-            userContextPort);
+            new SubscriptionPlanReplacementValidator(subscriptionPlanQuotaRepository));
     }
 
     @Test
@@ -152,6 +147,10 @@ class PublishSubscriptionPlanUseCaseTests {
     }
 
     private static SubscriptionPlanQuota quota(QuotaType quotaType, BigDecimal includedAmountVnd) {
-        return new SubscriptionPlanQuota(UUID.randomUUID(), quotaType, includedAmountVnd);
+        return SubscriptionPlanQuota.builder()
+            .subscriptionPlanId(UUID.randomUUID())
+            .quotaType(quotaType)
+            .includedAmountVnd(includedAmountVnd)
+            .build();
     }
 }

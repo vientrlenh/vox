@@ -82,7 +82,10 @@ public class AddAssessmentScheduleProctorUseCase implements IUseCase<AddAssessme
         assessmentScheduleProctorConflictValidator.requireTeacherFree(
             input.teacherId(), schedule.getStartDate(), schedule.getEndDate(), schedule.getId());
 
-        AssessmentScheduleProctor proctor = new AssessmentScheduleProctor(schedule.getId(), input.teacherId());
+        AssessmentScheduleProctor proctor = AssessmentScheduleProctor.builder()
+                .scheduleId(schedule.getId())
+                .teacherId(input.teacherId())
+                .build();
         return AssessmentScheduleProctorDtoMapper.toDto(assessmentScheduleProctorRepository.save(proctor));
     }
 }

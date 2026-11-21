@@ -223,9 +223,14 @@ class FundQuotaFromBalanceUseCaseTests {
     }
 
     private void givenPool(long totalVnd, long usedVnd, long fundedVnd) {
-        SchoolSubscriptionQuotaRecord pool = new SchoolSubscriptionQuotaRecord(
-            quotaId, subscriptionId, QuotaType.PRACTICE,
-            BigDecimal.valueOf(totalVnd), BigDecimal.valueOf(usedVnd), BigDecimal.valueOf(fundedVnd));
+        SchoolSubscriptionQuotaRecord pool = SchoolSubscriptionQuotaRecord.builder()
+            .id(quotaId)
+            .schoolSubscriptionId(subscriptionId)
+            .quotaType(QuotaType.PRACTICE)
+            .totalAllocatedAmountVnd(BigDecimal.valueOf(totalVnd))
+            .usedAmountVnd(BigDecimal.valueOf(usedVnd))
+            .fundedFromBalanceVnd(BigDecimal.valueOf(fundedVnd))
+            .build();
         when(quotaRecordRepository.findBySchoolSubscriptionIdAndQuotaType(subscriptionId, QuotaType.PRACTICE))
             .thenReturn(Optional.of(pool));
         when(quotaRecordRepository.findById(quotaId)).thenReturn(Optional.of(pool));
@@ -237,7 +242,12 @@ class FundQuotaFromBalanceUseCaseTests {
      * the number that was changed.
      */
     private void givenWallet(long balanceVnd) {
-        SchoolBalance balance = new SchoolBalance(schoolId, BigDecimal.valueOf(balanceVnd), null, null);
+        SchoolBalance balance = SchoolBalance.builder()
+            .schoolId(schoolId)
+            .balanceVnd(BigDecimal.valueOf(balanceVnd))
+            .createdAt(null)
+            .updatedAt(null)
+            .build();
         when(schoolBalanceRepository.findBySchoolId(schoolId)).thenReturn(Optional.of(balance));
         when(schoolBalanceRepository.findBySchoolIdForUpdateOrCreate(eq(schoolId), any())).thenReturn(balance);
     }

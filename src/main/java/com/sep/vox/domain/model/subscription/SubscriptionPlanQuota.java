@@ -6,11 +6,11 @@ import java.util.UUID;
 import com.sep.vox.domain.model.metering.QuotaType;
 
 /**
- * Định mức một loại hạn mức được bao gồm trong giá gói, tính bằng VND.
+ * The amount of one quota type included in the plan price, in VND.
  *
- * <p>Không còn tokenUnitPrice: đơn giá "VND cho mỗi $1 hạn mức" trước đây là tỷ giá ĐÃ CỘNG LÃI
- * (fx × (1 + serviceFeeRatio)), khiến trường nhìn thấy một tỷ giá không khớp thị trường. Phần lãi
- * giờ là một dòng riêng trên đơn hàng, còn quy đổi USD→VND ghi theo từng lượt dùng ở
+ * <p>There is no tokenUnitPrice any more: the old unit price "VND per $1 of quota" was an exchange rate WITH THE
+ * MARGIN ALREADY ADDED (fx x (1 + serviceFeeRatio)), so the school saw an exchange rate that did not match the market.
+ * The margin is now a separate line on the order, and the USD->VND conversion is recorded per usage in
  * SchoolBalanceEntry (costUsd + fxRateUsed).
  */
 public class SubscriptionPlanQuota {
@@ -20,19 +20,8 @@ public class SubscriptionPlanQuota {
     private BigDecimal includedAmountVnd;
 
     public SubscriptionPlanQuota() {}
-
-    public SubscriptionPlanQuota(UUID id, UUID subscriptionPlanId, QuotaType quotaType, BigDecimal includedAmountVnd) {
-        this.id = id;
-        this.subscriptionPlanId = subscriptionPlanId;
-        this.quotaType = quotaType;
-        this.includedAmountVnd = includedAmountVnd;
-    }
-
-    public SubscriptionPlanQuota(UUID subscriptionPlanId, QuotaType quotaType, BigDecimal includedAmountVnd) {
-        this.subscriptionPlanId = subscriptionPlanId;
-        this.quotaType = quotaType;
-        this.includedAmountVnd = includedAmountVnd;
-    }
+
+
 
     public UUID getId() {
         return id;
@@ -64,5 +53,42 @@ public class SubscriptionPlanQuota {
 
     public void setIncludedAmountVnd(BigDecimal includedAmountVnd) {
         this.includedAmountVnd = includedAmountVnd;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final SubscriptionPlanQuota target = new SubscriptionPlanQuota();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder subscriptionPlanId(UUID subscriptionPlanId) {
+            target.subscriptionPlanId = subscriptionPlanId;
+            return this;
+        }
+
+        public Builder quotaType(QuotaType quotaType) {
+            target.quotaType = quotaType;
+            return this;
+        }
+
+        public Builder includedAmountVnd(BigDecimal includedAmountVnd) {
+            target.includedAmountVnd = includedAmountVnd;
+            return this;
+        }
+
+        public SubscriptionPlanQuota build() {
+            return target;
+        }
+
     }
 }

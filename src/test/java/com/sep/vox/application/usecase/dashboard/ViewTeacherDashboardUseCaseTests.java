@@ -111,7 +111,14 @@ class ViewTeacherDashboardUseCaseTests {
     }
 
     private AssessmentMember membership(UUID assessmentId, UUID userId) {
-        return new AssessmentMember(UUID.randomUUID(), assessmentId, userId, AssessmentMemberRole.AUTHOR, Instant.now(), null);
+        return AssessmentMember.builder()
+                .id(UUID.randomUUID())
+                .assessmentId(assessmentId)
+                .userId(userId)
+                .role(AssessmentMemberRole.AUTHOR)
+                .grantedAt(Instant.now())
+                .grantedBy(null)
+                .build();
     }
 
     @Test
@@ -252,11 +259,32 @@ class ViewTeacherDashboardUseCaseTests {
             .thenReturn(List.of(candidateA, candidateB, candidateC));
 
         when(schoolClassUserRepository.findByUserIdIn(List.of(studentA, studentB, studentC))).thenReturn(List.of(
-            new SchoolClassUser(studentA, classId, true, Instant.now(), null, null),
-            new SchoolClassUser(studentB, classId, true, Instant.now(), null, null),
-            new SchoolClassUser(studentC, classId, true, Instant.now(), null, null)
+            SchoolClassUser.builder()
+                .userId(studentA)
+                .schoolClassId(classId)
+                .active(true)
+                .joinedAt(Instant.now())
+                .leftAt(null)
+                .assignedBy(null)
+                .build(),
+            SchoolClassUser.builder()
+                .userId(studentB)
+                .schoolClassId(classId)
+                .active(true)
+                .joinedAt(Instant.now())
+                .leftAt(null)
+                .assignedBy(null)
+                .build(),
+            SchoolClassUser.builder()
+                .userId(studentC)
+                .schoolClassId(classId)
+                .active(true)
+                .joinedAt(Instant.now())
+                .leftAt(null)
+                .assignedBy(null)
+                .build()
         ));
-        SchoolClass schoolClass = SchoolClass.create(schoolId, UUID.randomUUID(), UUID.randomUUID(), "L10A1", "Lớp 10A1", null, teacherId, Instant.now());
+        SchoolClass schoolClass = SchoolClass.create(schoolId, UUID.randomUUID(), UUID.randomUUID(), "L10A1", "Lớp 10A1", null);
         schoolClass.setId(classId);
         when(schoolClassRepository.findAllById(List.of(classId))).thenReturn(List.of(schoolClass));
 

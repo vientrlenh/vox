@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.service;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -61,10 +60,9 @@ public class SchoolClassImportCommitHandler implements ImportCommitHandler {
     @Override
     public ImportCommitResult commit(ImportSession session, List<ImportRow> rows) {
         UUID schoolId = session.getSchoolId();
-        UUID currentUserId = session.getCreatedBy();
         Map<String, String> mapping = jsonSerializationPort.toStringMap(session.getConfirmedMappingJson());
         validateMappingKeys(rows, mapping);
-        return processRows(rows, mapping, schoolId, currentUserId);
+        return processRows(rows, mapping, schoolId);
     }
 
 
@@ -88,7 +86,7 @@ public class SchoolClassImportCommitHandler implements ImportCommitHandler {
         }
     }
 
-    private ImportCommitResult processRows(List<ImportRow> rows, Map<String, String> confirmedMapping, UUID schoolId, UUID currentUserId) {
+    private ImportCommitResult processRows(List<ImportRow> rows, Map<String, String> confirmedMapping, UUID schoolId) {
         long createdRows = 0L;
         long updatedRows = 0L;
         long invalidRows = 0L;
@@ -133,11 +131,11 @@ public class SchoolClassImportCommitHandler implements ImportCommitHandler {
             try {
                 if (existingClass != null) {
                     transactionTemplate.executeWithoutResult(status ->
-                            updateClass(existingClass, normalized, language.getId(), schoolGrade.getId(), currentUserId));
+                            updateClass(existingClass, normalized, language.getId(), schoolGrade.getId()));
                     updatedRows++;
                 } else {
                     transactionTemplate.executeWithoutResult(status ->
-                            createClass(normalized, schoolId, language.getId(), schoolGrade.getId(), currentUserId));
+                            createClass(normalized, schoolId, language.getId(), schoolGrade.getId()));
                     createdRows++;
                 }
             } catch (DataIntegrityViolationException | IllegalArgumentException exception) {
@@ -154,27 +152,21 @@ public class SchoolClassImportCommitHandler implements ImportCommitHandler {
         return new ImportCommitResult(createdRows, updatedRows, 0L, invalidRows);
     }
 
-    private void createClass(Map<String, String> data, UUID schoolId, UUID languageId, UUID schoolGradeId, UUID currentUserId) {
-        Instant now = Instant.now();
+    private void createClass(Map<String, String> data, UUID schoolId, UUID languageId, UUID schoolGradeId) {
         schoolClassRepository.save(SchoolClass.create(
                 schoolId,
                 languageId,
                 schoolGradeId,
                 data.get("code"),
                 data.get("name"),
-                data.get("description"),
-                currentUserId,
-                now));
+                data.get("description")));
     }
 
-    private void updateClass(SchoolClass existing, Map<String, String> data, UUID languageId, UUID schoolGradeId, UUID currentUserId) {
-        Instant now = Instant.now();
+    private void updateClass(SchoolClass existing, Map<String, String> data, UUID languageId, UUID schoolGradeId) {
         existing.setName(data.get("name"));
         existing.setDescription(data.get("description"));
         existing.setLanguageId(languageId);
         existing.setSchoolGradeId(schoolGradeId);
-        existing.setUpdatedAt(now);
-        existing.setUpdatedBy(currentUserId);
         schoolClassRepository.save(existing);
     }
 

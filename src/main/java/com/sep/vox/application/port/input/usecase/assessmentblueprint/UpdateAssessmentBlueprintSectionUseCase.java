@@ -4,7 +4,6 @@ import com.sep.vox.domain.model.assessment.AssessmentBlueprint;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSection;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersion;
 import java.math.BigDecimal;
-import java.time.Instant;
 
 import java.util.List;
 import java.util.UUID;
@@ -82,8 +81,6 @@ public class UpdateAssessmentBlueprintSectionUseCase implements IUseCase<UpdateA
         section.setInstruction(command.instruction());
         section.setSectionTimeLimitSeconds(command.sectionTimeLimitSeconds());
         section.setSectionWeight(command.sectionWeight() == null ? BigDecimal.ONE : command.sectionWeight());
-        section.setUpdatedAt(Instant.now());
-        section.setUpdatedBy(currentUserId);
 
         return AssessmentBlueprintSectionDtoMapper.toDto(assessmentBlueprintSectionRepository.save(section));
     }

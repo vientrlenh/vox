@@ -63,7 +63,14 @@ class SchoolClassUserRepositoryTests {
         UUID assignedBy = UUID.randomUUID();
 
         SchoolClassUser saved = schoolClassUserRepository.save(
-            new SchoolClassUser(userId, schoolClassId, true, Instant.now(), null, assignedBy)
+            SchoolClassUser.builder()
+                .userId(userId)
+                .schoolClassId(schoolClassId)
+                .active(true)
+                .joinedAt(Instant.now())
+                .leftAt(null)
+                .assignedBy(assignedBy)
+                .build()
         );
 
         assertThat(saved.getUserId()).isEqualTo(userId);
@@ -77,7 +84,14 @@ class SchoolClassUserRepositoryTests {
         UUID userId = UUID.randomUUID();
         UUID schoolClassId = UUID.randomUUID();
         schoolClassUserRepository.save(
-            new SchoolClassUser(userId, schoolClassId, true, Instant.now(), null, UUID.randomUUID())
+            SchoolClassUser.builder()
+                .userId(userId)
+                .schoolClassId(schoolClassId)
+                .active(true)
+                .joinedAt(Instant.now())
+                .leftAt(null)
+                .assignedBy(UUID.randomUUID())
+                .build()
         );
 
         Optional<SchoolClassUser> found = schoolClassUserRepository.findByUserIdAndSchoolClassId(userId, schoolClassId);
@@ -94,13 +108,34 @@ class SchoolClassUserRepositoryTests {
         UUID classId = UUID.randomUUID();
         UUID anotherClassId = UUID.randomUUID();
         schoolClassUserRepository.save(
-            new SchoolClassUser(userId, classId, true, Instant.now(), null, UUID.randomUUID())
+            SchoolClassUser.builder()
+                .userId(userId)
+                .schoolClassId(classId)
+                .active(true)
+                .joinedAt(Instant.now())
+                .leftAt(null)
+                .assignedBy(UUID.randomUUID())
+                .build()
         );
         schoolClassUserRepository.save(
-            new SchoolClassUser(anotherUserId, anotherClassId, true, Instant.now(), null, UUID.randomUUID())
+            SchoolClassUser.builder()
+                .userId(anotherUserId)
+                .schoolClassId(anotherClassId)
+                .active(true)
+                .joinedAt(Instant.now())
+                .leftAt(null)
+                .assignedBy(UUID.randomUUID())
+                .build()
         );
         schoolClassUserRepository.save(
-            new SchoolClassUser(UUID.randomUUID(), UUID.randomUUID(), true, Instant.now(), null, UUID.randomUUID())
+            SchoolClassUser.builder()
+                .userId(UUID.randomUUID())
+                .schoolClassId(UUID.randomUUID())
+                .active(true)
+                .joinedAt(Instant.now())
+                .leftAt(null)
+                .assignedBy(UUID.randomUUID())
+                .build()
         );
 
         List<SchoolClassUser> found = schoolClassUserRepository.findByUserIdInAndSchoolClassIdIn(
@@ -120,13 +155,34 @@ class SchoolClassUserRepositoryTests {
         UUID classId = UUID.randomUUID();
         UUID anotherClassId = UUID.randomUUID();
         schoolClassUserRepository.save(
-            new SchoolClassUser(userId, classId, true, Instant.now(), null, UUID.randomUUID())
+            SchoolClassUser.builder()
+                .userId(userId)
+                .schoolClassId(classId)
+                .active(true)
+                .joinedAt(Instant.now())
+                .leftAt(null)
+                .assignedBy(UUID.randomUUID())
+                .build()
         );
         schoolClassUserRepository.save(
-            new SchoolClassUser(userId, anotherClassId, true, Instant.now(), null, UUID.randomUUID())
+            SchoolClassUser.builder()
+                .userId(userId)
+                .schoolClassId(anotherClassId)
+                .active(true)
+                .joinedAt(Instant.now())
+                .leftAt(null)
+                .assignedBy(UUID.randomUUID())
+                .build()
         );
         schoolClassUserRepository.save(
-            new SchoolClassUser(UUID.randomUUID(), UUID.randomUUID(), true, Instant.now(), null, UUID.randomUUID())
+            SchoolClassUser.builder()
+                .userId(UUID.randomUUID())
+                .schoolClassId(UUID.randomUUID())
+                .active(true)
+                .joinedAt(Instant.now())
+                .leftAt(null)
+                .assignedBy(UUID.randomUUID())
+                .build()
         );
 
         List<SchoolClassUser> found = schoolClassUserRepository.findByUserId(userId);
@@ -143,13 +199,34 @@ class SchoolClassUserRepositoryTests {
         UUID userId = UUID.randomUUID();
         UUID anotherUserId = UUID.randomUUID();
         schoolClassUserRepository.save(
-            new SchoolClassUser(userId, schoolClassId, true, Instant.now(), null, UUID.randomUUID())
+            SchoolClassUser.builder()
+                .userId(userId)
+                .schoolClassId(schoolClassId)
+                .active(true)
+                .joinedAt(Instant.now())
+                .leftAt(null)
+                .assignedBy(UUID.randomUUID())
+                .build()
         );
         schoolClassUserRepository.save(
-            new SchoolClassUser(anotherUserId, schoolClassId, true, Instant.now(), null, UUID.randomUUID())
+            SchoolClassUser.builder()
+                .userId(anotherUserId)
+                .schoolClassId(schoolClassId)
+                .active(true)
+                .joinedAt(Instant.now())
+                .leftAt(null)
+                .assignedBy(UUID.randomUUID())
+                .build()
         );
         schoolClassUserRepository.save(
-            new SchoolClassUser(UUID.randomUUID(), UUID.randomUUID(), true, Instant.now(), null, UUID.randomUUID())
+            SchoolClassUser.builder()
+                .userId(UUID.randomUUID())
+                .schoolClassId(UUID.randomUUID())
+                .active(true)
+                .joinedAt(Instant.now())
+                .leftAt(null)
+                .assignedBy(UUID.randomUUID())
+                .build()
         );
 
         PageResult<SchoolClassUser> found = schoolClassUserRepository.findBySchoolClassId(schoolClassId, 1, 2);
@@ -161,7 +238,14 @@ class SchoolClassUserRepositoryTests {
     void whenExistsBySchoolClassId_thenReturnsWhetherMembershipExists() {
         UUID schoolClassId = UUID.randomUUID();
         schoolClassUserRepository.save(
-            new SchoolClassUser(UUID.randomUUID(), schoolClassId, true, Instant.now(), null, UUID.randomUUID())
+            SchoolClassUser.builder()
+                .userId(UUID.randomUUID())
+                .schoolClassId(schoolClassId)
+                .active(true)
+                .joinedAt(Instant.now())
+                .leftAt(null)
+                .assignedBy(UUID.randomUUID())
+                .build()
         );
 
         assertThat(schoolClassUserRepository.existsBySchoolClassId(schoolClassId)).isTrue();
@@ -228,9 +312,30 @@ class SchoolClassUserRepositoryTests {
         UUID schoolClassId = UUID.randomUUID();
         UUID emptyClassId = UUID.randomUUID();
         Instant now = Instant.now();
-        schoolClassUserRepository.save(new SchoolClassUser(UUID.randomUUID(), schoolClassId, true, now, null, UUID.randomUUID()));
-        schoolClassUserRepository.save(new SchoolClassUser(UUID.randomUUID(), schoolClassId, true, now, null, UUID.randomUUID()));
-        schoolClassUserRepository.save(new SchoolClassUser(UUID.randomUUID(), schoolClassId, false, now, now, UUID.randomUUID()));
+        schoolClassUserRepository.save(SchoolClassUser.builder()
+            .userId(UUID.randomUUID())
+            .schoolClassId(schoolClassId)
+            .active(true)
+            .joinedAt(now)
+            .leftAt(null)
+            .assignedBy(UUID.randomUUID())
+            .build());
+        schoolClassUserRepository.save(SchoolClassUser.builder()
+            .userId(UUID.randomUUID())
+            .schoolClassId(schoolClassId)
+            .active(true)
+            .joinedAt(now)
+            .leftAt(null)
+            .assignedBy(UUID.randomUUID())
+            .build());
+        schoolClassUserRepository.save(SchoolClassUser.builder()
+            .userId(UUID.randomUUID())
+            .schoolClassId(schoolClassId)
+            .active(false)
+            .joinedAt(now)
+            .leftAt(now)
+            .assignedBy(UUID.randomUUID())
+            .build());
 
         Map<UUID, Integer> counts = schoolClassUserRepository.countActiveBySchoolClassIdIn(Set.of(schoolClassId, emptyClassId));
 
@@ -247,36 +352,50 @@ class SchoolClassUserRepositoryTests {
     private UUID joinClass(UUID schoolClassId, String email, String phone, String fullName) {
         User user = userRepository.save(newUser(email, phone, fullName));
         schoolClassUserRepository.save(
-            new SchoolClassUser(user.getId(), schoolClassId, true, Instant.now(), null, UUID.randomUUID())
+            SchoolClassUser.builder()
+                .userId(user.getId())
+                .schoolClassId(schoolClassId)
+                .active(true)
+                .joinedAt(Instant.now())
+                .leftAt(null)
+                .assignedBy(UUID.randomUUID())
+                .build()
         );
         return user.getId();
     }
 
     private void grantRole(UUID userId, UUID roleId) {
-        userRoleRepository.save(new UserRole(userId, roleId, Instant.now()));
+        userRoleRepository.save(UserRole.builder()
+            .userId(userId)
+            .roleId(roleId)
+            .createdAt(Instant.now())
+            .build());
     }
 
     private static Role newRole(String code, String name) {
         Instant now = Instant.now();
-        return new Role(new RoleCode(code), name, now, now, UUID.randomUUID(), UUID.randomUUID());
+        return Role.builder()
+            .code(new RoleCode(code))
+            .name(name)
+            .createdAt(now)
+            .updatedAt(now)
+            .createdBy(UUID.randomUUID().toString())
+            .updatedBy(UUID.randomUUID().toString())
+            .build();
     }
 
     private static User newUser(String email, String phone, String fullName) {
         Instant now = Instant.now();
-        return new User(
-            new Email(email),
-            "password-hash",
-            new Phone(phone),
-            new FullName(fullName),
-            null,
-            new DateOfBirth(LocalDate.of(2000, 1, 1)),
-            "Ho Chi Minh City",
-            null,
-            UserStatus.ACTIVE,
-            now,
-            now,
-            null,
-            null
-        );
+        return User.builder()
+            .email(new Email(email))
+            .passwordHash("password-hash")
+            .phone(new Phone(phone))
+            .fullName(new FullName(fullName))
+            .dateOfBirth(new DateOfBirth(LocalDate.of(2000, 1, 1)))
+            .address("Ho Chi Minh City")
+            .status(UserStatus.ACTIVE)
+            .createdAt(now)
+            .updatedAt(now)
+            .build();
     }
 }

@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,7 +13,6 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.port.input.command.CreateSubscriptionPlanCommand;
 import com.sep.vox.application.port.input.command.CreateSubscriptionPlanQuotaCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.subscription.SubscriptionPlan;
 import com.sep.vox.domain.model.subscription.SubscriptionPlanQuota;
@@ -30,15 +28,12 @@ public class CreateSubscriptionPlanUseCase implements IUseCase<CreateSubscriptio
 
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final SubscriptionPlanQuotaRepository subscriptionPlanQuotaRepository;
-    private final UserContextPort userContextPort;
 
     public CreateSubscriptionPlanUseCase(
             SubscriptionPlanRepository subscriptionPlanRepository,
-            SubscriptionPlanQuotaRepository subscriptionPlanQuotaRepository,
-            UserContextPort userContextPort) {
+            SubscriptionPlanQuotaRepository subscriptionPlanQuotaRepository) {
         this.subscriptionPlanRepository = subscriptionPlanRepository;
         this.subscriptionPlanQuotaRepository = subscriptionPlanQuotaRepository;
-        this.userContextPort = userContextPort;
     }
 
     @Override
@@ -56,9 +51,9 @@ public class CreateSubscriptionPlanUseCase implements IUseCase<CreateSubscriptio
         Map<QuotaType, BigDecimal> includedAmountByQuotaType = new LinkedHashMap<QuotaType, BigDecimal>();
         for (CreateSubscriptionPlanQuotaCommand quota : command.quotas()) {
             QuotaType quotaType = quota.quotaType();
-            // subscription_plan_quotas CHƯA có unique (subscription_plan_id, quota_type), nên DB
-            // không chặn giúp: gửi hai dòng GRADING sẽ lưu cả hai và mọi chỗ đọc hạn mức về sau lấy
-            // trúng dòng nào là tùy thứ tự trả về của Postgres.
+            // subscription_plan_quotas does NOT have a unique (subscription_plan_id, quota_type) yet, so the DB does not block it:
+            // sending two GRADING rows would save both, and whichever row every later quota read picks up depends on the order
+            // Postgres returns them in.
             if (includedAmountByQuotaType.containsKey(quotaType)) {
                 throw new IllegalArgumentException(
                     "Loại hạn mức \"" + quotaType + "\" bị khai báo nhiều lần trong cùng một gói");
@@ -76,16 +71,18 @@ public class CreateSubscriptionPlanUseCase implements IUseCase<CreateSubscriptio
             includedAmountByQuotaType.put(quotaType, quota.includedAmountVnd());
         }
 
-        Instant now = Instant.now();
-        UUID userId = userContextPort.getCurrentAuthenticatedUserId();
-        SubscriptionPlan plan = SubscriptionPlan.create(command.name(), command.tagline(), command.priceVnd(), command.periodType(), command.periodCount(), command.maxTimePerAttemptMin(), now, userId);
+        SubscriptionPlan plan = SubscriptionPlan.create(command.name(), command.tagline(), command.priceVnd(), command.periodType(), command.periodCount(), command.maxTimePerAttemptMin());
         SubscriptionPlan savedPlan = subscriptionPlanRepository.save(plan);
 
-        // Dòng hạn mức chỉ khai ĐỊNH MỨC, không kèm đơn giá nào. Tỷ giá USD->VND được ghi theo từng
-        // lượt dùng (SchoolBalanceEntry.fxRateUsed) còn phí dịch vụ là một dòng riêng trên đơn hàng,
-        // nên gói không cần và không được đóng băng một tỷ giá của riêng nó.
+        // A quota row only declares the QUOTA amount, with no unit price. The USD->VND exchange rate is recorded per usage
+        // (SchoolBalanceEntry.fxRateUsed) and the service fee is a separate line on the order, so the plan does not need to, and
+        // must not, freeze an exchange rate of its own.
         List<SubscriptionPlanQuota> quotas = includedAmountByQuotaType.entrySet().stream()
-            .map(entry -> new SubscriptionPlanQuota(savedPlan.getId(), entry.getKey(), entry.getValue()))
+            .map(entry -> SubscriptionPlanQuota.builder()
+                .subscriptionPlanId(savedPlan.getId())
+                .quotaType(entry.getKey())
+                .includedAmountVnd(entry.getValue())
+                .build())
             .toList();
         subscriptionPlanQuotaRepository.saveAll(quotas);
 

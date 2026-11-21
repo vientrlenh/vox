@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.domain.repository.StudentQuestionExposureRepository;
-import com.sep.vox.infrastructure.persistence.entity.StudentQuestionExposureJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.question.StudentQuestionExposureJpaEntity;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataStudentQuestionExposureRepository;
 
 @Repository
@@ -26,12 +26,12 @@ public class StudentQuestionExposureRepositoryImpl implements StudentQuestionExp
             .findByStudentIdAndPracticeQuestionId(studentId, questionId)
             .orElse(null);
         if (exposure == null) {
-            repository.save(new StudentQuestionExposureJpaEntity(
-                UUID.randomUUID(),
-                studentId,
-                questionId,
-                Instant.now()
-            ));
+            repository.save(StudentQuestionExposureJpaEntity.builder()
+                    .id(UUID.randomUUID())
+                    .studentId(studentId)
+                    .practiceQuestionId(questionId)
+                    .seenAt(Instant.now())
+                    .build());
         } else {
             exposure.setSeenAt(Instant.now());
             repository.save(exposure);

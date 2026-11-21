@@ -65,8 +65,6 @@ public class RejectImportSessionUseCase implements IUseCase<RejectImportSessionC
         String reason = normalizeReason(input.reason());
         session.setStatus(ImportSessionStatus.CANCELLED);
         session.setFailureReason(reason);
-        session.setUpdatedAt(now);
-        session.setUpdatedBy(currentUserId);
         ImportSession savedSession = importSessionRepository.save(session);
 
         return new RejectImportSessionResponse(
@@ -110,8 +108,6 @@ public class RejectImportSessionUseCase implements IUseCase<RejectImportSessionC
         }
         if (session.getExpiresAt() != null && session.getExpiresAt().isBefore(now)) {
             session.setStatus(ImportSessionStatus.EXPIRED);
-            session.setUpdatedAt(now);
-            session.setUpdatedBy(currentUserId);
             importSessionRepository.save(session);
             throw new IllegalStateException("Phiên import đã hết hạn");
         }

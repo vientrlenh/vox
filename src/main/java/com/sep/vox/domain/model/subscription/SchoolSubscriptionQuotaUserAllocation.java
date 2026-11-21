@@ -14,25 +14,8 @@ public class SchoolSubscriptionQuotaUserAllocation {
     private BigDecimal usedAmountVnd;
 
     public SchoolSubscriptionQuotaUserAllocation() {}
-
-    public SchoolSubscriptionQuotaUserAllocation(UUID id, UUID schoolSubscriptionId, QuotaType quotaType, UUID userId,
-            BigDecimal allocatedAmountVnd, BigDecimal usedAmountVnd) {
-        this.id = id;
-        this.schoolSubscriptionId = schoolSubscriptionId;
-        this.quotaType = quotaType;
-        this.userId = userId;
-        this.allocatedAmountVnd = allocatedAmountVnd;
-        this.usedAmountVnd = usedAmountVnd;
-    }
-
-    public SchoolSubscriptionQuotaUserAllocation(UUID schoolSubscriptionId, QuotaType quotaType, UUID userId,
-            BigDecimal allocatedAmountVnd, BigDecimal usedAmountVnd) {
-        this.schoolSubscriptionId = schoolSubscriptionId;
-        this.quotaType = quotaType;
-        this.userId = userId;
-        this.allocatedAmountVnd = allocatedAmountVnd;
-        this.usedAmountVnd = usedAmountVnd;
-    }
+
+
 
     public UUID getId() {
         return id;
@@ -80,5 +63,52 @@ public class SchoolSubscriptionQuotaUserAllocation {
 
     public void setUsedAmountVnd(BigDecimal usedAmountVnd) {
         this.usedAmountVnd = usedAmountVnd;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final SchoolSubscriptionQuotaUserAllocation target = new SchoolSubscriptionQuotaUserAllocation();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder schoolSubscriptionId(UUID schoolSubscriptionId) {
+            target.schoolSubscriptionId = schoolSubscriptionId;
+            return this;
+        }
+
+        public Builder quotaType(QuotaType quotaType) {
+            target.quotaType = quotaType;
+            return this;
+        }
+
+        public Builder userId(UUID userId) {
+            target.userId = userId;
+            return this;
+        }
+
+        public Builder allocatedAmountVnd(BigDecimal allocatedAmountVnd) {
+            target.allocatedAmountVnd = allocatedAmountVnd;
+            return this;
+        }
+
+        public Builder usedAmountVnd(BigDecimal usedAmountVnd) {
+            target.usedAmountVnd = usedAmountVnd;
+            return this;
+        }
+
+        public SchoolSubscriptionQuotaUserAllocation build() {
+            return target;
+        }
+
     }
 }

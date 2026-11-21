@@ -65,13 +65,13 @@ class ImportRowRepositoryTests {
     }
 
     private static ImportRow row(UUID sessionId, long rowNumber, ImportRowStatus status) {
-        return new ImportRow(
-            sessionId,
-            rowNumber,
-            "{\"code\":\"A01\"}",
-            null,
-            null,
-            status
-        );
+        return ImportRow.builder()
+            .sessionId(sessionId)
+            .rowNumber(rowNumber)
+            .rawDataJson("{\"code\":\"A01\"}")
+            .mappedDataJson(null)
+            .errorsJson(null)
+            .status(status)
+            .build();
     }
 }

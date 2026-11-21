@@ -2,32 +2,32 @@ package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.notification.NotificationCategory;
 import com.sep.vox.domain.model.notification.NotificationPreference;
-import com.sep.vox.infrastructure.persistence.entity.NotificationPreferenceJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.notification.NotificationPreferenceJpaEntity;
 
 public final class NotificationPreferenceMapper {
 
     private NotificationPreferenceMapper() {}
 
     public static NotificationPreference toDomain(NotificationPreferenceJpaEntity jpa) {
-        return new NotificationPreference(
-            jpa.getId(),
-            jpa.getUserId(),
-            categoryFromString(jpa.getCategory()),
-            jpa.isPushEnabled(),
-            jpa.isEmailEnabled(),
-            jpa.getUpdatedAt()
-        );
+        return NotificationPreference.builder()
+                .id(jpa.getId())
+                .userId(jpa.getUserId())
+                .category(categoryFromString(jpa.getCategory()))
+                .pushEnabled(jpa.isPushEnabled())
+                .emailEnabled(jpa.isEmailEnabled())
+                .updatedAt(jpa.getUpdatedAt())
+                .build();
     }
 
     public static NotificationPreferenceJpaEntity toJpa(NotificationPreference preference) {
-        return new NotificationPreferenceJpaEntity(
-            preference.getId(),
-            preference.getUserId(),
-            valueOf(preference.getCategory()),
-            preference.isPushEnabled(),
-            preference.isEmailEnabled(),
-            preference.getUpdatedAt()
-        );
+        return NotificationPreferenceJpaEntity.builder()
+                .id(preference.getId())
+                .userId(preference.getUserId())
+                .category(valueOf(preference.getCategory()))
+                .pushEnabled(preference.isPushEnabled())
+                .emailEnabled(preference.isEmailEnabled())
+                .updatedAt(preference.getUpdatedAt())
+                .build();
     }
 
     private static NotificationCategory categoryFromString(String category) {

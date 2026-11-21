@@ -146,20 +146,20 @@ class SchoolRepositoryTests {
 
     private static School newSchool(String code, String name, String domain, String email, String phone) {
         Instant now = Instant.now();
-        return new School(
-            new SchoolCode(code),
-            name,
-            "Repository test school",
-            new Phone(phone),
-            new Email(email),
-            new SchoolDomain(domain),
-            "Ho Chi Minh City",
-            new StudentCount(100),
-            true,
-            now,
-            now,
-            UUID.randomUUID(),
-            UUID.randomUUID()
-        );
+        return School.builder()
+            .code(new SchoolCode(code))
+            .name(name)
+            .description("Repository test school")
+            .contactPhone(new Phone(phone))
+            .contactEmail(new Email(email))
+            .domain(new SchoolDomain(domain))
+            .address("Ho Chi Minh City")
+            .studentCount(new StudentCount(100))
+            .active(true)
+            .createdAt(now)
+            .updatedAt(now)
+            .createdBy(UUID.randomUUID().toString())
+            .updatedBy(UUID.randomUUID().toString())
+            .build();
     }
 }

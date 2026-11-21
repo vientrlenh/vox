@@ -6,7 +6,7 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.sep.vox.infrastructure.persistence.entity.OrderItemJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.order.OrderItemJpaEntity;
 
 public interface SpringDataOrderItemRepository extends JpaRepository<OrderItemJpaEntity, UUID> {
     List<OrderItemJpaEntity> findByOrderId(UUID orderId);

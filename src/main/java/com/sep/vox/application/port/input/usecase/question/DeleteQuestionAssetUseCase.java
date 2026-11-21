@@ -61,7 +61,7 @@ public class DeleteQuestionAssetUseCase implements IUseCase<DeleteQuestionAssetC
         QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
-        boolean owner = currentUserId.equals(question.getCreatedBy());
+        boolean owner = question.isCreatedBy(currentUserId);
         boolean editorCollaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId)
             .filter(collaborator -> collaborator.getPermission() == QuestionCollaboratorPermission.CAN_EDIT)
             .isPresent();

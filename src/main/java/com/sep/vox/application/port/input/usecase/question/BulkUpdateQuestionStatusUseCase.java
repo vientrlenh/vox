@@ -110,8 +110,6 @@ public class BulkUpdateQuestionStatusUseCase
             }
 
             QuestionStatusTransition.apply(question, action);
-            question.setUpdatedAt(now);
-            question.setUpdatedBy(actor.userId());
             toSave.add(question);
         }
 

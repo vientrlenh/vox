@@ -18,72 +18,33 @@ public class SchoolBalanceEntry {
 
     private UUID id;
     private UUID schoolId;
-    /** Gói đang ACTIVE lúc phát sinh -- CHỈ để truy vết, số dư không thuộc về gói nào. */
+    /** The subscription that was ACTIVE when this arose -- ONLY for tracing, the balance does not belong to any plan. */
     private UUID subscriptionId;
     private SchoolBalanceEntryType entryType;
-    /** Dương = nạp/hoàn/điều chỉnh tăng, âm = trừ. */
+    /** Positive = top-up/refund/upward adjustment, negative = deduction. */
     private BigDecimal amountVnd;
-    /** Số dư sau bút toán -- dựng lại sao kê không cần cộng dồn từ đầu. */
+    /** Balance after the entry -- rebuilding a statement does not need to accumulate from the beginning. */
     private BigDecimal balanceAfterVnd;
-    /** Đơn hàng nguồn: bắt buộc với TOP_UP/REFUND. */
+    /** Source order: required for TOP_UP/REFUND. */
     private UUID orderId;
-    /** Phiên THI đã gây ra khoản trừ -- OVERAGE_CHARGE phải có ĐÚNG MỘT trong hai cột session. */
+    /** The EXAM session that caused the deduction -- OVERAGE_CHARGE must have EXACTLY ONE of the two session columns. */
     private UUID assessmentSessionId;
-    /** Phiên LUYỆN NÓI đã gây ra khoản trừ -- cột riêng vì mỗi cột session là một FK được thật. */
+    /** The SPEAKING PRACTICE session that caused the deduction -- a separate column because each session column is a real FK. */
     private UUID practiceSessionId;
-    /** Chiều BÁO CÁO cho ViewTokenUsageTimeseries, không phải ví riêng. */
+    /** A REPORTING dimension for ViewTokenUsageTimeseries, not a separate wallet. */
     private QuotaType quotaType;
-    /** Chi phí GỐC nhà cung cấp tính (Azure), giữ nguyên USD để đối soát ngược với ai_usage_records. */
+    /** The provider's ORIGINAL cost (Azure), kept in USD to reconcile back against ai_usage_records. */
     private BigDecimal costUsd;
-    /** Tỷ giá đã dùng để quy đổi costUsd sang amountVnd -- chốt lại vì tỷ giá đổi hằng ngày. */
+    /** The exchange rate used to convert costUsd to amountVnd -- stored because the rate changes daily. */
     private BigDecimal fxRateUsed;
-    /** Người thực hiện: bắt buộc với ADJUSTMENT. */
+    /** The person who acted: required for ADJUSTMENT. */
     private UUID actorId;
     private String reason;
     private Instant occurredAt;
 
     public SchoolBalanceEntry() {}
-
-    public SchoolBalanceEntry(UUID id, UUID schoolId, UUID subscriptionId, SchoolBalanceEntryType entryType,
-            BigDecimal amountVnd, BigDecimal balanceAfterVnd, UUID orderId, UUID assessmentSessionId,
-            UUID practiceSessionId, QuotaType quotaType,
-            BigDecimal costUsd, BigDecimal fxRateUsed, UUID actorId, String reason, Instant occurredAt) {
-        this.id = id;
-        this.schoolId = schoolId;
-        this.subscriptionId = subscriptionId;
-        this.entryType = entryType;
-        this.amountVnd = amountVnd;
-        this.balanceAfterVnd = balanceAfterVnd;
-        this.orderId = orderId;
-        this.assessmentSessionId = assessmentSessionId;
-        this.practiceSessionId = practiceSessionId;
-        this.quotaType = quotaType;
-        this.costUsd = costUsd;
-        this.fxRateUsed = fxRateUsed;
-        this.actorId = actorId;
-        this.reason = reason;
-        this.occurredAt = occurredAt;
-    }
-
-    public SchoolBalanceEntry(UUID schoolId, UUID subscriptionId, SchoolBalanceEntryType entryType,
-            BigDecimal amountVnd, BigDecimal balanceAfterVnd, UUID orderId, UUID assessmentSessionId,
-            UUID practiceSessionId, QuotaType quotaType,
-            BigDecimal costUsd, BigDecimal fxRateUsed, UUID actorId, String reason, Instant occurredAt) {
-        this.schoolId = schoolId;
-        this.subscriptionId = subscriptionId;
-        this.entryType = entryType;
-        this.amountVnd = amountVnd;
-        this.balanceAfterVnd = balanceAfterVnd;
-        this.orderId = orderId;
-        this.assessmentSessionId = assessmentSessionId;
-        this.practiceSessionId = practiceSessionId;
-        this.quotaType = quotaType;
-        this.costUsd = costUsd;
-        this.fxRateUsed = fxRateUsed;
-        this.actorId = actorId;
-        this.reason = reason;
-        this.occurredAt = occurredAt;
-    }
+
+
 
     public UUID getId() {
         return id;
@@ -206,40 +167,33 @@ public class SchoolBalanceEntry {
     }
 
     /**
-     * Bút toán NẠP TIỀN từ một đơn đã thu đủ.
+     * A TOP-UP entry from a fully paid order.
      *
-     * <p>Số cộng vào ví là {@code subtotalAmountVnd} của đơn, KHÔNG phải total: phần phí dịch vụ
-     * (charged_fee_vnd) là tiền công của mình, trường không được tiêu lại. Xem Order.forTopUp.
+     * <p>The amount added to the wallet is the order's {@code subtotalAmountVnd}, NOT the total: the service fee
+     * (charged_fee_vnd) is our own fee, and the school must not be able to spend it back. See Order.forTopUp.
      *
-     * <p>quotaType/costUsd/fxRateUsed đều null: đây là tiền vào, chưa gắn với lượt dùng nào -- ba
-     * cột đó chỉ có nghĩa với OVERAGE_CHARGE.
+     * <p>quotaType/costUsd/fxRateUsed are all null: this is money coming in, not yet tied to any usage -- those three
+     * columns only mean something for OVERAGE_CHARGE.
      */
     public static SchoolBalanceEntry forTopUp(UUID schoolId, UUID subscriptionId, UUID orderId,
             BigDecimal creditedAmountVnd, BigDecimal balanceAfterVnd, Instant now) {
-        return new SchoolBalanceEntry(
-            schoolId, 
-            subscriptionId, 
-            SchoolBalanceEntryType.TOP_UP, 
-            creditedAmountVnd, 
-            balanceAfterVnd, 
-            orderId, 
-            null, 
-            null, 
-            null, 
-            null, 
-            null, 
-            null, 
-            null, 
-            now
-        );
+        return builder()
+            .schoolId(schoolId)
+            .subscriptionId(subscriptionId)
+            .entryType(SchoolBalanceEntryType.TOP_UP)
+            .amountVnd(creditedAmountVnd)
+            .balanceAfterVnd(balanceAfterVnd)
+            .orderId(orderId)
+            .occurredAt(now)
+            .build();
     }
 
     /**
-     * Bút toán TRỪ phần chi phí AI vượt quá hạn mức kèm gói, cho một phiên THI.
+     * A DEDUCTION entry for the AI cost that exceeds the plan's quota, for an EXAM session.
      *
-     * <p>{@code overageVnd} là phần VƯỢT, không phải cả khoản chi: phần còn nằm trong hạn mức đã được
-     * ghi ở school_subscription_quota_records.used_amount_vnd rồi, ghi lại ở đây là đếm hai lần cùng
-     * một đồng tiền -- xem ConsumeQuotaService.chargeOverage.
+     * <p>{@code overageVnd} is the part that EXCEEDS, not the whole charge: the part that stays within the quota has
+     * already been recorded in school_subscription_quota_records.used_amount_vnd, and recording it here would count the
+     * same money twice -- see ConsumeQuotaService.chargeOverage.
      */
     public static SchoolBalanceEntry forAssessmentOverageCharge(UUID schoolId, UUID subscriptionId,
             UUID assessmentSessionId, QuotaType quotaType, BigDecimal overageVnd, BigDecimal balanceAfterVnd,
@@ -257,70 +211,154 @@ public class SchoolBalanceEntry {
     }
 
     /**
-     * Bút toán CHUYỂN tiền từ ví tự nạp sang ví hạn mức của một loại quota.
+     * A TRANSFER entry of money from the self-funded wallet to the quota wallet of one quota type.
      *
-     * <p>Nhận số DƯƠNG và tự đảo dấu, cùng lý do với {@link #overageCharge}: ràng buộc
-     * chk_school_balance_entries_quota_funding_traceable đòi {@code amount_vnd < 0}, và bắt chỗ gọi tự
-     * nhớ {@code .negate()} là chừa sẵn một chỗ để quên.
+     * <p>Takes a POSITIVE number and flips the sign itself, for the same reason as {@link #overageCharge}: the constraint
+     * chk_school_balance_entries_quota_funding_traceable requires {@code amount_vnd < 0}, and making the caller remember
+     * {@code .negate()} leaves a place to forget it.
      *
-     * <p>{@code costUsd}/{@code fxRateUsed} null và cả hai cột phiên đều null -- ràng buộc trên đòi
-     * đúng như vậy: đây không phải một khoản chi cho AI mà là tiền đổi túi, nên không có hóa đơn nhà
-     * cung cấp nào để đối soát và không có phiên nào gây ra nó.
+     * <p>{@code costUsd}/{@code fxRateUsed} are null and both session columns are null -- the constraint above demands
+     * exactly that: this is not a charge for AI but money moving between pockets, so there is no provider invoice to
+     * reconcile against and no session that caused it.
      *
-     * <p>{@code actorId} BẮT BUỘC, khác hẳn OVERAGE_CHARGE do hệ thống tự sinh: đây là quyết định của
-     * một con người và không có đường hoàn lại, nên sổ phải nói được ai đã bấm. {@code reason} thì
-     * tuỳ chọn -- đây là thao tác thường ngày, không phải một lần sửa tay như ADJUSTMENT, và bắt gõ
-     * lý do cho mỗi lần nạp chỉ đẻ ra một ô người dùng gõ cho xong.
+     * <p>{@code actorId} is REQUIRED, unlike the system-generated OVERAGE_CHARGE: this is a human decision with no way
+     * back, so the ledger must be able to say who pressed the button. {@code reason} is optional -- this is a routine
+     * operation, not a manual fix like ADJUSTMENT, and forcing a reason on every transfer would only produce a box the
+     * user types into just to get through.
      */
     public static SchoolBalanceEntry forQuotaFunding(UUID schoolId, UUID subscriptionId,
             QuotaType quotaType, BigDecimal fundedVnd, BigDecimal balanceAfterVnd, UUID actorId,
             String reason, Instant now) {
-        return new SchoolBalanceEntry(
-            schoolId,
-            subscriptionId,
-            SchoolBalanceEntryType.QUOTA_FUNDING,
-            fundedVnd.negate(),
-            balanceAfterVnd,
-            null,
-            null,
-            null,
-            quotaType,
-            null,
-            null,
-            actorId,
-            reason,
-            now
-        );
+        return builder()
+            .schoolId(schoolId)
+            .subscriptionId(subscriptionId)
+            .entryType(SchoolBalanceEntryType.QUOTA_FUNDING)
+            .amountVnd(fundedVnd.negate())
+            .balanceAfterVnd(balanceAfterVnd)
+            .quotaType(quotaType)
+            .actorId(actorId)
+            .reason(reason)
+            .occurredAt(now)
+            .build();
     }
 
     /**
-     * Truyền vào số DƯƠNG, factory tự đảo dấu: chk_school_balance_entries_overage_traceable đòi
-     * amount_vnd &lt; 0, và bắt chỗ gọi tự nhớ .negate() là chừa sẵn một chỗ để quên. Cùng ràng buộc
-     * đó đòi quotaType/costUsd/fxRateUsed NOT NULL và ĐÚNG MỘT trong hai cột session được set -- gom
-     * vào đây để "cột nào bắt buộc" chỉ có một nơi định nghĩa, giống forTopUp.
+     * Takes a POSITIVE number and the factory flips the sign itself: chk_school_balance_entries_overage_traceable requires
+     * amount_vnd &lt; 0, and making the caller remember .negate() leaves a place to forget it. The same constraint requires
+     * quotaType/costUsd/fxRateUsed to be NOT NULL and EXACTLY ONE of the two session columns to be set -- gathered here so
+     * that "which column is required" is defined in one place, like forTopUp.
      *
-     * <p>private, và hai factory công khai ở trên mỗi cái chỉ set được một cột session: để lộ cả hai
-     * tham số ra ngoài là để lộ luôn khả năng gọi với cả hai null (hoặc cả hai non-null), tức là dựng
-     * sẵn một dòng chắc chắn bị DB từ chối.
+     * <p>private, and each of the two public factories above can only set one session column: exposing both parameters
+     * would also expose the ability to call it with both null (or both non-null), i.e. to build a row that the database is
+     * certain to reject.
      */
     private static SchoolBalanceEntry overageCharge(UUID schoolId, UUID subscriptionId,
             UUID assessmentSessionId, UUID practiceSessionId, QuotaType quotaType, BigDecimal overageVnd,
             BigDecimal balanceAfterVnd, BigDecimal costUsd, BigDecimal fxRateUsed, Instant now) {
-        return new SchoolBalanceEntry(
-            schoolId,
-            subscriptionId,
-            SchoolBalanceEntryType.OVERAGE_CHARGE,
-            overageVnd.negate(),
-            balanceAfterVnd,
-            null,
-            assessmentSessionId,
-            practiceSessionId,
-            quotaType,
-            costUsd,
-            fxRateUsed,
-            null,
-            null,
-            now
-        );
+        return builder()
+            .schoolId(schoolId)
+            .subscriptionId(subscriptionId)
+            .entryType(SchoolBalanceEntryType.OVERAGE_CHARGE)
+            .amountVnd(overageVnd.negate())
+            .balanceAfterVnd(balanceAfterVnd)
+            .assessmentSessionId(assessmentSessionId)
+            .practiceSessionId(practiceSessionId)
+            .quotaType(quotaType)
+            .costUsd(costUsd)
+            .fxRateUsed(fxRateUsed)
+            .occurredAt(now)
+            .build();
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final SchoolBalanceEntry target = new SchoolBalanceEntry();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder schoolId(UUID schoolId) {
+            target.schoolId = schoolId;
+            return this;
+        }
+
+        public Builder subscriptionId(UUID subscriptionId) {
+            target.subscriptionId = subscriptionId;
+            return this;
+        }
+
+        public Builder entryType(SchoolBalanceEntryType entryType) {
+            target.entryType = entryType;
+            return this;
+        }
+
+        public Builder amountVnd(BigDecimal amountVnd) {
+            target.amountVnd = amountVnd;
+            return this;
+        }
+
+        public Builder balanceAfterVnd(BigDecimal balanceAfterVnd) {
+            target.balanceAfterVnd = balanceAfterVnd;
+            return this;
+        }
+
+        public Builder orderId(UUID orderId) {
+            target.orderId = orderId;
+            return this;
+        }
+
+        public Builder assessmentSessionId(UUID assessmentSessionId) {
+            target.assessmentSessionId = assessmentSessionId;
+            return this;
+        }
+
+        public Builder practiceSessionId(UUID practiceSessionId) {
+            target.practiceSessionId = practiceSessionId;
+            return this;
+        }
+
+        public Builder quotaType(QuotaType quotaType) {
+            target.quotaType = quotaType;
+            return this;
+        }
+
+        public Builder costUsd(BigDecimal costUsd) {
+            target.costUsd = costUsd;
+            return this;
+        }
+
+        public Builder fxRateUsed(BigDecimal fxRateUsed) {
+            target.fxRateUsed = fxRateUsed;
+            return this;
+        }
+
+        public Builder actorId(UUID actorId) {
+            target.actorId = actorId;
+            return this;
+        }
+
+        public Builder reason(String reason) {
+            target.reason = reason;
+            return this;
+        }
+
+        public Builder occurredAt(Instant occurredAt) {
+            target.occurredAt = occurredAt;
+            return this;
+        }
+
+        public SchoolBalanceEntry build() {
+            return target;
+        }
+
     }
 }

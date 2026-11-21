@@ -163,20 +163,19 @@ public class CreateSystemRubricCriteriaUseCase implements IUseCase<CreateSystemR
                 examplesVO = new RubricCriterionExamples(exampleList);
             }
 
-            return new RubricCriterion(
-                    command.versionId(),
-                    cCmd.frameworkCriterionId(),
-                    safeCode,
-                    safeName,
-                    cCmd.description() != null ? StringNormalization.trimAndCollapseSpaces(cCmd.description()) : null,
-                    examplesVO,
-                    cCmd.weight(),
-                    cCmd.minScore(),
-                    cCmd.maxScore(),
-                    cCmd.order(),
-                    cCmd.isRequired(),
-                    now, now, currentUserId, currentUserId
-            );
+            return RubricCriterion.builder()
+                    .rubricVersionId(command.versionId())
+                    .frameworkCriterionId(cCmd.frameworkCriterionId())
+                    .code(safeCode)
+                    .name(safeName)
+                    .description(cCmd.description() != null ? StringNormalization.trimAndCollapseSpaces(cCmd.description()) : null)
+                    .examples(examplesVO)
+                    .weight(cCmd.weight())
+                    .minScore(cCmd.minScore())
+                    .maxScore(cCmd.maxScore())
+                    .order(cCmd.order())
+                    .required(cCmd.isRequired())
+                    .build();
         }).collect(Collectors.toList());
 
         // 5. Lưu toàn bộ xuống SQL Server

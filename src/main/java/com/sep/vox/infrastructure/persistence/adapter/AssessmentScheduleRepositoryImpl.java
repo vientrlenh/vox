@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.AssessmentScheduleJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentScheduleJpaEntity;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -101,7 +101,7 @@ public class AssessmentScheduleRepositoryImpl implements AssessmentScheduleRepos
 
     @Override
     public int updateAtomic(UUID id, UUID schoolRoomId, Instant start, Instant end,
-            Instant now, UUID updatedBy) {
+            Instant now, String updatedBy) {
         return springDataAssessmentScheduleRepository.updateAtomic(id, schoolRoomId, start, end, now, updatedBy);
     }
     

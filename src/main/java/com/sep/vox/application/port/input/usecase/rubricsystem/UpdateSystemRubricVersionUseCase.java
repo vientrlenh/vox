@@ -157,7 +157,7 @@ public class UpdateSystemRubricVersionUseCase
                     command.scoringScaleMax(),
                     safeMethod,
                     Instant.now(),
-                    currentUserId
+                    currentUserId.toString()
             );
         } catch (DataIntegrityViolationException e) {
             throw new IllegalArgumentException(

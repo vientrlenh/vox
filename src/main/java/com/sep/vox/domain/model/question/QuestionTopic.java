@@ -1,58 +1,17 @@
 package com.sep.vox.domain.model.question;
 
-
-import java.time.Instant;
 import java.util.UUID;
 
-public class QuestionTopic {
-    private UUID id;
+import com.sep.vox.domain.model.BaseModel;
+
+public class QuestionTopic extends BaseModel {
     private UUID questionBankId;
     private String code;
     private String name;
     private String description;
     private QuestionTopicStatus status;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private UUID createdBy;
-    private UUID updatedBy;
 
     public QuestionTopic() {}
-
-    public QuestionTopic(UUID id, UUID questionBankId, String code, String name, String description,
-            QuestionTopicStatus status, Instant createdAt, Instant updatedAt, UUID createdBy,
-            UUID updatedBy) {
-        this.id = id;
-        this.questionBankId = questionBankId;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.status = status;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public QuestionTopic(UUID questionBankId, String code, String name, String description, QuestionTopicStatus status,
-            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.questionBankId = questionBankId;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.status = status;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
 
     public UUID getQuestionBankId() {
         return questionBankId;
@@ -94,39 +53,48 @@ public class QuestionTopic {
         this.status = status;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
-
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
-    }
-
     public boolean isActive() {
         return this.status == QuestionTopicStatus.PUBLISHED;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder extends BaseModel.Builder<QuestionTopic, Builder> {
+
+        private Builder() {
+            super(new QuestionTopic());
+        }
+
+        @Override
+        protected Builder self() {
+            return this;
+        }
+
+        public Builder questionBankId(UUID questionBankId) {
+            target.questionBankId = questionBankId;
+            return this;
+        }
+
+        public Builder code(String code) {
+            target.code = code;
+            return this;
+        }
+
+        public Builder name(String name) {
+            target.name = name;
+            return this;
+        }
+
+        public Builder description(String description) {
+            target.description = description;
+            return this;
+        }
+
+        public Builder status(QuestionTopicStatus status) {
+            target.status = status;
+            return this;
+        }
     }
 }

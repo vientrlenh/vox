@@ -194,7 +194,10 @@ class UpdateAssessmentUseCaseTests {
         when(assessmentScheduleRepository.findByAssessmentId(assessmentId)).thenReturn(List.of(schedule));
         UUID teacherId = UUID.randomUUID();
         when(assessmentScheduleProctorRepository.findByScheduleId(schedule.getId()))
-            .thenReturn(List.of(new AssessmentScheduleProctor(schedule.getId(), teacherId)));
+            .thenReturn(List.of(AssessmentScheduleProctor.builder()
+                    .scheduleId(schedule.getId())
+                    .teacherId(teacherId)
+                    .build()));
         when(assessmentScheduleProctorRepository.existsOverlappingAssignment(
             eq(teacherId), any(Instant.class), any(Instant.class), eq(schedule.getId()))).thenReturn(true);
 

@@ -81,7 +81,7 @@ public class AcceptSchoolUserImportUseCase
 
         String confirmedMappingJson = jsonSerializationPort.toJson(input.confirmedMapping());
         int queued = importSessionRepository.markQueued(
-                input.importSessionId(), USER_TYPE, confirmedMappingJson, now, currentUserId);
+                input.importSessionId(), USER_TYPE, confirmedMappingJson, now, currentUserId.toString());
         if (queued == 0) {
             throw new IllegalStateException("Phiên import không ở trạng thái cho accept hoặc đã hết hạn");
         }

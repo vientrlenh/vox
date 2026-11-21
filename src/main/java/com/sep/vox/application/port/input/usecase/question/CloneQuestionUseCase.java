@@ -51,7 +51,7 @@ public class CloneQuestionUseCase implements IUseCase<CloneQuestionCommand, Ques
         QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
-        boolean owner = currentUserId.equals(question.getCreatedBy());
+        boolean owner = question.isCreatedBy(currentUserId);
         boolean usableCollaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId)
             .filter(collaborator -> collaborator.getPermission() == QuestionCollaboratorPermission.CAN_EDIT
                 || collaborator.getPermission() == QuestionCollaboratorPermission.CAN_USE)

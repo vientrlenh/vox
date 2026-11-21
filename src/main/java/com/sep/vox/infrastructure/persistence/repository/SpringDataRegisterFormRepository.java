@@ -11,7 +11,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.RegisterFormJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.registerform.RegisterFormJpaEntity;
 
 import jakarta.persistence.LockModeType;
 

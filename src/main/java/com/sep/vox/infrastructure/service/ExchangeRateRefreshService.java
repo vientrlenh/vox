@@ -15,10 +15,10 @@ import com.sep.vox.infrastructure.client.ExchangeRateApiClient;
 import com.sep.vox.infrastructure.properties.ExchangeRateApiProperties;
 
 /**
- * Orchestrate 1 lần fetch tỷ giá USD->VND thật cho ExchangeRateRefreshJob. Không làm mượt/kẹp biên
- * theo lịch sử như QuotaPricingCalibrationService (đó là số tính từ dữ liệu nội bộ, cần smoothing
- * để tránh nhảy vọt theo khối lượng dữ liệu) -- ở đây chỉ là 1 con số bên ngoài, ExchangeRateApiClient
- * đã tự validate biên an toàn trước khi trả về, nên fetch được là lưu thẳng.
+ * Orchestrates ONE fetch of the real USD->VND exchange rate for ExchangeRateRefreshJob. It does not smooth/clamp against
+ * history like QuotaPricingCalibrationService (that number is computed from internal data and needs smoothing to avoid
+ * jumping with the data volume) -- here it is just one external number, and ExchangeRateApiClient already validates the
+ * safe bounds before returning, so whatever is fetched is stored directly.
  */
 @Service
 public class ExchangeRateRefreshService {
@@ -48,8 +48,12 @@ public class ExchangeRateRefreshService {
         // This job only fetches the USD rate (ExchangeRateApiProperties.baseUrl points to .../latest/USD), so
         // currency_code is hard-coded to USD -- adding a second currency means fetching separately, not attaching
         // another label to the same number.
-        ExchangeRateSnapshot snapshot = new ExchangeRateSnapshot(
-            CurrencyCode.USD, rate.get(), Instant.now(), exchangeRateApiProperties.baseUrl());
+        ExchangeRateSnapshot snapshot = ExchangeRateSnapshot.builder()
+            .currencyCode(CurrencyCode.USD)
+            .exchangeRateToVnd(rate.get())
+            .fetchedAt(Instant.now())
+            .sourceUrl(exchangeRateApiProperties.baseUrl())
+            .build();
         exchangeRateSnapshotRepository.save(snapshot);
         LOGGER.info("[exchange-rate] Đã lưu snapshot tỷ giá mới: {}", rate.get());
     }

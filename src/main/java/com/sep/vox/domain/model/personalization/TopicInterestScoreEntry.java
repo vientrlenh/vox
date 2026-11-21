@@ -13,17 +13,6 @@ public class TopicInterestScoreEntry {
     public TopicInterestScoreEntry() {
     }
 
-    public TopicInterestScoreEntry(
-            UUID topicId,
-            double score,
-            int sessionCount,
-            Instant lastEventAt) {
-        this.topicId = topicId;
-        this.score = score;
-        this.sessionCount = sessionCount;
-        this.lastEventAt = lastEventAt;
-    }
-
     public UUID getTopicId() {
         return topicId;
     }
@@ -54,5 +43,42 @@ public class TopicInterestScoreEntry {
 
     public void setLastEventAt(Instant lastEventAt) {
         this.lastEventAt = lastEventAt;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final TopicInterestScoreEntry target = new TopicInterestScoreEntry();
+
+        private Builder() {
+        }
+
+        public Builder topicId(UUID topicId) {
+            target.topicId = topicId;
+            return this;
+        }
+
+        public Builder score(double score) {
+            target.score = score;
+            return this;
+        }
+
+        public Builder sessionCount(int sessionCount) {
+            target.sessionCount = sessionCount;
+            return this;
+        }
+
+        public Builder lastEventAt(Instant lastEventAt) {
+            target.lastEventAt = lastEventAt;
+            return this;
+        }
+
+        public TopicInterestScoreEntry build() {
+            return target;
+        }
+
     }
 }

@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.domain.model.personalization.PracticePaperItem;
 import com.sep.vox.domain.repository.PracticePaperItemRepository;
-import com.sep.vox.infrastructure.persistence.entity.PracticePaperItemJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.personalization.PracticePaperItemJpaEntity;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataPracticePaperItemRepository;
 
 @Repository
@@ -22,15 +22,15 @@ public class PracticePaperItemRepositoryImpl implements PracticePaperItemReposit
 
     @Override
     public void save(PracticePaperItem item) {
-        repository.save(new PracticePaperItemJpaEntity(
-            item.getId(),
-            item.getPracticePaperId(),
-            item.getPracticeQuestionId(),
-            item.getSlotOrder(),
-            item.getTargetCriterionCode(),
-            item.getTargetSubAttribute(),
-            item.getTargetDifficultyRank()
-        ));
+        repository.save(PracticePaperItemJpaEntity.builder()
+                .id(item.getId())
+                .practicePaperId(item.getPracticePaperId())
+                .practiceQuestionId(item.getPracticeQuestionId())
+                .slotOrder(item.getSlotOrder())
+                .targetCriterionCode(item.getTargetCriterionCode())
+                .targetSubAttribute(item.getTargetSubAttribute())
+                .targetDifficultyRank(item.getTargetDifficultyRank())
+                .build());
     }
 
     @Override

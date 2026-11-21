@@ -1,65 +1,27 @@
 package com.sep.vox.domain.model.gradelevel;
 
-import java.time.Instant;
+import com.sep.vox.domain.model.BaseModel;
 import java.util.UUID;
 
 /**
- * Trần bậc mục tiêu cho một khối lớp trên một phiên bản khung năng lực.
+ * The target band ceiling for a grade level on one version of a competency framework.
  *
- * <p>Giữ ID bậc chứ không giữ thứ tự bậc: trần là một BẬC cụ thể ("không vượt quá B1"), không
- * phải một vị trí trên thang ("không vượt quá bậc số 3"). Nếu quản trị chèn thêm bậc hoặc đánh
- * lại thứ tự trong khung thì cách lưu theo ID vẫn giữ nguyên ý nghĩa, còn lưu theo thứ tự thì
- * trần âm thầm trỏ sang bậc khác.
+ * <p>It stores the band ID, not the band order: the ceiling is one specific BAND ("not above B1"), not
+ * a position on the scale ("not above band number 3"). If an administrator inserts a band or renumbers
+ * the order inside the framework, storing the ID keeps its meaning, while storing the order would
+ * silently point the ceiling at a different band.
  *
- * <p>Bất biến "bậc mặc định không được cao hơn bậc trần" và "cả hai bậc phải thuộc đúng
- * frameworkVersionId" không diễn đạt được ở tầng DB (đều cần join sang framework_result_bands),
- * nên do GradeLevelBandScopeGuardService canh.
+ * <p>The invariants "the default band must not be higher than the ceiling band" and "both bands must belong
+ * to the same frameworkVersionId" cannot be expressed in the database (both need a join to
+ * framework_result_bands), so GradeLevelBandScopeGuardService enforces them.
  */
-public class GradeLevelBandScope {
-    private UUID id;
+public class GradeLevelBandScope extends BaseModel {
     private UUID gradeLevelId;
     private UUID frameworkVersionId;
     private UUID defaultTargetBandId;
     private UUID hardMaxBandId;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private UUID createdBy;
-    private UUID updatedBy;
 
     public GradeLevelBandScope() {}
-
-    public GradeLevelBandScope(UUID id, UUID gradeLevelId, UUID frameworkVersionId, UUID defaultTargetBandId,
-            UUID hardMaxBandId, Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.id = id;
-        this.gradeLevelId = gradeLevelId;
-        this.frameworkVersionId = frameworkVersionId;
-        this.defaultTargetBandId = defaultTargetBandId;
-        this.hardMaxBandId = hardMaxBandId;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public GradeLevelBandScope(UUID gradeLevelId, UUID frameworkVersionId, UUID defaultTargetBandId,
-            UUID hardMaxBandId, Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.gradeLevelId = gradeLevelId;
-        this.frameworkVersionId = frameworkVersionId;
-        this.defaultTargetBandId = defaultTargetBandId;
-        this.hardMaxBandId = hardMaxBandId;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
 
     public UUID getGradeLevelId() {
         return gradeLevelId;
@@ -93,35 +55,39 @@ public class GradeLevelBandScope {
         this.hardMaxBandId = hardMaxBandId;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
+    public static class Builder extends BaseModel.Builder<GradeLevelBandScope, Builder> {
 
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
+        private Builder() {
+            super(new GradeLevelBandScope());
+        }
 
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
+        @Override
+        protected Builder self() {
+            return this;
+        }
 
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
+        public Builder gradeLevelId(UUID gradeLevelId) {
+            target.gradeLevelId = gradeLevelId;
+            return this;
+        }
 
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
+        public Builder frameworkVersionId(UUID frameworkVersionId) {
+            target.frameworkVersionId = frameworkVersionId;
+            return this;
+        }
 
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
+        public Builder defaultTargetBandId(UUID defaultTargetBandId) {
+            target.defaultTargetBandId = defaultTargetBandId;
+            return this;
+        }
 
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
+        public Builder hardMaxBandId(UUID hardMaxBandId) {
+            target.hardMaxBandId = hardMaxBandId;
+            return this;
+        }
     }
 }

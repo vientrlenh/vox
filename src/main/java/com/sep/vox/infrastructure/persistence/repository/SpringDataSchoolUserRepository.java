@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
-import com.sep.vox.infrastructure.persistence.entity.SchoolUserJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolUserJpaEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Collection;

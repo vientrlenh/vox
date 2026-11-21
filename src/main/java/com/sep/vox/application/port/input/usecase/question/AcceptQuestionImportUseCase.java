@@ -59,7 +59,7 @@ public class AcceptQuestionImportUseCase implements IUseCase<AcceptQuestionImpor
         if (session.getType() != ImportType.QUESTION) {
             throw new IllegalArgumentException("Phiên import không phải là loại câu hỏi");
         }
-        if (!Objects.equals(session.getCreatedBy(), currentUserId)) {
+        if (!session.isCreatedBy(currentUserId)) {
             throw new IllegalArgumentException("Phiên import không thuộc người dùng hiện tại");
         }
         if (session.getStatus() != ImportSessionStatus.PREVIEWED) {
@@ -77,7 +77,7 @@ public class AcceptQuestionImportUseCase implements IUseCase<AcceptQuestionImpor
             QUESTION_TYPE,
             jsonSerializationPort.toJson(input.confirmedMapping()),
             now,
-            currentUserId
+            currentUserId.toString()
         );
         if (queued == 0) {
             throw new IllegalStateException("Phiên import không ở trạng thái cho accept hoac đã hết hạn");

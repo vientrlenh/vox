@@ -60,16 +60,17 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 /**
- * Chốt kết quả thanh toán của MỘT đơn: đánh dấu lần thử đã trả, đóng đơn, giao hàng, phát hóa đơn.
+ * Settles the payment result of ONE order: marks the attempt as paid, closes the order, delivers the goods, issues the
+ * invoice.
  *
- * <p>Thay cho InvoiceSettlementService cũ. Khác biệt lớn nhất KHÔNG phải ở tên bảng mà ở chỗ lần
- * THỬ thanh toán đã tách khỏi ĐƠN: trước đây một invoice vừa là chứng từ vừa là phiên cổng vừa là ý
- * định mua, nên một lần trả hụt là chết cả ba. Giờ một lần thử hỏng chỉ đóng đúng dòng
- * payment_records đó, đơn vẫn PENDING và trường bấm trả lại được -- xem {@link #failAttempt}.
+ * <p>Replaces the old InvoiceSettlementService. The biggest difference is NOT the table name but that the payment
+ * ATTEMPT is now separated from the ORDER: previously an invoice was at once the document, the gateway session and the
+ * intent to buy, so one failed payment killed all three. Now a failed attempt only closes that one payment_records row,
+ * the order stays PENDING and the school can pay again -- see {@link #failAttempt}.
  *
- * <p>Tách khỏi use case vì có HAI đường vào cùng cần nó: callback của cổng
- * (ProcessPaymentCallbackUseCase) và job quét đơn treo sẽ viết sau. Cả hai đường đó có thể chạy
- * ĐỒNG THỜI trên cùng một đơn, nên mọi lối vào đây đều phải đi qua {@code findByIdForUpdate}.
+ * <p>Separate from the use case because TWO entry points both need it: the gateway callback
+ * (ProcessPaymentCallbackUseCase) and the job that sweeps pending orders, to be written later. Both paths may run
+ * CONCURRENTLY on the same order, so every entry here must go through {@code findByIdForUpdate}.
  */
 @Service
 public class OrderSettlementService {
@@ -144,9 +145,9 @@ public class OrderSettlementService {
      */
     @Transactional
     public void settlePaid(PaymentRecord payment, Instant paidAt) {
-        // Khóa đơn TRƯỚC khi đọc trạng thái: hai luồng cùng đọc "đơn còn PENDING" rồi cùng đi cộng
-        // tiền là đúng kịch bản mà uq_payment_records_one_paid_per_order không chặn được, vì mỗi
-        // luồng thao tác trên một dòng payment_records khác nhau của cùng một đơn.
+        // Lock the order BEFORE reading its status: two threads both reading "the order is still PENDING" and both going on to
+        // credit the money is exactly the scenario that uq_payment_records_one_paid_per_order cannot block, because each thread
+        // works on a different payment_records row of the same order.
         Order order = orderRepository.findByIdForUpdate(payment.getOrderId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn hàng của lần thanh toán"));
 
@@ -156,13 +157,13 @@ public class OrderSettlementService {
             return;
         }
         if (order.getStatus() != OrderStatus.PENDING) {
-            // Tiền về cho một đơn ĐÃ ĐÓNG. Đây KHÔNG phải callback lặp vô hại: trường đã trả nhưng
-            // sẽ không nhận được gì, và hệ thống chưa có luồng hoàn tiền nào. Phải kêu to để có
-            // người xử lý tay, thay vì lặng lẽ return như nhánh SUCCESS ở trên.
+            // Money has arrived for an order that is ALREADY CLOSED. This is NOT a harmless repeated callback: the school has paid but
+            // will receive nothing, and the system has no refund flow yet. It must be loud so that someone handles it by hand, instead
+            // of quietly returning like the SUCCESS branch above.
             //
-            // Đường vào ca này: trường hủy đơn trong lúc còn phiên SePay sống (cổng không cho hủy
-            // sớm nên CancelOrderUseCase chặn, nhưng nếu chặn đó bị nới thì đây là hậu quả), hoặc
-            // đơn hết hạn đúng lúc trường đang trả.
+            // How this case is reached: the school cancels the order while a SePay session is still alive (the gateway does not allow
+            // early cancellation, so CancelOrderUseCase blocks it, but if that block is loosened this is the consequence), or the order
+            // expires exactly while the school is paying.
             LOGGER.error(
                 "TIỀN VỀ CHO ĐƠN ĐÃ ĐÓNG -- cần hoàn tiền thủ công: orderId={} orderStatus={} paymentId={} amountVnd={}",
                 order.getId(), order.getStatus(), payment.getId(), payment.getAmountVnd());
@@ -174,15 +175,15 @@ public class OrderSettlementService {
         paymentRecordRepository.save(payment);
 
         order.setStatus(OrderStatus.SUCCESS);
-        order.setUpdatedAt(paidAt);
         orderRepository.save(order);
 
-        // Giao hàng TRƯỚC khi phát hóa đơn: hóa đơn là chứng từ cho thứ đã giao. Cùng transaction
-        // nên thứ tự này không đổi kết quả khi lỗi, nhưng nó nói đúng ý định cho người đọc sau.
+        // Deliver the goods BEFORE issuing the invoice: the invoice is the document for something already delivered. Both are in
+        // the same transaction so this order does not change the outcome on failure, but it states the intent correctly for later
+        // readers.
         UUID subscriptionId = fulfil(order, paidAt);
 
-        // Chỉ báo khi hóa đơn THẬT SỰ vừa được phát: Optional rỗng nghĩa là đơn này đã có hóa đơn
-        // từ một lần chốt trước, và một callback lặp không được sinh mail/thông báo lần hai.
+        // Only notify when the invoice was REALLY just issued: an empty Optional means this order already has an invoice from an
+        // earlier settlement, and a repeated callback must not produce a second mail/notification.
         issueInvoice(order, payment, paidAt)
             .ifPresent(invoice -> publishInvoicePaid(order, invoice, paidAt, subscriptionId));
     }
@@ -207,14 +208,14 @@ public class OrderSettlementService {
     }
 
     /**
-     * Đóng một đơn đã quá {@code expires_at} mà chưa thu được tiền.
+     * Closes an order that is past {@code expires_at} without having collected money.
      *
-     * <p>Đây là chỗ DUY NHẤT được phép đưa đơn sang EXPIRED, và nó TỪ CHỐI làm việc đó khi đơn còn
-     * một lần thử đang treo: dòng PENDING nghĩa là bên cổng vẫn còn một phiên có thể ra tiền, và
-     * đóng đơn lúc đó là tự đặt mình vào cảnh trường trả xong nhưng không còn đơn nào để giao hàng.
-     * Người gọi phải đi hỏi cổng và chốt lần thử đó trước (xem PendingOrderReconciler).
+     * <p>This is the ONLY place allowed to move an order to EXPIRED, and it REFUSES to do so while the order still has a
+     * pending attempt: a PENDING row means the gateway still has a session that could bring in money, and closing the order
+     * at that moment would put us in the situation where the school has paid but there is no order left to deliver against.
+     * The caller must ask the gateway and settle that attempt first (see PendingOrderReconciler).
      *
-     * @return true nếu đơn vừa được chuyển sang EXPIRED
+     * @return true if the order was just moved to EXPIRED
      */
     @Transactional
     public boolean expireIfOverdue(UUID orderId, Instant now) {
@@ -231,7 +232,6 @@ public class OrderSettlementService {
         }
 
         order.setStatus(OrderStatus.EXPIRED);
-        order.setUpdatedAt(now);
         orderRepository.save(order);
         LOGGER.info("Đóng đơn {} do quá hạn thanh toán ({})", orderId, order.getExpiresAt());
         return true;

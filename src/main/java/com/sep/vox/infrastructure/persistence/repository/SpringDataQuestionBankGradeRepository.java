@@ -6,7 +6,7 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.sep.vox.infrastructure.persistence.entity.QuestionBankGradeJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.question.QuestionBankGradeJpaEntity;
 
 public interface SpringDataQuestionBankGradeRepository extends JpaRepository<QuestionBankGradeJpaEntity, UUID> {
     List<QuestionBankGradeJpaEntity> findByQuestionBankId(UUID questionBankId);

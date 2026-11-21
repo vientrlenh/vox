@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.usecase.question;
 
 import com.sep.vox.domain.model.question.QuestionBank;
-import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -53,7 +52,7 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Up
         QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
-        boolean owner = currentUserId.equals(question.getCreatedBy());
+        boolean owner = question.isCreatedBy(currentUserId);
         boolean editorCollaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId)
             .filter(collaborator -> collaborator.getPermission() == QuestionCollaboratorPermission.CAN_EDIT)
             .isPresent();
@@ -93,8 +92,6 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Up
             applyContentUpdates(question, command, currentUserId);
         }
 
-        question.setUpdatedAt(Instant.now());
-        question.setUpdatedBy(currentUserId);
         questionRepository.save(question);
 
         return UpdateQuestionResponseMapper.toResponse(question);
@@ -112,8 +109,6 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Up
         if (question.getMinResponseSeconds() > question.getMaxResponseSeconds()) {
             throw new IllegalStateException("Thời gian trả lời tối thiểu không được lớn hơn thời gian trả lời tối đa");
         }
-        question.setUpdatedAt(Instant.now());
-        question.setUpdatedBy(currentUserId);
     }
 
     private UpdateQuestionCommand normalize(UpdateQuestionCommand input) {

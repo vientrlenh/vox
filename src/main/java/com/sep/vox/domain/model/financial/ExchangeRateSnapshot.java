@@ -8,29 +8,16 @@ public class ExchangeRateSnapshot {
     private UUID id;
     private CurrencyCode currencyCode;
     private BigDecimal exchangeRateToVnd;
-    // Thời điểm ExchangeRateRefreshJob lấy được row này -- dùng để lấy row mới nhất
+    // The moment ExchangeRateRefreshJob obtained this row -- used to pick the latest row
     // (ORDER BY fetched_at DESC).
     private Instant fetchedAt;
-    // Nguồn đã dùng để fetch row này (vd base URL của API tỷ giá) -- phòng khi sau này đổi provider,
-    // vẫn tra được row cũ lấy từ đâu.
+    // The source used to fetch this row (e.g. the base URL of the exchange-rate API) -- in case the provider is changed
+    // later, the origin of an old row can still be traced.
     private String sourceUrl;
 
     public ExchangeRateSnapshot() {}
-
-    public ExchangeRateSnapshot(UUID id, CurrencyCode currencyCode, BigDecimal exchangeRateToVnd, Instant fetchedAt, String sourceUrl) {
-        this.id = id;
-        this.currencyCode = currencyCode;
-        this.exchangeRateToVnd = exchangeRateToVnd;
-        this.fetchedAt = fetchedAt;
-        this.sourceUrl = sourceUrl;
-    }
-
-    public ExchangeRateSnapshot(CurrencyCode currencyCode, BigDecimal exchangeRateToVnd, Instant fetchedAt, String sourceUrl) {
-        this.currencyCode = currencyCode;
-        this.exchangeRateToVnd = exchangeRateToVnd;
-        this.fetchedAt = fetchedAt;
-        this.sourceUrl = sourceUrl;
-    }
+
+
 
     public UUID getId() {
         return id;
@@ -73,4 +60,46 @@ public class ExchangeRateSnapshot {
     }
 
     
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final ExchangeRateSnapshot target = new ExchangeRateSnapshot();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder currencyCode(CurrencyCode currencyCode) {
+            target.currencyCode = currencyCode;
+            return this;
+        }
+
+        public Builder exchangeRateToVnd(BigDecimal exchangeRateToVnd) {
+            target.exchangeRateToVnd = exchangeRateToVnd;
+            return this;
+        }
+
+        public Builder fetchedAt(Instant fetchedAt) {
+            target.fetchedAt = fetchedAt;
+            return this;
+        }
+
+        public Builder sourceUrl(String sourceUrl) {
+            target.sourceUrl = sourceUrl;
+            return this;
+        }
+
+        public ExchangeRateSnapshot build() {
+            return target;
+        }
+
+    }
 }

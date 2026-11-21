@@ -1,31 +1,31 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.refreshtoken.RefreshToken;
-import com.sep.vox.infrastructure.persistence.entity.RefreshTokenJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.refreshtoken.RefreshTokenJpaEntity;
 
 public final class RefreshTokenMapper {
     
     public static RefreshToken toDomain(RefreshTokenJpaEntity jpa) {
-        return new RefreshToken(
-            jpa.getId(), 
-            jpa.getSessionId(), 
-            jpa.getTokenHash(), 
-            jpa.getIssuedAt(), 
-            jpa.getExpiredAt(), 
-            jpa.getUsedAt(), 
-            jpa.getReplacedBy()
-        );
+        return RefreshToken.builder()
+            .id(jpa.getId())
+            .sessionId(jpa.getSessionId())
+            .tokenHash(jpa.getTokenHash())
+            .issuedAt(jpa.getIssuedAt())
+            .expiredAt(jpa.getExpiredAt())
+            .usedAt(jpa.getUsedAt())
+            .replacedBy(jpa.getReplacedBy())
+            .build();
     }
 
     public static RefreshTokenJpaEntity toJpa(RefreshToken token) {
-        return new RefreshTokenJpaEntity(
-            token.getId(), 
-            token.getSessionId(), 
-            token.getTokenHash(), 
-            token.getIssuedAt(), 
-            token.getExpiredAt(), 
-            token.getUsedAt(),
-            token.getReplacedBy()
-        );
+        return RefreshTokenJpaEntity.builder()
+            .id(token.getId())
+            .sessionId(token.getSessionId())
+            .tokenHash(token.getTokenHash())
+            .issuedAt(token.getIssuedAt())
+            .expiredAt(token.getExpiredAt())
+            .usedAt(token.getUsedAt())
+            .replacedBy(token.getReplacedBy())
+            .build();
     }
 }

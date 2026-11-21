@@ -2,7 +2,6 @@ package com.sep.vox.application.port.input.usecase.question;
 
 import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionBank;
-import java.time.Instant;
 
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -59,7 +58,7 @@ public class DeleteQuestionUseCase implements IUseCase<DeleteQuestionCommand, De
         QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
-        boolean owner = currentUserId.equals(question.getCreatedBy());
+        boolean owner = question.isCreatedBy(currentUserId);
         boolean systemAdminOnSystemBank = userContextPort.isSystemAdmin()
             && bank.getOwnerType() == QuestionBankOwnerType.SYSTEM;
         boolean schoolAdminOnSchoolBank = bank.getOwnerType() == QuestionBankOwnerType.SCHOOL
@@ -79,8 +78,6 @@ public class DeleteQuestionUseCase implements IUseCase<DeleteQuestionCommand, De
 
         if (usedInAssessment) {
             question.setStatus(QuestionStatus.ARCHIVED);
-            question.setUpdatedAt(Instant.now());
-            question.setUpdatedBy(currentUserId);
             questionRepository.save(question);
             return new DeleteQuestionResponse(false, true);
         }

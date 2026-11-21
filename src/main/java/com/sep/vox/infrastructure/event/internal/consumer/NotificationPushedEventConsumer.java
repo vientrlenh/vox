@@ -205,16 +205,16 @@ public class NotificationPushedEventConsumer {
         Instant now = Instant.now();
         List<Pushable> pushable = new ArrayList<Pushable>();
         for (Draft draft : drafts) {
-            Optional<Notification> saved = notificationRepository.saveIfAbsent(new Notification(
-                draft.userId(),
-                eventId,
-                eventType,
-                draft.title(),
-                draft.body(),
-                writePayload(draft.data()),
-                null,
-                now
-            ));
+            Optional<Notification> saved = notificationRepository.saveIfAbsent(Notification.builder()
+                    .userId(draft.userId())
+                    .eventId(eventId)
+                    .eventType(eventType)
+                    .title(draft.title())
+                    .body(draft.body())
+                    .payload(writePayload(draft.data()))
+                    .readAt(null)
+                    .createdAt(now)
+                    .build());
 
             // The decision to push must be made PER RECIPIENT, not for the whole
             // message: a crash midway last time may have already created 30 of 50 rows, and this
@@ -675,7 +675,11 @@ public class NotificationPushedEventConsumer {
 
     private void markProcessed(UUID eventId) {
         try {
-            processedEventRepository.save(new ProcessedEvent(eventId, CONSUMER_GROUP, Instant.now()));
+            processedEventRepository.save(ProcessedEvent.builder()
+                    .eventId(eventId)
+                    .consumerGroup(CONSUMER_GROUP)
+                    .processedAt(Instant.now())
+                    .build());
         } catch (DataIntegrityViolationException e) {
             // Luồng khác đã ghi trước: kết quả mong muốn đã đạt được, không có gì phải làm.
             LOGGER.debug("Event đã được đánh dấu bởi luồng khác: eventId={}", eventId);

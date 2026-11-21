@@ -105,9 +105,7 @@ public class ProvisionSchoolService {
             command.contactEmail(), 
             command.schoolDomain(), 
             command.schoolAddress(), 
-            command.studentCount(), 
-            command.createdUserId(),
-            command.now()
+            command.studentCount()
         );
         return schoolRepository.save(school);
     }
@@ -119,15 +117,17 @@ public class ProvisionSchoolService {
             command.contactFullName(), 
             command.dateOfBirth(), 
             command.contactAddress(), 
-            command.avatarUrl(),
-            command.createdUserId(), 
-            command.now()
+            command.avatarUrl()
         );
         return userRepository.save(schoolAdmin);
     }
 
     private void saveSchoolAdminUserRole(ProvisionSchoolCommand command, UUID schoolAdminId, UUID schoolAdminRoleId) {
-        UserRole userRole = new UserRole(schoolAdminId, schoolAdminRoleId, command.now());
+        UserRole userRole = UserRole.builder()
+            .userId(schoolAdminId)
+            .roleId(schoolAdminRoleId)
+            .createdAt(command.now())
+            .build();
         userRoleRepository.save(userRole);
     }
 }

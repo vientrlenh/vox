@@ -2,7 +2,7 @@ package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionEvent;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionEventType;
-import com.sep.vox.infrastructure.persistence.entity.SchoolSubscriptionEventJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.subscription.SchoolSubscriptionEventJpaEntity;
 
 public final class SchoolSubscriptionEventMapper {
 
@@ -10,26 +10,26 @@ public final class SchoolSubscriptionEventMapper {
     }
 
     public static SchoolSubscriptionEvent toDomain(SchoolSubscriptionEventJpaEntity jpa) {
-        return new SchoolSubscriptionEvent(
-            jpa.getId(),
-            jpa.getSchoolId(),
-            jpa.getSubscriptionId(),
-            SchoolSubscriptionEventType.valueOf(jpa.getEventType()),
-            jpa.getActorId(),
-            jpa.getReason(),
-            jpa.getOccurredAt()
-        );
+        return SchoolSubscriptionEvent.builder()
+            .id(jpa.getId())
+            .schoolId(jpa.getSchoolId())
+            .subscriptionId(jpa.getSubscriptionId())
+            .eventType(SchoolSubscriptionEventType.valueOf(jpa.getEventType()))
+            .actorId(jpa.getActorId())
+            .reason(jpa.getReason())
+            .occurredAt(jpa.getOccurredAt())
+            .build();
     }
 
     public static SchoolSubscriptionEventJpaEntity toJpa(SchoolSubscriptionEvent domain) {
-        SchoolSubscriptionEventJpaEntity jpa = new SchoolSubscriptionEventJpaEntity();
-        jpa.setId(domain.getId());
-        jpa.setSchoolId(domain.getSchoolId());
-        jpa.setSubscriptionId(domain.getSubscriptionId());
-        jpa.setEventType(domain.getEventType().name());
-        jpa.setActorId(domain.getActorId());
-        jpa.setReason(domain.getReason());
-        jpa.setOccurredAt(domain.getOccurredAt());
-        return jpa;
+        return SchoolSubscriptionEventJpaEntity.builder()
+            .id(domain.getId())
+            .schoolId(domain.getSchoolId())
+            .subscriptionId(domain.getSubscriptionId())
+            .eventType(domain.getEventType().name())
+            .actorId(domain.getActorId())
+            .reason(domain.getReason())
+            .occurredAt(domain.getOccurredAt())
+            .build();
     }
 }

@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.PracticeResponseTurnJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.personalization.PracticeResponseTurnJpaEntity;
 
 public interface SpringDataPracticeResponseTurnRepository
         extends JpaRepository<PracticeResponseTurnJpaEntity, UUID> {

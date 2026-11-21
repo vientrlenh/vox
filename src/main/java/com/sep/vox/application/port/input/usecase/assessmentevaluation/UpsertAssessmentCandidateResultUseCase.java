@@ -88,12 +88,6 @@ public class UpsertAssessmentCandidateResultUseCase {
         if (resolvedStatus == AssessmentCandidateResultStatus.RELEASED && result.getReleasedAt() == null) {
             result.setReleasedAt(now);
         }
-        if (existing == null) {
-            result.setCreatedAt(now);
-            result.setCreatedBy(null);
-        }
-        result.setUpdatedAt(now);
-        result.setUpdatedBy(null);
         return assessmentCandidateResultRepository.save(result);
     }
 }

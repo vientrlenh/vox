@@ -101,7 +101,12 @@ public class DeleteAssessmentSessionUseCaseTests {
         // A SCHOOL_ADMIN of the same school as the assessment -- the branch that allows deletion.
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(adminId);
         when(schoolUserRepository.findByUserId(adminId))
-            .thenReturn(Optional.of(new SchoolUser(schoolId, adminId, null, null)));
+            .thenReturn(Optional.of(SchoolUser.builder()
+                .schoolId(schoolId)
+                .userId(adminId)
+                .startDate(null)
+                .endDate(null)
+                .build()));
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(adminId)).thenReturn(List.of(
             new UserRoleInfo(UUID.randomUUID(), adminId, UUID.randomUUID(), null, "SCHOOL_ADMIN", "School Admin")));
 
@@ -263,7 +268,12 @@ public class DeleteAssessmentSessionUseCaseTests {
     private void givenTeacherCaller() {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(teacherId);
         when(schoolUserRepository.findByUserId(teacherId))
-            .thenReturn(Optional.of(new SchoolUser(schoolId, teacherId, null, null)));
+            .thenReturn(Optional.of(SchoolUser.builder()
+                .schoolId(schoolId)
+                .userId(teacherId)
+                .startDate(null)
+                .endDate(null)
+                .build()));
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(teacherId)).thenReturn(List.of(
             new UserRoleInfo(UUID.randomUUID(), teacherId, UUID.randomUUID(), null, "TEACHER", "Teacher")));
     }

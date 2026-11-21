@@ -157,9 +157,21 @@ class SchoolBalanceQuerySmokeTests {
     }
 
     private SchoolBalanceEntry overageCharge(BigDecimal amountVnd, Instant occurredAt) {
-        return new SchoolBalanceEntry(
-            schoolId, null, SchoolBalanceEntryType.OVERAGE_CHARGE,
-            amountVnd, amountVnd, null, UUID.randomUUID(), null, QuotaType.ASSESSMENT,
-            new BigDecimal("0.001000"), new BigDecimal("26647.5000"), null, null, occurredAt);
+        return SchoolBalanceEntry.builder()
+            .schoolId(schoolId)
+            .subscriptionId(null)
+            .entryType(SchoolBalanceEntryType.OVERAGE_CHARGE)
+            .amountVnd(amountVnd)
+            .balanceAfterVnd(amountVnd)
+            .orderId(null)
+            .assessmentSessionId(UUID.randomUUID())
+            .practiceSessionId(null)
+            .quotaType(QuotaType.ASSESSMENT)
+            .costUsd(new BigDecimal("0.001000"))
+            .fxRateUsed(new BigDecimal("26647.5000"))
+            .actorId(null)
+            .reason(null)
+            .occurredAt(occurredAt)
+            .build();
     }
 }

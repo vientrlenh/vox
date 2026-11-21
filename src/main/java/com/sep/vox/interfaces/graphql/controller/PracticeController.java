@@ -104,11 +104,11 @@ public class PracticeController {
     @PreAuthorize("hasRole('STUDENT')")
     public LearnerProfile submitInterestQuiz(@Argument("input") SubmitInterestQuizInput input) {
         List<QuizAnswer> answers = input.answers().stream()
-            .map(answer -> new QuizAnswer(
-                answer.itemId(),
-                answer.mostStatementIndex(),
-                answer.leastStatementIndex()
-            ))
+            .map(answer -> QuizAnswer.builder()
+                    .itemId(answer.itemId())
+                    .mostStatementIndex(answer.mostStatementIndex())
+                    .leastStatementIndex(answer.leastStatementIndex())
+                    .build())
             .toList();
         LearnerProfile profile = submitInterestQuizUseCase.execute(new SubmitInterestQuizCommand(answers));
 

@@ -27,43 +27,6 @@ public class PracticeSession {
     public PracticeSession() {
     }
 
-    public PracticeSession(
-            UUID id,
-            UUID studentId,
-            UUID practicePaperId,
-            UUID targetFrameworkBandId,
-            UUID chosenPracticeTopicId,
-            String targetSubAttributesJson,
-            String origin,
-            String offeredTopicIdsJson,
-            BigDecimal overallScore,
-            Instant startedAt,
-            Instant endedAt,
-            Instant lastHeartbeatAt,
-            int gradedSeconds,
-            String status,
-            String abandonDiagnosis,
-            int helpRequestCount,
-            int longPauseCount) {
-        this.id = id;
-        this.studentId = studentId;
-        this.practicePaperId = practicePaperId;
-        this.targetFrameworkBandId = targetFrameworkBandId;
-        this.chosenPracticeTopicId = chosenPracticeTopicId;
-        this.targetSubAttributesJson = targetSubAttributesJson;
-        this.origin = origin;
-        this.offeredTopicIdsJson = offeredTopicIdsJson;
-        this.overallScore = overallScore;
-        this.startedAt = startedAt;
-        this.endedAt = endedAt;
-        this.lastHeartbeatAt = lastHeartbeatAt;
-        this.gradedSeconds = gradedSeconds;
-        this.status = status;
-        this.abandonDiagnosis = abandonDiagnosis;
-        this.helpRequestCount = helpRequestCount;
-        this.longPauseCount = longPauseCount;
-    }
-
     public UUID getId() {
         return id;
     }
@@ -87,7 +50,6 @@ public class PracticeSession {
     public void setPracticePaperId(UUID practicePaperId) {
         this.practicePaperId = practicePaperId;
     }
-
 
     public void setRubricVersionId(UUID rubricVersionId) {
     }
@@ -205,21 +167,47 @@ public class PracticeSession {
     }
 
     public PracticeSession withLastHeartbeatAt(Instant newLastHeartbeatAt) {
-        return new PracticeSession(
-            id, studentId, practicePaperId, targetFrameworkBandId,
-            chosenPracticeTopicId, targetSubAttributesJson, origin, offeredTopicIdsJson,
-            overallScore, startedAt, endedAt, newLastHeartbeatAt, gradedSeconds, status,
-            abandonDiagnosis, helpRequestCount, longPauseCount
-        );
+        return PracticeSession.builder()
+                .id(id)
+                .studentId(studentId)
+                .practicePaperId(practicePaperId)
+                .targetFrameworkBandId(targetFrameworkBandId)
+                .chosenPracticeTopicId(chosenPracticeTopicId)
+                .targetSubAttributesJson(targetSubAttributesJson)
+                .origin(origin)
+                .offeredTopicIdsJson(offeredTopicIdsJson)
+                .overallScore(overallScore)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .lastHeartbeatAt(newLastHeartbeatAt)
+                .gradedSeconds(gradedSeconds)
+                .status(status)
+                .abandonDiagnosis(abandonDiagnosis)
+                .helpRequestCount(helpRequestCount)
+                .longPauseCount(longPauseCount)
+                .build();
     }
 
     public PracticeSession withGradedSecondsAndHeartbeat(int newGradedSeconds, Instant newLastHeartbeatAt) {
-        return new PracticeSession(
-            id, studentId, practicePaperId, targetFrameworkBandId,
-            chosenPracticeTopicId, targetSubAttributesJson, origin, offeredTopicIdsJson,
-            overallScore, startedAt, endedAt, newLastHeartbeatAt, newGradedSeconds, status,
-            abandonDiagnosis, helpRequestCount, longPauseCount
-        );
+        return PracticeSession.builder()
+                .id(id)
+                .studentId(studentId)
+                .practicePaperId(practicePaperId)
+                .targetFrameworkBandId(targetFrameworkBandId)
+                .chosenPracticeTopicId(chosenPracticeTopicId)
+                .targetSubAttributesJson(targetSubAttributesJson)
+                .origin(origin)
+                .offeredTopicIdsJson(offeredTopicIdsJson)
+                .overallScore(overallScore)
+                .startedAt(startedAt)
+                .endedAt(endedAt)
+                .lastHeartbeatAt(newLastHeartbeatAt)
+                .gradedSeconds(newGradedSeconds)
+                .status(status)
+                .abandonDiagnosis(abandonDiagnosis)
+                .helpRequestCount(helpRequestCount)
+                .longPauseCount(longPauseCount)
+                .build();
     }
 
     public PracticeSession ended(
@@ -229,20 +217,148 @@ public class PracticeSession {
             int newLongPauseCount,
             Instant newEndedAt,
             BigDecimal newOverallScore) {
-        return new PracticeSession(
-            id, studentId, practicePaperId, targetFrameworkBandId,
-            chosenPracticeTopicId, targetSubAttributesJson, origin, offeredTopicIdsJson,
-            newOverallScore, startedAt, newEndedAt, lastHeartbeatAt, gradedSeconds, newStatus,
-            newAbandonDiagnosis, newHelpRequestCount, newLongPauseCount
-        );
+        return PracticeSession.builder()
+                .id(id)
+                .studentId(studentId)
+                .practicePaperId(practicePaperId)
+                .targetFrameworkBandId(targetFrameworkBandId)
+                .chosenPracticeTopicId(chosenPracticeTopicId)
+                .targetSubAttributesJson(targetSubAttributesJson)
+                .origin(origin)
+                .offeredTopicIdsJson(offeredTopicIdsJson)
+                .overallScore(newOverallScore)
+                .startedAt(startedAt)
+                .endedAt(newEndedAt)
+                .lastHeartbeatAt(lastHeartbeatAt)
+                .gradedSeconds(gradedSeconds)
+                .status(newStatus)
+                .abandonDiagnosis(newAbandonDiagnosis)
+                .helpRequestCount(newHelpRequestCount)
+                .longPauseCount(newLongPauseCount)
+                .build();
     }
 
     public PracticeSession closedAsStale(String newStatus, String newAbandonDiagnosis, Instant newEndedAt) {
-        return new PracticeSession(
-            id, studentId, practicePaperId, targetFrameworkBandId,
-            chosenPracticeTopicId, targetSubAttributesJson, origin, offeredTopicIdsJson,
-            overallScore, startedAt, newEndedAt, lastHeartbeatAt, gradedSeconds, newStatus,
-            newAbandonDiagnosis, helpRequestCount, longPauseCount
-        );
+        return PracticeSession.builder()
+                .id(id)
+                .studentId(studentId)
+                .practicePaperId(practicePaperId)
+                .targetFrameworkBandId(targetFrameworkBandId)
+                .chosenPracticeTopicId(chosenPracticeTopicId)
+                .targetSubAttributesJson(targetSubAttributesJson)
+                .origin(origin)
+                .offeredTopicIdsJson(offeredTopicIdsJson)
+                .overallScore(overallScore)
+                .startedAt(startedAt)
+                .endedAt(newEndedAt)
+                .lastHeartbeatAt(lastHeartbeatAt)
+                .gradedSeconds(gradedSeconds)
+                .status(newStatus)
+                .abandonDiagnosis(newAbandonDiagnosis)
+                .helpRequestCount(helpRequestCount)
+                .longPauseCount(longPauseCount)
+                .build();
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final PracticeSession target = new PracticeSession();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder studentId(UUID studentId) {
+            target.studentId = studentId;
+            return this;
+        }
+
+        public Builder practicePaperId(UUID practicePaperId) {
+            target.practicePaperId = practicePaperId;
+            return this;
+        }
+
+        public Builder targetFrameworkBandId(UUID targetFrameworkBandId) {
+            target.targetFrameworkBandId = targetFrameworkBandId;
+            return this;
+        }
+
+        public Builder chosenPracticeTopicId(UUID chosenPracticeTopicId) {
+            target.chosenPracticeTopicId = chosenPracticeTopicId;
+            return this;
+        }
+
+        public Builder targetSubAttributesJson(String targetSubAttributesJson) {
+            target.targetSubAttributesJson = targetSubAttributesJson;
+            return this;
+        }
+
+        public Builder origin(String origin) {
+            target.origin = origin;
+            return this;
+        }
+
+        public Builder offeredTopicIdsJson(String offeredTopicIdsJson) {
+            target.offeredTopicIdsJson = offeredTopicIdsJson;
+            return this;
+        }
+
+        public Builder overallScore(BigDecimal overallScore) {
+            target.overallScore = overallScore;
+            return this;
+        }
+
+        public Builder startedAt(Instant startedAt) {
+            target.startedAt = startedAt;
+            return this;
+        }
+
+        public Builder endedAt(Instant endedAt) {
+            target.endedAt = endedAt;
+            return this;
+        }
+
+        public Builder lastHeartbeatAt(Instant lastHeartbeatAt) {
+            target.lastHeartbeatAt = lastHeartbeatAt;
+            return this;
+        }
+
+        public Builder gradedSeconds(int gradedSeconds) {
+            target.gradedSeconds = gradedSeconds;
+            return this;
+        }
+
+        public Builder status(String status) {
+            target.status = status;
+            return this;
+        }
+
+        public Builder abandonDiagnosis(String abandonDiagnosis) {
+            target.abandonDiagnosis = abandonDiagnosis;
+            return this;
+        }
+
+        public Builder helpRequestCount(int helpRequestCount) {
+            target.helpRequestCount = helpRequestCount;
+            return this;
+        }
+
+        public Builder longPauseCount(int longPauseCount) {
+            target.longPauseCount = longPauseCount;
+            return this;
+        }
+
+        public PracticeSession build() {
+            return target;
+        }
+
     }
 }

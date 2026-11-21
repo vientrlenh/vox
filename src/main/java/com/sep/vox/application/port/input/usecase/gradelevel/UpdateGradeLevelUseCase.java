@@ -70,7 +70,7 @@ public class UpdateGradeLevelUseCase implements IUseCase<UpdateGradeLevelCommand
                     description,
                     command.order(),
                     Instant.now(),
-                    currentUserId
+                    currentUserId.toString()
             );
         } catch (DataIntegrityViolationException e) {
             throw new DuplicatedException("Thứ tự khối học đã được sử dụng.");

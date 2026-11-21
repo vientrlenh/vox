@@ -13,7 +13,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.SchoolGradeJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolGradeJpaEntity;
 import org.springframework.data.jpa.repository.Modifying;
 
 // school_grades giờ mang school_id trực tiếp, nên các truy vấn theo trường không còn phải JOIN
@@ -76,7 +76,7 @@ public interface SpringDataSchoolGradeRepository extends JpaRepository<SchoolGra
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate,
             @Param("updatedAt") Instant updatedAt,
-            @Param("updatedBy") UUID updatedBy
+            @Param("updatedBy") String updatedBy
     );
 
     boolean existsBySchoolIdAndStatus(UUID schoolId, String status);

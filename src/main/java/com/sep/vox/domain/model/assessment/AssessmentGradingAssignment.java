@@ -23,44 +23,23 @@ public class AssessmentGradingAssignment {
     private UUID candidateResultId;
     private UUID teacherId;
     private GradingRoundType roundType;
-    /** Chỉ có giá trị khi {@code roundType = APPEAL}. */
+    /** Only set when {@code roundType = APPEAL}. */
     private UUID appealId;
     private GradingAssignmentStatus status;
     private GradingOutcome outcome;
-    /** Tổng điểm của bài lúc được giao — mốc so lệch sau khi chấm. */
+    /** Total score of the result when it was assigned: the baseline for the difference after grading. */
     private BigDecimal scoreBefore;
     private Instant assignedAt;
     private UUID assignedBy;
     private Instant completedAt;
     private Instant deadlineAt;
-    /** Đã gửi mail nhắc hạn lúc nào; null = chưa nhắc. Chống nhắc trùng. */
+    /** When the deadline reminder email was sent; null = not reminded yet. Prevents duplicate reminders. */
     private Instant remindedAt;
-    /** Bắt buộc khi outcome là INVALIDATED / CLEARED_INVALID / DECLINED. */
+    /** Required when the outcome is INVALIDATED / CLEARED_INVALID / DECLINED. */
     private String reason;
     private UUID activeResultId;
 
     public AssessmentGradingAssignment() {}
-
-    public AssessmentGradingAssignment(UUID id, UUID candidateResultId, UUID teacherId, GradingRoundType roundType,
-            UUID appealId, GradingAssignmentStatus status, GradingOutcome outcome, BigDecimal scoreBefore,
-            Instant assignedAt, UUID assignedBy, Instant completedAt, Instant deadlineAt,
-            Instant remindedAt, String reason, UUID activeResultId) {
-        this.id = id;
-        this.candidateResultId = candidateResultId;
-        this.teacherId = teacherId;
-        this.roundType = roundType;
-        this.appealId = appealId;
-        this.status = status;
-        this.outcome = outcome;
-        this.scoreBefore = scoreBefore;
-        this.assignedAt = assignedAt;
-        this.assignedBy = assignedBy;
-        this.completedAt = completedAt;
-        this.deadlineAt = deadlineAt;
-        this.remindedAt = remindedAt;
-        this.reason = reason;
-        this.activeResultId = activeResultId;
-    }
 
     /**
      * Mở một vòng chấm mới. {@code activeResultId} được set bằng chính bài — đây là
@@ -222,5 +201,97 @@ public class AssessmentGradingAssignment {
 
     public void setActiveResultId(UUID activeResultId) {
         this.activeResultId = activeResultId;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final AssessmentGradingAssignment target = new AssessmentGradingAssignment();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder candidateResultId(UUID candidateResultId) {
+            target.candidateResultId = candidateResultId;
+            return this;
+        }
+
+        public Builder teacherId(UUID teacherId) {
+            target.teacherId = teacherId;
+            return this;
+        }
+
+        public Builder roundType(GradingRoundType roundType) {
+            target.roundType = roundType;
+            return this;
+        }
+
+        public Builder appealId(UUID appealId) {
+            target.appealId = appealId;
+            return this;
+        }
+
+        public Builder status(GradingAssignmentStatus status) {
+            target.status = status;
+            return this;
+        }
+
+        public Builder outcome(GradingOutcome outcome) {
+            target.outcome = outcome;
+            return this;
+        }
+
+        public Builder scoreBefore(BigDecimal scoreBefore) {
+            target.scoreBefore = scoreBefore;
+            return this;
+        }
+
+        public Builder assignedAt(Instant assignedAt) {
+            target.assignedAt = assignedAt;
+            return this;
+        }
+
+        public Builder assignedBy(UUID assignedBy) {
+            target.assignedBy = assignedBy;
+            return this;
+        }
+
+        public Builder completedAt(Instant completedAt) {
+            target.completedAt = completedAt;
+            return this;
+        }
+
+        public Builder deadlineAt(Instant deadlineAt) {
+            target.deadlineAt = deadlineAt;
+            return this;
+        }
+
+        public Builder remindedAt(Instant remindedAt) {
+            target.remindedAt = remindedAt;
+            return this;
+        }
+
+        public Builder reason(String reason) {
+            target.reason = reason;
+            return this;
+        }
+
+        public Builder activeResultId(UUID activeResultId) {
+            target.activeResultId = activeResultId;
+            return this;
+        }
+
+        public AssessmentGradingAssignment build() {
+            return target;
+        }
+
     }
 }

@@ -3,7 +3,6 @@ package com.sep.vox.infrastructure.initializer;
 import com.sep.vox.domain.model.framework.Framework;
 import com.sep.vox.domain.model.framework.FrameworkResultBand;
 import com.sep.vox.domain.model.gradelevel.GradeLevel;
-import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -132,7 +131,6 @@ public class GradeLevelBandScopeInitializer implements ApplicationRunner {
                 + " đang cao hơn bậc trần " + BAND_CODE_HARD_MAX + " trong khung " + FRAMEWORK_CODE + ".");
         }
 
-        Instant now = Instant.now();
         int created = 0;
         for (String gradeLevelCode : GRADE_LEVEL_CODES) {
             GradeLevel gradeLevel = gradeLevelRepository.findByCode(gradeLevelCode).orElse(null);
@@ -146,16 +144,12 @@ public class GradeLevelBandScopeInitializer implements ApplicationRunner {
                 continue;
             }
 
-            gradeLevelBandScopeRepository.save(new GradeLevelBandScope(
-                gradeLevel.getId(),
-                frameworkVersion.getId(),
-                defaultTargetBand.getId(),
-                hardMaxBand.getId(),
-                now,
-                now,
-                null,
-                null
-            ));
+            gradeLevelBandScopeRepository.save(GradeLevelBandScope.builder()
+                .gradeLevelId(gradeLevel.getId())
+                .frameworkVersionId(frameworkVersion.getId())
+                .defaultTargetBandId(defaultTargetBand.getId())
+                .hardMaxBandId(hardMaxBand.getId())
+                .build());
             created++;
         }
 

@@ -18,13 +18,13 @@ import com.sep.vox.application.query.repository.AssessmentAppealQueryRepository;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.assessment.AssessmentAppealStatus;
 import com.sep.vox.domain.model.assessment.GradingAssignmentStatus;
-import com.sep.vox.infrastructure.persistence.entity.AssessmentCandidateJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.AssessmentCandidateResultJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.AssessmentGradingAssignmentJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.AssessmentJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.AssessmentResultAppealJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.AssessmentSessionJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.UserJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentCandidateJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentCandidateResultJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentGradingAssignmentJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentResultAppealJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentSessionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.user.UserJpaEntity;
 import com.sep.vox.support.IntegrationTest;
 
 import jakarta.persistence.EntityManager;
@@ -55,9 +55,15 @@ class JpaAssessmentAppealQueryRepositoryTests {
     @BeforeEach
     void seed() {
         schoolId = UUID.randomUUID();
-        studentId = persist(new UserJpaEntity(null, "hs-" + UUID.randomUUID() + "@vox.test", "hash",
-            null, "Tran Quang Thien", null, LocalDate.of(2008, 1, 1), null, null, "ACTIVE",
-            now, now, null, null)).getId();
+        studentId = persist(UserJpaEntity.builder()
+            .email("hs-" + UUID.randomUUID() + "@vox.test")
+            .passwordHash("hash")
+            .fullName("Tran Quang Thien")
+            .dateOfBirth(LocalDate.of(2008, 1, 1))
+            .status("ACTIVE")
+            .createdAt(now)
+            .updatedAt(now)
+            .build()).getId();
         seedAppeal("PENDING", null, null, null);
         seedAppeal("GRADING", "ASSIGNED", null, now.minusSeconds(3_600));
         em.flush();
@@ -107,23 +113,102 @@ class JpaAssessmentAppealQueryRepositoryTests {
 
     private void seedAppeal(String appealStatus, String reviewerStatus, String outcome, Instant deadline) {
         UUID paperId = UUID.randomUUID();
-        UUID assessmentId = persist(new AssessmentJpaEntity(null, null, null, "EX-" + UUID.randomUUID(), "Midterm",
-            null, schoolId, UUID.randomUUID(), "CENTRALIZED", "STUDENT_DEVICE", "CLOSED",
-            1, 900, "HIGHEST", null, null, null, null, UUID.randomUUID(), false,
-            now, now, null, null)).getId();
-        UUID candidateId = persist(new AssessmentCandidateJpaEntity(null, assessmentId, studentId, paperId, null,
-            "COMPLETED", now, now, null, null, null)).getId();
-        UUID sessionId = persist(new AssessmentSessionJpaEntity(null, assessmentId, candidateId, paperId, now, now,
-            "GRADED", false, null)).getId();
-        UUID candidateResultId = persist(new AssessmentCandidateResultJpaEntity(null, assessmentId, candidateId,
-            sessionId, UUID.randomUUID(), 1, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null,
-            new BigDecimal("6.50"), "APPEALED", null, null, now, now, null, null)).getId();
-        UUID appealId = persist(new AssessmentResultAppealJpaEntity(null, candidateResultId, studentId, "reason", now,
-            appealStatus, new BigDecimal("6.50"), null, null, null, null, deadline, null, null, null, null)).getId();
+        UUID assessmentId = persist(AssessmentJpaEntity.builder()
+                .blueprintId(null)
+                .blueprintVersionId(null)
+                .code("EX-" + UUID.randomUUID())
+                .name("Midterm")
+                .description(null)
+                .schoolId(schoolId)
+                .languageId(UUID.randomUUID())
+                .kind("CENTRALIZED")
+                .deliveryMode("STUDENT_DEVICE")
+                .status("CLOSED")
+                .maxAttempt(1)
+                .assessmentTimeDurationSecond(900)
+                .resultDecisionMethod("HIGHEST")
+                .requiredStreamType(null)
+                .streamTypePermission(null)
+                .openAt(null)
+                .closeAt(null)
+                .assessmentPolicyId(UUID.randomUUID())
+                .requiresOtp(false)
+                .build()).getId();
+        UUID candidateId = persist(AssessmentCandidateJpaEntity.builder()
+                .id(null)
+                .assessmentId(assessmentId)
+                .studentId(studentId)
+                .assignedPaperId(paperId)
+                .scheduleId(null)
+                .status("COMPLETED")
+                .assignedAt(now)
+                .updatedAt(now)
+                .blockedAt(null)
+                .assignedBy(null)
+                .updatedBy(null)
+                .build()).getId();
+        UUID sessionId = persist(AssessmentSessionJpaEntity.builder()
+                .id(null)
+                .assessmentId(assessmentId)
+                .candidateId(candidateId)
+                .paperId(paperId)
+                .startedAt(now)
+                .submittedAt(now)
+                .status("GRADED")
+                .flagged(false)
+                .flagReason(null)
+                .build()).getId();
+        UUID candidateResultId = persist(AssessmentCandidateResultJpaEntity.builder()
+                .assessmentId(assessmentId)
+                .candidateId(candidateId)
+                .sessionId(sessionId)
+                .assessmentPolicyId(UUID.randomUUID())
+                .policyVersion(1)
+                .rubricVersionId(UUID.randomUUID())
+                .frameworkVersionId(UUID.randomUUID())
+                .targetFrameworkBandId(UUID.randomUUID())
+                .rubricResultBandId(null)
+                .totalScore(new BigDecimal("6.50"))
+                .status("APPEALED")
+                .releasedAt(null)
+                .finalizedAt(null)
+                .build()).getId();
+        UUID appealId = persist(AssessmentResultAppealJpaEntity.builder()
+                .id(null)
+                .candidateResultId(candidateResultId)
+                .requestedBy(studentId)
+                .reason("reason")
+                .requestedAt(now)
+                .status(appealStatus)
+                .scoreBefore(new BigDecimal("6.50"))
+                .scoreAfter(null)
+                .resolvedBy(null)
+                .resolvedAt(null)
+                .notes(null)
+                .deadline(deadline)
+                .approvedAt(null)
+                .decisionNote(null)
+                .withdrawnAt(null)
+                .reviewerOverrideReason(null)
+                .build()).getId();
         if (reviewerStatus != null) {
-            persist(new AssessmentGradingAssignmentJpaEntity(null, candidateResultId, teacherId, "APPEAL", appealId,
-                reviewerStatus, outcome, new BigDecimal("6.50"), now, teacherId, null, deadline, null, null,
-                candidateResultId));
+            persist(AssessmentGradingAssignmentJpaEntity.builder()
+                    .id(null)
+                    .candidateResultId(candidateResultId)
+                    .teacherId(teacherId)
+                    .roundType("APPEAL")
+                    .appealId(appealId)
+                    .status(reviewerStatus)
+                    .outcome(outcome)
+                    .scoreBefore(new BigDecimal("6.50"))
+                    .assignedAt(now)
+                    .assignedBy(teacherId)
+                    .completedAt(null)
+                    .deadlineAt(deadline)
+                    .remindedAt(null)
+                    .reason(null)
+                    .activeResultId(candidateResultId)
+                    .build());
         }
     }
 

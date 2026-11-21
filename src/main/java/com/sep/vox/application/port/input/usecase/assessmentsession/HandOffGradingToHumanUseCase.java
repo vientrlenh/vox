@@ -141,9 +141,6 @@ public class HandOffGradingToHumanUseCase implements IUseCase<HandOffGradingToHu
         // bảng điểm như một con điểm thật.
         result.setTotalScore(null);
         result.setStatus(AssessmentCandidateResultStatus.PENDING_REVIEW);
-        result.setCreatedAt(now);
-        result.setUpdatedAt(now);
-        result.setUpdatedBy(moderationAccessService.getCurrentUserId());
 
         AssessmentCandidateResult saved = assessmentCandidateResultRepository.save(result);
         LOGGER.info(

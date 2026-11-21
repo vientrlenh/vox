@@ -32,7 +32,7 @@ public interface SchoolRepository {
 
     int updateSchoolAtomic(UUID id, String name, String description, String phone,
                            String email, String domain, String address, Integer studentCount,
-                           Instant now, UUID updatedBy);
+                           Instant now, String updatedBy);
     List<School> findByIdIn(Collection<UUID> ids);
     boolean existsByCode(String code);
 

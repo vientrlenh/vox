@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.sep.vox.domain.repository.SessionDurationAggregate;
-import com.sep.vox.infrastructure.persistence.entity.AssessmentItemResponseJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentItemResponseJpaEntity;
 
 public interface SpringDataAssessmentItemResponseRepository extends JpaRepository<AssessmentItemResponseJpaEntity, UUID> {
     @Query("""

@@ -23,8 +23,8 @@ public class RubricResultBandDtoMapper {
                 band.getOrder(),
                 band.getCreatedAt(),
                 band.getUpdatedAt(),
-                band.getCreatedBy(),
-                band.getUpdatedBy()
+                band.createdByUserId().orElse(null),
+                band.updatedByUserId().orElse(null)
         );
     }
 

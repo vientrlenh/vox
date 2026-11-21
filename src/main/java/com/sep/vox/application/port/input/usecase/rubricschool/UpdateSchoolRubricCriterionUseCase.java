@@ -179,7 +179,7 @@ public class UpdateSchoolRubricCriterionUseCase implements IUseCase<UpdateSchool
                     command.order(),
                     command.isRequired(),
                     Instant.now(),
-                    currentUserId
+                    currentUserId.toString()
             );
         } catch (DataIntegrityViolationException e) {
             throw new IllegalArgumentException("Không thể cập nhật Tiêu chí do dữ liệu bị trùng hoặc không hợp lệ.");

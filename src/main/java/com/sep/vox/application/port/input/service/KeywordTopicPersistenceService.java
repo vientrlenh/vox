@@ -47,33 +47,33 @@ public class KeywordTopicPersistenceService {
             String curriculumGroup,
             String temporalAffordance) {
         Instant now = Instant.now();
-        PracticeTopic saved = practiceTopicRepository.save(new PracticeTopic(
-            null,
-            topicName,
-            TopicSuggestionService.normalize(topicName),
-            topicName,
-            "USER_GENERATED",
-            dimension,
-            curriculumGroup == null ? "OUT_OF_CURRICULUM" : curriculumGroup,
-            true,
-            now,
-            null,
-            temporalAffordance == null ? TensePolicy.AFFORDANCE_MIXED : temporalAffordance
-        ));
-        topicSuggestionRepository.save(new TopicSuggestion(
-            null,
-            studentId,
-            keyword,
-            keyword,
-            "UNKNOWN",
-            null,
-            BigDecimal.ZERO,
-            "CREATED",
-            "{}",
-            "REQUESTED",
-            now,
-            null
-        ));
+        PracticeTopic saved = practiceTopicRepository.save(PracticeTopic.builder()
+                .id(null)
+                .name(topicName)
+                .normalizedName(TopicSuggestionService.normalize(topicName))
+                .description(topicName)
+                .source("USER_GENERATED")
+                .interestDimension(dimension)
+                .curriculumGroup(curriculumGroup == null ? "OUT_OF_CURRICULUM" : curriculumGroup)
+                .active(true)
+                .createdAt(now)
+                .sourceQuestionTopicId(null)
+                .temporalAffordance(temporalAffordance == null ? TensePolicy.AFFORDANCE_MIXED : temporalAffordance)
+                .build());
+        topicSuggestionRepository.save(TopicSuggestion.builder()
+                .id(null)
+                .studentId(studentId)
+                .suggestedTopicName(keyword)
+                .keyword(keyword)
+                .interestDimension("UNKNOWN")
+                .curriculumGroup(null)
+                .confidence(BigDecimal.ZERO)
+                .reasonText("CREATED")
+                .evidenceJson("{}")
+                .status("REQUESTED")
+                .createdAt(now)
+                .respondedAt(null)
+                .build());
         return saved.getId();
     }
 }

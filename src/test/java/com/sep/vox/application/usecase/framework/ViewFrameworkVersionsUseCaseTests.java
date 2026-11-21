@@ -45,10 +45,13 @@ public class ViewFrameworkVersionsUseCaseTests {
         UUID frameworkId = UUID.randomUUID();
         ViewFrameworkVersionsQuery query = new ViewFrameworkVersionsQuery(frameworkId, null, 1, 20);
 
-        Framework framework = new Framework(
-            frameworkId, new FrameworkCode("CEFR"), "CEFR", "Description",
-            true, now, now, null, null
-        );
+        Framework framework = Framework.builder()
+            .id(frameworkId)
+            .code(new FrameworkCode("CEFR"))
+            .name("CEFR")
+            .description("Description")
+            .active(true)
+            .build();
 
         FrameworkVersion version1 = new FrameworkVersion();
         version1.setId(UUID.randomUUID());
@@ -97,10 +100,13 @@ public class ViewFrameworkVersionsUseCaseTests {
         UUID frameworkId = UUID.randomUUID();
         ViewFrameworkVersionsQuery query = new ViewFrameworkVersionsQuery(frameworkId, null, 1, 20);
 
-        Framework framework = new Framework(
-            frameworkId, new FrameworkCode("CEFR"), "CEFR", "Description",
-            true, now, now, null, null
-        );
+        Framework framework = Framework.builder()
+            .id(frameworkId)
+            .code(new FrameworkCode("CEFR"))
+            .name("CEFR")
+            .description("Description")
+            .active(true)
+            .build();
 
         PageResult<FrameworkVersion> emptyPage = new PageResult<FrameworkVersion>(List.of(), 1, 20, 0, 0);
 
@@ -119,10 +125,13 @@ public class ViewFrameworkVersionsUseCaseTests {
         UUID frameworkId = UUID.randomUUID();
         ViewFrameworkVersionsQuery query = new ViewFrameworkVersionsQuery(frameworkId, null, 2, 10);
 
-        Framework framework = new Framework(
-            frameworkId, new FrameworkCode("CEFR"), "CEFR", "Description",
-            true, now, now, null, null
-        );
+        Framework framework = Framework.builder()
+            .id(frameworkId)
+            .code(new FrameworkCode("CEFR"))
+            .name("CEFR")
+            .description("Description")
+            .active(true)
+            .build();
 
         PageResult<FrameworkVersion> pageResult = new PageResult<FrameworkVersion>(List.of(), 2, 10, 25, 3);
 
@@ -142,10 +151,13 @@ public class ViewFrameworkVersionsUseCaseTests {
         UUID frameworkId = UUID.randomUUID();
         ViewFrameworkVersionsQuery query = new ViewFrameworkVersionsQuery(frameworkId, FrameworkVersionStatus.PUBLISHED, 1, 20);
 
-        Framework framework = new Framework(
-            frameworkId, new FrameworkCode("CEFR"), "CEFR", "Description",
-            true, now, now, null, null
-        );
+        Framework framework = Framework.builder()
+            .id(frameworkId)
+            .code(new FrameworkCode("CEFR"))
+            .name("CEFR")
+            .description("Description")
+            .active(true)
+            .build();
 
         FrameworkVersion version = new FrameworkVersion();
         version.setId(UUID.randomUUID());

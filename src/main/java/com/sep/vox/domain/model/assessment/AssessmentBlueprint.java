@@ -1,10 +1,10 @@
 package com.sep.vox.domain.model.assessment;
 
-import java.time.Instant;
 import java.util.UUID;
 
-public class AssessmentBlueprint {
-    private UUID id;
+import com.sep.vox.domain.model.BaseModel;
+
+public class AssessmentBlueprint extends BaseModel {
     private UUID schoolId;
     private UUID languageId;
     private UUID gradeLevelId;
@@ -12,53 +12,8 @@ public class AssessmentBlueprint {
     private String name;
     private String description;
     private boolean isActive;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private UUID createdBy;
-    private UUID updatedBy;
 
     public AssessmentBlueprint() {}
-
-    public AssessmentBlueprint(UUID id, UUID schoolId, UUID languageId, UUID gradeLevelId, String code, String name,
-            String description, boolean isActive, Instant createdAt, Instant updatedAt, UUID createdBy,
-            UUID updatedBy) {
-        this.id = id;
-        this.schoolId = schoolId;
-        this.languageId = languageId;
-        this.gradeLevelId = gradeLevelId;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.isActive = isActive;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public AssessmentBlueprint(UUID schoolId, UUID languageId, UUID gradeLevelId, String code, String name,
-            String description, boolean isActive, Instant createdAt, Instant updatedAt, UUID createdBy,
-            UUID updatedBy) {
-        this.schoolId = schoolId;
-        this.languageId = languageId;
-        this.gradeLevelId = gradeLevelId;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.isActive = isActive;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
 
     public UUID getSchoolId() {
         return schoolId;
@@ -116,37 +71,54 @@ public class AssessmentBlueprint {
         this.isActive = isActive;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
+    public static class Builder extends BaseModel.Builder<AssessmentBlueprint, Builder> {
 
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
+        private Builder() {
+            super(new AssessmentBlueprint());
+        }
 
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
+        @Override
+        protected Builder self() {
+            return this;
+        }
 
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
+        public Builder schoolId(UUID schoolId) {
+            target.schoolId = schoolId;
+            return this;
+        }
 
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
+        public Builder languageId(UUID languageId) {
+            target.languageId = languageId;
+            return this;
+        }
 
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
+        public Builder gradeLevelId(UUID gradeLevelId) {
+            target.gradeLevelId = gradeLevelId;
+            return this;
+        }
 
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
-    }
+        public Builder code(String code) {
+            target.code = code;
+            return this;
+        }
 
-    
+        public Builder name(String name) {
+            target.name = name;
+            return this;
+        }
+
+        public Builder description(String description) {
+            target.description = description;
+            return this;
+        }
+
+        public Builder active(boolean isActive) {
+            target.isActive = isActive;
+            return this;
+        }
+    }
 }

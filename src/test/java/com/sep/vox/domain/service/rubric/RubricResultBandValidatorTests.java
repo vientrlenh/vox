@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -17,9 +16,16 @@ import com.sep.vox.domain.model.rubric.RubricResultBand;
 public class RubricResultBandValidatorTests {
 
     private RubricResultBand band(String name, double min, double max) {
-        return new RubricResultBand(UUID.randomUUID(), UUID.randomUUID(), name.toUpperCase(), name, null,
-                BigDecimal.valueOf(min), BigDecimal.valueOf(max), 1, Instant.now(), Instant.now(),
-                UUID.randomUUID(), UUID.randomUUID());
+        return RubricResultBand.builder()
+                .id(UUID.randomUUID())
+                .rubricVersionId(UUID.randomUUID())
+                .code(name.toUpperCase())
+                .name(name)
+                .description(null)
+                .scoreMin(BigDecimal.valueOf(min))
+                .scoreMax(BigDecimal.valueOf(max))
+                .order(1)
+                .build();
     }
 
     @Test

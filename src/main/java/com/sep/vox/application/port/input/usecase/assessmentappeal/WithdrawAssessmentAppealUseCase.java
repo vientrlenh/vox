@@ -74,8 +74,6 @@ public class WithdrawAssessmentAppealUseCase implements IUseCase<UUID, UUID> {
         if (status == AssessmentCandidateResultStatus.APPEALED || status == AssessmentCandidateResultStatus.RE_GRADING) {
             ResultStatusHistoryRecorder.Snapshot before = resultStatusHistoryRecorder.snapshot(candidateResult);
             candidateResult.setStatus(AssessmentCandidateResultStatus.RELEASED);
-            candidateResult.setUpdatedAt(now);
-            candidateResult.setUpdatedBy(currentUserId);
             assessmentCandidateResultRepository.save(candidateResult);
             resultStatusHistoryRecorder.record(
                 before, candidateResult, ResultStatusChangeSource.SYSTEM, currentUserId,

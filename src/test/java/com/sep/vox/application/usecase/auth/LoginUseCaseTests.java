@@ -76,16 +76,15 @@ public class LoginUseCaseTests {
         UUID roleId = UUID.randomUUID();
         User user = activeUser(userId, schoolId, "test@example.com");
         SchoolUser schoolUser = activeSchoolUser(userId, schoolId);
-        DeviceSession deviceSession = new DeviceSession(
-            sessionId,
-            userId,
-            "device-1",
-            "Chrome on Windows",
-            SessionPlatform.WEB,
-            "203.0.113.10",
-            "JUnit User Agent",
-            null
-        );
+        DeviceSession deviceSession = DeviceSession.builder()
+            .id(sessionId)
+            .userId(userId)
+            .deviceId("device-1")
+            .deviceName("Chrome on Windows")
+            .platform(SessionPlatform.WEB)
+            .ipAddress("203.0.113.10")
+            .userAgent("JUnit User Agent")
+            .build();
         List<UserRoleInfo> roles = List.of(new UserRoleInfo(
             UUID.randomUUID(),
             userId,
@@ -131,16 +130,15 @@ public class LoginUseCaseTests {
         UUID sessionId = UUID.randomUUID();
         UUID roleId = UUID.randomUUID();
         User user = activeUser(userId, null, "sysadmin@example.com");
-        DeviceSession deviceSession = new DeviceSession(
-            sessionId,
-            userId,
-            "device-1",
-            "Chrome on Windows",
-            SessionPlatform.WEB,
-            "203.0.113.10",
-            "JUnit User Agent",
-            null
-        );
+        DeviceSession deviceSession = DeviceSession.builder()
+            .id(sessionId)
+            .userId(userId)
+            .deviceId("device-1")
+            .deviceName("Chrome on Windows")
+            .platform(SessionPlatform.WEB)
+            .ipAddress("203.0.113.10")
+            .userAgent("JUnit User Agent")
+            .build();
         List<UserRoleInfo> roles = List.of(new UserRoleInfo(
             UUID.randomUUID(),
             userId,
@@ -226,30 +224,26 @@ public class LoginUseCaseTests {
     }
 
     private User activeUser(UUID userId, UUID schoolId, String email) {
-        return new User(
-            userId,
-            new Email(email),
-            "password-hash",
-            new Phone("0987654321"),
-            new FullName("Test User"),
-            null,
-            new DateOfBirth(LocalDate.of(2000, 1, 1)),
-            "Ho Chi Minh City",
-            null,
-            UserStatus.ACTIVE,
-            Instant.now(),
-            Instant.now(),
-            null,
-            null
-        );
+        return User.builder()
+            .id(userId)
+            .email(new Email(email))
+            .passwordHash("password-hash")
+            .phone(new Phone("0987654321"))
+            .fullName(new FullName("Test User"))
+            .dateOfBirth(new DateOfBirth(LocalDate.of(2000, 1, 1)))
+            .address("Ho Chi Minh City")
+            .status(UserStatus.ACTIVE)
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
+            .build();
     }
 
     private SchoolUser activeSchoolUser(UUID userId, UUID schoolId) {
-        return new SchoolUser(
-            schoolId, 
-            userId, 
-            Instant.now(), 
-            Instant.now()
-        );
+        return SchoolUser.builder()
+            .schoolId(schoolId)
+            .userId(userId)
+            .startDate(Instant.now())
+            .endDate(Instant.now())
+            .build();
     }
 }

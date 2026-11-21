@@ -15,7 +15,6 @@ import com.sep.vox.application.port.input.command.CreateSchoolCommand;
 import com.sep.vox.application.port.input.command.ProvisionSchoolCommand;
 import com.sep.vox.application.port.input.service.ProvisionSchoolService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.repository.SchoolDirectoryRepository;
 
 /**
@@ -34,17 +33,14 @@ public class CreateSchoolUseCase implements IUseCase<CreateSchoolCommand, UUID> 
 
     private final SchoolDirectoryRepository schoolDirectoryRepository;
     private final ProvisionSchoolService provisionSchoolService;
-    private final UserContextPort userContextPort;
     private final String allowedAvatarHosts;
 
     public CreateSchoolUseCase(
             SchoolDirectoryRepository schoolDirectoryRepository,
             ProvisionSchoolService provisionSchoolService,
-            UserContextPort userContextPort,
             @Value("${app.avatar.allowed-hosts:}") String allowedAvatarHosts) {
         this.schoolDirectoryRepository = schoolDirectoryRepository;
         this.provisionSchoolService = provisionSchoolService;
-        this.userContextPort = userContextPort;
         this.allowedAvatarHosts = allowedAvatarHosts;
     }
 
@@ -55,8 +51,7 @@ public class CreateSchoolUseCase implements IUseCase<CreateSchoolCommand, UUID> 
         validateCommand(command);
 
         Instant now = Instant.now();
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        SchoolInfo school = resolveSchoolInfo(command, currentUserId, now);
+        SchoolInfo school = resolveSchoolInfo(command);
 
         return provisionSchoolService.provision(new ProvisionSchoolCommand(
             school.code(),
@@ -71,7 +66,6 @@ public class CreateSchoolUseCase implements IUseCase<CreateSchoolCommand, UUID> 
             command.adminDateOfBirth(),
             command.adminAddress(),
             command.adminAvatarUrl(),
-            currentUserId,
             now
         ));
     }
@@ -109,7 +103,7 @@ public class CreateSchoolUseCase implements IUseCase<CreateSchoolCommand, UUID> 
      * phần tự khai trong yêu cầu -- không trộn hai nguồn, tránh trường mang mã/tên của danh mục
      * này nhưng domain lại do người gọi tự gõ.
      */
-    private SchoolInfo resolveSchoolInfo(CreateSchoolCommand command, UUID currentUserId, Instant now) {
+    private SchoolInfo resolveSchoolInfo(CreateSchoolCommand command) {
         if (command.schoolDirectoryId() == null) {
             return new SchoolInfo(
                 command.schoolCode(),
@@ -127,7 +121,7 @@ public class CreateSchoolUseCase implements IUseCase<CreateSchoolCommand, UUID> 
         // thái lệch "School đã tồn tại nhưng danh mục vẫn chưa xác minh" (cùng cách
         // ApproveRegisterFormUseCase xử lý đơn từ danh mục).
         if (!directory.isVerified()) {
-            directory.verify(currentUserId, now);
+            directory.verify();
             schoolDirectoryRepository.save(directory);
         }
 

@@ -84,44 +84,44 @@ public class PracticePaperPersistenceService {
             PracticeQuestion question) {
         String resolvedOrigin = origin == null ? "SELECTED" : origin;
         Instant now = Instant.now();
-        return paperRepository.save(new com.sep.vox.domain.model.personalization.PracticePaper(
-            UUID.randomUUID(),
-            studentId,
-            topicId,
-            targetFrameworkBandId,
-            resolvedOrigin,
-            currentGoal(studentId),
-            jsonSerializationPort.toJson(
+        return paperRepository.save(com.sep.vox.domain.model.personalization.PracticePaper.builder()
+            .id(UUID.randomUUID())
+            .studentId(studentId)
+            .practiceTopicId(topicId)
+            .targetFrameworkBandId(targetFrameworkBandId)
+            .origin(resolvedOrigin)
+            .goalAtBuild(currentGoal(studentId))
+            .offeredTopicIdsJson(jsonSerializationPort.toJson(
                 offeredTopicIds == null ? List.of() : offeredTopicIds
-            ),
-            jsonSerializationPort.toJson(
+            ))
+            .previousOfferedTopicIdsJson(jsonSerializationPort.toJson(
                 previousOfferedTopicIds == null ? List.of() : previousOfferedTopicIds
-            ),
-            // plannedSeconds cũ = preparationTimeSeconds + spokenSeconds; bỏ cột chuẩn bị (V11)
-            // thì hai con số trùng nhau, nên gộp về một tên thay vì giữ hai tên cho một giá trị.
-            question.spokenSeconds(),
-            question.spokenSeconds(),
-            // Instant không có plusMinutes -- nó là mốc tuyệt đối, không mang lịch/múi giờ nên
-            // chỉ cộng được Duration. Ý nghĩa vẫn y hệt: giữ chỗ quota 10 phút.
-            now.plus(RESERVATION_WINDOW),
-            "RESERVED",
-            now
-        ));
+            ))
+            // The old plannedSeconds was preparationTimeSeconds + spokenSeconds; with the preparation column dropped (V11)
+            // the two numbers are equal, so they are merged into one name instead of keeping two names for one value.
+            .plannedSeconds(question.spokenSeconds())
+            .reservedQuotaSeconds(question.spokenSeconds())
+            // Instant has no plusMinutes -- it is an absolute point that carries no calendar or time zone, so only a
+            // Duration can be added. The meaning is unchanged: reserve the quota for 10 minutes.
+            .expiresAt(now.plus(RESERVATION_WINDOW))
+            .status("RESERVED")
+            .createdAt(now)
+            .build());
     }
 
     private void saveItemAndExposure(
             UUID studentId,
             UUID paperId,
             PracticeQuestionSelectionService.NextQuestionSelection selection) {
-        paperItemRepository.save(new PracticePaperItem(
-            UUID.randomUUID(),
-            paperId,
-            selection.question().getId(),
-            selection.slot(),
-            selection.criterion(),
-            selection.subAttribute(),
-            selection.targetRank()
-        ));
+        paperItemRepository.save(PracticePaperItem.builder()
+                .id(UUID.randomUUID())
+                .practicePaperId(paperId)
+                .practiceQuestionId(selection.question().getId())
+                .slotOrder(selection.slot())
+                .targetCriterionCode(selection.criterion())
+                .targetSubAttribute(selection.subAttribute())
+                .targetDifficultyRank(selection.targetRank())
+                .build());
         studentQuestionExposureRepository.recordExposure(studentId, selection.question().getId());
     }
 }

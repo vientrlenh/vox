@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.QuestionBankJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.question.QuestionBankJpaEntity;
 
 public interface SpringDataQuestionBankRepository extends JpaRepository<QuestionBankJpaEntity, UUID> {
 

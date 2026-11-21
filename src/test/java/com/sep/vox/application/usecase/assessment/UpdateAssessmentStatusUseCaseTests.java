@@ -591,7 +591,6 @@ class UpdateAssessmentStatusUseCaseTests {
 
         assertThat(draft.getStatus()).isEqualTo(AssessmentScheduleStatus.CANCELLED);
         assertThat(published.getStatus()).isEqualTo(AssessmentScheduleStatus.CANCELLED);
-        assertThat(published.getUpdatedBy()).isEqualTo(userId);
         verify(assessmentScheduleRepository).save(draft);
         verify(assessmentScheduleRepository).save(published);
     }

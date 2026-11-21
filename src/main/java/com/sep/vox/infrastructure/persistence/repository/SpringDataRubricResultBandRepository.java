@@ -10,7 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.sep.vox.infrastructure.persistence.entity.RubricResultBandJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.rubric.RubricResultBandJpaEntity;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -48,7 +48,7 @@ public interface SpringDataRubricResultBandRepository extends JpaRepository<Rubr
             @Param("scoreMax") BigDecimal scoreMax,
             @Param("order") Integer order,
             @Param("updatedAt") Instant updatedAt,
-            @Param("updatedBy") UUID updatedBy
+            @Param("updatedBy") String updatedBy
     );
 
     Page<RubricResultBandJpaEntity> findAllByRubricVersionId(UUID rubricVersionId, Pageable pageable);

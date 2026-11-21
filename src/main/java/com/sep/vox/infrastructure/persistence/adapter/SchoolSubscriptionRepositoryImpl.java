@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.SchoolSubscriptionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.subscription.SchoolSubscriptionJpaEntity;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;

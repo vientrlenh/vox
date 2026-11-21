@@ -16,10 +16,10 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.infrastructure.persistence.adapter.SchoolUserRepositoryImpl;
-import com.sep.vox.infrastructure.persistence.entity.RoleJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.SchoolClassUserJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.UserJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.UserRoleJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.user.RoleJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolClassUserJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.user.UserJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.user.UserRoleJpaEntity;
 import com.sep.vox.support.RepositoryTest;
 
 @RepositoryTest
@@ -50,9 +50,24 @@ class SchoolUserRepositoryTests {
         UUID schoolId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         UUID anotherUserId = UUID.randomUUID();
-        schoolUserRepository.save(new SchoolUser(schoolId, userId, Instant.now(), null));
-        schoolUserRepository.save(new SchoolUser(schoolId, anotherUserId, Instant.now(), null));
-        schoolUserRepository.save(new SchoolUser(UUID.randomUUID(), UUID.randomUUID(), Instant.now(), null));
+        schoolUserRepository.save(SchoolUser.builder()
+            .schoolId(schoolId)
+            .userId(userId)
+            .startDate(Instant.now())
+            .endDate(null)
+            .build());
+        schoolUserRepository.save(SchoolUser.builder()
+            .schoolId(schoolId)
+            .userId(anotherUserId)
+            .startDate(Instant.now())
+            .endDate(null)
+            .build());
+        schoolUserRepository.save(SchoolUser.builder()
+            .schoolId(UUID.randomUUID())
+            .userId(UUID.randomUUID())
+            .startDate(Instant.now())
+            .endDate(null)
+            .build());
 
         List<SchoolUser> found = schoolUserRepository.findByUserIdIn(Set.of(userId, anotherUserId, UUID.randomUUID()));
 
@@ -172,10 +187,24 @@ class SchoolUserRepositoryTests {
         UUID leftId = saveMember(schoolId, studentRoleId, "left@school.vn", "0900000002", "Đã Rời Lớp", "ACTIVE");
         UUID freeId = saveMember(schoolId, studentRoleId, "free@school.vn", "0900000003", "Chưa Vào Lớp", "ACTIVE");
         springDataSchoolClassUserRepository.saveAndFlush(
-            new SchoolClassUserJpaEntity(enrolledId, classId, true, NOW, null, enrolledId));
+            SchoolClassUserJpaEntity.builder()
+                .userId(enrolledId)
+                .schoolClassId(classId)
+                .isActive(true)
+                .joinedAt(NOW)
+                .leftAt(null)
+                .assignedBy(enrolledId)
+                .build());
         // Has left the class -> must still be shown so they can be added again.
         springDataSchoolClassUserRepository.saveAndFlush(
-            new SchoolClassUserJpaEntity(leftId, classId, false, NOW, NOW, leftId));
+            SchoolClassUserJpaEntity.builder()
+                .userId(leftId)
+                .schoolClassId(classId)
+                .isActive(false)
+                .joinedAt(NOW)
+                .leftAt(NOW)
+                .assignedBy(leftId)
+                .build());
 
         PageResult<SchoolUser> result = schoolUserRepository.findBySchoolId(schoolId, null, null, null, classId, true, 1, 20);
 
@@ -186,15 +215,36 @@ class SchoolUserRepositoryTests {
     }
 
     private UUID saveRole(String code) {
-        return springDataRoleRepository.saveAndFlush(new RoleJpaEntity(null, code, code, NOW, NOW, null, null)).getId();
+        return springDataRoleRepository.saveAndFlush(RoleJpaEntity.builder()
+            .code(code)
+            .name(code)
+            .createdAt(NOW)
+            .updatedAt(NOW)
+            .build()).getId();
     }
 
     private UUID saveMember(UUID schoolId, UUID roleId, String email, String phone, String fullName, String status) {
-        UserJpaEntity user = springDataUserRepository.saveAndFlush(new UserJpaEntity(
-            null, email, "hash", phone, fullName, null, LocalDate.of(2000, 1, 1), null, null,
-            status, NOW, NOW, null, null));
-        springDataUserRoleRepository.saveAndFlush(new UserRoleJpaEntity(null, user.getId(), roleId, NOW));
-        schoolUserRepository.save(new SchoolUser(schoolId, user.getId(), NOW, null));
+        UserJpaEntity user = springDataUserRepository.saveAndFlush(UserJpaEntity.builder()
+            .email(email)
+            .passwordHash("hash")
+            .phone(phone)
+            .fullName(fullName)
+            .dateOfBirth(LocalDate.of(2000, 1, 1))
+            .status(status)
+            .createdAt(NOW)
+            .updatedAt(NOW)
+            .build());
+        springDataUserRoleRepository.saveAndFlush(UserRoleJpaEntity.builder()
+            .userId(user.getId())
+            .roleId(roleId)
+            .createdAt(NOW)
+            .build());
+        schoolUserRepository.save(SchoolUser.builder()
+            .schoolId(schoolId)
+            .userId(user.getId())
+            .startDate(NOW)
+            .endDate(null)
+            .build());
         return user.getId();
     }
 }

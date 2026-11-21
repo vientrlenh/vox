@@ -80,14 +80,14 @@ public class CreateSchoolClassUserUseCase implements IUseCase<CreateSchoolClassU
             return new CreateSchoolClassUserResponse(saved.getId());
         }
 
-        SchoolClassUser schoolClassUser = new SchoolClassUser(
-            input.userId(),
-            input.classId(),
-            true,
-            now,
-            null,
-            currentUserId
-        );
+        SchoolClassUser schoolClassUser = SchoolClassUser.builder()
+            .userId(input.userId())
+            .schoolClassId(input.classId())
+            .active(true)
+            .joinedAt(now)
+            .leftAt(null)
+            .assignedBy(currentUserId)
+            .build();
         try {
             SchoolClassUser saved = schoolClassUserRepository.save(schoolClassUser);
             return new CreateSchoolClassUserResponse(saved.getId());

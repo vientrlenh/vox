@@ -95,7 +95,13 @@ class DeleteAssessmentPaperUseCaseTests {
         when(assessmentPaperRepository.findById(paperId)).thenReturn(Optional.of(paper(AssessmentPaperStatus.DRAFT)));
         when(assessmentRepository.findById(assessmentId)).thenReturn(Optional.of(assessment()));
         when(assessmentMemberRepository.findByAssessmentIdAndUserId(assessmentId, userId)).thenReturn(Optional.of(
-            new AssessmentMember(assessmentId, userId, AssessmentMemberRole.AUTHOR, Instant.now(), userId)));
+            AssessmentMember.builder()
+                    .assessmentId(assessmentId)
+                    .userId(userId)
+                    .role(AssessmentMemberRole.AUTHOR)
+                    .grantedAt(Instant.now())
+                    .grantedBy(userId)
+                    .build()));
     }
 
     @Test
@@ -122,7 +128,7 @@ class DeleteAssessmentPaperUseCaseTests {
     @Test
     void should_reject_when_user_is_not_the_creator() {
         AssessmentPaper paper = paper(AssessmentPaperStatus.DRAFT);
-        paper.setCreatedBy(UUID.randomUUID());
+        paper.setCreatedBy(UUID.randomUUID().toString());
         when(assessmentPaperRepository.findById(paperId)).thenReturn(Optional.of(paper));
 
         assertThatThrownBy(() -> useCase.execute(new DeleteAssessmentPaperCommand(paperId)))
@@ -198,7 +204,7 @@ class DeleteAssessmentPaperUseCaseTests {
         paper.setId(paperId);
         paper.setAssessmentId(assessmentId);
         paper.setStatus(status);
-        paper.setCreatedBy(userId);
+        paper.setCreatedBy(userId.toString());
         return paper;
     }
 

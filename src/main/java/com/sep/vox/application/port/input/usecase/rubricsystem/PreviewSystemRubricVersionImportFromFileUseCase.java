@@ -86,23 +86,27 @@ public class PreviewSystemRubricVersionImportFromFileUseCase implements IUseCase
         Instant expiresAt = now.plus(1, ChronoUnit.DAYS); // Phiên hết hạn sau 1 ngày
 
         // 1. Tạo Session với ID = null để DB tự sinh UUIDv7
-        ImportSession session = new ImportSession(
-                null,
-                null,
-                ImportType.RUBRIC_VERSION,
-                command.file().fileName(),
-                jsonSerializationPort.toJson(parsedResult.originalHeaders()),
-                jsonSerializationPort.toJson(parsedResult.suggestedMapping()),
-                null,
-                0, 0, 0, 0,
-                parsedResult.rows().size(),
-                null,
-                ImportSessionStatus.PREVIEWED,
-                command.rubricId(),
-                expiresAt,
-                null, null, null, 0,
-                now, now, currentUserId, currentUserId
-        );
+        ImportSession session = ImportSession.builder()
+            .schoolId(null)
+            .type(ImportType.RUBRIC_VERSION)
+            .fileName(command.file().fileName())
+            .originalHeadersJson(jsonSerializationPort.toJson(parsedResult.originalHeaders()))
+            .suggestedMappingJson(jsonSerializationPort.toJson(parsedResult.suggestedMapping()))
+            .confirmedMappingJson(null)
+            .validRows(0)
+            .invalidRows(0)
+            .importedRows(0)
+            .skippedRows(0)
+            .totalRows(parsedResult.rows().size())
+            .failureReason(null)
+            .status(ImportSessionStatus.PREVIEWED)
+            .importedEntityId(command.rubricId())
+            .expiresAt(expiresAt)
+            .claimedAt(null)
+            .claimedBy(null)
+            .leaseExpiresAt(null)
+            .attempts(0)
+            .build();
 
         // 2. Lưu vào DB và lấy ID xịn do DB sinh ra
         ImportSession savedSession = importSessionRepository.save(session);
@@ -112,15 +116,14 @@ public class PreviewSystemRubricVersionImportFromFileUseCase implements IUseCase
         List<ImportRow> importRows = IntStream.range(0, parsedResult.rows().size())
                 .mapToObj(i -> {
                     Map<String, String> rowMap = parsedResult.rows().get(i);
-                    return new ImportRow(
-                            null,
-                            generatedSessionId,
-                            i + 1,
-                            jsonSerializationPort.toJson(rowMap),
-                            null,
-                            null,
-                            ImportRowStatus.PENDING
-                    );
+                    return ImportRow.builder()
+                        .sessionId(generatedSessionId)
+                        .rowNumber(i + 1)
+                        .rawDataJson(jsonSerializationPort.toJson(rowMap))
+                        .mappedDataJson(null)
+                        .errorsJson(null)
+                        .status(ImportRowStatus.PENDING)
+                        .build();
                 })
                 .toList();
 

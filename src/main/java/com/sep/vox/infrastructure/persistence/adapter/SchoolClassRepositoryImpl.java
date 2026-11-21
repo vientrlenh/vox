@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.SchoolClassJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolClassJpaEntity;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -41,7 +41,7 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
     @Override
     public SchoolClass save(SchoolClass schoolClass) {
         SchoolClassJpaEntity entity = SchoolClassMapper.toJpa(schoolClass);
-        SchoolClassJpaEntity saved = springDataSchoolClassRepository.save(entity);
+        SchoolClassJpaEntity saved = springDataSchoolClassRepository.saveAndFlush(entity);
         return SchoolClassMapper.toDomain(saved);
     }
 
@@ -163,7 +163,7 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
     @Override
     public int updateMutableFields(UUID id, UUID schoolId, String name, boolean nameProvided,
             String description, boolean descriptionProvided, SchoolClassStatus status, boolean statusProvided,
-            Instant updatedAt, UUID updatedBy) {
+            Instant updatedAt, String updatedBy) {
         return springDataSchoolClassRepository.updateMutableFields(
             id,
             schoolId,
@@ -207,7 +207,7 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
     }
 
     @Override
-    public int archiveByGradeId(UUID schoolGradeId, Instant updatedAt, UUID updatedBy) {
+    public int archiveByGradeId(UUID schoolGradeId, Instant updatedAt, String updatedBy) {
         return springDataSchoolClassRepository.archiveByGradeId(schoolGradeId, updatedAt, updatedBy);
     }
 

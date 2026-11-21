@@ -11,27 +11,7 @@ public class ImportRow {
     private String errorsJson;
     private ImportRowStatus status;
 
-    public ImportRow() {}
-
-    public ImportRow(UUID id, UUID sessionId, long rowNumber, String rawDataJson, String mappedDataJson,
-            String errorsJson, ImportRowStatus status) {
-        this.id = id;
-        this.sessionId = sessionId;
-        this.rowNumber = rowNumber;
-        this.rawDataJson = rawDataJson;
-        this.mappedDataJson = mappedDataJson;
-        this.errorsJson = errorsJson;
-        this.status = status;
-    }
-
-    public ImportRow(UUID sessionId, long rowNumber, String rawDataJson, String mappedDataJson, String errorsJson,
-            ImportRowStatus status) {
-        this.sessionId = sessionId;
-        this.rowNumber = rowNumber;
-        this.rawDataJson = rawDataJson;
-        this.mappedDataJson = mappedDataJson;
-        this.errorsJson = errorsJson;
-        this.status = status;
+    public ImportRow() {
     }
 
     public UUID getId() {
@@ -90,5 +70,53 @@ public class ImportRow {
         this.status = status;
     }
 
-    
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private final ImportRow target = new ImportRow();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder sessionId(UUID sessionId) {
+            target.sessionId = sessionId;
+            return this;
+        }
+
+        public Builder rowNumber(long rowNumber) {
+            target.rowNumber = rowNumber;
+            return this;
+        }
+
+        public Builder rawDataJson(String rawDataJson) {
+            target.rawDataJson = rawDataJson;
+            return this;
+        }
+
+        public Builder mappedDataJson(String mappedDataJson) {
+            target.mappedDataJson = mappedDataJson;
+            return this;
+        }
+
+        public Builder errorsJson(String errorsJson) {
+            target.errorsJson = errorsJson;
+            return this;
+        }
+
+        public Builder status(ImportRowStatus status) {
+            target.status = status;
+            return this;
+        }
+
+        public ImportRow build() {
+            return target;
+        }
+    }
 }

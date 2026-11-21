@@ -133,13 +133,9 @@ public class UpdateAssessmentScheduleUseCase implements IUseCase<UpdateAssessmen
             schedule.setSchoolRoomId(effectiveRoomId);
             schedule.setStartDate(effectiveStart);
             schedule.setEndDate(effectiveEnd);
-            schedule.setUpdatedAt(now);
-            schedule.setUpdatedBy(currentUserId);
             assessmentScheduleRepository.save(schedule);
             assessment.setOpenAt(effectiveStart);
             assessment.setCloseAt(effectiveEnd);
-            assessment.setUpdatedAt(now);
-            assessment.setUpdatedBy(currentUserId);
             assessmentRepository.save(assessment);
         } else {
             int updated = assessmentScheduleRepository.updateAtomic(
@@ -148,7 +144,7 @@ public class UpdateAssessmentScheduleUseCase implements IUseCase<UpdateAssessmen
                 input.startDate(),
                 input.endDate(),
                 now,
-                currentUserId);
+                currentUserId.toString());
             if (updated == 0) {
                 throw new IllegalStateException("Không thể cập nhật ca thi (đã bị thay đổi trạng thái)");
             }

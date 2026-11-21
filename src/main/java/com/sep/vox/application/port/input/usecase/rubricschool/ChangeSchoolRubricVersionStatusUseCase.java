@@ -121,8 +121,6 @@ public class ChangeSchoolRubricVersionStatusUseCase implements IUseCase<ChangeSc
 
         // 5. Lưu xuống DB
         version.setStatus(command.status());
-        version.setUpdatedAt(now);
-        version.setUpdatedBy(currentUserId);
 
         rubricVersionRepository.save(version);
         return version.getId();

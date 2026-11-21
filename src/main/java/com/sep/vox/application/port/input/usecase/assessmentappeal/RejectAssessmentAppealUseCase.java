@@ -69,8 +69,6 @@ public class RejectAssessmentAppealUseCase implements IUseCase<RejectAssessmentA
         // Đơn bị từ chối: điểm gốc giữ nguyên giá trị, kết quả quay về đã công bố.
         AssessmentCandidateResult candidateResult = context.candidateResult();
         candidateResult.setStatus(AssessmentCandidateResultStatus.RELEASED);
-        candidateResult.setUpdatedAt(now);
-        candidateResult.setUpdatedBy(currentUserId);
         assessmentCandidateResultRepository.save(candidateResult);
 
         // Ghi outbox trong chính transaction này: mail báo học sinh và quyết định từ chối

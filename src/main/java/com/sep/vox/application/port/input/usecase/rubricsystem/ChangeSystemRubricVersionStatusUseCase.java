@@ -104,8 +104,6 @@ public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSy
 
         // 5. Lưu trạng thái mới cho Version
         version.setStatus(command.status());
-        version.setUpdatedAt(now);
-        version.setUpdatedBy(currentUserId);
 
         rubricVersionRepository.save(version);
         return version.getId();

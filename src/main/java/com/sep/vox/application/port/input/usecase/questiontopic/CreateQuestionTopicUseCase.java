@@ -65,17 +65,13 @@ public class CreateQuestionTopicUseCase implements IUseCase<CreateQuestionTopicC
         }
 
         Instant now = Instant.now();
-        QuestionTopic topic = new QuestionTopic(
-            command.questionBankId(),
-            command.code(),
-            command.name(),
-            command.description(),
-            QuestionTopicStatus.DRAFT,
-            now,
-            now,
-            currentUserId,
-            currentUserId
-        );
+        QuestionTopic topic = QuestionTopic.builder()
+                .questionBankId(command.questionBankId())
+                .code(command.code())
+                .name(command.name())
+                .description(command.description())
+                .status(QuestionTopicStatus.DRAFT)
+                .build();
         QuestionTopic saved = questionTopicRepository.save(topic);
         return CreateQuestionTopicResponseMapper.toResponse(saved.getId());
     }

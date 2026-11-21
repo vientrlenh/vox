@@ -114,11 +114,23 @@ class ViewAssessmentItemResponseEvaluationUseCaseTests {
     void should_return_teacher_criteria_when_latest_evaluation_is_human() {
         givenHumanRegradedOverAi();
         when(assessmentItemCriterionScoreRepository.findByEvaluationId(HUMAN_EVALUATION_ID)).thenReturn(List.of(
-            new AssessmentItemCriterionScore(UUID.randomUUID(), HUMAN_EVALUATION_ID, CRITERION_ID,
-                new BigDecimal("8.00"), new BigDecimal("8.00"), "GV: trôi chảy")));
+            AssessmentItemCriterionScore.builder()
+                .id(UUID.randomUUID())
+                .evaluationId(HUMAN_EVALUATION_ID)
+                .rubricCriterionId(CRITERION_ID)
+                .rawScore(new BigDecimal("8.00"))
+                .finalScore(new BigDecimal("8.00"))
+                .rationale("GV: trôi chảy")
+                .build()));
         when(assessmentItemCriterionScoreRepository.findByEvaluationId(AI_EVALUATION_ID)).thenReturn(List.of(
-            new AssessmentItemCriterionScore(UUID.randomUUID(), AI_EVALUATION_ID, CRITERION_ID,
-                new BigDecimal("6.00"), new BigDecimal("6.00"), "AI: còn ngập ngừng")));
+            AssessmentItemCriterionScore.builder()
+                .id(UUID.randomUUID())
+                .evaluationId(AI_EVALUATION_ID)
+                .rubricCriterionId(CRITERION_ID)
+                .rawScore(new BigDecimal("6.00"))
+                .finalScore(new BigDecimal("6.00"))
+                .rationale("AI: còn ngập ngừng")
+                .build()));
 
         AssessmentItemEvaluationDetailsResponse response = useCase.execute(new ViewAssessmentItemResponseEvaluationQuery(RESPONSE_ID));
 
@@ -131,8 +143,20 @@ class ViewAssessmentItemResponseEvaluationUseCaseTests {
     void should_read_turns_from_ai_evaluation_when_human_row_has_none() {
         givenHumanRegradedOverAi();
         when(assessmentItemEvaluationTurnRepository.findByEvaluationId(AI_EVALUATION_ID)).thenReturn(List.of(
-            new AssessmentItemEvaluationTurn(UUID.randomUUID(), AI_EVALUATION_ID, 1, TurnType.MAIN,
-                "Describe a place you like", "https://audio", "I like...", 12, 30, 0.9, null, null)));
+            AssessmentItemEvaluationTurn.builder()
+                    .id(UUID.randomUUID())
+                    .evaluationId(AI_EVALUATION_ID)
+                    .turnOrder(1)
+                    .turnType(TurnType.MAIN)
+                    .promptText("Describe a place you like")
+                    .audioUrl("https://audio")
+                    .transcript("I like...")
+                    .wordCount(12)
+                    .durationSeconds(30)
+                    .asrConfidence(0.9)
+                    .pronunciationOverallJson(null)
+                    .wordFeedbackJson(null)
+                    .build()));
 
         AssessmentItemEvaluationDetailsResponse response = useCase.execute(new ViewAssessmentItemResponseEvaluationQuery(RESPONSE_ID));
 
@@ -185,21 +209,55 @@ class ViewAssessmentItemResponseEvaluationUseCaseTests {
 
     /** Bản AI sau khi bị chấm lại: SUPERSEDED nhưng dữ liệu còn nguyên. */
     private AssessmentItemEvaluation aiEvaluation() {
-        return new AssessmentItemEvaluation(
-            AI_EVALUATION_ID, RESPONSE_ID, PAPER_ITEM_ID, AssessmentEvaluationEngineType.AI_SINGLE,
-            "gpt-x", 1, null, new BigDecimal("6.00"), new BigDecimal("6.00"),
-            new BigDecimal("0.82"), true, "LOW_CONFIDENCE", false, false,
-            null, "{\"ruleResults\":[]}", "AI: phát âm ổn", "[\"nói chậm lại\"]", "v3",
-            AssessmentItemEvaluationStatus.SUPERSEDED, Instant.now().minus(1, ChronoUnit.HOURS));
+        return AssessmentItemEvaluation.builder()
+                .id(AI_EVALUATION_ID)
+                .responseId(RESPONSE_ID)
+                .paperItemId(PAPER_ITEM_ID)
+                .engineType(AssessmentEvaluationEngineType.AI_SINGLE)
+                .gradedByModel("gpt-x")
+                .sampleCount(1)
+                .reviewerId(null)
+                .rawItemScore(new BigDecimal("6.00"))
+                .itemScore(new BigDecimal("6.00"))
+                .overallConfidence(new BigDecimal("0.82"))
+                .requiresHumanReview(true)
+                .reviewReasonCode("LOW_CONFIDENCE")
+                .markedInvalid(false)
+                .requiresRetake(false)
+                .signals(null)
+                .validityJson("{\"ruleResults\":[]}")
+                .feedbackSummary("AI: phát âm ổn")
+                .suggestionsJson("[\"nói chậm lại\"]")
+                .promptVersion("v3")
+                .status(AssessmentItemEvaluationStatus.SUPERSEDED)
+                .evaluatedAt(Instant.now().minus(1, ChronoUnit.HOURS))
+                .build();
     }
 
     /** Bản chấm tay: mọi cột AI đều null, không sinh turn nào. */
     private AssessmentItemEvaluation humanEvaluation() {
-        return new AssessmentItemEvaluation(
-            HUMAN_EVALUATION_ID, RESPONSE_ID, PAPER_ITEM_ID, AssessmentEvaluationEngineType.HUMAN,
-            "HUMAN", null, UUID.randomUUID(), new BigDecimal("8.00"), new BigDecimal("8.00"),
-            null, false, null, false, false,
-            null, null, "GV: đạt yêu cầu", null, null,
-            AssessmentItemEvaluationStatus.FINALIZED, Instant.now());
+        return AssessmentItemEvaluation.builder()
+                .id(HUMAN_EVALUATION_ID)
+                .responseId(RESPONSE_ID)
+                .paperItemId(PAPER_ITEM_ID)
+                .engineType(AssessmentEvaluationEngineType.HUMAN)
+                .gradedByModel("HUMAN")
+                .sampleCount(null)
+                .reviewerId(UUID.randomUUID())
+                .rawItemScore(new BigDecimal("8.00"))
+                .itemScore(new BigDecimal("8.00"))
+                .overallConfidence(null)
+                .requiresHumanReview(false)
+                .reviewReasonCode(null)
+                .markedInvalid(false)
+                .requiresRetake(false)
+                .signals(null)
+                .validityJson(null)
+                .feedbackSummary("GV: đạt yêu cầu")
+                .suggestionsJson(null)
+                .promptVersion(null)
+                .status(AssessmentItemEvaluationStatus.FINALIZED)
+                .evaluatedAt(Instant.now())
+                .build();
     }
 }

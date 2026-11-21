@@ -2,9 +2,9 @@ package com.sep.vox.domain.model.importfile;
 
 import java.time.Instant;
 import java.util.UUID;
+import com.sep.vox.domain.model.BaseModel;
 
-public class ImportSession {
-    private UUID id;
+public class ImportSession extends BaseModel {
     private UUID schoolId;
     private ImportType type;
     private String fileName;
@@ -24,82 +24,8 @@ public class ImportSession {
     private UUID claimedBy;
     private Instant leaseExpiresAt;
     private int attempts;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private UUID createdBy;
-    private UUID updatedBy;
 
-    public ImportSession() {}
-
-    public ImportSession(UUID id, UUID schoolId, ImportType type, String fileName, String originalHeadersJson,
-            String suggestedMappingJson, String confirmedMappingJson, long validRows, long invalidRows,
-            long importedRows, long skippedRows, long totalRows, String failureReason, ImportSessionStatus status,
-            UUID importedEntityId, Instant expiresAt, Instant claimedAt, UUID claimedBy,
-            Instant leaseExpiresAt, int attempts, Instant createdAt, Instant updatedAt,
-            UUID createdBy, UUID updatedBy) {
-        this.id = id;
-        this.schoolId = schoolId;
-        this.type = type;
-        this.fileName = fileName;
-        this.originalHeadersJson = originalHeadersJson;
-        this.suggestedMappingJson = suggestedMappingJson;
-        this.confirmedMappingJson = confirmedMappingJson;
-        this.validRows = validRows;
-        this.invalidRows = invalidRows;
-        this.importedRows = importedRows;
-        this.skippedRows = skippedRows;
-        this.totalRows = totalRows;
-        this.failureReason = failureReason;
-        this.status = status;
-        this.importedEntityId = importedEntityId;
-        this.expiresAt = expiresAt;
-        this.claimedAt = claimedAt;
-        this.claimedBy = claimedBy;
-        this.leaseExpiresAt = leaseExpiresAt;
-        this.attempts = attempts;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public ImportSession(UUID schoolId, ImportType type, String fileName, String originalHeadersJson,
-            String suggestedMappingJson, String confirmedMappingJson, long validRows, long invalidRows,
-            long importedRows, long skippedRows, long totalRows, String failureReason, ImportSessionStatus status,
-            UUID importedEntityId, Instant expiresAt, Instant claimedAt, UUID claimedBy,
-            Instant leaseExpiresAt, int attempts, Instant createdAt, Instant updatedAt,
-            UUID createdBy, UUID updatedBy) {
-        this.schoolId = schoolId;
-        this.type = type;
-        this.fileName = fileName;
-        this.originalHeadersJson = originalHeadersJson;
-        this.suggestedMappingJson = suggestedMappingJson;
-        this.confirmedMappingJson = confirmedMappingJson;
-        this.validRows = validRows;
-        this.invalidRows = invalidRows;
-        this.importedRows = importedRows;
-        this.skippedRows = skippedRows;
-        this.totalRows = totalRows;
-        this.failureReason = failureReason;
-        this.status = status;
-        this.importedEntityId = importedEntityId;
-        this.expiresAt = expiresAt;
-        this.claimedAt = claimedAt;
-        this.claimedBy = claimedBy;
-        this.leaseExpiresAt = leaseExpiresAt;
-        this.attempts = attempts;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
+    public ImportSession() {
     }
 
     public UUID getSchoolId() {
@@ -254,39 +180,114 @@ public class ImportSession {
         this.attempts = attempts;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
+    public static class Builder extends BaseModel.Builder<ImportSession, Builder> {
+
+        private Builder() {
+            super(new ImportSession());
+        }
+
+        @Override
+        protected Builder self() {
+            return this;
+        }
+
+        public Builder schoolId(UUID schoolId) {
+            target.schoolId = schoolId;
+            return this;
+        }
+
+        public Builder type(ImportType type) {
+            target.type = type;
+            return this;
+        }
+
+        public Builder fileName(String fileName) {
+            target.fileName = fileName;
+            return this;
+        }
+
+        public Builder originalHeadersJson(String originalHeadersJson) {
+            target.originalHeadersJson = originalHeadersJson;
+            return this;
+        }
+
+        public Builder suggestedMappingJson(String suggestedMappingJson) {
+            target.suggestedMappingJson = suggestedMappingJson;
+            return this;
+        }
+
+        public Builder confirmedMappingJson(String confirmedMappingJson) {
+            target.confirmedMappingJson = confirmedMappingJson;
+            return this;
+        }
+
+        public Builder validRows(long validRows) {
+            target.validRows = validRows;
+            return this;
+        }
+
+        public Builder invalidRows(long invalidRows) {
+            target.invalidRows = invalidRows;
+            return this;
+        }
+
+        public Builder importedRows(long importedRows) {
+            target.importedRows = importedRows;
+            return this;
+        }
+
+        public Builder skippedRows(long skippedRows) {
+            target.skippedRows = skippedRows;
+            return this;
+        }
+
+        public Builder totalRows(long totalRows) {
+            target.totalRows = totalRows;
+            return this;
+        }
+
+        public Builder failureReason(String failureReason) {
+            target.failureReason = failureReason;
+            return this;
+        }
+
+        public Builder status(ImportSessionStatus status) {
+            target.status = status;
+            return this;
+        }
+
+        public Builder importedEntityId(UUID importedEntityId) {
+            target.importedEntityId = importedEntityId;
+            return this;
+        }
+
+        public Builder expiresAt(Instant expiresAt) {
+            target.expiresAt = expiresAt;
+            return this;
+        }
+
+        public Builder claimedAt(Instant claimedAt) {
+            target.claimedAt = claimedAt;
+            return this;
+        }
+
+        public Builder claimedBy(UUID claimedBy) {
+            target.claimedBy = claimedBy;
+            return this;
+        }
+
+        public Builder leaseExpiresAt(Instant leaseExpiresAt) {
+            target.leaseExpiresAt = leaseExpiresAt;
+            return this;
+        }
+
+        public Builder attempts(int attempts) {
+            target.attempts = attempts;
+            return this;
+        }
     }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
-
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
-    }
-
-    
-
-    
 }

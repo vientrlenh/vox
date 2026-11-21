@@ -422,25 +422,37 @@ class OrderSettlementQuotaCarryForwardTests {
 
     private void givenNewPlanQuotas(Map<QuotaType, Long> includedByType) {
         List<SubscriptionPlanQuota> quotas = includedByType.entrySet().stream()
-            .map(entry -> new SubscriptionPlanQuota(
-                planId, entry.getKey(), BigDecimal.valueOf(entry.getValue())))
+            .map(entry -> SubscriptionPlanQuota.builder()
+                .subscriptionPlanId(planId)
+                .quotaType(entry.getKey())
+                .includedAmountVnd(BigDecimal.valueOf(entry.getValue()))
+                .build())
             .toList();
         when(subscriptionPlanQuotaRepository.findBySubscriptionPlanId(planId)).thenReturn(quotas);
     }
 
     private void givenPreviousPool(QuotaType quotaType, long totalVnd, long usedVnd, long fundedVnd) {
-        previousPools.put(quotaType, new SchoolSubscriptionQuotaRecord(
-            UUID.randomUUID(), previousSubscriptionId, quotaType,
-            BigDecimal.valueOf(totalVnd), BigDecimal.valueOf(usedVnd), BigDecimal.valueOf(fundedVnd)));
+        previousPools.put(quotaType, SchoolSubscriptionQuotaRecord.builder()
+            .id(UUID.randomUUID())
+            .schoolSubscriptionId(previousSubscriptionId)
+            .quotaType(quotaType)
+            .totalAllocatedAmountVnd(BigDecimal.valueOf(totalVnd))
+            .usedAmountVnd(BigDecimal.valueOf(usedVnd))
+            .fundedFromBalanceVnd(BigDecimal.valueOf(fundedVnd))
+            .build());
         when(quotaRecordRepository.findBySchoolSubscriptionId(previousSubscriptionId))
             .thenReturn(new ArrayList<>(previousPools.values()));
     }
 
     private void givenPreviousAllocations(QuotaType quotaType, Map<UUID, Long> allocatedByUser) {
         List<SchoolSubscriptionQuotaUserAllocation> rows = allocatedByUser.entrySet().stream()
-            .map(entry -> new SchoolSubscriptionQuotaUserAllocation(
-                previousSubscriptionId, quotaType, entry.getKey(),
-                BigDecimal.valueOf(entry.getValue()), BigDecimal.ZERO))
+            .map(entry -> SchoolSubscriptionQuotaUserAllocation.builder()
+                .schoolSubscriptionId(previousSubscriptionId)
+                .quotaType(quotaType)
+                .userId(entry.getKey())
+                .allocatedAmountVnd(BigDecimal.valueOf(entry.getValue()))
+                .usedAmountVnd(BigDecimal.ZERO)
+                .build())
             .toList();
         when(quotaUserAllocationRepository
             .findBySchoolSubscriptionIdAndQuotaType(previousSubscriptionId, quotaType))

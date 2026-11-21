@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.domain.repository.SavedTopicRepository;
-import com.sep.vox.infrastructure.persistence.entity.SavedTopicJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.personalization.SavedTopicJpaEntity;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSavedTopicRepository;
 
 @Repository
@@ -27,12 +27,12 @@ public class SavedTopicRepositoryImpl implements SavedTopicRepository {
     @Override
     @Transactional
     public void save(UUID studentId, UUID topicId) {
-        repository.save(new SavedTopicJpaEntity(
-            UUID.randomUUID(),
-            studentId,
-            topicId,
-            Instant.now()
-        ));
+        repository.save(SavedTopicJpaEntity.builder()
+                .id(UUID.randomUUID())
+                .studentId(studentId)
+                .practiceTopicId(topicId)
+                .savedAt(Instant.now())
+                .build());
     }
 
     @Override

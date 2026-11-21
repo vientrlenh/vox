@@ -107,16 +107,16 @@ public class ZeroScoreAssessmentResultService {
                 if (paperId == null) {
                     continue;
                 }
-                AssessmentSession session = assessmentSessionRepository.save(new AssessmentSession(
-                    assessmentId,
-                    candidate.getId(),
-                    paperId,
-                    now,
-                    now,
-                    AssessmentSessionStatus.GRADED,
-                    false,
-                    null
-                ));
+                AssessmentSession session = assessmentSessionRepository.save(AssessmentSession.builder()
+                        .assessmentId(assessmentId)
+                        .candidateId(candidate.getId())
+                        .paperId(paperId)
+                        .startedAt(now)
+                        .submittedAt(now)
+                        .status(AssessmentSessionStatus.GRADED)
+                        .flagged(false)
+                        .flagReason(null)
+                        .build());
                 releaseZeroForSession(session, policy, now);
                 continue;
             }
@@ -164,12 +164,6 @@ public class ZeroScoreAssessmentResultService {
         if (result.getReleasedAt() == null) {
             result.setReleasedAt(now);
         }
-        if (existing == null) {
-            result.setCreatedAt(now);
-            result.setCreatedBy(null);
-        }
-        result.setUpdatedAt(now);
-        result.setUpdatedBy(null);
         return assessmentCandidateResultRepository.save(result);
     }
 

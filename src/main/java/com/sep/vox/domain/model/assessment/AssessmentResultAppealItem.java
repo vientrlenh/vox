@@ -14,26 +14,10 @@ public class AssessmentResultAppealItem {
     private UUID appealId;
     private UUID paperItemId;
     private UUID responseId;
-    /** Điểm công bố cho phần này — null cho tới khi đơn được công bố. */
+    /** Score published for this part: null until the appeal is published. */
     private BigDecimal finalScore;
 
     public AssessmentResultAppealItem() {}
-
-    public AssessmentResultAppealItem(UUID id, UUID appealId, UUID paperItemId, UUID responseId,
-            BigDecimal finalScore) {
-        this.id = id;
-        this.appealId = appealId;
-        this.paperItemId = paperItemId;
-        this.responseId = responseId;
-        this.finalScore = finalScore;
-    }
-
-    public AssessmentResultAppealItem(UUID appealId, UUID paperItemId, UUID responseId, BigDecimal finalScore) {
-        this.appealId = appealId;
-        this.paperItemId = paperItemId;
-        this.responseId = responseId;
-        this.finalScore = finalScore;
-    }
 
     public UUID getId() {
         return id;
@@ -73,5 +57,47 @@ public class AssessmentResultAppealItem {
 
     public void setFinalScore(BigDecimal finalScore) {
         this.finalScore = finalScore;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final AssessmentResultAppealItem target = new AssessmentResultAppealItem();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder appealId(UUID appealId) {
+            target.appealId = appealId;
+            return this;
+        }
+
+        public Builder paperItemId(UUID paperItemId) {
+            target.paperItemId = paperItemId;
+            return this;
+        }
+
+        public Builder responseId(UUID responseId) {
+            target.responseId = responseId;
+            return this;
+        }
+
+        public Builder finalScore(BigDecimal finalScore) {
+            target.finalScore = finalScore;
+            return this;
+        }
+
+        public AssessmentResultAppealItem build() {
+            return target;
+        }
+
     }
 }

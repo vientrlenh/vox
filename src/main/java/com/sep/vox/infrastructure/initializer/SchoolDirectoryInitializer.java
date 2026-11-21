@@ -2,7 +2,6 @@ package com.sep.vox.infrastructure.initializer;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -67,13 +66,12 @@ public class SchoolDirectoryInitializer implements ApplicationRunner {
             .map(directory -> directory.getCode())
             .collect(Collectors.toSet());
 
-        Instant now = Instant.now();
         int inserted = 0;
         for (SeedRow seed : seeds) {
             if (existingCodes.contains(seed.code())) {
                 continue;
             }
-            schoolDirectoryRepository.save(toDirectory(seed, now));
+            schoolDirectoryRepository.save(toDirectory(seed));
             inserted++;
         }
 
@@ -89,25 +87,21 @@ public class SchoolDirectoryInitializer implements ApplicationRunner {
     }
 
     /**
-     * createdBy/updatedBy để null: cột cho phép null và lúc initializer chạy thì không có người
-     * dùng nào đứng sau hành động này -- gán bừa id của system admin sẽ thành dấu vết sai.
+     * The audit actor is left to the auditing hook: no user stands behind this action while the initializer runs,
+     * so it records "System" -- assigning the id of some system admin would leave a false trail.
      */
-    private SchoolDirectory toDirectory(SeedRow seed, Instant now) {
-        return new SchoolDirectory(
-            seed.code(),
-            seed.name(),
-            seed.provinceCode(),
-            seed.provinceName(),
-            seed.districtName(),
-            seed.domain(),
-            seed.address(),
-            SchoolDirectoryOrigin.OFFICIAL_IMPORT,
-            true,
-            now,
-            now,
-            null,
-            null
-        );
+    private SchoolDirectory toDirectory(SeedRow seed) {
+        return SchoolDirectory.builder()
+            .code(seed.code())
+            .name(seed.name())
+            .provinceCode(seed.provinceCode())
+            .provinceName(seed.provinceName())
+            .districtName(seed.districtName())
+            .domain(seed.domain())
+            .address(seed.address())
+            .origin(SchoolDirectoryOrigin.OFFICIAL_IMPORT)
+            .verified(true)
+            .build();
     }
 
     private record SeedRow(

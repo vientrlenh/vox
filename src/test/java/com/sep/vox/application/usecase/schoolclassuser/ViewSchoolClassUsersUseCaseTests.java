@@ -138,7 +138,12 @@ class ViewSchoolClassUsersUseCaseTests {
 
     private void mockUserSchool(UUID userId, UUID schoolId) {
         when(schoolUserRepository.findByUserId(userId))
-            .thenReturn(Optional.of(new SchoolUser(schoolId, userId, Instant.now(), null)));
+            .thenReturn(Optional.of(SchoolUser.builder()
+                .schoolId(schoolId)
+                .userId(userId)
+                .startDate(Instant.now())
+                .endDate(null)
+                .build()));
     }
 
     private static School activeSchool(UUID id) {

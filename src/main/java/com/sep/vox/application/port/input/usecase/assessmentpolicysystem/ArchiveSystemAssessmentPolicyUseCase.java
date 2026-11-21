@@ -65,25 +65,21 @@ public class ArchiveSystemAssessmentPolicyUseCase implements IUseCase<ArchiveSys
         // 4. Lưu trạng thái mới
         Instant now = Instant.now();
         policy.setStatus(AssessmentPolicyStatus.ARCHIVED);
-        // Không cho effectiveTo lùi về trước effectiveFrom nếu policy chưa tới ngày hiệu lực
+        // Do not let effectiveTo move back before effectiveFrom when the policy's effective date has not been reached yet
         policy.setEffectiveTo(now.isBefore(policy.getEffectiveFrom()) ? policy.getEffectiveFrom() : now);
-        policy.setUpdatedAt(now);
-        policy.setUpdatedBy(currentUserId);
 
         AssessmentPolicy saved = assessmentPolicyRepository.save(policy);
 
-        // 5. Archive Policy thì Archive luôn Phiên bản Rubric liên kết -- NHƯNG chỉ khi không còn
-        // Policy nào khác đang dùng nó. Xem lý do đầy đủ ở ArchiveSchoolAssessmentPolicyUseCase:
-        // mô hình 1-1 mà chú thích cũ mô tả là của V38, V44 đã cho nhiều Policy dùng chung một
-        // phiên bản.
+        // 5. Archiving a Policy also archives the linked Rubric Version -- BUT only when no other
+        // Policy is still using it. See ArchiveSchoolAssessmentPolicyUseCase for the full reason:
+        // the 1-1 model that the old comment described belonged to V38, and V44 let several Policies
+        // share one version.
         if (!assessmentPolicyRepository.existsOtherActiveByRubricVersionId(policy.getRubricVersionId(), policy.getId())) {
             rubricVersionRepository.findById(policy.getRubricVersionId()).ifPresent(rubricVersion -> {
                 if (rubricVersion.getStatus() == RubricStatus.PUBLISHED) {
                     rubricVersion.setStatus(RubricStatus.ARCHIVED);
                     rubricVersion.setEffectiveTo(
                             now.isBefore(rubricVersion.getEffectiveFrom()) ? rubricVersion.getEffectiveFrom() : now);
-                    rubricVersion.setUpdatedAt(now);
-                    rubricVersion.setUpdatedBy(currentUserId);
                     rubricVersionRepository.save(rubricVersion);
                 }
             });

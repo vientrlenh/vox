@@ -19,14 +19,14 @@ import com.sep.vox.domain.model.metering.QuotaType;
 public class SchoolDebtEvent {
     private UUID id;
     private UUID schoolId;
-    // Kỳ ĐĂNG KÝ đã phát sinh khoản nợ, không phải gói. Tên cũ subscriptionPlanId là sai và sai một
-    // chiều nguy hiểm: cột DB là subscription_id, JpaEntity cũng là subscriptionId, nên chỉ mỗi domain
-    // model gọi khác -- đọc code ở tầng này sẽ tưởng đang cầm id của gói.
+    // The SUBSCRIPTION period that incurred the debt, not the plan. The old name subscriptionPlanId was wrong, and wrong in
+    // a dangerous direction: the DB column is subscription_id and the JpaEntity is also subscriptionId, so only the domain
+    // model named it differently -- reading code at this layer would make one think it is holding a plan id.
     private UUID subscriptionId;
     private SchoolDebtEventType eventType;
-    /** null với CLEARED: hết nợ là sự kiện cấp TRƯỜNG, số dư không chia theo ví hạn mức nào. */
+    /** null for CLEARED: clearing debt is a SCHOOL-level event, the balance is not split by any quota wallet. */
     private QuotaType quotaType;
-    /** LOCKED/CAP_EXCEEDED: ĐÚNG MỘT trong hai cột session dưới đây được set. CLEARED: cả hai null. */
+    /** LOCKED/CAP_EXCEEDED: EXACTLY ONE of the two session columns below is set. CLEARED: both are null. */
     private UUID triggerAssessmentSessionId;
     private UUID triggerPracticeSessionId;
     private BigDecimal triggerAmountVnd;
@@ -36,41 +36,8 @@ public class SchoolDebtEvent {
     private Instant occurredAt;
 
     public SchoolDebtEvent() {}
-
-    public SchoolDebtEvent(UUID id, UUID schoolId, UUID subscriptionId, SchoolDebtEventType eventType,
-            QuotaType quotaType, UUID triggerAssessmentSessionId, UUID triggerPracticeSessionId,
-            BigDecimal triggerAmountVnd,
-            BigDecimal totalAllocatedVnd, BigDecimal usedAmountVnd, BigDecimal overageVnd, Instant occurredAt) {
-        this.id = id;
-        this.schoolId = schoolId;
-        this.subscriptionId = subscriptionId;
-        this.eventType = eventType;
-        this.quotaType = quotaType;
-        this.triggerAssessmentSessionId = triggerAssessmentSessionId;
-        this.triggerPracticeSessionId = triggerPracticeSessionId;
-        this.triggerAmountVnd = triggerAmountVnd;
-        this.totalAllocatedVnd = totalAllocatedVnd;
-        this.usedAmountVnd = usedAmountVnd;
-        this.overageVnd = overageVnd;
-        this.occurredAt = occurredAt;
-    }
-
-    public SchoolDebtEvent(UUID schoolId, UUID subscriptionId, SchoolDebtEventType eventType,
-            QuotaType quotaType, UUID triggerAssessmentSessionId, UUID triggerPracticeSessionId,
-            BigDecimal triggerAmountVnd,
-            BigDecimal totalAllocatedVnd, BigDecimal usedAmountVnd, BigDecimal overageVnd, Instant occurredAt) {
-        this.schoolId = schoolId;
-        this.subscriptionId = subscriptionId;
-        this.eventType = eventType;
-        this.quotaType = quotaType;
-        this.triggerAssessmentSessionId = triggerAssessmentSessionId;
-        this.triggerPracticeSessionId = triggerPracticeSessionId;
-        this.triggerAmountVnd = triggerAmountVnd;
-        this.totalAllocatedVnd = totalAllocatedVnd;
-        this.usedAmountVnd = usedAmountVnd;
-        this.overageVnd = overageVnd;
-        this.occurredAt = occurredAt;
-    }
+
+
 
     public UUID getId() {
         return id;
@@ -166,5 +133,82 @@ public class SchoolDebtEvent {
 
     public void setOccurredAt(Instant occurredAt) {
         this.occurredAt = occurredAt;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final SchoolDebtEvent target = new SchoolDebtEvent();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder schoolId(UUID schoolId) {
+            target.schoolId = schoolId;
+            return this;
+        }
+
+        public Builder subscriptionId(UUID subscriptionId) {
+            target.subscriptionId = subscriptionId;
+            return this;
+        }
+
+        public Builder eventType(SchoolDebtEventType eventType) {
+            target.eventType = eventType;
+            return this;
+        }
+
+        public Builder quotaType(QuotaType quotaType) {
+            target.quotaType = quotaType;
+            return this;
+        }
+
+        public Builder triggerAssessmentSessionId(UUID triggerAssessmentSessionId) {
+            target.triggerAssessmentSessionId = triggerAssessmentSessionId;
+            return this;
+        }
+
+        public Builder triggerPracticeSessionId(UUID triggerPracticeSessionId) {
+            target.triggerPracticeSessionId = triggerPracticeSessionId;
+            return this;
+        }
+
+        public Builder triggerAmountVnd(BigDecimal triggerAmountVnd) {
+            target.triggerAmountVnd = triggerAmountVnd;
+            return this;
+        }
+
+        public Builder totalAllocatedVnd(BigDecimal totalAllocatedVnd) {
+            target.totalAllocatedVnd = totalAllocatedVnd;
+            return this;
+        }
+
+        public Builder usedAmountVnd(BigDecimal usedAmountVnd) {
+            target.usedAmountVnd = usedAmountVnd;
+            return this;
+        }
+
+        public Builder overageVnd(BigDecimal overageVnd) {
+            target.overageVnd = overageVnd;
+            return this;
+        }
+
+        public Builder occurredAt(Instant occurredAt) {
+            target.occurredAt = occurredAt;
+            return this;
+        }
+
+        public SchoolDebtEvent build() {
+            return target;
+        }
+
     }
 }

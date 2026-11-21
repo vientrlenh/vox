@@ -10,28 +10,9 @@ public class AssessmentPaperItem {
     private UUID paperId;
     private UUID questionId;
     private int order;
-    private BigDecimal weight; 
+    private BigDecimal weight;
 
     public AssessmentPaperItem() {}
-
-    public AssessmentPaperItem(UUID id, UUID blueprintSlotId, UUID sectionId, UUID paperId, UUID questionId, int order, BigDecimal weight) {
-        this.id = id;
-        this.blueprintSlotId = blueprintSlotId;
-        this.sectionId = sectionId;
-        this.paperId = paperId;
-        this.questionId = questionId;
-        this.order = order;
-        this.weight = weight;
-    }
-
-    public AssessmentPaperItem(UUID blueprintSlotId, UUID sectionId, UUID paperId, UUID questionId, int order, BigDecimal weight) {
-        this.blueprintSlotId = blueprintSlotId;
-        this.sectionId = sectionId;
-        this.paperId = paperId;
-        this.questionId = questionId;
-        this.order = order;
-        this.weight = weight;
-    }
 
     public UUID getId() {
         return id;
@@ -39,6 +20,14 @@ public class AssessmentPaperItem {
 
     public void setId(UUID id) {
         this.id = id;
+    }
+
+    public UUID getBlueprintSlotId() {
+        return blueprintSlotId;
+    }
+
+    public void setBlueprintSlotId(UUID blueprintSlotId) {
+        this.blueprintSlotId = blueprintSlotId;
     }
 
     public UUID getSectionId() {
@@ -81,13 +70,54 @@ public class AssessmentPaperItem {
         this.weight = weight;
     }
 
-    public UUID getBlueprintSlotId() {
-        return blueprintSlotId;
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public void setBlueprintSlotId(UUID blueprintSlotId) {
-        this.blueprintSlotId = blueprintSlotId;
-    }
+    public static class Builder {
 
-    
+        private final AssessmentPaperItem target = new AssessmentPaperItem();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder blueprintSlotId(UUID blueprintSlotId) {
+            target.blueprintSlotId = blueprintSlotId;
+            return this;
+        }
+
+        public Builder sectionId(UUID sectionId) {
+            target.sectionId = sectionId;
+            return this;
+        }
+
+        public Builder paperId(UUID paperId) {
+            target.paperId = paperId;
+            return this;
+        }
+
+        public Builder questionId(UUID questionId) {
+            target.questionId = questionId;
+            return this;
+        }
+
+        public Builder order(int order) {
+            target.order = order;
+            return this;
+        }
+
+        public Builder weight(BigDecimal weight) {
+            target.weight = weight;
+            return this;
+        }
+
+        public AssessmentPaperItem build() {
+            return target;
+        }
+    }
 }

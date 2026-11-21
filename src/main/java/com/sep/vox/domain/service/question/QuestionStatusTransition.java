@@ -1,6 +1,5 @@
 package com.sep.vox.domain.service.question;
 
-import java.util.Objects;
 import java.util.UUID;
 
 import com.sep.vox.domain.model.question.Question;
@@ -102,7 +101,7 @@ public final class QuestionStatusTransition {
             return invalidAction();
         }
 
-        boolean owner = Objects.equals(actor.userId(), question.getCreatedBy());
+        boolean owner = question.isCreatedBy(actor.userId());
         boolean systemAdminOnSystemBank = actor.systemAdmin()
             && bank.getOwnerType() == QuestionBankOwnerType.SYSTEM;
         boolean schoolAdminOnSchoolBank = bank.getOwnerType() == QuestionBankOwnerType.SCHOOL

@@ -17,40 +17,15 @@ public class PracticeTopic {
     private UUID sourceQuestionTopicId;
 
     /**
-     * Chủ đề này tự nhiên gọi ra thì nào -- PAST (lịch sử, kỷ niệm) / FUTURE (dự định, phát
-     * minh) / MIXED. Do topicGenerationGraph gắn lúc soạn chủ đề, vì lúc đó mô hình đang hiểu
-     * chủ đề nói về cái gì; đoán lại từ tên chủ đề về sau là kém trung thực hơn.
+     * The tense this topic naturally calls for -- PAST (history, memories) / FUTURE (plans, inventions) /
+     * MIXED. Set by topicGenerationGraph when the topic is written, because at that moment the model understands
+     * what the topic is about; guessing it back from the topic name later is less faithful.
      *
-     * <p>{@code null} coi như MIXED -- xem {@code TensePolicy.forSlot}.
+     * <p>{@code null} counts as MIXED -- see {@code TensePolicy.forSlot}.
      */
     private String temporalAffordance;
 
     public PracticeTopic() {
-    }
-
-    public PracticeTopic(
-            UUID id,
-            String name,
-            String normalizedName,
-            String description,
-            String source,
-            String interestDimension,
-            String curriculumGroup,
-            boolean active,
-            Instant createdAt,
-            UUID sourceQuestionTopicId,
-            String temporalAffordance) {
-        this.temporalAffordance = temporalAffordance;
-        this.id = id;
-        this.name = name;
-        this.normalizedName = normalizedName;
-        this.description = description;
-        this.source = source;
-        this.interestDimension = interestDimension;
-        this.curriculumGroup = curriculumGroup;
-        this.active = active;
-        this.createdAt = createdAt;
-        this.sourceQuestionTopicId = sourceQuestionTopicId;
     }
 
     public UUID getId() {
@@ -139,5 +114,77 @@ public class PracticeTopic {
 
     public void setSourceQuestionTopicId(UUID sourceQuestionTopicId) {
         this.sourceQuestionTopicId = sourceQuestionTopicId;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final PracticeTopic target = new PracticeTopic();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder name(String name) {
+            target.name = name;
+            return this;
+        }
+
+        public Builder normalizedName(String normalizedName) {
+            target.normalizedName = normalizedName;
+            return this;
+        }
+
+        public Builder description(String description) {
+            target.description = description;
+            return this;
+        }
+
+        public Builder source(String source) {
+            target.source = source;
+            return this;
+        }
+
+        public Builder interestDimension(String interestDimension) {
+            target.interestDimension = interestDimension;
+            return this;
+        }
+
+        public Builder curriculumGroup(String curriculumGroup) {
+            target.curriculumGroup = curriculumGroup;
+            return this;
+        }
+
+        public Builder active(boolean active) {
+            target.active = active;
+            return this;
+        }
+
+        public Builder createdAt(Instant createdAt) {
+            target.createdAt = createdAt;
+            return this;
+        }
+
+        public Builder sourceQuestionTopicId(UUID sourceQuestionTopicId) {
+            target.sourceQuestionTopicId = sourceQuestionTopicId;
+            return this;
+        }
+
+        public Builder temporalAffordance(String temporalAffordance) {
+            target.temporalAffordance = temporalAffordance;
+            return this;
+        }
+
+        public PracticeTopic build() {
+            return target;
+        }
+
     }
 }

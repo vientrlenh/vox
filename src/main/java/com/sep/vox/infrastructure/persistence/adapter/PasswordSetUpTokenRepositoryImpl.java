@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.PasswordSetUpTokenJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.passwordsetuptoken.PasswordSetUpTokenJpaEntity;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;

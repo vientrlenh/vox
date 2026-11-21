@@ -11,8 +11,8 @@ import org.springframework.data.repository.query.Param;
 
 import jakarta.persistence.LockModeType;
 
-import com.sep.vox.infrastructure.persistence.entity.FrameworkResultBandJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.LearnerProfileJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.framework.FrameworkResultBandJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.personalization.LearnerProfileJpaEntity;
 
 public interface SpringDataLearnerProfileRepository
         extends JpaRepository<LearnerProfileJpaEntity, UUID> {

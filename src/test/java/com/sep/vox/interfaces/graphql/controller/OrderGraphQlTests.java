@@ -89,9 +89,21 @@ class OrderGraphQlTests {
     void order_should_return_item_type_invoice_and_payments_with_typed_values() {
         when(viewOrderDetailsUseCase.execute(any())).thenReturn(order());
         when(orderItemRepository.findByOrderIdIn(any())).thenReturn(List.of(
-            new OrderItem(ORDER_ID, OrderItemType.SUBSCRIPTION, UUID.randomUUID(), BigDecimal.TEN, BigDecimal.TEN, 1)));
+            OrderItem.builder()
+                .orderId(ORDER_ID)
+                .type(OrderItemType.SUBSCRIPTION)
+                .itemId(UUID.randomUUID())
+                .unitPriceVnd(BigDecimal.TEN)
+                .amountVnd(BigDecimal.TEN)
+                .quantity(1)
+                .build()));
         when(invoiceRepository.findByOrderIdIn(any())).thenReturn(List.of(
-            new Invoice(ORDER_ID, UUID.randomUUID(), "INV-2026-0123456789AB", CREATED_AT)));
+            Invoice.builder()
+                .orderId(ORDER_ID)
+                .paymentId(UUID.randomUUID())
+                .invoiceNumber("INV-2026-0123456789AB")
+                .issueDate(CREATED_AT)
+                .build()));
         when(paymentRecordRepository.findByOrderIdIn(any())).thenReturn(List.of(
             payment(PaymentStatus.PAID, null), payment(PaymentStatus.PENDING, "https://pay.example/checkout")));
 
@@ -155,7 +167,18 @@ class OrderGraphQlTests {
 
     private static PaymentRecord payment(PaymentStatus status, String checkoutUrl) {
         Instant paidAt = status == PaymentStatus.PAID ? Instant.parse("2026-07-28T02:35:00Z") : null;
-        return new PaymentRecord(UUID.randomUUID(), ORDER_ID, BigDecimal.TEN, PaymentMethod.E_BANKING,
-            PaymentProvider.PAYOS, status, "ref-1", checkoutUrl, null, paidAt, CREATED_AT);
+        return PaymentRecord.builder()
+            .id(UUID.randomUUID())
+            .orderId(ORDER_ID)
+            .amountVnd(BigDecimal.TEN)
+            .method(PaymentMethod.E_BANKING)
+            .provider(PaymentProvider.PAYOS)
+            .status(status)
+            .providerOrderRef("ref-1")
+            .checkoutUrl(checkoutUrl)
+            .providerPayloadJson(null)
+            .paidAt(paidAt)
+            .createdAt(CREATED_AT)
+            .build();
     }
 }

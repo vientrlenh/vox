@@ -2,54 +2,54 @@ package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.metering.AiUsageRecord;
 import com.sep.vox.domain.model.metering.AiUsageType;
-import com.sep.vox.infrastructure.persistence.entity.AiUsageRecordJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.metering.AiUsageRecordJpaEntity;
 
 public final class AiUsageRecordMapper {
 
     private AiUsageRecordMapper() {}
 
     public static AiUsageRecord toDomain(AiUsageRecordJpaEntity jpa) {
-        return new AiUsageRecord(
-            jpa.getId(),
-            jpa.getAssessmentSessionId(),
-            jpa.getTurnId(),
-            jpa.getUsageEventId(),
-            fromString(jpa.getUsageType()),
-            jpa.getProvider(),
-            jpa.getModelName(),
-            jpa.getInputTokens(),
-            jpa.getOutputTokens(),
-            jpa.getCacheCreationInputTokens(),
-            jpa.getCacheReadInputTokens(),
-            jpa.getDurationMs(),
-            jpa.getUnitPriceJson(),
-            jpa.getCostUsd(), 
-            jpa.getCostVnd(), 
-            jpa.getFxRateUsed(), 
-            jpa.getOccurredAt()
-        );
+        return AiUsageRecord.builder()
+            .id(jpa.getId())
+            .assessmentSessionId(jpa.getAssessmentSessionId())
+            .turnId(jpa.getTurnId())
+            .usageEventId(jpa.getUsageEventId())
+            .usageType(fromString(jpa.getUsageType()))
+            .provider(jpa.getProvider())
+            .modelName(jpa.getModelName())
+            .inputTokens(jpa.getInputTokens())
+            .outputTokens(jpa.getOutputTokens())
+            .cacheCreationInputTokens(jpa.getCacheCreationInputTokens())
+            .cacheReadInputTokens(jpa.getCacheReadInputTokens())
+            .durationMs(jpa.getDurationMs())
+            .unitPriceJson(jpa.getUnitPriceJson())
+            .costUsd(jpa.getCostUsd())
+            .costVnd(jpa.getCostVnd())
+            .fxRateUsed(jpa.getFxRateUsed())
+            .occurredAt(jpa.getOccurredAt())
+            .build();
     }
 
     public static AiUsageRecordJpaEntity toJpa(AiUsageRecord domain) {
-        return new AiUsageRecordJpaEntity(
-            domain.getId(),
-            domain.getAssessmentSessionId(),
-            domain.getTurnId(),
-            domain.getUsageEventId(),
-            valueOf(domain.getUsageType()),
-            domain.getProvider(),
-            domain.getModelName(),
-            domain.getInputTokens(),
-            domain.getOutputTokens(),
-            domain.getCacheCreationInputTokens(),
-            domain.getCacheReadInputTokens(),
-            domain.getDurationMs(),
-            domain.getUnitPriceJson(),
-            domain.getCostUsd(), 
-            domain.getCostVnd(), 
-            domain.getFxRateUsed(), 
-            domain.getOccurredAt()
-        );
+        return AiUsageRecordJpaEntity.builder()
+            .id(domain.getId())
+            .assessmentSessionId(domain.getAssessmentSessionId())
+            .turnId(domain.getTurnId())
+            .usageEventId(domain.getUsageEventId())
+            .usageType(valueOf(domain.getUsageType()))
+            .provider(domain.getProvider())
+            .modelName(domain.getModelName())
+            .inputTokens(domain.getInputTokens())
+            .outputTokens(domain.getOutputTokens())
+            .cacheCreationInputTokens(domain.getCacheCreationInputTokens())
+            .cacheReadInputTokens(domain.getCacheReadInputTokens())
+            .durationMs(domain.getDurationMs())
+            .unitPriceJson(domain.getUnitPriceJson())
+            .costUsd(domain.getCostUsd())
+            .costVnd(domain.getCostVnd())
+            .fxRateUsed(domain.getFxRateUsed())
+            .occurredAt(domain.getOccurredAt())
+            .build();
     }
 
     private static AiUsageType fromString(String type) {

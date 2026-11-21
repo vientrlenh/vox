@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
-import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -13,7 +12,6 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateFrameworkResultBandCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.framework.FrameworkResultBand;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
@@ -26,15 +24,12 @@ public class UpdateFrameworkResultBandUseCase
 
     private final FrameworkVersionRepository frameworkVersionRepository;
     private final FrameworkResultBandRepository frameworkResultBandRepository;
-    private final UserContextPort userContextPort;
 
     public UpdateFrameworkResultBandUseCase(
             FrameworkVersionRepository frameworkVersionRepository,
-            FrameworkResultBandRepository frameworkResultBandRepository,
-            UserContextPort userContextPort) {
+            FrameworkResultBandRepository frameworkResultBandRepository) {
         this.frameworkVersionRepository = frameworkVersionRepository;
         this.frameworkResultBandRepository = frameworkResultBandRepository;
-        this.userContextPort = userContextPort;
     }
 
     @Override
@@ -105,7 +100,5 @@ public class UpdateFrameworkResultBandUseCase
         band.setLabel(StringNormalization.trimAndCollapseSpaces(command.label()));
         band.setDescription(StringNormalization.trimAndCollapseSpaces(command.description()));
         band.setOrder(command.order());
-        band.setUpdatedAt(Instant.now());
-        band.setUpdatedBy(userContextPort.getCurrentAuthenticatedUserId());
     }
 }

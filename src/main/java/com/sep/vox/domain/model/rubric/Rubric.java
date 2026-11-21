@@ -2,7 +2,6 @@ package com.sep.vox.domain.model.rubric;
 
 import java.util.UUID;
 
-
 public class Rubric {
     private UUID id;
     private UUID languageId;
@@ -14,29 +13,6 @@ public class Rubric {
     private UUID schoolId;
 
     public Rubric() {}
-
-    public Rubric(UUID id, UUID languageId, UUID frameworkId, String code, String name, String description,
-            RubricOwnerType ownerType, UUID schoolId) {
-        this.id = id;
-        this.languageId = languageId;
-        this.frameworkId = frameworkId;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.ownerType = ownerType;
-        this.schoolId = schoolId;
-    }
-
-    public Rubric(UUID languageId, UUID frameworkId, String code, String name, String description,
-            RubricOwnerType ownerType, UUID schoolId) {
-        this.languageId = languageId;
-        this.frameworkId = frameworkId;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.ownerType = ownerType;
-        this.schoolId = schoolId;
-    }
 
     public UUID getId() {
         return id;
@@ -102,5 +78,58 @@ public class Rubric {
         this.schoolId = schoolId;
     }
 
-    
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private final Rubric target = new Rubric();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder languageId(UUID languageId) {
+            target.languageId = languageId;
+            return this;
+        }
+
+        public Builder frameworkId(UUID frameworkId) {
+            target.frameworkId = frameworkId;
+            return this;
+        }
+
+        public Builder code(String code) {
+            target.code = code;
+            return this;
+        }
+
+        public Builder name(String name) {
+            target.name = name;
+            return this;
+        }
+
+        public Builder description(String description) {
+            target.description = description;
+            return this;
+        }
+
+        public Builder ownerType(RubricOwnerType ownerType) {
+            target.ownerType = ownerType;
+            return this;
+        }
+
+        public Builder schoolId(UUID schoolId) {
+            target.schoolId = schoolId;
+            return this;
+        }
+
+        public Rubric build() {
+            return target;
+        }
+    }
 }

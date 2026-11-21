@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.RegisterFormJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.registerform.RegisterFormJpaEntity;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Optional;

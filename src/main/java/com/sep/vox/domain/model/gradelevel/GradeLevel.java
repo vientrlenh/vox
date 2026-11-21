@@ -1,56 +1,15 @@
 package com.sep.vox.domain.model.gradelevel;
 
-import java.time.Instant;
-import java.util.UUID;
+import com.sep.vox.domain.model.BaseModel;
 
-public class GradeLevel {
-    private UUID id;
+public class GradeLevel extends BaseModel {
     private String code;
     private String name;
     private String description;
     private int order;
     private GradeLevelStatus status;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private UUID createdBy;
-    private UUID updatedBy;
 
     public GradeLevel() {}
-
-    public GradeLevel(UUID id, String code, String name, String description, int order, GradeLevelStatus status,
-            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.id = id;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.order = order;
-        this.status = status;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public GradeLevel(String code, String name, String description, int order, GradeLevelStatus status,
-            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.order = order;
-        this.status = status;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
 
     public String getCode() {
         return code;
@@ -92,37 +51,44 @@ public class GradeLevel {
         this.status = status;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
+    public static class Builder extends BaseModel.Builder<GradeLevel, Builder> {
 
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
+        private Builder() {
+            super(new GradeLevel());
+        }
 
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
+        @Override
+        protected Builder self() {
+            return this;
+        }
 
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
+        public Builder code(String code) {
+            target.code = code;
+            return this;
+        }
 
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
+        public Builder name(String name) {
+            target.name = name;
+            return this;
+        }
 
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
+        public Builder description(String description) {
+            target.description = description;
+            return this;
+        }
 
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
-    }
+        public Builder order(int order) {
+            target.order = order;
+            return this;
+        }
 
-    
+        public Builder status(GradeLevelStatus status) {
+            target.status = status;
+            return this;
+        }
+    }
 }

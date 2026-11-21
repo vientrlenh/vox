@@ -59,30 +59,30 @@ class ImportSessionRepositoryTests {
     private static ImportSession session(ImportSessionStatus status, ImportType type) {
         Instant now = Instant.now();
         UUID userId = UUID.randomUUID();
-        return new ImportSession(
-            UUID.randomUUID(),
-            type,
-            "classes.csv",
-            "[]",
-            "{}",
-            null,
-            0L,
-            0L,
-            0L,
-            0L,
-            1L,
-            "User cancelled",
-            status,
-            null,
-            now.plus(1, ChronoUnit.DAYS), 
-            null, 
-            null, 
-            null, 
-            0, 
-            now,
-            now,
-            userId,
-            userId
-        );
+        return ImportSession.builder()
+            .schoolId(UUID.randomUUID())
+            .type(type)
+            .fileName("classes.csv")
+            .originalHeadersJson("[]")
+            .suggestedMappingJson("{}")
+            .confirmedMappingJson(null)
+            .validRows(0L)
+            .invalidRows(0L)
+            .importedRows(0L)
+            .skippedRows(0L)
+            .totalRows(1L)
+            .failureReason("User cancelled")
+            .status(status)
+            .importedEntityId(null)
+            .expiresAt(now.plus(1, ChronoUnit.DAYS))
+            .claimedAt(null)
+            .claimedBy(null)
+            .leaseExpiresAt(null)
+            .attempts(0)
+            .createdAt(now)
+            .updatedAt(now)
+            .createdBy(userId.toString())
+            .updatedBy(userId.toString())
+            .build();
     }
 }

@@ -88,28 +88,25 @@ public class ArchiveSchoolAssessmentPolicyUseCase implements IUseCase<ArchiveSch
         // 5. Lưu trạng thái mới
         Instant now = Instant.now();
         policy.setStatus(AssessmentPolicyStatus.ARCHIVED);
-        // Không cho effectiveTo lùi về trước effectiveFrom nếu policy chưa tới ngày hiệu lực
+        // Do not let effectiveTo move back before effectiveFrom when the policy's effective date has not been reached yet
         policy.setEffectiveTo(now.isBefore(policy.getEffectiveFrom()) ? policy.getEffectiveFrom() : now);
-        policy.setUpdatedAt(now);
-        policy.setUpdatedBy(currentUserId);
 
         AssessmentPolicy saved = assessmentPolicyRepository.save(policy);
 
-        // 6. Archive Policy thì Archive luôn Phiên bản Rubric liên kết -- NHƯNG chỉ khi không còn
-        // Policy nào khác đang dùng nó.
+        // 6. Archiving a Policy also archives the linked Rubric Version -- BUT only when no other
+        // Policy is still using it.
         //
-        // Chú thích cũ ở đây ("1 Rubric Version chỉ gắn với đúng 1 Assessment Policy, vĩnh viễn") mô
-        // tả mô hình 1-1 của V38, đã bị V44 gỡ. Từ khi nhiều Policy dùng chung được một phiên bản,
-        // Archive kèm vô điều kiện sẽ rút thang chấm khỏi chân các Policy còn hiệu lực: trường thu
-        // hồi chính sách của lớp thường là chính sách lớp chuyên trỏ vào một phiên bản ARCHIVED.
+        // The old comment here ("1 Rubric Version is tied to exactly 1 Assessment Policy, permanently")
+        // described the 1-1 model of V38, which V44 removed. Since several Policies can share one version,
+        // archiving unconditionally would pull the scoring scale out from under the Policies that are still
+        // in effect: when a school withdraws the regular-class policy, the specialised-class policy is often
+        // the one that points at an ARCHIVED version.
         if (!assessmentPolicyRepository.existsOtherActiveByRubricVersionId(policy.getRubricVersionId(), policy.getId())) {
             rubricVersionRepository.findById(policy.getRubricVersionId()).ifPresent(rubricVersion -> {
                 if (rubricVersion.getStatus() == RubricStatus.PUBLISHED) {
                     rubricVersion.setStatus(RubricStatus.ARCHIVED);
                     rubricVersion.setEffectiveTo(
                             now.isBefore(rubricVersion.getEffectiveFrom()) ? rubricVersion.getEffectiveFrom() : now);
-                    rubricVersion.setUpdatedAt(now);
-                    rubricVersion.setUpdatedBy(currentUserId);
                     rubricVersionRepository.save(rubricVersion);
                 }
             });

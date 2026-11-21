@@ -10,7 +10,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.AssessmentJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentJpaEntity;
 
 public interface SpringDataAssessmentRepository extends JpaRepository<AssessmentJpaEntity, UUID> {
 
@@ -62,7 +62,7 @@ public interface SpringDataAssessmentRepository extends JpaRepository<Assessment
         Pageable pageable
     );
 
-    List<com.sep.vox.infrastructure.persistence.entity.AssessmentJpaEntity> findAllByBlueprintId(UUID blueprintId);
+    List<com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentJpaEntity> findAllByBlueprintId(UUID blueprintId);
     boolean existsByBlueprintId(UUID blueprintId);
 
     @Query("""

@@ -37,12 +37,12 @@ public class InterestQuizSeedInitializer implements ApplicationRunner {
         List<InterestQuizSeedItem> items = new ArrayList<InterestQuizSeedItem>(rawItems.size());
         for (int index = 0; index < rawItems.size(); index++) {
             SeedItemJson item = rawItems.get(index);
-            items.add(new InterestQuizSeedItem(
-                UUID.nameUUIDFromBytes(("interest-quiz-" + index).getBytes(StandardCharsets.UTF_8)),
-                item.dimensionPerStatement(),
-                item.statements(),
-                item.note()
-            ));
+            items.add(InterestQuizSeedItem.builder()
+                    .id(UUID.nameUUIDFromBytes(("interest-quiz-" + index).getBytes(StandardCharsets.UTF_8)))
+                    .dimensionPerStatement(item.dimensionPerStatement())
+                    .statements(item.statements())
+                    .note(item.note())
+                    .build());
         }
         quizItemRepository.seedQuizItemsIfEmpty(items);
     }

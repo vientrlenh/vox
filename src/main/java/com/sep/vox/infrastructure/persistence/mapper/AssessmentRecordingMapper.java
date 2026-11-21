@@ -3,42 +3,42 @@ package com.sep.vox.infrastructure.persistence.mapper;
 import com.sep.vox.domain.model.assessment.AssessmentRecording;
 import com.sep.vox.domain.model.assessment.AssessmentRecordingAssemblyStatus;
 import com.sep.vox.domain.model.assessment.AssessmentRequiredStreamType;
-import com.sep.vox.infrastructure.persistence.entity.AssessmentRecordingJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentRecordingJpaEntity;
 
 public final class AssessmentRecordingMapper {
     
     public static AssessmentRecording toDomain(AssessmentRecordingJpaEntity jpa) {
-        return new AssessmentRecording(
-            jpa.getId(), 
-            jpa.getAssessmentSessionId(), 
-            jpa.getCandidateId(), 
-            streamTypeFromString(jpa.getStreamType()), 
-            jpa.getBucket(), 
-            jpa.getS3Key(), 
-            statusFromString(jpa.getStatus()), 
-            jpa.getSizeBytes(), 
-            jpa.getDurationSeconds(), 
-            jpa.getSource(),
-            jpa.getCreatedAt(), 
-            jpa.getAssembledAt()
-        );
+        return AssessmentRecording.builder()
+                .id(jpa.getId())
+                .assessmentSessionId(jpa.getAssessmentSessionId())
+                .candidateId(jpa.getCandidateId())
+                .streamType(streamTypeFromString(jpa.getStreamType()))
+                .bucket(jpa.getBucket())
+                .s3Key(jpa.getS3Key())
+                .status(statusFromString(jpa.getStatus()))
+                .sizeBytes(jpa.getSizeBytes())
+                .durationSeconds(jpa.getDurationSeconds())
+                .source(jpa.getSource())
+                .createdAt(jpa.getCreatedAt())
+                .assembledAt(jpa.getAssembledAt())
+                .build();
     }
 
     public static AssessmentRecordingJpaEntity toJpa(AssessmentRecording recording) {
-        return new AssessmentRecordingJpaEntity(
-            recording.getId(), 
-            recording.getAssessmentSessionId(), 
-            recording.getCandidateId(), 
-            valueOf(recording.getStreamType()), 
-            recording.getBucket(), 
-            recording.getS3Key(), 
-            valueOf(recording.getStatus()), 
-            recording.getSizeBytes(), 
-            recording.getDurationSeconds(), 
-            recording.getSource(),
-            recording.getCreatedAt(), 
-            recording.getAssembledAt()
-        );
+        return AssessmentRecordingJpaEntity.builder()
+                .id(recording.getId())
+                .assessmentSessionId(recording.getAssessmentSessionId())
+                .candidateId(recording.getCandidateId())
+                .streamType(valueOf(recording.getStreamType()))
+                .bucket(recording.getBucket())
+                .s3Key(recording.getS3Key())
+                .status(valueOf(recording.getStatus()))
+                .sizeBytes(recording.getSizeBytes())
+                .durationSeconds(recording.getDurationSeconds())
+                .source(recording.getSource())
+                .createdAt(recording.getCreatedAt())
+                .assembledAt(recording.getAssembledAt())
+                .build();
     }
 
 

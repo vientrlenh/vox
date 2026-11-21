@@ -3,8 +3,9 @@ package com.sep.vox.domain.model.assessment;
 import java.time.Instant;
 import java.util.UUID;
 
-public class AssessmentBlueprintVersion {
-    private UUID id;
+import com.sep.vox.domain.model.BaseModel;
+
+public class AssessmentBlueprintVersion extends BaseModel {
     private UUID blueprintId;
     private int version;
     private String code;
@@ -13,57 +14,8 @@ public class AssessmentBlueprintVersion {
     private Integer totalTimeLimitSeconds;
     private Instant effectiveFrom;
     private Instant effectiveTo;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private UUID createdBy;
-    private UUID updatedBy;
-    
+
     public AssessmentBlueprintVersion() {}
-
-    public AssessmentBlueprintVersion(UUID id, UUID blueprintId, int version, String code, String description,
-            AssessmentBlueprintVersionStatus status, Integer totalTimeLimitSeconds, Instant effectiveFrom,
-            Instant effectiveTo, Instant createdAt, Instant updatedAt, UUID createdBy,
-            UUID updatedBy) {
-        this.id = id;
-        this.blueprintId = blueprintId;
-        this.version = version;
-        this.code = code;
-        this.description = description;
-        this.status = status;
-        this.totalTimeLimitSeconds = totalTimeLimitSeconds;
-        this.effectiveFrom = effectiveFrom;
-        this.effectiveTo = effectiveTo;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public AssessmentBlueprintVersion(UUID blueprintId, int version, String code, String description,
-            AssessmentBlueprintVersionStatus status, Integer totalTimeLimitSeconds, Instant effectiveFrom,
-            Instant effectiveTo, Instant createdAt, Instant updatedAt, UUID createdBy,
-            UUID updatedBy) {
-        this.blueprintId = blueprintId;
-        this.version = version;
-        this.code = code;
-        this.description = description;
-        this.status = status;
-        this.totalTimeLimitSeconds = totalTimeLimitSeconds;
-        this.effectiveFrom = effectiveFrom;
-        this.effectiveTo = effectiveTo;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
 
     public UUID getBlueprintId() {
         return blueprintId;
@@ -129,37 +81,59 @@ public class AssessmentBlueprintVersion {
         this.effectiveTo = effectiveTo;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
+    public static class Builder extends BaseModel.Builder<AssessmentBlueprintVersion, Builder> {
 
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
+        private Builder() {
+            super(new AssessmentBlueprintVersion());
+        }
 
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
+        @Override
+        protected Builder self() {
+            return this;
+        }
 
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
+        public Builder blueprintId(UUID blueprintId) {
+            target.blueprintId = blueprintId;
+            return this;
+        }
 
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
+        public Builder version(int version) {
+            target.version = version;
+            return this;
+        }
 
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
+        public Builder code(String code) {
+            target.code = code;
+            return this;
+        }
 
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
-    }
+        public Builder description(String description) {
+            target.description = description;
+            return this;
+        }
 
-    
+        public Builder status(AssessmentBlueprintVersionStatus status) {
+            target.status = status;
+            return this;
+        }
+
+        public Builder totalTimeLimitSeconds(Integer totalTimeLimitSeconds) {
+            target.totalTimeLimitSeconds = totalTimeLimitSeconds;
+            return this;
+        }
+
+        public Builder effectiveFrom(Instant effectiveFrom) {
+            target.effectiveFrom = effectiveFrom;
+            return this;
+        }
+
+        public Builder effectiveTo(Instant effectiveTo) {
+            target.effectiveTo = effectiveTo;
+            return this;
+        }
+    }
 }

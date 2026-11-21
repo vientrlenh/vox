@@ -64,8 +64,6 @@ public class AssessmentQuestionSecureLockService {
         question.setLocked(false);
         question.setConfidentiality(QuestionConfidentiality.RELEASED);
         question.setSecurePoolId(null);
-        question.setUpdatedAt(Instant.now());
-        question.setUpdatedBy(currentUserId);
         questionRepository.save(question);
     }
 
@@ -85,8 +83,6 @@ public class AssessmentQuestionSecureLockService {
             question.setLocked(false);
             question.setConfidentiality(QuestionConfidentiality.RELEASED);
             question.setSecurePoolId(null);
-            question.setUpdatedAt(now);
-            question.setUpdatedBy(currentUserId);
             questionRepository.save(question);
         }
         assessmentSecurePoolRepository.deleteByAssessmentId(assessmentId);
@@ -103,12 +99,10 @@ public class AssessmentQuestionSecureLockService {
         Instant now = Instant.now();
         pool.setStatus(AssessmentSecurePoolStatus.RELEASED);
         pool.setReleasedAt(now);
-        pool.setUpdatedAt(now);
         AssessmentSecurePool savedPool = assessmentSecurePoolRepository.save(pool);
 
         for (Question question : questionRepository.findBySecurePoolId(savedPool.getId())) {
             question.setConfidentiality(QuestionConfidentiality.RELEASED);
-            question.setUpdatedAt(now);
             questionRepository.save(question);
         }
     }

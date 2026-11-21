@@ -302,28 +302,28 @@ public class RecordAssessmentAttemptEvaluationUseCase implements IUseCase<Record
 
             AssessmentItemEvaluation existingEvaluation = assessmentItemEvaluationRepository.findLatestByResponseId(response.getId()).orElse(null);
             AssessmentItemEvaluation evaluation = existingEvaluation == null
-                ? new AssessmentItemEvaluation(
-                    response.getId(),
-                    response.getPaperItemId(),
-                    AssessmentEvaluationEngineType.AI_SINGLE,
-                    input.payload() == null ? "gpt-4o" : input.payload().modelVersion(),
-                    1,
-                    null,
-                    itemScore,
-                    itemScore,
-                    overallConfidence,
-                    requiresHumanReview,
-                    reviewReasonCode,
-                    markedInvalid,
-                    requiresRetake,
-                    signals,
-                    toNullableJson(validity),
-                    input.payload() == null ? "" : input.payload().feedbackSummary(),
-                    toJson(input.payload() == null ? List.of() : input.payload().suggestions()),
-                    input.payload() == null ? null : input.payload().promptVersion(),
-                    AssessmentItemEvaluationStatus.AUTO_GRADED,
-                    parseEvaluatedAt(input.payload() == null ? null : input.payload().evaluatedAt())
-                )
+                ? AssessmentItemEvaluation.builder()
+                        .responseId(response.getId())
+                        .paperItemId(response.getPaperItemId())
+                        .engineType(AssessmentEvaluationEngineType.AI_SINGLE)
+                        .gradedByModel(input.payload() == null ? "gpt-4o" : input.payload().modelVersion())
+                        .sampleCount(1)
+                        .reviewerId(null)
+                        .rawItemScore(itemScore)
+                        .itemScore(itemScore)
+                        .overallConfidence(overallConfidence)
+                        .requiresHumanReview(requiresHumanReview)
+                        .reviewReasonCode(reviewReasonCode)
+                        .markedInvalid(markedInvalid)
+                        .requiresRetake(requiresRetake)
+                        .signals(signals)
+                        .validityJson(toNullableJson(validity))
+                        .feedbackSummary(input.payload() == null ? "" : input.payload().feedbackSummary())
+                        .suggestionsJson(toJson(input.payload() == null ? List.of() : input.payload().suggestions()))
+                        .promptVersion(input.payload() == null ? null : input.payload().promptVersion())
+                        .status(AssessmentItemEvaluationStatus.AUTO_GRADED)
+                        .evaluatedAt(parseEvaluatedAt(input.payload() == null ? null : input.payload().evaluatedAt()))
+                        .build()
                 : existingEvaluation;
 
             if (existingEvaluation != null) {
@@ -362,23 +362,23 @@ public class RecordAssessmentAttemptEvaluationUseCase implements IUseCase<Record
                     if (criterion == null) {
                         return null;
                     }
-                    // Sàn của CHÍNH tiêu chí đó, không phải số 0 -- cùng lý do với điểm câu ở trên.
-                    // Dùng min của tiêu chí (không phải của thang) vì với SUM mỗi tiêu chí có
-                    // khoảng riêng, và điểm hiển thị từng tiêu chí phải nằm trong khoảng của nó.
+                    // The floor of THAT criterion, not the number 0 -- same reason as the question score above.
+                    // Use the criterion's min (not the scale's) because with SUM every criterion has its
+                    // own range, and the score shown for each criterion must lie within its range.
                     BigDecimal score = zeroCriterionScores
                         ? clampCriterionScore(criterion.getMinScore(), criterion)
                         : clampCriterionScore(
                             BigDecimal.valueOf(entry.getValue().score()),
                             criterion
                         );
-                    return new AssessmentItemCriterionScore(
-                        savedEvaluation.getId(),
-                        criterion.getId(),
-                        score,
-                        score,
-                        entry.getValue().note(),
-                        blankToNull(entry.getValue().matchedBandCode())
-                    );
+                    return AssessmentItemCriterionScore.builder()
+                        .evaluationId(savedEvaluation.getId())
+                        .rubricCriterionId(criterion.getId())
+                        .rawScore(score)
+                        .finalScore(score)
+                        .rationale(entry.getValue().note())
+                        .matchedBandCode(blankToNull(entry.getValue().matchedBandCode()))
+                        .build();
                 })
                 .filter(item -> item != null)
                 .toList();
@@ -392,28 +392,28 @@ public class RecordAssessmentAttemptEvaluationUseCase implements IUseCase<Record
                     .map(turn -> {
                         Integer turnOrder = turn.turnOrder();
                         Integer wordCount = turn.wordCount();
-                        return new AssessmentItemEvaluationTurn(
-                            UUID.randomUUID(),
-                            savedEvaluation.getId(),
-                            turnOrder == null ? 0 : turnOrder,
-                            parseTurnType(turn.turnType()),
-                            turn.promptText(),
-                            // The same guard as the transcript right below, and for exactly the same reason: the column
-                            // assessment_item_evaluation_turns.audio_url is NOT NULL (V1__baseline),
-                            // so a turn without a recording would throw right at saveAll and bring down the WHOLE transaction that saves the grading result --
-                            // losing the scores of the other turns that have no problem at all.
-                            //
-                            // A turn missing its audio is real, not hypothetical: a turn
-                            // published before the recording made it back (see
-                            // turn_publisher.publish_turn_if_new, phase 1) carries audio_url null.
-                            turn.audioUrl() == null ? "" : turn.audioUrl(),
-                            turn.transcript() == null ? "" : turn.transcript(),
-                            wordCount == null ? 0 : wordCount,
-                            turn.durationSeconds(),
-                            turn.asrConfidence(),
-                            toJson(turn.pronunciationOverall()),
-                            toJson(turn.wordFeedback())
-                        );
+                        // The same guard as the transcript right below, and for exactly the same reason: the column
+                        // assessment_item_evaluation_turns.audio_url is NOT NULL (V1__baseline),
+                        // so a turn without a recording would throw right at saveAll and bring down the WHOLE transaction that saves the grading result --
+                        // losing the scores of the other turns that have no problem at all.
+                        //
+                        // A turn missing its audio is real, not hypothetical: a turn
+                        // published before the recording made it back (see
+                        // turn_publisher.publish_turn_if_new, phase 1) carries audio_url null.
+                        return AssessmentItemEvaluationTurn.builder()
+                            .id(UUID.randomUUID())
+                            .evaluationId(savedEvaluation.getId())
+                            .turnOrder(turnOrder == null ? 0 : turnOrder)
+                            .turnType(parseTurnType(turn.turnType()))
+                            .promptText(turn.promptText())
+                            .audioUrl(turn.audioUrl() == null ? "" : turn.audioUrl())
+                            .transcript(turn.transcript() == null ? "" : turn.transcript())
+                            .wordCount(wordCount == null ? 0 : wordCount)
+                            .durationSeconds(turn.durationSeconds())
+                            .asrConfidence(turn.asrConfidence())
+                            .pronunciationOverallJson(toJson(turn.pronunciationOverall()))
+                            .wordFeedbackJson(toJson(turn.wordFeedback()))
+                            .build();
                     })
                     .toList();
             if (!turns.isEmpty()) {

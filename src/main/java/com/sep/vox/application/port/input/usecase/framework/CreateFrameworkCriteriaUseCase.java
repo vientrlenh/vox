@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -16,7 +15,6 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateFrameworkCriteriaCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.framework.FrameworkCriterion;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
@@ -30,35 +28,30 @@ public class CreateFrameworkCriteriaUseCase
 
     private final FrameworkVersionRepository frameworkVersionRepository;
     private final FrameworkCriterionRepository frameworkCriterionRepository;
-    private final UserContextPort userContextPort;
 
     public CreateFrameworkCriteriaUseCase(
             FrameworkVersionRepository frameworkVersionRepository,
-            FrameworkCriterionRepository frameworkCriterionRepository,
-            UserContextPort userContextPort) {
+            FrameworkCriterionRepository frameworkCriterionRepository) {
         this.frameworkVersionRepository = frameworkVersionRepository;
         this.frameworkCriterionRepository = frameworkCriterionRepository;
-        this.userContextPort = userContextPort;
     }
 
     @Override
     @Transactional
     public List<UUID> execute(CreateFrameworkCriteriaCommand command) {
-        UUID userId = userContextPort.getCurrentAuthenticatedUserId();
-        Instant now = Instant.now();
 
         FrameworkVersion version = getVersion(command);
         validateRequest(command, version);
 
         List<FrameworkCriterion> criteriaToSave = new ArrayList<>(command.criteria().size());
         for (CreateFrameworkCriteriaCommand.CriterionItemCommand criterionCmd : command.criteria()) {
-            criteriaToSave.add(new FrameworkCriterion(
-                    command.versionId(),
-                    StringNormalization.normalizeCode(criterionCmd.code()),
-                    StringNormalization.trimAndCollapseSpaces(criterionCmd.name()),
-                    StringNormalization.trimAndCollapseSpaces(criterionCmd.description()),
-                    criterionCmd.order(),
-                    now, now, userId, userId));
+            criteriaToSave.add(FrameworkCriterion.builder()
+                .frameworkVersionId(command.versionId())
+                .code(StringNormalization.normalizeCode(criterionCmd.code()))
+                .name(StringNormalization.trimAndCollapseSpaces(criterionCmd.name()))
+                .description(StringNormalization.trimAndCollapseSpaces(criterionCmd.description()))
+                .order(criterionCmd.order())
+                .build());
         }
 
         try {

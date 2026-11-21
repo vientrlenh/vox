@@ -3,7 +3,7 @@ package com.sep.vox.infrastructure.persistence.mapper;
 import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
 import com.sep.vox.domain.model.rubric.RubricVersion;
-import com.sep.vox.infrastructure.persistence.entity.RubricVersionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.rubric.RubricVersionJpaEntity;
 
 public final class RubricVersionMapper {
 
@@ -18,24 +18,24 @@ public final class RubricVersionMapper {
     }
 
     private static RubricVersion newDomain(RubricVersionJpaEntity jpa) {
-        return new RubricVersion(
-            jpa.getId(),
-            jpa.getRubricId(),
-            jpa.getVersion(),
-            jpa.getCode(), 
-            jpa.getName(), 
-            jpa.getDescription(), 
-            fromStatus(jpa.getStatus()),
-            jpa.getEffectiveFrom(),
-            jpa.getEffectiveTo(),
-            jpa.getScoringScaleMin(),
-            jpa.getScoringScaleMax(),
-            fromTotalScoreMethod(jpa.getTotalScoreMethod()),
-            jpa.getCreatedAt(),
-            jpa.getUpdatedAt(),
-            jpa.getCreatedBy(),
-            jpa.getUpdatedBy()
-        );
+        return RubricVersion.builder()
+                .id(jpa.getId())
+                .rubricId(jpa.getRubricId())
+                .version(jpa.getVersion())
+                .code(jpa.getCode())
+                .name(jpa.getName())
+                .description(jpa.getDescription())
+                .status(fromStatus(jpa.getStatus()))
+                .effectiveFrom(jpa.getEffectiveFrom())
+                .effectiveTo(jpa.getEffectiveTo())
+                .scoringScaleMin(jpa.getScoringScaleMin())
+                .scoringScaleMax(jpa.getScoringScaleMax())
+                .totalScoreMethod(fromTotalScoreMethod(jpa.getTotalScoreMethod()))
+                .createdAt(jpa.getCreatedAt())
+                .updatedAt(jpa.getUpdatedAt())
+                .createdBy(jpa.getCreatedBy())
+                .updatedBy(jpa.getUpdatedBy())
+                .build();
     }
 
     public static RubricVersionJpaEntity toJpa(RubricVersion version) {
@@ -45,24 +45,24 @@ public final class RubricVersionMapper {
     }
 
     private static RubricVersionJpaEntity newJpa(RubricVersion version) {
-        return new RubricVersionJpaEntity(
-            version.getId(),
-            version.getRubricId(),
-            version.getVersion(),
-            version.getCode(),
-            version.getName(), 
-            version.getDescription(),
-            valueOf(version.getStatus()),
-            version.getEffectiveFrom(),
-            version.getEffectiveTo(),
-            version.getScoringScaleMin(),
-            version.getScoringScaleMax(),
-            valueOf(version.getTotalScoreMethod()),
-            version.getCreatedAt(),
-            version.getUpdatedAt(),
-            version.getCreatedBy(),
-            version.getUpdatedBy()
-        );
+        return RubricVersionJpaEntity.builder()
+                .id(version.getId())
+                .rubricId(version.getRubricId())
+                .version(version.getVersion())
+                .code(version.getCode())
+                .name(version.getName())
+                .description(version.getDescription())
+                .status(valueOf(version.getStatus()))
+                .effectiveFrom(version.getEffectiveFrom())
+                .effectiveTo(version.getEffectiveTo())
+                .scoringScaleMin(version.getScoringScaleMin())
+                .scoringScaleMax(version.getScoringScaleMax())
+                .totalScoreMethod(valueOf(version.getTotalScoreMethod()))
+                .createdAt(version.getCreatedAt())
+                .updatedAt(version.getUpdatedAt())
+                .createdBy(version.getCreatedBy())
+                .updatedBy(version.getUpdatedBy())
+                .build();
     }
 
     private static String valueOf(RubricTotalScoreMethod method) {

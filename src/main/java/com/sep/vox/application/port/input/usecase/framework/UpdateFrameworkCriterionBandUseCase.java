@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
-import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -10,7 +9,6 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateFrameworkCriterionBandCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.framework.FrameworkCriterion;
 import com.sep.vox.domain.model.framework.FrameworkCriterionBand;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
@@ -27,17 +25,14 @@ public class UpdateFrameworkCriterionBandUseCase
     private final FrameworkVersionRepository frameworkVersionRepository;
     private final FrameworkCriterionRepository frameworkCriterionRepository;
     private final FrameworkCriterionBandRepository frameworkCriterionBandRepository;
-    private final UserContextPort userContextPort;
 
     public UpdateFrameworkCriterionBandUseCase(
             FrameworkVersionRepository frameworkVersionRepository,
             FrameworkCriterionRepository frameworkCriterionRepository,
-            FrameworkCriterionBandRepository frameworkCriterionBandRepository,
-            UserContextPort userContextPort) {
+            FrameworkCriterionBandRepository frameworkCriterionBandRepository) {
         this.frameworkVersionRepository = frameworkVersionRepository;
         this.frameworkCriterionRepository = frameworkCriterionRepository;
         this.frameworkCriterionBandRepository = frameworkCriterionBandRepository;
-        this.userContextPort = userContextPort;
     }
 
     @Override
@@ -94,8 +89,6 @@ public class UpdateFrameworkCriterionBandUseCase
         if (hasSignals(command.negativeSignals())) 
             band.setNegativeSignals(command.negativeSignals());
 
-        band.setUpdatedAt(Instant.now());
-        band.setUpdatedBy(userContextPort.getCurrentAuthenticatedUserId());
     }
 
     private boolean hasText(String request) {

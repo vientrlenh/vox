@@ -83,13 +83,13 @@ class RoleRepositoryTests {
 
     private static Role newRole(String code, String name) {
         Instant now = Instant.now();
-        return new Role(
-            new RoleCode(code),
-            name,
-            now,
-            now,
-            UUID.randomUUID(),
-            UUID.randomUUID()
-        );
+        return Role.builder()
+            .code(new RoleCode(code))
+            .name(name)
+            .createdAt(now)
+            .updatedAt(now)
+            .createdBy(UUID.randomUUID().toString())
+            .updatedBy(UUID.randomUUID().toString())
+            .build();
     }
 }

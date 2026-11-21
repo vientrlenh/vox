@@ -2,7 +2,7 @@ package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersion;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersionStatus;
-import com.sep.vox.infrastructure.persistence.entity.AssessmentBlueprintVersionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentBlueprintVersionJpaEntity;
 
 public final class AssessmentBlueprintVersionMapper {
 
@@ -10,39 +10,39 @@ public final class AssessmentBlueprintVersionMapper {
     }
 
     public static AssessmentBlueprintVersion toDomain(AssessmentBlueprintVersionJpaEntity jpa) {
-        return new AssessmentBlueprintVersion(
-            jpa.getId(),
-            jpa.getBlueprintId(),
-            jpa.getVersion(),
-            jpa.getCode(),
-            jpa.getDescription(),
-            statusFromString(jpa.getStatus()),
-            jpa.getTotalTimeLimitSeconds(),
-            jpa.getEffectiveFrom(),
-            jpa.getEffectiveTo(),
-            jpa.getCreatedAt(),
-            jpa.getUpdatedAt(),
-            jpa.getCreatedBy(),
-            jpa.getUpdatedBy()
-        );
+        return AssessmentBlueprintVersion.builder()
+                .id(jpa.getId())
+                .blueprintId(jpa.getBlueprintId())
+                .version(jpa.getVersion())
+                .code(jpa.getCode())
+                .description(jpa.getDescription())
+                .status(statusFromString(jpa.getStatus()))
+                .totalTimeLimitSeconds(jpa.getTotalTimeLimitSeconds())
+                .effectiveFrom(jpa.getEffectiveFrom())
+                .effectiveTo(jpa.getEffectiveTo())
+                .createdAt(jpa.getCreatedAt())
+                .updatedAt(jpa.getUpdatedAt())
+                .createdBy(jpa.getCreatedBy())
+                .updatedBy(jpa.getUpdatedBy())
+                .build();
     }
 
     public static AssessmentBlueprintVersionJpaEntity toJpa(AssessmentBlueprintVersion domain) {
-        return new AssessmentBlueprintVersionJpaEntity(
-            domain.getId(),
-            domain.getBlueprintId(),
-            domain.getVersion(),
-            domain.getCode(),
-            domain.getDescription(),
-            domain.getStatus().name(),
-            domain.getTotalTimeLimitSeconds(),
-            domain.getEffectiveFrom(),
-            domain.getEffectiveTo(),
-            domain.getCreatedAt(),
-            domain.getUpdatedAt(),
-            domain.getCreatedBy(),
-            domain.getUpdatedBy()
-        );
+        return AssessmentBlueprintVersionJpaEntity.builder()
+                .id(domain.getId())
+                .blueprintId(domain.getBlueprintId())
+                .version(domain.getVersion())
+                .code(domain.getCode())
+                .description(domain.getDescription())
+                .status(domain.getStatus().name())
+                .totalTimeLimitSeconds(domain.getTotalTimeLimitSeconds())
+                .effectiveFrom(domain.getEffectiveFrom())
+                .effectiveTo(domain.getEffectiveTo())
+                .createdAt(domain.getCreatedAt())
+                .updatedAt(domain.getUpdatedAt())
+                .createdBy(domain.getCreatedBy())
+                .updatedBy(domain.getUpdatedBy())
+                .build();
     }
 
     private static AssessmentBlueprintVersionStatus statusFromString(String value) {

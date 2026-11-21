@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
-import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -9,7 +8,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateFrameworkActiveStatusCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.framework.Framework;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 import com.sep.vox.domain.repository.FrameworkRepository;
@@ -20,15 +18,12 @@ public class UpdateFrameworkStatusUseCase implements IUseCase<UpdateFrameworkAct
 
     private final FrameworkRepository frameworkRepository;
     private final FrameworkVersionRepository frameworkVersionRepository;
-    private final UserContextPort userContextPort;
 
     public UpdateFrameworkStatusUseCase(
             FrameworkRepository frameworkRepository,
-            FrameworkVersionRepository frameworkVersionRepository,
-            UserContextPort userContextPort) {
+            FrameworkVersionRepository frameworkVersionRepository) {
         this.frameworkRepository = frameworkRepository;
         this.frameworkVersionRepository = frameworkVersionRepository;
-        this.userContextPort = userContextPort;
     }
 
     @Override
@@ -54,7 +49,5 @@ public class UpdateFrameworkStatusUseCase implements IUseCase<UpdateFrameworkAct
 
     private void updateFrameworkStatus(UpdateFrameworkActiveStatusCommand input, Framework framework) {
         framework.setActive(input.isActive());
-        framework.setUpdatedAt(Instant.now());
-        framework.setUpdatedBy(userContextPort.getCurrentAuthenticatedUserId());
     }
 }

@@ -106,8 +106,6 @@ public class BulkUpdateQuestionTopicStatusUseCase
             }
 
             topic.setStatus(QuestionTopicStatus.valueOf(QuestionScopeStatusTransition.nextStatusName(action)));
-            topic.setUpdatedAt(now);
-            topic.setUpdatedBy(currentUserId);
             toSave.add(topic);
         }
 

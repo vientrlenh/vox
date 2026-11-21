@@ -17,14 +17,14 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.query.dto.AssessmentDirectoryGradeInfo;
 import com.sep.vox.application.query.dto.AssessmentDirectoryUserInfo;
 import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.infrastructure.persistence.entity.RoleJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.SchoolClassJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.SchoolClassUserJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.SchoolGradeJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.GradeLevelJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.SchoolUserJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.UserJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.UserRoleJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.user.RoleJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolClassJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolClassUserJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolGradeJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.gradelevel.GradeLevelJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolUserJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.user.UserJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.user.UserRoleJpaEntity;
 import com.sep.vox.support.IntegrationTest;
 
 import jakarta.persistence.EntityManager;
@@ -67,8 +67,13 @@ class JpaAssessmentDirectoryQueryRepositoryTests {
     void setUp() {
         schoolId = UUID.randomUUID();
         now = OffsetDateTime.parse("2026-07-29T09:00:00+07:00").toInstant();
-        gradeLevelId = persisted(new GradeLevelJpaEntity(
-            null, "K10-" + suffix(), "Khối 10", null, nextGradeLevelOrder(), "ACTIVE", now, now, null, null)).getId();
+        gradeLevelId = persisted(GradeLevelJpaEntity.builder()
+            .code("K10-" + suffix())
+            .name("Khối 10")
+            .description(null)
+            .order(nextGradeLevelOrder())
+            .status("ACTIVE")
+            .build()).getId();
         studentRoleId = roleId("STUDENT");
         teacherRoleId = roleId("TEACHER");
     }
@@ -200,8 +205,21 @@ class JpaAssessmentDirectoryQueryRepositoryTests {
         grade("NK-2020", "ARCHIVED");
         // Grade levels are shared -> another school's academic year still points at the same
         // gradeLevelId, differing only by school_id.
-        persisted(new SchoolGradeJpaEntity(null, UUID.randomUUID(), gradeLevelId, "NK-OTHER", "Niên khóa trường khác", null,
-            LocalDate.parse("2026-09-01"), LocalDate.parse("2027-06-01"), "ACTIVE", now, now, null, null));
+        persisted(SchoolGradeJpaEntity.builder()
+            .id(null)
+            .schoolId(UUID.randomUUID())
+            .gradeLevelId(gradeLevelId)
+            .code("NK-OTHER")
+            .name("Niên khóa trường khác")
+            .description(null)
+            .startDate(LocalDate.parse("2026-09-01"))
+            .endDate(LocalDate.parse("2027-06-01"))
+            .status("ACTIVE")
+            .createdAt(now)
+            .updatedAt(now)
+            .createdBy(null)
+            .updatedBy(null)
+            .build());
 
         PageResult<AssessmentDirectoryGradeInfo> page = repository.findGradesBySchoolId(schoolId, null, 1, 20);
 
@@ -240,25 +258,66 @@ class JpaAssessmentDirectoryQueryRepositoryTests {
         if (!existing.isEmpty()) {
             return existing.getFirst();
         }
-        return persisted(new RoleJpaEntity(null, code, code, now, now, null, null)).getId();
+        return persisted(RoleJpaEntity.builder()
+            .code(code)
+            .name(code)
+            .createdAt(now)
+            .updatedAt(now)
+            .build()).getId();
     }
 
     private UUID grade(String code, String status) {
-        return persisted(new SchoolGradeJpaEntity(null, schoolId, gradeLevelId, code + "-" + suffix(), code, null,
-            LocalDate.parse("2026-09-01"), LocalDate.parse("2027-06-01"), status, now, now, null, null)).getId();
+        return persisted(SchoolGradeJpaEntity.builder()
+            .id(null)
+            .schoolId(schoolId)
+            .gradeLevelId(gradeLevelId)
+            .code(code + "-" + suffix())
+            .name(code)
+            .description(null)
+            .startDate(LocalDate.parse("2026-09-01"))
+            .endDate(LocalDate.parse("2027-06-01"))
+            .status(status)
+            .createdAt(now)
+            .updatedAt(now)
+            .createdBy(null)
+            .updatedBy(null)
+            .build()).getId();
     }
 
     private UUID schoolClass(String code) {
         // school_classes.created_by and updated_by are both NOT NULL.
         UUID actor = UUID.randomUUID();
-        return persisted(new SchoolClassJpaEntity(null, schoolId, UUID.randomUUID(), grade("NK", "ACTIVE"),
-            code + "-" + suffix(), code, null, "ACTIVE", now, now, actor, actor)).getId();
+        return persisted(SchoolClassJpaEntity.builder()
+            .id(null)
+            .schoolId(schoolId)
+            .languageId(UUID.randomUUID())
+            .schoolGradeId(grade("NK", "ACTIVE"))
+            .code(code + "-" + suffix())
+            .name(code)
+            .description(null)
+            .status("ACTIVE")
+            .createdAt(now)
+            .updatedAt(now)
+            .createdBy(actor.toString())
+            .updatedBy(actor.toString())
+            .build()).getId();
     }
 
     private UUID user(String fullName, String local, UUID roleId) {
-        UUID userId = persisted(new UserJpaEntity(null, local + "-" + suffix() + "@test.local", "hash", null,
-            fullName, null, LocalDate.parse("2008-01-01"), null, null, "ACTIVE", now, now, null, null)).getId();
-        persisted(new UserRoleJpaEntity(null, userId, roleId, now));
+        UUID userId = persisted(UserJpaEntity.builder()
+            .email(local + "-" + suffix() + "@test.local")
+            .passwordHash("hash")
+            .fullName(fullName)
+            .dateOfBirth(LocalDate.parse("2008-01-01"))
+            .status("ACTIVE")
+            .createdAt(now)
+            .updatedAt(now)
+            .build()).getId();
+        persisted(UserRoleJpaEntity.builder()
+            .userId(userId)
+            .roleId(roleId)
+            .createdAt(now)
+            .build());
         return userId;
     }
 
@@ -271,12 +330,25 @@ class JpaAssessmentDirectoryQueryRepositoryTests {
     }
 
     private void joinSchool(UUID userId) {
-        persisted(new SchoolUserJpaEntity(null, schoolId, userId, now, null));
+        persisted(SchoolUserJpaEntity.builder()
+            .id(null)
+            .schoolId(schoolId)
+            .userId(userId)
+            .startDate(now)
+            .endDate(null)
+            .build());
     }
 
     private void enroll(UUID userId, UUID classId, boolean active) {
         // school_class_users.assigned_by là NOT NULL.
-        persisted(new SchoolClassUserJpaEntity(
-            null, userId, classId, active, now, active ? null : now, UUID.randomUUID()));
+        persisted(SchoolClassUserJpaEntity.builder()
+            .id(null)
+            .userId(userId)
+            .schoolClassId(classId)
+            .isActive(active)
+            .joinedAt(now)
+            .leftAt(active ? null : now)
+            .assignedBy(UUID.randomUUID())
+            .build());
     }
 }

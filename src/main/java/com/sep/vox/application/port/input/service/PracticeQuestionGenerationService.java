@@ -119,25 +119,25 @@ public class PracticeQuestionGenerationService {
     }
 
     private PracticeQuestion toPracticeQuestion(GeneratedQuestion question) {
-        return new PracticeQuestion(
-            question.id(),
-            question.topicId(),
-            question.questionText(),
-            question.criterionCode(),
-            question.subAttribute(),
-            question.targetTense(),
-            question.difficultyRank(),
-            question.difficultyFeaturesJson(),
-            question.evaluationGuideJson(),
-            question.suggestedIdeasJson(),
-            question.questionType(),
-            question.maxResponseSeconds(),
-            question.minResponseSeconds(),
-            question.vstepPart(),
-            null,
-            0,
-            true,
-            Instant.now()
-        );
+        return PracticeQuestion.builder()
+                .id(question.id())
+                .practiceTopicId(question.topicId())
+                .questionText(question.questionText())
+                .targetCriterionCode(question.criterionCode())
+                .targetSubAttribute(question.subAttribute())
+                .targetTense(question.targetTense())
+                .difficultyRank(question.difficultyRank())
+                .difficultyFeaturesJson(question.difficultyFeaturesJson())
+                .evaluationGuideJson(question.evaluationGuideJson())
+                .suggestedIdeasJson(question.suggestedIdeasJson())
+                .questionType(question.questionType())
+                .maxResponseSeconds(question.maxResponseSeconds())
+                .minResponseSeconds(question.minResponseSeconds())
+                .vstepPart(question.vstepPart())
+                .source(null)
+                .usageCount(0)
+                .active(true)
+                .createdAt(Instant.now())
+                .build();
     }
 }

@@ -217,7 +217,11 @@ class UpdateAssessmentScheduleStatusUseCaseTests {
         UUID teacherId = UUID.randomUUID();
         UUID proctorId = UUID.randomUUID();
         when(assessmentScheduleProctorRepository.findByScheduleId(scheduleId))
-            .thenReturn(List.of(new AssessmentScheduleProctor(proctorId, scheduleId, teacherId)));
+            .thenReturn(List.of(AssessmentScheduleProctor.builder()
+                    .id(proctorId)
+                    .scheduleId(scheduleId)
+                    .teacherId(teacherId)
+                    .build()));
         when(assessmentScheduleProctorRepository.existsByScheduleIdAndTeacherId(targetId, teacherId)).thenReturn(false);
 
         useCase.execute(command("MOVE", targetId));
@@ -236,7 +240,11 @@ class UpdateAssessmentScheduleStatusUseCaseTests {
         UUID teacherId = UUID.randomUUID();
         UUID proctorId = UUID.randomUUID();
         when(assessmentScheduleProctorRepository.findByScheduleId(scheduleId))
-            .thenReturn(List.of(new AssessmentScheduleProctor(proctorId, scheduleId, teacherId)));
+            .thenReturn(List.of(AssessmentScheduleProctor.builder()
+                    .id(proctorId)
+                    .scheduleId(scheduleId)
+                    .teacherId(teacherId)
+                    .build()));
         when(assessmentScheduleProctorRepository.existsByScheduleIdAndTeacherId(targetId, teacherId)).thenReturn(true);
 
         useCase.execute(command("MOVE", targetId));
@@ -256,7 +264,11 @@ class UpdateAssessmentScheduleStatusUseCaseTests {
         givenSource(AssessmentScheduleStatus.PUBLISHED);
         UUID teacherId = UUID.randomUUID();
         when(assessmentScheduleProctorRepository.findByScheduleId(scheduleId))
-            .thenReturn(List.of(new AssessmentScheduleProctor(UUID.randomUUID(), scheduleId, teacherId)));
+            .thenReturn(List.of(AssessmentScheduleProctor.builder()
+                    .id(UUID.randomUUID())
+                    .scheduleId(scheduleId)
+                    .teacherId(teacherId)
+                    .build()));
         when(assessmentScheduleProctorRepository.existsByScheduleIdAndTeacherId(targetId, teacherId)).thenReturn(false);
         when(assessmentScheduleProctorRepository.existsOverlappingAssignment(
             eq(teacherId), any(Instant.class), any(Instant.class), eq(scheduleId))).thenReturn(true);

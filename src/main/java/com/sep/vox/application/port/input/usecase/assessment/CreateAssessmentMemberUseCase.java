@@ -54,13 +54,13 @@ public class CreateAssessmentMemberUseCase implements IUseCase<CreateAssessmentM
             throw new IllegalStateException("Người dùng đã có vai trò này trong bài kiểm tra");
         }
 
-        AssessmentMember member = new AssessmentMember(
-            assessment.getId(),
-            input.userId(),
-            role,
-            Instant.now(),
-            actor.userId()
-        );
+        AssessmentMember member = AssessmentMember.builder()
+                .assessmentId(assessment.getId())
+                .userId(input.userId())
+                .role(role)
+                .grantedAt(Instant.now())
+                .grantedBy(actor.userId())
+                .build();
         return AssessmentMemberDtoMapper.toDto(assessmentMemberRepository.save(member));
     }
 }

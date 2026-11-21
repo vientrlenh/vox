@@ -70,7 +70,7 @@ public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassComma
             status,
             command.statusProvided(),
             now,
-            currentUserId
+            currentUserId.toString()
         );
         if (updatedRows == 0) {
             throw new NotFoundException("Không tìm thấy lớp học");

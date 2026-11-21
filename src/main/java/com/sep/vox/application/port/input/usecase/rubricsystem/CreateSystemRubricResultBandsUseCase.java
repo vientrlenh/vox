@@ -118,21 +118,17 @@ public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSyst
             ScoreRangeValidator.assertWithinScale(version.getScoringScaleMin(), version.getScoringScaleMax(),
                     bCmd.mappedScoreMin(), bCmd.mappedScoreMax(), safeName);
 
-            // 4.4 Build Object với ID = null để báo cho Hibernate biết đây là dữ liệu mới
-            RubricResultBand band = new RubricResultBand(
-                    null,                 // ĐỂ NULL: Chặn đứng lệnh SELECT dư thừa trước khi INSERT
-                    command.versionId(),
-                    safeCode,
-                    safeName,
-                    bCmd.description() != null ? StringNormalization.trimAndCollapseSpaces(bCmd.description()) : null,
-                    bCmd.mappedScoreMin(),
-                    bCmd.mappedScoreMax(),
-                    bCmd.order(),
-                    now,
-                    now,
-                    currentUserId,
-                    currentUserId
-            );
+            // 4.4 Build the object with id = null to tell Hibernate this is new data.
+            // The id stays unset (null): it prevents a redundant SELECT before the INSERT.
+            RubricResultBand band = RubricResultBand.builder()
+                    .rubricVersionId(command.versionId())
+                    .code(safeCode)
+                    .name(safeName)
+                    .description(bCmd.description() != null ? StringNormalization.trimAndCollapseSpaces(bCmd.description()) : null)
+                    .scoreMin(bCmd.mappedScoreMin())
+                    .scoreMax(bCmd.mappedScoreMax())
+                    .order(bCmd.order())
+                    .build();
             bandsSoFarByMin.put(band.getScoreMin(), band);
             return band;
         }).toList();

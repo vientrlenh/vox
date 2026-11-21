@@ -7,65 +7,52 @@ import java.util.UUID;
 import com.sep.vox.domain.model.metering.QuotaType;
 
 /**
- * Trần phân phối hạn mức của một trường, cho MỘT loại hạn mức.
+ * The quota distribution ceiling of a school, for ONE quota type.
  *
- * <p>Trả lời đúng một câu hỏi: trong ví hạn mức mà gói cấp, trường được chia ra cho từng người tối đa
- * bao nhiêu phần trăm. Phần còn lại là khoản DỰ PHÒNG -- không bị giữ ở đâu cả, chỉ là phần ví chưa
- * ai có trần chi để tiêu vào, để dành cấp thêm giữa kỳ cho người thật sự cần.
+ * <p>Answers exactly one question: out of the quota wallet that the plan grants, what maximum percentage may the
+ * school hand out to individual people. The rest is a RESERVE -- it is not held anywhere, it is simply the part of the
+ * wallet that nobody has a spending ceiling to spend from, kept to grant extra mid-period to whoever really needs it.
  *
- * <p>Thuộc về TRƯỜNG, không thuộc kỳ đăng ký: bản ghi hạn mức được dựng lại mỗi kỳ (xem
- * {@code OrderSettlementService.seedQuotaRecords}), nên đặt chính sách ở đó là để nó biến mất sau mỗi
- * lần gia hạn. Đây là cùng lý do khiến số dư tự nạp nằm ở {@link SchoolBalance} chứ không nằm theo kỳ.
+ * <p>Belongs to the SCHOOL, not to the subscription period: the quota record is rebuilt every period (see
+ * {@code OrderSettlementService.seedQuotaRecords}), so putting the policy there would make it disappear after every
+ * renewal. This is the same reason the self-funded balance lives in {@link SchoolBalance} rather than per period.
  */
 public class SchoolQuotaPolicy {
 
-    /** Chia được toàn bộ ví -- mặc định, và là hành vi của hệ thống trước khi có chính sách này. */
+    /** The whole wallet can be distributed -- the default, and the behaviour of the system before this policy existed. */
     public static final BigDecimal FULLY_DISTRIBUTABLE = BigDecimal.ONE;
 
     private UUID id;
     private UUID schoolId;
     private QuotaType quotaType;
-    /** Từ 0 tới 1. DB có CHECK giữ đúng khoảng này. */
+    /** From 0 to 1. The database has a CHECK that keeps it within this range. */
     private BigDecimal distributableRatio;
     private Instant createdAt;
     private Instant updatedAt;
 
     public SchoolQuotaPolicy() {}
-
-    public SchoolQuotaPolicy(UUID id, UUID schoolId, QuotaType quotaType, BigDecimal distributableRatio,
-            Instant createdAt, Instant updatedAt) {
-        this.id = id;
-        this.schoolId = schoolId;
-        this.quotaType = quotaType;
-        this.distributableRatio = distributableRatio;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-    }
-
-    public SchoolQuotaPolicy(UUID schoolId, QuotaType quotaType, BigDecimal distributableRatio,
-            Instant createdAt, Instant updatedAt) {
-        this.schoolId = schoolId;
-        this.quotaType = quotaType;
-        this.distributableRatio = distributableRatio;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-    }
+
+
 
     /**
-     * Chính sách mặc định cho trường chưa từng đặt gì -- chia được toàn bộ.
+     * The default policy for a school that has never set anything -- everything can be distributed.
      *
-     * <p>KHÔNG ghi dòng này xuống DB ở đường đọc: không có dòng và có dòng tỷ lệ 1.0 là cùng một
-     * nghĩa, nên tạo sẵn chỉ để đọc là đẻ ra một hàng cho mọi trường chỉ vì có người mở trang.
+     * <p>Do NOT write this row to the database on the read path: having no row and having a row with ratio 1.0 mean the
+     * same thing, so creating it just for reading would spawn a row for every school merely because someone opened a page.
      */
     public static SchoolQuotaPolicy fullyDistributable(UUID schoolId, QuotaType quotaType) {
-        return new SchoolQuotaPolicy(schoolId, quotaType, FULLY_DISTRIBUTABLE, null, null);
+        return builder()
+            .schoolId(schoolId)
+            .quotaType(quotaType)
+            .distributableRatio(FULLY_DISTRIBUTABLE)
+            .build();
     }
 
     /**
-     * Phần ví được phép chia ra cho từng người.
+     * The part of the wallet that may be handed out to individual people.
      *
-     * <p>Làm tròn XUỐNG về đúng scale của cột tiền (6 chữ số thập phân): làm tròn lên sẽ cho chia
-     * nhiều hơn trần một vài phần triệu đồng, tức phá đúng cái ràng buộc mà chính sách này đặt ra.
+     * <p>Rounded DOWN to the scale of the money column (6 decimal places): rounding up would allow distributing a few
+     * millionths of a dong more than the ceiling, which breaks the very constraint this policy sets.
      */
     public BigDecimal distributableAmountOf(BigDecimal totalAllocatedVnd) {
         if (totalAllocatedVnd == null) {
@@ -122,5 +109,52 @@ public class SchoolQuotaPolicy {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final SchoolQuotaPolicy target = new SchoolQuotaPolicy();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder schoolId(UUID schoolId) {
+            target.schoolId = schoolId;
+            return this;
+        }
+
+        public Builder quotaType(QuotaType quotaType) {
+            target.quotaType = quotaType;
+            return this;
+        }
+
+        public Builder distributableRatio(BigDecimal distributableRatio) {
+            target.distributableRatio = distributableRatio;
+            return this;
+        }
+
+        public Builder createdAt(Instant createdAt) {
+            target.createdAt = createdAt;
+            return this;
+        }
+
+        public Builder updatedAt(Instant updatedAt) {
+            target.updatedAt = updatedAt;
+            return this;
+        }
+
+        public SchoolQuotaPolicy build() {
+            return target;
+        }
+
     }
 }

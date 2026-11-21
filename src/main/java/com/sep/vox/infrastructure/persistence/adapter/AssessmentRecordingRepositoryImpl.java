@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.AssessmentRecordingJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentRecordingJpaEntity;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;

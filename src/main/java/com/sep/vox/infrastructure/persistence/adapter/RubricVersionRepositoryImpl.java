@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.RubricVersionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.rubric.RubricVersionJpaEntity;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Collection;
@@ -124,7 +124,7 @@ public class RubricVersionRepositoryImpl implements RubricVersionRepository {
             BigDecimal scoringScaleMax,
             String totalScoreMethod,
             Instant updatedAt,
-            UUID updatedBy) {
+            String updatedBy) {
         // SpringDataRubricVersionRepository.updateRubricVersionAtomic khai báo tham số theo thứ tự (id, name, code, ...)
         springDataRubricVersionRepository.updateRubricVersionAtomic(
             id,

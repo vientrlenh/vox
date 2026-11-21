@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.usecase.scoringrule;
 
 import com.sep.vox.domain.model.user.User;
-import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -115,8 +114,6 @@ public class UpdateSystemScoringRuleUseCase implements IUseCase<UpdateScoringRul
         rule.setSeverity(command.severity());
         rule.setStopProcessing(command.stopProcessing());
         rule.setActive(command.isActive());
-        rule.setUpdatedAt(Instant.now());
-        rule.setUpdatedBy(currentUserId);
 
         return scoringRuleRepository.save(rule).getId();
     }

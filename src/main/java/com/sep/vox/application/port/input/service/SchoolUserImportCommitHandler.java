@@ -89,15 +89,14 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
     @Override
     public ImportCommitResult commit(ImportSession session, List<ImportRow> rows) {
         UUID schoolId = session.getSchoolId();
-        UUID currentUserId = session.getCreatedBy();
         Map<String, String> mapping = jsonSerializationPort.toStringMap(session.getConfirmedMappingJson());
         School school = schoolRepository.findById(schoolId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
-        return processRows(rows, mapping, schoolId, school.getName(), currentUserId);
+        return processRows(rows, mapping, schoolId, school.getName());
     }
 
     private ImportCommitResult processRows(List<ImportRow> rows, Map<String, String> confirmedMapping,
-            UUID schoolId, String schoolName, UUID currentUserId) {
+            UUID schoolId, String schoolName) {
         long createdRows = 0L;
         long updatedRows = 0L;
         long invalidRows = 0L;
@@ -153,11 +152,11 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
             try {
                 if (existingUser != null) {
                     transactionTemplate.executeWithoutResult(status ->
-                            updateUser(existingUser, normalized, schoolId, membershipsByUserId, roleCode, currentUserId));
+                            updateUser(existingUser, normalized, schoolId, membershipsByUserId, roleCode));
                     updatedRows++;
                 } else {
                     transactionTemplate.executeWithoutResult(status ->
-                            createUser(normalized, role, schoolId, schoolName, currentUserId));
+                            createUser(normalized, role, schoolId, schoolName));
                     createdRows++;
                 }
             } catch (DataIntegrityViolationException | IllegalArgumentException e) {
@@ -174,12 +173,16 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
         return new ImportCommitResult(createdRows, updatedRows, 0L, invalidRows);
     }
 
-    private UUID createUser(Map<String, String> data, Role role, UUID schoolId, String schoolName, UUID currentUserId) {
+    private UUID createUser(Map<String, String> data, Role role, UUID schoolId, String schoolName) {
         Instant ts = Instant.now();
         User user = User.create(data.get("email"), data.get("phone"), data.get("fullName"),
-                parseDate(data.get("dateOfBirth")), data.get("address"), null, currentUserId, ts);
+                parseDate(data.get("dateOfBirth")), data.get("address"), null);
         User savedUser = userRepository.save(user);
-        userRoleRepository.save(new UserRole(savedUser.getId(), role.getId(), ts));
+        userRoleRepository.save(UserRole.builder()
+                .userId(savedUser.getId())
+                .roleId(role.getId())
+                .createdAt(ts)
+                .build());
         if (SchoolRoleCodes.STUDENT.equals(role.getCode().value())) {
             Instant startOffset = parseDate(data.get("startDate")).atStartOfDay(DateMapper.DEFAULT_INPUT_ZONE).toInstant();
             Instant endOffset = parseDate(data.get("endDate")).atStartOfDay(DateMapper.DEFAULT_INPUT_ZONE).toInstant();
@@ -187,8 +190,8 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
         } else if (SchoolRoleCodes.TEACHER.equals(role.getCode().value())) {
             schoolUserRepository.save(SchoolUser.create(savedUser.getId(), schoolId, ts, null));
         }
-        // Token đặt mật khẩu do consumer sinh ngay trước khi gửi mail, để nó không nằm
-        // plaintext trong bảng outboxes lẫn trong topic Kafka.
+        // The consumer generates the password set-up token right before it sends the mail, so the token is never
+        // stored as plaintext in the outboxes table or in the Kafka topic.
         UserCreatedPayloadV1 event = new UserCreatedPayloadV1(
             savedUser.getId(),
             data.get("email"),
@@ -210,14 +213,12 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
     }
 
     private UUID updateUser(User existing, Map<String, String> data, UUID schoolId,
-            Map<UUID, SchoolUser> membershipsByUserId, String roleCode, UUID currentUserId) {
+            Map<UUID, SchoolUser> membershipsByUserId, String roleCode) {
         Instant ts = Instant.now();
         existing.setFullName(new FullName(data.get("fullName")));
         existing.setPhone(new Phone(data.get("phone")));
         existing.setDateOfBirth(new DateOfBirth(parseDate(data.get("dateOfBirth"))));
         existing.setAddress(data.get("address"));
-        existing.setUpdatedAt(ts);
-        existing.setUpdatedBy(currentUserId);
         userRepository.save(existing);
         if (SchoolRoleCodes.STUDENT.equals(roleCode)) {
             Instant startOffset = parseDate(data.get("startDate")).atStartOfDay(DateMapper.DEFAULT_INPUT_ZONE).toInstant();

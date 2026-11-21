@@ -67,39 +67,35 @@ public class RubricCloneService {
         // languageId and frameworkId follow the template and must NOT be chosen again: the criteria
         // below point to the frameworkCriterionId of the source framework, so changing the framework
         // would leave all of those references dangling.
-        Rubric clonedRubric = rubricRepository.save(new Rubric(
-            sourceRubric.getLanguageId(),
-            sourceRubric.getFrameworkId(),
-            code,
-            name,
-            description,
-            RubricOwnerType.SCHOOL,
-            schoolId
-        ));
+        Rubric clonedRubric = rubricRepository.save(Rubric.builder()
+                .languageId(sourceRubric.getLanguageId())
+                .frameworkId(sourceRubric.getFrameworkId())
+                .code(code)
+                .name(name)
+                .description(description)
+                .ownerType(RubricOwnerType.SCHOOL)
+                .schoolId(schoolId)
+                .build());
 
-        RubricVersion clonedVersion = new RubricVersion(
-            clonedRubric.getId(),
-            // A new rubric always restarts versioning at 1. The version number is the TIME axis within
-            // one rubric, not something inherited from the template -- a clone of "template v3" is
-            // still the school's first version.
-            1,
-            code,
-            name,
-            description,
-            // DRAFT is mandatory, not a convention: CreateSchoolAssessmentPolicyUseCase rejects
-            // attaching a policy to an already PUBLISHED version, so a clone created directly as
-            // PUBLISHED would be one the school can never attach any policy to -- i.e. useless.
-            RubricStatus.DRAFT,
-            now,
-            null,
-            sourceVersion.getScoringScaleMin(),
-            sourceVersion.getScoringScaleMax(),
-            targetMethod,
-            now,
-            now,
-            currentUserId,
-            currentUserId
-        );
+        RubricVersion clonedVersion = RubricVersion.builder()
+                .rubricId(clonedRubric.getId())
+                // A new rubric always restarts versioning at 1. The version number is the TIME axis within
+                // one rubric, not something inherited from the template -- a clone of "template v3" is
+                // still the school's first version.
+                .version(1)
+                .code(code)
+                .name(name)
+                .description(description)
+                // DRAFT is mandatory, not a convention: CreateSchoolAssessmentPolicyUseCase rejects
+                // attaching a policy to an already PUBLISHED version, so a clone created directly as
+                // PUBLISHED would be one the school can never attach any policy to -- i.e. useless.
+                .status(RubricStatus.DRAFT)
+                .effectiveFrom(now)
+                .effectiveTo(null)
+                .scoringScaleMin(sourceVersion.getScoringScaleMin())
+                .scoringScaleMax(sourceVersion.getScoringScaleMax())
+                .totalScoreMethod(targetMethod)
+                .build();
         clonedVersion.setSourceRubricVersionId(sourceVersion.getId());
         RubricVersion savedVersion = rubricVersionRepository.save(clonedVersion);
 
@@ -117,23 +113,19 @@ public class RubricCloneService {
             return;
         }
         rubricCriterionRepository.saveAll(sourceCriteria.stream()
-            .map(source -> new RubricCriterion(
-                targetVersionId,
-                source.getFrameworkCriterionId(),
-                source.getCode(),
-                source.getName(),
-                source.getDescription(),
-                source.getExamples(),
-                resolveWeight(source.getWeight(), targetMethod),
-                source.getMinScore(),
-                source.getMaxScore(),
-                source.getOrder(),
-                source.isRequired(),
-                now,
-                now,
-                currentUserId,
-                currentUserId
-            ))
+            .map(source -> RubricCriterion.builder()
+                    .rubricVersionId(targetVersionId)
+                    .frameworkCriterionId(source.getFrameworkCriterionId())
+                    .code(source.getCode())
+                    .name(source.getName())
+                    .description(source.getDescription())
+                    .examples(source.getExamples())
+                    .weight(resolveWeight(source.getWeight(), targetMethod))
+                    .minScore(source.getMinScore())
+                    .maxScore(source.getMaxScore())
+                    .order(source.getOrder())
+                    .required(source.isRequired())
+                    .build())
             .toList());
     }
 
@@ -169,19 +161,15 @@ public class RubricCloneService {
             return;
         }
         rubricResultBandRepository.saveAll(sourceBands.stream()
-            .map(source -> new RubricResultBand(
-                targetVersionId,
-                source.getCode(),
-                source.getName(),
-                source.getDescription(),
-                source.getScoreMin(),
-                source.getScoreMax(),
-                source.getOrder(),
-                now,
-                now,
-                currentUserId,
-                currentUserId
-            ))
+            .map(source -> RubricResultBand.builder()
+                    .rubricVersionId(targetVersionId)
+                    .code(source.getCode())
+                    .name(source.getName())
+                    .description(source.getDescription())
+                    .scoreMin(source.getScoreMin())
+                    .scoreMax(source.getScoreMax())
+                    .order(source.getOrder())
+                    .build())
             .toList());
     }
 }

@@ -31,8 +31,8 @@ public class QuestionDtoMapper {
             question.getSecurePoolId(),
             question.getCreatedAt(),
             question.getUpdatedAt(),
-            question.getCreatedBy(),
-            question.getUpdatedBy()
+            question.createdByUserId().orElse(null),
+            question.updatedByUserId().orElse(null)
         );
     }
 

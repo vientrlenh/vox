@@ -14,7 +14,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.OrderJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.order.OrderJpaEntity;
 
 import jakarta.persistence.LockModeType;
 

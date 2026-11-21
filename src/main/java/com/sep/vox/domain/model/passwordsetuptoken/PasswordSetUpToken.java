@@ -16,23 +16,6 @@ public class PasswordSetUpToken {
 
     public PasswordSetUpToken() {}
 
-    public PasswordSetUpToken(UUID id, UUID userId, String tokenHash, Instant createdAt, Instant expiredAt, Instant usedAt) {
-        this.id = id;
-        this.userId = userId;
-        this.tokenHash = tokenHash;
-        this.createdAt = createdAt;
-        this.expiredAt = expiredAt;
-        this.usedAt = usedAt;
-    }
-
-    public PasswordSetUpToken(UUID userId, String tokenHash, Instant createdAt, Instant expiredAt, Instant usedAt) {
-        this.userId = userId;
-        this.tokenHash = tokenHash;
-        this.createdAt = createdAt;
-        this.expiredAt = expiredAt;
-        this.usedAt = usedAt;
-    }
-
     public UUID getId() {
         return id;
     }
@@ -83,12 +66,56 @@ public class PasswordSetUpToken {
 
     public static PasswordSetUpToken create(UUID userId, String tokenHash) {
         Instant now = Instant.now();
-        return new PasswordSetUpToken(
-            userId, 
-            tokenHash, 
-            now, 
-            now.plus(DAYS_UNTIL_EXPIRED, ChronoUnit.DAYS), 
-            null
-        );
+        return builder()
+            .userId(userId)
+            .tokenHash(tokenHash)
+            .createdAt(now)
+            .expiredAt(now.plus(DAYS_UNTIL_EXPIRED, ChronoUnit.DAYS))
+            .build();
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private final PasswordSetUpToken target = new PasswordSetUpToken();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder userId(UUID userId) {
+            target.userId = userId;
+            return this;
+        }
+
+        public Builder tokenHash(String tokenHash) {
+            target.tokenHash = tokenHash;
+            return this;
+        }
+
+        public Builder createdAt(Instant createdAt) {
+            target.createdAt = createdAt;
+            return this;
+        }
+
+        public Builder expiredAt(Instant expiredAt) {
+            target.expiredAt = expiredAt;
+            return this;
+        }
+
+        public Builder usedAt(Instant usedAt) {
+            target.usedAt = usedAt;
+            return this;
+        }
+
+        public PasswordSetUpToken build() {
+            return target;
+        }
     }
 }

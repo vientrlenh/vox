@@ -173,7 +173,12 @@ class AcceptSchoolUserImportUseCaseTests {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.findById(currentUserId)).thenReturn(Optional.of(admin));
         when(schoolUserRepository.findByUserId(currentUserId))
-            .thenReturn(Optional.of(new SchoolUser(schoolId, currentUserId, Instant.now(), null)));
+            .thenReturn(Optional.of(SchoolUser.builder()
+                .schoolId(schoolId)
+                .userId(currentUserId)
+                .startDate(Instant.now())
+                .endDate(null)
+                .build()));
         School inactiveSchool = new School();
         inactiveSchool.setId(schoolId);
         inactiveSchool.setActive(false);
@@ -203,7 +208,12 @@ class AcceptSchoolUserImportUseCaseTests {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.findById(currentUserId)).thenReturn(Optional.of(admin));
         when(schoolUserRepository.findByUserId(currentUserId))
-            .thenReturn(Optional.of(new SchoolUser(schoolId, currentUserId, Instant.now(), null)));
+            .thenReturn(Optional.of(SchoolUser.builder()
+                .schoolId(schoolId)
+                .userId(currentUserId)
+                .startDate(Instant.now())
+                .endDate(null)
+                .build()));
         School school = new School();
         school.setId(schoolId);
         school.setActive(true);
@@ -223,42 +233,118 @@ class AcceptSchoolUserImportUseCaseTests {
     }
 
     private static ImportSession session(UUID id, UUID schoolId) {
-        return new ImportSession(
-            id, schoolId, ImportType.USER, "users.csv", "[]", "{}", null,
-            0L, 0L, 0L, 0L, 2L, null, ImportSessionStatus.PREVIEWED, null,
-            Instant.now().plus(1, ChronoUnit.DAYS), null, null, null, 0,
-            Instant.now(), Instant.now(),
-            UUID.randomUUID(), UUID.randomUUID()
-        );
+        return ImportSession.builder()
+            .id(id)
+            .schoolId(schoolId)
+            .type(ImportType.USER)
+            .fileName("users.csv")
+            .originalHeadersJson("[]")
+            .suggestedMappingJson("{}")
+            .confirmedMappingJson(null)
+            .validRows(0L)
+            .invalidRows(0L)
+            .importedRows(0L)
+            .skippedRows(0L)
+            .totalRows(2L)
+            .failureReason(null)
+            .status(ImportSessionStatus.PREVIEWED)
+            .importedEntityId(null)
+            .expiresAt(Instant.now().plus(1, ChronoUnit.DAYS))
+            .claimedAt(null)
+            .claimedBy(null)
+            .leaseExpiresAt(null)
+            .attempts(0)
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
+            .createdBy(UUID.randomUUID().toString())
+            .updatedBy(UUID.randomUUID().toString())
+            .build();
     }
 
     private static ImportSession sessionWithType(UUID id, UUID schoolId, ImportType type) {
-        return new ImportSession(
-            id, schoolId, type, "users.csv", "[]", "{}", null,
-            0L, 0L, 0L, 0L, 2L, null, ImportSessionStatus.PREVIEWED, null,
-            Instant.now().plus(1, ChronoUnit.DAYS), null, null, null, 0,
-            Instant.now(), Instant.now(),
-            UUID.randomUUID(), UUID.randomUUID()
-        );
+        return ImportSession.builder()
+            .id(id)
+            .schoolId(schoolId)
+            .type(type)
+            .fileName("users.csv")
+            .originalHeadersJson("[]")
+            .suggestedMappingJson("{}")
+            .confirmedMappingJson(null)
+            .validRows(0L)
+            .invalidRows(0L)
+            .importedRows(0L)
+            .skippedRows(0L)
+            .totalRows(2L)
+            .failureReason(null)
+            .status(ImportSessionStatus.PREVIEWED)
+            .importedEntityId(null)
+            .expiresAt(Instant.now().plus(1, ChronoUnit.DAYS))
+            .claimedAt(null)
+            .claimedBy(null)
+            .leaseExpiresAt(null)
+            .attempts(0)
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
+            .createdBy(UUID.randomUUID().toString())
+            .updatedBy(UUID.randomUUID().toString())
+            .build();
     }
 
     private static ImportSession sessionWithStatus(UUID id, UUID schoolId, ImportSessionStatus status) {
-        return new ImportSession(
-            id, schoolId, ImportType.USER, "users.csv", "[]", "{}", null,
-            0L, 0L, 0L, 0L, 2L, null, status, null,
-            Instant.now().plus(1, ChronoUnit.DAYS), null, null, null, 0,
-            Instant.now(), Instant.now(),
-            UUID.randomUUID(), UUID.randomUUID()
-        );
+        return ImportSession.builder()
+            .id(id)
+            .schoolId(schoolId)
+            .type(ImportType.USER)
+            .fileName("users.csv")
+            .originalHeadersJson("[]")
+            .suggestedMappingJson("{}")
+            .confirmedMappingJson(null)
+            .validRows(0L)
+            .invalidRows(0L)
+            .importedRows(0L)
+            .skippedRows(0L)
+            .totalRows(2L)
+            .failureReason(null)
+            .status(status)
+            .importedEntityId(null)
+            .expiresAt(Instant.now().plus(1, ChronoUnit.DAYS))
+            .claimedAt(null)
+            .claimedBy(null)
+            .leaseExpiresAt(null)
+            .attempts(0)
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
+            .createdBy(UUID.randomUUID().toString())
+            .updatedBy(UUID.randomUUID().toString())
+            .build();
     }
 
     private static ImportSession expiredSession(UUID id, UUID schoolId) {
-        return new ImportSession(
-            id, schoolId, ImportType.USER, "users.csv", "[]", "{}", null,
-            0L, 0L, 0L, 0L, 2L, null, ImportSessionStatus.PREVIEWED, null,
-            Instant.now().minus(1, ChronoUnit.HOURS), null, null, null, 0,
-            Instant.now(), Instant.now(),
-            UUID.randomUUID(), UUID.randomUUID()
-        );
+        return ImportSession.builder()
+            .id(id)
+            .schoolId(schoolId)
+            .type(ImportType.USER)
+            .fileName("users.csv")
+            .originalHeadersJson("[]")
+            .suggestedMappingJson("{}")
+            .confirmedMappingJson(null)
+            .validRows(0L)
+            .invalidRows(0L)
+            .importedRows(0L)
+            .skippedRows(0L)
+            .totalRows(2L)
+            .failureReason(null)
+            .status(ImportSessionStatus.PREVIEWED)
+            .importedEntityId(null)
+            .expiresAt(Instant.now().minus(1, ChronoUnit.HOURS))
+            .claimedAt(null)
+            .claimedBy(null)
+            .leaseExpiresAt(null)
+            .attempts(0)
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
+            .createdBy(UUID.randomUUID().toString())
+            .updatedBy(UUID.randomUUID().toString())
+            .build();
     }
 }

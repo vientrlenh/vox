@@ -1,11 +1,10 @@
 package com.sep.vox.domain.model.school;
 
 import java.time.LocalDate;
-import java.time.Instant;
 import java.util.UUID;
+import com.sep.vox.domain.model.BaseModel;
 
-public class SchoolGrade {
-    private UUID id;
+public class SchoolGrade extends BaseModel {
     private UUID schoolId;
     private UUID gradeLevelId;
     private String code;
@@ -14,52 +13,24 @@ public class SchoolGrade {
     private LocalDate startDate;
     private LocalDate endDate;
     private SchoolGradeStatus status;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private UUID createdBy;
-    private UUID updatedBy;
 
-    public SchoolGrade() {}
+    public SchoolGrade() {
+    }
 
-    public SchoolGrade(UUID id, UUID schoolId, UUID gradeLevelId, String code, String name, String description, LocalDate startDate, LocalDate endDate, SchoolGradeStatus status,
-            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.id = id;
+    public UUID getSchoolId() {
+        return schoolId;
+    }
+
+    public void setSchoolId(UUID schoolId) {
         this.schoolId = schoolId;
+    }
+
+    public UUID getGradeLevelId() {
+        return gradeLevelId;
+    }
+
+    public void setGradeLevelId(UUID gradeLevelId) {
         this.gradeLevelId = gradeLevelId;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.startDate = startDate;
-        this.endDate = endDate;
-        this.status = status;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public SchoolGrade(UUID schoolId, UUID gradeLevelId, String code, String name, String description, LocalDate startDate, LocalDate endDate, SchoolGradeStatus status, Instant createdAt,
-            Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.schoolId = schoolId;
-        this.gradeLevelId = gradeLevelId;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.startDate = startDate;
-        this.endDate = endDate;
-        this.status = status;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
     }
 
     public String getCode() {
@@ -86,62 +57,6 @@ public class SchoolGrade {
         this.description = description;
     }
 
-    public SchoolGradeStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(SchoolGradeStatus status) {
-        this.status = status;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
-
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
-    }
-
-    public UUID getSchoolId() {
-        return schoolId;
-    }
-
-    public void setSchoolId(UUID schoolId) {
-        this.schoolId = schoolId;
-    }
-
-    public UUID getGradeLevelId() {
-        return gradeLevelId;
-    }
-
-    public void setGradeLevelId(UUID gradeLevelId) {
-        this.gradeLevelId = gradeLevelId;
-    }
-
     public LocalDate getStartDate() {
         return startDate;
     }
@@ -158,5 +73,67 @@ public class SchoolGrade {
         this.endDate = endDate;
     }
 
-    
+    public SchoolGradeStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(SchoolGradeStatus status) {
+        this.status = status;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder extends BaseModel.Builder<SchoolGrade, Builder> {
+
+        private Builder() {
+            super(new SchoolGrade());
+        }
+
+        @Override
+        protected Builder self() {
+            return this;
+        }
+
+        public Builder schoolId(UUID schoolId) {
+            target.schoolId = schoolId;
+            return this;
+        }
+
+        public Builder gradeLevelId(UUID gradeLevelId) {
+            target.gradeLevelId = gradeLevelId;
+            return this;
+        }
+
+        public Builder code(String code) {
+            target.code = code;
+            return this;
+        }
+
+        public Builder name(String name) {
+            target.name = name;
+            return this;
+        }
+
+        public Builder description(String description) {
+            target.description = description;
+            return this;
+        }
+
+        public Builder startDate(LocalDate startDate) {
+            target.startDate = startDate;
+            return this;
+        }
+
+        public Builder endDate(LocalDate endDate) {
+            target.endDate = endDate;
+            return this;
+        }
+
+        public Builder status(SchoolGradeStatus status) {
+            target.status = status;
+            return this;
+        }
+    }
 }

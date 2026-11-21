@@ -77,7 +77,7 @@ public class DeleteAssessmentPaperUseCase implements IUseCase<DeleteAssessmentPa
         // Người ra đề chỉ xoá được đề của chính mình. Chủ tịch hội đồng và quản trị trường xoá được mọi
         // mã đề: đổi khung đề bắt buộc phải xoá sạch mã đề hiện có, mà người ra đề cũ có thể đã rời hội
         // đồng — không có nhánh này thì kỳ thi kẹt vĩnh viễn với khung đề cũ.
-        if (!actor.canDecide() && !currentUserId.equals(paper.getCreatedBy())) {
+        if (!actor.canDecide() && !paper.isCreatedBy(currentUserId)) {
             throw new ForbiddenException("Chỉ người đã tạo đề thi này mới được xoá");
         }
         if (paper.getStatus() != AssessmentPaperStatus.DRAFT) {

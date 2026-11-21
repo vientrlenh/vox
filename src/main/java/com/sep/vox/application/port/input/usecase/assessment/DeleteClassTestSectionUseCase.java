@@ -111,18 +111,14 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
             if (remaining.getOrder() != newOrder) {
                 remaining.setOrder(newOrder);
             }
-            remaining.setUpdatedAt(now);
-            remaining.setUpdatedBy(currentUserId);
             assessmentPaperSectionRepository.save(remaining);
         }
         if (shouldRebalanceAfterDelete) {
-            rebalanceSectionWeights(paper.getId(), now, currentUserId);
+            rebalanceSectionWeights(paper.getId());
         } else {
-            normalizeSectionWeights(remainingPaperSections, now, currentUserId);
+            normalizeSectionWeights(remainingPaperSections);
         }
 
-        assessment.setUpdatedAt(now);
-        assessment.setUpdatedBy(currentUserId);
         Assessment saved = assessmentRepository.save(assessment);
         recalculateAssessmentTimeDurationService.recalculate(assessment.getId());
         return AssessmentDtoMapper.toDto(saved);
@@ -134,7 +130,7 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
                 "Bài đang dùng blueprint dùng chung, không thể sửa câu hỏi trực tiếp — dùng \"Đổi blueprint khác\" ở tab Blueprint để thay đổi cấu trúc");
         }
     }
-    private void rebalanceSectionWeights(UUID paperId, Instant now, UUID currentUserId) {
+    private void rebalanceSectionWeights(UUID paperId) {
         List<AssessmentPaperSection> sections = assessmentPaperSectionRepository.findByPaperId(paperId).stream()
             .sorted(Comparator.comparingInt(section -> section.getOrder()))
             .toList();
@@ -142,19 +138,15 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
         for (int i = 0; i < sections.size(); i++) {
             AssessmentPaperSection section = sections.get(i);
             section.setWeight(weights.get(i));
-            section.setUpdatedAt(now);
-            section.setUpdatedBy(currentUserId);
             assessmentPaperSectionRepository.save(section);
         }
     }
 
-    private void normalizeSectionWeights(List<com.sep.vox.domain.model.assessment.AssessmentPaperSection> sections, Instant now, UUID currentUserId) {
+    private void normalizeSectionWeights(List<com.sep.vox.domain.model.assessment.AssessmentPaperSection> sections) {
         List<BigDecimal> weights = ClassTestSectionWeightPolicy.normalizeStoredWeights(sections);
         for (int i = 0; i < sections.size(); i++) {
             AssessmentPaperSection section = sections.get(i);
             section.setWeight(weights.get(i));
-            section.setUpdatedAt(now);
-            section.setUpdatedBy(currentUserId);
             assessmentPaperSectionRepository.save(section);
         }
     }

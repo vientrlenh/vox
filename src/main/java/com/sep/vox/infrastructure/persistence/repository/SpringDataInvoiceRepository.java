@@ -7,7 +7,7 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.sep.vox.infrastructure.persistence.entity.InvoiceJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.invoice.InvoiceJpaEntity;
 
 public interface SpringDataInvoiceRepository extends JpaRepository<InvoiceJpaEntity, UUID> {
     Optional<InvoiceJpaEntity> findByOrderId(UUID orderId);

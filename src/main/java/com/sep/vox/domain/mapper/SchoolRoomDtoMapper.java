@@ -16,9 +16,9 @@ public class SchoolRoomDtoMapper {
                 room.getDescription(),
                 room.isActive(),
                 room.getCreatedAt(),
-                room.getCreatedBy(),
+                room.createdByUserId().orElse(null),
                 room.getUpdatedAt(),
-                room.getUpdatedBy()
+                room.updatedByUserId().orElse(null)
         );
     }
 }

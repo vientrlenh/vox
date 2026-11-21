@@ -10,7 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.sep.vox.infrastructure.persistence.entity.SchoolJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolJpaEntity;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -59,7 +59,7 @@ public interface SpringDataSchoolRepository extends JpaRepository<SchoolJpaEntit
             @Param("address") String address,
             @Param("studentCount") Integer studentCount,
             @Param("updatedAt") Instant updatedAt,
-            @Param("updatedBy") UUID updatedBy
+            @Param("updatedBy") String updatedBy
     );
     List<SchoolJpaEntity> findByIdIn(Collection<UUID> ids);
 

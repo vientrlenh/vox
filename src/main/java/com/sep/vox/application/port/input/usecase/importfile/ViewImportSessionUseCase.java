@@ -72,7 +72,7 @@ public class ViewImportSessionUseCase implements IUseCase<ViewImportSessionQuery
             UUID schoolId = getSchoolId(currentUser);
             validateSchool(schoolId);
             validateSessionBelongsToSchool(session, schoolId);
-        } else if (!Objects.equals(session.getCreatedBy(), currentUserId)) {
+        } else if (!session.isCreatedBy(currentUserId)) {
             throw new ForbiddenException("Phiên import không thuộc về bạn");
         }
 

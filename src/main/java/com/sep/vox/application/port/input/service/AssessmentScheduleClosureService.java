@@ -60,47 +60,47 @@ public class AssessmentScheduleClosureService {
     }
 
     /**
-     * Cascade khi ĐÓNG bài: ca đã qua giờ kết thúc → COMPLETED (đã thi thật), ca chưa từng chạy
-     * (còn DRAFT, hoặc đã công bố nhưng chưa tới giờ) → CANCELLED (sẽ không bao giờ diễn ra).
+     * Cascade when an assessment is CLOSED: a schedule whose end time has passed → COMPLETED (it really took place), a schedule that
+     * never ran (still DRAFT, or published but not yet due) → CANCELLED (it will never take place).
      *
-     * <p>Phân biệt theo giờ chứ không gộp một trạng thái, vì gộp về COMPLETED thì ca chưa ai vào
-     * cũng mang nhãn "đã hoàn thành" (sai với điểm danh và báo cáo), còn gộp về CANCELLED thì ca đã
-     * thi xong bị ghi là "bị huỷ" (sai lịch sử).
+     * <p>The split is made by time instead of using a single status: merging into COMPLETED would label a schedule nobody
+     * entered as "completed" (wrong for attendance and reports), while merging into CANCELLED would record a schedule that
+     * was already held as "cancelled" (wrong history).
      *
-     * @return số ca đã đổi trạng thái
+     * @return the number of schedules whose status changed
      */
-    public int closeSchedulesForAssessment(UUID assessmentId, UUID actorId, Instant now) {
+    public int closeSchedulesForAssessment(UUID assessmentId, Instant now) {
         int changed = 0;
         for (AssessmentSchedule schedule : assessmentScheduleRepository.findByAssessmentId(assessmentId)) {
             if (isTerminal(schedule.getStatus())) {
                 continue;
             }
-            // Chỉ ca ĐÃ CÔNG BỐ mới có thể đã thi thật: ca còn DRAFT thì học sinh chưa từng nhìn
-            // thấy nó, dù khung giờ đã trôi qua -- gọi là COMPLETED là bịa ra một buổi thi không có.
-            // Ca đang diễn ra không tới được đây vì guard chạy trước; nếu có thì nó đã bắt đầu thật
-            // nên COMPLETED vẫn là nhãn đúng hơn CANCELLED.
+            // Only a PUBLISHED schedule can have really been held: a DRAFT schedule was never visible to
+            // students even if its time window has passed -- calling it COMPLETED would invent a session that did not happen.
+            // An ongoing schedule cannot reach this point because the guard runs first; if it does, it has really
+            // started, so COMPLETED is still a better label than CANCELLED.
             boolean alreadyRan = schedule.getStatus() == AssessmentScheduleStatus.PUBLISHED
                 && (schedule.hasEndedAt(now) || schedule.isOngoingAt(now));
             AssessmentScheduleStatus target = alreadyRan ? AssessmentScheduleStatus.COMPLETED : AssessmentScheduleStatus.CANCELLED;
-            apply(schedule, target, actorId, now);
+            apply(schedule, target);
             changed++;
         }
         return changed;
     }
 
     /**
-     * Cascade khi HUỶ hoặc XOÁ bài: mọi ca chưa kết thúc → CANCELLED, không phân biệt đã chạy hay
-     * chưa. Khác đóng bài ở chỗ đó: bài bị huỷ thì ca cũng bị huỷ.
+     * Cascade when an assessment is CANCELLED or DELETED: every schedule that is not finished → CANCELLED, whether it has run or
+     * not. That is the difference from closing: when the assessment is cancelled its schedules are cancelled too.
      *
-     * @return số ca đã đổi trạng thái
+     * @return the number of schedules whose status changed
      */
-    public int cancelSchedulesForAssessment(UUID assessmentId, UUID actorId, Instant now) {
+    public int cancelSchedulesForAssessment(UUID assessmentId) {
         int changed = 0;
         for (AssessmentSchedule schedule : assessmentScheduleRepository.findByAssessmentId(assessmentId)) {
             if (isTerminal(schedule.getStatus())) {
                 continue;
             }
-            apply(schedule, AssessmentScheduleStatus.CANCELLED, actorId, now);
+            apply(schedule, AssessmentScheduleStatus.CANCELLED);
             changed++;
         }
         return changed;
@@ -115,7 +115,7 @@ public class AssessmentScheduleClosureService {
     public int completeEndedSchedules(Instant now, int limit) {
         List<AssessmentSchedule> ended = assessmentScheduleRepository.findPublishedEndedBefore(now, limit);
         for (AssessmentSchedule schedule : ended) {
-            apply(schedule, AssessmentScheduleStatus.COMPLETED, null, now);
+            apply(schedule, AssessmentScheduleStatus.COMPLETED);
         }
         return ended.size();
     }
@@ -129,16 +129,8 @@ public class AssessmentScheduleClosureService {
         return status != AssessmentScheduleStatus.DRAFT && status != AssessmentScheduleStatus.PUBLISHED;
     }
 
-    /**
-     * {@code actorId} null là lời gọi từ worker: ghi null đè lên sẽ xoá mất người sửa cuối, nên chỉ
-     * ghi khi thật sự có người thao tác.
-     */
-    private void apply(AssessmentSchedule schedule, AssessmentScheduleStatus target, UUID actorId, Instant now) {
+    private void apply(AssessmentSchedule schedule, AssessmentScheduleStatus target) {
         schedule.setStatus(target);
-        schedule.setUpdatedAt(now);
-        if (actorId != null) {
-            schedule.setUpdatedBy(actorId);
-        }
         assessmentScheduleRepository.save(schedule);
     }
 }

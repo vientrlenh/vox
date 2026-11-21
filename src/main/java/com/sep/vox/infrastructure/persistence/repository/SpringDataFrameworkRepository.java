@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
-import com.sep.vox.infrastructure.persistence.entity.FrameworkJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.framework.FrameworkJpaEntity;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.QuestionAssetJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.question.QuestionAssetJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;

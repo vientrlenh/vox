@@ -113,10 +113,7 @@ class ViewSchoolClassesByUserUseCaseTests {
             UUID.randomUUID(),
             "ENG-01",
             "English 01",
-            "Starter class",
-            UUID.randomUUID(),
-            Instant.now()
-        );
+            "Starter class");
         schoolClass.setId(UUID.randomUUID());
         return schoolClass;
     }

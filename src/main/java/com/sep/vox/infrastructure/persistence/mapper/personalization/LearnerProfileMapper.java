@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.mapper.personalization;
 
 import com.sep.vox.domain.model.personalization.LearnerProfile;
-import com.sep.vox.infrastructure.persistence.entity.LearnerProfileJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.personalization.LearnerProfileJpaEntity;
 
 public final class LearnerProfileMapper {
 
@@ -9,14 +9,14 @@ public final class LearnerProfileMapper {
     }
 
     public static LearnerProfile toDomain(LearnerProfileJpaEntity entity) {
-        return new LearnerProfile(
-            entity.getId(),
-            entity.getStudentId(),
-            entity.getGoalType(),
-            entity.isAutoUpdateInterest(),
-            entity.getQuizCompletedAt(),
-            entity.getRecordedAt()
-        );
+        return LearnerProfile.builder()
+                .id(entity.getId())
+                .studentId(entity.getStudentId())
+                .goalType(entity.getGoalType())
+                .autoUpdateInterest(entity.isAutoUpdateInterest())
+                .quizCompletedAt(entity.getQuizCompletedAt())
+                .recordedAt(entity.getRecordedAt())
+                .build();
     }
 
     /**
@@ -25,13 +25,13 @@ public final class LearnerProfileMapper {
      * on {@code student_id} throws from the second save onwards.
      */
     public static LearnerProfileJpaEntity toJpa(LearnerProfile profile) {
-        LearnerProfileJpaEntity entity = new LearnerProfileJpaEntity(
-            profile.getStudentId(),
-            profile.getGoalType(),
-            profile.isAutoUpdateInterest(),
-            profile.getQuizCompletedAt(),
-            profile.getRecordedAt()
-        );
+        LearnerProfileJpaEntity entity = LearnerProfileJpaEntity.builder()
+                .studentId(profile.getStudentId())
+                .goalType(profile.getGoalType())
+                .autoUpdateInterest(profile.isAutoUpdateInterest())
+                .quizCompletedAt(profile.getQuizCompletedAt())
+                .recordedAt(profile.getRecordedAt())
+                .build();
         entity.setId(profile.getId());
         return entity;
     }

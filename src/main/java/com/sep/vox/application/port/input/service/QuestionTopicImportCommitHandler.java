@@ -116,21 +116,15 @@ public class QuestionTopicImportCommitHandler implements ImportCommitHandler {
                     if (!isBlank(description)) {
                         existing.setDescription(description);
                     }
-                    existing.setUpdatedAt(now);
-                    existing.setUpdatedBy(session.getCreatedBy());
                     toSave.add(existing);
                 } else {
-                    toSave.add(new QuestionTopic(
-                        questionBankId,
-                        code,
-                        name,
-                        description,
-                        QuestionTopicStatus.DRAFT,
-                        now,
-                        now,
-                        session.getCreatedBy(),
-                        session.getCreatedBy()
-                    ));
+                    toSave.add(QuestionTopic.builder()
+                            .questionBankId(questionBankId)
+                            .code(code)
+                            .name(name)
+                            .description(description)
+                            .status(QuestionTopicStatus.DRAFT)
+                            .build());
                 }
 
                 row.setStatus(ImportRowStatus.IMPORTED);

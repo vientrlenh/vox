@@ -213,7 +213,11 @@ public class InvoiceEmailConsumer {
 
     private void markProcessed(UUID eventId) {
         try {
-            processedEventRepository.save(new ProcessedEvent(eventId, CONSUMER_GROUP, Instant.now()));
+            processedEventRepository.save(ProcessedEvent.builder()
+                    .eventId(eventId)
+                    .consumerGroup(CONSUMER_GROUP)
+                    .processedAt(Instant.now())
+                    .build());
         } catch (DataIntegrityViolationException e) {
             LOGGER.warn("This event was already marked by another instance: eventId={}", eventId);
         }

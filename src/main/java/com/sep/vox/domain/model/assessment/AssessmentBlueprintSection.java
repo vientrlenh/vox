@@ -1,62 +1,19 @@
 package com.sep.vox.domain.model.assessment;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.UUID;
 
-public class AssessmentBlueprintSection {
-    private UUID id;
+import com.sep.vox.domain.model.BaseModel;
+
+public class AssessmentBlueprintSection extends BaseModel {
     private UUID blueprintVersionId;
     private int order;
     private String title;
     private String instruction;
     private Integer sectionTimeLimitSeconds;
     private BigDecimal sectionWeight;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private UUID createdBy;
-    private UUID updatedBy;
 
     public AssessmentBlueprintSection() {}
-
-    public AssessmentBlueprintSection(UUID id, UUID blueprintVersionId, int order, String title, String instruction,
-            Integer sectionTimeLimitSeconds, BigDecimal sectionWeight, Instant createdAt,
-            Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.id = id;
-        this.blueprintVersionId = blueprintVersionId;
-        this.order = order;
-        this.title = title;
-        this.instruction = instruction;
-        this.sectionTimeLimitSeconds = sectionTimeLimitSeconds;
-        this.sectionWeight = sectionWeight;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public AssessmentBlueprintSection(UUID blueprintVersionId, int order, String title, String instruction,
-            Integer sectionTimeLimitSeconds, BigDecimal sectionWeight, Instant createdAt,
-            Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.blueprintVersionId = blueprintVersionId;
-        this.order = order;
-        this.title = title;
-        this.instruction = instruction;
-        this.sectionTimeLimitSeconds = sectionTimeLimitSeconds;
-        this.sectionWeight = sectionWeight;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
 
     public UUID getBlueprintVersionId() {
         return blueprintVersionId;
@@ -106,37 +63,49 @@ public class AssessmentBlueprintSection {
         this.sectionWeight = sectionWeight;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
+    public static class Builder extends BaseModel.Builder<AssessmentBlueprintSection, Builder> {
 
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
+        private Builder() {
+            super(new AssessmentBlueprintSection());
+        }
 
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
+        @Override
+        protected Builder self() {
+            return this;
+        }
 
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
+        public Builder blueprintVersionId(UUID blueprintVersionId) {
+            target.blueprintVersionId = blueprintVersionId;
+            return this;
+        }
 
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
+        public Builder order(int order) {
+            target.order = order;
+            return this;
+        }
 
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
+        public Builder title(String title) {
+            target.title = title;
+            return this;
+        }
 
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
-    }
+        public Builder instruction(String instruction) {
+            target.instruction = instruction;
+            return this;
+        }
 
-    
+        public Builder sectionTimeLimitSeconds(Integer sectionTimeLimitSeconds) {
+            target.sectionTimeLimitSeconds = sectionTimeLimitSeconds;
+            return this;
+        }
+
+        public Builder sectionWeight(BigDecimal sectionWeight) {
+            target.sectionWeight = sectionWeight;
+            return this;
+        }
+    }
 }

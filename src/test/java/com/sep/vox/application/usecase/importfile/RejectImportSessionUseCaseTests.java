@@ -71,8 +71,6 @@ class RejectImportSessionUseCaseTests {
         assertThat(response.reason()).isEqualTo("User cancelled");
         assertThat(session.getStatus()).isEqualTo(ImportSessionStatus.CANCELLED);
         assertThat(session.getFailureReason()).isEqualTo("User cancelled");
-        assertThat(session.getUpdatedBy()).isEqualTo(userId);
-        assertThat(session.getUpdatedAt()).isNotNull();
     }
 
     @Test
@@ -146,7 +144,6 @@ class RejectImportSessionUseCaseTests {
         ArgumentCaptor<ImportSession> captor = ArgumentCaptor.forClass(ImportSession.class);
         verify(importSessionRepository).save(captor.capture());
         assertThat(captor.getValue().getStatus()).isEqualTo(ImportSessionStatus.EXPIRED);
-        assertThat(captor.getValue().getUpdatedBy()).isEqualTo(userId);
     }
 
     @Test
@@ -195,32 +192,32 @@ class RejectImportSessionUseCaseTests {
     }
 
     private static ImportSession session(UUID id, UUID schoolId, ImportSessionStatus status, Instant expiresAt) {
-        return new ImportSession(
-            id,
-            schoolId,
-            ImportType.SCHOOL_CLASS,
-            "classes.csv",
-            "[]",
-            "{}",
-            null,
-            0L,
-            0L,
-            0L,
-            0L,
-            1L,
-            null,
-            status,
-            null,
-            expiresAt, 
-            null, 
-            null, 
-            null, 
-            0, 
-            Instant.now(),
-            Instant.now(),
-            UUID.randomUUID(),
-            UUID.randomUUID()
-        );
+        return ImportSession.builder()
+            .id(id)
+            .schoolId(schoolId)
+            .type(ImportType.SCHOOL_CLASS)
+            .fileName("classes.csv")
+            .originalHeadersJson("[]")
+            .suggestedMappingJson("{}")
+            .confirmedMappingJson(null)
+            .validRows(0L)
+            .invalidRows(0L)
+            .importedRows(0L)
+            .skippedRows(0L)
+            .totalRows(1L)
+            .failureReason(null)
+            .status(status)
+            .importedEntityId(null)
+            .expiresAt(expiresAt)
+            .claimedAt(null)
+            .claimedBy(null)
+            .leaseExpiresAt(null)
+            .attempts(0)
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
+            .createdBy(UUID.randomUUID().toString())
+            .updatedBy(UUID.randomUUID().toString())
+            .build();
     }
 
     private User user(UUID id, UUID schoolId, UserStatus status) {
@@ -228,7 +225,12 @@ class RejectImportSessionUseCaseTests {
         user.setId(id);
         user.setStatus(status);
         when(schoolUserRepository.findByUserId(id)).thenReturn(
-            schoolId != null ? Optional.of(new SchoolUser(schoolId, id, java.time.Instant.now(), java.time.Instant.now().plus(36500, ChronoUnit.DAYS))) : Optional.empty()
+            schoolId != null ? Optional.of(SchoolUser.builder()
+                .schoolId(schoolId)
+                .userId(id)
+                .startDate(java.time.Instant.now())
+                .endDate(java.time.Instant.now().plus(36500, ChronoUnit.DAYS))
+                .build()) : Optional.empty()
         );
         return user;
     }

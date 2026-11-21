@@ -173,8 +173,13 @@ class ConsumeQuotaServiceTests {
      */
     @Test
     void should_record_practice_spending_too() {
-        SchoolSubscriptionQuotaRecord practiceQuota = new SchoolSubscriptionQuotaRecord(
-            quotaId, subscriptionId, QuotaType.PRACTICE, BigDecimal.valueOf(100_000), BigDecimal.ZERO);
+        SchoolSubscriptionQuotaRecord practiceQuota = SchoolSubscriptionQuotaRecord.builder()
+            .id(quotaId)
+            .schoolSubscriptionId(subscriptionId)
+            .quotaType(QuotaType.PRACTICE)
+            .totalAllocatedAmountVnd(BigDecimal.valueOf(100_000))
+            .usedAmountVnd(BigDecimal.ZERO)
+            .build();
         when(quotaRecordRepository.findBySchoolSubscriptionIdAndQuotaType(subscriptionId, QuotaType.PRACTICE))
             .thenReturn(Optional.of(practiceQuota));
         when(quotaRecordRepository.findById(quotaId)).thenReturn(Optional.of(practiceQuota));
@@ -210,8 +215,13 @@ class ConsumeQuotaServiceTests {
     }
 
     private void givenQuota(BigDecimal totalAllocatedVnd, BigDecimal usedVnd) {
-        SchoolSubscriptionQuotaRecord quota = new SchoolSubscriptionQuotaRecord(
-            quotaId, subscriptionId, QuotaType.ASSESSMENT, totalAllocatedVnd, usedVnd);
+        SchoolSubscriptionQuotaRecord quota = SchoolSubscriptionQuotaRecord.builder()
+            .id(quotaId)
+            .schoolSubscriptionId(subscriptionId)
+            .quotaType(QuotaType.ASSESSMENT)
+            .totalAllocatedAmountVnd(totalAllocatedVnd)
+            .usedAmountVnd(usedVnd)
+            .build();
         when(quotaRecordRepository.findBySchoolSubscriptionIdAndQuotaType(subscriptionId, QuotaType.ASSESSMENT))
             .thenReturn(Optional.of(quota));
         when(quotaRecordRepository.findById(quotaId)).thenReturn(Optional.of(quota));

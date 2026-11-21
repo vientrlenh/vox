@@ -272,10 +272,20 @@ class ClassTestTokenQuotaGuardServiceTests {
         when(subscriptionQuotaUserAllocationRepository
             .findBySchoolSubscriptionIdAndQuotaType(subscriptionId, QuotaType.ASSESSMENT))
             .thenReturn(List.of(
-                new SchoolSubscriptionQuotaUserAllocation(subscriptionId, QuotaType.ASSESSMENT, teacherWithRoom,
-                    BigDecimal.valueOf(500_000), BigDecimal.valueOf(100_000)),
-                new SchoolSubscriptionQuotaUserAllocation(subscriptionId, QuotaType.ASSESSMENT, teacherFullyUsed,
-                    BigDecimal.valueOf(500_000), BigDecimal.valueOf(500_000))));
+                SchoolSubscriptionQuotaUserAllocation.builder()
+                    .schoolSubscriptionId(subscriptionId)
+                    .quotaType(QuotaType.ASSESSMENT)
+                    .userId(teacherWithRoom)
+                    .allocatedAmountVnd(BigDecimal.valueOf(500_000))
+                    .usedAmountVnd(BigDecimal.valueOf(100_000))
+                    .build(),
+                SchoolSubscriptionQuotaUserAllocation.builder()
+                    .schoolSubscriptionId(subscriptionId)
+                    .quotaType(QuotaType.ASSESSMENT)
+                    .userId(teacherFullyUsed)
+                    .allocatedAmountVnd(BigDecimal.valueOf(500_000))
+                    .usedAmountVnd(BigDecimal.valueOf(500_000))
+                    .build()));
 
         AssessmentTokenEstimateResponse estimate = guard.estimateTokenQuota(centralizedAssessment(ASSESSMENT_SECONDS));
 
@@ -316,16 +326,24 @@ class ClassTestTokenQuotaGuardServiceTests {
 
     private void givenSchoolQuota(long totalAllocatedVnd, long usedVnd) {
         when(subscriptionQuotaRepository.findBySchoolSubscriptionIdAndQuotaType(subscriptionId, QuotaType.ASSESSMENT))
-            .thenReturn(Optional.of(new SchoolSubscriptionQuotaRecord(
-                subscriptionId, QuotaType.ASSESSMENT, BigDecimal.valueOf(totalAllocatedVnd), BigDecimal.valueOf(usedVnd))));
+            .thenReturn(Optional.of(SchoolSubscriptionQuotaRecord.builder()
+                .schoolSubscriptionId(subscriptionId)
+                .quotaType(QuotaType.ASSESSMENT)
+                .totalAllocatedAmountVnd(BigDecimal.valueOf(totalAllocatedVnd))
+                .usedAmountVnd(BigDecimal.valueOf(usedVnd))
+                .build()));
     }
 
     private void givenUserAllocation(long allocatedVnd, long usedVnd) {
         when(subscriptionQuotaUserAllocationRepository
             .findBySchoolSubscriptionIdAndQuotaTypeAndUserId(subscriptionId, QuotaType.ASSESSMENT, teacherId))
-            .thenReturn(Optional.of(new SchoolSubscriptionQuotaUserAllocation(
-                subscriptionId, QuotaType.ASSESSMENT, teacherId,
-                BigDecimal.valueOf(allocatedVnd), BigDecimal.valueOf(usedVnd))));
+            .thenReturn(Optional.of(SchoolSubscriptionQuotaUserAllocation.builder()
+                .schoolSubscriptionId(subscriptionId)
+                .quotaType(QuotaType.ASSESSMENT)
+                .userId(teacherId)
+                .allocatedAmountVnd(BigDecimal.valueOf(allocatedVnd))
+                .usedAmountVnd(BigDecimal.valueOf(usedVnd))
+                .build()));
     }
 
     private void givenNoUserAllocation() {
@@ -336,7 +354,12 @@ class ClassTestTokenQuotaGuardServiceTests {
 
     private void givenBalance(long balanceVnd) {
         when(schoolBalanceRepository.findBySchoolId(schoolId)).thenReturn(Optional.of(
-            new SchoolBalance(schoolId, BigDecimal.valueOf(balanceVnd), Instant.now(), Instant.now())));
+            SchoolBalance.builder()
+                .schoolId(schoolId)
+                .balanceVnd(BigDecimal.valueOf(balanceVnd))
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build()));
     }
 
     /** Chưa từng nạp = chưa có dòng số dư, cùng nghĩa với số dư 0 -- xem SchoolBalance.emptyFor. */
@@ -360,7 +383,7 @@ class ClassTestTokenQuotaGuardServiceTests {
         Assessment assessment = new Assessment();
         assessment.setId(assessmentId);
         assessment.setSchoolId(schoolId);
-        assessment.setCreatedBy(teacherId);
+        assessment.setCreatedBy(teacherId.toString());
         assessment.setMaxAttempt(1);
         assessment.setAssessmentTimeDurationSecond(assessmentTimeDurationSecond);
         return assessment;

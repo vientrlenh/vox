@@ -7,7 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.sep.vox.infrastructure.persistence.entity.SubscriptionPlanJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.subscription.SubscriptionPlanJpaEntity;
 
 public interface SpringDataSubscriptionPlanRepository extends JpaRepository<SubscriptionPlanJpaEntity, UUID> {
     List<SubscriptionPlanJpaEntity> findByStatus(String status);

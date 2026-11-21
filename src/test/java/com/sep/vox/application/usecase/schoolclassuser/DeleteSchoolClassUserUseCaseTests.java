@@ -181,11 +181,23 @@ class DeleteSchoolClassUserUseCaseTests {
 
     private void mockUserSchool(UUID userId, UUID schoolId) {
         when(schoolUserRepository.findByUserId(userId))
-            .thenReturn(Optional.of(new SchoolUser(schoolId, userId, Instant.now(), null)));
+            .thenReturn(Optional.of(SchoolUser.builder()
+                .schoolId(schoolId)
+                .userId(userId)
+                .startDate(Instant.now())
+                .endDate(null)
+                .build()));
     }
 
     private static SchoolClassUser membership(UUID userId, UUID classId, boolean isActive, Instant leftAt, UUID assignedBy) {
-        SchoolClassUser membership = new SchoolClassUser(userId, classId, isActive, Instant.now().minus(2, ChronoUnit.DAYS), leftAt, assignedBy);
+        SchoolClassUser membership = SchoolClassUser.builder()
+            .userId(userId)
+            .schoolClassId(classId)
+            .active(isActive)
+            .joinedAt(Instant.now().minus(2, ChronoUnit.DAYS))
+            .leftAt(leftAt)
+            .assignedBy(assignedBy)
+            .build();
         membership.setId(UUID.randomUUID());
         return membership;
     }

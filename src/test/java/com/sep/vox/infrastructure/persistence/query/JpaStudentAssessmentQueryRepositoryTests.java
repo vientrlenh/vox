@@ -14,9 +14,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.query.dto.StudentAssessmentRowInfo;
 import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.infrastructure.persistence.entity.AssessmentCandidateJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.AssessmentJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.AssessmentScheduleJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentCandidateJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentScheduleJpaEntity;
 import com.sep.vox.support.IntegrationTest;
 
 import jakarta.persistence.EntityManager;
@@ -201,19 +201,50 @@ class JpaStudentAssessmentQueryRepositoryTests {
 
     private AssessmentCandidateJpaEntity givenAssessmentFor(
             UUID owner, String name, String assessmentStatus, String scheduleStatus, Instant startDate, String kind) {
-        AssessmentJpaEntity assessment = persisted(new AssessmentJpaEntity(
-            null, null, null, "EX-" + UUID.randomUUID(), name, name + " mô tả", null, UUID.randomUUID(),
-            kind, null, assessmentStatus, 1, null, null, null, null,
-            startDate, null, null, true,
-            now, now, null, null));
+        AssessmentJpaEntity assessment = persisted(AssessmentJpaEntity.builder()
+                .blueprintId(null)
+                .blueprintVersionId(null)
+                .code("EX-" + UUID.randomUUID())
+                .name(name)
+                .description(name + " mô tả")
+                .schoolId(null)
+                .languageId(UUID.randomUUID())
+                .kind(kind)
+                .deliveryMode(null)
+                .status(assessmentStatus)
+                .maxAttempt(1)
+                .assessmentTimeDurationSecond(null)
+                .resultDecisionMethod(null)
+                .requiredStreamType(null)
+                .streamTypePermission(null)
+                .openAt(startDate)
+                .closeAt(null)
+                .assessmentPolicyId(null)
+                .requiresOtp(true)
+                .build());
 
-        AssessmentScheduleJpaEntity schedule = persisted(new AssessmentScheduleJpaEntity(
-            null, assessment.getId(), null, startDate, startDate.plusSeconds(3600), scheduleStatus,
-            null, now, now, null, null));
+        AssessmentScheduleJpaEntity schedule = persisted(AssessmentScheduleJpaEntity.builder()
+                .assessmentId(assessment.getId())
+                .schoolRoomId(null)
+                .startDate(startDate)
+                .endDate(startDate.plusSeconds(3600))
+                .status(scheduleStatus)
+                .movedToScheduleId(null)
+                .build());
 
-        return persisted(new AssessmentCandidateJpaEntity(
-            null, assessment.getId(), owner, null, schedule.getId(),
-            "ASSIGNED", now, now, null, null, null));
+        return persisted(AssessmentCandidateJpaEntity.builder()
+                .id(null)
+                .assessmentId(assessment.getId())
+                .studentId(owner)
+                .assignedPaperId(null)
+                .scheduleId(schedule.getId())
+                .status("ASSIGNED")
+                .assignedAt(now)
+                .updatedAt(now)
+                .blockedAt(null)
+                .assignedBy(null)
+                .updatedBy(null)
+                .build());
     }
 
     /**

@@ -24,17 +24,18 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRoleRepository;
 
 /**
- * Phát 3 event thông báo nợ hạn mức AI, mirror đúng cách {@code OrderSettlementService
- * .publishInvoicePaid} đang ghi outbox -- CHỐT danh sách người nhận NGAY LÚC publish, nhúng thẳng vào
- * payload, không để consumer truy vấn lại (xem javadoc {@link SchoolLockedDueToDebtPayloadV1}).
+ * Publishes the 3 AI-quota debt notification events, mirroring the way {@code OrderSettlementService
+ * .publishInvoicePaid} writes to the outbox -- the recipient list is FIXED AT THE MOMENT OF PUBLISHING and embedded
+ * directly in the payload, so the consumer does not have to query again (see the javadoc of
+ * {@link SchoolLockedDueToDebtPayloadV1}).
  *
- * <p>Mỗi method PHẢI được gọi trong cùng transaction với nơi phát hiện transition (nơi gọi tự chịu
- * trách nhiệm @Transactional), giống hệt cách OrderSettlementService ghi outbox ngay trong transaction
- * xử lý nghiệp vụ chính.
+ * <p>Every method MUST be called in the same transaction as the place that detects the transition (the caller is
+ * responsible for @Transactional), exactly as OrderSettlementService writes the outbox inside the transaction that
+ * processes the main business logic.
  *
- * <p>Song song với outbox (tạm thời, phục vụ push/in-app), mỗi lần phát còn ghi 1 dòng
- * {@link SchoolDebtEvent} -- sổ audit "nguyên nhân nợ" bền vững, để system admin tra lại lịch sử
- * (session nào, trừ bao nhiêu, snapshot hạn mức) bất kỳ lúc nào, không phụ thuộc vòng đời outbox/notification.
+ * <p>In parallel with the outbox (temporary, serving push/in-app), every publication also writes 1 {@link SchoolDebtEvent}
+ * row -- a durable "cause of debt" audit ledger, so the system admin can look up the history (which session, how much
+ * was charged, the quota snapshot) at any time, independent of the outbox/notification lifecycle.
  */
 @Service
 public class SchoolDebtNotificationService {
@@ -152,10 +153,19 @@ public class SchoolDebtNotificationService {
             UUID schoolId, UUID subscriptionId, SchoolDebtEventType eventType, QuotaType quotaType,
             UUID triggerAssessmentSessionId, UUID triggerPracticeSessionId, BigDecimal triggerAmountVnd,
             BigDecimal totalAllocatedVnd, BigDecimal usedAmountVnd, BigDecimal overageVnd, Instant now) {
-        schoolDebtEventRepository.save(new SchoolDebtEvent(
-            schoolId, subscriptionId, eventType, quotaType, triggerAssessmentSessionId,
-            triggerPracticeSessionId, triggerAmountVnd, totalAllocatedVnd, usedAmountVnd, overageVnd, now
-        ));
+        schoolDebtEventRepository.save(SchoolDebtEvent.builder()
+            .schoolId(schoolId)
+            .subscriptionId(subscriptionId)
+            .eventType(eventType)
+            .quotaType(quotaType)
+            .triggerAssessmentSessionId(triggerAssessmentSessionId)
+            .triggerPracticeSessionId(triggerPracticeSessionId)
+            .triggerAmountVnd(triggerAmountVnd)
+            .totalAllocatedVnd(totalAllocatedVnd)
+            .usedAmountVnd(usedAmountVnd)
+            .overageVnd(overageVnd)
+            .occurredAt(now)
+            .build());
     }
 
     private List<UUID> schoolAdminIdsOf(UUID schoolId) {

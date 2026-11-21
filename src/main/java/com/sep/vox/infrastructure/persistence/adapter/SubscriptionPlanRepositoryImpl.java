@@ -13,7 +13,7 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.subscription.SubscriptionPlan;
 import com.sep.vox.domain.model.subscription.SubscriptionPlanStatus;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
-import com.sep.vox.infrastructure.persistence.entity.SubscriptionPlanJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.subscription.SubscriptionPlanJpaEntity;
 import com.sep.vox.infrastructure.persistence.mapper.SubscriptionPlanMapper;
 import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSubscriptionPlanRepository;

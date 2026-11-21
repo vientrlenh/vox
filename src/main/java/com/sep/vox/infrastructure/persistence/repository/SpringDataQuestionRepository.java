@@ -11,7 +11,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.QuestionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.question.QuestionJpaEntity;
 
 public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaEntity, UUID> {
     List<QuestionJpaEntity> findBySecurePoolId(UUID securePoolId);
@@ -54,7 +54,7 @@ public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaE
           AND (
                 :scope IS NULL
                 OR :scope = 'ALL'
-                OR (:scope = 'MINE' AND q.createdBy = :currentUserId)
+                OR (:scope = 'MINE' AND q.createdBy = cast(:currentUserId as string))
                 OR (
                     :scope = 'COLLABORATING'
                     AND EXISTS (
@@ -129,7 +129,7 @@ public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaE
                     OR (
                         :schoolAdmin = false
                         AND (
-                            q.createdBy = :currentUserId
+                            q.createdBy = cast(:currentUserId as string)
                             OR EXISTS (
                                 SELECT 1
                                 FROM QuestionCollaboratorJpaEntity qc
@@ -197,7 +197,7 @@ public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaE
           AND (
                 :scope IS NULL
                 OR :scope = 'ALL'
-                OR (:scope = 'MINE' AND q.createdBy = :currentUserId)
+                OR (:scope = 'MINE' AND q.createdBy = cast(:currentUserId as string))
                 OR (
                     :scope = 'COLLABORATING'
                     AND EXISTS (
@@ -263,7 +263,7 @@ public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaE
                     OR (
                         :schoolAdmin = false
                         AND (
-                            q.createdBy = :currentUserId
+                            q.createdBy = cast(:currentUserId as string)
                             OR EXISTS (
                                 SELECT 1
                                 FROM QuestionCollaboratorJpaEntity qc
@@ -357,7 +357,7 @@ public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaE
                     OR (
                         :schoolAdmin = false
                         AND (
-                            q.createdBy = :currentUserId
+                            q.createdBy = cast(:currentUserId as string)
                             OR EXISTS (
                                 SELECT 1
                                 FROM QuestionCollaboratorJpaEntity qc
@@ -440,7 +440,7 @@ public interface SpringDataQuestionRepository extends JpaRepository<QuestionJpaE
                     OR (
                         :schoolAdmin = false
                         AND (
-                            q.createdBy = :currentUserId
+                            q.createdBy = cast(:currentUserId as string)
                             OR EXISTS (
                                 SELECT 1
                                 FROM QuestionCollaboratorJpaEntity qc

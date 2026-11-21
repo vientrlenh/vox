@@ -7,19 +7,19 @@ import java.util.UUID;
 import com.sep.vox.domain.model.metering.QuotaType;
 
 /**
- * Một lần trường bị trừ chi phí AI. Sổ chỉ-ghi-thêm: không sửa, không xoá.
+ * One time a school was charged for AI cost. Append-only ledger: never edited, never deleted.
  *
- * <p>Trả lời câu mà hai sổ tiền còn lại không trả lời được — trường đã tiêu bao nhiêu, theo NGÀY, và
- * của AI:
+ * <p>Answers the question the other two money ledgers cannot -- how much the school has spent, per DAY, and on AI:
  *
  * <ul>
- *   <li>{@code ai_usage_records} là giá vốn của NỀN TẢNG, và từ V9 nó cố ý lệch khỏi số trường bị
- *       thu (khoản của lượt chấm hỏng được miễn). Nó cũng không biết gì về đường luyện nói.
- *   <li>{@code school_balance_entries} chỉ ghi phần tiêu VƯỢT hạn mức, nên cộng lại thì thiếu đúng
- *       phần lớn nhất.
+ *   <li>{@code ai_usage_records} is the PLATFORM's cost of goods, and since V9 it deliberately differs from what the
+ *       school is charged (the charge for a failed grading run is waived). It also knows nothing about the speaking
+ *       practice path.
+ *   <li>{@code school_balance_entries} only records the spending that EXCEEDS the quota, so summing it misses exactly
+ *       the largest part.
  * </ul>
  *
- * <p>Ghi ĐỦ số tiền của lần trừ, gồm cả phần nằm gọn trong hạn mức.
+ * <p>Records the FULL amount of the charge, including the part that fits entirely within the quota.
  */
 public class SchoolAiSpendEntry {
 
@@ -35,37 +35,40 @@ public class SchoolAiSpendEntry {
 
     public SchoolAiSpendEntry() {
     }
-
-    private SchoolAiSpendEntry(UUID schoolId, UUID subscriptionId, QuotaType quotaType, UUID userId,
-            UUID assessmentSessionId, UUID practiceSessionId, BigDecimal amountVnd, Instant occurredAt) {
-        this.schoolId = schoolId;
-        this.subscriptionId = subscriptionId;
-        this.quotaType = quotaType;
-        this.userId = userId;
-        this.assessmentSessionId = assessmentSessionId;
-        this.practiceSessionId = practiceSessionId;
-        this.amountVnd = amountVnd;
-        this.occurredAt = occurredAt;
-    }
+
 
     /**
-     * Khoản chi của một phiên THI.
+     * A charge for an EXAM session.
      *
-     * @param userId người ra đề bài kiểm tra trên lớp, hoặc {@code null} với kỳ thi tập trung — kỳ do
-     *               nhà trường tổ chức nên không thuộc trần chi của ai. null ở đây là một CÂU TRẢ
-     *               LỜI, không phải dữ liệu thiếu.
+     * @param userId the author of the in-class test, or {@code null} for a centralized exam -- that exam is run by the
+     *               school, so it does not belong to anyone's spending ceiling. null here is an ANSWER, not missing
+     *               data.
      */
     public static SchoolAiSpendEntry forAssessment(UUID schoolId, UUID subscriptionId, UUID assessmentSessionId,
             UUID userId, BigDecimal amountVnd, Instant occurredAt) {
-        return new SchoolAiSpendEntry(schoolId, subscriptionId, QuotaType.ASSESSMENT, userId,
-            assessmentSessionId, null, amountVnd, occurredAt);
+        return builder()
+            .schoolId(schoolId)
+            .subscriptionId(subscriptionId)
+            .quotaType(QuotaType.ASSESSMENT)
+            .userId(userId)
+            .assessmentSessionId(assessmentSessionId)
+            .amountVnd(amountVnd)
+            .occurredAt(occurredAt)
+            .build();
     }
 
-    /** Khoản chi của một phiên LUYỆN NÓI — luôn thuộc về học sinh đã nói. */
+    /** A charge for a SPEAKING PRACTICE session -- always belongs to the student who spoke. */
     public static SchoolAiSpendEntry forPractice(UUID schoolId, UUID subscriptionId,
             UUID practiceSessionId, UUID userId, BigDecimal amountVnd, Instant occurredAt) {
-        return new SchoolAiSpendEntry(schoolId, subscriptionId, QuotaType.PRACTICE, userId,
-            null, practiceSessionId, amountVnd, occurredAt);
+        return builder()
+            .schoolId(schoolId)
+            .subscriptionId(subscriptionId)
+            .quotaType(QuotaType.PRACTICE)
+            .userId(userId)
+            .practiceSessionId(practiceSessionId)
+            .amountVnd(amountVnd)
+            .occurredAt(occurredAt)
+            .build();
     }
 
     public UUID getId() {
@@ -106,5 +109,67 @@ public class SchoolAiSpendEntry {
 
     public Instant getOccurredAt() {
         return occurredAt;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final SchoolAiSpendEntry target = new SchoolAiSpendEntry();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder schoolId(UUID schoolId) {
+            target.schoolId = schoolId;
+            return this;
+        }
+
+        public Builder subscriptionId(UUID subscriptionId) {
+            target.subscriptionId = subscriptionId;
+            return this;
+        }
+
+        public Builder quotaType(QuotaType quotaType) {
+            target.quotaType = quotaType;
+            return this;
+        }
+
+        public Builder userId(UUID userId) {
+            target.userId = userId;
+            return this;
+        }
+
+        public Builder assessmentSessionId(UUID assessmentSessionId) {
+            target.assessmentSessionId = assessmentSessionId;
+            return this;
+        }
+
+        public Builder practiceSessionId(UUID practiceSessionId) {
+            target.practiceSessionId = practiceSessionId;
+            return this;
+        }
+
+        public Builder amountVnd(BigDecimal amountVnd) {
+            target.amountVnd = amountVnd;
+            return this;
+        }
+
+        public Builder occurredAt(Instant occurredAt) {
+            target.occurredAt = occurredAt;
+            return this;
+        }
+
+        public SchoolAiSpendEntry build() {
+            return target;
+        }
+
     }
 }

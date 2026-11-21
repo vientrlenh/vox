@@ -167,11 +167,13 @@ class SchoolUserImportCommitHandlerTests {
         UUID existingUserId = UUID.randomUUID();
         User existingUser = user(existingUserId, "student@example.com");
         Role role = role("STUDENT");
-        SchoolUser existingSchoolUser = new SchoolUser(
-            UUID.randomUUID(), schoolId, existingUserId,
-            Instant.parse("2024-09-01T00:00:00Z"),
-            Instant.parse("2025-06-30T00:00:00Z")
-        );
+        SchoolUser existingSchoolUser = SchoolUser.builder()
+            .id(UUID.randomUUID())
+            .schoolId(schoolId)
+            .userId(existingUserId)
+            .startDate(Instant.parse("2024-09-01T00:00:00Z"))
+            .endDate(Instant.parse("2025-06-30T00:00:00Z"))
+            .build();
         List<ImportRow> rows = List.of(row(sessionId, 1L, studentData("student@example.com")));
 
         mockSchool(schoolId);
@@ -229,11 +231,13 @@ class SchoolUserImportCommitHandlerTests {
         UUID existingUserId = UUID.randomUUID();
         User existingUser = user(existingUserId, "student@example.com");
         Role role = role("STUDENT");
-        SchoolUser otherSchoolUser = new SchoolUser(
-            UUID.randomUUID(), otherSchoolId, existingUserId,
-            Instant.parse("2024-09-01T00:00:00Z"),
-            Instant.parse("2025-06-30T00:00:00Z")
-        );
+        SchoolUser otherSchoolUser = SchoolUser.builder()
+            .id(UUID.randomUUID())
+            .schoolId(otherSchoolId)
+            .userId(existingUserId)
+            .startDate(Instant.parse("2024-09-01T00:00:00Z"))
+            .endDate(Instant.parse("2025-06-30T00:00:00Z"))
+            .build();
         List<ImportRow> rows = List.of(row(sessionId, 1L, studentData("student@example.com")));
 
         mockSchool(schoolId);
@@ -446,18 +450,44 @@ class SchoolUserImportCommitHandlerTests {
     }
 
     private ImportSession session(UUID id, UUID schoolId, UUID createdBy) {
-        return new ImportSession(
-            id, schoolId, ImportType.USER, "users.csv", "[]", "{}",
-            jsonSerializationPort.toJson(mapping()),
-            0L, 0L, 0L, 0L, 0L, null, ImportSessionStatus.IMPORTING, null,
-            Instant.now().plus(1, ChronoUnit.DAYS), null, null, null, 0,
-            Instant.now(), Instant.now(),
-            createdBy, createdBy
-        );
+        return ImportSession.builder()
+            .id(id)
+            .schoolId(schoolId)
+            .type(ImportType.USER)
+            .fileName("users.csv")
+            .originalHeadersJson("[]")
+            .suggestedMappingJson("{}")
+            .confirmedMappingJson(jsonSerializationPort.toJson(mapping()))
+            .validRows(0L)
+            .invalidRows(0L)
+            .importedRows(0L)
+            .skippedRows(0L)
+            .totalRows(0L)
+            .failureReason(null)
+            .status(ImportSessionStatus.IMPORTING)
+            .importedEntityId(null)
+            .expiresAt(Instant.now().plus(1, ChronoUnit.DAYS))
+            .claimedAt(null)
+            .claimedBy(null)
+            .leaseExpiresAt(null)
+            .attempts(0)
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
+            .createdBy(createdBy.toString())
+            .updatedBy(createdBy.toString())
+            .build();
     }
 
     private ImportRow row(UUID sessionId, long rowNumber, Map<String, String> rawData) {
-        return new ImportRow(UUID.randomUUID(), sessionId, rowNumber, jsonSerializationPort.toJson(rawData), null, null, ImportRowStatus.PENDING);
+        return ImportRow.builder()
+            .id(UUID.randomUUID())
+            .sessionId(sessionId)
+            .rowNumber(rowNumber)
+            .rawDataJson(jsonSerializationPort.toJson(rawData))
+            .mappedDataJson(null)
+            .errorsJson(null)
+            .status(ImportRowStatus.PENDING)
+            .build();
     }
 
     private static Map<String, String> mapping() {

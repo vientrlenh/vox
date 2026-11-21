@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.SchoolDebtEventJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolDebtEventJpaEntity;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;

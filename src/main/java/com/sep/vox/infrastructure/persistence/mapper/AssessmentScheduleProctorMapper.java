@@ -1,25 +1,25 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.assessment.AssessmentScheduleProctor;
-import com.sep.vox.infrastructure.persistence.entity.AssessmentScheduleProctorJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentScheduleProctorJpaEntity;
 
 public final class AssessmentScheduleProctorMapper {
 
     private AssessmentScheduleProctorMapper() {}
 
     public static AssessmentScheduleProctor toDomain(AssessmentScheduleProctorJpaEntity jpa) {
-        return new AssessmentScheduleProctor(
-            jpa.getId(),
-            jpa.getScheduleId(),
-            jpa.getTeacherId()
-        );
+        return AssessmentScheduleProctor.builder()
+                .id(jpa.getId())
+                .scheduleId(jpa.getScheduleId())
+                .teacherId(jpa.getTeacherId())
+                .build();
     }
 
     public static AssessmentScheduleProctorJpaEntity toJpa(AssessmentScheduleProctor domain) {
-        return new AssessmentScheduleProctorJpaEntity(
-            domain.getId(),
-            domain.getScheduleId(),
-            domain.getTeacherId()
-        );
+        return AssessmentScheduleProctorJpaEntity.builder()
+                .id(domain.getId())
+                .scheduleId(domain.getScheduleId())
+                .teacherId(domain.getTeacherId())
+                .build();
     }
 }

@@ -2,7 +2,7 @@ package com.sep.vox.domain.model.personalization;
 
 import java.util.UUID;
 
-/** Một câu trả lời "giống nhất / ít giống nhất" trong quiz sở thích 5-7 bộ triplet. */
+/** One "most alike / least alike" answer in the interest quiz of 5-7 triplets. */
 
 public class QuizAnswer {
 
@@ -11,15 +11,6 @@ public class QuizAnswer {
     private int leastStatementIndex;
 
     public QuizAnswer() {
-    }
-
-    public QuizAnswer(
-            UUID itemId,
-            int mostStatementIndex,
-            int leastStatementIndex) {
-        this.itemId = itemId;
-        this.mostStatementIndex = mostStatementIndex;
-        this.leastStatementIndex = leastStatementIndex;
     }
 
     public UUID getItemId() {
@@ -44,5 +35,37 @@ public class QuizAnswer {
 
     public void setLeastStatementIndex(int leastStatementIndex) {
         this.leastStatementIndex = leastStatementIndex;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final QuizAnswer target = new QuizAnswer();
+
+        private Builder() {
+        }
+
+        public Builder itemId(UUID itemId) {
+            target.itemId = itemId;
+            return this;
+        }
+
+        public Builder mostStatementIndex(int mostStatementIndex) {
+            target.mostStatementIndex = mostStatementIndex;
+            return this;
+        }
+
+        public Builder leastStatementIndex(int leastStatementIndex) {
+            target.leastStatementIndex = leastStatementIndex;
+            return this;
+        }
+
+        public QuizAnswer build() {
+            return target;
+        }
+
     }
 }

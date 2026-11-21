@@ -1,8 +1,6 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
-import java.time.Instant;
 
-import java.util.UUID;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,7 +11,6 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.mapper.framework.CreateFrameworkVersionResponseMapper;
 import com.sep.vox.application.port.input.command.CreateFrameworkVersionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.framework.CreateFrameworkVersionResponse;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
@@ -25,15 +22,12 @@ public class CreateFrameworkVersionUseCase implements IUseCase<CreateFrameworkVe
 
     private final FrameworkRepository frameworkRepository;
     private final FrameworkVersionRepository frameworkVersionRepository;
-    private final UserContextPort userContextPort;
 
     public CreateFrameworkVersionUseCase(
             FrameworkRepository frameworkRepository,
-            FrameworkVersionRepository frameworkVersionRepository,
-            UserContextPort userContextPort) {
+            FrameworkVersionRepository frameworkVersionRepository) {
         this.frameworkRepository = frameworkRepository;
         this.frameworkVersionRepository = frameworkVersionRepository;
-        this.userContextPort = userContextPort;
     }
 
     @Override
@@ -43,26 +37,20 @@ public class CreateFrameworkVersionUseCase implements IUseCase<CreateFrameworkVe
         if (command.effectiveTo() != null && !command.effectiveTo().isAfter(command.effectiveFrom())) {
             throw new IllegalArgumentException("Ngày hết hiệu lực phải sau ngày hiệu lực");
         }
-        Instant now = Instant.now();
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         frameworkRepository.findById(command.frameworkId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy framework"));
 
-        FrameworkVersion version = new FrameworkVersion(
-            command.frameworkId(),
-            command.code(),
-            command.name(),
-            command.description(),
-            command.version(),
-            command.effectiveFrom(),
-            command.effectiveTo(),
-            FrameworkVersionStatus.DRAFT,
-            now,
-            now,
-            currentUserId,
-            currentUserId
-        );
+        FrameworkVersion version = FrameworkVersion.builder()
+            .frameworkId(command.frameworkId())
+            .code(command.code())
+            .name(command.name())
+            .description(command.description())
+            .version(command.version())
+            .effectiveFrom(command.effectiveFrom())
+            .effectiveTo(command.effectiveTo())
+            .status(FrameworkVersionStatus.DRAFT)
+            .build();
 
         try {
             FrameworkVersion saved = frameworkVersionRepository.save(version);

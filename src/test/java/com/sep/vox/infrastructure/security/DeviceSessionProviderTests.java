@@ -89,8 +89,14 @@ class DeviceSessionProviderTests {
     }
 
     private DeviceSession session(String deviceId) {
-        return new DeviceSession(
-            sessionId, userId, deviceId, "Lab PC", SessionPlatform.WEB,
-            "127.0.0.1", "junit", null);
+        return DeviceSession.builder()
+            .id(sessionId)
+            .userId(userId)
+            .deviceId(deviceId)
+            .deviceName("Lab PC")
+            .platform(SessionPlatform.WEB)
+            .ipAddress("127.0.0.1")
+            .userAgent("junit")
+            .build();
     }
 }

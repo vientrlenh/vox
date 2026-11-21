@@ -115,7 +115,13 @@ class CreateClassTestPaperTests {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(TEACHER_ID);
         when(assessmentRepository.findById(ASSESSMENT_ID)).thenReturn(Optional.of(classTest(null)));
         when(assessmentMemberRepository.findByAssessmentIdAndUserId(ASSESSMENT_ID, TEACHER_ID)).thenReturn(Optional.of(
-            new AssessmentMember(ASSESSMENT_ID, TEACHER_ID, AssessmentMemberRole.CHAIR, Instant.now(), TEACHER_ID)));
+            AssessmentMember.builder()
+                    .assessmentId(ASSESSMENT_ID)
+                    .userId(TEACHER_ID)
+                    .role(AssessmentMemberRole.CHAIR)
+                    .grantedAt(Instant.now())
+                    .grantedBy(TEACHER_ID)
+                    .build()));
         when(questionRepository.findAccessibleById(any(UUID.class), any(UUID.class), any(UUID.class), anyBoolean(), anyBoolean()))
             .thenReturn(Optional.of(question()));
         when(assessmentPaperRepository.nextVariant(ASSESSMENT_ID)).thenReturn(1);
@@ -175,7 +181,13 @@ class CreateClassTestPaperTests {
         centralized.setSchoolId(SCHOOL_ID);
         when(assessmentRepository.findById(ASSESSMENT_ID)).thenReturn(Optional.of(centralized));
         when(assessmentMemberRepository.findByAssessmentIdAndUserId(ASSESSMENT_ID, TEACHER_ID)).thenReturn(Optional.of(
-            new AssessmentMember(ASSESSMENT_ID, TEACHER_ID, AssessmentMemberRole.AUTHOR, Instant.now(), TEACHER_ID)));
+            AssessmentMember.builder()
+                    .assessmentId(ASSESSMENT_ID)
+                    .userId(TEACHER_ID)
+                    .role(AssessmentMemberRole.AUTHOR)
+                    .grantedAt(Instant.now())
+                    .grantedBy(TEACHER_ID)
+                    .build()));
 
         assertThatThrownBy(() -> useCase.execute(questionsCommand()))
             .isInstanceOf(ForbiddenException.class)
@@ -294,7 +306,7 @@ class CreateClassTestPaperTests {
     private Question question() {
         Question question = new Question();
         question.setId(QUESTION_ID);
-        question.setCreatedBy(TEACHER_ID);
+        question.setCreatedBy(TEACHER_ID.toString());
         question.setSharing(QuestionSharing.SCHOOL_SHARED);
         question.setPreparationTimeSeconds(30);
         question.setMaxResponseSeconds(60);

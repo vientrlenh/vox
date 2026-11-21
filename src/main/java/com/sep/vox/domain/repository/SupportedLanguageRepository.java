@@ -20,7 +20,7 @@ public interface SupportedLanguageRepository {
     SupportedLanguage save(SupportedLanguage supportedLanguage);
     int updateMutableFields(UUID id, String code, boolean codeProvided, String name, boolean nameProvided,
             String description, boolean descriptionProvided, Boolean isActive, boolean isActiveProvided,
-            Instant updatedAt, UUID updatedBy);
+            Instant updatedAt, String updatedBy);
     long count();
     boolean existsById(UUID id);
     boolean existsByIdAndIsActive(UUID id, boolean isActive);

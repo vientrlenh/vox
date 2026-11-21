@@ -140,15 +140,13 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
         clearExistingPaperContent(paper, currentUserId);
 
         if (input.blueprintId() != null) {
-            switchToExistingBlueprint(input, assessment, paper, currentUserId, now);
+            switchToExistingBlueprint(input, assessment, paper, currentUserId);
         } else {
             // Gỡ blueprint: để trống hoàn toàn, không tạo blueprint ẩn nào — bài trở về chế độ câu hỏi trực tiếp tự do.
             assessment.setBlueprintId(null);
             assessment.setBlueprintVersionId(null);
         }
 
-        assessment.setUpdatedAt(now);
-        assessment.setUpdatedBy(currentUserId);
         Assessment saved = assessmentRepository.save(assessment);
         recalculateAssessmentTimeDurationService.recalculate(assessment.getId());
         return AssessmentDtoMapper.toDto(saved);
@@ -191,8 +189,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
             ChangeClassTestBlueprintCommand input,
             Assessment assessment,
             AssessmentPaper paper,
-            UUID currentUserId,
-            Instant now) {
+            UUID currentUserId) {
         AssessmentBlueprint blueprint = assessmentBlueprintRepository.findById(input.blueprintId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint"));
         if (!blueprint.getSchoolId().equals(assessment.getSchoolId())) {
@@ -225,44 +222,38 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
             List<AssessmentBlueprintSlot> slots = slotsBySectionId.getOrDefault(section.getId(), List.of()).stream()
                 .sorted(Comparator.comparingInt(slot -> slot.getOrder()))
                 .toList();
-            AssessmentPaperSection paperSection = assessmentPaperSectionRepository.save(new AssessmentPaperSection(
-                paper.getId(),
-                section.getOrder(),
-                section.getTitle(),
-                section.getInstruction(),
-                section.getSectionTimeLimitSeconds(),
-                section.getSectionWeight(),
-                now,
-                now,
-                currentUserId,
-                currentUserId
-            ));
+            AssessmentPaperSection paperSection = assessmentPaperSectionRepository.save(AssessmentPaperSection.builder()
+                .paperId(paper.getId())
+                .order(section.getOrder())
+                .title(section.getTitle())
+                .instruction(section.getInstruction())
+                .sectionTimeLimitSeconds(section.getSectionTimeLimitSeconds())
+                .weight(section.getSectionWeight())
+                .build());
             for (AssessmentBlueprintSlot slot : slots) {
                 UUID questionId = slot.getSlotType() == AssessmentBlueprintSlotType.FIXED ? slot.getFixedQuestionId() : null;
                 if (questionId != null) {
                     Question fixedQuestion = questionRepository.findById(questionId)
                         .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi cố định trong blueprint"));
                     if (fixedQuestion.getStatus() != QuestionStatus.PUBLISHED) {
-                        // Câu hỏi fixed đã bị archived sau khi blueprint publish — để trống ô này, CHAIR tự chọn câu khác qua picker.
-                        assessmentPaperItemRepository.save(new com.sep.vox.domain.model.assessment.AssessmentPaperItem(
-                            null,
-                            paperSection.getId(),
-                            paper.getId(),
-                            null,
-                            slot.getOrder(),
-                            slot.getWeight()
-                        ));
+                        // The fixed question was archived after the blueprint was published: leave this slot empty, the CHAIR picks another question through the picker.
+                        assessmentPaperItemRepository.save(AssessmentPaperItem.builder()
+                            .sectionId(paperSection.getId())
+                            .paperId(paper.getId())
+                            .order(slot.getOrder())
+                            .weight(slot.getWeight())
+                            .build());
                         continue;
                     }
                 }
-                AssessmentPaperItem item = new com.sep.vox.domain.model.assessment.AssessmentPaperItem(
-                    slot.getId(),
-                    paperSection.getId(),
-                    paper.getId(),
-                    questionId,
-                    slot.getOrder(),
-                    slot.getWeight()
-                );
+                AssessmentPaperItem item = AssessmentPaperItem.builder()
+                    .blueprintSlotId(slot.getId())
+                    .sectionId(paperSection.getId())
+                    .paperId(paper.getId())
+                    .questionId(questionId)
+                    .order(slot.getOrder())
+                    .weight(slot.getWeight())
+                    .build();
                 assessmentPaperItemRepository.save(item);
                 if (questionId != null) {
                     assessmentQuestionSecureLockService.lockQuestionForAssessment(

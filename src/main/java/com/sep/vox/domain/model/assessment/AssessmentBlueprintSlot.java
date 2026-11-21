@@ -1,75 +1,23 @@
 package com.sep.vox.domain.model.assessment;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.UUID;
 
+import com.sep.vox.domain.model.BaseModel;
 import com.sep.vox.domain.valueobject.QuestionSelectionSpec;
 
-public class AssessmentBlueprintSlot {
-    private UUID id;
+public class AssessmentBlueprintSlot extends BaseModel {
     private UUID sectionId;
     private UUID blueprintVersionId;
     private int order;
     private BigDecimal weight;
-    private Integer prepTimeSecondsOverride; // đè default
+    private Integer prepTimeSecondsOverride; // overrides the default
     private Integer responseTimeSecondsOverride;
-    private AssessmentBlueprintSlotType slotType; 
-    private UUID fixedQuestionId; // set khi FIXED
-    private QuestionSelectionSpec selectionSpec; // set khi SELECTION
-    private Instant createdAt;
-    private Instant updatedAt;
-    private UUID createdBy;
-    private UUID updatedBy;
+    private AssessmentBlueprintSlotType slotType;
+    private UUID fixedQuestionId; // set when FIXED
+    private QuestionSelectionSpec selectionSpec; // set when SELECTION
 
     public AssessmentBlueprintSlot() {}
-
-    public AssessmentBlueprintSlot(UUID id, UUID sectionId, UUID blueprintVersionId, int order, BigDecimal weight,
-            Integer prepTimeSecondsOverride, Integer responseTimeSecondsOverride, AssessmentBlueprintSlotType slotType,
-            UUID fixedQuestionId, QuestionSelectionSpec selectionSpec, Instant createdAt,
-            Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.id = id;
-        this.sectionId = sectionId;
-        this.blueprintVersionId = blueprintVersionId;
-        this.order = order;
-        this.weight = weight;
-        this.prepTimeSecondsOverride = prepTimeSecondsOverride;
-        this.responseTimeSecondsOverride = responseTimeSecondsOverride;
-        this.slotType = slotType;
-        this.fixedQuestionId = fixedQuestionId;
-        this.selectionSpec = selectionSpec;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public AssessmentBlueprintSlot(UUID sectionId, UUID blueprintVersionId, int order, BigDecimal weight,
-            Integer prepTimeSecondsOverride, Integer responseTimeSecondsOverride, AssessmentBlueprintSlotType slotType,
-            UUID fixedQuestionId, QuestionSelectionSpec selectionSpec, Instant createdAt,
-            Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.sectionId = sectionId;
-        this.blueprintVersionId = blueprintVersionId;
-        this.order = order;
-        this.weight = weight;
-        this.prepTimeSecondsOverride = prepTimeSecondsOverride;
-        this.responseTimeSecondsOverride = responseTimeSecondsOverride;
-        this.slotType = slotType;
-        this.fixedQuestionId = fixedQuestionId;
-        this.selectionSpec = selectionSpec;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
 
     public UUID getSectionId() {
         return sectionId;
@@ -143,37 +91,64 @@ public class AssessmentBlueprintSlot {
         this.selectionSpec = selectionSpec;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
+    public static class Builder extends BaseModel.Builder<AssessmentBlueprintSlot, Builder> {
 
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
+        private Builder() {
+            super(new AssessmentBlueprintSlot());
+        }
 
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
+        @Override
+        protected Builder self() {
+            return this;
+        }
 
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
+        public Builder sectionId(UUID sectionId) {
+            target.sectionId = sectionId;
+            return this;
+        }
 
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
+        public Builder blueprintVersionId(UUID blueprintVersionId) {
+            target.blueprintVersionId = blueprintVersionId;
+            return this;
+        }
 
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
+        public Builder order(int order) {
+            target.order = order;
+            return this;
+        }
 
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
-    }
+        public Builder weight(BigDecimal weight) {
+            target.weight = weight;
+            return this;
+        }
 
-    
+        public Builder prepTimeSecondsOverride(Integer prepTimeSecondsOverride) {
+            target.prepTimeSecondsOverride = prepTimeSecondsOverride;
+            return this;
+        }
+
+        public Builder responseTimeSecondsOverride(Integer responseTimeSecondsOverride) {
+            target.responseTimeSecondsOverride = responseTimeSecondsOverride;
+            return this;
+        }
+
+        public Builder slotType(AssessmentBlueprintSlotType slotType) {
+            target.slotType = slotType;
+            return this;
+        }
+
+        public Builder fixedQuestionId(UUID fixedQuestionId) {
+            target.fixedQuestionId = fixedQuestionId;
+            return this;
+        }
+
+        public Builder selectionSpec(QuestionSelectionSpec selectionSpec) {
+            target.selectionSpec = selectionSpec;
+            return this;
+        }
+    }
 }

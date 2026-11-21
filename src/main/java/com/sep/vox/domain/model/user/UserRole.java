@@ -11,19 +11,6 @@ public class UserRole {
 
     public UserRole() {}
 
-    public UserRole(UUID id, UUID userId, UUID roleId, Instant createdAt) {
-        this.id = id;
-        this.userId = userId;
-        this.roleId = roleId;
-        this.createdAt = createdAt;
-    }
-
-    public UserRole(UUID userId, UUID roleId, Instant createdAt) {
-        this.userId = userId;
-        this.roleId = roleId;
-        this.createdAt = createdAt;
-    }
-
     public UUID getId() {
         return id;
     }
@@ -56,5 +43,38 @@ public class UserRole {
         this.createdAt = createdAt;
     }
 
-    
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private final UserRole target = new UserRole();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder userId(UUID userId) {
+            target.userId = userId;
+            return this;
+        }
+
+        public Builder roleId(UUID roleId) {
+            target.roleId = roleId;
+            return this;
+        }
+
+        public Builder createdAt(Instant createdAt) {
+            target.createdAt = createdAt;
+            return this;
+        }
+
+        public UserRole build() {
+            return target;
+        }
+    }
 }

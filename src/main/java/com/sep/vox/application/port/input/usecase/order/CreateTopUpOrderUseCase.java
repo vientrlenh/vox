@@ -17,16 +17,16 @@ import com.sep.vox.domain.repository.OrderRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
 /**
- * Đặt đơn nạp thêm tiền vào số dư của trường. Thay cho BuyTokensUseCase cũ.
+ * Places an order to top up the school's balance. Replaces the old BuyTokensUseCase.
  *
- * <p>Khác biệt lớn nhất so với luồng cũ: use case này KHÔNG cấp gì cả. BuyTokensUseCase cộng hạn mức
- * NGAY và ghi thẳng một hóa đơn PAID mà không cổng nào xác nhận đã thu được tiền (chính comment của
- * nó nói vậy, nên nó phải tự cấm mọi phương thức online). Giờ đơn chỉ nằm PENDING cho tới khi tiền
- * về thật, nên không còn lý do gì phải phân biệt phương thức thanh toán ở khâu đặt đơn.
+ * <p>The biggest difference from the old flow: this use case grants NOTHING. BuyTokensUseCase added quota IMMEDIATELY and
+ * wrote a PAID invoice directly without any gateway confirming the money had been collected (its own comment said so,
+ * which is why it had to forbid every online method itself). Now the order just stays PENDING until the money really
+ * arrives, so there is no longer any reason to distinguish payment methods at the point of placing the order.
  *
- * <p>Đơn nạp thêm CỐ Ý không có order_items: nạp tiền không mua "món" nào để mà liệt kê, và ví
- * (school_balances.balance_vnd) là một con số duy nhất không chia theo QuotaType. Danh sách
- * TokenPurchaseItem cũ tồn tại chỉ vì hạn mức ngày xưa tách theo từng loại.
+ * <p>A top-up order DELIBERATELY has no order_items: topping up does not buy any "item" to list, and the wallet
+ * (school_balances.balance_vnd) is a single number that is not split by QuotaType. The old TokenPurchaseItem list existed
+ * only because quota used to be split per type.
  */
 @Service
 public class CreateTopUpOrderUseCase implements IUseCase<CreateTopUpOrderCommand, UUID> {
@@ -58,18 +58,18 @@ public class CreateTopUpOrderUseCase implements IUseCase<CreateTopUpOrderCommand
 
         BigDecimal creditAmountVnd = validatedCreditAmount(input.creditAmountVnd());
 
-        // Số dư chỉ bị tiêu khi hạn mức kèm gói đã cạn (OVERAGE_CHARGE), nên nạp lúc chưa có gói nào
-        // đang chạy là nạp tiền vào chỗ không tiêu được. Số dư VẪN sống xuyên qua các lần gia hạn --
-        // chặn ở đây là chặn nạp SỚM, không phải gắn tiền vào gói.
+        // The balance is only spent once the plan's quota is exhausted (OVERAGE_CHARGE), so topping up while no plan is running
+        // puts money where it cannot be spent. The balance DOES survive across renewals -- blocking here blocks topping up TOO
+        // EARLY, it does not attach the money to a plan.
         boolean hasActiveSubscription = schoolSubscriptionRepository.findActiveBySchoolId(schoolId).isPresent();
         if (!hasActiveSubscription) {
             throw new IllegalStateException("Trường chưa có gói đăng ký nào đang hoạt động để nạp thêm.");
         }
 
-        // Phí dịch vụ cộng THÊM vào số tiền phải trả, không trích ra khỏi số dư: trường xin 1.000.000đ
-        // thì nhận đúng 1.000.000đ vào ví và trả 1.200.000đ. Làm tròn phí về đồng nguyên vì cột là
-        // numeric(15,0) và cổng chỉ nhận số nguyên -- làm tròn ở đây chứ không để Postgres tự làm, để
-        // số ghi xuống đúng bằng số đã dùng để tính tổng.
+        // The service fee is ADDED to the amount to pay, not carved out of the balance: if the school asks for 1,000,000 it
+        // receives exactly 1,000,000 in the wallet and pays 1,200,000. The fee is rounded to whole dong because the column is
+        // numeric(15,0) and the gateway only accepts integers -- rounding here instead of letting Postgres do it, so the stored
+        // number equals the number used to compute the total.
         BigDecimal serviceFeeVnd = creditAmountVnd
             .multiply(serviceFeePort.serviceFeeRatio())
             .setScale(0, RoundingMode.HALF_UP);
@@ -84,11 +84,10 @@ public class CreateTopUpOrderUseCase implements IUseCase<CreateTopUpOrderCommand
             "Nạp thêm vào số dư",
             creditAmountVnd,
             serviceFeeVnd,
-            now,
-            userContextPort.getCurrentAuthenticatedUserId()
+            now
         ));
 
-        // Không ghi order_items: xem javadoc của class.
+        // No order_items are written: see the class Javadoc.
         return savedOrder.getId();
     }
 

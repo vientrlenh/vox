@@ -73,8 +73,6 @@ public class UpdateAssessmentPaperSectionUseCase implements IUseCase<UpdateAsses
         if (input.instruction() != null) {
             section.setInstruction(input.instruction());
         }
-        section.setUpdatedAt(now);
-        section.setUpdatedBy(currentUserId);
         AssessmentPaperSection saved = assessmentPaperSectionRepository.save(section);
 
         return AssessmentPaperSectionDtoMapper.toDto(saved);

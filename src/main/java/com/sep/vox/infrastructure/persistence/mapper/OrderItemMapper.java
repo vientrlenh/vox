@@ -2,34 +2,34 @@ package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.order.OrderItem;
 import com.sep.vox.domain.model.order.OrderItemType;
-import com.sep.vox.infrastructure.persistence.entity.OrderItemJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.order.OrderItemJpaEntity;
 
 public final class OrderItemMapper {
 
     private OrderItemMapper() {}
 
     public static OrderItem toDomain(OrderItemJpaEntity jpa) {
-        return new OrderItem(
-            jpa.getId(),
-            jpa.getOrderId(),
-            fromString(jpa.getType()),
-            jpa.getItemId(),
-            jpa.getUnitPriceVnd(),
-            jpa.getAmountVnd(),
-            jpa.getQuantity()
-        );
+        return OrderItem.builder()
+            .id(jpa.getId())
+            .orderId(jpa.getOrderId())
+            .type(fromString(jpa.getType()))
+            .itemId(jpa.getItemId())
+            .unitPriceVnd(jpa.getUnitPriceVnd())
+            .amountVnd(jpa.getAmountVnd())
+            .quantity(jpa.getQuantity())
+            .build();
     }
 
     public static OrderItemJpaEntity toJpa(OrderItem domain) {
-        return new OrderItemJpaEntity(
-            domain.getId(),
-            domain.getOrderId(),
-            valueOf(domain.getType()),
-            domain.getItemId(),
-            domain.getUnitPriceVnd(),
-            domain.getAmountVnd(),
-            domain.getQuantity()
-        );
+        return OrderItemJpaEntity.builder()
+            .id(domain.getId())
+            .orderId(domain.getOrderId())
+            .type(valueOf(domain.getType()))
+            .itemId(domain.getItemId())
+            .unitPriceVnd(domain.getUnitPriceVnd())
+            .amountVnd(domain.getAmountVnd())
+            .quantity(domain.getQuantity())
+            .build();
     }
 
     private static OrderItemType fromString(String type) {

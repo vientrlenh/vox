@@ -133,7 +133,14 @@ class AssessmentGraphQlTests {
     void assessment_members_should_return_role_enum_and_granted_at_date_time() {
         when(viewAssessmentDetailsUseCase.execute(any())).thenReturn(assessment());
         when(assessmentMemberRepository.findByAssessmentIdIn(any())).thenReturn(List.of(
-            new AssessmentMember(UUID.randomUUID(), ASSESSMENT_ID, UUID.randomUUID(), AssessmentMemberRole.CHAIR, CREATED_AT, null)));
+            AssessmentMember.builder()
+                    .id(UUID.randomUUID())
+                    .assessmentId(ASSESSMENT_ID)
+                    .userId(UUID.randomUUID())
+                    .role(AssessmentMemberRole.CHAIR)
+                    .grantedAt(CREATED_AT)
+                    .grantedBy(null)
+                    .build()));
 
         graphQlTester.document("{ assessment(id: \"%s\") { members { role grantedAt } } }".formatted(ASSESSMENT_ID)).execute()
             .errors().verify()
@@ -163,8 +170,15 @@ class AssessmentGraphQlTests {
     void assessment_secure_pool_should_return_enums_and_date_time_values() {
         when(viewAssessmentDetailsUseCase.execute(any())).thenReturn(assessment());
         when(assessmentSecurePoolRepository.findByAssessmentIdIn(any())).thenReturn(List.of(
-            new AssessmentSecurePool(UUID.randomUUID(), ASSESSMENT_ID, AssessmentSecurePoolStatus.SEALED,
-                AssessmentSecurePoolReleaseMode.AUTO_AFTER_CLOSE, OPEN_AT, null, null, CREATED_AT, null, null, null)));
+            AssessmentSecurePool.builder()
+                    .id(UUID.randomUUID())
+                    .assessmentId(ASSESSMENT_ID)
+                    .status(AssessmentSecurePoolStatus.SEALED)
+                    .releaseMode(AssessmentSecurePoolReleaseMode.AUTO_AFTER_CLOSE)
+                    .embargoUntil(OPEN_AT)
+                    .releasedAt(null)
+                    .releasedBy(null)
+                    .build()));
 
         graphQlTester.document("""
             { assessment(id: "%s") { securePool { status releaseMode embargoUntil releasedAt } } }""".formatted(ASSESSMENT_ID)).execute()
@@ -216,6 +230,7 @@ class AssessmentGraphQlTests {
     }
 
     private AssessmentPaper paper(String code, AssessmentPaperStatus status) {
-        return new AssessmentPaper(UUID.randomUUID(), ASSESSMENT_ID, null, code, 1, status, null, CREATED_AT, null, null, null);
+        return AssessmentPaper.builder().id(UUID.randomUUID()).assessmentId(ASSESSMENT_ID).code(code).variant(1)
+            .status(status).createdAt(CREATED_AT).build();
     }
 }

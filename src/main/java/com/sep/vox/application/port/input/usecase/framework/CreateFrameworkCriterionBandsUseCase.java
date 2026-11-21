@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -15,7 +14,6 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateFrameworkCriterionBandsCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.framework.FrameworkCriterion;
 import com.sep.vox.domain.model.framework.FrameworkCriterionBand;
 import com.sep.vox.domain.model.framework.FrameworkResultBand;
@@ -34,26 +32,21 @@ public class CreateFrameworkCriterionBandsUseCase
     private final FrameworkCriterionRepository frameworkCriterionRepository;
     private final FrameworkCriterionBandRepository frameworkCriterionBandRepository;
     private final FrameworkResultBandRepository frameworkResultBandRepository;
-    private final UserContextPort userContextPort;
 
     public CreateFrameworkCriterionBandsUseCase(
             FrameworkVersionRepository frameworkVersionRepository,
             FrameworkCriterionRepository frameworkCriterionRepository,
             FrameworkCriterionBandRepository frameworkCriterionBandRepository,
-            FrameworkResultBandRepository frameworkResultBandRepository,
-            UserContextPort userContextPort) {
+            FrameworkResultBandRepository frameworkResultBandRepository) {
         this.frameworkVersionRepository = frameworkVersionRepository;
         this.frameworkCriterionRepository = frameworkCriterionRepository;
         this.frameworkCriterionBandRepository = frameworkCriterionBandRepository;
         this.frameworkResultBandRepository = frameworkResultBandRepository;
-        this.userContextPort = userContextPort;
     }
 
     @Override
     @Transactional
     public List<UUID> execute(CreateFrameworkCriterionBandsCommand command) {
-        UUID userId = userContextPort.getCurrentAuthenticatedUserId();
-        Instant now = Instant.now();
 
         FrameworkVersion version = getVersion(command);
         FrameworkCriterion criterion = getCriterion(command);
@@ -77,13 +70,13 @@ public class CreateFrameworkCriterionBandsUseCase
 
         List<FrameworkCriterionBand> bandsToCreate = command.bands().stream().map(bandCmd -> {
             String safeCode = StringNormalization.normalizeCode(bandCmd.resultBandCode());
-            return new FrameworkCriterionBand(
-                    command.criterionId(),
-                    resultBandCodeToId.get(safeCode),
-                    StringNormalization.trimAndCollapseSpaces(bandCmd.descriptor()),
-                    bandCmd.positiveSignals(),
-                    bandCmd.negativeSignals(),
-                    now, now, userId, userId);
+            return FrameworkCriterionBand.builder()
+                .frameworkCriterionId(command.criterionId())
+                .frameworkResultBandId(resultBandCodeToId.get(safeCode))
+                .descriptor(StringNormalization.trimAndCollapseSpaces(bandCmd.descriptor()))
+                .positiveSignals(bandCmd.positiveSignals())
+                .negativeSignals(bandCmd.negativeSignals())
+                .build();
             }).collect(Collectors.toList());
 
         try {

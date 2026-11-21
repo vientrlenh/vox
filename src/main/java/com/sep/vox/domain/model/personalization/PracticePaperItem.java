@@ -15,23 +15,6 @@ public class PracticePaperItem {
     public PracticePaperItem() {
     }
 
-    public PracticePaperItem(
-            UUID id,
-            UUID practicePaperId,
-            UUID practiceQuestionId,
-            int slotOrder,
-            String targetCriterionCode,
-            String targetSubAttribute,
-            int targetDifficultyRank) {
-        this.id = id;
-        this.practicePaperId = practicePaperId;
-        this.practiceQuestionId = practiceQuestionId;
-        this.slotOrder = slotOrder;
-        this.targetCriterionCode = targetCriterionCode;
-        this.targetSubAttribute = targetSubAttribute;
-        this.targetDifficultyRank = targetDifficultyRank;
-    }
-
     public UUID getId() {
         return id;
     }
@@ -86,5 +69,57 @@ public class PracticePaperItem {
 
     public void setTargetDifficultyRank(int targetDifficultyRank) {
         this.targetDifficultyRank = targetDifficultyRank;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final PracticePaperItem target = new PracticePaperItem();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder practicePaperId(UUID practicePaperId) {
+            target.practicePaperId = practicePaperId;
+            return this;
+        }
+
+        public Builder practiceQuestionId(UUID practiceQuestionId) {
+            target.practiceQuestionId = practiceQuestionId;
+            return this;
+        }
+
+        public Builder slotOrder(int slotOrder) {
+            target.slotOrder = slotOrder;
+            return this;
+        }
+
+        public Builder targetCriterionCode(String targetCriterionCode) {
+            target.targetCriterionCode = targetCriterionCode;
+            return this;
+        }
+
+        public Builder targetSubAttribute(String targetSubAttribute) {
+            target.targetSubAttribute = targetSubAttribute;
+            return this;
+        }
+
+        public Builder targetDifficultyRank(int targetDifficultyRank) {
+            target.targetDifficultyRank = targetDifficultyRank;
+            return this;
+        }
+
+        public PracticePaperItem build() {
+            return target;
+        }
+
     }
 }

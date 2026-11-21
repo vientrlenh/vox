@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.model.personalization.InterestQuizSeedItem;
 import com.sep.vox.domain.repository.InterestQuizItemRepository;
-import com.sep.vox.infrastructure.persistence.entity.InterestQuizItemJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.personalization.InterestQuizItemJpaEntity;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataInterestQuizItemRepository;
 
 @Repository
@@ -61,14 +61,14 @@ public class InterestQuizItemRepositoryImpl
         }
         Instant now = Instant.now();
         repository.saveAll(items.stream()
-            .map(item -> new InterestQuizItemJpaEntity(
-                jsonSerialization.toJson(item.getDimensionPerStatement()),
-                jsonSerialization.toJson(item.getStatements()),
-                item.getNote(),
-                true,
-                null,
-                now
-            ))
+            .map(item -> InterestQuizItemJpaEntity.builder()
+                    .dimensionsJson(jsonSerialization.toJson(item.getDimensionPerStatement()))
+                    .statementsJson(jsonSerialization.toJson(item.getStatements()))
+                    .desirabilityNote(item.getNote())
+                    .active(true)
+                    .studentId(null)
+                    .createdAt(now)
+                    .build())
             .toList());
     }
 
@@ -76,24 +76,24 @@ public class InterestQuizItemRepositoryImpl
     public void saveGeneratedForStudent(UUID studentId, List<InterestQuizSeedItem> items) {
         Instant now = Instant.now();
         repository.saveAll(items.stream()
-            .map(item -> new InterestQuizItemJpaEntity(
-                jsonSerialization.toJson(item.getDimensionPerStatement()),
-                jsonSerialization.toJson(item.getStatements()),
-                item.getNote(),
-                true,
-                studentId,
-                now
-            ))
+            .map(item -> InterestQuizItemJpaEntity.builder()
+                    .dimensionsJson(jsonSerialization.toJson(item.getDimensionPerStatement()))
+                    .statementsJson(jsonSerialization.toJson(item.getStatements()))
+                    .desirabilityNote(item.getNote())
+                    .active(true)
+                    .studentId(studentId)
+                    .createdAt(now)
+                    .build())
             .toList());
     }
 
     private InterestQuizSeedItem toDomain(InterestQuizItemJpaEntity entity) {
-        return new InterestQuizSeedItem(
-            entity.getId(),
-            jsonSerialization.toStringList(entity.getDimensionsJson()),
-            jsonSerialization.toStringList(entity.getStatementsJson()),
-            entity.getDesirabilityNote()
-        );
+        return InterestQuizSeedItem.builder()
+                .id(entity.getId())
+                .dimensionPerStatement(jsonSerialization.toStringList(entity.getDimensionsJson()))
+                .statements(jsonSerialization.toStringList(entity.getStatementsJson()))
+                .note(entity.getDesirabilityNote())
+                .build();
     }
 
     @Override

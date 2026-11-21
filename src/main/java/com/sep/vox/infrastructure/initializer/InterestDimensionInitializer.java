@@ -72,7 +72,16 @@ public class InterestDimensionInitializer implements ApplicationRunner {
     private static InterestDimension dimension(
             String code, String label, String description, boolean quizEligible, int displayOrder) {
         Instant now = Instant.now();
-        return new InterestDimension(code, label, description, true, quizEligible, displayOrder, now, now);
+        return InterestDimension.builder()
+                .code(code)
+                .label(label)
+                .description(description)
+                .active(true)
+                .quizEligible(quizEligible)
+                .displayOrder(displayOrder)
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
     }
 
     private final InterestDimensionRepository interestDimensionRepository;

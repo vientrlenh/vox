@@ -13,7 +13,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.SupportedLanguageJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.supportedlanguage.SupportedLanguageJpaEntity;
 
 public interface SpringDataSupportedLanguageRepository extends JpaRepository<SupportedLanguageJpaEntity, UUID>{
     Optional<SupportedLanguageJpaEntity> findByCode(String code);
@@ -60,7 +60,7 @@ public interface SpringDataSupportedLanguageRepository extends JpaRepository<Sup
         @Param("isActive") Boolean isActive,
         @Param("isActiveProvided") boolean isActiveProvided,
         @Param("updatedAt") Instant updatedAt,
-        @Param("updatedBy") UUID updatedBy
+        @Param("updatedBy") String updatedBy
     );
     List<SupportedLanguageJpaEntity> findByIdIn(Collection<UUID> ids);
 }

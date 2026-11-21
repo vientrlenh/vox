@@ -66,7 +66,7 @@ public class AcceptQuestionBankImportUseCase implements IUseCase<AcceptQuestionB
         if (session.getType() != ImportType.QUESTION_BANK) {
             throw new IllegalArgumentException("Phiên import không phải là loại ngân hàng câu hỏi");
         }
-        if (!Objects.equals(session.getCreatedBy(), currentUserId)) {
+        if (!session.isCreatedBy(currentUserId)) {
             throw new IllegalArgumentException("Phiên import không thuộc người dùng hiện tại");
         }
         if (session.getStatus() != ImportSessionStatus.PREVIEWED) {
@@ -84,7 +84,7 @@ public class AcceptQuestionBankImportUseCase implements IUseCase<AcceptQuestionB
             ImportType.QUESTION_BANK.name(),
             jsonSerializationPort.toJson(input.confirmedMapping()),
             now,
-            currentUserId
+            currentUserId.toString()
         );
         if (queued == 0) {
             throw new IllegalStateException("Phiên import không ở trạng thái cho accept hoặc đã hết hạn");

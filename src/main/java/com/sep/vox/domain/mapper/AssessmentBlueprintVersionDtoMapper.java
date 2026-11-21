@@ -23,8 +23,8 @@ public final class AssessmentBlueprintVersionDtoMapper {
             domain.getEffectiveTo(),
             domain.getCreatedAt(),
             domain.getUpdatedAt(),
-            domain.getCreatedBy(),
-            domain.getUpdatedBy()
+            domain.createdByUserId().orElse(null),
+            domain.updatedByUserId().orElse(null)
         );
     }
 

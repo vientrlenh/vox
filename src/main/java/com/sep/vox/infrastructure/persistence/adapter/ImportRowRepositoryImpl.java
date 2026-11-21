@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.ImportRowJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.importfile.ImportRowJpaEntity;
 import java.util.List;
 import java.util.UUID;
 

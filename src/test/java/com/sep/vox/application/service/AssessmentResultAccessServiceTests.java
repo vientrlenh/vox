@@ -81,12 +81,31 @@ class AssessmentResultAccessServiceTests {
             userContextPort
         );
 
-        AssessmentSession session = new AssessmentSession(SESSION_ID, ASSESSMENT_ID, CANDIDATE_ID, UUID.randomUUID(),
-            Instant.now(), Instant.now(), AssessmentSessionStatus.GRADED, false, null);
+        AssessmentSession session = AssessmentSession.builder()
+                .id(SESSION_ID)
+                .assessmentId(ASSESSMENT_ID)
+                .candidateId(CANDIDATE_ID)
+                .paperId(UUID.randomUUID())
+                .startedAt(Instant.now())
+                .submittedAt(Instant.now())
+                .status(AssessmentSessionStatus.GRADED)
+                .flagged(false)
+                .flagReason(null)
+                .build();
         when(assessmentSessionRepository.findById(SESSION_ID)).thenReturn(Optional.of(session));
-        when(assessmentCandidateRepository.findById(CANDIDATE_ID)).thenReturn(Optional.of(new AssessmentCandidate(
-            CANDIDATE_ID, ASSESSMENT_ID, STUDENT_ID, null, null, AssessmentCandidateStatus.ATTENDED,
-            Instant.now(), Instant.now(), null, null, null)));
+        when(assessmentCandidateRepository.findById(CANDIDATE_ID)).thenReturn(Optional.of(AssessmentCandidate.builder()
+                .id(CANDIDATE_ID)
+                .assessmentId(ASSESSMENT_ID)
+                .studentId(STUDENT_ID)
+                .assignedPaperId(null)
+                .scheduleId(null)
+                .status(AssessmentCandidateStatus.ATTENDED)
+                .assignedAt(Instant.now())
+                .updatedAt(Instant.now())
+                .blockedAt(null)
+                .assignedBy(null)
+                .updatedBy(null)
+                .build()));
         Assessment assessment = new Assessment();
         assessment.setId(ASSESSMENT_ID);
         assessment.setSchoolId(SCHOOL_ID);
@@ -188,10 +207,22 @@ class AssessmentResultAccessServiceTests {
     }
 
     private void givenResult(AssessmentCandidateResultStatus status) {
-        AssessmentCandidateResult result = new AssessmentCandidateResult(
-            UUID.randomUUID(), ASSESSMENT_ID, CANDIDATE_ID, SESSION_ID, UUID.randomUUID(), 1,
-            UUID.randomUUID(), UUID.randomUUID(), null, null,
-            new BigDecimal("7.00"), status, null, null, Instant.now(), Instant.now(), null, null);
+        AssessmentCandidateResult result = AssessmentCandidateResult.builder()
+                .id(UUID.randomUUID())
+                .assessmentId(ASSESSMENT_ID)
+                .candidateId(CANDIDATE_ID)
+                .sessionId(SESSION_ID)
+                .assessmentPolicyId(UUID.randomUUID())
+                .policyVersion(1)
+                .rubricVersionId(UUID.randomUUID())
+                .frameworkVersionId(UUID.randomUUID())
+                .targetFrameworkBandId(null)
+                .rubricResultBandId(null)
+                .totalScore(new BigDecimal("7.00"))
+                .status(status)
+                .releasedAt(null)
+                .finalizedAt(null)
+                .build();
         when(assessmentCandidateResultRepository.findBySessionId(SESSION_ID)).thenReturn(Optional.of(result));
     }
 }

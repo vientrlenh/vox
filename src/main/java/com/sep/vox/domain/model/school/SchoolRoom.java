@@ -1,55 +1,16 @@
 package com.sep.vox.domain.model.school;
 
-import java.time.Instant;
 import java.util.UUID;
+import com.sep.vox.domain.model.BaseModel;
 
-public class SchoolRoom {
-    private UUID id;
+public class SchoolRoom extends BaseModel {
     private UUID schoolId;
     private String code;
     private String name;
     private String description;
     private boolean isActive;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private UUID createdBy;
-    private UUID updatedBy;
 
-    public SchoolRoom() {}
-
-    public SchoolRoom(UUID id, UUID schoolId, String code, String name, String description, boolean isActive, Instant createdAt,
-            Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.id = id;
-        this.schoolId = schoolId;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.isActive = isActive;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public SchoolRoom(UUID schoolId, String code, String name, String description, boolean isActive, Instant createdAt,
-            Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.schoolId = schoolId;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.isActive = isActive;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
+    public SchoolRoom() {
     }
 
     public UUID getSchoolId() {
@@ -84,38 +45,6 @@ public class SchoolRoom {
         this.description = description;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
-
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
-    }
-
     public boolean isActive() {
         return isActive;
     }
@@ -124,5 +53,44 @@ public class SchoolRoom {
         this.isActive = isActive;
     }
 
-    
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder extends BaseModel.Builder<SchoolRoom, Builder> {
+
+        private Builder() {
+            super(new SchoolRoom());
+        }
+
+        @Override
+        protected Builder self() {
+            return this;
+        }
+
+        public Builder schoolId(UUID schoolId) {
+            target.schoolId = schoolId;
+            return this;
+        }
+
+        public Builder code(String code) {
+            target.code = code;
+            return this;
+        }
+
+        public Builder name(String name) {
+            target.name = name;
+            return this;
+        }
+
+        public Builder description(String description) {
+            target.description = description;
+            return this;
+        }
+
+        public Builder active(boolean isActive) {
+            target.isActive = isActive;
+            return this;
+        }
+    }
 }

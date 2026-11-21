@@ -53,26 +53,21 @@ public class CreateAssessmentBlueprintUseCase implements IUseCase<CreateAssessme
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
 
-        // Khối lớp là catalog dùng chung: chỉ cần tồn tại, không còn ràng buộc thuộc trường nào.
+        // Grade level is a shared catalog: it only has to exist, it no longer belongs to a school.
         if (command.gradeLevelId() != null
                 && gradeLevelRepository.findById(command.gradeLevelId()).isEmpty()) {
             throw new NotFoundException("Không tìm thấy khối lớp");
         }
 
-        Instant now = Instant.now();
-        AssessmentBlueprint blueprint = new AssessmentBlueprint(
-            currentSchoolId,
-            command.languageId(),
-            command.gradeLevelId(),
-            blueprintCodeOf(command.code()),
-            command.name(),
-            command.description(),
-            true,
-            now,
-            now,
-            currentUserId,
-            currentUserId
-        );
+        AssessmentBlueprint blueprint = AssessmentBlueprint.builder()
+            .schoolId(currentSchoolId)
+            .languageId(command.languageId())
+            .gradeLevelId(command.gradeLevelId())
+            .code(blueprintCodeOf(command.code()))
+            .name(command.name())
+            .description(command.description())
+            .active(true)
+            .build();
         return AssessmentBlueprintDtoMapper.toDto(assessmentBlueprintRepository.save(blueprint));
     }
 

@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
 import com.sep.vox.domain.model.subscription.SubscriptionPlan;
-import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -10,19 +9,18 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateSubscriptionPlanReplacementCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.subscription.SubscriptionPlanStatus;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 
 /**
- * Tạo một gói mới (DRAFT) rồi archive NGAY gói đang bán trỏ replacedByPlanId sang gói mới đó -- gộp
- * hai bước "tạo gói" + "ngừng bán, chọn gói thay thế" thành một, cho luồng "Tạo gói thay thế" trên
- * trang quản lý gói.
+ * Creates a new plan (DRAFT) and IMMEDIATELY archives the plan currently on sale, pointing its replacedByPlanId at the
+ * new plan -- merging the two steps "create a plan" + "stop selling, choose a replacement plan" into one, for the
+ * "Create replacement plan" flow on the plan management page.
  *
- * <p>KHÔNG kiểm SubscriptionPlanReplacementValidator ở đây: gói mới còn DRAFT, admin có thể còn sửa
- * hạn mức/thời lượng trước khi xuất bản. Điều khoản (chu kỳ/giá bằng đúng, hạn mức/thời lượng không
- * thấp hơn) được PublishSubscriptionPlanUseCase chốt lại đúng lúc gói này thật sự nhận vai trò thay
- * thế -- xem SubscriptionPlanReplacementValidator.requireCompatibleTerms.
+ * <p>Does NOT check SubscriptionPlanReplacementValidator here: the new plan is still DRAFT, and the admin may still edit
+ * the quota/duration before publishing. The terms (equal period/price, quota/duration not lower) are checked again by
+ * PublishSubscriptionPlanUseCase at the moment this plan really takes on the replacement role -- see
+ * SubscriptionPlanReplacementValidator.requireCompatibleTerms.
  */
 @Service
 public class CreateSubscriptionPlanReplacementUseCase
@@ -30,15 +28,12 @@ public class CreateSubscriptionPlanReplacementUseCase
 
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final CreateSubscriptionPlanUseCase createSubscriptionPlanUseCase;
-    private final UserContextPort userContextPort;
 
     public CreateSubscriptionPlanReplacementUseCase(
             SubscriptionPlanRepository subscriptionPlanRepository,
-            CreateSubscriptionPlanUseCase createSubscriptionPlanUseCase,
-            UserContextPort userContextPort) {
+            CreateSubscriptionPlanUseCase createSubscriptionPlanUseCase) {
         this.subscriptionPlanRepository = subscriptionPlanRepository;
         this.createSubscriptionPlanUseCase = createSubscriptionPlanUseCase;
-        this.userContextPort = userContextPort;
     }
 
     @Override
@@ -47,8 +42,8 @@ public class CreateSubscriptionPlanReplacementUseCase
         SubscriptionPlan replacedPlan = subscriptionPlanRepository.findById(input.replacedPlanId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
 
-        // Chỉ cho gói ĐANG BÁN: gói đã ARCHIVED cần sửa gói thay thế thì đi qua
-        // UpdateSubscriptionPlanReplacementUseCase, gói DRAFT thì chưa có ai dùng nên chưa cần thay.
+        // Only for plans ON SALE: an ARCHIVED plan that needs its replacement fixed goes through
+        // UpdateSubscriptionPlanReplacementUseCase, and a DRAFT plan has no users yet so it needs no replacement.
         if (replacedPlan.getStatus() != SubscriptionPlanStatus.ACTIVE) {
             throw new IllegalStateException("Chỉ tạo được gói thay thế cho gói đang bán.");
         }
@@ -57,8 +52,6 @@ public class CreateSubscriptionPlanReplacementUseCase
 
         replacedPlan.setReplacedByPlanId(newPlanId);
         replacedPlan.setStatus(SubscriptionPlanStatus.ARCHIVED);
-        replacedPlan.setUpdatedAt(Instant.now());
-        replacedPlan.setUpdatedBy(userContextPort.getCurrentAuthenticatedUserId());
         subscriptionPlanRepository.save(replacedPlan);
 
         return newPlanId;

@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.InterestQuizItemJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.personalization.InterestQuizItemJpaEntity;
 
 public interface SpringDataInterestQuizItemRepository
         extends JpaRepository<InterestQuizItemJpaEntity, UUID> {

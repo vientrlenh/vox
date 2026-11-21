@@ -79,7 +79,6 @@ public class UpdateSchoolUserUseCaseTests {
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).saveAndFlush(captor.capture());
         assertThat(captor.getValue().getFullName().value()).isEqualTo("Nguyen Van Updated");
-        assertThat(captor.getValue().getUpdatedBy()).isEqualTo(callerId);
     }
 
     @Test
@@ -310,14 +309,29 @@ public class UpdateSchoolUserUseCaseTests {
 
     private User user(UUID id, String phone) {
         Instant now = Instant.now();
-        return new User(id, new Email("user@school.edu.vn"), "hash",
-            new Phone(phone), new FullName("Nguyen Van A"), null,
-            new DateOfBirth(LocalDate.of(2005, 1, 15)), "123 Street", null,
-            UserStatus.ACTIVE, now, now, id, id);
+        return User.builder()
+            .id(id)
+            .email(new Email("user@school.edu.vn"))
+            .passwordHash("hash")
+            .phone(new Phone(phone))
+            .fullName(new FullName("Nguyen Van A"))
+            .dateOfBirth(new DateOfBirth(LocalDate.of(2005, 1, 15)))
+            .address("123 Street")
+            .status(UserStatus.ACTIVE)
+            .createdAt(now)
+            .updatedAt(now)
+            .createdBy(id.toString())
+            .updatedBy(id.toString())
+            .build();
     }
 
     private SchoolUser schoolUser(UUID userSchoolId, UUID userId) {
         Instant now = Instant.now();
-        return new SchoolUser(userSchoolId, userId, now, now.plus(36500, ChronoUnit.DAYS));
+        return SchoolUser.builder()
+            .schoolId(userSchoolId)
+            .userId(userId)
+            .startDate(now)
+            .endDate(now.plus(36500, ChronoUnit.DAYS))
+            .build();
     }
 }

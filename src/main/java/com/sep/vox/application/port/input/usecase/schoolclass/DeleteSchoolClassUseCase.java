@@ -85,8 +85,6 @@ public class DeleteSchoolClassUseCase implements IUseCase<DeleteSchoolClassComma
         Instant now = Instant.now();
         schoolClassUserRepository.deactivateBySchoolClassId(input.id(), now);
         schoolClass.setStatus(SchoolClassStatus.ARCHIVED);
-        schoolClass.setUpdatedAt(now);
-        schoolClass.setUpdatedBy(currentUserId);
         SchoolClass saved = schoolClassRepository.save(schoolClass);
         return new DeleteSchoolClassResponse(
             saved.getId(),

@@ -111,15 +111,15 @@ public class CreateSchoolRubricUseCase implements IUseCase<CreateSchoolRubricCom
         }
 
         // 5. Build thực thể Rubric gắn chặt schoolId
-        Rubric newRubric = new Rubric(
-                command.languageId(),
-                command.frameworkId(),
-                safeCode,
-                safeName,
-                safeDesc,
-                RubricOwnerType.SCHOOL,
-                command.schoolId()
-        );
+        Rubric newRubric = Rubric.builder()
+                .languageId(command.languageId())
+                .frameworkId(command.frameworkId())
+                .code(safeCode)
+                .name(safeName)
+                .description(safeDesc)
+                .ownerType(RubricOwnerType.SCHOOL)
+                .schoolId(command.schoolId())
+                .build();
 
         Rubric savedRubric = rubricRepository.save(newRubric);
         return savedRubric.getId();

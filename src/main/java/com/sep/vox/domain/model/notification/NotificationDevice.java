@@ -14,27 +14,6 @@ public class NotificationDevice {
 
     public NotificationDevice() {}
 
-    public NotificationDevice(UUID id, UUID userId, String deviceId, NotificationDevicePlatform platform, String installationId,
-            Instant createdAt, Instant lastSeenAt) {
-        this.id = id;
-        this.userId = userId;
-        this.deviceId = deviceId;
-        this.platform = platform;
-        this.installationId = installationId;
-        this.createdAt = createdAt;
-        this.lastSeenAt = lastSeenAt;
-    }
-
-    public NotificationDevice(UUID userId, String deviceId, NotificationDevicePlatform platform, String installationId,
-            Instant createdAt, Instant lastSeenAt) {
-        this.userId = userId;
-        this.deviceId = deviceId;
-        this.platform = platform;
-        this.installationId = installationId;
-        this.createdAt = createdAt;
-        this.lastSeenAt = lastSeenAt;
-    }
-
     public UUID getId() {
         return id;
     }
@@ -92,7 +71,65 @@ public class NotificationDevice {
     }
 
     public static NotificationDevice create(UUID userId, String deviceId, NotificationDevicePlatform platform, String installationId, Instant now) {
-        return new NotificationDevice(
-            userId, deviceId, platform, installationId, now, now);
+        return NotificationDevice.builder()
+                .userId(userId)
+                .deviceId(deviceId)
+                .platform(platform)
+                .installationId(installationId)
+                .createdAt(now)
+                .lastSeenAt(now)
+                .build();
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final NotificationDevice target = new NotificationDevice();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder userId(UUID userId) {
+            target.userId = userId;
+            return this;
+        }
+
+        public Builder deviceId(String deviceId) {
+            target.deviceId = deviceId;
+            return this;
+        }
+
+        public Builder platform(NotificationDevicePlatform platform) {
+            target.platform = platform;
+            return this;
+        }
+
+        public Builder installationId(String installationId) {
+            target.installationId = installationId;
+            return this;
+        }
+
+        public Builder createdAt(Instant createdAt) {
+            target.createdAt = createdAt;
+            return this;
+        }
+
+        public Builder lastSeenAt(Instant lastSeenAt) {
+            target.lastSeenAt = lastSeenAt;
+            return this;
+        }
+
+        public NotificationDevice build() {
+            return target;
+        }
+
     }
 }

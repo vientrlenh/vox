@@ -42,67 +42,6 @@ public class RegisterForm {
     public RegisterForm() {
     }
 
-    public RegisterForm(UUID id, UUID schoolDirectoryId, String schoolName, SchoolDomain schoolDomain,
-            String schoolDistrict, String schoolProvince, String schoolAddress, FullName contactFullName,
-            IdentityNumber identityNumber, Phone contactPhone, Email contactEmail, DateOfBirth dateOfBirth,
-            String contactAddress, PostalCode postalCode, String position, StudentCount studentCount,
-            RegisterFormVerificationMethod verificationMethod, Instant verifiedAt, String rejectedReason,
-            RegisterFormStatus status, Instant createdAt, Instant updatedAt, UUID reviewedBy) {
-        this.id = id;
-        this.schoolDirectoryId = schoolDirectoryId;
-        this.schoolName = schoolName;
-        this.schoolDomain = schoolDomain;
-        this.schoolDistrict = schoolDistrict;
-        this.schoolProvince = schoolProvince;
-        this.schoolAddress = schoolAddress;
-        this.contactFullName = contactFullName;
-        this.identityNumber = identityNumber;
-        this.contactPhone = contactPhone;
-        this.contactEmail = contactEmail;
-        this.dateOfBirth = dateOfBirth;
-        this.contactAddress = contactAddress;
-        this.postalCode = postalCode;
-        this.position = position;
-        this.studentCount = studentCount;
-        this.verificationMethod = verificationMethod;
-        this.verifiedAt = verifiedAt;
-        this.rejectedReason = rejectedReason;
-        this.status = status;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.reviewedBy = reviewedBy;
-    }
-
-    public RegisterForm(UUID schoolDirectoryId, String schoolName, SchoolDomain schoolDomain,
-            String schoolDistrict, String schoolProvince, String schoolAddress, FullName contactFullName,
-            IdentityNumber identityNumber, Phone contactPhone, Email contactEmail, DateOfBirth dateOfBirth,
-            String contactAddress, PostalCode postalCode, String position, StudentCount studentCount,
-            RegisterFormVerificationMethod verificationMethod, Instant verifiedAt, String rejectedReason,
-            RegisterFormStatus status, Instant createdAt, Instant updatedAt, UUID reviewedBy) {
-        this.schoolDirectoryId = schoolDirectoryId;
-        this.schoolName = schoolName;
-        this.schoolDomain = schoolDomain;
-        this.schoolDistrict = schoolDistrict;
-        this.schoolProvince = schoolProvince;
-        this.schoolAddress = schoolAddress;
-        this.contactFullName = contactFullName;
-        this.identityNumber = identityNumber;
-        this.contactPhone = contactPhone;
-        this.contactEmail = contactEmail;
-        this.dateOfBirth = dateOfBirth;
-        this.contactAddress = contactAddress;
-        this.postalCode = postalCode;
-        this.position = position;
-        this.studentCount = studentCount;
-        this.verificationMethod = verificationMethod;
-        this.verifiedAt = verifiedAt;
-        this.rejectedReason = rejectedReason;
-        this.status = status;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.reviewedBy = reviewedBy;
-    }
-
     public UUID getId() {
         return id;
     }
@@ -287,7 +226,6 @@ public class RegisterForm {
         this.reviewedBy = reviewedBy;
     }
 
-
     public static RegisterForm fromDirectoryWithDocuments(
         UUID schoolDirectoryId, 
         RegisterFormVerificationMethod verificationMethod, 
@@ -393,5 +331,135 @@ public class RegisterForm {
 
     private static <T> T require(T data) {
         return Objects.requireNonNull(data);
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private final RegisterForm target = new RegisterForm();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder schoolDirectoryId(UUID schoolDirectoryId) {
+            target.schoolDirectoryId = schoolDirectoryId;
+            return this;
+        }
+
+        public Builder schoolName(String schoolName) {
+            target.schoolName = schoolName;
+            return this;
+        }
+
+        public Builder schoolDomain(SchoolDomain schoolDomain) {
+            target.schoolDomain = schoolDomain;
+            return this;
+        }
+
+        public Builder schoolDistrict(String schoolDistrict) {
+            target.schoolDistrict = schoolDistrict;
+            return this;
+        }
+
+        public Builder schoolProvince(String schoolProvince) {
+            target.schoolProvince = schoolProvince;
+            return this;
+        }
+
+        public Builder schoolAddress(String schoolAddress) {
+            target.schoolAddress = schoolAddress;
+            return this;
+        }
+
+        public Builder contactFullName(FullName contactFullName) {
+            target.contactFullName = contactFullName;
+            return this;
+        }
+
+        public Builder identityNumber(IdentityNumber identityNumber) {
+            target.identityNumber = identityNumber;
+            return this;
+        }
+
+        public Builder contactPhone(Phone contactPhone) {
+            target.contactPhone = contactPhone;
+            return this;
+        }
+
+        public Builder contactEmail(Email contactEmail) {
+            target.contactEmail = contactEmail;
+            return this;
+        }
+
+        public Builder dateOfBirth(DateOfBirth dateOfBirth) {
+            target.dateOfBirth = dateOfBirth;
+            return this;
+        }
+
+        public Builder contactAddress(String contactAddress) {
+            target.contactAddress = contactAddress;
+            return this;
+        }
+
+        public Builder postalCode(PostalCode postalCode) {
+            target.postalCode = postalCode;
+            return this;
+        }
+
+        public Builder position(String position) {
+            target.position = position;
+            return this;
+        }
+
+        public Builder studentCount(StudentCount studentCount) {
+            target.studentCount = studentCount;
+            return this;
+        }
+
+        public Builder verificationMethod(RegisterFormVerificationMethod verificationMethod) {
+            target.verificationMethod = verificationMethod;
+            return this;
+        }
+
+        public Builder verifiedAt(Instant verifiedAt) {
+            target.verifiedAt = verifiedAt;
+            return this;
+        }
+
+        public Builder rejectedReason(String rejectedReason) {
+            target.rejectedReason = rejectedReason;
+            return this;
+        }
+
+        public Builder status(RegisterFormStatus status) {
+            target.status = status;
+            return this;
+        }
+
+        public Builder createdAt(Instant createdAt) {
+            target.createdAt = createdAt;
+            return this;
+        }
+
+        public Builder updatedAt(Instant updatedAt) {
+            target.updatedAt = updatedAt;
+            return this;
+        }
+
+        public Builder reviewedBy(UUID reviewedBy) {
+            target.reviewedBy = reviewedBy;
+            return this;
+        }
+
+        public RegisterForm build() {
+            return target;
+        }
     }
 }

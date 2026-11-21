@@ -1,7 +1,5 @@
 package com.sep.vox.infrastructure.initializer;
 
-import java.time.Instant;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
@@ -33,17 +31,12 @@ public class SupportedLanguageInitializer implements ApplicationRunner {
             LOGGER.info("Supported language already exist in database. Skip initialize");
             return;
         }
-        Instant now = Instant.now();
-        SupportedLanguage english = new SupportedLanguage(
-            new LanguageCode(ENGLISH_CODE), 
-            "Tiếng Anh", 
-            "Tiếng Anh hỗ trợ cho việc luyện thi", 
-            true, 
-            now, 
-            now, 
-            null, 
-            null
-        );
+        SupportedLanguage english = SupportedLanguage.builder()
+            .code(new LanguageCode(ENGLISH_CODE))
+            .name("Tiếng Anh")
+            .description("Tiếng Anh hỗ trợ cho việc luyện thi")
+            .active(true)
+            .build();
         supportedLanguageRepository.save(english);
         LOGGER.info("Supported language initialized successfully");
     }

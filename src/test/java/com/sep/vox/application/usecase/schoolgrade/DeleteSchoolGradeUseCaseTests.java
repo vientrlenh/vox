@@ -66,7 +66,13 @@ class DeleteSchoolGradeUseCaseTests {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)).thenReturn(true);
         when(schoolUserRepository.findByUserId(currentUserId))
-            .thenReturn(Optional.of(new SchoolUser(UUID.randomUUID(), schoolId, currentUserId, null, null)));
+            .thenReturn(Optional.of(SchoolUser.builder()
+                .id(UUID.randomUUID())
+                .schoolId(schoolId)
+                .userId(currentUserId)
+                .startDate(null)
+                .endDate(null)
+                .build()));
     }
 
     @Test
@@ -77,7 +83,7 @@ class DeleteSchoolGradeUseCaseTests {
 
         // Deactivates memberships + archives the classes that belong to the school year.
         verify(schoolClassUserRepository).deactivateByGradeId(eq(gradeId), any(Instant.class));
-        verify(schoolClassRepository).archiveByGradeId(eq(gradeId), any(Instant.class), eq(currentUserId));
+        verify(schoolClassRepository).archiveByGradeId(eq(gradeId), any(Instant.class), eq(currentUserId.toString()));
 
         // Archives the school year itself (soft delete), no hard delete.
         ArgumentCaptor<SchoolGrade> captor = ArgumentCaptor.forClass(SchoolGrade.class);
@@ -101,11 +107,21 @@ class DeleteSchoolGradeUseCaseTests {
 
     private SchoolGrade grade(SchoolGradeStatus status) {
         Instant now = Instant.now();
-        return new SchoolGrade(
-            gradeId, schoolId, gradeLevelId, "NH2024", "Năm học 2024", "desc",
-            LocalDate.of(2024, 9, 1), LocalDate.of(2025, 6, 30), status,
-            now, now, UUID.randomUUID(), UUID.randomUUID()
-        );
+        return SchoolGrade.builder()
+            .id(gradeId)
+            .schoolId(schoolId)
+            .gradeLevelId(gradeLevelId)
+            .code("NH2024")
+            .name("Năm học 2024")
+            .description("desc")
+            .startDate(LocalDate.of(2024, 9, 1))
+            .endDate(LocalDate.of(2025, 6, 30))
+            .status(status)
+            .createdAt(now)
+            .updatedAt(now)
+            .createdBy(UUID.randomUUID().toString())
+            .updatedBy(UUID.randomUUID().toString())
+            .build();
     }
 
 }

@@ -11,7 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.sep.vox.application.query.dto.CurrentPolicyInfo;
-import com.sep.vox.infrastructure.persistence.entity.AssessmentPolicyJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessmentpolicy.AssessmentPolicyJpaEntity;
 
 public interface SpringDataAssessmentPolicyRepository extends JpaRepository<AssessmentPolicyJpaEntity, UUID> {
     boolean existsByFrameworkVersionId(UUID frameworkVersionId);

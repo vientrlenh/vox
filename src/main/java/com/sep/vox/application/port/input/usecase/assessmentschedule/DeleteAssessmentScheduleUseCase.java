@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.usecase.assessmentschedule;
 
 import com.sep.vox.domain.model.assessment.AssessmentSchedule;
-import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -79,8 +78,6 @@ public class DeleteAssessmentScheduleUseCase implements IUseCase<DeleteAssessmen
         }
 
         schedule.setStatus(AssessmentScheduleStatus.DELETED);
-        schedule.setUpdatedAt(Instant.now());
-        schedule.setUpdatedBy(currentUserId);
         assessmentScheduleRepository.save(schedule);
         return schedule.getId();
     }

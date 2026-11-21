@@ -45,7 +45,13 @@ class ViewSchoolStudentsBySchoolUseCaseTests {
     @Test
     void execute_should_delegate_with_student_role_id() {
         UUID roleId = UUID.randomUUID();
-        Role studentRole = new Role(roleId, new RoleCode(SchoolRoleCodes.STUDENT), "Student", Instant.now(), Instant.now(), null, null);
+        Role studentRole = Role.builder()
+            .id(roleId)
+            .code(new RoleCode(SchoolRoleCodes.STUDENT))
+            .name("Student")
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
+            .build();
         PageResult<SchoolUserDto> page = new PageResult<SchoolUserDto>(List.of(), 1, 20, 0, 0);
 
         when(roleRepository.findByCode(SchoolRoleCodes.STUDENT)).thenReturn(Optional.of(studentRole));

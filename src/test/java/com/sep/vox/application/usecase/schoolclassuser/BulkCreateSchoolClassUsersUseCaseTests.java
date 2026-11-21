@@ -190,7 +190,14 @@ class BulkCreateSchoolClassUsersUseCaseTests {
         UUID existingUserId = UUID.randomUUID();
         mockValidContext(existingUserId);
         when(schoolClassUserRepository.findByUserIdInAndSchoolClassIdIn(anyCollection(), anyCollection()))
-            .thenReturn(List.of(new SchoolClassUser(existingUserId, classId, true, Instant.now(), null, currentUserId)));
+            .thenReturn(List.of(SchoolClassUser.builder()
+                .userId(existingUserId)
+                .schoolClassId(classId)
+                .active(true)
+                .joinedAt(Instant.now())
+                .leftAt(null)
+                .assignedBy(currentUserId)
+                .build()));
 
         BulkCreateSchoolClassUsersResponse response = useCase.execute(
             new BulkCreateSchoolClassUsersCommand(schoolId, classId, List.of(existingUserId)));
@@ -206,9 +213,15 @@ class BulkCreateSchoolClassUsersUseCaseTests {
         UUID returningUserId = UUID.randomUUID();
         UUID membershipId = UUID.randomUUID();
         mockValidContext(returningUserId);
-        SchoolClassUser leftMembership = new SchoolClassUser(
-            membershipId, returningUserId, classId, false, Instant.now().minus(5, ChronoUnit.DAYS),
-            Instant.now().minus(1, ChronoUnit.DAYS), UUID.randomUUID());
+        SchoolClassUser leftMembership = SchoolClassUser.builder()
+            .id(membershipId)
+            .userId(returningUserId)
+            .schoolClassId(classId)
+            .active(false)
+            .joinedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+            .leftAt(Instant.now().minus(1, ChronoUnit.DAYS))
+            .assignedBy(UUID.randomUUID())
+            .build();
         when(schoolClassUserRepository.findByUserIdInAndSchoolClassIdIn(anyCollection(), anyCollection()))
             .thenReturn(List.of(leftMembership));
         mockSaveAllEchoesInput();
@@ -375,6 +388,11 @@ class BulkCreateSchoolClassUsersUseCaseTests {
     }
 
     private SchoolUser activeSchoolUser(UUID userId, UUID schoolId) {
-        return new SchoolUser(schoolId, userId, Instant.now(), Instant.now());
+        return SchoolUser.builder()
+            .schoolId(schoolId)
+            .userId(userId)
+            .startDate(Instant.now())
+            .endDate(Instant.now())
+            .build();
     }
 }

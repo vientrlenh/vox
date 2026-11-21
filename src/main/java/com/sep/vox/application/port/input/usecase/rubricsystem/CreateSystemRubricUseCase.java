@@ -75,15 +75,15 @@ public class CreateSystemRubricUseCase implements IUseCase<CreateSystemRubricCom
         String safeDesc = command.description() != null ? StringNormalization.trimAndCollapseSpaces(command.description()) : null;
 
         // 3. TẠO RUBRIC SYSTEM (Vỏ bọc)
-        Rubric newRubric = new Rubric(
-                command.languageId(),
-                command.frameworkId(),
-                safeCode,
-                safeName,
-                safeDesc,
-                RubricOwnerType.SYSTEM,
-                null
-        );
+        Rubric newRubric = Rubric.builder()
+                .languageId(command.languageId())
+                .frameworkId(command.frameworkId())
+                .code(safeCode)
+                .name(safeName)
+                .description(safeDesc)
+                .ownerType(RubricOwnerType.SYSTEM)
+                .schoolId(null)
+                .build();
 
         Rubric savedRubric = rubricRepository.save(newRubric);
 

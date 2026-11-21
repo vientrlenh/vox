@@ -103,7 +103,7 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
         }
 
         User user = User.create(command.email(), command.phone(), command.fullName(),
-            command.dateOfBirth(), command.address(), null, callerId, now);
+            command.dateOfBirth(), command.address(), null);
 
         User savedUser;
         try {
@@ -112,7 +112,11 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
             throw new DuplicatedException("Email hoặc số điện thoại đã tồn tại");
         }
 
-        userRoleRepository.save(new UserRole(savedUser.getId(), role.getId(), now));
+        userRoleRepository.save(UserRole.builder()
+            .userId(savedUser.getId())
+            .roleId(role.getId())
+            .createdAt(now)
+            .build());
 
         if ("STUDENT".equals(command.roleCode())) {
             if (command.startDate() == null || command.endDate() == null) {
@@ -131,9 +135,9 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
             saveSchoolUser(SchoolUser.create(savedUser.getId(), command.schoolId(), startDate, null));
         }
 
-        // Ghi outbox trong cùng transaction với việc tạo user: user tồn tại thì event
-        // chắc chắn tồn tại. Token đặt mật khẩu do consumer sinh ngay trước khi gửi mail,
-        // để nó không nằm plaintext trong bảng outboxes lẫn trong topic Kafka.
+        // Write the outbox row in the same transaction as the user creation: if the user exists, the event exists.
+        // The consumer generates the password set-up token right before it sends the mail, so the token is never
+        // stored as plaintext in the outboxes table or in the Kafka topic.
         UserCreatedPayloadV1 event = new UserCreatedPayloadV1(
             savedUser.getId(),
             command.email(),

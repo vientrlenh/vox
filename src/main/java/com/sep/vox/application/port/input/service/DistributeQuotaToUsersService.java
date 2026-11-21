@@ -334,12 +334,17 @@ public class DistributeQuotaToUsersService {
             SchoolSubscriptionQuotaRecord pool, List<UUID> eligibleUserIds) {
         Map<UUID, SchoolSubscriptionQuotaUserAllocation> existing = fetchExistingAllocationsByUserId(subscriptionId, quotaType);
 
-        // Trả về ĐỦ mọi người đủ điều kiện, kể cả người chưa được cấp gì (allocation ZERO ảo, không
-        // ghi xuống DB): màn chia hạn mức phải hiện được cả người đang có 0 thì quản trị trường mới
-        // biết còn ai chưa chia.
+        // Return EVERY eligible person, including those who have been granted nothing (a virtual ZERO allocation, not written to
+        // the DB): the quota distribution screen must also show people who currently have 0 so that the school admin can see who
+        // has not been given a share yet.
         List<SchoolSubscriptionQuotaUserAllocationDto> allocationDtos = eligibleUserIds.stream()
-            .map(userId -> existing.getOrDefault(userId, new SchoolSubscriptionQuotaUserAllocation(
-                subscriptionId, quotaType, userId, BigDecimal.ZERO, BigDecimal.ZERO)))
+            .map(userId -> existing.getOrDefault(userId, SchoolSubscriptionQuotaUserAllocation.builder()
+                .schoolSubscriptionId(subscriptionId)
+                .quotaType(quotaType)
+                .userId(userId)
+                .allocatedAmountVnd(BigDecimal.ZERO)
+                .usedAmountVnd(BigDecimal.ZERO)
+                .build()))
             .map(SchoolSubscriptionQuotaUserAllocationDto::toDto)
             .toList();
 

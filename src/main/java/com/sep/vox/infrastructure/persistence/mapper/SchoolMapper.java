@@ -6,46 +6,46 @@ import com.sep.vox.domain.valueobject.Phone;
 import com.sep.vox.domain.valueobject.SchoolCode;
 import com.sep.vox.domain.valueobject.SchoolDomain;
 import com.sep.vox.domain.valueobject.StudentCount;
-import com.sep.vox.infrastructure.persistence.entity.SchoolJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolJpaEntity;
 
 public final class SchoolMapper {
     
     public static School toDomain(SchoolJpaEntity jpa) {
-        return new School(
-            jpa.getId(),
-            new SchoolCode(jpa.getCode()),
-            jpa.getName(),
-            jpa.getDescription(),
-            new Phone(jpa.getContactPhone()),
-            new Email(jpa.getContactEmail()),
-            new SchoolDomain(jpa.getDomain()),
-            jpa.getAddress(),
-            new StudentCount(jpa.getStudentCount()),
-            jpa.isActive(),
-            jpa.getCreatedAt(),
-            jpa.getUpdatedAt(),
-            jpa.getCreatedBy(),
-            jpa.getUpdatedBy()
-        );
+        return School.builder()
+            .id(jpa.getId())
+            .code(new SchoolCode(jpa.getCode()))
+            .name(jpa.getName())
+            .description(jpa.getDescription())
+            .contactPhone(new Phone(jpa.getContactPhone()))
+            .contactEmail(new Email(jpa.getContactEmail()))
+            .domain(new SchoolDomain(jpa.getDomain()))
+            .address(jpa.getAddress())
+            .studentCount(new StudentCount(jpa.getStudentCount()))
+            .active(jpa.isActive())
+            .createdAt(jpa.getCreatedAt())
+            .updatedAt(jpa.getUpdatedAt())
+            .createdBy(jpa.getCreatedBy())
+            .updatedBy(jpa.getUpdatedBy())
+            .build();
     }
 
     public static SchoolJpaEntity toJpa(School school) {
-        return new SchoolJpaEntity(
-            school.getId(), 
-            valueOf(school.getCode()), 
-            school.getName(), 
-            school.getDescription(), 
-            valueOf(school.getContactPhone()), 
-            valueOf(school.getContactEmail()), 
-            valueOf(school.getDomain()), 
-            school.getAddress(),
-            valueOf(school.getStudentCount()), 
-            school.isActive(), 
-            school.getCreatedAt(), 
-            school.getUpdatedAt(), 
-            school.getCreatedBy(), 
-            school.getUpdatedBy()
-        );
+        return SchoolJpaEntity.builder()
+            .id(school.getId())
+            .code(valueOf(school.getCode()))
+            .name(school.getName())
+            .description(school.getDescription())
+            .contactPhone(valueOf(school.getContactPhone()))
+            .contactEmail(valueOf(school.getContactEmail()))
+            .domain(valueOf(school.getDomain()))
+            .address(school.getAddress())
+            .studentCount(valueOf(school.getStudentCount()))
+            .isActive(school.isActive())
+            .createdAt(school.getCreatedAt())
+            .updatedAt(school.getUpdatedAt())
+            .createdBy(school.getCreatedBy())
+            .updatedBy(school.getUpdatedBy())
+            .build();
     }
 
     private static String valueOf(SchoolCode schoolCode) {

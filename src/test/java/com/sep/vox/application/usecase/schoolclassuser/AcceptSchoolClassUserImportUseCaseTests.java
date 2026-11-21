@@ -208,7 +208,12 @@ class AcceptSchoolClassUserImportUseCaseTests {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.findById(currentUserId)).thenReturn(Optional.of(user));
         when(schoolUserRepository.findByUserId(currentUserId))
-            .thenReturn(Optional.of(new SchoolUser(schoolId, currentUserId, Instant.now(), null)));
+            .thenReturn(Optional.of(SchoolUser.builder()
+                .schoolId(schoolId)
+                .userId(currentUserId)
+                .startDate(Instant.now())
+                .endDate(null)
+                .build()));
         School school = new School();
         school.setId(schoolId);
         school.setActive(schoolActive);
@@ -240,12 +245,31 @@ class AcceptSchoolClassUserImportUseCaseTests {
     }
 
     private static ImportSession buildSession(UUID id, UUID schoolId, ImportType type, ImportSessionStatus status, Instant expiresAt) {
-        return new ImportSession(
-            id, schoolId, type, "class-users.csv", "[]", "{}", null,
-            0L, 0L, 0L, 0L, 2L, null, status, null,
-            expiresAt, null, null, null, 0,
-            Instant.now(), Instant.now(),
-            UUID.randomUUID(), UUID.randomUUID()
-        );
+        return ImportSession.builder()
+            .id(id)
+            .schoolId(schoolId)
+            .type(type)
+            .fileName("class-users.csv")
+            .originalHeadersJson("[]")
+            .suggestedMappingJson("{}")
+            .confirmedMappingJson(null)
+            .validRows(0L)
+            .invalidRows(0L)
+            .importedRows(0L)
+            .skippedRows(0L)
+            .totalRows(2L)
+            .failureReason(null)
+            .status(status)
+            .importedEntityId(null)
+            .expiresAt(expiresAt)
+            .claimedAt(null)
+            .claimedBy(null)
+            .leaseExpiresAt(null)
+            .attempts(0)
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
+            .createdBy(UUID.randomUUID().toString())
+            .updatedBy(UUID.randomUUID().toString())
+            .build();
     }
 }

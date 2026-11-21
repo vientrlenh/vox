@@ -6,35 +6,35 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * MỘT LẦN THỬ thanh toán của một Order -- sinh ra ngay lúc phát link (PENDING), rồi chuyển sang
- * PAID/FAILED khi cổng báo về hoặc khi mình chủ động hỏi lại.
+ * ONE PAYMENT ATTEMPT of an Order -- created the moment the link is issued (PENDING), then moved to PAID/FAILED when
+ * the gateway reports back or when we actively ask again.
  *
- * <p>Một Order có NHIỀU PaymentRecord (trả hụt rồi trả lại), nhưng tối đa MỘT dòng PAID
- * (uq_payment_records_one_paid_per_order) và tối đa MỘT dòng PENDING
- * (uq_payment_records_one_pending_per_order). Ràng buộc PENDING là thứ ép đúng thứ tự: muốn phát
- * link mới thì phải chốt lần thử cũ trước, tức là phải hỏi cổng xem nó đã trả tiền chưa -- không có
- * nó thì trường bấm "thanh toán lại" nhiều lần và trả tiền hai lần cho một đơn.
+ * <p>An Order has MANY PaymentRecords (a failed payment followed by a retry), but at most ONE PAID row
+ * (uq_payment_records_one_paid_per_order) and at most ONE PENDING row (uq_payment_records_one_pending_per_order). The
+ * PENDING constraint is what enforces the right order of events: to issue a new link the old attempt must be settled
+ * first, which means asking the gateway whether it was paid -- without it a school could press "pay again" several
+ * times and pay twice for one order.
  *
- * <p>{@code providerOrderRef} là KHÓA ĐỐI SOÁT với cổng và KHÔNG BAO GIỜ dùng lại: cả hai cổng đều
- * bắt mã đơn duy nhất phía họ (PayOS trả lỗi "Đơn thanh toán đã tồn tại"; SePay yêu cầu
- * {@code order_invoice_number} không trùng), nên mỗi lần thử phải mang một mã mới.
+ * <p>{@code providerOrderRef} is the RECONCILIATION KEY with the gateway and is NEVER reused: both gateways require an
+ * order code that is unique on their side (PayOS returns the error "Payment order already exists"; SePay requires a
+ * unique {@code order_invoice_number}), so every attempt must carry a new code.
  *
- * <p>CỐ Ý không lưu checkoutUrl lẫn paymentLinkId, và cũng KHÔNG có cột payload/metadata dạng JSON
- * cho dữ liệu riêng của từng cổng. Mọi thao tác với cổng đều chỉ cần {@code providerOrderRef}:
- * PayOS tra theo orderCode, SePay tra theo order_invoice_number, và dashboard của cả hai đều tìm
- * được bằng chính mã đó. Một cột JSON tự do ở bảng tiền là đúng thứ V2 vừa bỏ đi khi thay cặp
- * (source_type, source_id) đa hình bằng các cột có kiểu -- thêm lại ở đây là đi ngược.
+ * <p>checkoutUrl and paymentLinkId are DELIBERATELY not stored, and there is also NO JSON payload/metadata column for
+ * gateway-specific data. Every operation against the gateway only needs {@code providerOrderRef}: PayOS looks up by
+ * orderCode, SePay looks up by order_invoice_number, and both dashboards can find it with that same code. A free-form
+ * JSON column on a money table is exactly what V2 just removed when it replaced the polymorphic (source_type,
+ * source_id) pair with typed columns -- adding it back here would go against that.
  */
 public class PaymentRecord {
 
     /**
-     * Cửa sổ ân hạn trước khi được phép tin một câu NOT_FOUND từ cổng -- xem
+     * Grace window before a NOT_FOUND answer from the gateway may be trusted -- see
      * {@link #canRetireOnGatewayNotFound}.
      *
-     * <p>Đặt dài hơn hẳn mọi timeout gọi cổng (SePay: 5s kết nối + 15s đọc; SDK PayOS không công bố
-     * ngưỡng nên phải chừa rộng) vì nó phải trùm được TOÀN BỘ quãng createPaymentLink còn đang bay.
-     * Đắt nhất khi đặt rộng chỉ là dòng mồ côi bị dọn ở lượt đối soát sau -- 5 phút nữa; đặt hẹp thì
-     * cái giá là một khoản tiền vào mà không giao gì.
+     * <p>Set much longer than every gateway call timeout (SePay: 5s connect + 15s read; the PayOS SDK does not publish a
+     * threshold, so leave plenty of room) because it must cover the WHOLE time a createPaymentLink call may still be in
+     * flight. The worst cost of setting it wide is an orphan row cleaned up in the next reconciliation round -- 5 minutes
+     * later; setting it narrow costs money coming in without anything being delivered.
      */
     private static final Duration ORPHAN_GRACE = Duration.ofMinutes(5);
 
@@ -44,64 +44,42 @@ public class PaymentRecord {
     private PaymentMethod method;
     private PaymentProvider provider;
     private PaymentStatus status;
-    /** Mã giao dịch phía cổng -- duy nhất theo từng lần thử, khóa tra ngược dashboard PayOS/SePay. */
+    /** Transaction code on the gateway side -- unique per attempt, the key for looking up the PayOS/SePay dashboards. */
     private String providerOrderRef;
-    /** Thời điểm cổng ghi nhận giao dịch, KHÁC createdAt (lúc mình phát link). Null khi chưa trả. */
-    // Link đã phát cho lần thử này -- giữ lại để trường bấm lại thì nhận đúng link cũ.
+    /** The moment the gateway recorded the transaction, DIFFERENT from createdAt (when we issued the link). Null until paid. */
+    // The link issued for this attempt -- kept so that when the school clicks again it receives the same old link.
     private String checkoutUrl;
-    // Dữ liệu CHỈ RIÊNG một cổng mới có (vd PayOS paymentLinkId), dạng JSON. Không tách cột riêng
-    // cho từng cổng -- xem cột provider_payload_json trong V2. KHÔNG chứa chữ ký.
+    // Data that ONLY ONE gateway has (e.g. the PayOS paymentLinkId), as JSON. No separate column per gateway -- see the
+    // provider_payload_json column in V2. Does NOT contain signatures.
     private String providerPayloadJson;
     private Instant paidAt;
     private Instant createdAt;
 
     public PaymentRecord() {}
-
-    public PaymentRecord(UUID id, UUID orderId, BigDecimal amountVnd, PaymentMethod method, PaymentProvider provider,
-            PaymentStatus status, String providerOrderRef, String checkoutUrl, String providerPayloadJson,
-            Instant paidAt, Instant createdAt) {
-        this.id = id;
-        this.orderId = orderId;
-        this.amountVnd = amountVnd;
-        this.method = method;
-        this.provider = provider;
-        this.status = status;
-        this.providerOrderRef = providerOrderRef;
-        this.checkoutUrl = checkoutUrl;
-        this.providerPayloadJson = providerPayloadJson;
-        this.paidAt = paidAt;
-        this.createdAt = createdAt;
-    }
-
-    public PaymentRecord(UUID orderId, BigDecimal amountVnd, PaymentMethod method, PaymentProvider provider,
-            PaymentStatus status, String providerOrderRef, String checkoutUrl, String providerPayloadJson,
-            Instant paidAt, Instant createdAt) {
-        this.orderId = orderId;
-        this.amountVnd = amountVnd;
-        this.method = method;
-        this.provider = provider;
-        this.status = status;
-        this.providerOrderRef = providerOrderRef;
-        this.checkoutUrl = checkoutUrl;
-        this.providerPayloadJson = providerPayloadJson;
-        this.paidAt = paidAt;
-        this.createdAt = createdAt;
-    }
+
+
 
     /**
-     * Một lần thử thanh toán VỪA MỞ: chưa có tiền, chưa có link, chưa có mốc trả.
+     * A payment attempt JUST OPENED: no money yet, no link yet, no payment timestamp yet.
      *
-     * <p>method đóng cứng E_BANKING vì hiện chỉ nhận thanh toán qua cổng thứ ba (PayOS/SePay) --
-     * CARD là thanh toán thẻ trực tiếp, chưa hỗ trợ. Ghi sẵn một method mà chưa chắc đúng rồi chờ
-     * callback đính chính là tạo ra một quãng thời gian mà số liệu theo phương thức bị sai; ở đây
-     * E_BANKING đúng với mọi đơn đi qua cổng nên không có gì phải đoán.
+     * <p>method is hard-coded to E_BANKING because only payment through a third-party gateway (PayOS/SePay) is accepted
+     * right now -- CARD is direct card payment, which is not supported yet. Writing a method that may be wrong and waiting
+     * for a callback to correct it creates a window in which the per-method figures are wrong; here E_BANKING is correct
+     * for every order that goes through the gateway, so there is nothing to guess.
      *
-     * <p>checkoutUrl để null: chỉ có sau khi cổng trả về, chỗ gọi tự set rồi lưu lại.
+     * <p>checkoutUrl is left null: it only exists after the gateway responds, and the caller sets it and saves again.
      */
     public static PaymentRecord forEBankingCheckout(UUID orderId, BigDecimal amountVnd, PaymentProvider provider,
             String providerOrderRef, Instant now) {
-        return new PaymentRecord(orderId, amountVnd, PaymentMethod.E_BANKING, provider, PaymentStatus.PENDING,
-            providerOrderRef, null, null, null, now);
+        return builder()
+            .orderId(orderId)
+            .amountVnd(amountVnd)
+            .method(PaymentMethod.E_BANKING)
+            .provider(provider)
+            .status(PaymentStatus.PENDING)
+            .providerOrderRef(providerOrderRef)
+            .createdAt(now)
+            .build();
     }
 
     public UUID getId() {
@@ -192,30 +170,99 @@ public class PaymentRecord {
         this.createdAt = createdAt;
     }
 
-    /** Đã kết thúc (không còn chờ cổng) -- chốt chặn trước khi cho phát link mới. */
+    /** Finished (no longer waiting for the gateway) -- the guard before a new link may be issued. */
     public boolean isSettled() {
         return status != PaymentStatus.PENDING;
     }
 
     /**
-     * Có được phép tin lời cổng nói "không có phiên nào mang mã này" mà chốt lần thử này là hỏng hay
-     * không.
+     * Whether the gateway's statement "no session carries this code" may be trusted to settle this attempt as failed.
      *
-     * <p>Cần thiết vì dòng PENDING nay được COMMIT TRƯỚC lúc gọi createPaymentLink (xem
-     * CreatePaymentCheckoutUrlUseCase): trong suốt quãng lời gọi đó còn đang bay, cổng CHƯA dựng
-     * phiên nên trả NOT_FOUND là hoàn toàn đúng -- mà lần thử ấy thì sắp sống. Chốt hỏng nó ngay lúc
-     * này tạo ra đúng ca tệ nhất hệ thống có: trường nhận được link thật, trả tiền vào đó, còn dòng
-     * ứng với khoản tiền ấy đã mang FAILED nên callback không giao gì cả (xem
-     * CallbackOutcome.PAID_AFTER_WRITE_OFF). Cửa sổ này hẹp nhưng có thật -- job đối soát chạy nền
-     * hoàn toàn có thể rơi vào giữa hai bước đó.
+     * <p>Needed because the PENDING row is now COMMITTED BEFORE createPaymentLink is called (see
+     * CreatePaymentCheckoutUrlUseCase): during the time that call is still in flight the gateway has NOT built the
+     * session yet, so NOT_FOUND is entirely correct -- yet that attempt is about to be alive. Settling it as failed right
+     * now produces the worst case the system has: the school receives a real link, pays into it, and the row matching that
+     * money already carries FAILED, so the callback delivers nothing (see CallbackOutcome.PAID_AFTER_WRITE_OFF). The window
+     * is narrow but real -- the background reconciliation job can easily fall between those two steps.
      *
-     * <p>Quá {@code ORPHAN_GRACE} thì không còn lời gọi nào bay được nữa, nên NOT_FOUND lúc đó nghĩa
-     * là phiên chưa từng dựng xong: không có đường nào ra tiền theo mã ấy, chốt hỏng là an toàn.
+     * <p>Past {@code ORPHAN_GRACE} no call can still be in flight, so NOT_FOUND then means the session was never built
+     * successfully: there is no way for money to arrive under that code, and settling it as failed is safe.
      *
-     * <p>Thiếu createdAt thì trả false: chưa biết lần thử này bao nhiêu tuổi thì không được phép
-     * đánh hỏng nó.
+     * <p>Returns false when createdAt is missing: if we do not know how old the attempt is, we must not mark it failed.
      */
     public boolean canRetireOnGatewayNotFound(Instant now) {
         return createdAt != null && !now.isBefore(createdAt.plus(ORPHAN_GRACE));
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final PaymentRecord target = new PaymentRecord();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder orderId(UUID orderId) {
+            target.orderId = orderId;
+            return this;
+        }
+
+        public Builder amountVnd(BigDecimal amountVnd) {
+            target.amountVnd = amountVnd;
+            return this;
+        }
+
+        public Builder method(PaymentMethod method) {
+            target.method = method;
+            return this;
+        }
+
+        public Builder provider(PaymentProvider provider) {
+            target.provider = provider;
+            return this;
+        }
+
+        public Builder status(PaymentStatus status) {
+            target.status = status;
+            return this;
+        }
+
+        public Builder providerOrderRef(String providerOrderRef) {
+            target.providerOrderRef = providerOrderRef;
+            return this;
+        }
+
+        public Builder checkoutUrl(String checkoutUrl) {
+            target.checkoutUrl = checkoutUrl;
+            return this;
+        }
+
+        public Builder providerPayloadJson(String providerPayloadJson) {
+            target.providerPayloadJson = providerPayloadJson;
+            return this;
+        }
+
+        public Builder paidAt(Instant paidAt) {
+            target.paidAt = paidAt;
+            return this;
+        }
+
+        public Builder createdAt(Instant createdAt) {
+            target.createdAt = createdAt;
+            return this;
+        }
+
+        public PaymentRecord build() {
+            return target;
+        }
+
     }
 }

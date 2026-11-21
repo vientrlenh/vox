@@ -136,8 +136,17 @@ class QuotaPricingCalibrationServiceTests {
             new SessionDurationAggregate(sessionA, 100L),
             new SessionDurationAggregate(sessionB, 100L)
         ));
-        QuotaPricingCalibration previous = new QuotaPricingCalibration(Instant.now(), 90, 10, BigDecimal.ONE, 100L,
-            new BigDecimal("0.01"), new BigDecimal("0.01"), null, QuotaPricingSource.ASSESSMENT);
+        QuotaPricingCalibration previous = QuotaPricingCalibration.builder()
+            .computedAt(Instant.now())
+            .windowDays(90)
+            .sessionCount(10)
+            .totalCostUsd(BigDecimal.ONE)
+            .totalAnsweredSeconds(100L)
+            .rawRateUsdPerSecond(new BigDecimal("0.01"))
+            .appliedRateUsdPerSecond(new BigDecimal("0.01"))
+            .note(null)
+            .pricingSource(QuotaPricingSource.ASSESSMENT)
+            .build();
         when(quotaPricingCalibrationRepository.findLatest(QuotaPricingSource.ASSESSMENT)).thenReturn(Optional.of(previous));
 
         service.recalibrateAssessment();
@@ -166,8 +175,17 @@ class QuotaPricingCalibrationServiceTests {
         ));
         // previousApplied is already at the maxRateBound=1.0 ceiling -- even after smoothing it
         // must still be clamped to exactly 1.0.
-        QuotaPricingCalibration previous = new QuotaPricingCalibration(Instant.now(), 90, 10, BigDecimal.ONE, 100L,
-            new BigDecimal("0.99"), new BigDecimal("0.99"), null, QuotaPricingSource.ASSESSMENT);
+        QuotaPricingCalibration previous = QuotaPricingCalibration.builder()
+            .computedAt(Instant.now())
+            .windowDays(90)
+            .sessionCount(10)
+            .totalCostUsd(BigDecimal.ONE)
+            .totalAnsweredSeconds(100L)
+            .rawRateUsdPerSecond(new BigDecimal("0.99"))
+            .appliedRateUsdPerSecond(new BigDecimal("0.99"))
+            .note(null)
+            .pricingSource(QuotaPricingSource.ASSESSMENT)
+            .build();
         when(quotaPricingCalibrationRepository.findLatest(QuotaPricingSource.ASSESSMENT)).thenReturn(Optional.of(previous));
 
         service.recalibrateAssessment();

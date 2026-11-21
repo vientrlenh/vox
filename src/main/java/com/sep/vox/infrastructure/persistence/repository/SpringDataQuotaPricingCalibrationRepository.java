@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.sep.vox.infrastructure.persistence.entity.QuotaPricingCalibrationJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.metering.QuotaPricingCalibrationJpaEntity;
 
 public interface SpringDataQuotaPricingCalibrationRepository
         extends JpaRepository<QuotaPricingCalibrationJpaEntity, UUID> {

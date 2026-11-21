@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.AssessmentBlueprintJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentBlueprintJpaEntity;
 
 public interface SpringDataAssessmentBlueprintRepository extends JpaRepository<AssessmentBlueprintJpaEntity, UUID> {
 
@@ -83,7 +83,7 @@ public interface SpringDataAssessmentBlueprintRepository extends JpaRepository<A
                 )
                 OR (
                     NOT EXISTS (SELECT 1 FROM AssessmentJpaEntity e2 WHERE e2.blueprintId = b.id)
-                    AND b.createdBy = :userId
+                    AND b.createdBy = cast(:userId as string)
                 )
             )
         ) THEN true ELSE false END

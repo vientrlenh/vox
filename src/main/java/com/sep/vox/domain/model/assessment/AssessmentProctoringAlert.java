@@ -69,33 +69,6 @@ public class AssessmentProctoringAlert {
     public AssessmentProctoringAlert() {
     }
 
-    public AssessmentProctoringAlert(UUID id, String eventId, UUID assessmentSessionId, UUID candidateId, String streamId,
-            String streamType, String alertType, String level, String source, String detail, BigDecimal confidence,
-            Long sequenceNo, Instant capturedAt, Instant raisedAt, Instant createdAt) {
-        this.id = id;
-        this.eventId = eventId;
-        this.assessmentSessionId = assessmentSessionId;
-        this.candidateId = candidateId;
-        this.streamId = streamId;
-        this.streamType = streamType;
-        this.alertType = alertType;
-        this.level = level;
-        this.source = source;
-        this.detail = detail;
-        this.confidence = confidence;
-        this.sequenceNo = sequenceNo;
-        this.capturedAt = capturedAt;
-        this.raisedAt = raisedAt;
-        this.createdAt = createdAt;
-    }
-
-    public AssessmentProctoringAlert(String eventId, UUID assessmentSessionId, UUID candidateId, String streamId,
-            String streamType, String alertType, String level, String source, String detail, BigDecimal confidence,
-            Long sequenceNo, Instant capturedAt, Instant raisedAt, Instant createdAt) {
-        this(null, eventId, assessmentSessionId, candidateId, streamId, streamType, alertType, level, source, detail,
-                confidence, sequenceNo, capturedAt, raisedAt, createdAt);
-    }
-
     public UUID getId() {
         return id;
     }
@@ -214,5 +187,97 @@ public class AssessmentProctoringAlert {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final AssessmentProctoringAlert target = new AssessmentProctoringAlert();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder eventId(String eventId) {
+            target.eventId = eventId;
+            return this;
+        }
+
+        public Builder assessmentSessionId(UUID assessmentSessionId) {
+            target.assessmentSessionId = assessmentSessionId;
+            return this;
+        }
+
+        public Builder candidateId(UUID candidateId) {
+            target.candidateId = candidateId;
+            return this;
+        }
+
+        public Builder streamId(String streamId) {
+            target.streamId = streamId;
+            return this;
+        }
+
+        public Builder streamType(String streamType) {
+            target.streamType = streamType;
+            return this;
+        }
+
+        public Builder alertType(String alertType) {
+            target.alertType = alertType;
+            return this;
+        }
+
+        public Builder level(String level) {
+            target.level = level;
+            return this;
+        }
+
+        public Builder source(String source) {
+            target.source = source;
+            return this;
+        }
+
+        public Builder detail(String detail) {
+            target.detail = detail;
+            return this;
+        }
+
+        public Builder confidence(BigDecimal confidence) {
+            target.confidence = confidence;
+            return this;
+        }
+
+        public Builder sequenceNo(Long sequenceNo) {
+            target.sequenceNo = sequenceNo;
+            return this;
+        }
+
+        public Builder capturedAt(Instant capturedAt) {
+            target.capturedAt = capturedAt;
+            return this;
+        }
+
+        public Builder raisedAt(Instant raisedAt) {
+            target.raisedAt = raisedAt;
+            return this;
+        }
+
+        public Builder createdAt(Instant createdAt) {
+            target.createdAt = createdAt;
+            return this;
+        }
+
+        public AssessmentProctoringAlert build() {
+            return target;
+        }
+
     }
 }

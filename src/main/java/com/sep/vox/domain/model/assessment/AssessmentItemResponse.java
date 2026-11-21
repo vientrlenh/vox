@@ -15,29 +15,6 @@ public class AssessmentItemResponse {
 
     public AssessmentItemResponse() {}
 
-    public AssessmentItemResponse(UUID id, UUID sessionId, UUID paperItemId, String audioUrl, Integer durationSeconds,
-            String transcript, String terminationReason, Instant submittedAt) {
-        this.id = id;
-        this.sessionId = sessionId;
-        this.paperItemId = paperItemId;
-        this.audioUrl = audioUrl;
-        this.durationSeconds = durationSeconds;
-        this.transcript = transcript;
-        this.terminationReason = terminationReason;
-        this.submittedAt = submittedAt;
-    }
-
-    public AssessmentItemResponse(UUID sessionId, UUID paperItemId, String audioUrl, Integer durationSeconds,
-            String transcript, String terminationReason, Instant submittedAt) {
-        this.sessionId = sessionId;
-        this.paperItemId = paperItemId;
-        this.audioUrl = audioUrl;
-        this.durationSeconds = durationSeconds;
-        this.transcript = transcript;
-        this.terminationReason = terminationReason;
-        this.submittedAt = submittedAt;
-    }
-
     public UUID getId() {
         return id;
     }
@@ -102,5 +79,60 @@ public class AssessmentItemResponse {
         this.submittedAt = submittedAt;
     }
 
-    
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final AssessmentItemResponse target = new AssessmentItemResponse();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder sessionId(UUID sessionId) {
+            target.sessionId = sessionId;
+            return this;
+        }
+
+        public Builder paperItemId(UUID paperItemId) {
+            target.paperItemId = paperItemId;
+            return this;
+        }
+
+        public Builder audioUrl(String audioUrl) {
+            target.audioUrl = audioUrl;
+            return this;
+        }
+
+        public Builder durationSeconds(Integer durationSeconds) {
+            target.durationSeconds = durationSeconds;
+            return this;
+        }
+
+        public Builder transcript(String transcript) {
+            target.transcript = transcript;
+            return this;
+        }
+
+        public Builder terminationReason(String terminationReason) {
+            target.terminationReason = terminationReason;
+            return this;
+        }
+
+        public Builder submittedAt(Instant submittedAt) {
+            target.submittedAt = submittedAt;
+            return this;
+        }
+
+        public AssessmentItemResponse build() {
+            return target;
+        }
+
+    }
 }

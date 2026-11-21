@@ -103,8 +103,6 @@ class CreateSchoolClassUseCaseTests {
         assertThat(captor.getValue().getCode().value()).isEqualTo("ENG-01");
         assertThat(captor.getValue().getName()).isEqualTo("English 01");
         assertThat(captor.getValue().getDescription()).isEqualTo("Starter class");
-        assertThat(captor.getValue().getCreatedBy()).isEqualTo(userId);
-        assertThat(captor.getValue().getUpdatedBy()).isEqualTo(userId);
     }
 
     @Test
@@ -123,7 +121,7 @@ class CreateSchoolClassUseCaseTests {
         when(supportedLanguageRepository.findById(languageId)).thenReturn(Optional.of(activeLanguage(languageId)));
         when(schoolGradeRepository.findById(gradeId)).thenReturn(Optional.of(grade));
         when(schoolClassRepository.findBySchoolIdAndCode(schoolId, "ENG-01"))
-            .thenReturn(Optional.of(SchoolClass.create(schoolId, languageId, gradeId, "ENG-01", "Existing", null, userId, Instant.now())));
+            .thenReturn(Optional.of(SchoolClass.create(schoolId, languageId, gradeId, "ENG-01", "Existing", null)));
 
         assertThrows(DuplicatedException.class, () -> useCase.execute(command));
 
@@ -196,7 +194,12 @@ class CreateSchoolClassUseCaseTests {
         user.setId(id);
         user.setStatus(status);
         when(schoolUserRepository.findByUserId(id)).thenReturn(
-            schoolId != null ? Optional.of(new SchoolUser(schoolId, id, java.time.Instant.now(), java.time.Instant.now().plus(36500, ChronoUnit.DAYS))) : Optional.empty()
+            schoolId != null ? Optional.of(SchoolUser.builder()
+                .schoolId(schoolId)
+                .userId(id)
+                .startDate(java.time.Instant.now())
+                .endDate(java.time.Instant.now().plus(36500, ChronoUnit.DAYS))
+                .build()) : Optional.empty()
         );
         return user;
     }

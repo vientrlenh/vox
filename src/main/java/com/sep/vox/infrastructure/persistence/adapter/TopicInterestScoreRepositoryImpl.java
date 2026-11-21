@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.domain.model.personalization.TopicInterestScoreEntry;
 import com.sep.vox.domain.repository.TopicInterestScoreRepository;
-import com.sep.vox.infrastructure.persistence.entity.TopicInterestScoreJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.personalization.TopicInterestScoreJpaEntity;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataTopicInterestScoreRepository;
 
 @Repository
@@ -43,15 +43,15 @@ public class TopicInterestScoreRepositoryImpl
         repository.flush();
         Instant now = Instant.now();
         repository.saveAll(scores.stream()
-            .map(entry -> new TopicInterestScoreJpaEntity(
-                UUID.randomUUID(),
-                studentId,
-                entry.getTopicId(),
-                BigDecimal.valueOf(entry.getScore()),
-                entry.getSessionCount(),
-                entry.getLastEventAt(),
-                now
-            ))
+            .map(entry -> TopicInterestScoreJpaEntity.builder()
+                    .id(UUID.randomUUID())
+                    .studentId(studentId)
+                    .practiceTopicId(entry.getTopicId())
+                    .score(BigDecimal.valueOf(entry.getScore()))
+                    .sessionsMentioned(entry.getSessionCount())
+                    .lastMentionedAt(entry.getLastEventAt())
+                    .computedAt(now)
+                    .build())
             .toList());
     }
 }

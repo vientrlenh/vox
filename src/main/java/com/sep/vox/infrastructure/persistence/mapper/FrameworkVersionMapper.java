@@ -2,46 +2,46 @@ package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
-import com.sep.vox.infrastructure.persistence.entity.FrameworkVersionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.framework.FrameworkVersionJpaEntity;
 
 public final class FrameworkVersionMapper {
 
     private FrameworkVersionMapper() {}
 
     public static FrameworkVersion toDomain(FrameworkVersionJpaEntity jpa) {
-        return new FrameworkVersion(
-            jpa.getId(),
-            jpa.getFrameworkId(),
-            jpa.getCode(),
-            jpa.getName(),
-            jpa.getDescription(),
-            jpa.getVersion(),
-            jpa.getEffectiveFrom(),
-            jpa.getEffectiveTo(),
-            fromStatus(jpa.getStatus()),
-            jpa.getCreatedAt(),
-            jpa.getUpdatedAt(),
-            jpa.getCreatedBy(),
-            jpa.getUpdatedBy()
-        );
+        return FrameworkVersion.builder()
+            .id(jpa.getId())
+            .frameworkId(jpa.getFrameworkId())
+            .code(jpa.getCode())
+            .name(jpa.getName())
+            .description(jpa.getDescription())
+            .version(jpa.getVersion())
+            .effectiveFrom(jpa.getEffectiveFrom())
+            .effectiveTo(jpa.getEffectiveTo())
+            .status(fromStatus(jpa.getStatus()))
+            .createdAt(jpa.getCreatedAt())
+            .updatedAt(jpa.getUpdatedAt())
+            .createdBy(jpa.getCreatedBy())
+            .updatedBy(jpa.getUpdatedBy())
+            .build();
     }
 
     public static FrameworkVersionJpaEntity toJpa(FrameworkVersion version) {
-        return new FrameworkVersionJpaEntity(
-            version.getId(),
-            version.getFrameworkId(),
-            version.getCode(),
-            version.getName(),
-            version.getDescription(),
-            version.getVersion(),
-            version.getEffectiveFrom(),
-            version.getEffectiveTo(),
-            valueOf(version.getStatus()),
-            version.getCreatedAt(),
-            version.getUpdatedAt(),
-            version.getCreatedBy(),
-            version.getUpdatedBy()
-        );
+        return FrameworkVersionJpaEntity.builder()
+            .id(version.getId())
+            .frameworkId(version.getFrameworkId())
+            .code(version.getCode())
+            .name(version.getName())
+            .description(version.getDescription())
+            .version(version.getVersion())
+            .effectiveFrom(version.getEffectiveFrom())
+            .effectiveTo(version.getEffectiveTo())
+            .status(valueOf(version.getStatus()))
+            .createdAt(version.getCreatedAt())
+            .updatedAt(version.getUpdatedAt())
+            .createdBy(version.getCreatedBy())
+            .updatedBy(version.getUpdatedBy())
+            .build();
     }
 
     private static String valueOf(FrameworkVersionStatus status) {

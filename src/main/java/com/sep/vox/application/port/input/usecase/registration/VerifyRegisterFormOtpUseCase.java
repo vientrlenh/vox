@@ -81,7 +81,6 @@ public class VerifyRegisterFormOtpUseCase implements IUseCase<VerifyRegisterForm
             payload.dateOfBirth(), 
             payload.address(), 
             null, 
-            null, 
             now
         ));
 

@@ -5,7 +5,6 @@ import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersion;
 import com.sep.vox.domain.model.question.QuestionAsset;
 import com.sep.vox.domain.model.question.QuestionCollaborator;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -164,34 +163,25 @@ public class CreateAssessmentPaperUseCase implements IUseCase<CreateAssessmentPa
 
         validateVersionWeights(sections, slotsBySectionId);
 
-        Instant now = Instant.now();
         int variant = assessmentPaperRepository.nextVariant(assessment.getId());
-        AssessmentPaper paper = assessmentPaperRepository.save(new AssessmentPaper(
-            assessment.getId(),
-            assessment.getBlueprintVersionId(),
-            assessment.getCode() + "-P" + variant,
-            variant,
-            AssessmentPaperStatus.DRAFT,
-            0,
-            now,
-            now,
-            currentUserId,
-            currentUserId
-        ));
+        AssessmentPaper paper = assessmentPaperRepository.save(AssessmentPaper.builder()
+            .assessmentId(assessment.getId())
+            .blueprintVersionId(assessment.getBlueprintVersionId())
+            .code(assessment.getCode() + "-P" + variant)
+            .variant(variant)
+            .status(AssessmentPaperStatus.DRAFT)
+            .timeDurationSeconds(0)
+            .build());
 
         for (AssessmentBlueprintSection section : sections) {
-            AssessmentPaperSection savedSection = assessmentPaperSectionRepository.save(new AssessmentPaperSection(
-                paper.getId(),
-                section.getOrder(),
-                section.getTitle(),
-                section.getInstruction(),
-                section.getSectionTimeLimitSeconds(),
-                section.getSectionWeight(),
-                now,
-                now,
-                currentUserId,
-                currentUserId
-            ));
+            AssessmentPaperSection savedSection = assessmentPaperSectionRepository.save(AssessmentPaperSection.builder()
+                .paperId(paper.getId())
+                .order(section.getOrder())
+                .title(section.getTitle())
+                .instruction(section.getInstruction())
+                .sectionTimeLimitSeconds(section.getSectionTimeLimitSeconds())
+                .weight(section.getSectionWeight())
+                .build());
 
             List<AssessmentBlueprintSlot> slots = slotsBySectionId.getOrDefault(section.getId(), List.of()).stream()
                 .sorted(Comparator.comparingInt(slot -> slot.getOrder()))
@@ -207,27 +197,25 @@ public class CreateAssessmentPaperUseCase implements IUseCase<CreateAssessmentPa
                             throw new IllegalStateException(
                                 "Câu hỏi " + fixedQuestion.getCode() + " trong khung chưa PUBLISHED, không thể sinh đề thi");
                         }
-                        // Bài trên lớp: câu hỏi fixed đã bị archived sau khi blueprint publish — để trống
-                        // ô này, CHAIR tự chọn câu khác qua picker thay vì chặn hẳn việc tạo mã đề.
-                        assessmentPaperItemRepository.save(new AssessmentPaperItem(
-                            null,
-                            savedSection.getId(),
-                            paper.getId(),
-                            null,
-                            slot.getOrder(),
-                            slot.getWeight()
-                        ));
+                        // Class test: the fixed question was archived after the blueprint was published. Leave this
+                        // slot empty so the CHAIR picks another question through the picker, instead of blocking the paper variant altogether.
+                        assessmentPaperItemRepository.save(AssessmentPaperItem.builder()
+                            .sectionId(savedSection.getId())
+                            .paperId(paper.getId())
+                            .order(slot.getOrder())
+                            .weight(slot.getWeight())
+                            .build());
                         continue;
                     }
                 }
-                assessmentPaperItemRepository.save(new AssessmentPaperItem(
-                    slot.getId(),
-                    savedSection.getId(),
-                    paper.getId(),
-                    questionId,
-                    slot.getOrder(),
-                    slot.getWeight()
-                ));
+                assessmentPaperItemRepository.save(AssessmentPaperItem.builder()
+                    .blueprintSlotId(slot.getId())
+                    .sectionId(savedSection.getId())
+                    .paperId(paper.getId())
+                    .questionId(questionId)
+                    .order(slot.getOrder())
+                    .weight(slot.getWeight())
+                    .build());
                 if (questionId != null) {
                     assessmentQuestionSecureLockService.lockQuestionForAssessment(
                         questionId,
@@ -289,47 +277,35 @@ public class CreateAssessmentPaperUseCase implements IUseCase<CreateAssessmentPa
         assessmentTimeQuotaGuardService.requireWithinPlan(assessment.getSchoolId(), totalSeconds, "Bài kiểm tra trên lớp");
 
         List<BigDecimal> sectionWeights = ClassTestSectionWeightPolicy.resolveRequestedWeights(sections);
-        Instant now = Instant.now();
         int variant = assessmentPaperRepository.nextVariant(assessment.getId());
-        AssessmentPaper paper = assessmentPaperRepository.save(new AssessmentPaper(
-            assessment.getId(),
-            null,
-            assessment.getCode() + "-P" + variant,
-            variant,
-            AssessmentPaperStatus.DRAFT,
-            0,
-            now,
-            now,
-            currentUserId,
-            currentUserId
-        ));
+        AssessmentPaper paper = assessmentPaperRepository.save(AssessmentPaper.builder()
+            .assessmentId(assessment.getId())
+            .code(assessment.getCode() + "-P" + variant)
+            .variant(variant)
+            .status(AssessmentPaperStatus.DRAFT)
+            .timeDurationSeconds(0)
+            .build());
 
         for (int i = 0; i < sections.size(); i++) {
             ClassTestSectionCommand sectionCommand = sections.get(i);
             List<BigDecimal> questionWeights = ClassTestSectionWeightPolicy.resolveQuestionWeights(sectionCommand.questions());
-            AssessmentPaperSection savedSection = assessmentPaperSectionRepository.save(new AssessmentPaperSection(
-                paper.getId(),
-                i + 1,
-                sectionCommand.title(),
-                sectionCommand.instruction(),
-                null,
-                sectionWeights.get(i),
-                now,
-                now,
-                currentUserId,
-                currentUserId
-            ));
+            AssessmentPaperSection savedSection = assessmentPaperSectionRepository.save(AssessmentPaperSection.builder()
+                .paperId(paper.getId())
+                .order(i + 1)
+                .title(sectionCommand.title())
+                .instruction(sectionCommand.instruction())
+                .weight(sectionWeights.get(i))
+                .build());
 
             List<Question> questions = questionsBySection.get(i);
             for (int j = 0; j < questions.size(); j++) {
-                assessmentPaperItemRepository.save(new AssessmentPaperItem(
-                    null,
-                    savedSection.getId(),
-                    paper.getId(),
-                    questions.get(j).getId(),
-                    j + 1,
-                    questionWeights.get(j)
-                ));
+                assessmentPaperItemRepository.save(AssessmentPaperItem.builder()
+                    .sectionId(savedSection.getId())
+                    .paperId(paper.getId())
+                    .questionId(questions.get(j).getId())
+                    .order(j + 1)
+                    .weight(questionWeights.get(j))
+                    .build());
                 assessmentQuestionSecureLockService.lockQuestionForAssessment(
                     questions.get(j).getId(),
                     assessment.getId(),
@@ -351,7 +327,7 @@ public class CreateAssessmentPaperUseCase implements IUseCase<CreateAssessmentPa
     }
 
     private void requireCanUseQuestion(Question question, UUID currentUserId) {
-        boolean isOwner = currentUserId.equals(question.getCreatedBy());
+        boolean isOwner = question.isCreatedBy(currentUserId);
         boolean isSchoolShared = question.getSharing() == QuestionSharing.SCHOOL_SHARED;
         if (isOwner || isSchoolShared) {
             return;
@@ -399,52 +375,43 @@ public class CreateAssessmentPaperUseCase implements IUseCase<CreateAssessmentPa
             "Mã đề sao chép " + sourcePaper.getCode()
         );
 
-        Instant now = Instant.now();
         int variant = assessmentPaperRepository.nextVariant(assessment.getId());
-        AssessmentPaper paper = assessmentPaperRepository.save(new AssessmentPaper(
-            assessment.getId(),
-            sourcePaper.getBlueprintVersionId(),
-            assessment.getCode() + "-P" + variant,
-            variant,
-            AssessmentPaperStatus.DRAFT,
-            0,
-            now,
-            now,
-            currentUserId,
-            currentUserId
-        ));
+        AssessmentPaper paper = assessmentPaperRepository.save(AssessmentPaper.builder()
+            .assessmentId(assessment.getId())
+            .blueprintVersionId(sourcePaper.getBlueprintVersionId())
+            .code(assessment.getCode() + "-P" + variant)
+            .variant(variant)
+            .status(AssessmentPaperStatus.DRAFT)
+            .timeDurationSeconds(0)
+            .build());
 
         List<AssessmentPaperSection> sourceSections = assessmentPaperSectionRepository.findByPaperId(sourcePaper.getId()).stream()
             .sorted(Comparator.comparingInt(section -> section.getOrder()))
             .toList();
 
         for (AssessmentPaperSection section : sourceSections) {
-            AssessmentPaperSection savedSection = assessmentPaperSectionRepository.save(new AssessmentPaperSection(
-                paper.getId(),
-                section.getOrder(),
-                section.getTitle(),
-                section.getInstruction(),
-                section.getSectionTimeLimitSeconds(),
-                section.getWeight(),
-                now,
-                now,
-                currentUserId,
-                currentUserId
-            ));
+            AssessmentPaperSection savedSection = assessmentPaperSectionRepository.save(AssessmentPaperSection.builder()
+                .paperId(paper.getId())
+                .order(section.getOrder())
+                .title(section.getTitle())
+                .instruction(section.getInstruction())
+                .sectionTimeLimitSeconds(section.getSectionTimeLimitSeconds())
+                .weight(section.getWeight())
+                .build());
 
             List<AssessmentPaperItem> items = assessmentPaperItemRepository.findBySectionId(section.getId()).stream()
                 .sorted(Comparator.comparingInt(item -> item.getOrder()))
                 .toList();
 
             for (AssessmentPaperItem item : items) {
-                assessmentPaperItemRepository.save(new AssessmentPaperItem(
-                    item.getBlueprintSlotId(),
-                    savedSection.getId(),
-                    paper.getId(),
-                    item.getQuestionId(),
-                    item.getOrder(),
-                    item.getWeight()
-                ));
+                assessmentPaperItemRepository.save(AssessmentPaperItem.builder()
+                    .blueprintSlotId(item.getBlueprintSlotId())
+                    .sectionId(savedSection.getId())
+                    .paperId(paper.getId())
+                    .questionId(item.getQuestionId())
+                    .order(item.getOrder())
+                    .weight(item.getWeight())
+                    .build());
                 if (item.getQuestionId() != null) {
                     assessmentQuestionSecureLockService.lockQuestionForAssessment(
                         item.getQuestionId(),

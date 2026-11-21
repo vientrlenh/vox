@@ -3,59 +3,19 @@ package com.sep.vox.domain.model.assessment;
 import java.time.Instant;
 import java.util.UUID;
 
-public class AssessmentSecurePool {
-    private UUID id;
+import com.sep.vox.domain.model.BaseModel;
+
+public class AssessmentSecurePool extends BaseModel {
     private UUID assessmentId;
     private AssessmentSecurePoolStatus status;
     private AssessmentSecurePoolReleaseMode releaseMode;
-    private Instant embargoUntil; // auto thì tự release sau thời gian này
+    private Instant embargoUntil; // in automatic mode the pool is released on its own after this time
     private Instant releasedAt;
     private UUID releasedBy;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private UUID createdBy;
-    private UUID updatedBy;
 
     public AssessmentSecurePool() {}
 
-    public AssessmentSecurePool(UUID id, UUID assessmentId, AssessmentSecurePoolStatus status, AssessmentSecurePoolReleaseMode releaseMode,
-            Instant embargoUntil, Instant releasedAt, UUID releasedBy, Instant createdAt,
-            Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.id = id;
-        this.assessmentId = assessmentId;
-        this.status = status;
-        this.releaseMode = releaseMode;
-        this.embargoUntil = embargoUntil;
-        this.releasedAt = releasedAt;
-        this.releasedBy = releasedBy;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
 
-    public AssessmentSecurePool(UUID assessmentId, AssessmentSecurePoolStatus status, AssessmentSecurePoolReleaseMode releaseMode,
-            Instant embargoUntil, Instant releasedAt, UUID releasedBy, Instant createdAt,
-            Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.assessmentId = assessmentId;
-        this.status = status;
-        this.releaseMode = releaseMode;
-        this.embargoUntil = embargoUntil;
-        this.releasedAt = releasedAt;
-        this.releasedBy = releasedBy;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
 
     public UUID getAssessmentId() {
         return assessmentId;
@@ -105,37 +65,50 @@ public class AssessmentSecurePool {
         this.releasedBy = releasedBy;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
+    public static class Builder extends BaseModel.Builder<AssessmentSecurePool, Builder> {
 
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
+        private Builder() {
+            super(new AssessmentSecurePool());
+        }
 
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
+        @Override
+        protected Builder self() {
+            return this;
+        }
 
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
+        public Builder assessmentId(UUID assessmentId) {
+            target.assessmentId = assessmentId;
+            return this;
+        }
 
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
+        public Builder status(AssessmentSecurePoolStatus status) {
+            target.status = status;
+            return this;
+        }
 
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
+        public Builder releaseMode(AssessmentSecurePoolReleaseMode releaseMode) {
+            target.releaseMode = releaseMode;
+            return this;
+        }
 
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
-    }
+        public Builder embargoUntil(Instant embargoUntil) {
+            target.embargoUntil = embargoUntil;
+            return this;
+        }
 
-    
+        public Builder releasedAt(Instant releasedAt) {
+            target.releasedAt = releasedAt;
+            return this;
+        }
+
+        public Builder releasedBy(UUID releasedBy) {
+            target.releasedBy = releasedBy;
+            return this;
+        }
+
+    }
 }

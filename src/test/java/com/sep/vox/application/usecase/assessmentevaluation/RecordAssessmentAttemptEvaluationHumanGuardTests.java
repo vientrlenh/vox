@@ -115,7 +115,16 @@ public class RecordAssessmentAttemptEvaluationHumanGuardTests {
         when(assessmentProctoringAlertRepository.hasIntegrityAlert(any())).thenReturn(false);
 
         when(assessmentItemResponseRepository.findById(responseId)).thenReturn(Optional.of(
-            new AssessmentItemResponse(responseId, sessionId, paperItemId, null, null, null, null, null)));
+            AssessmentItemResponse.builder()
+                    .id(responseId)
+                    .sessionId(sessionId)
+                    .paperItemId(paperItemId)
+                    .audioUrl(null)
+                    .durationSeconds(null)
+                    .transcript(null)
+                    .terminationReason(null)
+                    .submittedAt(null)
+                    .build()));
         when(assessmentItemResponseRepository.findBySessionId(sessionId)).thenReturn(List.of());
 
         // The session -> assessment -> policy -> rubric chain is only needed for the branches that are

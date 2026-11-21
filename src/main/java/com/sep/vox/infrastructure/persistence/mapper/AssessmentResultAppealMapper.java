@@ -2,7 +2,7 @@ package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.assessment.AssessmentAppealStatus;
 import com.sep.vox.domain.model.assessment.AssessmentResultAppeal;
-import com.sep.vox.infrastructure.persistence.entity.AssessmentResultAppealJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentResultAppealJpaEntity;
 
 public final class AssessmentResultAppealMapper {
 
@@ -12,48 +12,48 @@ public final class AssessmentResultAppealMapper {
         if (entity == null) {
             return null;
         }
-        return new AssessmentResultAppeal(
-            entity.getId(),
-            entity.getCandidateResultId(),
-            entity.getRequestedBy(),
-            entity.getReason(),
-            entity.getRequestedAt(),
-            toStatus(entity.getStatus()),
-            entity.getScoreBefore(),
-            entity.getScoreAfter(),
-            entity.getResolvedBy(),
-            entity.getResolvedAt(),
-            entity.getNotes(),
-            entity.getDeadline(),
-            entity.getApprovedAt(),
-            entity.getDecisionNote(),
-            entity.getWithdrawnAt(),
-            entity.getReviewerOverrideReason()
-        );
+        return AssessmentResultAppeal.builder()
+                .id(entity.getId())
+                .candidateResultId(entity.getCandidateResultId())
+                .requestedBy(entity.getRequestedBy())
+                .reason(entity.getReason())
+                .requestedAt(entity.getRequestedAt())
+                .status(toStatus(entity.getStatus()))
+                .scoreBefore(entity.getScoreBefore())
+                .scoreAfter(entity.getScoreAfter())
+                .resolvedBy(entity.getResolvedBy())
+                .resolvedAt(entity.getResolvedAt())
+                .notes(entity.getNotes())
+                .deadline(entity.getDeadline())
+                .approvedAt(entity.getApprovedAt())
+                .decisionNote(entity.getDecisionNote())
+                .withdrawnAt(entity.getWithdrawnAt())
+                .reviewerOverrideReason(entity.getReviewerOverrideReason())
+                .build();
     }
 
     public static AssessmentResultAppealJpaEntity toJpa(AssessmentResultAppeal appeal) {
         if (appeal == null) {
             return null;
         }
-        return new AssessmentResultAppealJpaEntity(
-            appeal.getId(),
-            appeal.getCandidateResultId(),
-            appeal.getRequestedBy(),
-            appeal.getReason(),
-            appeal.getRequestedAt(),
-            appeal.getStatus() == null ? null : appeal.getStatus().name(),
-            appeal.getScoreBefore(),
-            appeal.getScoreAfter(),
-            appeal.getResolvedBy(),
-            appeal.getResolvedAt(),
-            appeal.getNotes(),
-            appeal.getDeadline(),
-            appeal.getApprovedAt(),
-            appeal.getDecisionNote(),
-            appeal.getWithdrawnAt(),
-            appeal.getReviewerOverrideReason()
-        );
+        return AssessmentResultAppealJpaEntity.builder()
+                .id(appeal.getId())
+                .candidateResultId(appeal.getCandidateResultId())
+                .requestedBy(appeal.getRequestedBy())
+                .reason(appeal.getReason())
+                .requestedAt(appeal.getRequestedAt())
+                .status(appeal.getStatus() == null ? null : appeal.getStatus().name())
+                .scoreBefore(appeal.getScoreBefore())
+                .scoreAfter(appeal.getScoreAfter())
+                .resolvedBy(appeal.getResolvedBy())
+                .resolvedAt(appeal.getResolvedAt())
+                .notes(appeal.getNotes())
+                .deadline(appeal.getDeadline())
+                .approvedAt(appeal.getApprovedAt())
+                .decisionNote(appeal.getDecisionNote())
+                .withdrawnAt(appeal.getWithdrawnAt())
+                .reviewerOverrideReason(appeal.getReviewerOverrideReason())
+                .build();
     }
 
     private static AssessmentAppealStatus toStatus(String value) {

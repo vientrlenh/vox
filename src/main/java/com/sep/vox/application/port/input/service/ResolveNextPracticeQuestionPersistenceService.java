@@ -29,15 +29,15 @@ public class ResolveNextPracticeQuestionPersistenceService {
             UUID studentId,
             UUID practicePaperId,
             PracticeQuestionSelectionService.NextQuestionSelection selection) {
-        paperItemRepository.save(new PracticePaperItem(
-            UUID.randomUUID(),
-            practicePaperId,
-            selection.question().getId(),
-            selection.slot(),
-            selection.criterion(),
-            selection.subAttribute(),
-            selection.targetRank()
-        ));
+        paperItemRepository.save(PracticePaperItem.builder()
+                .id(UUID.randomUUID())
+                .practicePaperId(practicePaperId)
+                .practiceQuestionId(selection.question().getId())
+                .slotOrder(selection.slot())
+                .targetCriterionCode(selection.criterion())
+                .targetSubAttribute(selection.subAttribute())
+                .targetDifficultyRank(selection.targetRank())
+                .build());
         studentQuestionExposureRepository.recordExposure(studentId, selection.question().getId());
     }
 }

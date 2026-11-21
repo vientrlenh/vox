@@ -74,7 +74,7 @@ class UpdateSchoolClassUseCaseTests {
             eq(null),
             eq(false),
             any(Instant.class),
-            eq(userId)
+            eq(userId.toString())
         )).thenReturn(1);
 
         UpdateSchoolClassResponse response = useCase.execute(command);
@@ -90,7 +90,7 @@ class UpdateSchoolClassUseCaseTests {
             eq(null),
             eq(false),
             any(Instant.class),
-            eq(userId)
+            eq(userId.toString())
         );
     }
 
@@ -110,7 +110,7 @@ class UpdateSchoolClassUseCaseTests {
             eq(SchoolClassStatus.INACTIVE),
             eq(true),
             any(Instant.class),
-            eq(userId)
+            eq(userId.toString())
         )).thenReturn(1);
 
         UpdateSchoolClassResponse response = useCase.execute(new UpdateSchoolClassCommand(classId, null, false, null, false, SchoolClassStatus.INACTIVE, true));
@@ -134,7 +134,7 @@ class UpdateSchoolClassUseCaseTests {
             eq(null),
             eq(false),
             any(Instant.class),
-            eq(userId)
+            eq(userId.toString())
         )).thenReturn(1);
 
         UpdateSchoolClassResponse response = useCase.execute(new UpdateSchoolClassCommand(classId, null, false, null, true, null, false));
@@ -168,7 +168,7 @@ class UpdateSchoolClassUseCaseTests {
             eq(null),
             eq(false),
             any(Instant.class),
-            eq(userId)
+            eq(userId.toString())
         )).thenReturn(0);
 
         assertThrows(
@@ -281,7 +281,12 @@ class UpdateSchoolClassUseCaseTests {
         user.setId(id);
         user.setStatus(status);
         when(schoolUserRepository.findByUserId(id)).thenReturn(
-            schoolId != null ? Optional.of(new SchoolUser(schoolId, id, java.time.Instant.now(), java.time.Instant.now().plus(36500, ChronoUnit.DAYS))) : Optional.empty()
+            schoolId != null ? Optional.of(SchoolUser.builder()
+                .schoolId(schoolId)
+                .userId(id)
+                .startDate(java.time.Instant.now())
+                .endDate(java.time.Instant.now().plus(36500, ChronoUnit.DAYS))
+                .build()) : Optional.empty()
         );
         return user;
     }

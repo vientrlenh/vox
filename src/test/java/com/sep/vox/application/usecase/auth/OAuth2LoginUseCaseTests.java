@@ -72,16 +72,15 @@ class OAuth2LoginUseCaseTests {
         UUID roleId = UUID.randomUUID();
         User user = activeUser(userId, schoolId);
         SchoolUser schoolUser = activeSchoolUser(userId, schoolId);
-        DeviceSession savedDeviceSession = new DeviceSession(
-            sessionId,
-            userId,
-            "device-1",
-            "Chrome on Windows",
-            SessionPlatform.WEB,
-            "203.0.113.10",
-            "JUnit User Agent",
-            null
-        );
+        DeviceSession savedDeviceSession = DeviceSession.builder()
+            .id(sessionId)
+            .userId(userId)
+            .deviceId("device-1")
+            .deviceName("Chrome on Windows")
+            .platform(SessionPlatform.WEB)
+            .ipAddress("203.0.113.10")
+            .userAgent("JUnit User Agent")
+            .build();
         List<UserRoleInfo> roles = List.of(new UserRoleInfo(
             UUID.randomUUID(),
             userId,
@@ -158,25 +157,26 @@ class OAuth2LoginUseCaseTests {
     }
 
     private User activeUser(UUID userId, UUID schoolId) {
-        return new User(
-            userId,
-            new Email("student@example.com"),
-            "password-hash",
-            new Phone("0987654321"),
-            new FullName("Test Student"),
-            null,
-            new DateOfBirth(LocalDate.of(2000, 1, 1)),
-            "Ho Chi Minh City",
-            null,
-            UserStatus.ACTIVE,
-            Instant.now(),
-            Instant.now(),
-            null,
-            null
-        );
+        return User.builder()
+            .id(userId)
+            .email(new Email("student@example.com"))
+            .passwordHash("password-hash")
+            .phone(new Phone("0987654321"))
+            .fullName(new FullName("Test Student"))
+            .dateOfBirth(new DateOfBirth(LocalDate.of(2000, 1, 1)))
+            .address("Ho Chi Minh City")
+            .status(UserStatus.ACTIVE)
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
+            .build();
     }
 
     private SchoolUser activeSchoolUser(UUID userId, UUID schoolId) {
-        return new SchoolUser(schoolId, userId, Instant.now(), Instant.now());
+        return SchoolUser.builder()
+            .schoolId(schoolId)
+            .userId(userId)
+            .startDate(Instant.now())
+            .endDate(Instant.now())
+            .build();
     }
 }

@@ -21,7 +21,7 @@ import org.springframework.data.domain.Pageable;
 
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
-import com.sep.vox.infrastructure.persistence.entity.RubricCriterionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.rubric.RubricCriterionJpaEntity;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataRubricCriterionRepository;
 
 /**

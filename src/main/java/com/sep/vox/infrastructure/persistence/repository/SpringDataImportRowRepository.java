@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.ImportRowJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.importfile.ImportRowJpaEntity;
 
 public interface SpringDataImportRowRepository extends JpaRepository<ImportRowJpaEntity, UUID> {
     List<ImportRowJpaEntity> findBySessionIdOrderByRowNumber(UUID sessionId);

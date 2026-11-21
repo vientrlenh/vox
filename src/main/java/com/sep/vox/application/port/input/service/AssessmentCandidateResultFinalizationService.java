@@ -49,8 +49,6 @@ public class AssessmentCandidateResultFinalizationService {
         Instant now = Instant.now();
         result.setStatus(AssessmentCandidateResultStatus.INVALID);
         result.setTotalScore(BigDecimal.ZERO.setScale(2));
-        result.setUpdatedAt(now);
-        result.setUpdatedBy(actingUserId);
         assessmentCandidateResultRepository.save(result);
 
         closeOpenAppeals(result.getId(), actingUserId, now);

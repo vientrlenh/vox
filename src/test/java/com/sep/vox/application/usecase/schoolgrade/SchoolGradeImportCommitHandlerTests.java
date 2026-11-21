@@ -109,11 +109,21 @@ class SchoolGradeImportCommitHandlerTests {
     void should_update_existing_grade_when_code_exists() {
         UUID sessionId = UUID.randomUUID();
         Instant createdAt = Instant.now().minus(5, ChronoUnit.DAYS);
-        SchoolGrade existing = new SchoolGrade(
-            UUID.randomUUID(), schoolId, levelId, "2024", "Năm cũ", "Mô tả cũ",
-            LocalDate.of(2024, 1, 1), LocalDate.of(2024, 6, 1),
-            SchoolGradeStatus.ACTIVE, createdAt, createdAt, createdBy, createdBy
-        );
+        SchoolGrade existing = SchoolGrade.builder()
+            .id(UUID.randomUUID())
+            .schoolId(schoolId)
+            .gradeLevelId(levelId)
+            .code("2024")
+            .name("Năm cũ")
+            .description("Mô tả cũ")
+            .startDate(LocalDate.of(2024, 1, 1))
+            .endDate(LocalDate.of(2024, 6, 1))
+            .status(SchoolGradeStatus.ACTIVE)
+            .createdAt(createdAt)
+            .updatedAt(createdAt)
+            .createdBy(createdBy.toString())
+            .updatedBy(createdBy.toString())
+            .build();
         List<ImportRow> rows = List.of(row(sessionId, 1L, data("K10", "2024", "Năm mới", "2024-09-05", "2025-05-30")));
 
         when(gradeLevelRepository.findByCodeIn(Set.of("K10"))).thenReturn(List.of(gradeLevel("K10")));
@@ -208,23 +218,55 @@ class SchoolGradeImportCommitHandlerTests {
 
     private GradeLevel gradeLevel(String code) {
         Instant now = Instant.now();
-        return new GradeLevel(levelId, code, "Khối " + code, null, 1,
-            GradeLevelStatus.ACTIVE, now, now, createdBy, createdBy);
+        return GradeLevel.builder()
+            .id(levelId)
+            .code(code)
+            .name("Khối " + code)
+            .description(null)
+            .order(1)
+            .status(GradeLevelStatus.ACTIVE)
+            .build();
     }
 
     private ImportRow row(UUID sessionId, long rowNumber, Map<String, String> rawData) {
-        return new ImportRow(UUID.randomUUID(), sessionId, rowNumber, jsonSerializationPort.toJson(rawData), null, null, ImportRowStatus.PENDING);
+        return ImportRow.builder()
+            .id(UUID.randomUUID())
+            .sessionId(sessionId)
+            .rowNumber(rowNumber)
+            .rawDataJson(jsonSerializationPort.toJson(rawData))
+            .mappedDataJson(null)
+            .errorsJson(null)
+            .status(ImportRowStatus.PENDING)
+            .build();
     }
 
     private ImportSession session(UUID id) {
-        return new ImportSession(
-            id, schoolId, ImportType.SCHOOL_GRADE, "grades.csv", "[]", "{}",
-            jsonSerializationPort.toJson(mapping()),
-            0L, 0L, 0L, 0L, 0L, null, ImportSessionStatus.IMPORTING, null,
-            Instant.now().plus(1, ChronoUnit.DAYS), null, null, null, 0,
-            Instant.now(), Instant.now(),
-            createdBy, createdBy
-        );
+        return ImportSession.builder()
+            .id(id)
+            .schoolId(schoolId)
+            .type(ImportType.SCHOOL_GRADE)
+            .fileName("grades.csv")
+            .originalHeadersJson("[]")
+            .suggestedMappingJson("{}")
+            .confirmedMappingJson(jsonSerializationPort.toJson(mapping()))
+            .validRows(0L)
+            .invalidRows(0L)
+            .importedRows(0L)
+            .skippedRows(0L)
+            .totalRows(0L)
+            .failureReason(null)
+            .status(ImportSessionStatus.IMPORTING)
+            .importedEntityId(null)
+            .expiresAt(Instant.now().plus(1, ChronoUnit.DAYS))
+            .claimedAt(null)
+            .claimedBy(null)
+            .leaseExpiresAt(null)
+            .attempts(0)
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
+            .createdBy(createdBy.toString())
+            .updatedBy(createdBy.toString())
+            .build();
     }
 
     private static Map<String, String> mapping() {

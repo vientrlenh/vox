@@ -126,15 +126,15 @@ class ViewMyClassDetailsUseCaseTests {
 
     private void givenMembership(boolean isActive) {
         when(schoolClassUserRepository.findByUserIdAndSchoolClassId(callerId, classId))
-            .thenReturn(Optional.of(new SchoolClassUser(
-                UUID.randomUUID(),
-                callerId,
-                classId,
-                isActive,
-                Instant.now(),
-                isActive ? null : Instant.now(),
-                UUID.randomUUID()
-            )));
+            .thenReturn(Optional.of(SchoolClassUser.builder()
+                .id(UUID.randomUUID())
+                .userId(callerId)
+                .schoolClassId(classId)
+                .active(isActive)
+                .joinedAt(Instant.now())
+                .leftAt(isActive ? null : Instant.now())
+                .assignedBy(UUID.randomUUID())
+                .build()));
     }
 
     private SchoolClass schoolClass() {
@@ -144,10 +144,7 @@ class ViewMyClassDetailsUseCaseTests {
             UUID.randomUUID(),
             "ENG-01",
             "English 01",
-            "Starter class",
-            UUID.randomUUID(),
-            Instant.now()
-        );
+            "Starter class");
         schoolClass.setId(classId);
         return schoolClass;
     }

@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.DeviceSessionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.devicesession.DeviceSessionJpaEntity;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;

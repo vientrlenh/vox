@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.mapper.personalization;
 
 import com.sep.vox.domain.model.personalization.PracticeQuestion;
-import com.sep.vox.infrastructure.persistence.entity.PracticeQuestionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.personalization.PracticeQuestionJpaEntity;
 
 public final class PracticeQuestionMapper {
 
@@ -10,48 +10,48 @@ public final class PracticeQuestionMapper {
 
     public static PracticeQuestion toDomain(
             PracticeQuestionJpaEntity entity) {
-        return new PracticeQuestion(
-            entity.getId(),
-            entity.getPracticeTopicId(),
-            entity.getQuestionText(),
-            entity.getTargetCriterionCode(),
-            entity.getTargetSubAttribute(),
-            entity.getTargetTense(),
-            entity.getDifficultyRank(),
-            entity.getDifficultyFeaturesJson(),
-            entity.getEvaluationGuideJson(),
-            entity.getSuggestedIdeasJson(),
-            entity.getQuestionType(),
-            entity.getMaxResponseSeconds(),
-            entity.getMinResponseSeconds(),
-            entity.getVstepPart(),
-            entity.getSource(),
-            entity.getUsageCount(),
-            entity.isActive(),
-            entity.getCreatedAt()
-        );
+        return PracticeQuestion.builder()
+                .id(entity.getId())
+                .practiceTopicId(entity.getPracticeTopicId())
+                .questionText(entity.getQuestionText())
+                .targetCriterionCode(entity.getTargetCriterionCode())
+                .targetSubAttribute(entity.getTargetSubAttribute())
+                .targetTense(entity.getTargetTense())
+                .difficultyRank(entity.getDifficultyRank())
+                .difficultyFeaturesJson(entity.getDifficultyFeaturesJson())
+                .evaluationGuideJson(entity.getEvaluationGuideJson())
+                .suggestedIdeasJson(entity.getSuggestedIdeasJson())
+                .questionType(entity.getQuestionType())
+                .maxResponseSeconds(entity.getMaxResponseSeconds())
+                .minResponseSeconds(entity.getMinResponseSeconds())
+                .vstepPart(entity.getVstepPart())
+                .source(entity.getSource())
+                .usageCount(entity.getUsageCount())
+                .active(entity.isActive())
+                .createdAt(entity.getCreatedAt())
+                .build();
     }
 
     public static PracticeQuestionJpaEntity toJpa(
             PracticeQuestion question) {
-        return new PracticeQuestionJpaEntity(
-            question.getPracticeTopicId(),
-            question.getQuestionText(),
-            question.getTargetCriterionCode(),
-            question.getTargetSubAttribute(),
-            question.getTargetTense(),
-            question.getDifficultyRank(),
-            question.getDifficultyFeaturesJson(),
-            question.getEvaluationGuideJson(),
-            question.getSuggestedIdeasJson(),
-            question.getQuestionType(),
-            question.getMaxResponseSeconds(),
-            question.getMinResponseSeconds(),
-            question.getVstepPart(),
-            question.getSource(),
-            question.getUsageCount(),
-            question.isActive(),
-            question.getCreatedAt()
-        );
+        return PracticeQuestionJpaEntity.builder()
+                .practiceTopicId(question.getPracticeTopicId())
+                .questionText(question.getQuestionText())
+                .targetCriterionCode(question.getTargetCriterionCode())
+                .targetSubAttribute(question.getTargetSubAttribute())
+                .targetTense(question.getTargetTense())
+                .difficultyRank(question.getDifficultyRank())
+                .difficultyFeaturesJson(question.getDifficultyFeaturesJson())
+                .evaluationGuideJson(question.getEvaluationGuideJson())
+                .suggestedIdeasJson(question.getSuggestedIdeasJson())
+                .questionType(question.getQuestionType())
+                .maxResponseSeconds(question.getMaxResponseSeconds())
+                .minResponseSeconds(question.getMinResponseSeconds())
+                .vstepPart(question.getVstepPart())
+                .source(question.getSource())
+                .usageCount(question.getUsageCount())
+                .active(question.isActive())
+                .createdAt(question.getCreatedAt())
+                .build();
     }
 }

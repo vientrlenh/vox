@@ -50,8 +50,13 @@ class ViewMyAssessmentQuotaAllocationUseCaseTests {
     void should_return_allocation_when_row_exists() {
         when(subscriptionQuotaUserAllocationRepository
             .findBySchoolSubscriptionIdAndQuotaTypeAndUserId(subscriptionId, QuotaType.ASSESSMENT, userId))
-            .thenReturn(Optional.of(new SchoolSubscriptionQuotaUserAllocation(
-                subscriptionId, QuotaType.ASSESSMENT, userId, BigDecimal.valueOf(1800), BigDecimal.valueOf(600))));
+            .thenReturn(Optional.of(SchoolSubscriptionQuotaUserAllocation.builder()
+                .schoolSubscriptionId(subscriptionId)
+                .quotaType(QuotaType.ASSESSMENT)
+                .userId(userId)
+                .allocatedAmountVnd(BigDecimal.valueOf(1800))
+                .usedAmountVnd(BigDecimal.valueOf(600))
+                .build()));
 
         SchoolSubscriptionQuotaUserAllocationDto result = useCase.execute(null);
 

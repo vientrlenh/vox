@@ -58,8 +58,9 @@ class AssessmentBlueprintGraphQlTests {
     }
 
     private AssessmentBlueprintVersion version(int number, AssessmentBlueprintVersionStatus status) {
-        return new AssessmentBlueprintVersion(UUID.randomUUID(), BLUEPRINT_ID, number, "V" + number, null, status, 1800,
-            EFFECTIVE_FROM, null, CREATED_AT, null, null, null);
+        return AssessmentBlueprintVersion.builder().id(UUID.randomUUID()).blueprintId(BLUEPRINT_ID).version(number)
+            .code("V" + number).status(status).totalTimeLimitSeconds(1800).effectiveFrom(EFFECTIVE_FROM)
+            .createdAt(CREATED_AT).build();
     }
 
     @Test

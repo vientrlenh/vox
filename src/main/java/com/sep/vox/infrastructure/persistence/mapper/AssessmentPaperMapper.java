@@ -2,42 +2,42 @@ package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.assessment.AssessmentPaper;
 import com.sep.vox.domain.model.assessment.AssessmentPaperStatus;
-import com.sep.vox.infrastructure.persistence.entity.AssessmentPaperJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentPaperJpaEntity;
 
 public final class AssessmentPaperMapper {
 
     private AssessmentPaperMapper() {}
 
     public static AssessmentPaper toDomain(AssessmentPaperJpaEntity jpa) {
-        return new AssessmentPaper(
-            jpa.getId(),
-            jpa.getAssessmentId(),
-            jpa.getBlueprintVersionId(),
-            jpa.getCode(),
-            jpa.getVariant(),
-            statusFromString(jpa.getStatus()),
-            jpa.getTimeDurationSeconds(),
-            jpa.getCreatedAt(),
-            jpa.getUpdatedAt(),
-            jpa.getCreatedBy(),
-            jpa.getUpdatedBy()
-        );
+        return AssessmentPaper.builder()
+                .id(jpa.getId())
+                .assessmentId(jpa.getAssessmentId())
+                .blueprintVersionId(jpa.getBlueprintVersionId())
+                .code(jpa.getCode())
+                .variant(jpa.getVariant())
+                .status(statusFromString(jpa.getStatus()))
+                .timeDurationSeconds(jpa.getTimeDurationSeconds())
+                .createdAt(jpa.getCreatedAt())
+                .updatedAt(jpa.getUpdatedAt())
+                .createdBy(jpa.getCreatedBy())
+                .updatedBy(jpa.getUpdatedBy())
+                .build();
     }
 
     public static AssessmentPaperJpaEntity toJpa(AssessmentPaper domain) {
-        return new AssessmentPaperJpaEntity(
-            domain.getId(),
-            domain.getAssessmentId(),
-            domain.getBlueprintVersionId(),
-            domain.getCode(),
-            domain.getVariant(),
-            domain.getStatus().name(),
-            domain.getTimeDurationSeconds(),
-            domain.getCreatedAt(),
-            domain.getUpdatedAt(),
-            domain.getCreatedBy(),
-            domain.getUpdatedBy()
-        );
+        return AssessmentPaperJpaEntity.builder()
+                .id(domain.getId())
+                .assessmentId(domain.getAssessmentId())
+                .blueprintVersionId(domain.getBlueprintVersionId())
+                .code(domain.getCode())
+                .variant(domain.getVariant())
+                .status(domain.getStatus().name())
+                .timeDurationSeconds(domain.getTimeDurationSeconds())
+                .createdAt(domain.getCreatedAt())
+                .updatedAt(domain.getUpdatedAt())
+                .createdBy(domain.getCreatedBy())
+                .updatedBy(domain.getUpdatedBy())
+                .build();
     }
 
     private static AssessmentPaperStatus statusFromString(String status) {

@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.AssessmentResultAppealJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentResultAppealJpaEntity;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;

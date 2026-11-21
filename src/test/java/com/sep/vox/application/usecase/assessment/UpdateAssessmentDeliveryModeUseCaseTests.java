@@ -94,7 +94,7 @@ class UpdateAssessmentDeliveryModeUseCaseTests {
     void should_update_delivery_mode_for_centralized_as_school_admin() {
         Assessment assessment = assessment(AssessmentKind.CENTRALIZED, AssessmentStatus.DRAFT);
         when(schoolUserRepository.findByUserId(userId))
-            .thenReturn(Optional.of(new com.sep.vox.domain.model.school.SchoolUser(schoolId, userId, null, null)));
+            .thenReturn(Optional.of(com.sep.vox.domain.model.school.SchoolUser.builder().schoolId(schoolId).userId(userId).startDate(null).endDate(null).build()));
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId))
             .thenReturn(List.of(new com.sep.vox.application.query.dto.UserRoleInfo(
                 UUID.randomUUID(), userId, UUID.randomUUID(), null, "SCHOOL_ADMIN", "School Admin")));

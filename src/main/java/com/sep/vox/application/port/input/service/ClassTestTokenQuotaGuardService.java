@@ -112,7 +112,7 @@ public class ClassTestTokenQuotaGuardService {
         // Kỳ thi tập trung do nhà trường tổ chức nên không tính vào túi riêng của ai; chỉ bài kiểm
         // tra trên lớp mới đụng tới hạn mức cá nhân mà trường cấp cho giáo viên ra đề.
         if (assessment.getKind() == AssessmentKind.CLASS_TEST) {
-            requireWithinUserAllocation(subscription.getId(), assessment.getCreatedBy(), estimatedCostVnd);
+            requireWithinUserAllocation(subscription.getId(), assessment.createdByUserId().orElse(null), estimatedCostVnd);
         }
     }
 
@@ -164,7 +164,7 @@ public class ClassTestTokenQuotaGuardService {
         BigDecimal remainingMyClassTest = null;
         boolean wouldExceedMyClassTest = false;
         if (assessment.getKind() == AssessmentKind.CLASS_TEST) {
-            remainingMyClassTest = remainingUserAllocation(subscriptionId, assessment.getCreatedBy());
+            remainingMyClassTest = remainingUserAllocation(subscriptionId, assessment.createdByUserId().orElse(null));
             wouldExceedMyClassTest = remainingMyClassTest != null
                 && estimatedCostVnd.compareTo(remainingMyClassTest) > 0;
         }

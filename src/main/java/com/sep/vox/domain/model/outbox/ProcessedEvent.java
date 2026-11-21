@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Đánh dấu event đã hoàn thành, chặn duplicate khi schedule
+ * Marks an event as completed, preventing duplicates when scheduling
  * ProcessedEvent
  */
 public class ProcessedEvent {
@@ -14,19 +14,6 @@ public class ProcessedEvent {
     private Instant processedAt;
 
     public ProcessedEvent() {}
-
-    public ProcessedEvent(UUID id, UUID eventId, String consumerGroup, Instant processedAt) {
-        this.id = id;
-        this.eventId = eventId;
-        this.consumerGroup = consumerGroup;
-        this.processedAt = processedAt;
-    }
-
-    public ProcessedEvent(UUID eventId, String consumerGroup, Instant processedAt) {
-        this.eventId = eventId;
-        this.consumerGroup = consumerGroup;
-        this.processedAt = processedAt;
-    }
 
     public UUID getId() {
         return id;
@@ -61,4 +48,41 @@ public class ProcessedEvent {
     }
 
     
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final ProcessedEvent target = new ProcessedEvent();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder eventId(UUID eventId) {
+            target.eventId = eventId;
+            return this;
+        }
+
+        public Builder consumerGroup(String consumerGroup) {
+            target.consumerGroup = consumerGroup;
+            return this;
+        }
+
+        public Builder processedAt(Instant processedAt) {
+            target.processedAt = processedAt;
+            return this;
+        }
+
+        public ProcessedEvent build() {
+            return target;
+        }
+
+    }
 }

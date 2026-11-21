@@ -14,7 +14,6 @@ import com.sep.vox.domain.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -92,8 +91,6 @@ public class DeleteSchoolUseCase implements IUseCase<DeleteSchoolCommand, UUID> 
 
         // 5. THỰC HIỆN XÓA MỀM VÀ LƯU DB
         school.setActive(false);
-        school.setUpdatedAt(Instant.now());
-        school.setUpdatedBy(currentUserId);
 
         schoolRepository.save(school);
 

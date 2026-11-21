@@ -1,10 +1,10 @@
 package com.sep.vox.domain.model.question;
 
-import java.time.Instant;
 import java.util.UUID;
 
-public class QuestionBank {
-    private UUID id;
+import com.sep.vox.domain.model.BaseModel;
+
+public class QuestionBank extends BaseModel {
     private UUID languageId; 
     private UUID schoolId;
     private String code;
@@ -12,52 +12,8 @@ public class QuestionBank {
     private String description;
     private QuestionBankOwnerType ownerType;
     private QuestionBankStatus status;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private UUID createdBy;
-    private UUID updatedBy;
 
     public QuestionBank() {}
-
-    public QuestionBank(UUID id, UUID languageId, UUID schoolId, String code, String name, String description, QuestionBankOwnerType ownerType, QuestionBankStatus status,
-            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.id = id;
-        this.languageId = languageId;
-        this.schoolId = schoolId;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.ownerType = ownerType;
-        this.status = status;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public QuestionBank(UUID languageId, UUID schoolId, String code, String name, String description, 
-            QuestionBankOwnerType ownerType, QuestionBankStatus status, 
-            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.languageId = languageId;
-        this.schoolId = schoolId;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.ownerType = ownerType;
-        this.status = status;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
 
     public UUID getLanguageId() {
         return languageId;
@@ -81,39 +37,6 @@ public class QuestionBank {
 
     public void setDescription(String description) {
         this.description = description;
-    }
-
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
-
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
     }
 
     public String getCode() {
@@ -148,20 +71,67 @@ public class QuestionBank {
         this.ownerType = ownerType;
     }
 
-    public static QuestionBank create(UUID languageId, UUID schoolId, String code, String name, String description, QuestionBankOwnerType ownerType, 
-    Instant now, UUID createdBy) {
-        return new QuestionBank(
-            languageId, 
-            schoolId, 
-            code, 
-            name, 
-            description, 
-            ownerType, 
-            QuestionBankStatus.DRAFT, 
-            now, 
-            now, 
-            createdBy, 
-            createdBy
-        );
+    public static QuestionBank create(UUID languageId, UUID schoolId, String code, String name, String description,
+            QuestionBankOwnerType ownerType) {
+        return builder()
+                .languageId(languageId)
+                .schoolId(schoolId)
+                .code(code)
+                .name(name)
+                .description(description)
+                .ownerType(ownerType)
+                .status(QuestionBankStatus.DRAFT)
+                .build();
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder extends BaseModel.Builder<QuestionBank, Builder> {
+
+        private Builder() {
+            super(new QuestionBank());
+        }
+
+        @Override
+        protected Builder self() {
+            return this;
+        }
+
+        public Builder languageId(UUID languageId) {
+            target.languageId = languageId;
+            return this;
+        }
+
+        public Builder schoolId(UUID schoolId) {
+            target.schoolId = schoolId;
+            return this;
+        }
+
+        public Builder code(String code) {
+            target.code = code;
+            return this;
+        }
+
+        public Builder name(String name) {
+            target.name = name;
+            return this;
+        }
+
+        public Builder description(String description) {
+            target.description = description;
+            return this;
+        }
+
+        public Builder ownerType(QuestionBankOwnerType ownerType) {
+            target.ownerType = ownerType;
+            return this;
+        }
+
+        public Builder status(QuestionBankStatus status) {
+            target.status = status;
+            return this;
+        }
     }
 }

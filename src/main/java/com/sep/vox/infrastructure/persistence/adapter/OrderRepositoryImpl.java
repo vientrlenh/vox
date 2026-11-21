@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.OrderJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.order.OrderJpaEntity;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;

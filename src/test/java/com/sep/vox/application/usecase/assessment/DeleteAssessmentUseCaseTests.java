@@ -255,20 +255,6 @@ class DeleteAssessmentUseCaseTests {
     }
 
     @Test
-    void should_stamp_updated_by_on_cancelled_schedules() {
-        Assessment assessment = assessment(AssessmentStatus.IN_PROGRESS);
-        AssessmentSchedule schedule = schedule(AssessmentScheduleStatus.PUBLISHED);
-        when(assessmentRepository.findById(assessmentId)).thenReturn(Optional.of(assessment));
-        when(assessmentRepository.save(any(Assessment.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(assessmentScheduleRepository.findByAssessmentId(assessmentId)).thenReturn(List.of(schedule));
-
-        useCase.execute(new DeleteAssessmentCommand(assessmentId));
-
-        assertThat(schedule.getUpdatedBy()).isEqualTo(userId);
-        assertThat(schedule.getUpdatedAt()).isNotNull();
-    }
-
-    @Test
     void should_reject_when_user_is_neither_school_admin_nor_chair() {
         when(assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessmentId, userId, AssessmentMemberRole.CHAIR))
             .thenReturn(false);

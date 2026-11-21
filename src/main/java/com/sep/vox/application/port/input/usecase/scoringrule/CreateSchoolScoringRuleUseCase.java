@@ -3,7 +3,6 @@ package com.sep.vox.application.port.input.usecase.scoringrule;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
-import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -120,26 +119,24 @@ public class CreateSchoolScoringRuleUseCase implements IUseCase<CreateSchoolScor
         ScoringRuleConditionParams conditionParams = ScoringRuleParamsMapper.toConditionParams(command.conditionType(), command.conditionParams());
         ScoringRuleActionParams actionParams = ScoringRuleParamsMapper.toActionParams(command.actionType(), command.actionParams());
 
-        // 7b. Kiểm tra criterionCode/bandCode (nếu có) có thực sự tồn tại trong Rubric Version của Policy
+        // 7b. Check that criterionCode/bandCode (if present) really exist in the Policy's Rubric Version
         validateCriterionReferences(policy.getRubricVersionId(), policy.getFrameworkVersionId(), conditionParams, actionParams);
 
-        // 8. Tạo mới và lưu
-        Instant now = Instant.now();
-        ScoringRule rule = new ScoringRule(
-                command.policyId(),
-                safeCode,
-                command.name().strip(),
-                command.description(),
-                command.conditionType(),
-                conditionParams,
-                command.actionType(),
-                actionParams,
-                command.priority(),
-                command.severity(),
-                command.stopProcessing(),
-                command.isActive(),
-                now, now, currentUserId, currentUserId
-        );
+        // 8. Create and save
+        ScoringRule rule = ScoringRule.builder()
+            .policyId(command.policyId())
+            .code(safeCode)
+            .name(command.name().strip())
+            .description(command.description())
+            .conditionType(command.conditionType())
+            .conditionParams(conditionParams)
+            .actionType(command.actionType())
+            .actionParams(actionParams)
+            .priority(command.priority())
+            .severity(command.severity())
+            .stopProcessing(command.stopProcessing())
+            .active(command.isActive())
+            .build();
 
         return scoringRuleRepository.save(rule).getId();
     }

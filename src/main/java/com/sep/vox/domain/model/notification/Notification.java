@@ -16,31 +16,6 @@ public class Notification {
 
     public Notification() {}
 
-    public Notification(UUID id, UUID userId, UUID eventId, String eventType, String title, String body, String payload,
-            Instant readAt, Instant createdAt) {
-        this.id = id;
-        this.userId = userId;
-        this.eventId = eventId;
-        this.eventType = eventType;
-        this.title = title;
-        this.body = body;
-        this.payload = payload;
-        this.readAt = readAt;
-        this.createdAt = createdAt;
-    }
-
-    public Notification(UUID userId, UUID eventId, String eventType, String title, String body, String payload,
-            Instant readAt, Instant createdAt) {
-        this.userId = userId;
-        this.eventId = eventId;
-        this.eventType = eventType;
-        this.title = title;
-        this.body = body;
-        this.payload = payload;
-        this.readAt = readAt;
-        this.createdAt = createdAt;
-    }
-
     public UUID getId() {
         return id;
     }
@@ -115,4 +90,66 @@ public class Notification {
 
     
     
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final Notification target = new Notification();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder userId(UUID userId) {
+            target.userId = userId;
+            return this;
+        }
+
+        public Builder eventId(UUID eventId) {
+            target.eventId = eventId;
+            return this;
+        }
+
+        public Builder eventType(String eventType) {
+            target.eventType = eventType;
+            return this;
+        }
+
+        public Builder title(String title) {
+            target.title = title;
+            return this;
+        }
+
+        public Builder body(String body) {
+            target.body = body;
+            return this;
+        }
+
+        public Builder payload(String payload) {
+            target.payload = payload;
+            return this;
+        }
+
+        public Builder readAt(Instant readAt) {
+            target.readAt = readAt;
+            return this;
+        }
+
+        public Builder createdAt(Instant createdAt) {
+            target.createdAt = createdAt;
+            return this;
+        }
+
+        public Notification build() {
+            return target;
+        }
+
+    }
 }

@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.SupportedLanguageJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.supportedlanguage.SupportedLanguageJpaEntity;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -105,7 +105,7 @@ public class SupportedLanguageRepositoryImpl implements SupportedLanguageReposit
     @Override
     public int updateMutableFields(UUID id, String code, boolean codeProvided, String name, boolean nameProvided,
             String description, boolean descriptionProvided, Boolean isActive, boolean isActiveProvided,
-            Instant updatedAt, UUID updatedBy) {
+            Instant updatedAt, String updatedBy) {
         return springDataSupportedLanguageRepository.updateMutableFields(
             id,
             code,

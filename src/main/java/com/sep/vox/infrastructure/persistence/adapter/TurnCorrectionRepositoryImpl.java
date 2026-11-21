@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.dto.personalization.TurnCorrectionDto;
 import com.sep.vox.domain.repository.TurnCorrectionRepository;
-import com.sep.vox.infrastructure.persistence.entity.TurnCorrectionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.personalization.TurnCorrectionJpaEntity;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataTurnCorrectionRepository;
 
 @Repository
@@ -27,15 +27,15 @@ public class TurnCorrectionRepositoryImpl implements TurnCorrectionRepository {
             String correctedText,
             String explanation,
             String correctAudioUrl) {
-        repository.save(new TurnCorrectionJpaEntity(
-            UUID.randomUUID(),
-            turnId,
-            category,
-            originalText,
-            correctedText,
-            explanation,
-            correctAudioUrl
-        ));
+        repository.save(TurnCorrectionJpaEntity.builder()
+                .id(UUID.randomUUID())
+                .turnId(turnId)
+                .category(category)
+                .originalText(originalText)
+                .correctedText(correctedText)
+                .explanation(explanation)
+                .correctAudioUrl(correctAudioUrl)
+                .build());
     }
 
     @Override

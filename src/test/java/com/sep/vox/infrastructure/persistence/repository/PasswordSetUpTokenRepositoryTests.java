@@ -89,7 +89,12 @@ class PasswordSetUpTokenRepositoryTests {
         String tokenHash = "expired-update-token";
         Instant now = Instant.now();
         passwordSetUpTokenRepository.save(
-            new PasswordSetUpToken(userId, tokenHash, now.minus(3, ChronoUnit.DAYS), now.minus(1, ChronoUnit.DAYS), null)
+            PasswordSetUpToken.builder()
+            .userId(userId)
+            .tokenHash(tokenHash)
+            .createdAt(now.minus(3, ChronoUnit.DAYS))
+            .expiredAt(now.minus(1, ChronoUnit.DAYS))
+            .build()
         );
         entityManager.flush();
 
@@ -100,12 +105,11 @@ class PasswordSetUpTokenRepositoryTests {
 
     private static PasswordSetUpToken newToken(UUID userId, String tokenHash) {
         Instant now = Instant.now();
-        return new PasswordSetUpToken(
-            userId,
-            tokenHash,
-            now,
-            now.plus(2, ChronoUnit.DAYS),
-            null
-        );
+        return PasswordSetUpToken.builder()
+            .userId(userId)
+            .tokenHash(tokenHash)
+            .createdAt(now)
+            .expiredAt(now.plus(2, ChronoUnit.DAYS))
+            .build();
     }
 }

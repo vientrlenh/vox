@@ -80,13 +80,11 @@ class RefreshTokenRepositoryTests {
 
     private static RefreshToken newRefreshToken(UUID sessionId, String tokenHash) {
         Instant now = Instant.now();
-        return new RefreshToken(
-            sessionId,
-            tokenHash,
-            now,
-            now.plus(7, ChronoUnit.DAYS),
-            null,
-            null
-        );
+        return RefreshToken.builder()
+            .sessionId(sessionId)
+            .tokenHash(tokenHash)
+            .issuedAt(now)
+            .expiredAt(now.plus(7, ChronoUnit.DAYS))
+            .build();
     }
 }

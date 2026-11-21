@@ -19,39 +19,6 @@ public class AssessmentRecording {
 
     public AssessmentRecording() {}
 
-    public AssessmentRecording(UUID id, UUID assessmentSessionId, UUID candidateId, AssessmentRequiredStreamType streamType,
-            String bucket, String s3Key, AssessmentRecordingAssemblyStatus status, Long sizeBytes, Integer durationSeconds, String source,
-            Instant createdAt, Instant assembledAt) {
-        this.id = id;
-        this.assessmentSessionId = assessmentSessionId;
-        this.candidateId = candidateId;
-        this.streamType = streamType;
-        this.bucket = bucket;
-        this.s3Key = s3Key;
-        this.status = status;
-        this.sizeBytes = sizeBytes;
-        this.durationSeconds = durationSeconds;
-        this.source = source;
-        this.createdAt = createdAt;
-        this.assembledAt = assembledAt;
-    }
-
-    public AssessmentRecording(UUID assessmentSessionId, UUID candidateId, AssessmentRequiredStreamType streamType, String bucket,
-            String s3Key, AssessmentRecordingAssemblyStatus status, Long sizeBytes, Integer durationSeconds, String source,
-            Instant createdAt, Instant assembledAt) {
-        this.assessmentSessionId = assessmentSessionId;
-        this.candidateId = candidateId;
-        this.streamType = streamType;
-        this.bucket = bucket;
-        this.s3Key = s3Key;
-        this.status = status;
-        this.sizeBytes = sizeBytes;
-        this.durationSeconds = durationSeconds;
-        this.source = source;
-        this.createdAt = createdAt;
-        this.assembledAt = assembledAt;
-    }
-
     public UUID getId() {
         return id;
     }
@@ -148,5 +115,80 @@ public class AssessmentRecording {
         this.source = source;
     }
 
-    
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final AssessmentRecording target = new AssessmentRecording();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder assessmentSessionId(UUID assessmentSessionId) {
+            target.assessmentSessionId = assessmentSessionId;
+            return this;
+        }
+
+        public Builder candidateId(UUID candidateId) {
+            target.candidateId = candidateId;
+            return this;
+        }
+
+        public Builder streamType(AssessmentRequiredStreamType streamType) {
+            target.streamType = streamType;
+            return this;
+        }
+
+        public Builder bucket(String bucket) {
+            target.bucket = bucket;
+            return this;
+        }
+
+        public Builder s3Key(String s3Key) {
+            target.s3Key = s3Key;
+            return this;
+        }
+
+        public Builder status(AssessmentRecordingAssemblyStatus status) {
+            target.status = status;
+            return this;
+        }
+
+        public Builder sizeBytes(Long sizeBytes) {
+            target.sizeBytes = sizeBytes;
+            return this;
+        }
+
+        public Builder durationSeconds(Integer durationSeconds) {
+            target.durationSeconds = durationSeconds;
+            return this;
+        }
+
+        public Builder source(String source) {
+            target.source = source;
+            return this;
+        }
+
+        public Builder createdAt(Instant createdAt) {
+            target.createdAt = createdAt;
+            return this;
+        }
+
+        public Builder assembledAt(Instant assembledAt) {
+            target.assembledAt = assembledAt;
+            return this;
+        }
+
+        public AssessmentRecording build() {
+            return target;
+        }
+
+    }
 }

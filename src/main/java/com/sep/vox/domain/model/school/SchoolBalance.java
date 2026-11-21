@@ -18,32 +18,18 @@ import java.util.UUID;
 public class SchoolBalance {
     private UUID id;
     private UUID schoolId;
-    // Không có CHECK >= 0 ở tầng DB: phần âm ở đây CHÍNH LÀ nợ, phát sinh khi một khoản chi THẬT
-    // (đường thi, xem ConsumeQuotaService) vượt quá cả hạn mức kèm gói lẫn số dư đã nạp.
+    // No CHECK >= 0 at the database level: the negative part here IS the debt, which arises when a REAL charge (the exam
+    // path, see ConsumeQuotaService) exceeds both the plan's quota and the balance that was topped up.
     private BigDecimal balanceVnd;
     private Instant createdAt;
     private Instant updatedAt;
-    // Phải mang theo ở domain model, không chỉ ở JpaEntity: mapper dựng entity MỚI mỗi lần lưu nên
-    // entity luôn detached -- thiếu version, Hibernate coi là transient và INSERT đè lên id đã có.
+    // Must be carried on the domain model, not only on the JpaEntity: the mapper builds a NEW entity on every save, so the
+    // entity is always detached -- without the version, Hibernate treats it as transient and INSERTs over the existing id.
     private Long version;
 
     public SchoolBalance() {}
-
-    public SchoolBalance(UUID id, UUID schoolId, BigDecimal balanceVnd, Instant createdAt, Instant updatedAt, Long version) {
-        this.id = id;
-        this.schoolId = schoolId;
-        this.balanceVnd = balanceVnd;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.version = version;
-    }
-
-    public SchoolBalance(UUID schoolId, BigDecimal balanceVnd, Instant createdAt, Instant updatedAt) {
-        this.schoolId = schoolId;
-        this.balanceVnd = balanceVnd;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-    }
+
+
 
     public UUID getId() {
         return id;
@@ -93,35 +79,87 @@ public class SchoolBalance {
         this.version = version;
     }
 
-    /** Nợ = số dư âm. Trường vẫn dùng được (nếu QuotaType cho ghi nợ) nhưng phải nạp bù. */
+    /** Debt = negative balance. The school can still use the service (if the QuotaType allows going into debt) but must top up. */
     public boolean isInDebt() {
         return balanceVnd.compareTo(BigDecimal.ZERO) < 0;
     }
 
     /**
-     * Ví rỗng cho trường chưa từng nạp. Tạo lúc chạm vào ví lần đầu chứ không tạo sẵn cùng lúc với
-     * School: ví không có dòng nào và ví có số dư 0 là cùng một nghĩa, nên tạo sẵn chỉ thêm một bảng
-     * phải dọn khi xóa trường.
+     * An empty wallet for a school that has never topped up. Created the first time the wallet is touched rather than
+     * together with the School: a wallet with no rows and a wallet with a balance of 0 mean the same thing, so creating it
+     * up front only adds a table that has to be cleaned up when a school is deleted.
      *
-     * <p>KHÔNG dùng cái này để dựng dòng rồi save: dòng số dư phải do
-     * {@code SchoolBalanceRepository.findBySchoolIdForUpdateOrCreate} tạo, vì chỉ ở đó việc tạo mới
-     * nằm chung một câu INSERT ... ON CONFLICT với việc khóa hàng. Dựng ở tầng Java rồi save là mở lại
-     * đúng cửa sổ tranh chấp mà method kia sinh ra để đóng.
+     * <p>Do NOT use this to build a row and then save it: the balance row must be created by
+     * {@code SchoolBalanceRepository.findBySchoolIdForUpdateOrCreate}, because only there is the creation part of the same
+     * INSERT ... ON CONFLICT statement as the row lock. Building it in Java and saving would reopen exactly the race window
+     * that method exists to close.
      */
     public static SchoolBalance emptyFor(UUID schoolId, Instant now) {
-        return new SchoolBalance(schoolId, BigDecimal.ZERO, now, now);
+        return builder()
+            .schoolId(schoolId)
+            .balanceVnd(BigDecimal.ZERO)
+            .createdAt(now)
+            .updatedAt(now)
+            .build();
     }
 
     /**
-     * Cộng/trừ số dư và trả về số dư MỚI. Trả ra để chỗ gọi ghi thẳng vào
-     * {@code SchoolBalanceEntry.balanceAfterVnd} -- hai con số đó buộc phải là một, nếu tự tính lại
-     * ở chỗ gọi thì sao kê và số dư tổng hợp sẽ trôi khỏi nhau.
+     * Adds to / subtracts from the balance and returns the NEW balance. It is returned so the caller can write it straight
+     * into {@code SchoolBalanceEntry.balanceAfterVnd} -- those two numbers must be one, because if the caller recomputes
+     * it, the statement and the aggregated balance would drift apart.
      *
-     * @param amountVnd dương = nạp/hoàn, âm = trừ
+     * @param amountVnd positive = top-up/refund, negative = deduction
      */
     public BigDecimal apply(BigDecimal amountVnd, Instant now) {
         this.balanceVnd = this.balanceVnd.add(amountVnd);
         this.updatedAt = now;
         return this.balanceVnd;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final SchoolBalance target = new SchoolBalance();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder schoolId(UUID schoolId) {
+            target.schoolId = schoolId;
+            return this;
+        }
+
+        public Builder balanceVnd(BigDecimal balanceVnd) {
+            target.balanceVnd = balanceVnd;
+            return this;
+        }
+
+        public Builder createdAt(Instant createdAt) {
+            target.createdAt = createdAt;
+            return this;
+        }
+
+        public Builder updatedAt(Instant updatedAt) {
+            target.updatedAt = updatedAt;
+            return this;
+        }
+
+        public Builder version(Long version) {
+            target.version = version;
+            return this;
+        }
+
+        public SchoolBalance build() {
+            return target;
+        }
+
     }
 }

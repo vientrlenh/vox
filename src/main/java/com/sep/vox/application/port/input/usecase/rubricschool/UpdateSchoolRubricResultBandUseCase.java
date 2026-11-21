@@ -145,7 +145,7 @@ public class UpdateSchoolRubricResultBandUseCase implements IUseCase<UpdateSchoo
                     command.scoreMax(),
                     command.order(),
                     Instant.now(),
-                    currentUserId
+                    currentUserId.toString()
             );
         } catch (DataIntegrityViolationException e) {
             throw new IllegalArgumentException("Không thể cập nhật Dải điểm Kết quả do dữ liệu bị trùng hoặc không hợp lệ.");

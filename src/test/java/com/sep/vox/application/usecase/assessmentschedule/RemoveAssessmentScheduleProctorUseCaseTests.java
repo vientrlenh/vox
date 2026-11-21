@@ -72,7 +72,11 @@ class RemoveAssessmentScheduleProctorUseCaseTests {
 
     @Test
     void should_remove_proctor_belonging_to_schedule() {
-        AssessmentScheduleProctor proctor = new AssessmentScheduleProctor(proctorId, scheduleId, UUID.randomUUID());
+        AssessmentScheduleProctor proctor = AssessmentScheduleProctor.builder()
+                .id(proctorId)
+                .scheduleId(scheduleId)
+                .teacherId(UUID.randomUUID())
+                .build();
         when(assessmentScheduleProctorRepository.findById(proctorId)).thenReturn(Optional.of(proctor));
 
         UUID result = useCase.execute(new DeleteAssessmentScheduleProctorCommand(assessmentId, scheduleId, proctorId));
@@ -83,7 +87,11 @@ class RemoveAssessmentScheduleProctorUseCaseTests {
 
     @Test
     void should_reject_when_proctor_not_in_schedule() {
-        AssessmentScheduleProctor proctor = new AssessmentScheduleProctor(proctorId, UUID.randomUUID(), UUID.randomUUID());
+        AssessmentScheduleProctor proctor = AssessmentScheduleProctor.builder()
+                .id(proctorId)
+                .scheduleId(UUID.randomUUID())
+                .teacherId(UUID.randomUUID())
+                .build();
         when(assessmentScheduleProctorRepository.findById(proctorId)).thenReturn(Optional.of(proctor));
 
         assertThatThrownBy(() -> useCase.execute(new DeleteAssessmentScheduleProctorCommand(assessmentId, scheduleId, proctorId)))

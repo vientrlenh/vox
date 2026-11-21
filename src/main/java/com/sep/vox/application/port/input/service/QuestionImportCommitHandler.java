@@ -187,7 +187,7 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
 
             try {
                 transactionTemplate.executeWithoutResult(status ->
-                    createQuestion(normalized, importContext, session.getCreatedBy())
+                    createQuestion(normalized, importContext, session.createdByUserId().orElseThrow())
                 );
                 row.setErrorsJson(null);
                 row.setStatus(ImportRowStatus.IMPORTED);
@@ -465,46 +465,43 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
 
     private void createQuestion(Map<String, String> data, ImportContext importContext, UUID currentUserId) {
         Instant now = Instant.now();
-        Question question = new Question(
-            importContext.questionBank().getId(),
-            importContext.questionTopic().getId(),
-            questionCodeOf(data.get("code")),
-            data.get("instructionText"),
-            data.get("questionText"),
-            data.get("promptText"),
-            data.get("preparationText"),
-            QuestionType.valueOf(data.get("type")),
-            Integer.parseInt(data.get("preparationTimeSeconds")),
-            Integer.parseInt(data.get("minResponseSeconds")),
-            Integer.parseInt(data.get("maxResponseSeconds")),
-            data.get("sharing") == null ? QuestionSharing.PRIVATE : QuestionSharing.valueOf(data.get("sharing")),
-            null,
-            false,
-            QuestionConfidentiality.OPEN,
-            null,
-            // DRAFT chứ không phải SUBMITTED_FOR_REVIEW: câu nhập hàng loạt gần như luôn còn phải
-            // sửa tiếp -- điển hình là upload ảnh/audio thật cho tài nguyên, vì tệp media không đi
-            // kèm được trong Excel. Đẩy thẳng vào hàng đợi duyệt là bắt người duyệt xem một câu
-            // chưa xong. Người nhập là createdBy nên tự bulk SUBMIT được khi đã hoàn thiện
-            // (QuestionStatusTransition: SUBMIT nhận DRAFT hoặc REVISION_REQUESTED).
-            QuestionStatus.DRAFT,
-            now,
-            now,
-            currentUserId,
-            currentUserId
-        );
+        Question question = Question.builder()
+                .questionBankId(importContext.questionBank().getId())
+                .questionTopicId(importContext.questionTopic().getId())
+                .code(questionCodeOf(data.get("code")))
+                .instructionText(data.get("instructionText"))
+                .questionText(data.get("questionText"))
+                .promptText(data.get("promptText"))
+                .preparationText(data.get("preparationText"))
+                .type(QuestionType.valueOf(data.get("type")))
+                .preparationTimeSeconds(Integer.parseInt(data.get("preparationTimeSeconds")))
+                .minResponseSeconds(Integer.parseInt(data.get("minResponseSeconds")))
+                .maxResponseSeconds(Integer.parseInt(data.get("maxResponseSeconds")))
+                .sharing(data.get("sharing") == null ? QuestionSharing.PRIVATE : QuestionSharing.valueOf(data.get("sharing")))
+                .sourceQuestionId(null)
+                .locked(false)
+                .confidentiality(QuestionConfidentiality.OPEN)
+                .securePoolId(null)
+                // DRAFT, not SUBMITTED_FOR_REVIEW: bulk-imported questions almost always still need further
+                // edits -- typically uploading the real image/audio for the assets, because media files cannot
+                // be carried in the Excel file. Sending them straight to the review queue would make reviewers
+                // look at an unfinished question. The importer is createdBy, so they can bulk SUBMIT it
+                // themselves once it is complete (QuestionStatusTransition: SUBMIT accepts DRAFT or
+                // REVISION_REQUESTED).
+                .status(QuestionStatus.DRAFT)
+                .build();
         Question savedQuestion = questionRepository.save(question);
         createAssetIfPresent(data, savedQuestion.getId());
         if (hasEvaluationGuide(data)) {
-            questionEvaluationGuideRepository.save(new QuestionEvaluationGuide(
-                savedQuestion.getId(),
-                data.get("evaluationExpectedContent"),
-                data.get("evaluationKeyPoints"),
-                data.get("evaluationAcceptableResponses"),
-                data.get("evaluationOffTopicExamples"),
-                data.get("evaluationScoringHints"),
-                data.get("evaluationCommonMistakes")
-            ));
+            questionEvaluationGuideRepository.save(QuestionEvaluationGuide.builder()
+                    .questionId(savedQuestion.getId())
+                    .expectedContent(data.get("evaluationExpectedContent"))
+                    .keyPoints(data.get("evaluationKeyPoints"))
+                    .acceptableResponses(data.get("evaluationAcceptableResponses"))
+                    .offTopicExamples(data.get("evaluationOffTopicExamples"))
+                    .scoringHints(data.get("evaluationScoringHints"))
+                    .commonMistakes(data.get("evaluationCommonMistakes"))
+                    .build());
         }
     }
 
@@ -538,17 +535,17 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
             durationSeconds = Integer.parseInt(rawDuration.strip());
         }
 
-        questionAssetRepository.save(new QuestionAsset(
-            questionId,
-            data.get("assetTitle"),
-            durationSeconds,
-            altText,
-            assetType,
-            url,
-            transcript,
-            description,
-            1
-        ));
+        questionAssetRepository.save(QuestionAsset.builder()
+                .questionId(questionId)
+                .title(data.get("assetTitle"))
+                .durationSeconds(durationSeconds)
+                .altText(altText)
+                .type(assetType)
+                .url(url)
+                .transcript(transcript)
+                .description(description)
+                .order(1)
+                .build());
     }
 
     private boolean hasDifferentContext(Map<String, String> data, ImportContext importContext) {

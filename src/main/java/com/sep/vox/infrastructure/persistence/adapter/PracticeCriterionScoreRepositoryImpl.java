@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.domain.dto.personalization.PracticeCriterionScoreDto;
 import com.sep.vox.domain.repository.PracticeCriterionScoreRepository;
-import com.sep.vox.infrastructure.persistence.entity.PracticeCriterionScoreJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.personalization.PracticeCriterionScoreJpaEntity;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataPracticeCriterionScoreRepository;
 
 @Repository
@@ -33,12 +33,12 @@ public class PracticeCriterionScoreRepositoryImpl implements PracticeCriterionSc
             .orElse(null);
         BigDecimal scoreValue = BigDecimal.valueOf(finalScore);
         if (existing == null) {
-            repository.save(new PracticeCriterionScoreJpaEntity(
-                UUID.randomUUID(),
-                practiceEvaluationId,
-                criterionCode,
-                scoreValue
-            ));
+            repository.save(PracticeCriterionScoreJpaEntity.builder()
+                    .id(UUID.randomUUID())
+                    .practiceEvaluationId(practiceEvaluationId)
+                    .criterionCode(criterionCode)
+                    .finalScore(scoreValue)
+                    .build());
             return;
         }
         existing.setFinalScore(scoreValue);

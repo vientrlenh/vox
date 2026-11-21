@@ -44,16 +44,16 @@ public class CreateAssessmentSessionUseCase implements IUseCase<CreateAssessment
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đề thi"));
 
         Instant now = Instant.now();
-        AssessmentSession session = new AssessmentSession(
-            input.assessmentId(),
-            input.candidateId(),
-            input.paperId(),
-            now,
-            null,
-            AssessmentSessionStatus.IN_PROGRESS,
-            false,
-            null
-        );
+        AssessmentSession session = AssessmentSession.builder()
+                .assessmentId(input.assessmentId())
+                .candidateId(input.candidateId())
+                .paperId(input.paperId())
+                .startedAt(now)
+                .submittedAt(null)
+                .status(AssessmentSessionStatus.IN_PROGRESS)
+                .flagged(false)
+                .flagReason(null)
+                .build();
         return toResponse(assessmentSessionRepository.save(session));
     }
 

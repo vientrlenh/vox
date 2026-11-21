@@ -208,18 +208,38 @@ class ViewAssessmentSessionResultUseCaseTests {
     }
 
     private void givenAccess(boolean candidateOwner, boolean flagged) {
-        AssessmentSession session = new AssessmentSession(
-            SESSION_ID, ASSESSMENT_ID, CANDIDATE_ID, PAPER_ID, Instant.now(), Instant.now(),
-            AssessmentSessionStatus.GRADED, flagged, flagged ? "nghi vấn" : null);
+        AssessmentSession session = AssessmentSession.builder()
+                .id(SESSION_ID)
+                .assessmentId(ASSESSMENT_ID)
+                .candidateId(CANDIDATE_ID)
+                .paperId(PAPER_ID)
+                .startedAt(Instant.now())
+                .submittedAt(Instant.now())
+                .status(AssessmentSessionStatus.GRADED)
+                .flagged(flagged)
+                .flagReason(flagged ? "nghi vấn" : null)
+                .build();
         when(assessmentResultAccessService.authorizeSession(SESSION_ID))
             .thenReturn(new SessionAccess(session, candidateOwner));
     }
 
     private void givenResult(AssessmentCandidateResultStatus status) {
-        AssessmentCandidateResult result = new AssessmentCandidateResult(
-            UUID.randomUUID(), ASSESSMENT_ID, CANDIDATE_ID, SESSION_ID, UUID.randomUUID(), 1,
-            UUID.randomUUID(), UUID.randomUUID(), null, null,
-            new BigDecimal("7.50"), status, null, null, Instant.now(), Instant.now(), null, null);
+        AssessmentCandidateResult result = AssessmentCandidateResult.builder()
+                .id(UUID.randomUUID())
+                .assessmentId(ASSESSMENT_ID)
+                .candidateId(CANDIDATE_ID)
+                .sessionId(SESSION_ID)
+                .assessmentPolicyId(UUID.randomUUID())
+                .policyVersion(1)
+                .rubricVersionId(UUID.randomUUID())
+                .frameworkVersionId(UUID.randomUUID())
+                .targetFrameworkBandId(null)
+                .rubricResultBandId(null)
+                .totalScore(new BigDecimal("7.50"))
+                .status(status)
+                .releasedAt(null)
+                .finalizedAt(null)
+                .build();
         when(assessmentCandidateResultRepository.findBySessionId(SESSION_ID)).thenReturn(Optional.of(result));
     }
 

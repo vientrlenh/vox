@@ -102,34 +102,42 @@ public class PreviewSystemRubricCriterionImportFromFileUseCase implements IUseCa
         Instant expiresAt = now.plus(1, ChronoUnit.DAYS);
 
         // Tạo Session (Ghim rubricVersionId vào importedEntityId)
-        ImportSession session = new ImportSession(
-                null,
-                command.schoolId(),
-                ImportType.RUBRIC_CRITERION,
-                command.file().fileName(),
-                jsonSerializationPort.toJson(parsedResult.originalHeaders()),
-                jsonSerializationPort.toJson(parsedResult.suggestedMapping()),
-                null,
-                0, 0, 0, 0,
-                parsedResult.rows().size(),
-                null,
-                ImportSessionStatus.PREVIEWED,
-                command.rubricVersionId(),// Nạp tiêu chí vào versionId này
-                expiresAt,
-                null, null, null, 0,
-                now, now, currentUserId, currentUserId
-        );
+        ImportSession session = ImportSession.builder()
+            .schoolId(command.schoolId())
+            .type(ImportType.RUBRIC_CRITERION)
+            .fileName(command.file().fileName())
+            .originalHeadersJson(jsonSerializationPort.toJson(parsedResult.originalHeaders()))
+            .suggestedMappingJson(jsonSerializationPort.toJson(parsedResult.suggestedMapping()))
+            .confirmedMappingJson(null)
+            .validRows(0)
+            .invalidRows(0)
+            .importedRows(0)
+            .skippedRows(0)
+            .totalRows(parsedResult.rows().size())
+            .failureReason(null)
+            .status(ImportSessionStatus.PREVIEWED)
+            // Load the criteria into this versionId
+            .importedEntityId(command.rubricVersionId())
+            .expiresAt(expiresAt)
+            .claimedAt(null)
+            .claimedBy(null)
+            .leaseExpiresAt(null)
+            .attempts(0)
+            .build();
 
         ImportSession savedSession = importSessionRepository.save(session);
         UUID generatedSessionId = savedSession.getId();
 
         // Tạo Rows nháp
         List<ImportRow> importRows = IntStream.range(0, parsedResult.rows().size())
-                .mapToObj(i -> new ImportRow(
-                        null, generatedSessionId, i + 1,
-                        jsonSerializationPort.toJson(parsedResult.rows().get(i)),
-                        null, null, ImportRowStatus.PENDING
-                )).toList();
+                .mapToObj(i -> ImportRow.builder()
+                    .sessionId(generatedSessionId)
+                    .rowNumber(i + 1)
+                    .rawDataJson(jsonSerializationPort.toJson(parsedResult.rows().get(i)))
+                    .mappedDataJson(null)
+                    .errorsJson(null)
+                    .status(ImportRowStatus.PENDING)
+                    .build()).toList();
 
         importRowRepository.saveAll(importRows);
 

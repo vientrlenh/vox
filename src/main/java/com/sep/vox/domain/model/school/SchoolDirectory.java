@@ -1,69 +1,19 @@
 package com.sep.vox.domain.model.school;
 
-import java.time.Instant;
-import java.util.UUID;
+import com.sep.vox.domain.model.BaseModel;
 
-public class SchoolDirectory {
-    private UUID id;
+public class SchoolDirectory extends BaseModel {
     private String code;
     private String name;
     private String provinceCode;
     private String provinceName;
     private String districtName;
     private String domain;
-    private String address; 
+    private String address;
     private SchoolDirectoryOrigin origin;
     private boolean verified;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private UUID createdBy;
-    private UUID updatedBy;
 
-    public SchoolDirectory() {}
-
-    public SchoolDirectory(UUID id, String code, String name, String provinceCode, String provinceName,
-            String districtName, String domain, String address, SchoolDirectoryOrigin origin, boolean verified, Instant createdAt,
-            Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.id = id;
-        this.code = code;
-        this.name = name;
-        this.provinceCode = provinceCode;
-        this.provinceName = provinceName;
-        this.districtName = districtName;
-        this.domain = domain;
-        this.address = address;
-        this.origin = origin;
-        this.verified = verified;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public SchoolDirectory(String code, String name, String provinceCode, String provinceName, String districtName,
-            String domain, String address, SchoolDirectoryOrigin origin, boolean verified, Instant createdAt, Instant updatedAt,
-            UUID createdBy, UUID updatedBy) {
-        this.code = code;
-        this.name = name;
-        this.provinceCode = provinceCode;
-        this.provinceName = provinceName;
-        this.districtName = districtName;
-        this.domain = domain;
-        this.address = address;
-        this.origin = origin;
-        this.verified = verified;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
+    public SchoolDirectory() {
     }
 
     public String getCode() {
@@ -138,99 +88,57 @@ public class SchoolDirectory {
         this.verified = verified;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
-
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
-    } 
-
-    public void verify(UUID updatedBy, Instant now) {
+    public void verify() {
         this.verified = true;
-        this.updatedAt = now;
-        this.updatedBy = updatedBy;
     }
 
-    public static SchoolDirectory createByAdmin(String code, String name, String provinceCode, String provinceName, String districtName, String domain, String address, Instant now, UUID createdBy) {
-        return new SchoolDirectory(
-            code, 
-            name, 
-            provinceCode, 
-            provinceName, 
-            districtName, 
-            domain, 
-            address, 
-            SchoolDirectoryOrigin.ADMIN_CREATED, true, 
-            now, 
-            now, 
-            createdBy, 
-            createdBy
-        );
+    public static SchoolDirectory createByAdmin(String code, String name, String provinceCode, String provinceName,
+            String districtName, String domain, String address) {
+        return builder()
+            .code(code)
+            .name(name)
+            .provinceCode(provinceCode)
+            .provinceName(provinceName)
+            .districtName(districtName)
+            .domain(domain)
+            .address(address)
+            .origin(SchoolDirectoryOrigin.ADMIN_CREATED)
+            .verified(true)
+            .build();
     }
 
-    public static SchoolDirectory createByUserSubmitted(String code, String name, String provinceCode, String provinceName, String districtName, String domain, String address, Instant now, UUID createdBy) {
-        return new SchoolDirectory(
-            code, 
-            name, 
-            provinceCode, 
-            provinceName, 
-            districtName, 
-            domain, 
-            address, 
-            SchoolDirectoryOrigin.USER_SUBMITTED,
-            false,
-            now,
-            now,
-            createdBy,
-            createdBy
-        );
+    public static SchoolDirectory createByUserSubmitted(String code, String name, String provinceCode, String provinceName,
+            String districtName, String domain, String address) {
+        return builder()
+            .code(code)
+            .name(name)
+            .provinceCode(provinceCode)
+            .provinceName(provinceName)
+            .districtName(districtName)
+            .domain(domain)
+            .address(address)
+            .origin(SchoolDirectoryOrigin.USER_SUBMITTED)
+            .verified(false)
+            .build();
     }
 
-    public static SchoolDirectory createByImport(String code, String name, String provinceCode, String provinceName, String districtName, String domain, String address, Instant now, UUID createdBy) {
-        return new SchoolDirectory(
-            code,
-            name,
-            provinceCode,
-            provinceName,
-            districtName,
-            domain,
-            address,
-            SchoolDirectoryOrigin.OFFICIAL_IMPORT,
-            false,
-            now,
-            now,
-            createdBy,
-            createdBy
-        );
+    public static SchoolDirectory createByImport(String code, String name, String provinceCode, String provinceName,
+            String districtName, String domain, String address) {
+        return builder()
+            .code(code)
+            .name(name)
+            .provinceCode(provinceCode)
+            .provinceName(provinceName)
+            .districtName(districtName)
+            .domain(domain)
+            .address(address)
+            .origin(SchoolDirectoryOrigin.OFFICIAL_IMPORT)
+            .verified(false)
+            .build();
     }
 
-
-    public void applyImportUpdate(String name, String provinceCode, String provinceName, String districtName, String domain, String address, UUID updatedBy, Instant now) {
+    public void applyImportUpdate(String name, String provinceCode, String provinceName, String districtName,
+            String domain, String address) {
         this.name = name;
         this.provinceCode = provinceCode;
         this.provinceName = provinceName;
@@ -238,12 +146,70 @@ public class SchoolDirectory {
         this.domain = domain;
         this.address = address;
         this.origin = SchoolDirectoryOrigin.OFFICIAL_IMPORT;
-        this.updatedAt = now;
-        this.updatedBy = updatedBy;
     }
-
 
     public boolean isCurated() {
         return verified || origin == SchoolDirectoryOrigin.ADMIN_CREATED;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder extends BaseModel.Builder<SchoolDirectory, Builder> {
+
+        private Builder() {
+            super(new SchoolDirectory());
+        }
+
+        @Override
+        protected Builder self() {
+            return this;
+        }
+
+        public Builder code(String code) {
+            target.code = code;
+            return this;
+        }
+
+        public Builder name(String name) {
+            target.name = name;
+            return this;
+        }
+
+        public Builder provinceCode(String provinceCode) {
+            target.provinceCode = provinceCode;
+            return this;
+        }
+
+        public Builder provinceName(String provinceName) {
+            target.provinceName = provinceName;
+            return this;
+        }
+
+        public Builder districtName(String districtName) {
+            target.districtName = districtName;
+            return this;
+        }
+
+        public Builder domain(String domain) {
+            target.domain = domain;
+            return this;
+        }
+
+        public Builder address(String address) {
+            target.address = address;
+            return this;
+        }
+
+        public Builder origin(SchoolDirectoryOrigin origin) {
+            target.origin = origin;
+            return this;
+        }
+
+        public Builder verified(boolean verified) {
+            target.verified = verified;
+            return this;
+        }
     }
 }

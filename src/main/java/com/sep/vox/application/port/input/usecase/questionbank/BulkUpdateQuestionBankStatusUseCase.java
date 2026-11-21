@@ -104,8 +104,6 @@ public class BulkUpdateQuestionBankStatusUseCase
             }
 
             bank.setStatus(QuestionBankStatus.valueOf(QuestionScopeStatusTransition.nextStatusName(action)));
-            bank.setUpdatedAt(now);
-            bank.setUpdatedBy(currentUserId);
             toSave.add(bank);
         }
 

@@ -14,7 +14,7 @@ import com.sep.vox.application.query.dto.RankedTopicInfo;
 import com.sep.vox.application.query.dto.TopicDimensionInfo;
 import com.sep.vox.application.query.dto.TopicNameCardInfo;
 import com.sep.vox.application.query.dto.TopicSearchRowInfo;
-import com.sep.vox.infrastructure.persistence.entity.PracticeTopicJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.personalization.PracticeTopicJpaEntity;
 
 public interface SpringDataPracticeTopicRepository
         extends JpaRepository<PracticeTopicJpaEntity, UUID> {

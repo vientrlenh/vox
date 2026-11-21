@@ -30,14 +30,14 @@ public class AssessmentSession {
     private AssessmentRequiredStreamType chosenStreamType;
 
     /**
-     * Checkpoint đồng hồ đếm ngược do client gửi lên, null nếu phiên thi chưa checkpoint lần nào.
+     * Checkpoint of the countdown clock sent by the client, null if the session has never been checkpointed.
      *
-     * <p>Phải do client báo chứ server không tự suy ra được: đồng hồ phía WPF <b>không trừ giây khi
-     * avatar đang nói</b>, nên thời gian còn lại không phải là {@code startedAt + duration - now}.
-     * Chỉ client biết avatar đã nói mất bao lâu.
+     * <p>The client has to report it because the server cannot derive it: the WPF clock <b>does not
+     * subtract the seconds while the avatar is speaking</b>, so the remaining time is not
+     * {@code startedAt + duration - now}. Only the client knows how long the avatar has spoken.
      *
-     * <p>Không có giá trị này thì mỗi lần vào lại phiên thi là đếm ngược lại từ đầu - học viên thoát
-     * ra ở phút 25 của bài 30 phút sẽ được thêm trọn 30 phút nữa.
+     * <p>Without this value every re-entry into the session would restart the countdown from the beginning:
+     * a learner who leaves at minute 25 of a 30-minute assessment would get another full 30 minutes.
      */
     private Integer remainingSeconds;
 
@@ -50,48 +50,24 @@ public class AssessmentSession {
      */
     private String gradingError;
 
-    /** Dịch vụ chấm đã thử bao nhiêu lần trước khi bỏ cuộc; null cùng lúc với {@link #gradingError}. */
+    /** How many times the grading service tried before giving up; null exactly when {@link #gradingError} is null. */
     private Integer gradingRetryCount;
 
     /**
-     * Số lần NHÀ TRƯỜNG đã nhờ AI chấm lại phiên này.
+     * How many times the SCHOOL has asked the AI to grade this session again.
      *
-     * <p>Khác hẳn {@link #gradingRetryCount}: cột kia là số lần DỊCH VỤ CHẤM tự thử trong một lượt,
-     * lấy từ sự kiện Kafka. Cột này đếm số LƯỢT do người ở trường yêu cầu.
+     * <p>Quite different from {@link #gradingRetryCount}: that column is how many times the GRADING SERVICE
+     * retried by itself within one round, taken from the Kafka event. This column counts the ROUNDS
+     * requested by a person at the school.
      *
-     * <p>CHỈ đếm lượt phía trường. Lượt do quản trị hệ thống kích — và sau này là job tự chạy lại khi
-     * có sự cố diện rộng — không tiêu vào định mức của trường: bằng không, một lần AI hỏng hàng loạt
-     * sẽ âm thầm đốt sạch lượt chấm lại của mọi trường rồi ép hàng trăm bài sang chấm tay, vì một sự
-     * cố của chính nền tảng.
+     * <p>It counts ONLY the school's rounds. Rounds triggered by the system administrator, and later by a job that
+     * reruns automatically after a widespread incident, do not use up the school's allowance: otherwise one
+     * mass AI failure would silently burn the regrade allowance of every school and force hundreds of results
+     * into manual grading because of an incident on the platform itself.
      */
     private int schoolRegradeCount;
 
     public AssessmentSession() {}
-
-    public AssessmentSession(UUID id, UUID assessmentId, UUID candidateId, UUID paperId, Instant startedAt,
-            Instant submittedAt, AssessmentSessionStatus status, boolean flagged, String flagReason) {
-        this.id = id;
-        this.assessmentId = assessmentId;
-        this.candidateId = candidateId;
-        this.paperId = paperId;
-        this.startedAt = startedAt;
-        this.submittedAt = submittedAt;
-        this.status = status;
-        this.flagged = flagged;
-        this.flagReason = flagReason;
-    }
-
-    public AssessmentSession(UUID assessmentId, UUID candidateId, UUID paperId, Instant startedAt,
-            Instant submittedAt, AssessmentSessionStatus status, boolean flagged, String flagReason) {
-        this.assessmentId = assessmentId;
-        this.candidateId = candidateId;
-        this.paperId = paperId;
-        this.startedAt = startedAt;
-        this.submittedAt = submittedAt;
-        this.status = status;
-        this.flagged = flagged;
-        this.flagReason = flagReason;
-    }
 
     public UUID getId() {
         return id;
@@ -231,5 +207,92 @@ public class AssessmentSession {
     public void clearGradingFailure() {
         this.gradingError = null;
         this.gradingRetryCount = null;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final AssessmentSession target = new AssessmentSession();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder assessmentId(UUID assessmentId) {
+            target.assessmentId = assessmentId;
+            return this;
+        }
+
+        public Builder candidateId(UUID candidateId) {
+            target.candidateId = candidateId;
+            return this;
+        }
+
+        public Builder paperId(UUID paperId) {
+            target.paperId = paperId;
+            return this;
+        }
+
+        public Builder startedAt(Instant startedAt) {
+            target.startedAt = startedAt;
+            return this;
+        }
+
+        public Builder submittedAt(Instant submittedAt) {
+            target.submittedAt = submittedAt;
+            return this;
+        }
+
+        public Builder status(AssessmentSessionStatus status) {
+            target.status = status;
+            return this;
+        }
+
+        public Builder flagged(boolean flagged) {
+            target.flagged = flagged;
+            return this;
+        }
+
+        public Builder flagReason(String flagReason) {
+            target.flagReason = flagReason;
+            return this;
+        }
+
+        public Builder chosenStreamType(AssessmentRequiredStreamType chosenStreamType) {
+            target.chosenStreamType = chosenStreamType;
+            return this;
+        }
+
+        public Builder remainingSeconds(Integer remainingSeconds) {
+            target.remainingSeconds = remainingSeconds;
+            return this;
+        }
+
+        public Builder gradingError(String gradingError) {
+            target.gradingError = gradingError;
+            return this;
+        }
+
+        public Builder gradingRetryCount(Integer gradingRetryCount) {
+            target.gradingRetryCount = gradingRetryCount;
+            return this;
+        }
+
+        public Builder schoolRegradeCount(int schoolRegradeCount) {
+            target.schoolRegradeCount = schoolRegradeCount;
+            return this;
+        }
+
+        public AssessmentSession build() {
+            return target;
+        }
+
     }
 }

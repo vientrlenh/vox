@@ -180,8 +180,6 @@ public class UpdateAssessmentUseCase implements IUseCase<UpdateAssessmentCommand
         if (assessment.getKind() == AssessmentKind.CLASS_TEST && (command.openAt() != null || command.closeAt() != null)) {
             syncClassTestDraftSchedules(assessment, currentUserId, now);
         }
-        assessment.setUpdatedAt(now);
-        assessment.setUpdatedBy(currentUserId);
         return AssessmentDtoMapper.toDto(assessmentRepository.save(assessment));
     }
 
@@ -203,8 +201,6 @@ public class UpdateAssessmentUseCase implements IUseCase<UpdateAssessmentCommand
 
                 schedule.setStartDate(assessment.getOpenAt());
                 schedule.setEndDate(assessment.getCloseAt());
-                schedule.setUpdatedAt(now);
-                schedule.setUpdatedBy(currentUserId);
                 assessmentScheduleRepository.save(schedule);
             }
         }

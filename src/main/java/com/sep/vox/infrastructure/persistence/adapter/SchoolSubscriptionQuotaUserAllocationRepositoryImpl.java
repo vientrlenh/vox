@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaUserAllocation;
 import com.sep.vox.domain.repository.SchoolSubscriptionQuotaUserAllocationRepository;
-import com.sep.vox.infrastructure.persistence.entity.SchoolSubscriptionQuotaUserAllocationJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.subscription.SchoolSubscriptionQuotaUserAllocationJpaEntity;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolSubscriptionQuotaUserAllocationMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolSubscriptionQuotaUserAllocationRepository;
 
@@ -44,8 +44,13 @@ public class SchoolSubscriptionQuotaUserAllocationRepositoryImpl implements Scho
             entity = existing.get();
             entity.setAllocatedAmountVnd(allocatedAmountVnd);
         } else {
-            entity = new SchoolSubscriptionQuotaUserAllocationJpaEntity(
-                null, schoolSubscriptionId, quotaType.name(), userId, allocatedAmountVnd, BigDecimal.ZERO);
+            entity = SchoolSubscriptionQuotaUserAllocationJpaEntity.builder()
+                .schoolSubscriptionId(schoolSubscriptionId)
+                .quotaType(quotaType.name())
+                .userId(userId)
+                .allocatedAmountVnd(allocatedAmountVnd)
+                .usedAmountVnd(BigDecimal.ZERO)
+                .build();
         }
         SchoolSubscriptionQuotaUserAllocationJpaEntity saved = springDataRepository.save(entity);
         return SchoolSubscriptionQuotaUserAllocationMapper.toDomain(saved);

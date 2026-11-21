@@ -5,92 +5,41 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
-public class Order {
+import com.sep.vox.domain.model.BaseModel;
+
+public class Order extends BaseModel {
 
     /**
-     * Đơn treo bao lâu thì coi như bỏ. 24 giờ vì trường chủ yếu trả bằng chuyển khoản ngân hàng --
-     * đặt đơn cuối giờ chiều thì kế toán sang sáng hôm sau mới duyệt chi.
+     * How long a pending order lives before it is considered abandoned. 24 hours because schools mostly pay by bank
+     * transfer -- an order placed late in the afternoon is only approved by accounting the next morning.
      *
-     * <p>Hằng số ở model chứ không phải config: đây là con số ĐI KÈM từng đơn (ghi vào expires_at lúc
-     * tạo và gửi sang cổng), nên đổi nó chỉ ảnh hưởng đơn mới. Nếu về sau cần chỉnh theo môi trường
-     * thì chuyển thành property và truyền vào factory, đừng đọc config lúc kiểm tra hạn -- làm vậy là
-     * đổi hạn của cả những đơn đang treo.
+     * <p>The constant lives on the model, not in config: it is a number that TRAVELS WITH each order (written to
+     * expires_at at creation and sent to the gateway), so changing it only affects new orders. If it ever needs to be
+     * tuned per environment, turn it into a property and pass it to the factory; do not read config when checking expiry
+     * -- that would change the deadline of orders that are already pending.
      */
     public static final Duration PENDING_TTL = Duration.ofHours(24);
 
-    private UUID id;
     private UUID schoolId;
     private OrderType type;
     private String description;
-    // Tiền hàng TRƯỚC phí và giảm giá. Bất biến: totalAmountVnd = subtotalAmountVnd + chargedFeeVnd
-    // - discountAmountVnd (chk_orders_amounts_balance dưới DB giữ luôn cho chắc).
+    // Goods total BEFORE fee and discount. Invariant: totalAmountVnd = subtotalAmountVnd + chargedFeeVnd
+    // - discountAmountVnd (chk_orders_amounts_balance in the database enforces it as well, to be safe).
     private BigDecimal subtotalAmountVnd;
     private BigDecimal totalAmountVnd;
     private BigDecimal chargedFeeVnd;
     private BigDecimal discountAmountVnd;
     private OrderStatus status;
     private String notes;
-    private Instant createdAt;
-    private Instant updatedAt;
-    // Hạn chót trả tiền, chốt lúc tạo đơn -- xem cột expires_at trong V2.
+    // Payment deadline, fixed when the order is created -- see the expires_at column in V2.
     private Instant expiresAt;
-    private UUID createdBy;
-    private UUID updatedBy;
-    // Phải mang theo ở domain model, không chỉ ở JpaEntity: mapper dựng entity MỚI mỗi lần lưu nên
-    // entity luôn detached -- thiếu version, Hibernate coi là transient và INSERT đè lên id đã có.
+    // Must be carried on the domain model, not only on the JpaEntity: the mapper builds a NEW entity on every save, so the
+    // entity is always detached -- without the version, Hibernate treats it as transient and INSERTs over the existing id.
     private Long version;
 
     public Order() {}
-
-    public Order(UUID id, UUID schoolId, OrderType type, String description, BigDecimal subtotalAmountVnd,
-            BigDecimal totalAmountVnd, BigDecimal chargedFeeVnd,
-            BigDecimal discountAmountVnd, OrderStatus status, String notes, Instant createdAt, Instant updatedAt, Instant expiresAt, UUID createdBy,
-            UUID updatedBy, Long version) {
-        this.id = id;
-        this.schoolId = schoolId;
-        this.type = type;
-        this.description = description;
-        this.subtotalAmountVnd = subtotalAmountVnd;
-        this.totalAmountVnd = totalAmountVnd;
-        this.chargedFeeVnd = chargedFeeVnd;
-        this.discountAmountVnd = discountAmountVnd;
-        this.status = status;
-        this.notes = notes;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.expiresAt = expiresAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-        this.version = version;
-    }
-
-    public Order(UUID schoolId, OrderType type, String description, BigDecimal subtotalAmountVnd,
-            BigDecimal totalAmountVnd, BigDecimal chargedFeeVnd,
-            BigDecimal discountAmountVnd, OrderStatus status, String notes, Instant createdAt, Instant updatedAt, Instant expiresAt, UUID createdBy,
-            UUID updatedBy) {
-        this.schoolId = schoolId;
-        this.type = type;
-        this.description = description;
-        this.subtotalAmountVnd = subtotalAmountVnd;
-        this.totalAmountVnd = totalAmountVnd;
-        this.chargedFeeVnd = chargedFeeVnd;
-        this.discountAmountVnd = discountAmountVnd;
-        this.status = status;
-        this.notes = notes;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.expiresAt = expiresAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
+
+
 
     public UUID getSchoolId() {
         return schoolId;
@@ -148,44 +97,12 @@ public class Order {
         this.status = status;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
     public Instant getExpiresAt() {
         return expiresAt;
     }
 
     public void setExpiresAt(Instant expiresAt) {
         this.expiresAt = expiresAt;
-    }
-
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
-
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
     }
 
     public Long getVersion() {
@@ -213,46 +130,142 @@ public class Order {
     }
 
     /**
-     * Đơn mua một chu kỳ gói. Tiền đơn đúng bằng giá niêm yết của gói, KHÔNG cộng phí dịch vụ: biên
-     * lãi của gói đã nằm sẵn trong priceVnd do admin tự đặt (bán 10 triệu cho 8 triệu hạn mức).
+     * An order for one billing period of a plan. The order amount equals the plan's list price exactly, WITHOUT a service
+     * fee: the plan's margin is already inside priceVnd, which the admin sets (selling 10 million for 8 million of quota).
      */
-    public static Order forSubscription(UUID schoolId, OrderType type, String description, BigDecimal planPriceVnd, BigDecimal serviceFeeVnd, 
-            Instant now, UUID createdBy) {
-        return new Order(schoolId, type, description, planPriceVnd, planPriceVnd.add(serviceFeeVnd), serviceFeeVnd, BigDecimal.ZERO,
-            OrderStatus.PENDING, null, now, now, now.plus(PENDING_TTL), createdBy, createdBy);
+    public static Order forSubscription(UUID schoolId, OrderType type, String description, BigDecimal planPriceVnd, BigDecimal serviceFeeVnd,
+            Instant now) {
+        return builder()
+            .schoolId(schoolId)
+            .type(type)
+            .description(description)
+            .subtotalAmountVnd(planPriceVnd)
+            .totalAmountVnd(planPriceVnd.add(serviceFeeVnd))
+            .chargedFeeVnd(serviceFeeVnd)
+            .discountAmountVnd(BigDecimal.ZERO)
+            .status(OrderStatus.PENDING)
+            .expiresAt(now.plus(PENDING_TTL))
+            .build();
     }
 
     /**
-     * Đơn NÂNG CẤP: mua gói mới có hiệu lực ngay, trừ đi phần chưa dùng của kỳ đang chạy.
+     * An UPGRADE order: buying a new plan that takes effect immediately, minus the unused part of the running period.
      *
-     * <p>Khoản bù đi vào {@code discountAmountVnd} chứ không phải trừ thẳng vào subtotal: subtotal
-     * phải giữ nguyên giá niêm yết của gói mới thì hóa đơn mới đọc được -- "gói 12.000.000, trừ
-     * 700.000 phần chưa dùng của gói cũ, còn phải trả 11.300.000". Trừ thẳng vào subtotal sẽ ghi lại
-     * một mức giá gói chưa từng tồn tại.
+     * <p>The credit goes into {@code discountAmountVnd} rather than being subtracted from the subtotal: the subtotal must
+     * keep the new plan's list price for the invoice to be readable -- "plan 12,000,000, minus 700,000 unused from the old
+     * plan, 11,300,000 to pay". Subtracting from the subtotal would record a plan price that never existed.
      *
-     * <p>Tách factory riêng thay vì thêm tham số discount vào {@link #forSubscription}: đăng ký và
-     * gia hạn KHÔNG BAO GIỜ có giảm giá loại này (kỳ mới nối tiếp nên không mất ngày nào), nên để
-     * chúng nhận một tham số luôn bằng 0 là mời gọi có ngày ai đó truyền nhầm.
+     * <p>A separate factory instead of a discount parameter on {@link #forSubscription}: registration and renewal NEVER
+     * get this kind of discount (the new period is chained, so no day is lost), and giving them a parameter that is
+     * always 0 invites someone to pass the wrong value one day.
      */
     public static Order forSubscriptionUpgrade(UUID schoolId, String description, BigDecimal planPriceVnd,
-            BigDecimal unusedCreditVnd, BigDecimal serviceFeeVnd, Instant now, UUID createdBy) {
-        return new Order(schoolId, OrderType.SUBSCRIPTION_UPGRADE, description, planPriceVnd,
-            planPriceVnd.subtract(unusedCreditVnd).add(serviceFeeVnd), serviceFeeVnd, unusedCreditVnd,
-            OrderStatus.PENDING, null, now, now, now.plus(PENDING_TTL), createdBy, createdBy);
+            BigDecimal unusedCreditVnd, BigDecimal serviceFeeVnd, Instant now) {
+        return builder()
+            .schoolId(schoolId)
+            .type(OrderType.SUBSCRIPTION_UPGRADE)
+            .description(description)
+            .subtotalAmountVnd(planPriceVnd)
+            .totalAmountVnd(planPriceVnd.subtract(unusedCreditVnd).add(serviceFeeVnd))
+            .chargedFeeVnd(serviceFeeVnd)
+            .discountAmountVnd(unusedCreditVnd)
+            .status(OrderStatus.PENDING)
+            .expiresAt(now.plus(PENDING_TTL))
+            .build();
     }
 
     /**
-     * Đơn nạp thêm vào số dư. Phí dịch vụ cộng THÊM chứ không trích ra: trường nhận đúng
-     * creditAmountVnd vào ví và trả creditAmountVnd + serviceFeeVnd.
+     * A top-up order for the balance. The service fee is ADDED, not carved out: the school receives exactly
+     * creditAmountVnd in the wallet and pays creditAmountVnd + serviceFeeVnd.
      *
-     * <p>Số dư được cộng chính là subtotalAmountVnd, GHI THẲNG chứ không suy ra từ total - fee: đơn
-     * nạp thêm không có order_items nào để cộng lại, nên cách suy ngược đó là nguồn duy nhất -- và nó
-     * sai ngay khi discountAmountVnd khác 0, sai về phía cộng dư tiền cho trường.
+     * <p>The amount credited is subtotalAmountVnd, WRITTEN DIRECTLY instead of derived from total - fee: a top-up order
+     * has no order_items to add back up, so that back-calculation would be the only source -- and it is wrong as soon as
+     * discountAmountVnd is non-zero, wrong in the direction of crediting the school too much.
      */
     public static Order forTopUp(UUID schoolId, String description, BigDecimal creditAmountVnd,
-            BigDecimal serviceFeeVnd, Instant now, UUID createdBy) {
-        return new Order(schoolId, OrderType.TOPUP, description, creditAmountVnd,
-            creditAmountVnd.add(serviceFeeVnd), serviceFeeVnd,
-            BigDecimal.ZERO, OrderStatus.PENDING, null, now, now, now.plus(PENDING_TTL), createdBy, createdBy);
+            BigDecimal serviceFeeVnd, Instant now) {
+        return builder()
+            .schoolId(schoolId)
+            .type(OrderType.TOPUP)
+            .description(description)
+            .subtotalAmountVnd(creditAmountVnd)
+            .totalAmountVnd(creditAmountVnd.add(serviceFeeVnd))
+            .chargedFeeVnd(serviceFeeVnd)
+            .discountAmountVnd(BigDecimal.ZERO)
+            .status(OrderStatus.PENDING)
+            .expiresAt(now.plus(PENDING_TTL))
+            .build();
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder extends BaseModel.Builder<Order, Builder> {
+
+        private Builder() {
+            super(new Order());
+        }
+
+        @Override
+        protected Builder self() {
+            return this;
+        }
+
+        public Builder schoolId(UUID schoolId) {
+            target.schoolId = schoolId;
+            return this;
+        }
+
+        public Builder type(OrderType type) {
+            target.type = type;
+            return this;
+        }
+
+        public Builder description(String description) {
+            target.description = description;
+            return this;
+        }
+
+        public Builder subtotalAmountVnd(BigDecimal subtotalAmountVnd) {
+            target.subtotalAmountVnd = subtotalAmountVnd;
+            return this;
+        }
+
+        public Builder totalAmountVnd(BigDecimal totalAmountVnd) {
+            target.totalAmountVnd = totalAmountVnd;
+            return this;
+        }
+
+        public Builder chargedFeeVnd(BigDecimal chargedFeeVnd) {
+            target.chargedFeeVnd = chargedFeeVnd;
+            return this;
+        }
+
+        public Builder discountAmountVnd(BigDecimal discountAmountVnd) {
+            target.discountAmountVnd = discountAmountVnd;
+            return this;
+        }
+
+        public Builder status(OrderStatus status) {
+            target.status = status;
+            return this;
+        }
+
+        public Builder notes(String notes) {
+            target.notes = notes;
+            return this;
+        }
+
+        public Builder expiresAt(Instant expiresAt) {
+            target.expiresAt = expiresAt;
+            return this;
+        }
+
+        public Builder version(Long version) {
+            target.version = version;
+            return this;
+        }
+
     }
 }

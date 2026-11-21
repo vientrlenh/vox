@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
-import com.sep.vox.infrastructure.persistence.entity.GradeLevelJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.gradelevel.GradeLevelJpaEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -57,6 +57,6 @@ public interface SpringDataGradeLevelRepository extends JpaRepository<GradeLevel
         @Param("description") String description,
         @Param("order") Integer order,
         @Param("updatedAt") Instant updatedAt,
-        @Param("updatedBy") UUID updatedBy
+        @Param("updatedBy") String updatedBy
     );
 }

@@ -175,41 +175,38 @@ class LogoutUseCaseTests {
     }
 
     private static DeviceSession activeSession(UUID sessionId, UUID userId, String deviceId) {
-        return new DeviceSession(
-            sessionId,
-            userId,
-            deviceId,
-            "Chrome on Windows",
-            SessionPlatform.WEB,
-            "203.0.113.10",
-            "JUnit User Agent",
-            null
-        );
+        return DeviceSession.builder()
+            .id(sessionId)
+            .userId(userId)
+            .deviceId(deviceId)
+            .deviceName("Chrome on Windows")
+            .platform(SessionPlatform.WEB)
+            .ipAddress("203.0.113.10")
+            .userAgent("JUnit User Agent")
+            .build();
     }
 
     private static DeviceSession revokedSession(UUID sessionId, UUID userId, String deviceId) {
-        return new DeviceSession(
-            sessionId,
-            userId,
-            deviceId,
-            "Chrome on Windows",
-            SessionPlatform.WEB,
-            "203.0.113.10",
-            "JUnit User Agent",
-            Instant.now()
-        );
+        return DeviceSession.builder()
+            .id(sessionId)
+            .userId(userId)
+            .deviceId(deviceId)
+            .deviceName("Chrome on Windows")
+            .platform(SessionPlatform.WEB)
+            .ipAddress("203.0.113.10")
+            .userAgent("JUnit User Agent")
+            .revokedAt(Instant.now())
+            .build();
     }
 
     private static RefreshToken activeRefreshToken(UUID sessionId, String tokenHash) {
         Instant now = Instant.now();
-        return new RefreshToken(
-            UUID.randomUUID(),
-            sessionId,
-            tokenHash,
-            now,
-            now.plus(7, ChronoUnit.DAYS),
-            null,
-            null
-        );
+        return RefreshToken.builder()
+            .id(UUID.randomUUID())
+            .sessionId(sessionId)
+            .tokenHash(tokenHash)
+            .issuedAt(now)
+            .expiredAt(now.plus(7, ChronoUnit.DAYS))
+            .build();
     }
 }

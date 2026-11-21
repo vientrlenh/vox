@@ -175,8 +175,12 @@ class ViewAssessmentDirectoryUseCasesTests {
 
     private SchoolClass schoolClass() {
         SchoolClass schoolClass = SchoolClass.create(
-            schoolId, UUID.randomUUID(), UUID.randomUUID(), "ENG-01", "English 01", null,
-            UUID.randomUUID(), Instant.now());
+            schoolId,
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            "ENG-01",
+            "English 01",
+            null);
         schoolClass.setId(UUID.randomUUID());
         return schoolClass;
     }

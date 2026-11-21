@@ -95,8 +95,6 @@ public class UpdateAssessmentScheduleStatusUseCase implements IUseCase<UpdateAss
             default -> throw new IllegalArgumentException("Hành động không hợp lệ");
         }
 
-        schedule.setUpdatedAt(now);
-        schedule.setUpdatedBy(currentUserId);
         return AssessmentScheduleDtoMapper.toDto(assessmentScheduleRepository.save(schedule));
     }
 
@@ -197,7 +195,10 @@ public class UpdateAssessmentScheduleStatusUseCase implements IUseCase<UpdateAss
                 // vào một ca thứ ba. Loại ca nguồn khỏi phép kiểm tra vì nó sắp thành MOVED.
                 assessmentScheduleProctorConflictValidator.requireTeacherFree(
                     proctor.getTeacherId(), target.getStartDate(), target.getEndDate(), sourceScheduleId);
-                assessmentScheduleProctorRepository.save(new AssessmentScheduleProctor(target.getId(), proctor.getTeacherId()));
+                assessmentScheduleProctorRepository.save(AssessmentScheduleProctor.builder()
+                        .scheduleId(target.getId())
+                        .teacherId(proctor.getTeacherId())
+                        .build());
             }
             assessmentScheduleProctorRepository.deleteById(proctor.getId());
         }

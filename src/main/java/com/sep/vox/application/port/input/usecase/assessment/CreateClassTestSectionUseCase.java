@@ -105,7 +105,7 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
         for (ClassTestQuestionCommand questionCommand : input.questions()) {
             Question question = questionRepository.findAccessibleById(questionCommand.questionId(), currentUserId, assessment.getSchoolId(), false, false)
                 .orElseThrow(() -> new ForbiddenException("Không có quyền dùng câu hỏi " + questionCommand.questionId()));
-            boolean isOwner = currentUserId.equals(question.getCreatedBy());
+            boolean isOwner = question.isCreatedBy(currentUserId);
             boolean isSchoolShared = question.getSharing() == QuestionSharing.SCHOOL_SHARED;
             if (!isOwner && !isSchoolShared) {
                 Optional<QuestionCollaborator> collaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId);
@@ -119,28 +119,31 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
         int order = assessmentPaperSectionRepository.findByPaperId(paper.getId()).size() + 1;
 
         Instant now = Instant.now();
-        AssessmentPaperSection paperSection = assessmentPaperSectionRepository.save(new AssessmentPaperSection(
-            paper.getId(), order, input.title(), input.instruction(), null, input.weight(), now, now, currentUserId, currentUserId
-        ));
+        AssessmentPaperSection paperSection = assessmentPaperSectionRepository.save(AssessmentPaperSection.builder()
+            .paperId(paper.getId())
+            .order(order)
+            .title(input.title())
+            .instruction(input.instruction())
+            .weight(input.weight())
+            .build());
 
         List<ClassTestQuestionCommand> questions = input.questions();
         List<BigDecimal> weights = ClassTestSectionWeightPolicy.resolveQuestionWeights(questions);
         for (int i = 0; i < questions.size(); i++) {
             UUID questionId = questions.get(i).questionId();
-            assessmentPaperItemRepository.save(new AssessmentPaperItem(
-                null,
-                paperSection.getId(),
-                paper.getId(),
-                questionId,
-                i + 1,
-                weights.get(i)
-            ));
+            assessmentPaperItemRepository.save(AssessmentPaperItem.builder()
+                .sectionId(paperSection.getId())
+                .paperId(paper.getId())
+                .questionId(questionId)
+                .order(i + 1)
+                .weight(weights.get(i))
+                .build());
             assessmentQuestionSecureLockService.lockQuestionForAssessment(
                 questionId, assessment.getId(), AssessmentSecurePoolReleaseMode.AUTO_AFTER_CLOSE, currentUserId
             );
         }
         if (input.weight() == null) {
-            rebalanceSectionWeights(paper.getId(), now, currentUserId);
+            rebalanceSectionWeights(paper.getId());
         } else {
             List<AssessmentPaperSection> sections = assessmentPaperSectionRepository.findByPaperId(paper.getId()).stream()
                 .sorted(Comparator.comparingInt(section -> section.getOrder()))
@@ -148,8 +151,6 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
             ClassTestSectionWeightPolicy.validateStoredWeights(sections, "Tổng trọng số section phải bằng 1.00");
         }
 
-        assessment.setUpdatedAt(now);
-        assessment.setUpdatedBy(currentUserId);
         Assessment saved = assessmentRepository.save(assessment);
         recalculateAssessmentTimeDurationService.recalculate(assessment.getId());
         return AssessmentDtoMapper.toDto(saved);
@@ -174,7 +175,7 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
         return weights;
     }
 
-    private void rebalanceSectionWeights(UUID paperId, Instant now, UUID currentUserId) {
+    private void rebalanceSectionWeights(UUID paperId) {
         List<AssessmentPaperSection> sections = assessmentPaperSectionRepository.findByPaperId(paperId).stream()
             .sorted(Comparator.comparingInt(section -> section.getOrder()))
             .toList();
@@ -182,8 +183,6 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
         for (int i = 0; i < sections.size(); i++) {
             AssessmentPaperSection section = sections.get(i);
             section.setWeight(weights.get(i));
-            section.setUpdatedAt(now);
-            section.setUpdatedBy(currentUserId);
             assessmentPaperSectionRepository.save(section);
         }
     }

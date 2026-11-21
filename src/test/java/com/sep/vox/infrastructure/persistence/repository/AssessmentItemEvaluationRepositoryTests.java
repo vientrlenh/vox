@@ -126,12 +126,28 @@ class AssessmentItemEvaluationRepositoryTests {
             AssessmentEvaluationEngineType engineType,
             AssessmentItemEvaluationStatus status,
             Instant evaluatedAt) {
-        return new AssessmentItemEvaluation(
-            null, responseId, UUID.randomUUID(), engineType,
-            engineType == AssessmentEvaluationEngineType.HUMAN ? "HUMAN" : "gpt-x",
-            null, null, new BigDecimal("6.00"), new BigDecimal("6.00"),
-            null, false, null, false, false,
-            null, null, null, null, null,
-            status, evaluatedAt);
+        return AssessmentItemEvaluation.builder()
+                .id(null)
+                .responseId(responseId)
+                .paperItemId(UUID.randomUUID())
+                .engineType(engineType)
+                .gradedByModel(engineType == AssessmentEvaluationEngineType.HUMAN ? "HUMAN" : "gpt-x")
+                .sampleCount(null)
+                .reviewerId(null)
+                .rawItemScore(new BigDecimal("6.00"))
+                .itemScore(new BigDecimal("6.00"))
+                .overallConfidence(null)
+                .requiresHumanReview(false)
+                .reviewReasonCode(null)
+                .markedInvalid(false)
+                .requiresRetake(false)
+                .signals(null)
+                .validityJson(null)
+                .feedbackSummary(null)
+                .suggestionsJson(null)
+                .promptVersion(null)
+                .status(status)
+                .evaluatedAt(evaluatedAt)
+                .build();
     }
 }

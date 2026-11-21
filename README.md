@@ -195,6 +195,7 @@ The plans live in `docs/` and track the status of every phase and job.
 ## CI/CD
 
 - **CI** (`.github/workflows/ci-build.yml`): runs `./gradlew clean build --no-daemon` on JDK 25 for pushes and pull requests to `default`.
-- **CD** (`.github/workflows/cd.yml`): builds the Docker image, pushes it to ECR, and updates the image tag in the Helm repository.
-- **CD Test** (`.github/workflows/cd-test.yml`): the same image build and push, triggered directly by a push to one temporary test branch. It has no CI gate, and the branch name inside the file must match the branch you are working on.
 - **Security**: CodeQL analysis runs from `.github/workflows/codeql-analysis.yml`.
+
+This repository has no deployment workflow. The image build and push workflows (`cd.yml`, `cd-test.yml`) were removed in #108.
+The `Dockerfile` is still used by the `app` service in `docker-compose.yml`.

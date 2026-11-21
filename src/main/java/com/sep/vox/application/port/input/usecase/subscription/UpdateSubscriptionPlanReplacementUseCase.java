@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
 import com.sep.vox.domain.model.subscription.SubscriptionPlan;
-import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -11,28 +10,28 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateSubscriptionPlanReplacementCommand;
 import com.sep.vox.application.port.input.service.SubscriptionPlanReplacementValidator;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.subscription.SubscriptionPlanStatus;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 
 /**
- * Chỉ (hoặc chỉ lại) gói thay thế cho một gói ĐÃ lưu trữ.
+ * Sets (or re-sets) the replacement plan of a plan that is ALREADY archived.
  *
- * <p>Tồn tại để sửa một ngõ cụt KHÔNG có đường ra trước đây: replacedByPlanId chỉ đặt được đúng một
- * lần, ngay lúc gọi ArchiveSubscriptionPlanUseCase, mà use case đó lại từ chối chạy trên gói đã
- * ARCHIVED. Nên kịch bản dưới đây khóa chết một trường vĩnh viễn:
+ * <p>Exists to fix a dead end that previously had NO way out: replacedByPlanId could only be set once, at the moment
+ * ArchiveSubscriptionPlanUseCase is called, and that use case refuses to run on an ARCHIVED plan. So the scenario below
+ * locked a school out permanently:
  *
  * <ol>
- *   <li>Kỳ thuê bao của trường hết hạn -> subscription chuyển EXPIRED.
- *   <li>System Admin lưu trữ gói, không chọn gói thay thế -- và được phép, vì chốt chặn lúc đó chỉ
- *       đếm trường đang ACTIVE trên gói, mà trường này thì không còn ACTIVE.
- *   <li>Trường quay lại gia hạn -> resolveActivePlan ném "Gói đã ngừng cung cấp và chưa có gói thay thế".
- *   <li>Admin muốn vá bằng cách chỉ gói thay thế -> archive lại thì bị chặn "Gói đã được lưu trữ trước đó."
+ *   <li>The school's subscription period ends -> the subscription becomes EXPIRED.
+ *   <li>The System Admin archives the plan without choosing a replacement -- allowed, because the guard at that time
+ *       only counts schools that are ACTIVE on the plan, and this school is no longer ACTIVE.
+ *   <li>The school comes back to renew -> resolveActivePlan throws "The plan is discontinued and has no replacement plan yet".
+ *   <li>The admin wants to patch it by setting a replacement plan -> archiving again is blocked with "The plan has already
+ *       been archived."
  * </ol>
  *
- * <p>Tách use case riêng thay vì nới ArchiveSubscriptionPlanUseCase cho chạy hai lần: lưu trữ là
- * chuyện đổi trạng thái gói, còn đây là sửa một con trỏ. Gộp lại thì mỗi lần đọc phải tự đoán lần
- * gọi này mang ý nào, và chốt chặn của bên này sẽ vướng bên kia.
+ * <p>A separate use case instead of loosening ArchiveSubscriptionPlanUseCase to run twice: archiving is a change of the
+ * plan's status, whereas this edits a pointer. Merged together, every reader would have to guess what a given call means,
+ * and one side's guard would get in the way of the other.
  */
 @Service
 public class UpdateSubscriptionPlanReplacementUseCase
@@ -40,15 +39,12 @@ public class UpdateSubscriptionPlanReplacementUseCase
 
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final SubscriptionPlanReplacementValidator replacementValidator;
-    private final UserContextPort userContextPort;
 
     public UpdateSubscriptionPlanReplacementUseCase(
             SubscriptionPlanRepository subscriptionPlanRepository,
-            SubscriptionPlanReplacementValidator replacementValidator,
-            UserContextPort userContextPort) {
+            SubscriptionPlanReplacementValidator replacementValidator) {
         this.subscriptionPlanRepository = subscriptionPlanRepository;
         this.replacementValidator = replacementValidator;
-        this.userContextPort = userContextPort;
     }
 
     @Override
@@ -57,9 +53,9 @@ public class UpdateSubscriptionPlanReplacementUseCase
         SubscriptionPlan plan = subscriptionPlanRepository.findById(input.subscriptionPlanId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
 
-        // CHỈ áp cho gói đã lưu trữ: replacedByPlanId của một gói còn bán không có nghĩa gì --
-        // resolveActivePlan chỉ đi theo con trỏ đó khi gói đang ARCHIVED. Cho đặt trên gói ACTIVE là
-        // tạo ra dữ liệu chẳng bao giờ được đọc, rồi có ngày ai đó tin là nó có tác dụng.
+        // ONLY applies to an archived plan: the replacedByPlanId of a plan still on sale means nothing -- resolveActivePlan only
+        // follows that pointer when the plan is ARCHIVED. Allowing it on an ACTIVE plan would create data that is never read, and
+        // one day someone would believe it has an effect.
         if (plan.getStatus() != SubscriptionPlanStatus.ARCHIVED) {
             throw new IllegalStateException("Chỉ gói đã lưu trữ mới cần gói thay thế.");
         }
@@ -67,13 +63,11 @@ public class UpdateSubscriptionPlanReplacementUseCase
         SubscriptionPlan replacement = subscriptionPlanRepository.findById(input.replacedByPlanId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói thay thế"));
 
-        // Cùng bộ luật với lúc lưu trữ. Sửa con trỏ sau này KHÔNG được lỏng hơn: trường vẫn bị ép đi
-        // theo nó khi gia hạn, và vẫn không có cơ hội từ chối.
+        // The same rule set as at archive time. Editing the pointer later must NOT be looser: schools are still forced to follow
+        // it on renewal, and still have no chance to refuse.
         replacementValidator.requireValidReplacement(replacement, plan);
 
         plan.setReplacedByPlanId(replacement.getId());
-        plan.setUpdatedAt(Instant.now());
-        plan.setUpdatedBy(userContextPort.getCurrentAuthenticatedUserId());
 
         return subscriptionPlanRepository.save(plan).getId();
     }

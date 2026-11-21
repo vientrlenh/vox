@@ -27,7 +27,12 @@ class QuotaPricingServiceTests {
         QuotaPricingProperties quotaPricingProperties = new QuotaPricingProperties(null, null);
         QuotaSellingPriceProperties quotaSellingPriceProperties = new QuotaSellingPriceProperties(new BigDecimal("25500"), new BigDecimal("0.05"));
         when(exchangeRateSnapshotRepository.findLatest(CurrencyCode.USD)).thenReturn(
-            Optional.of(new ExchangeRateSnapshot(CurrencyCode.USD, new BigDecimal("26777"), Instant.now(), "https://example.test")));
+            Optional.of(ExchangeRateSnapshot.builder()
+                .currencyCode(CurrencyCode.USD)
+                .exchangeRateToVnd(new BigDecimal("26777"))
+                .fetchedAt(Instant.now())
+                .sourceUrl("https://example.test")
+                .build()));
 
         QuotaPricingService service = new QuotaPricingService(
             quotaPricingCalibrationRepository, exchangeRateSnapshotRepository, quotaPricingProperties,

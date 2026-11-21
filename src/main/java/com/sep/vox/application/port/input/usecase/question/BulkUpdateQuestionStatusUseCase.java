@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.usecase.question;
 
 import com.sep.vox.domain.dto.QuestionDto;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -84,7 +83,6 @@ public class BulkUpdateQuestionStatusUseCase
 
         List<BulkUpdateQuestionStatusFailure> failed = new ArrayList<BulkUpdateQuestionStatusFailure>();
         List<Question> toSave = new ArrayList<Question>();
-        Instant now = Instant.now();
 
         for (UUID questionId : questionIds) {
             Question question = questionsById.get(questionId);
@@ -110,8 +108,6 @@ public class BulkUpdateQuestionStatusUseCase
             }
 
             QuestionStatusTransition.apply(question, action);
-            question.setUpdatedAt(now);
-            question.setUpdatedBy(actor.userId());
             toSave.add(question);
         }
 

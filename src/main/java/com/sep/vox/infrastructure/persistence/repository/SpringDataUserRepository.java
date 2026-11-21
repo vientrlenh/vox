@@ -13,7 +13,7 @@ import org.springframework.data.repository.query.Param;
 
 import jakarta.persistence.LockModeType;
 
-import com.sep.vox.infrastructure.persistence.entity.UserJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.user.UserJpaEntity;
 
 public interface SpringDataUserRepository extends JpaRepository<UserJpaEntity, UUID>{
     @Lock(LockModeType.PESSIMISTIC_WRITE)

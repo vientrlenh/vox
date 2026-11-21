@@ -4,14 +4,14 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Hồ sơ học tập -- MỘT dòng cho MỘT học sinh, cập nhật tại chỗ.
+ * Learner profile -- ONE row per student, updated in place.
  *
- * <p>Bản trước là append-only có cột {@code version}: mỗi lần đổi mục tiêu / nộp lại quiz / bật
- * tắt tự cập nhật là sinh một bản mới. Bỏ vì lịch sử đó được ghi mà không ai đọc -- chi tiết ở
- * chú thích đầu V18__learner_profile_single_row.sql (bản drop cột {@code version}).
+ * <p>The previous design was append-only with a {@code version} column: every goal change / quiz resubmission / auto-update
+ * toggle produced a new row. It was dropped because that history was written but nobody read it -- details are in the
+ * header comment of V18__learner_profile_single_row.sql (the migration that dropped the {@code version} column).
  *
- * <p>Đi kèm là {@code first()} và {@code next()} cũng bị gỡ: chúng chỉ tồn tại để dựng bản kế
- * tiếp. Giờ dùng setter thường, và {@code applyChanges} gom phần "chỉ ghi đè khi có giá trị".
+ * <p>{@code first()} and {@code next()} were removed with it: they only existed to build the next version. Plain setters
+ * are used now, and {@code applyChanges} gathers the "overwrite only when a value is given" part.
  */
 public class LearnerProfile {
 
@@ -25,31 +25,23 @@ public class LearnerProfile {
     public LearnerProfile() {
     }
 
-    public LearnerProfile(
-            UUID id,
-            UUID studentId,
-            String goalType,
-            boolean autoUpdateInterest,
-            Instant quizCompletedAt,
-            Instant recordedAt) {
-        this.id = id;
-        this.studentId = studentId;
-        this.goalType = goalType;
-        this.autoUpdateInterest = autoUpdateInterest;
-        this.quizCompletedAt = quizCompletedAt;
-        this.recordedAt = recordedAt;
-    }
-
-    /** Hồ sơ mặc định cho học sinh chưa có gì -- bật tự cập nhật sở thích. */
+    /** The default profile for a student who has nothing yet -- auto-update of interests is on. */
     public static LearnerProfile forStudent(UUID studentId) {
-        return new LearnerProfile(null, studentId, null, true, null, Instant.now());
+        return LearnerProfile.builder()
+                .id(null)
+                .studentId(studentId)
+                .goalType(null)
+                .autoUpdateInterest(true)
+                .quizCompletedAt(null)
+                .recordedAt(Instant.now())
+                .build();
     }
 
     /**
-     * Ghi đè các trường có giá trị, giữ nguyên phần còn lại.
+     * Overwrites the fields that have a value and keeps the rest.
      *
-     * <p>{@code null} nghĩa là "không đụng tới", đúng như ngữ nghĩa của {@code next()} cũ: mỗi
-     * hành động (đặt mục tiêu / nộp quiz / bật tắt) chỉ truyền đúng phần nó phụ trách.
+     * <p>{@code null} means "do not touch", exactly the semantics of the old {@code next()}: each
+     * action (set a goal / submit a quiz / toggle) passes only the part it is responsible for.
      */
     public void applyChanges(
             String nextGoalType,
@@ -113,5 +105,52 @@ public class LearnerProfile {
 
     public void setRecordedAt(Instant recordedAt) {
         this.recordedAt = recordedAt;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final LearnerProfile target = new LearnerProfile();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder studentId(UUID studentId) {
+            target.studentId = studentId;
+            return this;
+        }
+
+        public Builder goalType(String goalType) {
+            target.goalType = goalType;
+            return this;
+        }
+
+        public Builder autoUpdateInterest(boolean autoUpdateInterest) {
+            target.autoUpdateInterest = autoUpdateInterest;
+            return this;
+        }
+
+        public Builder quizCompletedAt(Instant quizCompletedAt) {
+            target.quizCompletedAt = quizCompletedAt;
+            return this;
+        }
+
+        public Builder recordedAt(Instant recordedAt) {
+            target.recordedAt = recordedAt;
+            return this;
+        }
+
+        public LearnerProfile build() {
+            return target;
+        }
+
     }
 }

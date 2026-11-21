@@ -49,8 +49,12 @@ class RegisterFormGraphQlTests {
     void register_form_should_return_date_status_enum_and_document_date_time() {
         when(viewRegisterFormDetailsUseCase.execute(any())).thenReturn(registerForm());
         when(registerFormDocumentRepository.findByRegisterFormIdIn(any())).thenReturn(List.of(
-            new RegisterFormDocument(UUID.randomUUID(), FORM_ID, "https://files.example/doc.pdf",
-                Instant.parse("2026-07-28T02:30:00Z"))));
+            RegisterFormDocument.builder()
+            .id(UUID.randomUUID())
+            .registerFormId(FORM_ID)
+            .url("https://files.example/doc.pdf")
+            .createdAt(Instant.parse("2026-07-28T02:30:00Z"))
+            .build()));
 
         graphQlTester.document("{ registerForm(id: \"%s\") { dateOfBirth status documents { createdAt } } }"
                 .formatted(FORM_ID))

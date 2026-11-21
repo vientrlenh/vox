@@ -11,7 +11,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.RefreshTokenJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.refreshtoken.RefreshTokenJpaEntity;
 
 import jakarta.persistence.LockModeType;
 

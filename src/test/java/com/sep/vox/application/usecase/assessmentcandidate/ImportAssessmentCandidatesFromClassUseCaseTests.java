@@ -200,7 +200,15 @@ class ImportAssessmentCandidatesFromClassUseCaseTests {
     }
 
     private SchoolClassUser classUser(UUID studentId, boolean active) {
-        return new SchoolClassUser(UUID.randomUUID(), studentId, classId, active, Instant.now(), null, userId);
+        return SchoolClassUser.builder()
+            .id(UUID.randomUUID())
+            .userId(studentId)
+            .schoolClassId(classId)
+            .active(active)
+            .joinedAt(Instant.now())
+            .leftAt(null)
+            .assignedBy(userId)
+            .build();
     }
 
     private SchoolClass schoolClass() {

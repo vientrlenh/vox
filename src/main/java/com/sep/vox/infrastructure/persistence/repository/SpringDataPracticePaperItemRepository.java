@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.PracticePaperItemJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.personalization.PracticePaperItemJpaEntity;
 
 public interface SpringDataPracticePaperItemRepository
         extends JpaRepository<PracticePaperItemJpaEntity, UUID> {

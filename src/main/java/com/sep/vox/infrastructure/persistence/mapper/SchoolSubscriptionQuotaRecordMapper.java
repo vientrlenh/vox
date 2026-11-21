@@ -2,35 +2,34 @@ package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaRecord;
-import com.sep.vox.infrastructure.persistence.entity.SchoolSubscriptionQuotaRecordJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.subscription.SchoolSubscriptionQuotaRecordJpaEntity;
 
 public final class SchoolSubscriptionQuotaRecordMapper {
 
     private SchoolSubscriptionQuotaRecordMapper() {}
 
     public static SchoolSubscriptionQuotaRecord toDomain(SchoolSubscriptionQuotaRecordJpaEntity jpa) {
-        SchoolSubscriptionQuotaRecord domain = new SchoolSubscriptionQuotaRecord(
-            jpa.getId(),
-            jpa.getSchoolSubscriptionId(),
-            fromString(jpa.getQuotaType()),
-            jpa.getTotalAllocatedAmountVnd(),
-            jpa.getUsedAmountVnd(),
-            jpa.getFundedFromBalanceVnd()
-        );
-        domain.setCarryFundingFromSubscriptionId(jpa.getCarryFundingFromSubscriptionId());
-        return domain;
+        return SchoolSubscriptionQuotaRecord.builder()
+            .id(jpa.getId())
+            .schoolSubscriptionId(jpa.getSchoolSubscriptionId())
+            .quotaType(fromString(jpa.getQuotaType()))
+            .totalAllocatedAmountVnd(jpa.getTotalAllocatedAmountVnd())
+            .usedAmountVnd(jpa.getUsedAmountVnd())
+            .fundedFromBalanceVnd(jpa.getFundedFromBalanceVnd())
+            .carryFundingFromSubscriptionId(jpa.getCarryFundingFromSubscriptionId())
+            .build();
     }
 
     public static SchoolSubscriptionQuotaRecordJpaEntity toJpa(SchoolSubscriptionQuotaRecord domain) {
-        return new SchoolSubscriptionQuotaRecordJpaEntity(
-            domain.getId(),
-            domain.getSchoolSubscriptionId(),
-            valueOf(domain.getQuotaType()),
-            domain.getTotalAllocatedAmountVnd(),
-            domain.getUsedAmountVnd(),
-            domain.getFundedFromBalanceVnd(),
-            domain.getCarryFundingFromSubscriptionId()
-        );
+        return SchoolSubscriptionQuotaRecordJpaEntity.builder()
+            .id(domain.getId())
+            .schoolSubscriptionId(domain.getSchoolSubscriptionId())
+            .quotaType(valueOf(domain.getQuotaType()))
+            .totalAllocatedAmountVnd(domain.getTotalAllocatedAmountVnd())
+            .usedAmountVnd(domain.getUsedAmountVnd())
+            .fundedFromBalanceVnd(domain.getFundedFromBalanceVnd())
+            .carryFundingFromSubscriptionId(domain.getCarryFundingFromSubscriptionId())
+            .build();
     }
 
 

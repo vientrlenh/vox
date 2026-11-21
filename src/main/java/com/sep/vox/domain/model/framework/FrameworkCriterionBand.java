@@ -1,60 +1,18 @@
 package com.sep.vox.domain.model.framework;
 
-import java.time.Instant;
+import com.sep.vox.domain.model.BaseModel;
 import java.util.UUID;
 
 import com.sep.vox.domain.valueobject.framework.FrameworkCriterionSignals;
 
-public class FrameworkCriterionBand {
-    private UUID id;
+public class FrameworkCriterionBand extends BaseModel {
     private UUID frameworkCriterionId;
     private UUID frameworkResultBandId;
     private String descriptor;
     private FrameworkCriterionSignals positiveSignals;
     private FrameworkCriterionSignals negativeSignals;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private UUID createdBy;
-    private UUID updatedBy;
 
     public FrameworkCriterionBand() {}
-
-    public FrameworkCriterionBand(UUID id, UUID frameworkCriterionId, UUID frameworkResultBandId, String descriptor,
-            FrameworkCriterionSignals positiveSignals, FrameworkCriterionSignals negativeSignals, Instant createdAt, Instant updatedAt,
-            UUID createdBy, UUID updatedBy) {
-        this.id = id;
-        this.frameworkCriterionId = frameworkCriterionId;
-        this.frameworkResultBandId = frameworkResultBandId;
-        this.descriptor = descriptor;
-        this.positiveSignals = positiveSignals;
-        this.negativeSignals = negativeSignals;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public FrameworkCriterionBand(UUID frameworkCriterionId, UUID frameworkResultBandId, String descriptor,
-            FrameworkCriterionSignals positiveSignals, FrameworkCriterionSignals negativeSignals, Instant createdAt, Instant updatedAt,
-            UUID createdBy, UUID updatedBy) {
-        this.frameworkCriterionId = frameworkCriterionId;
-        this.frameworkResultBandId = frameworkResultBandId;
-        this.descriptor = descriptor;
-        this.positiveSignals = positiveSignals;
-        this.negativeSignals = negativeSignals;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
 
     public UUID getFrameworkCriterionId() {
         return frameworkCriterionId;
@@ -96,37 +54,44 @@ public class FrameworkCriterionBand {
         this.negativeSignals = negativeSignals;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
+    public static class Builder extends BaseModel.Builder<FrameworkCriterionBand, Builder> {
 
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
+        private Builder() {
+            super(new FrameworkCriterionBand());
+        }
 
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
+        @Override
+        protected Builder self() {
+            return this;
+        }
 
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
+        public Builder frameworkCriterionId(UUID frameworkCriterionId) {
+            target.frameworkCriterionId = frameworkCriterionId;
+            return this;
+        }
 
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
+        public Builder frameworkResultBandId(UUID frameworkResultBandId) {
+            target.frameworkResultBandId = frameworkResultBandId;
+            return this;
+        }
 
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
+        public Builder descriptor(String descriptor) {
+            target.descriptor = descriptor;
+            return this;
+        }
 
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
-    }
+        public Builder positiveSignals(FrameworkCriterionSignals positiveSignals) {
+            target.positiveSignals = positiveSignals;
+            return this;
+        }
 
-    
+        public Builder negativeSignals(FrameworkCriterionSignals negativeSignals) {
+            target.negativeSignals = negativeSignals;
+            return this;
+        }
+    }
 }

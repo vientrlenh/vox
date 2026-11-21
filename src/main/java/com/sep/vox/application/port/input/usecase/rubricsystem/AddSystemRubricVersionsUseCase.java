@@ -94,11 +94,19 @@ public class AddSystemRubricVersionsUseCase implements IUseCase<AddSystemRubricV
                     ? vCmd.name().trim()
                     : rubric.getName() + " - Version " + vCmd.version();
 
-            return new RubricVersion(
-                    command.rubricId(), vCmd.version(), safeCode, safeName, rubric.getDescription(),
-                    RubricStatus.DRAFT, validFrom, vCmd.effectiveTo(), vCmd.scoringScaleMin(), vCmd.scoringScaleMax(),
-                    vCmd.totalScoreMethod(), now, now, currentUserId, currentUserId
-            );
+            return RubricVersion.builder()
+                    .rubricId(command.rubricId())
+                    .version(vCmd.version())
+                    .code(safeCode)
+                    .name(safeName)
+                    .description(rubric.getDescription())
+                    .status(RubricStatus.DRAFT)
+                    .effectiveFrom(validFrom)
+                    .effectiveTo(vCmd.effectiveTo())
+                    .scoringScaleMin(vCmd.scoringScaleMin())
+                    .scoringScaleMax(vCmd.scoringScaleMax())
+                    .totalScoreMethod(vCmd.totalScoreMethod())
+                    .build();
         }).toList();
 
         // 5. Lưu vào DB và trả về ID của các version vừa tạo

@@ -98,23 +98,23 @@ public class PracticeSessionInternalController {
         UUID studentId = practiceSessionRepository.findById(sessionId)
             .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên luyện."))
             .getStudentId();
-        SubmitPracticeTurn turn = new SubmitPracticeTurn(
-            sessionId,
-            request.questionId(),
-            request.turnOrder(),
-            request.turnType(),
-            request.promptText(),
-            request.audioUrl(),
-            request.transcript(),
-            request.durationSeconds(),
-            request.turnCostUsd(),
-            request.wordFeedbackJson(),
-            request.turnScore(),
-            request.questionComplete(),
-            request.corrections() == null
+        SubmitPracticeTurn turn = SubmitPracticeTurn.builder()
+                .sessionId(sessionId)
+                .questionId(request.questionId())
+                .turnOrder(request.turnOrder())
+                .turnType(request.turnType())
+                .promptText(request.promptText())
+                .audioUrl(request.audioUrl())
+                .transcript(request.transcript())
+                .durationSeconds(request.durationSeconds())
+                .turnCostUsd(request.turnCostUsd())
+                .wordFeedbackJson(request.wordFeedbackJson())
+                .turnScore(request.turnScore())
+                .questionComplete(request.questionComplete())
+                .corrections(request.corrections() == null
                 ? List.of()
-                : request.corrections().stream().map(correction -> correction.toDomain()).toList()
-        );
+                : request.corrections().stream().map(correction -> correction.toDomain()).toList())
+                .build();
         return ApiResponse.success("OK", submitPracticeTurnUseCase.execute(studentId, turn));
     }
 
@@ -146,9 +146,14 @@ public class PracticeSessionInternalController {
         double confidence) {
 
         TurnCorrectionSubmission toDomain() {
-            return new TurnCorrectionSubmission(
-                category, originalText, correctedText, explanation, correctAudioUrl, confidence
-            );
+            return TurnCorrectionSubmission.builder()
+                    .category(category)
+                    .originalText(originalText)
+                    .correctedText(correctedText)
+                    .explanation(explanation)
+                    .correctAudioUrl(correctAudioUrl)
+                    .confidence(confidence)
+                    .build();
         }
     }
 }

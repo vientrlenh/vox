@@ -1,15 +1,12 @@
 package com.sep.vox.domain.model.scoringrule;
 
-import java.time.Instant;
+import com.sep.vox.domain.model.BaseModel;
 import java.util.UUID;
 
 import com.sep.vox.domain.valueobject.scoringruleaction.ScoringRuleActionParams;
 import com.sep.vox.domain.valueobject.scoringrulecondition.ScoringRuleConditionParams;
 
-
-
-public class ScoringRule {
-    private UUID id;
+public class ScoringRule extends BaseModel {
     private UUID policyId;
     private String code;
     private String name;
@@ -22,65 +19,8 @@ public class ScoringRule {
     private ScoringRuleSeverity severity;
     private boolean stopProcessing;
     private boolean isActive;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private UUID createdBy;
-    private UUID updatedBy;
     
     public ScoringRule() {
-    }
-
-    public ScoringRule(UUID id, UUID policyId, String code, String name, String description,
-            ScoringRuleConditionType conditionType, ScoringRuleConditionParams conditionParams,
-            ScoringRuleActionType actionType, ScoringRuleActionParams actionParams, int priority, ScoringRuleSeverity severity, boolean stopProcessing, boolean isActive,
-            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.id = id;
-        this.policyId = policyId;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.conditionType = conditionType;
-        this.conditionParams = conditionParams;
-        this.actionType = actionType;
-        this.actionParams = actionParams;
-        this.priority = priority;
-        this.severity = severity;
-        this.stopProcessing = stopProcessing;
-        this.isActive = isActive;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public ScoringRule(UUID policyId, String code, String name, String description,
-            ScoringRuleConditionType conditionType, ScoringRuleConditionParams conditionParams,
-            ScoringRuleActionType actionType, ScoringRuleActionParams actionParams, int priority, ScoringRuleSeverity severity, boolean stopProcessing, boolean isActive,
-            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.policyId = policyId;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.conditionType = conditionType;
-        this.conditionParams = conditionParams;
-        this.actionType = actionType;
-        this.actionParams = actionParams;
-        this.priority = priority;
-        this.severity = severity;
-        this.stopProcessing = stopProcessing;
-        this.isActive = isActive;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
     }
 
     public UUID getPolicyId() {
@@ -155,7 +95,6 @@ public class ScoringRule {
         this.priority = priority;
     }
 
-
     public ScoringRuleSeverity getSeverity() {
         return severity;
     }
@@ -180,37 +119,79 @@ public class ScoringRule {
         this.isActive = isActive;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
+    public static class Builder extends BaseModel.Builder<ScoringRule, Builder> {
 
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
+        private Builder() {
+            super(new ScoringRule());
+        }
 
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
+        @Override
+        protected Builder self() {
+            return this;
+        }
 
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
+        public Builder policyId(UUID policyId) {
+            target.policyId = policyId;
+            return this;
+        }
 
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
+        public Builder code(String code) {
+            target.code = code;
+            return this;
+        }
 
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
+        public Builder name(String name) {
+            target.name = name;
+            return this;
+        }
 
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
-    }
+        public Builder description(String description) {
+            target.description = description;
+            return this;
+        }
 
-    
+        public Builder conditionType(ScoringRuleConditionType conditionType) {
+            target.conditionType = conditionType;
+            return this;
+        }
+
+        public Builder conditionParams(ScoringRuleConditionParams conditionParams) {
+            target.conditionParams = conditionParams;
+            return this;
+        }
+
+        public Builder actionType(ScoringRuleActionType actionType) {
+            target.actionType = actionType;
+            return this;
+        }
+
+        public Builder actionParams(ScoringRuleActionParams actionParams) {
+            target.actionParams = actionParams;
+            return this;
+        }
+
+        public Builder priority(int priority) {
+            target.priority = priority;
+            return this;
+        }
+
+        public Builder severity(ScoringRuleSeverity severity) {
+            target.severity = severity;
+            return this;
+        }
+
+        public Builder stopProcessing(boolean stopProcessing) {
+            target.stopProcessing = stopProcessing;
+            return this;
+        }
+
+        public Builder active(boolean isActive) {
+            target.isActive = isActive;
+            return this;
+        }
+    }
 }

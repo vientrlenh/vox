@@ -308,7 +308,13 @@ class UpdateAssessmentPaperStatusUseCaseTests {
     }
 
     private void givenCallerRole(AssessmentMemberRole role) {
-        AssessmentMember member = new AssessmentMember(ASSESSMENT_ID, CALLER_ID, role, Instant.now(), CALLER_ID);
+        AssessmentMember member = AssessmentMember.builder()
+                .assessmentId(ASSESSMENT_ID)
+                .userId(CALLER_ID)
+                .role(role)
+                .grantedAt(Instant.now())
+                .grantedBy(CALLER_ID)
+                .build();
         when(assessmentMemberRepository.findByAssessmentIdAndUserId(ASSESSMENT_ID, CALLER_ID)).thenReturn(Optional.of(member));
     }
 
@@ -328,7 +334,7 @@ class UpdateAssessmentPaperStatusUseCaseTests {
         paper.setId(PAPER_ID);
         paper.setAssessmentId(ASSESSMENT_ID);
         paper.setStatus(status);
-        paper.setCreatedBy(createdBy);
+        paper.setCreatedBy(createdBy.toString());
         when(assessmentPaperRepository.findById(PAPER_ID)).thenReturn(Optional.of(paper));
     }
 

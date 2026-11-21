@@ -64,17 +64,17 @@ public class ResultStatusHistoryRecorder {
         if (!statusChanged && !scoreChanged) {
             return null;
         }
-        return assessmentResultStatusHistoryRepository.save(new AssessmentResultStatusHistory(
-            after.getId(),
-            before.status(),
-            after.getStatus(),
-            before.totalScore(),
-            after.getTotalScore(),
-            source,
-            actorId,
-            reason,
-            Instant.now()
-        ));
+        return assessmentResultStatusHistoryRepository.save(AssessmentResultStatusHistory.builder()
+                .candidateResultId(after.getId())
+                .fromStatus(before.status())
+                .toStatus(after.getStatus())
+                .scoreBefore(before.totalScore())
+                .scoreAfter(after.getTotalScore())
+                .source(source)
+                .actorId(actorId)
+                .reason(reason)
+                .createdAt(Instant.now())
+                .build());
     }
 
     /**
@@ -88,17 +88,17 @@ public class ResultStatusHistoryRecorder {
         if (before == null || after == null) {
             return null;
         }
-        return assessmentResultStatusHistoryRepository.save(new AssessmentResultStatusHistory(
-            after.getId(),
-            before.status(),
-            after.getStatus(),
-            before.totalScore(),
-            after.getTotalScore(),
-            source,
-            actorId,
-            reason,
-            Instant.now()
-        ));
+        return assessmentResultStatusHistoryRepository.save(AssessmentResultStatusHistory.builder()
+                .candidateResultId(after.getId())
+                .fromStatus(before.status())
+                .toStatus(after.getStatus())
+                .scoreBefore(before.totalScore())
+                .scoreAfter(after.getTotalScore())
+                .source(source)
+                .actorId(actorId)
+                .reason(reason)
+                .createdAt(Instant.now())
+                .build());
     }
 
     /** Ghi hàng loạt — chốt sổ cả kỳ thi không được đẻ ra N insert lẻ. */

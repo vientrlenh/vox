@@ -1,13 +1,11 @@
 package com.sep.vox.application.port.input.service;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.regex.Pattern;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -51,10 +49,10 @@ public class SchoolDirectoryImportCommitHandler implements ImportCommitHandler {
     @Override
     public ImportCommitResult commit(ImportSession session, List<ImportRow> rows) {
         Map<String, String> mapping = jsonSerializationPort.toStringMap(session.getConfirmedMappingJson());
-        return processRows(rows, mapping, session.getCreatedBy());
+        return processRows(rows, mapping);
     }
 
-    private ImportCommitResult processRows(List<ImportRow> rows, Map<String, String> confirmedMapping, UUID currentUserId) {
+    private ImportCommitResult processRows(List<ImportRow> rows, Map<String, String> confirmedMapping) {
         long createdRows = 0L;
         long updatedRows = 0L;
         long skippedRows = 0L;
@@ -98,11 +96,11 @@ public class SchoolDirectoryImportCommitHandler implements ImportCommitHandler {
             try {
                 if (existing != null) {
                     transactionTemplate.executeWithoutResult(status ->
-                            updateDirectory(existing, normalized, currentUserId));
+                            updateDirectory(existing, normalized));
                     updatedRows++;
                 } else {
                     transactionTemplate.executeWithoutResult(status ->
-                            createDirectory(normalized, currentUserId));
+                            createDirectory(normalized));
                     createdRows++;
                 }
             } catch (DataIntegrityViolationException e) {
@@ -119,8 +117,7 @@ public class SchoolDirectoryImportCommitHandler implements ImportCommitHandler {
         return new ImportCommitResult(createdRows, updatedRows, skippedRows, invalidRows);
     }
 
-    private void createDirectory(Map<String, String> data, UUID currentUserId) {
-        Instant now = Instant.now();
+    private void createDirectory(Map<String, String> data) {
         schoolDirectoryRepository.save(SchoolDirectory.createByImport(
                 data.get("code"),
                 data.get("name"),
@@ -128,22 +125,17 @@ public class SchoolDirectoryImportCommitHandler implements ImportCommitHandler {
                 data.get("provinceName"),
                 data.get("districtName"),
                 data.get("domain"),
-                data.get("address"),
-                now,
-                currentUserId));
+                data.get("address")));
     }
 
-    private void updateDirectory(SchoolDirectory existing, Map<String, String> data, UUID currentUserId) {
-        Instant now = Instant.now();
+    private void updateDirectory(SchoolDirectory existing, Map<String, String> data) {
         existing.applyImportUpdate(
                 data.get("name"),
                 data.get("provinceCode"),
                 data.get("provinceName"),
                 data.get("districtName"),
                 data.get("domain"),
-                data.get("address"),
-                currentUserId,
-                now);
+                data.get("address"));
         schoolDirectoryRepository.save(existing);
     }
 

@@ -4,7 +4,7 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.sep.vox.infrastructure.persistence.entity.TopicInterestScoreJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.personalization.TopicInterestScoreJpaEntity;
 
 public interface SpringDataTopicInterestScoreRepository
         extends JpaRepository<TopicInterestScoreJpaEntity, UUID> {

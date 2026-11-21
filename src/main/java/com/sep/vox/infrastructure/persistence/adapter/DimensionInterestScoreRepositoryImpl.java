@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.domain.repository.DimensionInterestScoreRepository;
-import com.sep.vox.infrastructure.persistence.entity.DimensionInterestScoreJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.personalization.DimensionInterestScoreJpaEntity;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataDimensionInterestScoreRepository;
 
 @Repository
@@ -76,12 +76,12 @@ public class DimensionInterestScoreRepositoryImpl
         // rollback sạch nên không mất dữ liệu, nhưng học sinh không cách nào làm lại quiz.
         repository.flush();
         repository.saveAll(scores.entrySet().stream()
-            .map(entry -> new DimensionInterestScoreJpaEntity(
-                learnerProfileId,
-                entry.getKey(),
-                BigDecimal.valueOf(entry.getValue()).setScale(4, RoundingMode.HALF_UP),
-                null
-            ))
+            .map(entry -> DimensionInterestScoreJpaEntity.builder()
+                    .learnerProfileId(learnerProfileId)
+                    .dimension(entry.getKey())
+                    .score(BigDecimal.valueOf(entry.getValue()).setScale(4, RoundingMode.HALF_UP))
+                    .baselineScore(null)
+                    .build())
             .toList());
     }
 

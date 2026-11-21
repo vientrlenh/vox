@@ -11,7 +11,7 @@ import org.springframework.data.repository.query.Param;
 
 import jakarta.persistence.LockModeType;
 
-import com.sep.vox.infrastructure.persistence.entity.PracticePaperJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.personalization.PracticePaperJpaEntity;
 
 public interface SpringDataPracticePaperRepository
         extends JpaRepository<PracticePaperJpaEntity, UUID> {

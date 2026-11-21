@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
-import com.sep.vox.infrastructure.persistence.entity.FrameworkCriterionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.framework.FrameworkCriterionJpaEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Collection;

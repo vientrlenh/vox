@@ -3,7 +3,7 @@ package com.sep.vox.infrastructure.persistence.mapper;
 import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
 import com.sep.vox.domain.model.assessment.AssessmentResultStatusHistory;
 import com.sep.vox.domain.model.assessment.ResultStatusChangeSource;
-import com.sep.vox.infrastructure.persistence.entity.AssessmentResultStatusHistoryJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentResultStatusHistoryJpaEntity;
 
 public final class AssessmentResultStatusHistoryMapper {
 
@@ -13,36 +13,36 @@ public final class AssessmentResultStatusHistoryMapper {
         if (entity == null) {
             return null;
         }
-        return new AssessmentResultStatusHistory(
-            entity.getId(),
-            entity.getCandidateResultId(),
-            toResultStatus(entity.getFromStatus()),
-            toResultStatus(entity.getToStatus()),
-            entity.getScoreBefore(),
-            entity.getScoreAfter(),
-            toSource(entity.getSource()),
-            entity.getActorId(),
-            entity.getReason(),
-            entity.getCreatedAt()
-        );
+        return AssessmentResultStatusHistory.builder()
+                .id(entity.getId())
+                .candidateResultId(entity.getCandidateResultId())
+                .fromStatus(toResultStatus(entity.getFromStatus()))
+                .toStatus(toResultStatus(entity.getToStatus()))
+                .scoreBefore(entity.getScoreBefore())
+                .scoreAfter(entity.getScoreAfter())
+                .source(toSource(entity.getSource()))
+                .actorId(entity.getActorId())
+                .reason(entity.getReason())
+                .createdAt(entity.getCreatedAt())
+                .build();
     }
 
     public static AssessmentResultStatusHistoryJpaEntity toJpa(AssessmentResultStatusHistory history) {
         if (history == null) {
             return null;
         }
-        return new AssessmentResultStatusHistoryJpaEntity(
-            history.getId(),
-            history.getCandidateResultId(),
-            history.getFromStatus() == null ? null : history.getFromStatus().name(),
-            history.getToStatus() == null ? null : history.getToStatus().name(),
-            history.getScoreBefore(),
-            history.getScoreAfter(),
-            history.getSource() == null ? null : history.getSource().name(),
-            history.getActorId(),
-            history.getReason(),
-            history.getCreatedAt()
-        );
+        return AssessmentResultStatusHistoryJpaEntity.builder()
+                .id(history.getId())
+                .candidateResultId(history.getCandidateResultId())
+                .fromStatus(history.getFromStatus() == null ? null : history.getFromStatus().name())
+                .toStatus(history.getToStatus() == null ? null : history.getToStatus().name())
+                .scoreBefore(history.getScoreBefore())
+                .scoreAfter(history.getScoreAfter())
+                .source(history.getSource() == null ? null : history.getSource().name())
+                .actorId(history.getActorId())
+                .reason(history.getReason())
+                .createdAt(history.getCreatedAt())
+                .build();
     }
 
     private static AssessmentCandidateResultStatus toResultStatus(String value) {

@@ -110,13 +110,13 @@ class UpdateAssessmentScheduleUseCaseTests {
     void should_update_draft_schedule_time() {
         when(assessmentScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(AssessmentScheduleStatus.DRAFT)));
         when(assessmentScheduleRepository.existsOverlapping(roomId, newStart, newEnd, scheduleId)).thenReturn(false);
-        when(assessmentScheduleRepository.updateAtomic(eq(scheduleId), eq(null), eq(newStart), eq(newEnd), any(), eq(userId)))
+        when(assessmentScheduleRepository.updateAtomic(eq(scheduleId), eq(null), eq(newStart), eq(newEnd), any(), eq(userId.toString())))
             .thenReturn(1);
 
         UUID result = useCase.execute(new UpdateAssessmentScheduleCommand(scheduleId, null, newStart, newEnd));
 
         assertThat(result).isEqualTo(scheduleId);
-        verify(assessmentScheduleRepository).updateAtomic(eq(scheduleId), eq(null), eq(newStart), eq(newEnd), any(), eq(userId));
+        verify(assessmentScheduleRepository).updateAtomic(eq(scheduleId), eq(null), eq(newStart), eq(newEnd), any(), eq(userId.toString()));
     }
 
     @Test
@@ -148,7 +148,10 @@ class UpdateAssessmentScheduleUseCaseTests {
         when(assessmentScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(AssessmentScheduleStatus.DRAFT)));
         when(assessmentScheduleRepository.existsOverlapping(roomId, newStart, newEnd, scheduleId)).thenReturn(false);
         when(assessmentScheduleProctorRepository.findByScheduleId(scheduleId))
-            .thenReturn(List.of(new AssessmentScheduleProctor(scheduleId, teacherId)));
+            .thenReturn(List.of(AssessmentScheduleProctor.builder()
+                    .scheduleId(scheduleId)
+                    .teacherId(teacherId)
+                    .build()));
         when(assessmentScheduleProctorRepository.existsOverlappingAssignment(teacherId, newStart, newEnd, scheduleId))
             .thenReturn(true);
 
@@ -189,7 +192,7 @@ class UpdateAssessmentScheduleUseCaseTests {
         when(assessmentCandidateRepository.findConflictsForStudents(anyCollection(), any(), any(), any()))
             .thenReturn(List.of(new StudentScheduleConflict(
                 candidate.getStudentId(), scheduleId, newStart, newEnd)));
-        when(assessmentScheduleRepository.updateAtomic(eq(scheduleId), eq(null), eq(newStart), eq(newEnd), any(), eq(userId)))
+        when(assessmentScheduleRepository.updateAtomic(eq(scheduleId), eq(null), eq(newStart), eq(newEnd), any(), eq(userId.toString())))
             .thenReturn(1);
 
         UUID result = useCase.execute(new UpdateAssessmentScheduleCommand(scheduleId, null, newStart, newEnd));
@@ -211,7 +214,7 @@ class UpdateAssessmentScheduleUseCaseTests {
     void should_reject_when_atomic_update_affects_no_rows() {
         when(assessmentScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(AssessmentScheduleStatus.DRAFT)));
         when(assessmentScheduleRepository.existsOverlapping(roomId, newStart, newEnd, scheduleId)).thenReturn(false);
-        when(assessmentScheduleRepository.updateAtomic(eq(scheduleId), eq(null), eq(newStart), eq(newEnd), any(), eq(userId)))
+        when(assessmentScheduleRepository.updateAtomic(eq(scheduleId), eq(null), eq(newStart), eq(newEnd), any(), eq(userId.toString())))
             .thenReturn(0);
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentScheduleCommand(scheduleId, null, newStart, newEnd)))
@@ -310,7 +313,7 @@ class UpdateAssessmentScheduleUseCaseTests {
     void should_not_check_subscription_period_for_centralized_schedule() {
         when(assessmentScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(AssessmentScheduleStatus.DRAFT)));
         when(assessmentScheduleRepository.existsOverlapping(roomId, newStart, newEnd, scheduleId)).thenReturn(false);
-        when(assessmentScheduleRepository.updateAtomic(eq(scheduleId), eq(null), eq(newStart), eq(newEnd), any(), eq(userId)))
+        when(assessmentScheduleRepository.updateAtomic(eq(scheduleId), eq(null), eq(newStart), eq(newEnd), any(), eq(userId.toString())))
             .thenReturn(1);
 
         useCase.execute(new UpdateAssessmentScheduleCommand(scheduleId, null, newStart, newEnd));

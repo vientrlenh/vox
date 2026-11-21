@@ -1,54 +1,16 @@
 package com.sep.vox.domain.model.framework;
 
-import java.time.Instant;
-import java.util.UUID;
+import com.sep.vox.domain.model.BaseModel;
 
 import com.sep.vox.domain.valueobject.FrameworkCode;
 
-public class Framework {
-    private UUID id;
+public class Framework extends BaseModel {
     private FrameworkCode code;
     private String name;
     private String description;
     private boolean isActive;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private UUID createdBy;
-    private UUID updatedBy;
 
     public Framework() {}
-
-    public Framework(UUID id, FrameworkCode code, String name, String description, boolean isActive, Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.id = id;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.isActive = isActive;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public Framework(FrameworkCode code, String name, String description, boolean isActive,
-            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.isActive = isActive;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
 
     public FrameworkCode getCode() {
         return code;
@@ -82,35 +44,39 @@ public class Framework {
         this.isActive = isActive;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
+    public static class Builder extends BaseModel.Builder<Framework, Builder> {
 
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
+        private Builder() {
+            super(new Framework());
+        }
 
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
+        @Override
+        protected Builder self() {
+            return this;
+        }
 
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
+        public Builder code(FrameworkCode code) {
+            target.code = code;
+            return this;
+        }
 
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
+        public Builder name(String name) {
+            target.name = name;
+            return this;
+        }
 
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
+        public Builder description(String description) {
+            target.description = description;
+            return this;
+        }
 
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
+        public Builder active(boolean isActive) {
+            target.isActive = isActive;
+            return this;
+        }
     }
 }

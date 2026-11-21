@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.ImportSessionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.importfile.ImportSessionJpaEntity;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -76,18 +76,18 @@ public class ImportSessionRepositoryImpl implements ImportSessionRepository {
     }
 
     @Override
-    public int markImporting(UUID id, String type, String confirmedMapping, Instant now, UUID updatedBy) {
+    public int markImporting(UUID id, String type, String confirmedMapping, Instant now, String updatedBy) {
         return springDataImportSessionRepository.markImporting(id, type, confirmedMapping, now, updatedBy);
     }
 
     @Override
-    public int markQueued(UUID id, String type, String confirmedMapping, Instant now, UUID updatedBy) {
+    public int markQueued(UUID id, String type, String confirmedMapping, Instant now, String updatedBy) {
         return springDataImportSessionRepository.markQueued(id, type, confirmedMapping, now, updatedBy);
     }
 
     @Override
     public int markClaimed(Collection<UUID> ids, UUID worker, Instant now, Instant leaseUntil) {
-        return springDataImportSessionRepository.markClaimed(ids, worker, now, leaseUntil);
+        return springDataImportSessionRepository.markClaimed(ids, worker, now, leaseUntil, worker.toString());
     }
 
     @Override

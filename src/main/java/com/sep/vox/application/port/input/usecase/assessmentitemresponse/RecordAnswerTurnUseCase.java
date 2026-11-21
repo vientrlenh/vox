@@ -51,16 +51,16 @@ public class RecordAnswerTurnUseCase implements IUseCase<RecordAnswerTurnCommand
 
         Instant answeredAt = input.answeredAt() == null ? Instant.now() : input.answeredAt();
         AssessmentItemResponse response = assessmentItemResponseRepository.findById(input.answerId())
-            .orElseGet(() -> new AssessmentItemResponse(
-                input.answerId(),
-                input.sessionId(),
-                input.paperItemId(),
-                input.audioUrl(),
-                input.durationSeconds(),
-                input.transcript(),
-                null,
-                answeredAt
-            ));
+            .orElseGet(() -> AssessmentItemResponse.builder()
+                    .id(input.answerId())
+                    .sessionId(input.sessionId())
+                    .paperItemId(input.paperItemId())
+                    .audioUrl(input.audioUrl())
+                    .durationSeconds(input.durationSeconds())
+                    .transcript(input.transcript())
+                    .terminationReason(null)
+                    .submittedAt(answeredAt)
+                    .build());
 
         response.setSessionId(input.sessionId());
         if (response.getPaperItemId() == null && input.paperItemId() != null) {
@@ -97,28 +97,27 @@ public class RecordAnswerTurnUseCase implements IUseCase<RecordAnswerTurnCommand
             .findByAssessmentItemResponseIdAndTurnOrder(response.getId(), input.turnOrder())
             .orElse(null);
 
-        AssessmentItemResponseTurn turn = new AssessmentItemResponseTurn(
-            response.getId(),
-            input.turnOrder(),
-            // normalizeTurnType trả MAIN khi thiếu, nên một pha không gửi turnType sẽ hạ cấp
-            // lượt FOLLOWUP thành MAIN -- lệch cả thống kê follow-up lẫn cách hiển thị bài.
-            isMeaningful(input.turnType()) || existingTurn == null
-                ? normalizeTurnType(input.turnType())
-                : existingTurn.getTurnType(),
-            keep(input.promptText(), existingTurn == null ? null : existingTurn.getPromptText()),
-            keep(input.audioUrl(), existingTurn == null ? null : existingTurn.getAudioUrl()),
-            keep(input.transcript(), existingTurn == null ? null : existingTurn.getTranscript()),
-            input.durationSeconds() != null || existingTurn == null
+        // normalizeTurnType returns MAIN when the type is missing, so a phase that sends no turnType would downgrade
+        // a FOLLOWUP turn to MAIN -- skewing both the follow-up statistics and how the assessment is displayed.
+        AssessmentItemResponseTurn turn = AssessmentItemResponseTurn.builder()
+                .assessmentItemResponseId(response.getId())
+                .turnOrder(input.turnOrder())
+                .turnType(isMeaningful(input.turnType()) || existingTurn == null
+                    ? normalizeTurnType(input.turnType())
+                    : existingTurn.getTurnType())
+                .promptText(keep(input.promptText(), existingTurn == null ? null : existingTurn.getPromptText()))
+                .audioUrl(keep(input.audioUrl(), existingTurn == null ? null : existingTurn.getAudioUrl()))
+                .transcript(keep(input.transcript(), existingTurn == null ? null : existingTurn.getTranscript()))
+                .durationSeconds(input.durationSeconds() != null || existingTurn == null
                 ? input.durationSeconds()
-                : existingTurn.getDurationSeconds(),
-            input.wordCount() != null || existingTurn == null
+                : existingTurn.getDurationSeconds())
+                .wordCount(input.wordCount() != null || existingTurn == null
                 ? input.wordCount()
-                : existingTurn.getWordCount(),
-            input.answeredAt() != null || existingTurn == null
+                : existingTurn.getWordCount())
+                .answeredAt(input.answeredAt() != null || existingTurn == null
                 ? answeredAt
-                : existingTurn.getAnsweredAt(),
-            null
-        );
+                : existingTurn.getAnsweredAt())
+                .build();
         assessmentItemResponseTurnRepository.upsert(turn);
         return null;
     }

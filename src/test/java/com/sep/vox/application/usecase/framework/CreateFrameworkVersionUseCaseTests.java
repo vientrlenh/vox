@@ -20,7 +20,6 @@ import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateFrameworkVersionCommand;
 import com.sep.vox.application.port.input.usecase.framework.CreateFrameworkVersionUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.framework.CreateFrameworkVersionResponse;
 import com.sep.vox.domain.model.framework.Framework;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
@@ -32,19 +31,16 @@ public class CreateFrameworkVersionUseCaseTests {
 
     private FrameworkRepository frameworkRepository;
     private FrameworkVersionRepository frameworkVersionRepository;
-    private UserContextPort userContextPort;
     private CreateFrameworkVersionUseCase useCase;
 
     private UUID frameworkId = UUID.randomUUID();
-    private UUID userId = UUID.randomUUID();
     private Instant now = Instant.now();
 
     @BeforeEach
     void setUp() {
         frameworkRepository = mock(FrameworkRepository.class);
         frameworkVersionRepository = mock(FrameworkVersionRepository.class);
-        userContextPort = mock(UserContextPort.class);
-        useCase = new CreateFrameworkVersionUseCase(frameworkRepository, frameworkVersionRepository, userContextPort);
+        useCase = new CreateFrameworkVersionUseCase(frameworkRepository, frameworkVersionRepository);
     }
 
     @Test
@@ -53,12 +49,14 @@ public class CreateFrameworkVersionUseCaseTests {
             frameworkId, "V1_0", "Version 1.0", "Initial version", 1, now, now.plus(30, ChronoUnit.DAYS)
         );
 
-        Framework framework = new Framework(
-            frameworkId, new FrameworkCode("CEFR"), "Test Framework", "Description",
-            true, now, now, null, null
-        );
+        Framework framework = Framework.builder()
+            .id(frameworkId)
+            .code(new FrameworkCode("CEFR"))
+            .name("Test Framework")
+            .description("Description")
+            .active(true)
+            .build();
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
-        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(frameworkVersionRepository.save(any(FrameworkVersion.class)))
             .thenAnswer(invocation -> {
                 FrameworkVersion version = invocation.getArgument(0);
@@ -90,12 +88,14 @@ public class CreateFrameworkVersionUseCaseTests {
             frameworkId, "V1_0", "Version 1.0", "Initial version", 1, now, now.plus(30, ChronoUnit.DAYS)
         );
 
-        Framework framework = new Framework(
-            frameworkId, new FrameworkCode("CEFR"), "Test Framework", "Description",
-            true, now, now, null, null
-        );
+        Framework framework = Framework.builder()
+            .id(frameworkId)
+            .code(new FrameworkCode("CEFR"))
+            .name("Test Framework")
+            .description("Description")
+            .active(true)
+            .build();
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
-        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(frameworkVersionRepository.save(any(FrameworkVersion.class)))
             .thenThrow(new DataIntegrityViolationException("duplicate"));
 

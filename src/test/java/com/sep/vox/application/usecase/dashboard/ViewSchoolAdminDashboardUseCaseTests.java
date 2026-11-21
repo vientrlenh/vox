@@ -377,7 +377,12 @@ class ViewSchoolAdminDashboardUseCaseTests {
     }
 
     private static SchoolBalance balance(BigDecimal balanceVnd) {
-        return new SchoolBalance(SCHOOL_ID, balanceVnd, Instant.now(), Instant.now());
+        return SchoolBalance.builder()
+            .schoolId(SCHOOL_ID)
+            .balanceVnd(balanceVnd)
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
+            .build();
     }
 
     private static String month(Instant at) {

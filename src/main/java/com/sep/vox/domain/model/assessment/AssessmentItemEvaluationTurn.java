@@ -19,39 +19,6 @@ public class AssessmentItemEvaluationTurn {
     public AssessmentItemEvaluationTurn() {
     }
 
-    public AssessmentItemEvaluationTurn(UUID id, UUID evaluationId, int turnOrder, TurnType turnType, String promptText,
-            String audioUrl, String transcript, Integer wordCount, Integer durationSeconds, Double asrConfidence,
-            String pronunciationOverallJson, String wordFeedbackJson) {
-        this.id = id;
-        this.evaluationId = evaluationId;
-        this.turnOrder = turnOrder;
-        this.turnType = turnType;
-        this.promptText = promptText;
-        this.audioUrl = audioUrl;
-        this.transcript = transcript;
-        this.wordCount = wordCount;
-        this.durationSeconds = durationSeconds;
-        this.asrConfidence = asrConfidence;
-        this.pronunciationOverallJson = pronunciationOverallJson;
-        this.wordFeedbackJson = wordFeedbackJson;
-    }
-
-    public AssessmentItemEvaluationTurn(UUID evaluationId, int turnOrder, TurnType turnType, String promptText,
-            String audioUrl, String transcript, Integer wordCount, Integer durationSeconds, Double asrConfidence,
-            String pronunciationOverallJson, String wordFeedbackJson) {
-        this.evaluationId = evaluationId;
-        this.turnOrder = turnOrder;
-        this.turnType = turnType;
-        this.promptText = promptText;
-        this.audioUrl = audioUrl;
-        this.transcript = transcript;
-        this.wordCount = wordCount;
-        this.durationSeconds = durationSeconds;
-        this.asrConfidence = asrConfidence;
-        this.pronunciationOverallJson = pronunciationOverallJson;
-        this.wordFeedbackJson = wordFeedbackJson;
-    }
-
     public UUID getId() {
         return id;
     }
@@ -146,5 +113,82 @@ public class AssessmentItemEvaluationTurn {
 
     public void setWordFeedbackJson(String wordFeedbackJson) {
         this.wordFeedbackJson = wordFeedbackJson;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final AssessmentItemEvaluationTurn target = new AssessmentItemEvaluationTurn();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder evaluationId(UUID evaluationId) {
+            target.evaluationId = evaluationId;
+            return this;
+        }
+
+        public Builder turnOrder(int turnOrder) {
+            target.turnOrder = turnOrder;
+            return this;
+        }
+
+        public Builder turnType(TurnType turnType) {
+            target.turnType = turnType;
+            return this;
+        }
+
+        public Builder promptText(String promptText) {
+            target.promptText = promptText;
+            return this;
+        }
+
+        public Builder audioUrl(String audioUrl) {
+            target.audioUrl = audioUrl;
+            return this;
+        }
+
+        public Builder transcript(String transcript) {
+            target.transcript = transcript;
+            return this;
+        }
+
+        public Builder wordCount(Integer wordCount) {
+            target.wordCount = wordCount;
+            return this;
+        }
+
+        public Builder durationSeconds(Integer durationSeconds) {
+            target.durationSeconds = durationSeconds;
+            return this;
+        }
+
+        public Builder asrConfidence(Double asrConfidence) {
+            target.asrConfidence = asrConfidence;
+            return this;
+        }
+
+        public Builder pronunciationOverallJson(String pronunciationOverallJson) {
+            target.pronunciationOverallJson = pronunciationOverallJson;
+            return this;
+        }
+
+        public Builder wordFeedbackJson(String wordFeedbackJson) {
+            target.wordFeedbackJson = wordFeedbackJson;
+            return this;
+        }
+
+        public AssessmentItemEvaluationTurn build() {
+            return target;
+        }
+
     }
 }

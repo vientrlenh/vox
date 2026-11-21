@@ -280,31 +280,27 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
         int nextVersion = assessmentPolicyRepository.findMaxVersionForScope(
             null, languageId, frameworkVersion.getId(), gradeLevelId, null, null) + 1;
 
-        assessmentPolicyRepository.save(new AssessmentPolicy(
+        assessmentPolicyRepository.save(AssessmentPolicy.builder()
             // schoolId null = a system policy, belonging to no school.
-            null,
-            gradeLevelId,
+            .schoolId(null)
+            .gradeLevelId(gradeLevelId)
             // School year and Class belong to the scope of a specific school, so a system policy always leaves them empty.
-            null,
-            null,
-            languageId,
-            frameworkVersion.getId(),
-            rubricVersion.getId(),
-            targetBand.getId(),
+            .schoolGradeId(null)
+            .schoolClassId(null)
+            .languageId(languageId)
+            .frameworkVersionId(frameworkVersion.getId())
+            .rubricVersionId(rubricVersion.getId())
+            .targetFrameworkBandId(targetBand.getId())
             // See the class javadoc: the regulation dictates the band, not the score threshold.
-            null,
-            AssessmentPolicyStrictness.STANDARD,
-            nextVersion,
-            AssessmentPolicyStatus.PUBLISHED,
+            .passingScore(null)
+            .strictness(AssessmentPolicyStrictness.STANDARD)
+            .version(nextVersion)
+            .status(AssessmentPolicyStatus.PUBLISHED)
             // effectiveTo null = unlimited. A template is only for reading and copying so there is no reason for it to expire;
             // the real validity range is what the school sets itself when copying it over.
-            now,
-            null,
-            now,
-            now,
-            null,
-            null
-        ));
+            .effectiveFrom(now)
+            .effectiveTo(null)
+            .build());
         return true;
     }
 

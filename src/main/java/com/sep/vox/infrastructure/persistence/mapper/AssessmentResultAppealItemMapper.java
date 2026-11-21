@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.assessment.AssessmentResultAppealItem;
-import com.sep.vox.infrastructure.persistence.entity.AssessmentResultAppealItemJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentResultAppealItemJpaEntity;
 
 public final class AssessmentResultAppealItemMapper {
 
@@ -11,25 +11,25 @@ public final class AssessmentResultAppealItemMapper {
         if (entity == null) {
             return null;
         }
-        return new AssessmentResultAppealItem(
-            entity.getId(),
-            entity.getAppealId(),
-            entity.getPaperItemId(),
-            entity.getResponseId(),
-            entity.getFinalScore()
-        );
+        return AssessmentResultAppealItem.builder()
+                .id(entity.getId())
+                .appealId(entity.getAppealId())
+                .paperItemId(entity.getPaperItemId())
+                .responseId(entity.getResponseId())
+                .finalScore(entity.getFinalScore())
+                .build();
     }
 
     public static AssessmentResultAppealItemJpaEntity toJpa(AssessmentResultAppealItem item) {
         if (item == null) {
             return null;
         }
-        return new AssessmentResultAppealItemJpaEntity(
-            item.getId(),
-            item.getAppealId(),
-            item.getPaperItemId(),
-            item.getResponseId(),
-            item.getFinalScore()
-        );
+        return AssessmentResultAppealItemJpaEntity.builder()
+                .id(item.getId())
+                .appealId(item.getAppealId())
+                .paperItemId(item.getPaperItemId())
+                .responseId(item.getResponseId())
+                .finalScore(item.getFinalScore())
+                .build();
     }
 }

@@ -22,33 +22,6 @@ public class TopicSuggestion {
     public TopicSuggestion() {
     }
 
-    public TopicSuggestion(
-            UUID id,
-            UUID studentId,
-            String suggestedTopicName,
-            String keyword,
-            String interestDimension,
-            String curriculumGroup,
-            BigDecimal confidence,
-            String reasonText,
-            String evidenceJson,
-            String status,
-            Instant createdAt,
-            Instant respondedAt) {
-        this.id = id;
-        this.studentId = studentId;
-        this.suggestedTopicName = suggestedTopicName;
-        this.keyword = keyword;
-        this.interestDimension = interestDimension;
-        this.curriculumGroup = curriculumGroup;
-        this.confidence = confidence;
-        this.reasonText = reasonText;
-        this.evidenceJson = evidenceJson;
-        this.status = status;
-        this.createdAt = createdAt;
-        this.respondedAt = respondedAt;
-    }
-
     public UUID getId() {
         return id;
     }
@@ -143,5 +116,82 @@ public class TopicSuggestion {
 
     public void setRespondedAt(Instant respondedAt) {
         this.respondedAt = respondedAt;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final TopicSuggestion target = new TopicSuggestion();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder studentId(UUID studentId) {
+            target.studentId = studentId;
+            return this;
+        }
+
+        public Builder suggestedTopicName(String suggestedTopicName) {
+            target.suggestedTopicName = suggestedTopicName;
+            return this;
+        }
+
+        public Builder keyword(String keyword) {
+            target.keyword = keyword;
+            return this;
+        }
+
+        public Builder interestDimension(String interestDimension) {
+            target.interestDimension = interestDimension;
+            return this;
+        }
+
+        public Builder curriculumGroup(String curriculumGroup) {
+            target.curriculumGroup = curriculumGroup;
+            return this;
+        }
+
+        public Builder confidence(BigDecimal confidence) {
+            target.confidence = confidence;
+            return this;
+        }
+
+        public Builder reasonText(String reasonText) {
+            target.reasonText = reasonText;
+            return this;
+        }
+
+        public Builder evidenceJson(String evidenceJson) {
+            target.evidenceJson = evidenceJson;
+            return this;
+        }
+
+        public Builder status(String status) {
+            target.status = status;
+            return this;
+        }
+
+        public Builder createdAt(Instant createdAt) {
+            target.createdAt = createdAt;
+            return this;
+        }
+
+        public Builder respondedAt(Instant respondedAt) {
+            target.respondedAt = respondedAt;
+            return this;
+        }
+
+        public TopicSuggestion build() {
+            return target;
+        }
+
     }
 }

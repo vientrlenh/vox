@@ -17,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateFrameworkVersionCommand;
 import com.sep.vox.application.port.input.usecase.framework.UpdateFrameworkVersionUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.framework.Framework;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
@@ -29,20 +28,17 @@ public class UpdateFrameworkVersionUseCaseTests {
 
     private FrameworkRepository frameworkRepository;
     private FrameworkVersionRepository frameworkVersionRepository;
-    private UserContextPort userContextPort;
     private UpdateFrameworkVersionUseCase useCase;
 
     private final UUID frameworkId = UUID.randomUUID();
     private final UUID versionId = UUID.randomUUID();
-    private final UUID userId = UUID.randomUUID();
     private final Instant now = Instant.now();
 
     @BeforeEach
     void setUp() {
         frameworkRepository = mock(FrameworkRepository.class);
         frameworkVersionRepository = mock(FrameworkVersionRepository.class);
-        userContextPort = mock(UserContextPort.class);
-        useCase = new UpdateFrameworkVersionUseCase(frameworkVersionRepository, userContextPort);
+        useCase = new UpdateFrameworkVersionUseCase(frameworkVersionRepository);
     }
 
     @Test
@@ -52,10 +48,13 @@ public class UpdateFrameworkVersionUseCaseTests {
             now, now.plus(365, ChronoUnit.DAYS)
         );
 
-        Framework framework = new Framework(
-            frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, now, now, null, null
-        );
+        Framework framework = Framework.builder()
+            .id(frameworkId)
+            .code(new FrameworkCode("CEFR"))
+            .name("Test")
+            .description("Description")
+            .active(true)
+            .build();
         FrameworkVersion version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(frameworkId);
@@ -63,7 +62,6 @@ public class UpdateFrameworkVersionUseCaseTests {
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
         when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
-        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
 
         useCase.execute(command);
 
@@ -89,10 +87,13 @@ public class UpdateFrameworkVersionUseCaseTests {
             now, now.plus(365, ChronoUnit.DAYS)
         );
 
-        Framework framework = new Framework(
-            frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, now, now, null, null
-        );
+        Framework framework = Framework.builder()
+            .id(frameworkId)
+            .code(new FrameworkCode("CEFR"))
+            .name("Test")
+            .description("Description")
+            .active(true)
+            .build();
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
         when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.empty());
@@ -108,10 +109,13 @@ public class UpdateFrameworkVersionUseCaseTests {
             now, now.plus(365, ChronoUnit.DAYS)
         );
 
-        Framework framework = new Framework(
-            frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, now, now, null, null
-        );
+        Framework framework = Framework.builder()
+            .id(frameworkId)
+            .code(new FrameworkCode("CEFR"))
+            .name("Test")
+            .description("Description")
+            .active(true)
+            .build();
         FrameworkVersion version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(otherFrameworkId);
@@ -129,10 +133,13 @@ public class UpdateFrameworkVersionUseCaseTests {
             now, now.plus(365, ChronoUnit.DAYS)
         );
 
-        Framework framework = new Framework(
-            frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, now, now, null, null
-        );
+        Framework framework = Framework.builder()
+            .id(frameworkId)
+            .code(new FrameworkCode("CEFR"))
+            .name("Test")
+            .description("Description")
+            .active(true)
+            .build();
         FrameworkVersion version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(frameworkId);

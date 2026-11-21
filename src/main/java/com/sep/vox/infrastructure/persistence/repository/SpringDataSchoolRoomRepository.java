@@ -10,7 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.sep.vox.infrastructure.persistence.entity.SchoolRoomJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolRoomJpaEntity;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -42,6 +42,6 @@ public interface SpringDataSchoolRoomRepository extends JpaRepository<SchoolRoom
             @Param("name") String name,
             @Param("description") String description,
             @Param("updatedAt") Instant updatedAt,
-            @Param("updatedBy") UUID updatedBy
+            @Param("updatedBy") String updatedBy
     );
 }

@@ -59,7 +59,7 @@ public class CreateQuestionCollaboratorUseCase implements IUseCase<CreateQuestio
         QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
-        validateOwner(question.getCreatedBy(), currentUserId);
+        validateOwner(question, currentUserId);
         validateSchoolQuestion(bank.getOwnerType());
 
         if (question.getStatus() == QuestionStatus.ARCHIVED) {
@@ -96,8 +96,8 @@ public class CreateQuestionCollaboratorUseCase implements IUseCase<CreateQuestio
         return QuestionCollaboratorDtoMapper.toDto(saved);
     }
 
-    private void validateOwner(java.util.UUID ownerId, java.util.UUID currentUserId) {
-        if (!currentUserId.equals(ownerId)) {
+    private void validateOwner(Question question, java.util.UUID currentUserId) {
+        if (!question.isCreatedBy(currentUserId)) {
             throw new ForbiddenException("Chỉ owner mới được quản lý collaborator");
         }
     }

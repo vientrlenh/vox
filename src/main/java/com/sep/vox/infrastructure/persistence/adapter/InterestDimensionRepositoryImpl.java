@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.domain.model.personalization.InterestDimension;
 import com.sep.vox.domain.repository.InterestDimensionRepository;
-import com.sep.vox.infrastructure.persistence.entity.InterestDimensionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.personalization.InterestDimensionJpaEntity;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataInterestDimensionRepository;
 
 @Repository
@@ -51,16 +51,16 @@ public class InterestDimensionRepositoryImpl implements InterestDimensionReposit
     @Override
     public InterestDimension save(InterestDimension dimension) {
         Instant now = Instant.now();
-        InterestDimensionJpaEntity saved = repository.save(new InterestDimensionJpaEntity(
-            dimension.getCode(),
-            dimension.getLabel(),
-            dimension.getDescription(),
-            dimension.isActive(),
-            dimension.isQuizEligible(),
-            dimension.getDisplayOrder(),
-            dimension.getCreatedAt() == null ? now : dimension.getCreatedAt(),
-            now
-        ));
+        InterestDimensionJpaEntity saved = repository.save(InterestDimensionJpaEntity.builder()
+                .code(dimension.getCode())
+                .label(dimension.getLabel())
+                .description(dimension.getDescription())
+                .active(dimension.isActive())
+                .quizEligible(dimension.isQuizEligible())
+                .displayOrder(dimension.getDisplayOrder())
+                .createdAt(dimension.getCreatedAt() == null ? now : dimension.getCreatedAt())
+                .updatedAt(now)
+                .build());
         return toDomain(saved);
     }
 
@@ -71,15 +71,15 @@ public class InterestDimensionRepositoryImpl implements InterestDimensionReposit
     }
 
     private static InterestDimension toDomain(InterestDimensionJpaEntity entity) {
-        return new InterestDimension(
-            entity.getCode(),
-            entity.getLabel(),
-            entity.getDescription(),
-            entity.isActive(),
-            entity.isQuizEligible(),
-            entity.getDisplayOrder(),
-            entity.getCreatedAt(),
-            entity.getUpdatedAt()
-        );
+        return InterestDimension.builder()
+                .code(entity.getCode())
+                .label(entity.getLabel())
+                .description(entity.getDescription())
+                .active(entity.isActive())
+                .quizEligible(entity.isQuizEligible())
+                .displayOrder(entity.getDisplayOrder())
+                .createdAt(entity.getCreatedAt())
+                .updatedAt(entity.getUpdatedAt())
+                .build();
     }
 }

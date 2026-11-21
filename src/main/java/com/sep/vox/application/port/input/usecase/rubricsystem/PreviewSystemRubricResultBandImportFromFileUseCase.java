@@ -96,37 +96,43 @@ public class PreviewSystemRubricResultBandImportFromFileUseCase implements IUseC
         Instant expiresAt = now.plus(1, ChronoUnit.DAYS);
 
         // Bước 4: Tạo phiên Import làm việc (ImportSession) gắn cờ loại dữ liệu mới
-        ImportSession session = new ImportSession(
-                null,
-                null, // System Admin luôn truyền mã trường là null
-                ImportType.RUBRIC_RESULT_BAND,
-                command.file().fileName(),
-                jsonSerializationPort.toJson(parsedResult.originalHeaders()),
-                jsonSerializationPort.toJson(parsedResult.suggestedMapping()),
-                null, 0, 0, 0, 0,
-                parsedResult.rows().size(),
-                null,
-                ImportSessionStatus.PREVIEWED, // Cấu hình trạng thái chờ Map cột ở màn Preview
-                command.rubricVersionId(),
-                expiresAt,
-                null, null, null, 0,
-                now, now, currentUserId, currentUserId
-        );
+        ImportSession session = ImportSession.builder()
+            // A System Admin always passes a null school id
+            .schoolId(null)
+            .type(ImportType.RUBRIC_RESULT_BAND)
+            .fileName(command.file().fileName())
+            .originalHeadersJson(jsonSerializationPort.toJson(parsedResult.originalHeaders()))
+            .suggestedMappingJson(jsonSerializationPort.toJson(parsedResult.suggestedMapping()))
+            .confirmedMappingJson(null)
+            .validRows(0)
+            .invalidRows(0)
+            .importedRows(0)
+            .skippedRows(0)
+            .totalRows(parsedResult.rows().size())
+            .failureReason(null)
+            // Waiting state for column mapping on the Preview screen
+            .status(ImportSessionStatus.PREVIEWED)
+            .importedEntityId(command.rubricVersionId())
+            .expiresAt(expiresAt)
+            .claimedAt(null)
+            .claimedBy(null)
+            .leaseExpiresAt(null)
+            .attempts(0)
+            .build();
 
         ImportSession savedSession = importSessionRepository.save(session);
         UUID generatedSessionId = savedSession.getId();
 
         // Bước 5: Chuyển dữ liệu Excel thô của từng hàng vào bảng ImportRow để lưu trữ tạm thời
         List<ImportRow> importRows = IntStream.range(0, parsedResult.rows().size())
-                .mapToObj(i -> new ImportRow(
-                        null,
-                        generatedSessionId,
-                        i + 1,
-                        jsonSerializationPort.toJson(parsedResult.rows().get(i)),
-                        null,
-                        null,
-                        ImportRowStatus.PENDING
-                )).toList();
+                .mapToObj(i -> ImportRow.builder()
+                    .sessionId(generatedSessionId)
+                    .rowNumber(i + 1)
+                    .rawDataJson(jsonSerializationPort.toJson(parsedResult.rows().get(i)))
+                    .mappedDataJson(null)
+                    .errorsJson(null)
+                    .status(ImportRowStatus.PENDING)
+                    .build()).toList();
 
         importRowRepository.saveAll(importRows);
 

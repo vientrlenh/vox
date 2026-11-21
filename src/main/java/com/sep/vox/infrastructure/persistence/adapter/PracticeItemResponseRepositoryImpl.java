@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.domain.repository.PendingEvaluationResponse;
 import com.sep.vox.domain.repository.PracticeItemResponseRepository;
-import com.sep.vox.infrastructure.persistence.entity.PracticeItemResponseJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.personalization.PracticeItemResponseJpaEntity;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataPracticeItemResponseRepository;
 
 @Repository
@@ -54,14 +54,14 @@ public class PracticeItemResponseRepositoryImpl implements PracticeItemResponseR
             existing.setQuestionComplete(existing.isQuestionComplete() || questionComplete);
             return repository.save(existing).getId();
         }
-        PracticeItemResponseJpaEntity saved = repository.save(new PracticeItemResponseJpaEntity(
-            UUID.randomUUID(),
-            sessionId,
-            questionId,
-            audioUrl,
-            transcript,
-            questionComplete
-        ));
+        PracticeItemResponseJpaEntity saved = repository.save(PracticeItemResponseJpaEntity.builder()
+                .id(UUID.randomUUID())
+                .practiceSessionId(sessionId)
+                .practiceQuestionId(questionId)
+                .audioUrl(audioUrl)
+                .transcript(transcript)
+                .questionComplete(questionComplete)
+                .build());
         return saved.getId();
     }
 

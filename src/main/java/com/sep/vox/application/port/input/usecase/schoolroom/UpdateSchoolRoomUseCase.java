@@ -74,7 +74,7 @@ public class UpdateSchoolRoomUseCase implements IUseCase<UpdateSchoolRoomCommand
                 safeName,
                 safeDesc,
                 Instant.now(),
-                currentUserId
+                currentUserId.toString()
         );
 
         if (updatedRows == 0) {

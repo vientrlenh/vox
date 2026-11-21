@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
 import com.sep.vox.domain.model.subscription.SubscriptionPlan;
-import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -11,7 +10,6 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.ArchiveSubscriptionPlanCommand;
 import com.sep.vox.application.port.input.service.SubscriptionPlanReplacementValidator;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.subscription.SubscriptionPlanStatus;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
@@ -22,17 +20,14 @@ public class ArchiveSubscriptionPlanUseCase implements IUseCase<ArchiveSubscript
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final SubscriptionPlanReplacementValidator replacementValidator;
-    private final UserContextPort userContextPort;
 
     public ArchiveSubscriptionPlanUseCase(
             SubscriptionPlanRepository subscriptionPlanRepository,
             SchoolSubscriptionRepository schoolSubscriptionRepository,
-            SubscriptionPlanReplacementValidator replacementValidator,
-            UserContextPort userContextPort) {
+            SubscriptionPlanReplacementValidator replacementValidator) {
         this.subscriptionPlanRepository = subscriptionPlanRepository;
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.replacementValidator = replacementValidator;
-        this.userContextPort = userContextPort;
     }
 
     @Override
@@ -48,15 +43,15 @@ public class ArchiveSubscriptionPlanUseCase implements IUseCase<ArchiveSubscript
             throw new IllegalStateException("Gói đã được lưu trữ trước đó.");
         }
 
-        // existsActiveByPlanId đã có sẵn từ trước nhưng chưa từng được gọi -- gap thật: archive vô
-        // điều kiện dù đang có trường ACTIVE dùng gói này sẽ khiến trường đó kẹt cứng, không gia hạn
-        // được cho tới khi có ai đó tạo gói thay thế (SubscriptionPlanResolver.resolveActivePlan ném
-        // lỗi lúc gia hạn). Bắt buộc chọn gói thay thế NGAY LÚC archive nếu đang có trường dùng.
+        // existsActiveByPlanId already existed but was never called -- a real gap: archiving unconditionally while an ACTIVE
+        // school still uses this plan would leave that school stuck, unable to renew until someone creates a replacement plan
+        // (SubscriptionPlanResolver.resolveActivePlan throws on renewal). Choosing a replacement plan is mandatory AT THE TIME OF
+        // archiving if any school is using it.
         //
-        // Vế thứ hai (existsByReplacedByPlanId) vá đúng lỗ hổng đó ở MỘT BƯỚC XA HƠN: gói A đã trỏ
-        // thay thế sang B, giờ lưu trữ B mà không chỉ gói tiếp theo. Không trường nào ACTIVE trên B
-        // nên vế đầu cho qua, nhưng những trường đang ở A sẽ đi hết chuỗi rồi dừng ở một gói đã
-        // ARCHIVED không có lối ra -- vẫn là kẹt cứng, chỉ khó nhìn ra hơn.
+        // The second clause (existsByReplacedByPlanId) patches the same hole ONE STEP FURTHER AWAY: plan A already points to B as
+        // its replacement, and now B is archived without naming a next plan. No school is ACTIVE on B, so the first clause lets
+        // it through, but the schools on A would walk the whole chain and stop at an ARCHIVED plan with no way out -- still stuck,
+        // just harder to see.
         if (input.replacedByPlanId() == null) {
             if (schoolSubscriptionRepository.existsActiveByPlanId(plan.getId())) {
                 throw new IllegalArgumentException(
@@ -71,17 +66,12 @@ public class ArchiveSubscriptionPlanUseCase implements IUseCase<ArchiveSubscript
         if (input.replacedByPlanId() != null) {
             SubscriptionPlan replacement = subscriptionPlanRepository.findById(input.replacedByPlanId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy gói thay thế"));
-            // Trường bị ép đổi gói khi gia hạn (SubscriptionPlanResolver.resolveActivePlan) không có
-            // cơ hội từ chối -- xem SubscriptionPlanReplacementValidator cho bộ luật đầy đủ.
+            // A school forced to change plan on renewal (SubscriptionPlanResolver.resolveActivePlan) has no chance to refuse -- see
+            // SubscriptionPlanReplacementValidator for the full set of rules.
             replacementValidator.requireValidReplacement(replacement, plan);
             plan.setReplacedByPlanId(replacement.getId());
         }
-        UUID userId = userContextPort.getCurrentAuthenticatedUserId();
-        Instant now = Instant.now();
-
         plan.setStatus(SubscriptionPlanStatus.ARCHIVED);
-        plan.setUpdatedAt(now);
-        plan.setUpdatedBy(userId);
         SubscriptionPlan savedPlan = subscriptionPlanRepository.save(plan);
 
         return savedPlan.getId();

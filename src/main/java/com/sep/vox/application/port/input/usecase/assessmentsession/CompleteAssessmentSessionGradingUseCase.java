@@ -113,7 +113,7 @@ public class CompleteAssessmentSessionGradingUseCase implements IUseCase<Complet
             // mà nhà trường cấp cho chính giáo viên ra đề. Kỳ thi tập trung do nhà trường tổ chức,
             // không thuộc túi riêng của ai nên để null -- ConsumeQuotaService sẽ bỏ qua bước trừ
             // hạn mức cá nhân.
-            UUID chargedUserId = assessment.getKind() == AssessmentKind.CLASS_TEST ? assessment.getCreatedBy() : null;
+            UUID chargedUserId = assessment.getKind() == AssessmentKind.CLASS_TEST ? assessment.createdByUserId().orElse(null) : null;
             checkAndReportLockTransition(subscription.getId(), assessment.getSchoolId(), QuotaType.ASSESSMENT,
                 session.getId(), totalCostVnd, totalCostUsd, chargedUserId, now);
         }

@@ -15,44 +15,16 @@ public class SchoolSubscription {
     private Instant cancelledAt;
     private Instant createdAt;
     private Long version;
-    // System Admin cưỡng chế đình chỉ (SUSPENDED) -- khác cancelledAt (chỉ tắt gia hạn). Cả 3 null khi
-    // không bị đình chỉ, và bị xóa về null lại khi gỡ đình chỉ (UnsuspendSubscriptionUseCase) -- lịch sử
-    // ai đình chỉ/gỡ lúc nào/vì sao được lưu bền ở SchoolSubscriptionEvent, không phải 3 cột này.
+    // Forced suspension (SUSPENDED) by the System Admin -- different from cancelledAt (which only turns off renewal). All
+    // 3 are null when not suspended, and are reset to null when the suspension is lifted (UnsuspendSubscriptionUseCase) --
+    // the history of who suspended/lifted when and why is stored durably in SchoolSubscriptionEvent, not in these 3 columns.
     private Instant suspendedAt;
     private String suspendedReason;
     private UUID suspendedBy;
 
     public SchoolSubscription() {}
-
-    public SchoolSubscription(UUID id, UUID schoolId, UUID subscriptionPlanId, Instant startDate, Instant endDate,
-            SchoolSubscriptionStatus status, BigDecimal pricePaidSnapshot, Instant cancelledAt, Instant createdAt,
-            Long version, Instant suspendedAt, String suspendedReason, UUID suspendedBy) {
-        this.id = id;
-        this.schoolId = schoolId;
-        this.subscriptionPlanId = subscriptionPlanId;
-        this.startDate = startDate;
-        this.endDate = endDate;
-        this.status = status;
-        this.pricePaidSnapshot = pricePaidSnapshot;
-        this.cancelledAt = cancelledAt;
-        this.createdAt = createdAt;
-        this.version = version;
-        this.suspendedAt = suspendedAt;
-        this.suspendedReason = suspendedReason;
-        this.suspendedBy = suspendedBy;
-    }
-
-    public SchoolSubscription(UUID schoolId, UUID subscriptionPlanId, Instant startDate, Instant endDate,
-            SchoolSubscriptionStatus status, BigDecimal pricePaidSnapshot, Instant cancelledAt, Instant createdAt) {
-        this.schoolId = schoolId;
-        this.subscriptionPlanId = subscriptionPlanId;
-        this.startDate = startDate;
-        this.endDate = endDate;
-        this.status = status;
-        this.pricePaidSnapshot = pricePaidSnapshot;
-        this.cancelledAt = cancelledAt;
-        this.createdAt = createdAt;
-    }
+
+
 
     public UUID getId() {
         return id;
@@ -159,31 +131,119 @@ public class SchoolSubscription {
     }
 
     /**
-     * Kỳ thuê bao MỚI, tạo ngay khi tiền của đơn đã về.
+     * A NEW subscription period, created as soon as the order's money has arrived.
      *
-     * <p>{@code startsAt} là chỗ phân biệt mua mới và gia hạn sớm:
+     * <p>{@code startsAt} is what tells a new purchase from an early renewal:
      *
      * <ul>
-     *   <li>Trường chưa có kỳ nào còn hiệu lực -> {@code startsAt = now}. KHÔNG lấy lúc đặt đơn: đơn
-     *       có thể nằm chờ tới 24 tiếng (Order.PENDING_TTL), tính hạn từ lúc đặt là ăn mất của
-     *       trường đúng quãng chờ đó.
-     *   <li>Trường gia hạn khi kỳ cũ còn chạy -> {@code startsAt = endDate của kỳ cũ}. Kỳ mới NỐI
-     *       TIẾP chứ không đè lên: trường đã trả cho đủ một chu kỳ thì phải nhận đủ một chu kỳ.
-     *       Đây là lý do hệ thống không cần tính bù trừ ngày thừa (proration) -- không có ngày nào
-     *       bị mất để mà phải bù.
+     *   <li>The school has no period in force -> {@code startsAt = now}. NOT the time the order was placed: an order
+     *       can wait up to 24 hours (Order.PENDING_TTL), and counting the term from the order time would eat exactly
+     *       that waiting time from the school.
+     *   <li>The school renews while the old period is still running -> {@code startsAt = the old period's endDate}. The
+     *       new period CHAINS instead of overlapping: a school that paid for a full period must receive a full period.
+     *       This is why the system needs no proration of leftover days -- no day is lost, so none has to be made up.
      * </ul>
      *
-     * <p>Kỳ tương lai vẫn mang status ACTIVE ngay từ đầu, và điều đó KHÔNG làm nó có hiệu lực sớm:
-     * mọi chỗ hỏi "kỳ hiện tại" đều đi qua findActiveBySchoolId, vốn lọc theo ngày. Trạng thái ở đây
-     * trả lời "đã trả tiền chưa", còn khoảng ngày trả lời "đang chạy chưa" -- tách hai câu hỏi đó ra
-     * là thứ giữ cho gia hạn sớm không cần thêm một status SCHEDULED và một job để lật nó.
+     * <p>A future period still carries status ACTIVE from the start, and that does NOT make it take effect early: every
+     * place that asks for "the current period" goes through findActiveBySchoolId, which filters by date. The status here
+     * answers "has it been paid", while the date range answers "is it running" -- keeping those two questions apart is
+     * what lets an early renewal avoid an extra SCHEDULED status and a job to flip it.
      *
-     * <p>pricePaidSnapshot đóng băng giá tại thời điểm mua -- gói có thể đổi giá hoặc bị ARCHIVED
-     * sau đó, nhưng hóa đơn đã phát và kỳ đã bán phải giữ nguyên con số trường thật sự đã trả.
+     * <p>pricePaidSnapshot freezes the price at purchase time -- the plan may change price or be ARCHIVED afterwards, but
+     * an invoice already issued and a period already sold must keep the number the school actually paid.
      */
     public static SchoolSubscription activate(UUID schoolId, SubscriptionPlan plan, BigDecimal pricePaidVnd,
             Instant startsAt, Instant now) {
-        return new SchoolSubscription(schoolId, plan.getId(), startsAt, plan.endDateFrom(startsAt),
-            SchoolSubscriptionStatus.ACTIVE, pricePaidVnd, null, now);
+        return builder()
+            .schoolId(schoolId)
+            .subscriptionPlanId(plan.getId())
+            .startDate(startsAt)
+            .endDate(plan.endDateFrom(startsAt))
+            .status(SchoolSubscriptionStatus.ACTIVE)
+            .pricePaidSnapshot(pricePaidVnd)
+            .createdAt(now)
+            .build();
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final SchoolSubscription target = new SchoolSubscription();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder schoolId(UUID schoolId) {
+            target.schoolId = schoolId;
+            return this;
+        }
+
+        public Builder subscriptionPlanId(UUID subscriptionPlanId) {
+            target.subscriptionPlanId = subscriptionPlanId;
+            return this;
+        }
+
+        public Builder startDate(Instant startDate) {
+            target.startDate = startDate;
+            return this;
+        }
+
+        public Builder endDate(Instant endDate) {
+            target.endDate = endDate;
+            return this;
+        }
+
+        public Builder status(SchoolSubscriptionStatus status) {
+            target.status = status;
+            return this;
+        }
+
+        public Builder pricePaidSnapshot(BigDecimal pricePaidSnapshot) {
+            target.pricePaidSnapshot = pricePaidSnapshot;
+            return this;
+        }
+
+        public Builder cancelledAt(Instant cancelledAt) {
+            target.cancelledAt = cancelledAt;
+            return this;
+        }
+
+        public Builder createdAt(Instant createdAt) {
+            target.createdAt = createdAt;
+            return this;
+        }
+
+        public Builder version(Long version) {
+            target.version = version;
+            return this;
+        }
+
+        public Builder suspendedAt(Instant suspendedAt) {
+            target.suspendedAt = suspendedAt;
+            return this;
+        }
+
+        public Builder suspendedReason(String suspendedReason) {
+            target.suspendedReason = suspendedReason;
+            return this;
+        }
+
+        public Builder suspendedBy(UUID suspendedBy) {
+            target.suspendedBy = suspendedBy;
+            return this;
+        }
+
+        public SchoolSubscription build() {
+            return target;
+        }
+
     }
 }

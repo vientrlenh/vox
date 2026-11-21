@@ -3,7 +3,6 @@ package com.sep.vox.application.port.input.usecase.schoolclass;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.school.SchoolGrade;
 import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
-import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -62,7 +61,6 @@ public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassComma
     @Transactional
     public CreateSchoolClassResponse execute(CreateSchoolClassCommand input) {
         CreateSchoolClassCommand command = normalize(input);
-        Instant now = Instant.now();
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = findCurrentUser(currentUserId);
         UUID schoolId = getSchoolId(currentUser);
@@ -80,9 +78,7 @@ public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassComma
             command.schoolGradeId(),
             command.code(),
             command.name(),
-            command.description(),
-            currentUserId,
-            now
+            command.description()
         );
         SchoolClass saved = schoolClassRepository.save(schoolClass);
         return CreateSchoolClassResponseMapper.toResponse(saved.getId());

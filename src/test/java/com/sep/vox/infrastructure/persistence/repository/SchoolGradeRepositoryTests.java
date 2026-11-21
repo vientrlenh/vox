@@ -16,7 +16,7 @@ import com.sep.vox.domain.model.school.SchoolGrade;
 import com.sep.vox.domain.model.school.SchoolGradeStatus;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.infrastructure.persistence.adapter.SchoolGradeRepositoryImpl;
-import com.sep.vox.infrastructure.persistence.entity.GradeLevelJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.gradelevel.GradeLevelJpaEntity;
 import com.sep.vox.support.RepositoryTest;
 
 import jakarta.persistence.EntityManager;
@@ -53,19 +53,13 @@ class SchoolGradeRepositoryTests {
     }
 
     private GradeLevelJpaEntity persistGradeLevel(String code, int order) {
-        Instant now = Instant.now();
-        GradeLevelJpaEntity level = new GradeLevelJpaEntity(
-            null,
-            code,
-            code,
-            "Repository test grade level",
-            order,
-            "ACTIVE",
-            now,
-            now,
-            UUID.randomUUID(),
-            UUID.randomUUID()
-        );
+        GradeLevelJpaEntity level = GradeLevelJpaEntity.builder()
+            .code(code)
+            .name(code)
+            .description("Repository test grade level")
+            .order(order)
+            .status("ACTIVE")
+            .build();
         entityManager.persist(level);
         entityManager.flush();
         entityManager.refresh(level);
@@ -74,19 +68,19 @@ class SchoolGradeRepositoryTests {
 
     private static SchoolGrade newSchoolGrade(UUID schoolId, UUID gradeLevelId, String code, String name) {
         Instant now = Instant.now();
-        return new SchoolGrade(
-            schoolId,
-            gradeLevelId,
-            code,
-            name,
-            "Repository test grade",
-            LocalDate.now(),
-            LocalDate.now().plusMonths(6),
-            SchoolGradeStatus.ACTIVE,
-            now,
-            now,
-            UUID.randomUUID(),
-            UUID.randomUUID()
-        );
+        return SchoolGrade.builder()
+            .schoolId(schoolId)
+            .gradeLevelId(gradeLevelId)
+            .code(code)
+            .name(name)
+            .description("Repository test grade")
+            .startDate(LocalDate.now())
+            .endDate(LocalDate.now().plusMonths(6))
+            .status(SchoolGradeStatus.ACTIVE)
+            .createdAt(now)
+            .updatedAt(now)
+            .createdBy(UUID.randomUUID().toString())
+            .updatedBy(UUID.randomUUID().toString())
+            .build();
     }
 }

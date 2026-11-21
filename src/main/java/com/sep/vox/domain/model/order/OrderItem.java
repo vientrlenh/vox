@@ -13,27 +13,8 @@ public class OrderItem {
     private Integer quantity;
 
     public OrderItem() {}
-
-    public OrderItem(UUID id, UUID orderId, OrderItemType type, UUID itemId, BigDecimal unitPriceVnd,
-            BigDecimal amountVnd, Integer quantity) {
-        this.id = id;
-        this.orderId = orderId;
-        this.type = type;
-        this.itemId = itemId;
-        this.unitPriceVnd = unitPriceVnd;
-        this.amountVnd = amountVnd;
-        this.quantity = quantity;
-    }
-
-    public OrderItem(UUID orderId, OrderItemType type, UUID itemId, BigDecimal unitPriceVnd, BigDecimal amountVnd,
-            Integer quantity) {
-        this.orderId = orderId;
-        this.type = type;
-        this.itemId = itemId;
-        this.unitPriceVnd = unitPriceVnd;
-        this.amountVnd = amountVnd;
-        this.quantity = quantity;
-    }
+
+
 
     public UUID getId() {
         return id;
@@ -92,4 +73,56 @@ public class OrderItem {
     }
 
     
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final OrderItem target = new OrderItem();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder orderId(UUID orderId) {
+            target.orderId = orderId;
+            return this;
+        }
+
+        public Builder type(OrderItemType type) {
+            target.type = type;
+            return this;
+        }
+
+        public Builder itemId(UUID itemId) {
+            target.itemId = itemId;
+            return this;
+        }
+
+        public Builder unitPriceVnd(BigDecimal unitPriceVnd) {
+            target.unitPriceVnd = unitPriceVnd;
+            return this;
+        }
+
+        public Builder amountVnd(BigDecimal amountVnd) {
+            target.amountVnd = amountVnd;
+            return this;
+        }
+
+        public Builder quantity(Integer quantity) {
+            target.quantity = quantity;
+            return this;
+        }
+
+        public OrderItem build() {
+            return target;
+        }
+
+    }
 }

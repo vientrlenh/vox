@@ -181,8 +181,6 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
                         targetVersion.setTotalScoreMethod(method);
                         targetVersion.setEffectiveFrom(effectiveFrom);
                         targetVersion.setEffectiveTo(effectiveTo);
-                        targetVersion.setUpdatedAt(now);
-                        targetVersion.setUpdatedBy(session.getCreatedBy());
 
                         versionsToSave.add(targetVersion);
                     } else {
@@ -195,11 +193,19 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
                                 ? descriptionStr.trim()
                                 : rubric.getDescription();
 
-                        targetVersion = new RubricVersion(
-                                rubricId, versionNum, safeCode, safeName, safeDescription,
-                                RubricStatus.DRAFT, effectiveFrom, effectiveTo, minScore, maxScore,
-                                method, now, now, session.getCreatedBy(), session.getCreatedBy()
-                        );
+                        targetVersion = RubricVersion.builder()
+                                .rubricId(rubricId)
+                                .version(versionNum)
+                                .code(safeCode)
+                                .name(safeName)
+                                .description(safeDescription)
+                                .status(RubricStatus.DRAFT)
+                                .effectiveFrom(effectiveFrom)
+                                .effectiveTo(effectiveTo)
+                                .scoringScaleMin(minScore)
+                                .scoringScaleMax(maxScore)
+                                .totalScoreMethod(method)
+                                .build();
                         versionsToSave.add(targetVersion);
                     }
 

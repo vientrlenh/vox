@@ -16,47 +16,18 @@ import java.util.UUID;
 public class AssessmentResultStatusHistory {
     private UUID id;
     private UUID candidateResultId;
-    /** null khi đây là dòng đầu tiên (bài vừa được tạo). */
+    /** Null when this is the first row (the result has just been created). */
     private AssessmentCandidateResultStatus fromStatus;
     private AssessmentCandidateResultStatus toStatus;
     private BigDecimal scoreBefore;
     private BigDecimal scoreAfter;
     private ResultStatusChangeSource source;
-    /** null khi hệ thống tự đổi (AI chấm xong, job chốt sổ). */
+    /** Null when the system changed the status itself (AI grading finished, the finalizing job). */
     private UUID actorId;
     private String reason;
     private Instant createdAt;
 
     public AssessmentResultStatusHistory() {}
-
-    public AssessmentResultStatusHistory(UUID id, UUID candidateResultId, AssessmentCandidateResultStatus fromStatus,
-            AssessmentCandidateResultStatus toStatus, BigDecimal scoreBefore, BigDecimal scoreAfter,
-            ResultStatusChangeSource source, UUID actorId, String reason, Instant createdAt) {
-        this.id = id;
-        this.candidateResultId = candidateResultId;
-        this.fromStatus = fromStatus;
-        this.toStatus = toStatus;
-        this.scoreBefore = scoreBefore;
-        this.scoreAfter = scoreAfter;
-        this.source = source;
-        this.actorId = actorId;
-        this.reason = reason;
-        this.createdAt = createdAt;
-    }
-
-    public AssessmentResultStatusHistory(UUID candidateResultId, AssessmentCandidateResultStatus fromStatus,
-            AssessmentCandidateResultStatus toStatus, BigDecimal scoreBefore, BigDecimal scoreAfter,
-            ResultStatusChangeSource source, UUID actorId, String reason, Instant createdAt) {
-        this.candidateResultId = candidateResultId;
-        this.fromStatus = fromStatus;
-        this.toStatus = toStatus;
-        this.scoreBefore = scoreBefore;
-        this.scoreAfter = scoreAfter;
-        this.source = source;
-        this.actorId = actorId;
-        this.reason = reason;
-        this.createdAt = createdAt;
-    }
 
     /** Trạng thái không đổi mà điểm đổi cũng là một sự kiện đáng ghi (hậu kiểm sửa điểm). */
     public boolean isScoreOnlyChange() {
@@ -141,5 +112,72 @@ public class AssessmentResultStatusHistory {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final AssessmentResultStatusHistory target = new AssessmentResultStatusHistory();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder candidateResultId(UUID candidateResultId) {
+            target.candidateResultId = candidateResultId;
+            return this;
+        }
+
+        public Builder fromStatus(AssessmentCandidateResultStatus fromStatus) {
+            target.fromStatus = fromStatus;
+            return this;
+        }
+
+        public Builder toStatus(AssessmentCandidateResultStatus toStatus) {
+            target.toStatus = toStatus;
+            return this;
+        }
+
+        public Builder scoreBefore(BigDecimal scoreBefore) {
+            target.scoreBefore = scoreBefore;
+            return this;
+        }
+
+        public Builder scoreAfter(BigDecimal scoreAfter) {
+            target.scoreAfter = scoreAfter;
+            return this;
+        }
+
+        public Builder source(ResultStatusChangeSource source) {
+            target.source = source;
+            return this;
+        }
+
+        public Builder actorId(UUID actorId) {
+            target.actorId = actorId;
+            return this;
+        }
+
+        public Builder reason(String reason) {
+            target.reason = reason;
+            return this;
+        }
+
+        public Builder createdAt(Instant createdAt) {
+            target.createdAt = createdAt;
+            return this;
+        }
+
+        public AssessmentResultStatusHistory build() {
+            return target;
+        }
+
     }
 }

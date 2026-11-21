@@ -7,7 +7,7 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.sep.vox.infrastructure.persistence.entity.QuestionCollaboratorJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.question.QuestionCollaboratorJpaEntity;
 
 public interface SpringDataQuestionCollaboratorRepository extends JpaRepository<QuestionCollaboratorJpaEntity, UUID> {
     Optional<QuestionCollaboratorJpaEntity> findByQuestionIdAndUserId(UUID questionId, UUID userId);

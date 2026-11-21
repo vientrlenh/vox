@@ -19,29 +19,6 @@ public class AssessmentItemResponseTurn {
     public AssessmentItemResponseTurn() {
     }
 
-    public AssessmentItemResponseTurn(UUID id, UUID assessmentItemResponseId, int turnOrder, TurnType turnType, String promptText,
-            String audioUrl, String transcript, Integer durationSeconds, Integer wordCount, Instant answeredAt,
-            Instant createdAt) {
-        this.id = id;
-        this.assessmentItemResponseId = assessmentItemResponseId;
-        this.turnOrder = turnOrder;
-        this.turnType = turnType;
-        this.promptText = promptText;
-        this.audioUrl = audioUrl;
-        this.transcript = transcript;
-        this.durationSeconds = durationSeconds;
-        this.wordCount = wordCount;
-        this.answeredAt = answeredAt;
-        this.createdAt = createdAt;
-    }
-
-    public AssessmentItemResponseTurn(UUID assessmentItemResponseId, int turnOrder, TurnType turnType, String promptText,
-            String audioUrl, String transcript, Integer durationSeconds, Integer wordCount, Instant answeredAt,
-            Instant createdAt) {
-        this(null, assessmentItemResponseId, turnOrder, turnType, promptText, audioUrl, transcript, durationSeconds,
-            wordCount, answeredAt, createdAt);
-    }
-
     public UUID getId() {
         return id;
     }
@@ -128,5 +105,77 @@ public class AssessmentItemResponseTurn {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final AssessmentItemResponseTurn target = new AssessmentItemResponseTurn();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder assessmentItemResponseId(UUID assessmentItemResponseId) {
+            target.assessmentItemResponseId = assessmentItemResponseId;
+            return this;
+        }
+
+        public Builder turnOrder(int turnOrder) {
+            target.turnOrder = turnOrder;
+            return this;
+        }
+
+        public Builder turnType(TurnType turnType) {
+            target.turnType = turnType;
+            return this;
+        }
+
+        public Builder promptText(String promptText) {
+            target.promptText = promptText;
+            return this;
+        }
+
+        public Builder audioUrl(String audioUrl) {
+            target.audioUrl = audioUrl;
+            return this;
+        }
+
+        public Builder transcript(String transcript) {
+            target.transcript = transcript;
+            return this;
+        }
+
+        public Builder durationSeconds(Integer durationSeconds) {
+            target.durationSeconds = durationSeconds;
+            return this;
+        }
+
+        public Builder wordCount(Integer wordCount) {
+            target.wordCount = wordCount;
+            return this;
+        }
+
+        public Builder answeredAt(Instant answeredAt) {
+            target.answeredAt = answeredAt;
+            return this;
+        }
+
+        public Builder createdAt(Instant createdAt) {
+            target.createdAt = createdAt;
+            return this;
+        }
+
+        public AssessmentItemResponseTurn build() {
+            return target;
+        }
+
     }
 }

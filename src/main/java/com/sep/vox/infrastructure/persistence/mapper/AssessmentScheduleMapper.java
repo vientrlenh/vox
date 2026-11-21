@@ -2,42 +2,42 @@ package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.assessment.AssessmentSchedule;
 import com.sep.vox.domain.model.assessment.AssessmentScheduleStatus;
-import com.sep.vox.infrastructure.persistence.entity.AssessmentScheduleJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentScheduleJpaEntity;
 
 public final class AssessmentScheduleMapper {
 
     private AssessmentScheduleMapper() {}
 
     public static AssessmentSchedule toDomain(AssessmentScheduleJpaEntity jpa) {
-        return new AssessmentSchedule(
-            jpa.getId(),
-            jpa.getAssessmentId(),
-            jpa.getSchoolRoomId(),
-            jpa.getStartDate(),
-            jpa.getEndDate(),
-            statusFromString(jpa.getStatus()),
-            jpa.getMovedToScheduleId(),
-            jpa.getCreatedAt(),
-            jpa.getUpdatedAt(),
-            jpa.getCreatedBy(),
-            jpa.getUpdatedBy()
-        );
+        return AssessmentSchedule.builder()
+                .id(jpa.getId())
+                .assessmentId(jpa.getAssessmentId())
+                .schoolRoomId(jpa.getSchoolRoomId())
+                .startDate(jpa.getStartDate())
+                .endDate(jpa.getEndDate())
+                .status(statusFromString(jpa.getStatus()))
+                .movedToScheduleId(jpa.getMovedToScheduleId())
+                .createdAt(jpa.getCreatedAt())
+                .updatedAt(jpa.getUpdatedAt())
+                .createdBy(jpa.getCreatedBy())
+                .updatedBy(jpa.getUpdatedBy())
+                .build();
     }
 
     public static AssessmentScheduleJpaEntity toJpa(AssessmentSchedule domain) {
-        return new AssessmentScheduleJpaEntity(
-            domain.getId(),
-            domain.getAssessmentId(),
-            domain.getSchoolRoomId(),
-            domain.getStartDate(),
-            domain.getEndDate(),
-            domain.getStatus().name(),
-            domain.getMovedToScheduleId(),
-            domain.getCreatedAt(),
-            domain.getUpdatedAt(),
-            domain.getCreatedBy(),
-            domain.getUpdatedBy()
-        );
+        return AssessmentScheduleJpaEntity.builder()
+                .id(domain.getId())
+                .assessmentId(domain.getAssessmentId())
+                .schoolRoomId(domain.getSchoolRoomId())
+                .startDate(domain.getStartDate())
+                .endDate(domain.getEndDate())
+                .status(domain.getStatus().name())
+                .movedToScheduleId(domain.getMovedToScheduleId())
+                .createdAt(domain.getCreatedAt())
+                .updatedAt(domain.getUpdatedAt())
+                .createdBy(domain.getCreatedBy())
+                .updatedBy(domain.getUpdatedBy())
+                .build();
     }
 
     private static AssessmentScheduleStatus statusFromString(String status) {

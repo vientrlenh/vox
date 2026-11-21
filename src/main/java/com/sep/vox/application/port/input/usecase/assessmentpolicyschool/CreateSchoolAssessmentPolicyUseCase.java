@@ -27,7 +27,6 @@ import com.sep.vox.domain.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -107,12 +106,11 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
         UUID schoolId = commands.get(0).schoolId();
         if (!schoolUser.getSchoolId().equals(schoolId)) throw new ForbiddenException("BẢO MẬT: Không thể tạo Policy cho trường khác.");
 
-        Instant now = Instant.now();
         List<AssessmentPolicy> policiesToSave = new ArrayList<>();
         Map<VersionScopeKey, Integer> nextVersionByScope = new HashMap<>();
         Set<ScopeClaimKey> scopeClaimsInBatch = new HashSet<>();
-        // Nhớ lại kết quả tra Lớp -> Khối năm học -> Khối và trần bậc trong suốt batch:
-        // một lần gọi API tạo nhiều policy thường dùng lại đúng vài khối và vài khung.
+        // Remember the Class -> School grade -> Grade level and band ceiling lookups for the whole batch:
+        // one API call that creates many policies usually reuses just a few grade levels and a few frameworks.
         GradeLevelBandScopeGuardService.Batch bandScopeBatch = gradeLevelBandScopeGuardService.newBatch();
 
         for (CreateAssessmentPolicyCommand command : commands) {
@@ -248,19 +246,26 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
                             key.gradeLevelId(), key.schoolGradeId(), key.schoolClassId()) + 1);
             nextVersionByScope.put(versionScopeKey, nextVersion + 1);
 
-            AssessmentPolicy newPolicy = new AssessmentPolicy(
-                    schoolId, command.gradeLevelId(), command.schoolGradeId(), command.schoolClassId(),
-                    command.languageId(), command.frameworkVersionId(),
-                    rubricVersionId,
-                    command.targetFrameworkBandId(),
-                    command.passingScore(), strictness, nextVersion, AssessmentPolicyStatus.DRAFT,
-                    command.effectiveFrom(), command.effectiveTo(),
-                    now, now, currentUserId, currentUserId
-            );
+            AssessmentPolicy newPolicy = AssessmentPolicy.builder()
+                .schoolId(schoolId)
+                .gradeLevelId(command.gradeLevelId())
+                .schoolGradeId(command.schoolGradeId())
+                .schoolClassId(command.schoolClassId())
+                .languageId(command.languageId())
+                .frameworkVersionId(command.frameworkVersionId())
+                .rubricVersionId(rubricVersionId)
+                .targetFrameworkBandId(command.targetFrameworkBandId())
+                .passingScore(command.passingScore())
+                .strictness(strictness)
+                .version(nextVersion)
+                .status(AssessmentPolicyStatus.DRAFT)
+                .effectiveFrom(command.effectiveFrom())
+                .effectiveTo(command.effectiveTo())
+                .build();
             policiesToSave.add(newPolicy);
         }
 
-        // 8. Lưu 1 lần xuống DB
+        // 8. Save to the DB in one go
         List<AssessmentPolicy> savedPolicies = assessmentPolicyRepository.saveAll(policiesToSave);
         return savedPolicies.stream().map(ap -> ap.getId()).toList();
     }

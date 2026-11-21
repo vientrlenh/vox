@@ -105,9 +105,14 @@ class LogoutNotificationDeviceCleanUpTests {
         rawRefreshToken = "raw-refresh-token-" + UUID.randomUUID();
         Instant now = Instant.now();
 
-        sessionId = transactionTemplate.execute(status -> deviceSessionRepository.save(new DeviceSession(
-            userId, DEVICE_ID, "Lab PC", SessionPlatform.WEB,
-            "203.0.113.10", "JUnit User Agent", null)).getId());
+        sessionId = transactionTemplate.execute(status -> deviceSessionRepository.save(DeviceSession.builder()
+            .userId(userId)
+            .deviceId(DEVICE_ID)
+            .deviceName("Lab PC")
+            .platform(SessionPlatform.WEB)
+            .ipAddress("203.0.113.10")
+            .userAgent("JUnit User Agent")
+            .build()).getId());
 
         transactionTemplate.executeWithoutResult(status -> refreshTokenRepository.save(
             RefreshToken.createFresh(sessionId, sessionTokenManagerPort.hash(rawRefreshToken), now)));

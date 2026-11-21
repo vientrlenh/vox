@@ -1,39 +1,39 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.framework.FrameworkCriterion;
-import com.sep.vox.infrastructure.persistence.entity.FrameworkCriterionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.framework.FrameworkCriterionJpaEntity;
 
 public final class FrameworkCriterionMapper {
 
     private FrameworkCriterionMapper() {}
 
     public static FrameworkCriterion toDomain(FrameworkCriterionJpaEntity jpa) {
-        return new FrameworkCriterion(
-            jpa.getId(),
-            jpa.getFrameworkVersionId(),
-            jpa.getCode(),
-            jpa.getName(),
-            jpa.getDescription(), 
-            jpa.getOrder(),
-            jpa.getCreatedAt(),
-            jpa.getUpdatedAt(),
-            jpa.getCreatedBy(),
-            jpa.getUpdatedBy()
-        );
+        return FrameworkCriterion.builder()
+            .id(jpa.getId())
+            .frameworkVersionId(jpa.getFrameworkVersionId())
+            .code(jpa.getCode())
+            .name(jpa.getName())
+            .description(jpa.getDescription())
+            .order(jpa.getOrder())
+            .createdAt(jpa.getCreatedAt())
+            .updatedAt(jpa.getUpdatedAt())
+            .createdBy(jpa.getCreatedBy())
+            .updatedBy(jpa.getUpdatedBy())
+            .build();
     }
 
     public static FrameworkCriterionJpaEntity toJpa(FrameworkCriterion criterion) {
-        return new FrameworkCriterionJpaEntity(
-            criterion.getId(),
-            criterion.getFrameworkVersionId(),
-            criterion.getCode(),
-            criterion.getName(),
-            criterion.getDescription(), 
-            criterion.getOrder(),
-            criterion.getCreatedAt(),
-            criterion.getUpdatedAt(),
-            criterion.getCreatedBy(),
-            criterion.getUpdatedBy()
-        );
+        return FrameworkCriterionJpaEntity.builder()
+            .id(criterion.getId())
+            .frameworkVersionId(criterion.getFrameworkVersionId())
+            .code(criterion.getCode())
+            .name(criterion.getName())
+            .description(criterion.getDescription())
+            .order(criterion.getOrder())
+            .createdAt(criterion.getCreatedAt())
+            .updatedAt(criterion.getUpdatedAt())
+            .createdBy(criterion.getCreatedBy())
+            .updatedBy(criterion.getUpdatedBy())
+            .build();
     }
 }

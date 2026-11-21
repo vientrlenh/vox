@@ -4,10 +4,9 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
+import com.sep.vox.domain.model.BaseModel;
 
-
-public class RubricVersion {
-    private UUID id;
+public class RubricVersion extends BaseModel {
     private UUID rubricId;
     private int version;
     private String code;
@@ -20,69 +19,14 @@ public class RubricVersion {
     private BigDecimal scoringScaleMax;
     private RubricTotalScoreMethod totalScoreMethod;
     /**
-     * Phiên bản gốc mà bản này được sao ra, hoặc null nếu do chính chủ sở hữu soạn.
+     * The source version this one was copied from, or null if the owner wrote it themselves.
      *
-     * <p>Cố ý KHÔNG nằm trong constructor: thêm tham số vào đó buộc mọi nơi đang dựng RubricVersion
-     * phải sửa theo, tuyệt đại đa số chỉ để truyền null. Bên sao chép tự gọi setter.
+     * <p>Deliberately NOT in the constructor: adding a parameter there forces every place that builds a RubricVersion
+     * to change, the vast majority only to pass null. The copying side calls the setter itself.
      */
     private UUID sourceRubricVersionId;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private UUID createdBy;
-    private UUID updatedBy;
 
     public RubricVersion() {}
-
-    public RubricVersion(UUID id, UUID rubricId, int version, String code, String name, String description,
-            RubricStatus status, Instant effectiveFrom, Instant effectiveTo, BigDecimal scoringScaleMin,
-            BigDecimal scoringScaleMax, RubricTotalScoreMethod totalScoreMethod, Instant createdAt,
-            Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.id = id;
-        this.rubricId = rubricId;
-        this.version = version;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.status = status;
-        this.effectiveFrom = effectiveFrom;
-        this.effectiveTo = effectiveTo;
-        this.scoringScaleMin = scoringScaleMin;
-        this.scoringScaleMax = scoringScaleMax;
-        this.totalScoreMethod = totalScoreMethod;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public RubricVersion(UUID rubricId, int version, String code, String name, String description, RubricStatus status,
-            Instant effectiveFrom, Instant effectiveTo, BigDecimal scoringScaleMin,
-            BigDecimal scoringScaleMax, RubricTotalScoreMethod totalScoreMethod, Instant createdAt,
-            Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.rubricId = rubricId;
-        this.version = version;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.status = status;
-        this.effectiveFrom = effectiveFrom;
-        this.effectiveTo = effectiveTo;
-        this.scoringScaleMin = scoringScaleMin;
-        this.scoringScaleMax = scoringScaleMax;
-        this.totalScoreMethod = totalScoreMethod;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
 
     public UUID getRubricId() {
         return rubricId;
@@ -172,38 +116,6 @@ public class RubricVersion {
         this.totalScoreMethod = totalScoreMethod;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
-
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
-    }
-
     public UUID getSourceRubricVersionId() {
         return sourceRubricVersionId;
     }
@@ -212,6 +124,79 @@ public class RubricVersion {
         this.sourceRubricVersionId = sourceRubricVersionId;
     }
 
-    
-    
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder extends BaseModel.Builder<RubricVersion, Builder> {
+
+        private Builder() {
+            super(new RubricVersion());
+        }
+
+        @Override
+        protected Builder self() {
+            return this;
+        }
+
+        public Builder rubricId(UUID rubricId) {
+            target.rubricId = rubricId;
+            return this;
+        }
+
+        public Builder version(int version) {
+            target.version = version;
+            return this;
+        }
+
+        public Builder code(String code) {
+            target.code = code;
+            return this;
+        }
+
+        public Builder name(String name) {
+            target.name = name;
+            return this;
+        }
+
+        public Builder description(String description) {
+            target.description = description;
+            return this;
+        }
+
+        public Builder status(RubricStatus status) {
+            target.status = status;
+            return this;
+        }
+
+        public Builder effectiveFrom(Instant effectiveFrom) {
+            target.effectiveFrom = effectiveFrom;
+            return this;
+        }
+
+        public Builder effectiveTo(Instant effectiveTo) {
+            target.effectiveTo = effectiveTo;
+            return this;
+        }
+
+        public Builder scoringScaleMin(BigDecimal scoringScaleMin) {
+            target.scoringScaleMin = scoringScaleMin;
+            return this;
+        }
+
+        public Builder scoringScaleMax(BigDecimal scoringScaleMax) {
+            target.scoringScaleMax = scoringScaleMax;
+            return this;
+        }
+
+        public Builder totalScoreMethod(RubricTotalScoreMethod totalScoreMethod) {
+            target.totalScoreMethod = totalScoreMethod;
+            return this;
+        }
+
+        public Builder sourceRubricVersionId(UUID sourceRubricVersionId) {
+            target.sourceRubricVersionId = sourceRubricVersionId;
+            return this;
+        }
+    }
 }

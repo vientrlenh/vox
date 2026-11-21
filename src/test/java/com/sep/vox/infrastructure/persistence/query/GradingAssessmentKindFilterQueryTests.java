@@ -20,12 +20,12 @@ import com.sep.vox.application.query.dto.GradingStatsInfo;
 import com.sep.vox.application.query.dto.GradingTaskInfo;
 import com.sep.vox.application.query.repository.AssessmentGradingQueryRepository;
 import com.sep.vox.domain.common.PageResult;
-import com.sep.vox.infrastructure.persistence.entity.AssessmentCandidateJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.AssessmentCandidateResultJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.AssessmentGradingAssignmentJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.AssessmentJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.AssessmentSessionJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.UserJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentCandidateJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentCandidateResultJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentGradingAssignmentJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentSessionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.user.UserJpaEntity;
 import com.sep.vox.support.IntegrationTest;
 
 import jakarta.persistence.EntityManager;
@@ -61,9 +61,15 @@ class GradingAssessmentKindFilterQueryTests {
     @BeforeEach
     void seed() {
         schoolId = UUID.randomUUID();
-        UUID studentId = persist(new UserJpaEntity(null, "hs-" + UUID.randomUUID() + "@vox.test", "hash",
-            null, "Trần Quang Thiên", null, LocalDate.of(2008, 1, 1), null, null, "ACTIVE",
-            now, now, null, null)).getId();
+        UUID studentId = persist(UserJpaEntity.builder()
+            .email("hs-" + UUID.randomUUID() + "@vox.test")
+            .passwordHash("hash")
+            .fullName("Trần Quang Thiên")
+            .dateOfBirth(LocalDate.of(2008, 1, 1))
+            .status("ACTIVE")
+            .createdAt(now)
+            .updatedAt(now)
+            .build()).getId();
 
         seedAssessment("CLASS_TEST", "Kiểm tra 15 phút", studentId);
         seedAssessment("CENTRALIZED", "Kỳ thi cuối kỳ", studentId);
@@ -153,20 +159,83 @@ class GradingAssessmentKindFilterQueryTests {
 
     private void seedAssessment(String kind, String name, UUID studentId) {
         UUID paperId = UUID.randomUUID();
-        UUID assessmentId = persist(new AssessmentJpaEntity(null, null, null, "EX-" + UUID.randomUUID(), name,
-            null, schoolId, UUID.randomUUID(), kind, "STUDENT_DEVICE", "CLOSED",
-            1, 900, "HIGHEST", null, null, null, null, UUID.randomUUID(), false,
-            now, now, null, null)).getId();
-        UUID candidateId = persist(new AssessmentCandidateJpaEntity(null, assessmentId, studentId, paperId, null,
-            "COMPLETED", now, now, null, null, null)).getId();
-        UUID sessionId = persist(new AssessmentSessionJpaEntity(null, assessmentId, candidateId, paperId, now, now,
-            "GRADED", false, null)).getId();
-        UUID candidateResultId = persist(new AssessmentCandidateResultJpaEntity(null, assessmentId, candidateId, sessionId,
-            UUID.randomUUID(), 1, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null,
-            new BigDecimal("6.50"), "PENDING_REVIEW", null, null, now, now, null, null)).getId();
-        persist(new AssessmentGradingAssignmentJpaEntity(null, candidateResultId, teacherId,
-            "INITIAL", null, "ASSIGNED", null, new BigDecimal("6.50"), now, teacherId, null,
-            null, null, null, candidateResultId));
+        UUID assessmentId = persist(AssessmentJpaEntity.builder()
+                .blueprintId(null)
+                .blueprintVersionId(null)
+                .code("EX-" + UUID.randomUUID())
+                .name(name)
+                .description(null)
+                .schoolId(schoolId)
+                .languageId(UUID.randomUUID())
+                .kind(kind)
+                .deliveryMode("STUDENT_DEVICE")
+                .status("CLOSED")
+                .maxAttempt(1)
+                .assessmentTimeDurationSecond(900)
+                .resultDecisionMethod("HIGHEST")
+                .requiredStreamType(null)
+                .streamTypePermission(null)
+                .openAt(null)
+                .closeAt(null)
+                .assessmentPolicyId(UUID.randomUUID())
+                .requiresOtp(false)
+                .build()).getId();
+        UUID candidateId = persist(AssessmentCandidateJpaEntity.builder()
+                .id(null)
+                .assessmentId(assessmentId)
+                .studentId(studentId)
+                .assignedPaperId(paperId)
+                .scheduleId(null)
+                .status("COMPLETED")
+                .assignedAt(now)
+                .updatedAt(now)
+                .blockedAt(null)
+                .assignedBy(null)
+                .updatedBy(null)
+                .build()).getId();
+        UUID sessionId = persist(AssessmentSessionJpaEntity.builder()
+                .id(null)
+                .assessmentId(assessmentId)
+                .candidateId(candidateId)
+                .paperId(paperId)
+                .startedAt(now)
+                .submittedAt(now)
+                .status("GRADED")
+                .flagged(false)
+                .flagReason(null)
+                .build()).getId();
+        UUID candidateResultId = persist(AssessmentCandidateResultJpaEntity.builder()
+                .assessmentId(assessmentId)
+                .candidateId(candidateId)
+                .sessionId(sessionId)
+                .assessmentPolicyId(UUID.randomUUID())
+                .policyVersion(1)
+                .rubricVersionId(UUID.randomUUID())
+                .frameworkVersionId(UUID.randomUUID())
+                .targetFrameworkBandId(UUID.randomUUID())
+                .rubricResultBandId(null)
+                .totalScore(new BigDecimal("6.50"))
+                .status("PENDING_REVIEW")
+                .releasedAt(null)
+                .finalizedAt(null)
+                .build()).getId();
+        persist(AssessmentGradingAssignmentJpaEntity.builder()
+                .id(null)
+                .candidateResultId(candidateResultId)
+                .teacherId(teacherId)
+                .roundType("INITIAL")
+                .appealId(null)
+                .status("ASSIGNED")
+                .outcome(null)
+                .scoreBefore(new BigDecimal("6.50"))
+                .assignedAt(now)
+                .assignedBy(teacherId)
+                .completedAt(null)
+                .deadlineAt(null)
+                .remindedAt(null)
+                .reason(null)
+                .activeResultId(candidateResultId)
+                .build());
     }
 
     private <T> T persist(T entity) {

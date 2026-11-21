@@ -64,12 +64,12 @@ public class CreateQuestionBankGradeUseCase implements IUseCase<CreateQuestionBa
             throw new DuplicatedException("Khối lớp này đã được gắn với ngân hàng câu hỏi");
         }
 
-        QuestionBankGrade grade = new QuestionBankGrade(
-            questionBank.getId(),
-            input.schoolGradeId(),
-            Instant.now(),
-            currentUserId
-        );
+        QuestionBankGrade grade = QuestionBankGrade.builder()
+                .questionBankId(questionBank.getId())
+                .schoolGradeId(input.schoolGradeId())
+                .attachedAt(Instant.now())
+                .attachedBy(currentUserId)
+                .build();
         QuestionBankGrade saved = questionBankGradeRepository.save(grade);
         return QuestionBankGradeDtoMapper.toDto(saved);
     }

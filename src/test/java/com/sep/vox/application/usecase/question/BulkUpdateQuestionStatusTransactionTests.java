@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.when;
 
-import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.AfterEach;
@@ -72,18 +72,37 @@ class BulkUpdateQuestionStatusTransactionTests {
     @BeforeEach
     void setUp() {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
+        when(userContextPort.findCurrentAuthenticatedUserId()).thenReturn(Optional.of(currentUserId));
         when(userContextPort.isSystemAdmin()).thenReturn(false);
 
-        Instant now = Instant.now();
-        questionBankId = transactionTemplate.execute(status -> questionBankRepository.save(new QuestionBank(
-            UUID.randomUUID(), null, "BANK-" + UUID.randomUUID(), "Ngân hàng kiểm thử", null,
-            QuestionBankOwnerType.SYSTEM, QuestionBankStatus.PUBLISHED,
-            now, now, currentUserId, currentUserId)).getId());
-        questionId = transactionTemplate.execute(status -> questionRepository.save(new Question(
-            questionBankId, UUID.randomUUID(), "Q-" + UUID.randomUUID(), null, "Câu hỏi kiểm thử",
-            null, null, QuestionType.SHORT_ANSWER, 10, 10, 60, QuestionSharing.PRIVATE, null,
-            false, QuestionConfidentiality.OPEN, null, QuestionStatus.DRAFT,
-            now, now, currentUserId, currentUserId)).getId());
+        questionBankId = transactionTemplate.execute(status -> questionBankRepository.save(QuestionBank.builder()
+                .languageId(UUID.randomUUID())
+                .schoolId(null)
+                .code("BANK-" + UUID.randomUUID())
+                .name("Ngân hàng kiểm thử")
+                .description(null)
+                .ownerType(QuestionBankOwnerType.SYSTEM)
+                .status(QuestionBankStatus.PUBLISHED)
+                .build()).getId());
+        questionId = transactionTemplate.execute(status -> questionRepository.save(Question.builder()
+                .questionBankId(questionBankId)
+                .questionTopicId(UUID.randomUUID())
+                .code("Q-" + UUID.randomUUID())
+                .instructionText(null)
+                .questionText("Câu hỏi kiểm thử")
+                .promptText(null)
+                .preparationText(null)
+                .type(QuestionType.SHORT_ANSWER)
+                .preparationTimeSeconds(10)
+                .minResponseSeconds(10)
+                .maxResponseSeconds(60)
+                .sharing(QuestionSharing.PRIVATE)
+                .sourceQuestionId(null)
+                .locked(false)
+                .confidentiality(QuestionConfidentiality.OPEN)
+                .securePoolId(null)
+                .status(QuestionStatus.DRAFT)
+                .build()).getId());
     }
 
     @AfterEach

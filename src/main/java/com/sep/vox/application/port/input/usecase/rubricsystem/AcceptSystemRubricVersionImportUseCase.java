@@ -21,7 +21,6 @@ import com.sep.vox.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -81,8 +80,6 @@ public class AcceptSystemRubricVersionImportUseCase implements IUseCase<AcceptSy
         //  5: Cập nhật trạng thái chu kỳ sang QUEUED để Background Worker bốc việc
         session.setStatus(ImportSessionStatus.QUEUED);
         session.setAttempts(0);
-        session.setUpdatedAt(Instant.now());
-        session.setUpdatedBy(currentUserId);
 
         importSessionRepository.save(session);
 

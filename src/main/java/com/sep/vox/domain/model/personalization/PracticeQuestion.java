@@ -12,9 +12,9 @@ public class PracticeQuestion {
     private String targetSubAttribute;
 
     /**
-     * Thì mà câu này ép học sinh trả lời -- PRESENT/PAST/FUTURE/PERFECT/CONDITIONAL, xem
-     * {@code TensePolicy}. {@code null} nghĩa là CHƯA BIẾT (câu soạn trước khi có cột này),
-     * không phải "không ép thì nào"; thang leo chọn câu coi null là dùng được.
+     * The tense this question forces the student to answer in -- PRESENT/PAST/FUTURE/PERFECT/CONDITIONAL, see
+     * {@code TensePolicy}. {@code null} means UNKNOWN (a question written before this column existed),
+     * not "no tense is forced"; the question-selection ladder treats null as usable.
      */
     private String targetTense;
     private int difficultyRank;
@@ -31,45 +31,6 @@ public class PracticeQuestion {
     private Instant createdAt;
 
     public PracticeQuestion() {
-    }
-
-    public PracticeQuestion(
-            UUID id,
-            UUID practiceTopicId,
-            String questionText,
-            String targetCriterionCode,
-            String targetSubAttribute,
-            String targetTense,
-            int difficultyRank,
-            String difficultyFeaturesJson,
-            String evaluationGuideJson,
-            String suggestedIdeasJson,
-            String questionType,
-            int maxResponseSeconds,
-            int minResponseSeconds,
-            Integer vstepPart,
-            String source,
-            int usageCount,
-            boolean active,
-            Instant createdAt) {
-        this.id = id;
-        this.practiceTopicId = practiceTopicId;
-        this.questionText = questionText;
-        this.targetCriterionCode = targetCriterionCode;
-        this.targetSubAttribute = targetSubAttribute;
-        this.targetTense = targetTense;
-        this.difficultyRank = difficultyRank;
-        this.difficultyFeaturesJson = difficultyFeaturesJson;
-        this.evaluationGuideJson = evaluationGuideJson;
-        this.suggestedIdeasJson = suggestedIdeasJson;
-        this.questionType = questionType;
-        this.maxResponseSeconds = maxResponseSeconds;
-        this.minResponseSeconds = minResponseSeconds;
-        this.vstepPart = vstepPart;
-        this.source = source;
-        this.usageCount = usageCount;
-        this.active = active;
-        this.createdAt = createdAt;
     }
 
     public UUID getId() {
@@ -218,16 +179,123 @@ public class PracticeQuestion {
     }
 
     /**
-     * Trần nói của CẢ câu, gồm cả chuỗi follow-up.
+     * The speaking ceiling of the WHOLE question, including the follow-up chain.
      *
-     * Trước đây là {@code maxResponseSeconds + maxFollowupSeconds}, nhưng cột follow-up là cột
-     * chết (LLM tự điền mà prompt không hề mô tả, nên toàn kho bằng 0) -- tổng đó luôn bằng
-     * đúng maxResponseSeconds. Giờ nói thẳng ra thay vì cộng một số hạng luôn bằng 0.
+     * It used to be {@code maxResponseSeconds + maxFollowupSeconds}, but the follow-up column is a dead
+     * column (the LLM fills it in although the prompt never describes it, so the whole table holds 0) -- that sum always equals
+     * maxResponseSeconds. It is now stated directly instead of adding a term that is always 0.
      *
-     * Follow-up không có ngân sách riêng vì SignalNode vốn đã cộng dồn giây qua mọi lượt của
-     * cùng một câu; cái nó thiếu là SÀN để biết khi nào đủ, và đó là {@link #getMinResponseSeconds()}.
+     * A follow-up has no budget of its own because SignalNode already accumulates seconds across every turn of the
+     * same question; what it lacks is the FLOOR that says when enough is enough, and that is {@link #getMinResponseSeconds()}.
      */
     public int spokenSeconds() {
         return maxResponseSeconds;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final PracticeQuestion target = new PracticeQuestion();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder practiceTopicId(UUID practiceTopicId) {
+            target.practiceTopicId = practiceTopicId;
+            return this;
+        }
+
+        public Builder questionText(String questionText) {
+            target.questionText = questionText;
+            return this;
+        }
+
+        public Builder targetCriterionCode(String targetCriterionCode) {
+            target.targetCriterionCode = targetCriterionCode;
+            return this;
+        }
+
+        public Builder targetSubAttribute(String targetSubAttribute) {
+            target.targetSubAttribute = targetSubAttribute;
+            return this;
+        }
+
+        public Builder targetTense(String targetTense) {
+            target.targetTense = targetTense;
+            return this;
+        }
+
+        public Builder difficultyRank(int difficultyRank) {
+            target.difficultyRank = difficultyRank;
+            return this;
+        }
+
+        public Builder difficultyFeaturesJson(String difficultyFeaturesJson) {
+            target.difficultyFeaturesJson = difficultyFeaturesJson;
+            return this;
+        }
+
+        public Builder evaluationGuideJson(String evaluationGuideJson) {
+            target.evaluationGuideJson = evaluationGuideJson;
+            return this;
+        }
+
+        public Builder suggestedIdeasJson(String suggestedIdeasJson) {
+            target.suggestedIdeasJson = suggestedIdeasJson;
+            return this;
+        }
+
+        public Builder questionType(String questionType) {
+            target.questionType = questionType;
+            return this;
+        }
+
+        public Builder maxResponseSeconds(int maxResponseSeconds) {
+            target.maxResponseSeconds = maxResponseSeconds;
+            return this;
+        }
+
+        public Builder minResponseSeconds(int minResponseSeconds) {
+            target.minResponseSeconds = minResponseSeconds;
+            return this;
+        }
+
+        public Builder vstepPart(Integer vstepPart) {
+            target.vstepPart = vstepPart;
+            return this;
+        }
+
+        public Builder source(String source) {
+            target.source = source;
+            return this;
+        }
+
+        public Builder usageCount(int usageCount) {
+            target.usageCount = usageCount;
+            return this;
+        }
+
+        public Builder active(boolean active) {
+            target.active = active;
+            return this;
+        }
+
+        public Builder createdAt(Instant createdAt) {
+            target.createdAt = createdAt;
+            return this;
+        }
+
+        public PracticeQuestion build() {
+            return target;
+        }
+
     }
 }

@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.usecase.user;
 
 import com.sep.vox.domain.model.user.User;
-import java.time.Instant;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -62,7 +61,6 @@ public class UpdateProfileUseCase implements IUseCase<UpdateProfileCommand, User
             throw new IllegalArgumentException("Cần cung cấp ít nhất một trường để cập nhật");
         }
 
-        Instant now = Instant.now();
         UUID callerId = userContextPort.getCurrentAuthenticatedUserId();
 
         User target = userRepository.findByIdForUpdate(callerId)
@@ -103,8 +101,6 @@ public class UpdateProfileUseCase implements IUseCase<UpdateProfileCommand, User
             target.setAvatarUrl(resolveAvatarUrl(input.avatarUrl()));
         }
 
-        target.setUpdatedAt(now);
-        target.setUpdatedBy(callerId);
         try {
             userRepository.saveAndFlush(target);
         } catch (DataIntegrityViolationException e) {

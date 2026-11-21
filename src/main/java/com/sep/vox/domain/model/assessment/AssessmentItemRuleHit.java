@@ -12,12 +12,12 @@ public class AssessmentItemRuleHit {
     private UUID id;
     private UUID evaluationId;
     private UUID scoringRuleId;
-    private String ruleCode; // snapshot của rule
+    private String ruleCode; // snapshot of the rule
     private ScoringRuleConditionType conditionType;
-    private BigDecimal observedValue; // giá trị đạt được (ví dụ 0.7)
-    private BigDecimal threshold; // ngưỡng (ví dụ 0.5)
+    private BigDecimal observedValue; // the observed value (for example 0.7)
+    private BigDecimal threshold; // the threshold (for example 0.5)
     private ScoringRuleActionType actionType;
-    private String effectSummary; // ví dụ điểm từ 8.5 xuống 2.5
+    private String effectSummary; // for example the score dropped from 8.5 to 2.5
     private ScoringRuleSeverity severity;
     private String reasonCode;
     private int appliedOrder;
@@ -25,45 +25,6 @@ public class AssessmentItemRuleHit {
     private UUID createdBy;
 
     public AssessmentItemRuleHit() {}
-
-    public AssessmentItemRuleHit(UUID id, UUID evaluationId, UUID scoringRuleId, String ruleCode,
-            ScoringRuleConditionType conditionType, BigDecimal observedValue, BigDecimal threshold,
-            ScoringRuleActionType actionType, String effectSummary, ScoringRuleSeverity severity, String reasonCode,
-            int appliedOrder, Instant createdAt, UUID createdBy) {
-        this.id = id;
-        this.evaluationId = evaluationId;
-        this.scoringRuleId = scoringRuleId;
-        this.ruleCode = ruleCode;
-        this.conditionType = conditionType;
-        this.observedValue = observedValue;
-        this.threshold = threshold;
-        this.actionType = actionType;
-        this.effectSummary = effectSummary;
-        this.severity = severity;
-        this.reasonCode = reasonCode;
-        this.appliedOrder = appliedOrder;
-        this.createdAt = createdAt;
-        this.createdBy = createdBy;
-    }
-
-    public AssessmentItemRuleHit(UUID evaluationId, UUID scoringRuleId, String ruleCode,
-            ScoringRuleConditionType conditionType, BigDecimal observedValue, BigDecimal threshold,
-            ScoringRuleActionType actionType, String effectSummary, ScoringRuleSeverity severity, String reasonCode,
-            int appliedOrder, Instant createdAt, UUID createdBy) {
-        this.evaluationId = evaluationId;
-        this.scoringRuleId = scoringRuleId;
-        this.ruleCode = ruleCode;
-        this.conditionType = conditionType;
-        this.observedValue = observedValue;
-        this.threshold = threshold;
-        this.actionType = actionType;
-        this.effectSummary = effectSummary;
-        this.severity = severity;
-        this.reasonCode = reasonCode;
-        this.appliedOrder = appliedOrder;
-        this.createdAt = createdAt;
-        this.createdBy = createdBy;
-    }
 
     public UUID getId() {
         return id;
@@ -177,5 +138,90 @@ public class AssessmentItemRuleHit {
         this.createdBy = createdBy;
     }
 
-    
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final AssessmentItemRuleHit target = new AssessmentItemRuleHit();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder evaluationId(UUID evaluationId) {
+            target.evaluationId = evaluationId;
+            return this;
+        }
+
+        public Builder scoringRuleId(UUID scoringRuleId) {
+            target.scoringRuleId = scoringRuleId;
+            return this;
+        }
+
+        public Builder ruleCode(String ruleCode) {
+            target.ruleCode = ruleCode;
+            return this;
+        }
+
+        public Builder conditionType(ScoringRuleConditionType conditionType) {
+            target.conditionType = conditionType;
+            return this;
+        }
+
+        public Builder observedValue(BigDecimal observedValue) {
+            target.observedValue = observedValue;
+            return this;
+        }
+
+        public Builder threshold(BigDecimal threshold) {
+            target.threshold = threshold;
+            return this;
+        }
+
+        public Builder actionType(ScoringRuleActionType actionType) {
+            target.actionType = actionType;
+            return this;
+        }
+
+        public Builder effectSummary(String effectSummary) {
+            target.effectSummary = effectSummary;
+            return this;
+        }
+
+        public Builder severity(ScoringRuleSeverity severity) {
+            target.severity = severity;
+            return this;
+        }
+
+        public Builder reasonCode(String reasonCode) {
+            target.reasonCode = reasonCode;
+            return this;
+        }
+
+        public Builder appliedOrder(int appliedOrder) {
+            target.appliedOrder = appliedOrder;
+            return this;
+        }
+
+        public Builder createdAt(Instant createdAt) {
+            target.createdAt = createdAt;
+            return this;
+        }
+
+        public Builder createdBy(UUID createdBy) {
+            target.createdBy = createdBy;
+            return this;
+        }
+
+        public AssessmentItemRuleHit build() {
+            return target;
+        }
+
+    }
 }

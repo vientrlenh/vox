@@ -3,52 +3,52 @@ package com.sep.vox.infrastructure.persistence.mapper;
 import com.sep.vox.domain.model.order.Order;
 import com.sep.vox.domain.model.order.OrderStatus;
 import com.sep.vox.domain.model.order.OrderType;
-import com.sep.vox.infrastructure.persistence.entity.OrderJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.order.OrderJpaEntity;
 
 public final class OrderMapper {
 
     private OrderMapper() {}
 
     public static Order toDomain(OrderJpaEntity jpa) {
-        return new Order(
-            jpa.getId(),
-            jpa.getSchoolId(),
-            typeFromString(jpa.getType()),
-            jpa.getDescription(),
-            jpa.getSubtotalAmountVnd(),
-            jpa.getTotalAmountVnd(),
-            jpa.getChargedFeeVnd(),
-            jpa.getDiscountAmountVnd(),
-            statusFromString(jpa.getStatus()),
-            jpa.getNotes(),
-            jpa.getCreatedAt(),
-            jpa.getUpdatedAt(),
-            jpa.getExpiresAt(),
-            jpa.getCreatedBy(),
-            jpa.getUpdatedBy(),
-            jpa.getVersion()
-        );
+        return Order.builder()
+            .id(jpa.getId())
+            .schoolId(jpa.getSchoolId())
+            .type(typeFromString(jpa.getType()))
+            .description(jpa.getDescription())
+            .subtotalAmountVnd(jpa.getSubtotalAmountVnd())
+            .totalAmountVnd(jpa.getTotalAmountVnd())
+            .chargedFeeVnd(jpa.getChargedFeeVnd())
+            .discountAmountVnd(jpa.getDiscountAmountVnd())
+            .status(statusFromString(jpa.getStatus()))
+            .notes(jpa.getNotes())
+            .createdAt(jpa.getCreatedAt())
+            .updatedAt(jpa.getUpdatedAt())
+            .expiresAt(jpa.getExpiresAt())
+            .createdBy(jpa.getCreatedBy())
+            .updatedBy(jpa.getUpdatedBy())
+            .version(jpa.getVersion())
+            .build();
     }
 
     public static OrderJpaEntity toJpa(Order domain) {
-        return new OrderJpaEntity(
-            domain.getId(),
-            domain.getSchoolId(),
-            valueOf(domain.getType()),
-            domain.getDescription(),
-            domain.getSubtotalAmountVnd(),
-            domain.getTotalAmountVnd(),
-            domain.getChargedFeeVnd(),
-            domain.getDiscountAmountVnd(),
-            valueOf(domain.getStatus()),
-            domain.getNotes(),
-            domain.getCreatedAt(),
-            domain.getUpdatedAt(),
-            domain.getExpiresAt(),
-            domain.getCreatedBy(),
-            domain.getUpdatedBy(),
-            domain.getVersion()
-        );
+        return OrderJpaEntity.builder()
+            .id(domain.getId())
+            .schoolId(domain.getSchoolId())
+            .type(valueOf(domain.getType()))
+            .description(domain.getDescription())
+            .subtotalAmountVnd(domain.getSubtotalAmountVnd())
+            .totalAmountVnd(domain.getTotalAmountVnd())
+            .chargedFeeVnd(domain.getChargedFeeVnd())
+            .discountAmountVnd(domain.getDiscountAmountVnd())
+            .status(valueOf(domain.getStatus()))
+            .notes(domain.getNotes())
+            .createdAt(domain.getCreatedAt())
+            .updatedAt(domain.getUpdatedAt())
+            .expiresAt(domain.getExpiresAt())
+            .createdBy(domain.getCreatedBy())
+            .updatedBy(domain.getUpdatedBy())
+            .version(domain.getVersion())
+            .build();
     }
 
     private static OrderType typeFromString(String type) {

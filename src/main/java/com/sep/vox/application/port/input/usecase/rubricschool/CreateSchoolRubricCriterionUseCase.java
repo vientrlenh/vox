@@ -25,7 +25,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -97,9 +96,6 @@ public class CreateSchoolRubricCriterionUseCase implements IUseCase<CreateSchool
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
         }
 
-
-
-        Instant now = Instant.now();
         Set<String> uniqueCodes = new HashSet<>();
         Set<UUID> uniqueFrameworkIds = new HashSet<>();
 
@@ -153,20 +149,20 @@ public class CreateSchoolRubricCriterionUseCase implements IUseCase<CreateSchool
                 examplesVO = new RubricCriterionExamples(exampleList);
             }
 
-            return new RubricCriterion(
-                    command.versionId(),
-                    cCmd.frameworkCriterionId(),
-                    safeCode,
-                    safeName,
-                    cCmd.description() != null ? StringNormalization.trimAndCollapseSpaces(cCmd.description()) : null,
-                    examplesVO, // Gắn Value Object vào đây
-                    cCmd.weight(),
-                    cCmd.minScore(),
-                    cCmd.maxScore(),
-                    cCmd.order(),
-                    cCmd.isRequired(),
-                    now, now, currentUserId, currentUserId
-            );
+            return RubricCriterion.builder()
+                    .rubricVersionId(command.versionId())
+                    .frameworkCriterionId(cCmd.frameworkCriterionId())
+                    .code(safeCode)
+                    .name(safeName)
+                    .description(cCmd.description() != null ? StringNormalization.trimAndCollapseSpaces(cCmd.description()) : null)
+                    // Attach the Value Object here
+                    .examples(examplesVO)
+                    .weight(cCmd.weight())
+                    .minScore(cCmd.minScore())
+                    .maxScore(cCmd.maxScore())
+                    .order(cCmd.order())
+                    .required(cCmd.isRequired())
+                    .build();
         }).collect(Collectors.toList());
 
         // 5. Lưu xuống DB

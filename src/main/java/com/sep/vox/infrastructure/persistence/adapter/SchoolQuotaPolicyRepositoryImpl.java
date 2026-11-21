@@ -11,7 +11,7 @@ import org.springframework.stereotype.Repository;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.school.SchoolQuotaPolicy;
 import com.sep.vox.domain.repository.SchoolQuotaPolicyRepository;
-import com.sep.vox.infrastructure.persistence.entity.SchoolQuotaPolicyJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolQuotaPolicyJpaEntity;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolQuotaPolicyMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolQuotaPolicyRepository;
 
@@ -48,14 +48,14 @@ public class SchoolQuotaPolicyRepositoryImpl implements SchoolQuotaPolicyReposit
         Optional<SchoolQuotaPolicyJpaEntity> existing = springDataSchoolQuotaPolicyRepository
             .findBySchoolIdAndQuotaType(schoolId, quotaType.name());
 
-        SchoolQuotaPolicyJpaEntity entity = new SchoolQuotaPolicyJpaEntity(
-            existing.map(e -> e.getId()).orElse(null),
-            schoolId,
-            quotaType.name(),
-            distributableRatio,
-            existing.map(e -> e.getCreatedAt()).orElse(now),
-            now
-        );
+        SchoolQuotaPolicyJpaEntity entity = SchoolQuotaPolicyJpaEntity.builder()
+            .id(existing.map(e -> e.getId()).orElse(null))
+            .schoolId(schoolId)
+            .quotaType(quotaType.name())
+            .distributableRatio(distributableRatio)
+            .createdAt(existing.map(e -> e.getCreatedAt()).orElse(now))
+            .updatedAt(now)
+            .build();
 
         return SchoolQuotaPolicyMapper.toDomain(springDataSchoolQuotaPolicyRepository.save(entity));
     }

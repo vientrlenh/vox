@@ -43,30 +43,28 @@ public class StartPracticeSessionPersistenceService {
                 "Đề luyện không tồn tại hoặc đã hết thời gian giữ chỗ."
             ));
         UUID sessionId = UUID.randomUUID();
-        practiceSessionRepository.save(new com.sep.vox.domain.model.personalization.PracticeSession(
-            sessionId,
-            studentId,
-            paper.getId(),
-            // Không có rubric, cũng không tra assessment policy: luyện tập chấm thang 0-100
-            // cố định. Policy chọn theo lớp học sinh, mà trường chưa cấu hình thì học sinh
-            // KHÔNG vào được phiên -- chặn ngay ở cửa vì một thứ luyện tập không dùng tới.
+        practiceSessionRepository.save(com.sep.vox.domain.model.personalization.PracticeSession.builder()
+            .id(sessionId)
+            .studentId(studentId)
+            .practicePaperId(paper.getId())
+            // There is no rubric and no assessment policy lookup: practice is graded on a fixed 0-100 scale.
+            // The policy is chosen by the student's class, and when the school has not configured one the student
+            // could NOT enter the session -- blocking at the door for something practice does not use.
             //
-            // Bậc do HỌC SINH chọn ở màn chuẩn bị, là thứ duy nhất còn lại từ khung đánh giá.
-            requireTargetBand(paper.getTargetFrameworkBandId()),
-            paper.getPracticeTopicId(),
-            "[]",
-            paper.getOrigin(),
-            offerEvidenceJson(paper.getOfferedTopicIdsJson(), paper.getPreviousOfferedTopicIdsJson()),
-            null,
-            now,
-            null,
-            now,
-            0,
-            "IN_PROGRESS",
-            null,
-            0,
-            0
-        ));
+            // The band is chosen by the STUDENT on the preparation screen; it is the only thing left from the
+            // assessment framework.
+            .targetFrameworkBandId(requireTargetBand(paper.getTargetFrameworkBandId()))
+            .chosenPracticeTopicId(paper.getPracticeTopicId())
+            .targetSubAttributesJson("[]")
+            .origin(paper.getOrigin())
+            .offeredTopicIdsJson(offerEvidenceJson(paper.getOfferedTopicIdsJson(), paper.getPreviousOfferedTopicIdsJson()))
+            .startedAt(now)
+            .lastHeartbeatAt(now)
+            .gradedSeconds(0)
+            .status("IN_PROGRESS")
+            .helpRequestCount(0)
+            .longPauseCount(0)
+            .build());
         practicePaperRepository.save(paper.withStatus("STARTED"));
         return PracticeSessionResponseMapper.toResponse(
             SessionRowMapper.toDto(

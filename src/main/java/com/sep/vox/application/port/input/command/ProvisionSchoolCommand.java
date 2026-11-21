@@ -2,7 +2,6 @@ package com.sep.vox.application.port.input.command;
 
 import java.time.LocalDate;
 import java.time.Instant;
-import java.util.UUID;
 
 public record ProvisionSchoolCommand(
     String schoolCode, 
@@ -17,7 +16,6 @@ public record ProvisionSchoolCommand(
     LocalDate dateOfBirth, 
     String contactAddress, 
     String avatarUrl, 
-    UUID createdUserId, 
     Instant now
 ) {
     

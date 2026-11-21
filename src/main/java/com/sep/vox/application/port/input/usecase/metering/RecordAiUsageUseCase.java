@@ -12,8 +12,8 @@ import com.sep.vox.application.port.output.QuotaPricingPort;
 import com.sep.vox.domain.model.metering.AiUsageRecord;
 import com.sep.vox.domain.repository.AiUsageRecordRepository;
 
-// Internal service-to-service use case (Kafka consumer nhận usage report từ Agentic AI sau mỗi turn,
-// và đường REST ReportAiUsageUseCase cho nguồn không nối được Kafka), không end-user-facing.
+// Internal service-to-service use case (a Kafka consumer receiving the usage report from the Agentic AI after every turn,
+// and the REST path ReportAiUsageUseCase for sources that cannot reach Kafka), not end-user-facing.
 @Service
 public class RecordAiUsageUseCase implements IUseCase<RecordAiUsageCommand, Void> {
 
@@ -40,47 +40,46 @@ public class RecordAiUsageUseCase implements IUseCase<RecordAiUsageCommand, Void
         if (input.assessmentSessionId() == null) {
             throw new IllegalArgumentException("Thiếu assessmentSessionId trong dữ liệu usage");
         }
-        // Chặn sớm thay vì để NPE ở phép nhân bên dưới: cost_vnd là NOT NULL nên một dòng thiếu
-        // costUsd không thể ghi được, và nuốt lặng nó nghĩa là mất trắng một khoản chi thật.
+        // Block early instead of letting an NPE happen in the multiplication below: cost_vnd is NOT NULL, so a row missing
+        // costUsd cannot be written, and swallowing it silently means losing a real charge entirely.
         if (input.costUsd() == null) {
             throw new IllegalArgumentException("Thiếu costUsd trong dữ liệu usage");
         }
 
-        // Idempotent: Kafka có thể redeliver cùng usageEventId khi retry/rebalance -- bỏ qua thay vì
-        // ghi trùng, uk_ai_usage_record_usage_event_id là chốt chặn cuối nếu race hiếm gặp lọt qua đây.
+        // Idempotent: Kafka may redeliver the same usageEventId on retry/rebalance -- skip instead of writing a duplicate;
+        // uk_ai_usage_record_usage_event_id is the last guard if a rare race slips through here.
         if (aiUsageRecordRepository.existsByUsageEventId(input.usageEventId())) {
             return null;
         }
 
-        // Qua QuotaPricingPort chứ không tự đọc ExchangeRateSnapshotRepository: cổng đó đã gộp sẵn
-        // "tỷ giá mới nhất, fallback về hằng số trong .env khi chưa có lần fetch nào thành công", nên
-        // tự lặp lại logic ở đây là dựng một tỷ giá thứ hai âm thầm lệch khỏi giá bán quota.
+        // Go through QuotaPricingPort instead of reading ExchangeRateSnapshotRepository directly: that port already combines
+        // "the latest exchange rate, falling back to the constant in .env when no fetch has succeeded yet", so repeating the logic
+        // here would build a second exchange rate that silently drifts from the quota selling price.
         //
-        // Chốt tỷ giá NGAY LÚC GHI và lưu vào chính dòng này: retry Kafka/DLT có thể đẩy một sự kiện
-        // sang tận ngày hôm sau, lúc đó quy đổi lại theo tỷ giá "mới nhất" sẽ ra một con số khác với
-        // lúc chi phí thật phát sinh. Ràng buộc idempotency ở trên bảo đảm một sự kiện chỉ được chốt
-        // đúng một lần.
+        // Fix the exchange rate AT WRITE TIME and store it on this very row: a Kafka/DLT retry may push an event to the next day,
+        // and converting again with the "latest" rate would then give a different number from the one at the time the real cost
+        // arose. The idempotency constraint above guarantees an event is only fixed exactly once.
         BigDecimal exchangeRateVnd = quotaPricingPort.usdToVndRate();
         BigDecimal costVnd = input.costUsd().multiply(exchangeRateVnd).setScale(COST_VND_SCALE, RoundingMode.HALF_UP);
 
-        aiUsageRecordRepository.save(new AiUsageRecord(
-            input.assessmentSessionId(),
-            input.turnId(),
-            input.usageEventId(),
-            input.usageType(),
-            input.provider(),
-            input.modelName(),
-            input.inputTokens(),
-            input.outputTokens(),
-            input.cacheCreationInputTokens(),
-            input.cacheReadInputTokens(),
-            input.durationMs(),
-            input.unitPriceJson(),
-            input.costUsd(), 
-            costVnd, 
-            exchangeRateVnd,
-            input.occurredAt()
-        ));
+        aiUsageRecordRepository.save(AiUsageRecord.builder()
+            .assessmentSessionId(input.assessmentSessionId())
+            .turnId(input.turnId())
+            .usageEventId(input.usageEventId())
+            .usageType(input.usageType())
+            .provider(input.provider())
+            .modelName(input.modelName())
+            .inputTokens(input.inputTokens())
+            .outputTokens(input.outputTokens())
+            .cacheCreationInputTokens(input.cacheCreationInputTokens())
+            .cacheReadInputTokens(input.cacheReadInputTokens())
+            .durationMs(input.durationMs())
+            .unitPriceJson(input.unitPriceJson())
+            .costUsd(input.costUsd())
+            .costVnd(costVnd)
+            .fxRateUsed(exchangeRateVnd)
+            .occurredAt(input.occurredAt())
+            .build());
         return null;
     }
 }

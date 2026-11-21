@@ -1,8 +1,6 @@
 package com.sep.vox.application.port.input.usecase.schooldirectory;
 
-import java.time.Instant;
 
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -10,7 +8,6 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.port.input.command.CreateSchoolDirectoryCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.schooldirectory.CreateSchoolDirectoryResponse;
 import com.sep.vox.domain.model.school.SchoolDirectory;
 import com.sep.vox.domain.repository.SchoolDirectoryRepository;
@@ -19,11 +16,9 @@ import com.sep.vox.domain.repository.SchoolDirectoryRepository;
 public class CreateSchoolDirectoryUseCase implements IUseCase<CreateSchoolDirectoryCommand, CreateSchoolDirectoryResponse> {
 
     private final SchoolDirectoryRepository schoolDirectoryRepository;
-    private final UserContextPort userContextPort;
 
-    public CreateSchoolDirectoryUseCase(SchoolDirectoryRepository schoolDirectoryRepository, UserContextPort userContextPort) {
+    public CreateSchoolDirectoryUseCase(SchoolDirectoryRepository schoolDirectoryRepository) {
         this.schoolDirectoryRepository = schoolDirectoryRepository;
-        this.userContextPort = userContextPort;
     }
 
     @Override
@@ -35,9 +30,6 @@ public class CreateSchoolDirectoryUseCase implements IUseCase<CreateSchoolDirect
             throw new DuplicatedException("Mã trường này đã tồn tại trong danh mục hệ thống");
         }
 
-        Instant now = Instant.now();
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-
         SchoolDirectory directory = SchoolDirectory.createByAdmin(
             command.code(), 
             command.name(), 
@@ -45,9 +37,7 @@ public class CreateSchoolDirectoryUseCase implements IUseCase<CreateSchoolDirect
             command.provinceName(), 
             command.districtName(), 
             command.domain(), 
-            command.address(), 
-            now, 
-            currentUserId
+            command.address()
         );
         SchoolDirectory saved = schoolDirectoryRepository.save(directory);
         return new CreateSchoolDirectoryResponse(saved.getId());

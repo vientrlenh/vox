@@ -65,8 +65,14 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         List<FrameworkCriterion> criteria = new ArrayList<>();
         int order = 1;
         for (String code : codes) {
-            criteria.add(new FrameworkCriterion(
-                    UUID.randomUUID(), versionId, code, code, "Description", order++, now, now, null, null));
+            criteria.add(FrameworkCriterion.builder()
+                .id(UUID.randomUUID())
+                .frameworkVersionId(versionId)
+                .code(code)
+                .name(code)
+                .description("Description")
+                .order(order++)
+                .build());
         }
         return criteria;
     }
@@ -75,9 +81,14 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         FrameworkCriterionSignals signals = new FrameworkCriterionSignals(List.of(
                 new FrameworkCriterionSignal("S1", "desc", FrameworkCriterionSignalImportance.HIGH, null)));
         return criteria.stream()
-                .map(criterion -> new FrameworkCriterionBand(
-                        UUID.randomUUID(), criterion.getId(), UUID.randomUUID(), "descriptor",
-                        signals, signals, now, now, null, null))
+                .map(criterion -> FrameworkCriterionBand.builder()
+                    .id(UUID.randomUUID())
+                    .frameworkCriterionId(criterion.getId())
+                    .frameworkResultBandId(UUID.randomUUID())
+                    .descriptor("descriptor")
+                    .positiveSignals(signals)
+                    .negativeSignals(signals)
+                    .build())
                 .collect(Collectors.toList());
     }
 
@@ -87,10 +98,13 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
             frameworkId, versionId, FrameworkVersionStatus.PUBLISHED
         );
 
-        Framework framework = new Framework(
-            frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, now, now, null, null
-        );
+        Framework framework = Framework.builder()
+            .id(frameworkId)
+            .code(new FrameworkCode("CEFR"))
+            .name("Test")
+            .description("Description")
+            .active(true)
+            .build();
         FrameworkVersion version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(frameworkId);
@@ -123,10 +137,13 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
             frameworkId, versionId, FrameworkVersionStatus.PUBLISHED
         );
 
-        Framework framework = new Framework(
-            frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, now, now, null, null
-        );
+        Framework framework = Framework.builder()
+            .id(frameworkId)
+            .code(new FrameworkCode("CEFR"))
+            .name("Test")
+            .description("Description")
+            .active(true)
+            .build();
         FrameworkVersion version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(frameworkId);
@@ -156,10 +173,13 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
             frameworkId, versionId, FrameworkVersionStatus.PUBLISHED
         );
 
-        Framework framework = new Framework(
-            frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, now, now, null, null
-        );
+        Framework framework = Framework.builder()
+            .id(frameworkId)
+            .code(new FrameworkCode("CEFR"))
+            .name("Test")
+            .description("Description")
+            .active(true)
+            .build();
         FrameworkVersion version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(frameworkId);
@@ -171,8 +191,14 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         FrameworkCriterionSignals emptySignals = new FrameworkCriterionSignals(List.of());
         List<FrameworkCriterionBand> bands = buildValidBands(criteria).stream()
             .map(band -> band.getFrameworkCriterionId().equals(criteria.get(0).getId())
-                ? new FrameworkCriterionBand(band.getId(), band.getFrameworkCriterionId(), band.getFrameworkResultBandId(),
-                    band.getDescriptor(), emptySignals, emptySignals, now, now, null, null)
+                ? FrameworkCriterionBand.builder()
+                    .id(band.getId())
+                    .frameworkCriterionId(band.getFrameworkCriterionId())
+                    .frameworkResultBandId(band.getFrameworkResultBandId())
+                    .descriptor(band.getDescriptor())
+                    .positiveSignals(emptySignals)
+                    .negativeSignals(emptySignals)
+                    .build()
                 : band)
             .collect(Collectors.toList());
         List<UUID> criterionIds = criteria.stream().map(fc -> fc.getId()).collect(Collectors.toList());
@@ -193,10 +219,13 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
             frameworkId, versionId, FrameworkVersionStatus.PUBLISHED
         );
 
-        Framework framework = new Framework(
-            frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, now, now, null, null
-        );
+        Framework framework = Framework.builder()
+            .id(frameworkId)
+            .code(new FrameworkCode("CEFR"))
+            .name("Test")
+            .description("Description")
+            .active(true)
+            .build();
         FrameworkVersion version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(frameworkId);
@@ -217,10 +246,13 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
             frameworkId, versionId, FrameworkVersionStatus.PUBLISHED
         );
 
-        Framework framework = new Framework(
-            frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, now, now, null, null
-        );
+        Framework framework = Framework.builder()
+            .id(frameworkId)
+            .code(new FrameworkCode("CEFR"))
+            .name("Test")
+            .description("Description")
+            .active(true)
+            .build();
         FrameworkVersion version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(frameworkId);
@@ -242,10 +274,13 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
             frameworkId, versionId, FrameworkVersionStatus.ARCHIVED
         );
 
-        Framework framework = new Framework(
-            frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, now, now, null, null
-        );
+        Framework framework = Framework.builder()
+            .id(frameworkId)
+            .code(new FrameworkCode("CEFR"))
+            .name("Test")
+            .description("Description")
+            .active(true)
+            .build();
         FrameworkVersion version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(frameworkId);
@@ -277,10 +312,13 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
             frameworkId, versionId, FrameworkVersionStatus.PUBLISHED
         );
 
-        Framework framework = new Framework(
-            frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, now, now, null, null
-        );
+        Framework framework = Framework.builder()
+            .id(frameworkId)
+            .code(new FrameworkCode("CEFR"))
+            .name("Test")
+            .description("Description")
+            .active(true)
+            .build();
 
         when(frameworkRepository.findFrameworkByIdForUpdate(frameworkId)).thenReturn(Optional.of(framework));
         when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.empty());
@@ -295,10 +333,13 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
             frameworkId, versionId, FrameworkVersionStatus.PUBLISHED
         );
 
-        Framework framework = new Framework(
-            frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, now, now, null, null
-        );
+        Framework framework = Framework.builder()
+            .id(frameworkId)
+            .code(new FrameworkCode("CEFR"))
+            .name("Test")
+            .description("Description")
+            .active(true)
+            .build();
         FrameworkVersion version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(otherFrameworkId);
@@ -315,10 +356,13 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
             frameworkId, versionId, FrameworkVersionStatus.PUBLISHED
         );
 
-        Framework framework = new Framework(
-            frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, now, now, null, null
-        );
+        Framework framework = Framework.builder()
+            .id(frameworkId)
+            .code(new FrameworkCode("CEFR"))
+            .name("Test")
+            .description("Description")
+            .active(true)
+            .build();
         FrameworkVersion version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(frameworkId);
@@ -349,10 +393,13 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
             frameworkId, versionId, FrameworkVersionStatus.ARCHIVED
         );
 
-        Framework framework = new Framework(
-            frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, now, now, null, null
-        );
+        Framework framework = Framework.builder()
+            .id(frameworkId)
+            .code(new FrameworkCode("CEFR"))
+            .name("Test")
+            .description("Description")
+            .active(true)
+            .build();
         FrameworkVersion version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(frameworkId);
@@ -370,10 +417,13 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
             frameworkId, versionId, FrameworkVersionStatus.PUBLISHED
         );
 
-        Framework framework = new Framework(
-            frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, now, now, null, null
-        );
+        Framework framework = Framework.builder()
+            .id(frameworkId)
+            .code(new FrameworkCode("CEFR"))
+            .name("Test")
+            .description("Description")
+            .active(true)
+            .build();
         FrameworkVersion version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(frameworkId);

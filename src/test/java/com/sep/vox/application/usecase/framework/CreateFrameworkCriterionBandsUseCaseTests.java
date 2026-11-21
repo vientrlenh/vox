@@ -21,7 +21,6 @@ import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateFrameworkCriterionBandsCommand;
 import com.sep.vox.application.port.input.command.CreateFrameworkCriterionBandsCommand.CriterionBandItemCommand;
 import com.sep.vox.application.port.input.usecase.framework.CreateFrameworkCriterionBandsUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.framework.FrameworkCriterion;
 import com.sep.vox.domain.model.framework.FrameworkCriterionBand;
 import com.sep.vox.domain.model.framework.FrameworkResultBand;
@@ -39,13 +38,11 @@ public class CreateFrameworkCriterionBandsUseCaseTests {
     private FrameworkCriterionRepository frameworkCriterionRepository;
     private FrameworkCriterionBandRepository frameworkCriterionBandRepository;
     private FrameworkResultBandRepository frameworkResultBandRepository;
-    private UserContextPort userContextPort;
     private CreateFrameworkCriterionBandsUseCase useCase;
 
     private final UUID frameworkId = UUID.randomUUID();
     private final UUID versionId = UUID.randomUUID();
     private final UUID criterionId = UUID.randomUUID();
-    private final UUID userId = UUID.randomUUID();
     private final Instant now = Instant.now();
 
     @BeforeEach
@@ -54,25 +51,46 @@ public class CreateFrameworkCriterionBandsUseCaseTests {
         frameworkCriterionRepository = mock(FrameworkCriterionRepository.class);
         frameworkCriterionBandRepository = mock(FrameworkCriterionBandRepository.class);
         frameworkResultBandRepository = mock(FrameworkResultBandRepository.class);
-        userContextPort = mock(UserContextPort.class);
         useCase = new CreateFrameworkCriterionBandsUseCase(
                 frameworkVersionRepository, frameworkCriterionRepository,
-                frameworkCriterionBandRepository, frameworkResultBandRepository, userContextPort);
+                frameworkCriterionBandRepository, frameworkResultBandRepository);
 
-        FrameworkVersion version = new FrameworkVersion(versionId, frameworkId, "V1_0", "Version 1.0", "Desc", 1, now, now.plus(30, ChronoUnit.DAYS),
-                FrameworkVersionStatus.DRAFT, now, now, userId, userId);
+        FrameworkVersion version = FrameworkVersion.builder()
+            .id(versionId)
+            .frameworkId(frameworkId)
+            .code("V1_0")
+            .name("Version 1.0")
+            .description("Desc")
+            .version(1)
+            .effectiveFrom(now)
+            .effectiveTo(now.plus(30, ChronoUnit.DAYS))
+            .status(FrameworkVersionStatus.DRAFT)
+            .build();
         when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(version));
 
-        FrameworkCriterion criterion = new FrameworkCriterion(criterionId, versionId, "C1", "Criterion 1", "Desc", 1, now, now, userId, userId);
+        FrameworkCriterion criterion = FrameworkCriterion.builder()
+            .id(criterionId)
+            .frameworkVersionId(versionId)
+            .code("C1")
+            .name("Criterion 1")
+            .description("Desc")
+            .order(1)
+            .build();
         when(frameworkCriterionRepository.findById(criterionId)).thenReturn(Optional.of(criterion));
 
-        FrameworkResultBand resultBand = new FrameworkResultBand(UUID.randomUUID(), versionId, "RB1", "Label", "Desc", 1, now, now, userId, userId);
+        FrameworkResultBand resultBand = FrameworkResultBand.builder()
+            .id(UUID.randomUUID())
+            .frameworkVersionId(versionId)
+            .code("RB1")
+            .label("Label")
+            .description("Desc")
+            .order(1)
+            .build();
         when(frameworkResultBandRepository.findByFrameworkVersionIdAndCodeIn(any(), any())).thenAnswer(invocation -> {
             Set<String> codes = invocation.getArgument(1);
             return List.of(resultBand).stream().filter(rb -> codes.contains(rb.getCode())).collect(Collectors.toList());
         });
 
-        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
     }
 
     private CriterionBandItemCommand bandItem(String resultBandCode) {
@@ -105,8 +123,17 @@ public class CreateFrameworkCriterionBandsUseCaseTests {
 
     @Test
     void should_throw_when_version_not_draft() {
-        FrameworkVersion activeVersion = new FrameworkVersion(versionId, frameworkId, "V1_0", "Version 1.0", "Desc", 1, now, now.plus(30, ChronoUnit.DAYS),
-                FrameworkVersionStatus.PUBLISHED, now, now, userId, userId);
+        FrameworkVersion activeVersion = FrameworkVersion.builder()
+            .id(versionId)
+            .frameworkId(frameworkId)
+            .code("V1_0")
+            .name("Version 1.0")
+            .description("Desc")
+            .version(1)
+            .effectiveFrom(now)
+            .effectiveTo(now.plus(30, ChronoUnit.DAYS))
+            .status(FrameworkVersionStatus.PUBLISHED)
+            .build();
         when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(activeVersion));
         CreateFrameworkCriterionBandsCommand command = new CreateFrameworkCriterionBandsCommand(frameworkId, versionId, criterionId, List.of(bandItem("rb1")));
 
@@ -115,7 +142,14 @@ public class CreateFrameworkCriterionBandsUseCaseTests {
 
     @Test
     void should_throw_when_criterion_belongs_to_different_version() {
-        FrameworkCriterion otherCriterion = new FrameworkCriterion(criterionId, UUID.randomUUID(), "C1", "Criterion 1", "Desc", 1, now, now, userId, userId);
+        FrameworkCriterion otherCriterion = FrameworkCriterion.builder()
+            .id(criterionId)
+            .frameworkVersionId(UUID.randomUUID())
+            .code("C1")
+            .name("Criterion 1")
+            .description("Desc")
+            .order(1)
+            .build();
         when(frameworkCriterionRepository.findById(criterionId)).thenReturn(Optional.of(otherCriterion));
         CreateFrameworkCriterionBandsCommand command = new CreateFrameworkCriterionBandsCommand(frameworkId, versionId, criterionId, List.of(bandItem("rb1")));
 

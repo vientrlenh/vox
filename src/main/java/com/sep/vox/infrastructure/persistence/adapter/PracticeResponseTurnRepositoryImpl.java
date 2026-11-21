@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.repository.PracticeResponseTurnRepository;
 import com.sep.vox.domain.repository.SessionDurationAggregate;
-import com.sep.vox.infrastructure.persistence.entity.PracticeResponseTurnJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.personalization.PracticeResponseTurnJpaEntity;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataPracticeResponseTurnRepository;
 
 @Repository
@@ -39,18 +39,18 @@ public class PracticeResponseTurnRepositoryImpl implements PracticeResponseTurnR
             // real second turn (turn_order is client-driven and monotonic per question).
             return new TurnWrite(existing.get().getId(), false);
         }
-        PracticeResponseTurnJpaEntity saved = repository.save(new PracticeResponseTurnJpaEntity(
-            UUID.randomUUID(),
-            practiceResponseId,
-            turnOrder,
-            turnType,
-            promptText,
-            audioUrl,
-            transcript,
-            durationSeconds,
-            wordFeedbackJson,
-            turnScore == null ? null : BigDecimal.valueOf(turnScore)
-        ));
+        PracticeResponseTurnJpaEntity saved = repository.save(PracticeResponseTurnJpaEntity.builder()
+                .id(UUID.randomUUID())
+                .practiceResponseId(practiceResponseId)
+                .turnOrder(turnOrder)
+                .turnType(turnType)
+                .promptText(promptText)
+                .audioUrl(audioUrl)
+                .transcript(transcript)
+                .durationSeconds(durationSeconds)
+                .wordFeedbackJson(wordFeedbackJson)
+                .turnScore(turnScore == null ? null : BigDecimal.valueOf(turnScore))
+                .build());
         return new TurnWrite(saved.getId(), true);
     }
 

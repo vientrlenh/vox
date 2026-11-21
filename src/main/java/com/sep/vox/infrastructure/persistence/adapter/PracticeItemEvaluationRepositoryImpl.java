@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.domain.repository.PracticeItemEvaluationRepository;
-import com.sep.vox.infrastructure.persistence.entity.PracticeItemEvaluationJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.personalization.PracticeItemEvaluationJpaEntity;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataPracticeItemEvaluationRepository;
 
 @Repository
@@ -31,13 +31,13 @@ public class PracticeItemEvaluationRepositoryImpl implements PracticeItemEvaluat
         PracticeItemEvaluationJpaEntity existing = repository.findByPracticeResponseId(practiceResponseId).orElse(null);
         BigDecimal scoreValue = BigDecimal.valueOf(itemScore);
         if (existing == null) {
-            PracticeItemEvaluationJpaEntity saved = repository.save(new PracticeItemEvaluationJpaEntity(
-                UUID.randomUUID(),
-                practiceResponseId,
-                scoreValue,
-                markedInvalid,
-                evaluatedAt
-            ));
+            PracticeItemEvaluationJpaEntity saved = repository.save(PracticeItemEvaluationJpaEntity.builder()
+                    .id(UUID.randomUUID())
+                    .practiceResponseId(practiceResponseId)
+                    .itemScore(scoreValue)
+                    .markedInvalid(markedInvalid)
+                    .evaluatedAt(evaluatedAt)
+                    .build());
             return saved.getId();
         }
         existing.setItemScore(scoreValue);

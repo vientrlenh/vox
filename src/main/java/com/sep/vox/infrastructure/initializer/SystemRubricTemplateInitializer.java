@@ -289,59 +289,49 @@ public class SystemRubricTemplateInitializer implements ApplicationRunner {
             Map<String, FrameworkCriterion> criterionByCode,
             Instant now) {
 
-        Rubric rubric = rubricRepository.save(new Rubric(
-            languageId,
-            frameworkId,
-            template.code(),
-            template.name(),
-            template.description(),
-            RubricOwnerType.SYSTEM,
-            // SYSTEM requires school_id NULL -- chk_rubrics_owner_school_valid.
-            null
-        ));
+        Rubric rubric = rubricRepository.save(Rubric.builder()
+                .languageId(languageId)
+                .frameworkId(frameworkId)
+                .code(template.code())
+                .name(template.name())
+                .description(template.description())
+                .ownerType(RubricOwnerType.SYSTEM)
+                // SYSTEM requires school_id NULL -- chk_rubrics_owner_school_valid.
+                .schoolId(null)
+                .build());
 
-        RubricVersion version = rubricVersionRepository.save(new RubricVersion(
-            rubric.getId(),
-            1,
-            template.code() + "-V1",
-            template.name(),
-            template.description(),
-            // PUBLISHED right away: a template is only for reading and copying, and CloneSystemRubricToSchoolUseCase rejects
-            // every unpublished version. A template in draft state is one nobody can use.
-            RubricStatus.PUBLISHED,
-            now,
-            null,
-            SCORING_SCALE_MIN,
-            SCORING_SCALE_MAX,
-            RubricTotalScoreMethod.SUM,
-            now,
-            now,
-            // No login session exists at startup, so there is no identity to write into
-            // created_by/updated_by. Both columns are nullable, and null here reads correctly: this version was built by the
-            // system, not created by any person.
-            null,
-            null
-        ));
+        RubricVersion version = rubricVersionRepository.save(RubricVersion.builder()
+                .rubricId(rubric.getId())
+                .version(1)
+                .code(template.code() + "-V1")
+                .name(template.name())
+                .description(template.description())
+                // PUBLISHED right away: a template is only for reading and copying, and CloneSystemRubricToSchoolUseCase rejects
+                // every unpublished version. A template in draft state is one nobody can use.
+                .status(RubricStatus.PUBLISHED)
+                .effectiveFrom(now)
+                .effectiveTo(null)
+                .scoringScaleMin(SCORING_SCALE_MIN)
+                .scoringScaleMax(SCORING_SCALE_MAX)
+                .totalScoreMethod(RubricTotalScoreMethod.SUM)
+                .build());
 
         List<RubricCriterion> criteria = CRITERIA.stream()
-            .map(seed -> new RubricCriterion(
-                version.getId(),
-                criterionByCode.get(seed.frameworkCriterionCode()).getId(),
-                seed.frameworkCriterionCode(),
-                seed.name(),
-                seed.description(),
-                // No sample examples: an example is tied to each school's own assessment and grading style, and putting one in here
-                // would make every copy carry an example that is not its own.
-                null,
-                template.weights().get(seed.frameworkCriterionCode()),
-                SCORING_SCALE_MIN,
-                SCORING_SCALE_MAX,
-                seed.order(),
-                true,
-                now,
-                now,
-                null,
-                null))
+            .map(seed -> RubricCriterion.builder()
+                    .rubricVersionId(version.getId())
+                    .frameworkCriterionId(criterionByCode.get(seed.frameworkCriterionCode()).getId())
+                    .code(seed.frameworkCriterionCode())
+                    .name(seed.name())
+                    .description(seed.description())
+                    // No sample examples: an example is tied to each school's own assessment and grading style, and putting one in here
+                    // would make every copy carry an example that is not its own.
+                    .examples(null)
+                    .weight(template.weights().get(seed.frameworkCriterionCode()))
+                    .minScore(SCORING_SCALE_MIN)
+                    .maxScore(SCORING_SCALE_MAX)
+                    .order(seed.order())
+                    .required(true)
+                    .build())
             .toList();
 
         // Checked with exactly the rules of the real publish path, before writing. Wrong numbers in this file will break
@@ -353,18 +343,15 @@ public class SystemRubricTemplateInitializer implements ApplicationRunner {
         rubricCriterionRepository.saveAll(criteria);
 
         rubricResultBandRepository.saveAll(RESULT_BANDS.stream()
-            .map(seed -> new RubricResultBand(
-                version.getId(),
-                seed.code(),
-                seed.name(),
-                seed.description(),
-                seed.scoreMin(),
-                seed.scoreMax(),
-                seed.order(),
-                now,
-                now,
-                null,
-                null))
+            .map(seed -> RubricResultBand.builder()
+                    .rubricVersionId(version.getId())
+                    .code(seed.code())
+                    .name(seed.name())
+                    .description(seed.description())
+                    .scoreMin(seed.scoreMin())
+                    .scoreMax(seed.scoreMax())
+                    .order(seed.order())
+                    .build())
             .toList());
     }
 

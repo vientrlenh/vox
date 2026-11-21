@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.NotificationPreferenceJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.notification.NotificationPreferenceJpaEntity;
 import java.util.Optional;
 import java.util.UUID;
 

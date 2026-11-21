@@ -158,9 +158,14 @@ class CarryQuotaFundingAtPeriodStartServiceTests {
     // ---------------------------------------------------------------------
 
     private void givenSourcePool(QuotaType quotaType, long totalVnd, long usedVnd, long fundedVnd) {
-        sourcePools.add(new SchoolSubscriptionQuotaRecord(
-            UUID.randomUUID(), previousSubscriptionId, quotaType,
-            BigDecimal.valueOf(totalVnd), BigDecimal.valueOf(usedVnd), BigDecimal.valueOf(fundedVnd)));
+        sourcePools.add(SchoolSubscriptionQuotaRecord.builder()
+            .id(UUID.randomUUID())
+            .schoolSubscriptionId(previousSubscriptionId)
+            .quotaType(quotaType)
+            .totalAllocatedAmountVnd(BigDecimal.valueOf(totalVnd))
+            .usedAmountVnd(BigDecimal.valueOf(usedVnd))
+            .fundedFromBalanceVnd(BigDecimal.valueOf(fundedVnd))
+            .build());
     }
 
     private void givenDueCarry(QuotaType quotaType) {
@@ -172,10 +177,14 @@ class CarryQuotaFundingAtPeriodStartServiceTests {
      * {@code alreadyFundedVnd} = what the school topped up on its own while waiting.
      */
     private void givenDueCarry(QuotaType quotaType, long alreadyFundedVnd) {
-        SchoolSubscriptionQuotaRecord target = new SchoolSubscriptionQuotaRecord(
-            newPracticePoolId, newSubscriptionId, quotaType,
-            BigDecimal.valueOf(10_000_000 + alreadyFundedVnd), BigDecimal.ZERO,
-            BigDecimal.valueOf(alreadyFundedVnd));
+        SchoolSubscriptionQuotaRecord target = SchoolSubscriptionQuotaRecord.builder()
+            .id(newPracticePoolId)
+            .schoolSubscriptionId(newSubscriptionId)
+            .quotaType(quotaType)
+            .totalAllocatedAmountVnd(BigDecimal.valueOf(10_000_000 + alreadyFundedVnd))
+            .usedAmountVnd(BigDecimal.ZERO)
+            .fundedFromBalanceVnd(BigDecimal.valueOf(alreadyFundedVnd))
+            .build();
         target.setCarryFundingFromSubscriptionId(previousSubscriptionId);
         when(quotaRecordRepository.findDueFundingCarries(now)).thenReturn(List.of(target));
     }

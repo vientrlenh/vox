@@ -176,14 +176,14 @@ public class UpdateAssessmentStatusUseCase implements IUseCase<UpdateAssessmentS
                 }
                 requireTransition(assessment, AssessmentStatus.SCHEDULED, AssessmentStatus.IN_PROGRESS);
                 if (assessment.getKind() == AssessmentKind.CLASS_TEST) {
-                    lockClassTestPapers(assessment.getId(), currentUserId);
+                    lockClassTestPapers(assessment.getId());
                 }
             }
             case "CLOSE" -> {
                 requireTransition(assessment, AssessmentStatus.IN_PROGRESS, AssessmentStatus.CLOSED);
                 // Kiểm trạng thái trước rồi mới đụng ca thi, giống nhánh CANCEL bên dưới.
                 assessmentScheduleClosureService.requireNoActiveSessionInOngoingSchedule(assessment.getId(), now);
-                assessmentScheduleClosureService.closeSchedulesForAssessment(assessment.getId(), currentUserId, now);
+                assessmentScheduleClosureService.closeSchedulesForAssessment(assessment.getId(), now);
                 assessmentQuestionSecureLockService.releaseIfAutoAfterClose(assessment.getId());
                 zeroScoreAssessmentResultService.ensureZeroResultsForMissingOrEmptyAttempts(assessment.getId());
                 // Quét bù SAU khi đã bù kết quả điểm 0: bài trên lớp không có ai điều phối
@@ -203,13 +203,11 @@ public class UpdateAssessmentStatusUseCase implements IUseCase<UpdateAssessmentS
             case "CANCEL" -> {
                 // Kiểm trạng thái trước rồi mới đụng ca thi: huỷ không hợp lệ thì không được ghi gì.
                 requireTransition(assessment, CANCELLABLE_FROM, AssessmentStatus.CANCELLED);
-                assessmentScheduleClosureService.cancelSchedulesForAssessment(assessment.getId(), currentUserId, now);
+                assessmentScheduleClosureService.cancelSchedulesForAssessment(assessment.getId());
             }
             default -> throw new IllegalStateException("Action không hợp lệ");
         }
 
-        assessment.setUpdatedAt(now);
-        assessment.setUpdatedBy(currentUserId);
         return AssessmentDtoMapper.toDto(assessmentRepository.save(assessment));
     }
 
@@ -474,13 +472,10 @@ public class UpdateAssessmentStatusUseCase implements IUseCase<UpdateAssessmentS
         }
     }
 
-    private void lockClassTestPapers(UUID assessmentId, UUID currentUserId) {
-        Instant now = Instant.now();
+    private void lockClassTestPapers(UUID assessmentId) {
         for (AssessmentPaper paper : assessmentPaperRepository.findByAssessmentId(assessmentId)) {
             if (paper.getStatus() != AssessmentPaperStatus.LOCKED) {
                 paper.setStatus(AssessmentPaperStatus.LOCKED);
-                paper.setUpdatedAt(now);
-                paper.setUpdatedBy(currentUserId);
                 assessmentPaperRepository.save(paper);
             }
         }

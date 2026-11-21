@@ -2,36 +2,36 @@ package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
-import com.sep.vox.infrastructure.persistence.entity.RubricJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.rubric.RubricJpaEntity;
 
 public final class RubricMapper {
 
     private RubricMapper() {}
 
     public static Rubric toDomain(RubricJpaEntity jpa) {
-        return new Rubric(
-            jpa.getId(),
-            jpa.getLanguageId(),
-            jpa.getFrameworkId(),
-            jpa.getCode(),
-            jpa.getName(),
-            jpa.getDescription(),
-            fromOwnerType(jpa.getOwnerType()),
-            jpa.getSchoolId()
-        );
+        return Rubric.builder()
+                .id(jpa.getId())
+                .languageId(jpa.getLanguageId())
+                .frameworkId(jpa.getFrameworkId())
+                .code(jpa.getCode())
+                .name(jpa.getName())
+                .description(jpa.getDescription())
+                .ownerType(fromOwnerType(jpa.getOwnerType()))
+                .schoolId(jpa.getSchoolId())
+                .build();
     }
 
     public static RubricJpaEntity toJpa(Rubric rubric) {
-        return new RubricJpaEntity(
-            rubric.getId(),
-            rubric.getLanguageId(),
-            rubric.getFrameworkId(),
-            rubric.getCode(),
-            rubric.getName(),
-            rubric.getDescription(),
-            valueOf(rubric.getOwnerType()),
-            rubric.getSchoolId()
-        );
+        return RubricJpaEntity.builder()
+                .id(rubric.getId())
+                .languageId(rubric.getLanguageId())
+                .frameworkId(rubric.getFrameworkId())
+                .code(rubric.getCode())
+                .name(rubric.getName())
+                .description(rubric.getDescription())
+                .ownerType(valueOf(rubric.getOwnerType()))
+                .schoolId(rubric.getSchoolId())
+                .build();
     }
 
     private static String valueOf(RubricOwnerType type) {

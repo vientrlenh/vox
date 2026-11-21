@@ -3,7 +3,6 @@ package com.sep.vox.application.port.input.usecase.assessment;
 import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionCollaborator;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -94,19 +93,13 @@ public class UpdateClassTestSectionUseCase implements IUseCase<UpdateClassTestSe
         AssessmentPaperSection paperSection = assessmentPaperSectionRepository.findById(input.sectionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy section"));
 
-        Instant now = Instant.now();
-
         if (input.title() != null) {
             paperSection.setTitle(input.title());
-            paperSection.setUpdatedAt(now);
-            paperSection.setUpdatedBy(currentUserId);
             assessmentPaperSectionRepository.save(paperSection);
         }
 
         if (input.instruction() != null) {
             paperSection.setInstruction(input.instruction());
-            paperSection.setUpdatedAt(now);
-            paperSection.setUpdatedBy(currentUserId);
             assessmentPaperSectionRepository.save(paperSection);
         }
 
@@ -116,8 +109,6 @@ public class UpdateClassTestSectionUseCase implements IUseCase<UpdateClassTestSe
                 .map(section -> section.getId().equals(paperSection.getId()) ? paperSection : section)
                 .toList();
             ClassTestSectionWeightPolicy.validateStoredWeights(sections, "Tổng trọng số section phải bằng 1.00");
-            paperSection.setUpdatedAt(now);
-            paperSection.setUpdatedBy(currentUserId);
             assessmentPaperSectionRepository.save(paperSection);
         }
 
@@ -128,7 +119,7 @@ public class UpdateClassTestSectionUseCase implements IUseCase<UpdateClassTestSe
             for (ClassTestQuestionCommand questionCommand : input.questions()) {
                 Question question = questionRepository.findAccessibleById(questionCommand.questionId(), currentUserId, assessment.getSchoolId(), false, false)
                     .orElseThrow(() -> new ForbiddenException("Không có quyền dùng câu hỏi " + questionCommand.questionId()));
-                boolean isOwner = currentUserId.equals(question.getCreatedBy());
+                boolean isOwner = question.isCreatedBy(currentUserId);
                 boolean isSchoolShared = question.getSharing() == QuestionSharing.SCHOOL_SHARED;
                 if (!isOwner && !isSchoolShared) {
                     Optional<QuestionCollaborator> collaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId);
@@ -137,11 +128,9 @@ public class UpdateClassTestSectionUseCase implements IUseCase<UpdateClassTestSe
                     }
                 }
             }
-            updateSectionQuestions(paperSection, input.questions(), assessment.getId(), currentUserId, now);
+            updateSectionQuestions(paperSection, input.questions(), assessment.getId(), currentUserId);
         }
 
-        assessment.setUpdatedAt(now);
-        assessment.setUpdatedBy(currentUserId);
         Assessment saved = assessmentRepository.save(assessment);
         recalculateAssessmentTimeDurationService.recalculate(assessment.getId());
         return AssessmentDtoMapper.toDto(saved);
@@ -158,8 +147,7 @@ public class UpdateClassTestSectionUseCase implements IUseCase<UpdateClassTestSe
             AssessmentPaperSection paperSection,
             List<ClassTestQuestionCommand> questions,
             UUID assessmentId,
-            UUID currentUserId,
-            Instant now) {
+            UUID currentUserId) {
         List<AssessmentPaperItem> existingItems = assessmentPaperItemRepository.findBySectionId(paperSection.getId()).stream()
             .sorted((a, b) -> Integer.compare(a.getOrder(), b.getOrder()))
             .toList();
@@ -170,20 +158,17 @@ public class UpdateClassTestSectionUseCase implements IUseCase<UpdateClassTestSe
         List<BigDecimal> weights = ClassTestSectionWeightPolicy.resolveQuestionWeights(questions);
         for (int i = 0; i < questions.size(); i++) {
             UUID questionId = questions.get(i).questionId();
-            assessmentPaperItemRepository.save(new AssessmentPaperItem(
-                null,
-                paperSection.getId(),
-                paperSection.getPaperId(),
-                questionId,
-                i + 1,
-                weights.get(i)
-            ));
+            assessmentPaperItemRepository.save(AssessmentPaperItem.builder()
+                .sectionId(paperSection.getId())
+                .paperId(paperSection.getPaperId())
+                .questionId(questionId)
+                .order(i + 1)
+                .weight(weights.get(i))
+                .build());
             assessmentQuestionSecureLockService.lockQuestionForAssessment(
                 questionId, assessmentId, AssessmentSecurePoolReleaseMode.AUTO_AFTER_CLOSE, currentUserId
             );
         }
-        paperSection.setUpdatedAt(now);
-        paperSection.setUpdatedBy(currentUserId);
         assessmentPaperSectionRepository.save(paperSection);
     }
 }

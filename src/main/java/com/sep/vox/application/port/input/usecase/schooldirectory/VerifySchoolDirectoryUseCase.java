@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.usecase.schooldirectory;
 
 import com.sep.vox.domain.model.school.SchoolDirectory;
-import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -10,25 +9,20 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.VerifySchoolDirectoryCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.repository.SchoolDirectoryRepository;
 
 @Service
 public class VerifySchoolDirectoryUseCase implements IUseCase<VerifySchoolDirectoryCommand, UUID>{
 
     private final SchoolDirectoryRepository schoolDirectoryRepository;
-    private final UserContextPort userContextPort;
 
-    public VerifySchoolDirectoryUseCase(SchoolDirectoryRepository schoolDirectoryRepository, UserContextPort userContextPort) {
+    public VerifySchoolDirectoryUseCase(SchoolDirectoryRepository schoolDirectoryRepository) {
         this.schoolDirectoryRepository = schoolDirectoryRepository;
-        this.userContextPort = userContextPort;
     }
 
     @Override
     @Transactional
     public UUID execute(VerifySchoolDirectoryCommand input) {
-        UUID userId = userContextPort.getCurrentAuthenticatedUserId();
-
         SchoolDirectory directory = schoolDirectoryRepository.findById(input.id())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy danh mục truờng"));
 
@@ -36,7 +30,7 @@ public class VerifySchoolDirectoryUseCase implements IUseCase<VerifySchoolDirect
             throw new IllegalStateException("Danh mục truờng đã được kiểm duyệt");
         }
 
-        directory.verify(userId, Instant.now());
+        directory.verify();
         SchoolDirectory updated = schoolDirectoryRepository.save(directory);
         return updated.getId();
     }

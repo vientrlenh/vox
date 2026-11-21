@@ -5,7 +5,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -40,7 +39,6 @@ public class DeleteFrameworkVersionUseCaseTests {
 
     private UUID frameworkId = UUID.randomUUID();
     private UUID versionId = UUID.randomUUID();
-    private Instant now = Instant.now();
 
     @BeforeEach
     void setUp() {
@@ -63,10 +61,13 @@ public class DeleteFrameworkVersionUseCaseTests {
     void should_hard_delete_draft_version_with_children() {
         DeleteFrameworkVersionCommand command = new DeleteFrameworkVersionCommand(frameworkId, versionId);
 
-        Framework framework = new Framework(
-            frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, now, now, null, null
-        );
+        Framework framework = Framework.builder()
+            .id(frameworkId)
+            .code(new FrameworkCode("CEFR"))
+            .name("Test")
+            .description("Description")
+            .active(true)
+            .build();
         FrameworkVersion version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(frameworkId);
@@ -95,10 +96,13 @@ public class DeleteFrameworkVersionUseCaseTests {
     void should_soft_delete_published_version() {
         DeleteFrameworkVersionCommand command = new DeleteFrameworkVersionCommand(frameworkId, versionId);
 
-        Framework framework = new Framework(
-            frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, now, now, null, null
-        );
+        Framework framework = Framework.builder()
+            .id(frameworkId)
+            .code(new FrameworkCode("CEFR"))
+            .name("Test")
+            .description("Description")
+            .active(true)
+            .build();
         FrameworkVersion version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(frameworkId);
@@ -116,10 +120,13 @@ public class DeleteFrameworkVersionUseCaseTests {
     void should_soft_delete_archived_version() {
         DeleteFrameworkVersionCommand command = new DeleteFrameworkVersionCommand(frameworkId, versionId);
 
-        Framework framework = new Framework(
-            frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, now, now, null, null
-        );
+        Framework framework = Framework.builder()
+            .id(frameworkId)
+            .code(new FrameworkCode("CEFR"))
+            .name("Test")
+            .description("Description")
+            .active(true)
+            .build();
         FrameworkVersion version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(frameworkId);
@@ -146,10 +153,13 @@ public class DeleteFrameworkVersionUseCaseTests {
     void should_throw_not_found_when_version_missing() {
         DeleteFrameworkVersionCommand command = new DeleteFrameworkVersionCommand(frameworkId, versionId);
 
-        Framework framework = new Framework(
-            frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, now, now, null, null
-        );
+        Framework framework = Framework.builder()
+            .id(frameworkId)
+            .code(new FrameworkCode("CEFR"))
+            .name("Test")
+            .description("Description")
+            .active(true)
+            .build();
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
         when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.empty());
@@ -162,10 +172,13 @@ public class DeleteFrameworkVersionUseCaseTests {
         UUID otherFrameworkId = UUID.randomUUID();
         DeleteFrameworkVersionCommand command = new DeleteFrameworkVersionCommand(frameworkId, versionId);
 
-        Framework framework = new Framework(
-            frameworkId, new FrameworkCode("CEFR"), "Test", "Description",
-            true, now, now, null, null
-        );
+        Framework framework = Framework.builder()
+            .id(frameworkId)
+            .code(new FrameworkCode("CEFR"))
+            .name("Test")
+            .description("Description")
+            .active(true)
+            .build();
         FrameworkVersion version = new FrameworkVersion();
         version.setId(versionId);
         version.setFrameworkId(otherFrameworkId);

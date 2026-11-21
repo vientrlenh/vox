@@ -3,48 +3,48 @@ package com.sep.vox.infrastructure.persistence.mapper;
 import com.sep.vox.domain.model.subscription.SubscriptionPlanStatus;
 import com.sep.vox.domain.model.subscription.SubscriptionPlan;
 import com.sep.vox.domain.model.subscription.SubscriptionPlanPeriod;
-import com.sep.vox.infrastructure.persistence.entity.SubscriptionPlanJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.subscription.SubscriptionPlanJpaEntity;
 
 public final class SubscriptionPlanMapper {
 
     private SubscriptionPlanMapper() {}
 
     public static SubscriptionPlan toDomain(SubscriptionPlanJpaEntity jpa) {
-        return new SubscriptionPlan(
-            jpa.getId(),
-            jpa.getName(),
-            jpa.getTagline(),
-            jpa.getPriceVnd(),
-            periodFromString(jpa.getPeriodType()), 
-            jpa.getPeriodCount(),
-            jpa.getMaxTimePerAttemptMin(),
-            statusFromString(jpa.getStatus()),
-            jpa.getVersion(),
-            jpa.getCreatedAt(), 
-            jpa.getUpdatedAt(), 
-            jpa.getCreatedBy(), 
-            jpa.getUpdatedBy(), 
-            jpa.getReplacedByPlanId()
-        );
+        return SubscriptionPlan.builder()
+            .id(jpa.getId())
+            .name(jpa.getName())
+            .tagline(jpa.getTagline())
+            .priceVnd(jpa.getPriceVnd())
+            .periodType(periodFromString(jpa.getPeriodType()))
+            .periodCount(jpa.getPeriodCount())
+            .maxTimePerAttemptMin(jpa.getMaxTimePerAttemptMin())
+            .status(statusFromString(jpa.getStatus()))
+            .version(jpa.getVersion())
+            .createdAt(jpa.getCreatedAt())
+            .updatedAt(jpa.getUpdatedAt())
+            .createdBy(jpa.getCreatedBy())
+            .updatedBy(jpa.getUpdatedBy())
+            .replacedByPlanId(jpa.getReplacedByPlanId())
+            .build();
     }
 
     public static SubscriptionPlanJpaEntity toJpa(SubscriptionPlan domain) {
-        return new SubscriptionPlanJpaEntity(
-            domain.getId(),
-            domain.getName(),
-            domain.getTagline(),
-            domain.getPriceVnd(),
-            valueOf(domain.getPeriodType()),
-            domain.getPeriodCount(),
-            domain.getMaxTimePerAttemptMin(),
-            valueOf(domain.getStatus()),
-            domain.getVersion(),
-            domain.getCreatedAt(),
-            domain.getUpdatedAt(), 
-            domain.getCreatedBy(), 
-            domain.getUpdatedBy(), 
-            domain.getReplacedByPlanId()
-        );
+        return SubscriptionPlanJpaEntity.builder()
+            .id(domain.getId())
+            .name(domain.getName())
+            .tagline(domain.getTagline())
+            .priceVnd(domain.getPriceVnd())
+            .periodType(valueOf(domain.getPeriodType()))
+            .periodCount(domain.getPeriodCount())
+            .maxTimePerAttemptMin(domain.getMaxTimePerAttemptMin())
+            .status(valueOf(domain.getStatus()))
+            .version(domain.getVersion())
+            .createdAt(domain.getCreatedAt())
+            .updatedAt(domain.getUpdatedAt())
+            .createdBy(domain.getCreatedBy())
+            .updatedBy(domain.getUpdatedBy())
+            .replacedByPlanId(domain.getReplacedByPlanId())
+            .build();
     }
 
     private static SubscriptionPlanPeriod periodFromString(String periodType) {

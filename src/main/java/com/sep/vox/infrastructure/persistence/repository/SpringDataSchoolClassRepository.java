@@ -13,7 +13,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.SchoolClassJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolClassJpaEntity;
 
 public interface SpringDataSchoolClassRepository extends JpaRepository<SchoolClassJpaEntity, UUID>{
     Optional<SchoolClassJpaEntity> findBySchoolIdAndCode(UUID schoolId, String code);
@@ -116,7 +116,7 @@ public interface SpringDataSchoolClassRepository extends JpaRepository<SchoolCla
         @Param("status") String status,
         @Param("statusProvided") boolean statusProvided,
         @Param("updatedAt") Instant updatedAt,
-        @Param("updatedBy") UUID updatedBy
+        @Param("updatedBy") String updatedBy
     );
 
     @Query(value = """
@@ -165,6 +165,6 @@ public interface SpringDataSchoolClassRepository extends JpaRepository<SchoolCla
     int archiveByGradeId(
         @Param("schoolGradeId") UUID schoolGradeId,
         @Param("updatedAt") Instant updatedAt,
-        @Param("updatedBy") UUID updatedBy
+        @Param("updatedBy") String updatedBy
     );
 }

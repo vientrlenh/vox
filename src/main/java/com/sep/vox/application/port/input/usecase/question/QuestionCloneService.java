@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.question;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -33,30 +32,25 @@ public class QuestionCloneService {
 
     @Transactional
     public Question cloneAsDraftWithDetails(Question source, UUID currentUserId) {
-        Instant now = Instant.now();
-        Question clonedQuestion = new Question(
-            source.getQuestionBankId(),
-            source.getQuestionTopicId(),
-            cloneCodeOf(source.getCode()),
-            source.getInstructionText(),
-            source.getQuestionText(),
-            source.getPromptText(),
-            source.getPreparationText(),
-            source.getType(),
-            source.getPreparationTimeSeconds(),
-            source.getMinResponseSeconds(),
-            source.getMaxResponseSeconds(),
-            source.getSharing(),
-            source.getId(),
-            false,
-            source.getConfidentiality(),
-            source.getSecurePoolId(),
-            QuestionStatus.DRAFT,
-            now,
-            now,
-            currentUserId,
-            currentUserId
-        );
+        Question clonedQuestion = Question.builder()
+                .questionBankId(source.getQuestionBankId())
+                .questionTopicId(source.getQuestionTopicId())
+                .code(cloneCodeOf(source.getCode()))
+                .instructionText(source.getInstructionText())
+                .questionText(source.getQuestionText())
+                .promptText(source.getPromptText())
+                .preparationText(source.getPreparationText())
+                .type(source.getType())
+                .preparationTimeSeconds(source.getPreparationTimeSeconds())
+                .minResponseSeconds(source.getMinResponseSeconds())
+                .maxResponseSeconds(source.getMaxResponseSeconds())
+                .sharing(source.getSharing())
+                .sourceQuestionId(source.getId())
+                .locked(false)
+                .confidentiality(source.getConfidentiality())
+                .securePoolId(source.getSecurePoolId())
+                .status(QuestionStatus.DRAFT)
+                .build();
         Question savedQuestion = questionRepository.save(clonedQuestion);
 
         cloneAssets(source.getId(), savedQuestion.getId());
@@ -72,32 +66,32 @@ public class QuestionCloneService {
         }
 
         List<QuestionAsset> clonedAssets = sourceAssets.stream()
-            .map(asset -> new QuestionAsset(
-                targetQuestionId,
-                asset.getTitle(),
-                asset.getDurationSeconds(),
-                asset.getAltText(),
-                asset.getType(),
-                asset.getUrl(),
-                asset.getTranscript(),
-                asset.getDescription(),
-                asset.getOrder()
-            ))
+            .map(asset -> QuestionAsset.builder()
+                    .questionId(targetQuestionId)
+                    .title(asset.getTitle())
+                    .durationSeconds(asset.getDurationSeconds())
+                    .altText(asset.getAltText())
+                    .type(asset.getType())
+                    .url(asset.getUrl())
+                    .transcript(asset.getTranscript())
+                    .description(asset.getDescription())
+                    .order(asset.getOrder())
+                    .build())
             .toList();
         questionAssetRepository.saveAll(clonedAssets);
     }
 
     private void cloneEvaluationGuide(UUID sourceQuestionId, UUID targetQuestionId) {
         questionEvaluationGuideRepository.findByQuestionId(sourceQuestionId)
-            .map(guide -> new QuestionEvaluationGuide(
-                targetQuestionId,
-                guide.getExpectedContent(),
-                guide.getKeyPoints(),
-                guide.getAcceptableResponses(),
-                guide.getOffTopicExamples(),
-                guide.getScoringHints(),
-                guide.getCommonMistakes()
-            ))
+            .map(guide -> QuestionEvaluationGuide.builder()
+                    .questionId(targetQuestionId)
+                    .expectedContent(guide.getExpectedContent())
+                    .keyPoints(guide.getKeyPoints())
+                    .acceptableResponses(guide.getAcceptableResponses())
+                    .offTopicExamples(guide.getOffTopicExamples())
+                    .scoringHints(guide.getScoringHints())
+                    .commonMistakes(guide.getCommonMistakes())
+                    .build())
             .ifPresent(questionEvaluationGuideRepository::save);
     }
 

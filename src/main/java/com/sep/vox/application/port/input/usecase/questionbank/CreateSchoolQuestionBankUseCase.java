@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.usecase.questionbank;
 
 import com.sep.vox.domain.model.school.SchoolUser;
-import java.time.Instant;
 
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -41,16 +40,13 @@ public class CreateSchoolQuestionBankUseCase implements IUseCase<CreateSchoolQue
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
             .orElseThrow(() -> new ForbiddenException("Quyền truy cập không hợp lệ"));
 
-        Instant now = Instant.now();
         QuestionBank questionBank = QuestionBank.create(
             command.languageId(), 
             schoolUser.getSchoolId(), 
             command.code(), 
             command.name(), 
             command.description(), 
-            QuestionBankOwnerType.SCHOOL, 
-            now, 
-            currentUserId
+            QuestionBankOwnerType.SCHOOL
         );
 
         QuestionBank saved = questionBankRepository.save(questionBank);

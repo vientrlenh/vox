@@ -25,7 +25,6 @@ import com.sep.vox.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -96,8 +95,7 @@ public class PublishSchoolAssessmentPoliciesByRubricVersionUseCase
             throw new NotFoundException("Không có Assessment Policy nào của trường học đang ở trạng thái DRAFT liên kết với Rubric Version này.");
         }
 
-        // 5. Kiểm tra và publish từng policy (rollback toàn bộ nếu có 1 policy không hợp lệ)
-        Instant now = Instant.now();
+        // 5. Validate and publish each policy (roll everything back if one policy is invalid)
         for (AssessmentPolicy policy : draftPolicies) {
             FrameworkVersion frameworkVersion = frameworkVersionRepository.findById(policy.getFrameworkVersionId())
                     .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản Khung tiêu chuẩn (Framework Version) liên kết."));
@@ -107,8 +105,6 @@ public class PublishSchoolAssessmentPoliciesByRubricVersionUseCase
             }
 
             policy.setStatus(AssessmentPolicyStatus.PUBLISHED);
-            policy.setUpdatedAt(now);
-            policy.setUpdatedBy(currentUserId);
         }
 
         return assessmentPolicyRepository.saveAll(draftPolicies)

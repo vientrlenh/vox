@@ -66,14 +66,13 @@ class DeviceSessionRepositoryTests {
     }
 
     private static DeviceSession newDeviceSession(UUID userId, String deviceId, String deviceName) {
-        return new DeviceSession(
-            userId,
-            deviceId,
-            deviceName,
-            SessionPlatform.WEB,
-            "203.0.113.10",
-            "JUnit User Agent",
-            null
-        );
+        return DeviceSession.builder()
+            .userId(userId)
+            .deviceId(deviceId)
+            .deviceName(deviceName)
+            .platform(SessionPlatform.WEB)
+            .ipAddress("203.0.113.10")
+            .userAgent("JUnit User Agent")
+            .build();
     }
 }

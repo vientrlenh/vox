@@ -156,17 +156,17 @@ public class QuotaPricingCalibrationService {
             : "raw=%s bị điều chỉnh còn applied=%s (làm mượt tối đa %s%% so với lần trước %s, hoặc chặn biên an toàn)"
                 .formatted(rawRate, applied, maxChangeRatio.multiply(BigDecimal.valueOf(100)), previousApplied);
 
-        QuotaPricingCalibration calibration = new QuotaPricingCalibration(
-            Instant.now(),
-            windowDays,
-            matchedCount,
-            totalCost,
-            totalSeconds,
-            rawRate,
-            applied,
-            note,
-            source
-        );
+        QuotaPricingCalibration calibration = QuotaPricingCalibration.builder()
+            .computedAt(Instant.now())
+            .windowDays(windowDays)
+            .sessionCount(matchedCount)
+            .totalCostUsd(totalCost)
+            .totalAnsweredSeconds(totalSeconds)
+            .rawRateUsdPerSecond(rawRate)
+            .appliedRateUsdPerSecond(applied)
+            .note(note)
+            .pricingSource(source)
+            .build();
         quotaPricingCalibrationRepository.save(calibration);
 
         LOGGER.info(

@@ -3,7 +3,6 @@ package com.sep.vox.application.port.input.usecase.assessment;
 import com.sep.vox.domain.model.question.QuestionAsset;
 import com.sep.vox.domain.model.question.QuestionCollaborator;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -129,7 +128,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
             for (ClassTestQuestionCommand questionCommand : section.questions()) {
                 Question question = questionRepository.findAccessibleById(questionCommand.questionId(), currentUserId, assessment.getSchoolId(), false, false)
                     .orElseThrow(() -> new ForbiddenException("Không có quyền dùng câu hỏi " + questionCommand.questionId()));
-                boolean isOwner = currentUserId.equals(question.getCreatedBy());
+                boolean isOwner = question.isCreatedBy(currentUserId);
                 boolean isSchoolShared = question.getSharing() == QuestionSharing.SCHOOL_SHARED;
                 if (!isOwner && !isSchoolShared) {
                     Optional<QuestionCollaborator> collaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId);
@@ -157,7 +156,6 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
             .sorted((a, b) -> Integer.compare(a.getOrder(), b.getOrder()))
             .toList();
 
-        Instant now = Instant.now();
         int commonCount = Math.min(existingPaperSections.size(), input.sections().size());
         List<BigDecimal> sectionWeights = ClassTestSectionWeightPolicy.resolveRequestedWeights(input.sections());
 
@@ -168,11 +166,9 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
             existingPaperSection.setTitle(sectionCommand.title());
             existingPaperSection.setInstruction(sectionCommand.instruction());
             existingPaperSection.setWeight(sectionWeights.get(i));
-            existingPaperSection.setUpdatedAt(now);
-            existingPaperSection.setUpdatedBy(currentUserId);
             assessmentPaperSectionRepository.save(existingPaperSection);
 
-            updateSectionQuestions(existingPaperSection, sectionCommand.questions(), assessment.getId(), currentUserId, now);
+            updateSectionQuestions(existingPaperSection, sectionCommand.questions(), assessment.getId(), currentUserId);
         }
 
         for (int i = input.sections().size(); i < existingPaperSections.size(); i++) {
@@ -180,11 +176,9 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
         }
 
         for (int i = existingPaperSections.size(); i < input.sections().size(); i++) {
-            createNewSection(paper, input.sections().get(i), sectionWeights.get(i), i + 1, assessment.getId(), currentUserId, now);
+            createNewSection(paper, input.sections().get(i), sectionWeights.get(i), i + 1, assessment.getId(), currentUserId);
         }
 
-        assessment.setUpdatedAt(now);
-        assessment.setUpdatedBy(currentUserId);
         Assessment saved = assessmentRepository.save(assessment);
         recalculateAssessmentTimeDurationService.recalculate(assessment.getId());
         return AssessmentDtoMapper.toDto(saved);
@@ -194,8 +188,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
             AssessmentPaperSection paperSection,
             List<ClassTestQuestionCommand> questions,
             UUID assessmentId,
-            UUID currentUserId,
-            Instant now) {
+            UUID currentUserId) {
         for (AssessmentPaperItem item : assessmentPaperItemRepository.findBySectionId(paperSection.getId())) {
             assessmentPaperItemRepository.deleteById(item.getId());
         }
@@ -203,14 +196,13 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
         List<BigDecimal> weights = ClassTestSectionWeightPolicy.resolveQuestionWeights(questions);
         for (int i = 0; i < questions.size(); i++) {
             UUID questionId = questions.get(i).questionId();
-            assessmentPaperItemRepository.save(new AssessmentPaperItem(
-                null,
-                paperSection.getId(),
-                paperSection.getPaperId(),
-                questionId,
-                i + 1,
-                weights.get(i)
-            ));
+            assessmentPaperItemRepository.save(AssessmentPaperItem.builder()
+                .sectionId(paperSection.getId())
+                .paperId(paperSection.getPaperId())
+                .questionId(questionId)
+                .order(i + 1)
+                .weight(weights.get(i))
+                .build());
             assessmentQuestionSecureLockService.lockQuestionForAssessment(
                 questionId, assessmentId, AssessmentSecurePoolReleaseMode.AUTO_AFTER_CLOSE, currentUserId
             );
@@ -230,33 +222,26 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
             BigDecimal sectionWeight,
             int order,
             UUID assessmentId,
-            UUID currentUserId,
-            Instant now) {
-        AssessmentPaperSection paperSection = assessmentPaperSectionRepository.save(new AssessmentPaperSection(
-            paper.getId(),
-            order,
-            sectionCommand.title(),
-            sectionCommand.instruction(),
-            null,
-            sectionWeight,
-            now,
-            now,
-            currentUserId,
-            currentUserId
-        ));
+            UUID currentUserId) {
+        AssessmentPaperSection paperSection = assessmentPaperSectionRepository.save(AssessmentPaperSection.builder()
+            .paperId(paper.getId())
+            .order(order)
+            .title(sectionCommand.title())
+            .instruction(sectionCommand.instruction())
+            .weight(sectionWeight)
+            .build());
 
         List<ClassTestQuestionCommand> questions = sectionCommand.questions();
         List<BigDecimal> weights = ClassTestSectionWeightPolicy.resolveQuestionWeights(questions);
         for (int i = 0; i < questions.size(); i++) {
             UUID questionId = questions.get(i).questionId();
-            assessmentPaperItemRepository.save(new AssessmentPaperItem(
-                null,
-                paperSection.getId(),
-                paper.getId(),
-                questionId,
-                i + 1,
-                weights.get(i)
-            ));
+            assessmentPaperItemRepository.save(AssessmentPaperItem.builder()
+                .sectionId(paperSection.getId())
+                .paperId(paper.getId())
+                .questionId(questionId)
+                .order(i + 1)
+                .weight(weights.get(i))
+                .build());
             assessmentQuestionSecureLockService.lockQuestionForAssessment(
                 questionId, assessmentId, AssessmentSecurePoolReleaseMode.AUTO_AFTER_CLOSE, currentUserId
             );

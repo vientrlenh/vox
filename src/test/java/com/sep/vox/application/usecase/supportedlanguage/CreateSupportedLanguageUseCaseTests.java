@@ -17,7 +17,6 @@ import org.mockito.ArgumentCaptor;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.port.input.command.CreateSupportedLanguageCommand;
 import com.sep.vox.application.port.input.usecase.supportedlanguage.CreateSupportedLanguageUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.supportedlanguage.CreateSupportedLanguageResponse;
 import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
@@ -26,24 +25,20 @@ import com.sep.vox.domain.valueobject.LanguageCode;
 class CreateSupportedLanguageUseCaseTests {
 
     private SupportedLanguageRepository supportedLanguageRepository;
-    private UserContextPort userContextPort;
     private CreateSupportedLanguageUseCase useCase;
 
     @BeforeEach
     void setUp() {
         supportedLanguageRepository = mock(SupportedLanguageRepository.class);
-        userContextPort = mock(UserContextPort.class);
-        useCase = new CreateSupportedLanguageUseCase(supportedLanguageRepository, userContextPort);
+        useCase = new CreateSupportedLanguageUseCase(supportedLanguageRepository);
     }
 
     @Test
-    void create_should_save_active_language_with_normalized_values_and_audit_fields() {
-        UUID userId = UUID.randomUUID();
+    void create_should_save_active_language_with_normalized_values() {
         UUID savedId = UUID.randomUUID();
         CreateSupportedLanguageCommand command = new CreateSupportedLanguageCommand("  en  ", "  English   Language  ", "  Main   language  ");
 
         when(supportedLanguageRepository.findByCode("EN")).thenReturn(Optional.empty());
-        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(supportedLanguageRepository.save(any(SupportedLanguage.class))).thenAnswer(invocation -> {
             SupportedLanguage language = invocation.getArgument(0, SupportedLanguage.class);
             language.setId(savedId);
@@ -60,10 +55,6 @@ class CreateSupportedLanguageUseCaseTests {
         assertThat(saved.getName()).isEqualTo("English Language");
         assertThat(saved.getDescription()).isEqualTo("Main language");
         assertThat(saved.isActive()).isTrue();
-        assertThat(saved.getCreatedAt()).isNotNull();
-        assertThat(saved.getUpdatedAt()).isNotNull();
-        assertThat(saved.getCreatedBy()).isEqualTo(userId);
-        assertThat(saved.getUpdatedBy()).isEqualTo(userId);
     }
 
     @Test

@@ -3,68 +3,68 @@ package com.sep.vox.infrastructure.persistence.mapper;
 import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
-import com.sep.vox.infrastructure.persistence.entity.ImportSessionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.importfile.ImportSessionJpaEntity;
 
 public final class ImportSessionMapper {
 
     private ImportSessionMapper() {}
 
     public static ImportSession toDomain(ImportSessionJpaEntity jpa) {
-        return new ImportSession(
-            jpa.getId(),
-            jpa.getSchoolId(),
-            typeFromString(jpa.getType()),
-            jpa.getFileName(),
-            jpa.getOriginalHeadersJson(),
-            jpa.getSuggestedMappingJson(),
-            jpa.getConfirmedMappingJson(),
-            jpa.getValidRows(),
-            jpa.getInvalidRows(),
-            jpa.getImportedRows(),
-            jpa.getSkippedRows(),
-            jpa.getTotalRows(),
-            jpa.getFailureReason(),
-            statusFromString(jpa.getStatus()),
-            jpa.getImportedEntityId(),
-            jpa.getExpiresAt(), 
-            jpa.getClaimedAt(), 
-            jpa.getClaimedBy(), 
-            jpa.getLeaseExpiresAt(), 
-            jpa.getAttempts(), 
-            jpa.getCreatedAt(),
-            jpa.getUpdatedAt(),
-            jpa.getCreatedBy(),
-            jpa.getUpdatedBy()
-        );
+        return ImportSession.builder()
+            .id(jpa.getId())
+            .schoolId(jpa.getSchoolId())
+            .type(typeFromString(jpa.getType()))
+            .fileName(jpa.getFileName())
+            .originalHeadersJson(jpa.getOriginalHeadersJson())
+            .suggestedMappingJson(jpa.getSuggestedMappingJson())
+            .confirmedMappingJson(jpa.getConfirmedMappingJson())
+            .validRows(jpa.getValidRows())
+            .invalidRows(jpa.getInvalidRows())
+            .importedRows(jpa.getImportedRows())
+            .skippedRows(jpa.getSkippedRows())
+            .totalRows(jpa.getTotalRows())
+            .failureReason(jpa.getFailureReason())
+            .status(statusFromString(jpa.getStatus()))
+            .importedEntityId(jpa.getImportedEntityId())
+            .expiresAt(jpa.getExpiresAt())
+            .claimedAt(jpa.getClaimedAt())
+            .claimedBy(jpa.getClaimedBy())
+            .leaseExpiresAt(jpa.getLeaseExpiresAt())
+            .attempts(jpa.getAttempts())
+            .createdAt(jpa.getCreatedAt())
+            .updatedAt(jpa.getUpdatedAt())
+            .createdBy(jpa.getCreatedBy())
+            .updatedBy(jpa.getUpdatedBy())
+            .build();
     }
 
     public static ImportSessionJpaEntity toJpa(ImportSession session) {
-        return new ImportSessionJpaEntity(
-            session.getId(),
-            session.getSchoolId(),
-            valueOf(session.getType()),
-            session.getFileName(),
-            session.getOriginalHeadersJson(),
-            session.getSuggestedMappingJson(),
-            session.getConfirmedMappingJson(),
-            session.getValidRows(),
-            session.getInvalidRows(),
-            session.getImportedRows(),
-            session.getSkippedRows(),
-            session.getTotalRows(),
-            session.getFailureReason(),
-            valueOf(session.getStatus()),
-            session.getImportedEntityId(),
-            session.getExpiresAt(), 
-            session.getClaimedAt(), 
-            session.getClaimedBy(), 
-            session.getLeaseExpiresAt(), 
-            session.getAttempts(), 
-            session.getCreatedAt(),
-            session.getUpdatedAt(),
-            session.getCreatedBy(),
-            session.getUpdatedBy()
-        );
+        return ImportSessionJpaEntity.builder()
+            .id(session.getId())
+            .schoolId(session.getSchoolId())
+            .type(valueOf(session.getType()))
+            .fileName(session.getFileName())
+            .originalHeadersJson(session.getOriginalHeadersJson())
+            .suggestedMappingJson(session.getSuggestedMappingJson())
+            .confirmedMappingJson(session.getConfirmedMappingJson())
+            .validRows(session.getValidRows())
+            .invalidRows(session.getInvalidRows())
+            .importedRows(session.getImportedRows())
+            .skippedRows(session.getSkippedRows())
+            .totalRows(session.getTotalRows())
+            .failureReason(session.getFailureReason())
+            .status(valueOf(session.getStatus()))
+            .importedEntityId(session.getImportedEntityId())
+            .expiresAt(session.getExpiresAt())
+            .claimedAt(session.getClaimedAt())
+            .claimedBy(session.getClaimedBy())
+            .leaseExpiresAt(session.getLeaseExpiresAt())
+            .attempts(session.getAttempts())
+            .createdAt(session.getCreatedAt())
+            .updatedAt(session.getUpdatedAt())
+            .createdBy(session.getCreatedBy())
+            .updatedBy(session.getUpdatedBy())
+            .build();
     }
 
     private static ImportType typeFromString(String type) {

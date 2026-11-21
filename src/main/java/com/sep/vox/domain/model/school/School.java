@@ -1,17 +1,13 @@
 package com.sep.vox.domain.model.school;
 
-import java.time.Instant;
-import java.util.UUID;
-
+import com.sep.vox.domain.model.BaseModel;
 import com.sep.vox.domain.valueobject.Email;
 import com.sep.vox.domain.valueobject.Phone;
 import com.sep.vox.domain.valueobject.SchoolCode;
 import com.sep.vox.domain.valueobject.SchoolDomain;
 import com.sep.vox.domain.valueobject.StudentCount;
 
-public class
-School {
-    private UUID id;
+public class School extends BaseModel {
     private SchoolCode code;
     private String name;
     private String description;
@@ -21,54 +17,8 @@ School {
     private String address;
     private StudentCount studentCount;
     private boolean isActive;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private UUID createdBy;
-    private UUID updatedBy;
 
-    public School() {}
-
-    public School(UUID id, SchoolCode code, String name, String description, Phone contactPhone, Email contactEmail, SchoolDomain domain, String address, StudentCount studentCount, boolean isActive, Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.id = id;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.contactPhone = contactPhone;
-        this.contactEmail = contactEmail;
-        this.domain = domain;
-        this.address = address;
-        this.studentCount = studentCount;
-        this.isActive = isActive;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public School(SchoolCode code, String name, String description, Phone contactPhone, Email contactEmail, SchoolDomain domain, 
-            String address, StudentCount studentCount, boolean isActive, Instant createdAt, Instant updatedAt,
-            UUID createdBy, UUID updatedBy) {
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.contactPhone = contactPhone;
-        this.contactEmail = contactEmail;
-        this.domain = domain;
-        this.address = address;
-        this.studentCount = studentCount;
-        this.isActive = isActive;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
+    public School() {
     }
 
     public SchoolCode getCode() {
@@ -111,6 +61,14 @@ School {
         this.contactEmail = contactEmail;
     }
 
+    public SchoolDomain getDomain() {
+        return domain;
+    }
+
+    public void setDomain(SchoolDomain domain) {
+        this.domain = domain;
+    }
+
     public String getAddress() {
         return address;
     }
@@ -135,63 +93,79 @@ School {
         this.isActive = isActive;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
+    public static School create(String code, String name, String description, String contactPhone, String contactEmail,
+            String domain, String address, int studentCount) {
+        return builder()
+            .code(new SchoolCode(code))
+            .name(name)
+            .description(description)
+            .contactPhone(new Phone(contactPhone))
+            .contactEmail(new Email(contactEmail))
+            .domain(new SchoolDomain(domain))
+            .address(address)
+            .studentCount(new StudentCount(studentCount))
+            .active(true)
+            .build();
     }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
+    public static class Builder extends BaseModel.Builder<School, Builder> {
 
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
+        private Builder() {
+            super(new School());
+        }
 
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
+        @Override
+        protected Builder self() {
+            return this;
+        }
 
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
+        public Builder code(SchoolCode code) {
+            target.code = code;
+            return this;
+        }
 
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
+        public Builder name(String name) {
+            target.name = name;
+            return this;
+        }
 
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
-    }
+        public Builder description(String description) {
+            target.description = description;
+            return this;
+        }
 
-    public SchoolDomain getDomain() {
-        return domain;
-    }
+        public Builder contactPhone(Phone contactPhone) {
+            target.contactPhone = contactPhone;
+            return this;
+        }
 
-    public void setDomain(SchoolDomain domain) {
-        this.domain = domain;
-    }
+        public Builder contactEmail(Email contactEmail) {
+            target.contactEmail = contactEmail;
+            return this;
+        }
 
-    public static School create(String code, String name, String description, String contactPhone, String contactEmail, String domain, String address, int studentCount, UUID createdUserId, Instant now) {
-        return new School(
-            new SchoolCode(code), 
-            name, 
-            description, 
-            new Phone(contactPhone), 
-            new Email(contactEmail), 
-            new SchoolDomain(domain), 
-            address, 
-            new StudentCount(studentCount), 
-            true, 
-            now, 
-            now, 
-            createdUserId, 
-            createdUserId
-        );
+        public Builder domain(SchoolDomain domain) {
+            target.domain = domain;
+            return this;
+        }
 
+        public Builder address(String address) {
+            target.address = address;
+            return this;
+        }
+
+        public Builder studentCount(StudentCount studentCount) {
+            target.studentCount = studentCount;
+            return this;
+        }
+
+        public Builder active(boolean isActive) {
+            target.isActive = isActive;
+            return this;
+        }
     }
-    
 }

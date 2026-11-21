@@ -5,8 +5,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
-public class Assessment {
-    private UUID id;
+import com.sep.vox.domain.model.BaseModel;
+
+public class Assessment extends BaseModel {
     private UUID blueprintId;
     private UUID blueprintVersionId;
     private String code;
@@ -32,80 +33,16 @@ public class Assessment {
     private boolean requiresOtp;
 
     /**
-     * Ngưỡng tin cậy AI do nhà trường đặt cho bài này (0.00-1.00).
+     * AI confidence threshold set by the school for this assessment (0.00-1.00).
      *
-     * <p>Bản chấm có {@code overall_confidence} THẤP HƠN ngưỡng sẽ bị đưa sang PENDING_REVIEW
-     * thay vì tự công bố. NULL = nhà trường không đặt ngưỡng, chỉ luật cứng trong
-     * {@code ConfidenceReviewCalculator} quyết định như trước.
+     * <p>A grading whose {@code overall_confidence} is BELOW the threshold is sent to PENDING_REVIEW
+     * instead of being published automatically. NULL = the school set no threshold, so only the hard rules in
+     * {@code ConfidenceReviewCalculator} decide, as before.
      */
     private BigDecimal aiConfidenceThresholdPercent;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private UUID createdBy;
-    private UUID updatedBy;
     private Instant humanGradingNotifiedAt;
 
     public Assessment() {}
-
-    public Assessment(UUID id, UUID blueprintId, UUID blueprintVersionId, String code, String name, String description, UUID schoolId, UUID languageId,
-            AssessmentKind kind, AssessmentDeliveryMode deliveryMode, AssessmentStatus status, Integer maxAttempt, Integer assessmentTimeDurationSecond,
-            ResultDecisionMethod resultDecisionMethod, AssessmentRequiredStreamType requiredStreamType, AssessmentStreamTypePermission streamTypePermission,
-            Instant openAt, Instant closeAt, UUID assessmentPolicyId, boolean requiresOtp,
-            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.id = id;
-        this.blueprintId = blueprintId;
-        this.blueprintVersionId = blueprintVersionId;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.schoolId = schoolId;
-        this.languageId = languageId;
-        this.kind = kind;
-        this.deliveryMode = deliveryMode;
-        this.status = status;
-        this.maxAttempt = maxAttempt;
-        this.assessmentTimeDurationSecond = assessmentTimeDurationSecond;
-        this.resultDecisionMethod = resultDecisionMethod;
-        this.requiredStreamType = requiredStreamType;
-        this.streamTypePermission = streamTypePermission;
-        this.openAt = openAt;
-        this.closeAt = closeAt;
-        this.assessmentPolicyId = assessmentPolicyId;
-        this.requiresOtp = requiresOtp;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public Assessment(UUID blueprintId, UUID blueprintVersionId, String code, String name, String description, UUID schoolId, UUID languageId, AssessmentKind kind,
-            AssessmentDeliveryMode deliveryMode, AssessmentStatus status, Integer maxAttempt, Integer assessmentTimeDurationSecond, ResultDecisionMethod resultDecisionMethod,
-            Instant openAt, Instant closeAt, UUID assessmentPolicyId, boolean requiresOtp, Instant createdAt,AssessmentRequiredStreamType requiredStreamType, AssessmentStreamTypePermission streamTypePermission,
-            Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.blueprintId = blueprintId;
-        this.blueprintVersionId = blueprintVersionId;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.schoolId = schoolId;
-        this.languageId = languageId;
-        this.kind = kind;
-        this.deliveryMode = deliveryMode;
-        this.status = status;
-        this.maxAttempt = maxAttempt;
-        this.assessmentTimeDurationSecond = assessmentTimeDurationSecond;
-        this.resultDecisionMethod = resultDecisionMethod;
-        this.requiredStreamType = requiredStreamType;
-        this.streamTypePermission = streamTypePermission;
-        this.openAt = openAt;
-        this.closeAt = closeAt;
-        this.assessmentPolicyId = assessmentPolicyId;
-        this.requiresOtp = requiresOtp;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
 
     /**
      * H.1: a session must be long enough for the candidate to finish the paper, i.e. (end - start) >= assessmentTimeDurationSecond.
@@ -179,13 +116,7 @@ public class Assessment {
         this.humanGradingNotifiedAt = humanGradingNotifiedAt;
     }
 
-    public UUID getId() {
-        return id;
-    }
 
-    public void setId(UUID id) {
-        this.id = id;
-    }
 
     public String getCode() {
         return code;
@@ -299,37 +230,13 @@ public class Assessment {
         this.assessmentPolicyId = assessmentPolicyId;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
 
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
 
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
 
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
 
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
 
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
 
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
-    }
 
     public UUID getBlueprintId() {
         return blueprintId;
@@ -379,5 +286,127 @@ public class Assessment {
 
     public void setAiConfidenceThresholdPercent(java.math.BigDecimal aiConfidenceThresholdPercent) {
         this.aiConfidenceThresholdPercent = aiConfidenceThresholdPercent;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder extends BaseModel.Builder<Assessment, Builder> {
+
+        private Builder() {
+            super(new Assessment());
+        }
+
+        @Override
+        protected Builder self() {
+            return this;
+        }
+
+        public Builder blueprintId(UUID blueprintId) {
+            target.blueprintId = blueprintId;
+            return this;
+        }
+
+        public Builder blueprintVersionId(UUID blueprintVersionId) {
+            target.blueprintVersionId = blueprintVersionId;
+            return this;
+        }
+
+        public Builder code(String code) {
+            target.code = code;
+            return this;
+        }
+
+        public Builder name(String name) {
+            target.name = name;
+            return this;
+        }
+
+        public Builder description(String description) {
+            target.description = description;
+            return this;
+        }
+
+        public Builder schoolId(UUID schoolId) {
+            target.schoolId = schoolId;
+            return this;
+        }
+
+        public Builder languageId(UUID languageId) {
+            target.languageId = languageId;
+            return this;
+        }
+
+        public Builder kind(AssessmentKind kind) {
+            target.kind = kind;
+            return this;
+        }
+
+        public Builder deliveryMode(AssessmentDeliveryMode deliveryMode) {
+            target.deliveryMode = deliveryMode;
+            return this;
+        }
+
+        public Builder status(AssessmentStatus status) {
+            target.status = status;
+            return this;
+        }
+
+        public Builder maxAttempt(Integer maxAttempt) {
+            target.maxAttempt = maxAttempt;
+            return this;
+        }
+
+        public Builder assessmentTimeDurationSecond(Integer assessmentTimeDurationSecond) {
+            target.assessmentTimeDurationSecond = assessmentTimeDurationSecond;
+            return this;
+        }
+
+        public Builder resultDecisionMethod(ResultDecisionMethod resultDecisionMethod) {
+            target.resultDecisionMethod = resultDecisionMethod;
+            return this;
+        }
+
+        public Builder requiredStreamType(AssessmentRequiredStreamType requiredStreamType) {
+            target.requiredStreamType = requiredStreamType;
+            return this;
+        }
+
+        public Builder streamTypePermission(AssessmentStreamTypePermission streamTypePermission) {
+            target.streamTypePermission = streamTypePermission;
+            return this;
+        }
+
+        public Builder openAt(Instant openAt) {
+            target.openAt = openAt;
+            return this;
+        }
+
+        public Builder closeAt(Instant closeAt) {
+            target.closeAt = closeAt;
+            return this;
+        }
+
+        public Builder assessmentPolicyId(UUID assessmentPolicyId) {
+            target.assessmentPolicyId = assessmentPolicyId;
+            return this;
+        }
+
+        public Builder requiresOtp(boolean requiresOtp) {
+            target.requiresOtp = requiresOtp;
+            return this;
+        }
+
+        public Builder aiConfidenceThresholdPercent(BigDecimal aiConfidenceThresholdPercent) {
+            target.aiConfidenceThresholdPercent = aiConfidenceThresholdPercent;
+            return this;
+        }
+
+        public Builder humanGradingNotifiedAt(Instant humanGradingNotifiedAt) {
+            target.humanGradingNotifiedAt = humanGradingNotifiedAt;
+            return this;
+        }
+
     }
 }

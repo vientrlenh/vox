@@ -107,7 +107,14 @@ class CreateSchoolClassUserUseCaseTests {
 
         mockValidContext(currentUserId, schoolId, classId, targetUserId);
         when(schoolClassUserRepository.findByUserIdAndSchoolClassId(targetUserId, classId))
-            .thenReturn(Optional.of(new SchoolClassUser(targetUserId, classId, true, Instant.now(), null, currentUserId)));
+            .thenReturn(Optional.of(SchoolClassUser.builder()
+                .userId(targetUserId)
+                .schoolClassId(classId)
+                .active(true)
+                .joinedAt(Instant.now())
+                .leftAt(null)
+                .assignedBy(currentUserId)
+                .build()));
 
         assertThrows(DuplicatedException.class, () -> useCase.execute(command));
 
@@ -124,9 +131,15 @@ class CreateSchoolClassUserUseCaseTests {
         CreateSchoolClassUserCommand command = new CreateSchoolClassUserCommand(schoolId, classId, targetUserId);
 
         mockValidContext(currentUserId, schoolId, classId, targetUserId);
-        SchoolClassUser leftMembership = new SchoolClassUser(
-            membershipId, targetUserId, classId, false, Instant.now().minus(5, ChronoUnit.DAYS),
-            Instant.now().minus(1, ChronoUnit.DAYS), UUID.randomUUID());
+        SchoolClassUser leftMembership = SchoolClassUser.builder()
+            .id(membershipId)
+            .userId(targetUserId)
+            .schoolClassId(classId)
+            .active(false)
+            .joinedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+            .leftAt(Instant.now().minus(1, ChronoUnit.DAYS))
+            .assignedBy(UUID.randomUUID())
+            .build();
         when(schoolClassUserRepository.findByUserIdAndSchoolClassId(targetUserId, classId))
             .thenReturn(Optional.of(leftMembership));
         when(schoolClassUserRepository.save(any(SchoolClassUser.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -350,7 +363,12 @@ class CreateSchoolClassUserUseCaseTests {
 
     private void mockUserSchool(UUID userId, UUID schoolId) {
         when(schoolUserRepository.findByUserId(userId))
-            .thenReturn(Optional.of(new SchoolUser(schoolId, userId, Instant.now(), null)));
+            .thenReturn(Optional.of(SchoolUser.builder()
+                .schoolId(schoolId)
+                .userId(userId)
+                .startDate(Instant.now())
+                .endDate(null)
+                .build()));
     }
 
     private static User activeUser(UUID id, UUID schoolId) {

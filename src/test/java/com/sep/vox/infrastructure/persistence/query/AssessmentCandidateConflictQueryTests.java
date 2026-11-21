@@ -15,9 +15,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.domain.repository.AssessmentCandidateRepository;
 import com.sep.vox.domain.repository.AssessmentCandidateRepository.StudentScheduleConflict;
-import com.sep.vox.infrastructure.persistence.entity.AssessmentCandidateJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.AssessmentJpaEntity;
-import com.sep.vox.infrastructure.persistence.entity.AssessmentScheduleJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentCandidateJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentScheduleJpaEntity;
 import com.sep.vox.support.IntegrationTest;
 
 import jakarta.persistence.EntityManager;
@@ -151,15 +151,38 @@ class AssessmentCandidateConflictQueryTests {
     }
 
     private UUID seedAssessment(String name) {
-        return persist(new AssessmentJpaEntity(null, null, null, "EX-" + UUID.randomUUID(), name,
-            null, schoolId, UUID.randomUUID(), "CLASS_TEST", "STUDENT_DEVICE", "SCHEDULED",
-            1, 900, "HIGHEST", null, null, null, null, UUID.randomUUID(), false,
-            now, now, null, null)).getId();
+        return persist(AssessmentJpaEntity.builder()
+                .blueprintId(null)
+                .blueprintVersionId(null)
+                .code("EX-" + UUID.randomUUID())
+                .name(name)
+                .description(null)
+                .schoolId(schoolId)
+                .languageId(UUID.randomUUID())
+                .kind("CLASS_TEST")
+                .deliveryMode("STUDENT_DEVICE")
+                .status("SCHEDULED")
+                .maxAttempt(1)
+                .assessmentTimeDurationSecond(900)
+                .resultDecisionMethod("HIGHEST")
+                .requiredStreamType(null)
+                .streamTypePermission(null)
+                .openAt(null)
+                .closeAt(null)
+                .assessmentPolicyId(UUID.randomUUID())
+                .requiresOtp(false)
+                .build()).getId();
     }
 
     private UUID seedSchedule(UUID assessmentId, String status, Instant start, Instant end) {
-        return persist(new AssessmentScheduleJpaEntity(null, assessmentId, null, start, end, status,
-            null, now, now, null, null)).getId();
+        return persist(AssessmentScheduleJpaEntity.builder()
+                .assessmentId(assessmentId)
+                .schoolRoomId(null)
+                .startDate(start)
+                .endDate(end)
+                .status(status)
+                .movedToScheduleId(null)
+                .build()).getId();
     }
 
     private UUID seedCandidate(UUID assessmentId, UUID studentId, UUID scheduleId, String status) {
@@ -168,8 +191,19 @@ class AssessmentCandidateConflictQueryTests {
 
     private AssessmentCandidateJpaEntity seedCandidateEntity(
             UUID assessmentId, UUID studentId, UUID scheduleId, String status) {
-        return persist(new AssessmentCandidateJpaEntity(null, assessmentId, studentId, null, scheduleId,
-            status, now, now, null, null, null));
+        return persist(AssessmentCandidateJpaEntity.builder()
+                .id(null)
+                .assessmentId(assessmentId)
+                .studentId(studentId)
+                .assignedPaperId(null)
+                .scheduleId(scheduleId)
+                .status(status)
+                .assignedAt(now)
+                .updatedAt(now)
+                .blockedAt(null)
+                .assignedBy(null)
+                .updatedBy(null)
+                .build());
     }
 
     private <T> T persist(T entity) {

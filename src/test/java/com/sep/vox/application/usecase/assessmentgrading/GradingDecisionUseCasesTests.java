@@ -167,9 +167,16 @@ class GradingDecisionUseCasesTests {
      * existed.
      */
     private AssessmentItemResponse givenAnsweredButUngradedItem() {
-        AssessmentItemResponse response = new AssessmentItemResponse(
-            UUID.randomUUID(), sessionId, UUID.randomUUID(), "s3://audio", 41,
-            "I usually study at the library.", null, Instant.now());
+        AssessmentItemResponse response = AssessmentItemResponse.builder()
+                .id(UUID.randomUUID())
+                .sessionId(sessionId)
+                .paperItemId(UUID.randomUUID())
+                .audioUrl("s3://audio")
+                .durationSeconds(41)
+                .transcript("I usually study at the library.")
+                .terminationReason(null)
+                .submittedAt(Instant.now())
+                .build();
         when(assessmentItemResponseRepository.findBySessionId(sessionId)).thenReturn(java.util.List.of(response));
         when(assessmentItemEvaluationRepository.findByResponseIdIn(any())).thenReturn(java.util.List.of());
         when(missingResponseBackfillService.isSilentAnswer(response)).thenReturn(false);

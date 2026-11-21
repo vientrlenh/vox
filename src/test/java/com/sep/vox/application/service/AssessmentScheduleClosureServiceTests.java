@@ -36,7 +36,6 @@ class AssessmentScheduleClosureServiceTests {
     private AssessmentScheduleClosureService service;
 
     private final UUID assessmentId = UUID.randomUUID();
-    private final UUID actorId = UUID.randomUUID();
 
     private final Instant start = OffsetDateTime.parse("2026-07-10T08:00:00+07:00").toInstant();
     private final Instant end = start.plus(2, ChronoUnit.HOURS);
@@ -92,12 +91,10 @@ class AssessmentScheduleClosureServiceTests {
         AssessmentSchedule ended = schedule(AssessmentScheduleStatus.PUBLISHED, start, end);
         when(assessmentScheduleRepository.findByAssessmentId(assessmentId)).thenReturn(List.of(ended));
 
-        int changed = service.closeSchedulesForAssessment(assessmentId, actorId, afterEnd);
+        int changed = service.closeSchedulesForAssessment(assessmentId, afterEnd);
 
         assertThat(changed).isEqualTo(1);
         assertThat(ended.getStatus()).isEqualTo(AssessmentScheduleStatus.COMPLETED);
-        assertThat(ended.getUpdatedAt()).isEqualTo(afterEnd);
-        assertThat(ended.getUpdatedBy()).isEqualTo(actorId);
         verify(assessmentScheduleRepository).save(ended);
     }
 
@@ -110,7 +107,7 @@ class AssessmentScheduleClosureServiceTests {
         AssessmentSchedule notStarted = schedule(AssessmentScheduleStatus.PUBLISHED, afterEnd, afterEnd.plus(1, ChronoUnit.HOURS));
         when(assessmentScheduleRepository.findByAssessmentId(assessmentId)).thenReturn(List.of(notStarted));
 
-        service.closeSchedulesForAssessment(assessmentId, actorId, start);
+        service.closeSchedulesForAssessment(assessmentId, start);
 
         assertThat(notStarted.getStatus()).isEqualTo(AssessmentScheduleStatus.CANCELLED);
         verify(assessmentScheduleRepository).save(notStarted);
@@ -121,7 +118,7 @@ class AssessmentScheduleClosureServiceTests {
         AssessmentSchedule draft = schedule(AssessmentScheduleStatus.DRAFT, start, end);
         when(assessmentScheduleRepository.findByAssessmentId(assessmentId)).thenReturn(List.of(draft));
 
-        service.closeSchedulesForAssessment(assessmentId, actorId, afterEnd);
+        service.closeSchedulesForAssessment(assessmentId, afterEnd);
 
         assertThat(draft.getStatus()).isEqualTo(AssessmentScheduleStatus.CANCELLED);
     }
@@ -138,7 +135,7 @@ class AssessmentScheduleClosureServiceTests {
         AssessmentSchedule cancelled = schedule(AssessmentScheduleStatus.CANCELLED, start, end);
         when(assessmentScheduleRepository.findByAssessmentId(assessmentId)).thenReturn(List.of(completed, moved, cancelled));
 
-        int changed = service.closeSchedulesForAssessment(assessmentId, actorId, afterEnd);
+        int changed = service.closeSchedulesForAssessment(assessmentId, afterEnd);
 
         assertThat(changed).isZero();
         assertThat(completed.getStatus()).isEqualTo(AssessmentScheduleStatus.COMPLETED);
@@ -148,19 +145,18 @@ class AssessmentScheduleClosureServiceTests {
     }
 
     /**
-     * The automatic close job has no user: writing null over it would erase whoever edited last.
+     * The audit values are written by the persistence layer when the schedule is saved, so the service must not touch them.
      */
     @Test
-    void should_keep_previous_updated_by_when_actor_is_null() {
-        UUID previousActor = UUID.randomUUID();
+    void should_leave_audit_values_to_persistence_when_closing_schedules() {
         AssessmentSchedule ended = schedule(AssessmentScheduleStatus.PUBLISHED, start, end);
-        ended.setUpdatedBy(previousActor);
+        ended.setUpdatedBy("previous-editor");
         when(assessmentScheduleRepository.findByAssessmentId(assessmentId)).thenReturn(List.of(ended));
 
-        service.closeSchedulesForAssessment(assessmentId, null, afterEnd);
+        service.closeSchedulesForAssessment(assessmentId, afterEnd);
 
         assertThat(ended.getStatus()).isEqualTo(AssessmentScheduleStatus.COMPLETED);
-        assertThat(ended.getUpdatedBy()).isEqualTo(previousActor);
+        assertThat(ended.getUpdatedBy()).isEqualTo("previous-editor");
     }
 
     // ---------- cascade khi HUỶ/XOÁ bài ----------
@@ -171,12 +167,11 @@ class AssessmentScheduleClosureServiceTests {
         AssessmentSchedule published = schedule(AssessmentScheduleStatus.PUBLISHED, start, end);
         when(assessmentScheduleRepository.findByAssessmentId(assessmentId)).thenReturn(List.of(draft, published));
 
-        int changed = service.cancelSchedulesForAssessment(assessmentId, actorId, afterEnd);
+        int changed = service.cancelSchedulesForAssessment(assessmentId);
 
         assertThat(changed).isEqualTo(2);
         assertThat(draft.getStatus()).isEqualTo(AssessmentScheduleStatus.CANCELLED);
         assertThat(published.getStatus()).isEqualTo(AssessmentScheduleStatus.CANCELLED);
-        assertThat(published.getUpdatedBy()).isEqualTo(actorId);
         verify(assessmentScheduleRepository).save(draft);
         verify(assessmentScheduleRepository).save(published);
     }
@@ -190,7 +185,7 @@ class AssessmentScheduleClosureServiceTests {
         AssessmentSchedule ended = schedule(AssessmentScheduleStatus.PUBLISHED, start, end);
         when(assessmentScheduleRepository.findByAssessmentId(assessmentId)).thenReturn(List.of(ended));
 
-        service.cancelSchedulesForAssessment(assessmentId, actorId, afterEnd);
+        service.cancelSchedulesForAssessment(assessmentId);
 
         assertThat(ended.getStatus()).isEqualTo(AssessmentScheduleStatus.CANCELLED);
     }
@@ -201,7 +196,7 @@ class AssessmentScheduleClosureServiceTests {
         AssessmentSchedule moved = schedule(AssessmentScheduleStatus.MOVED, start, end);
         when(assessmentScheduleRepository.findByAssessmentId(assessmentId)).thenReturn(List.of(completed, moved));
 
-        assertThat(service.cancelSchedulesForAssessment(assessmentId, actorId, afterEnd)).isZero();
+        assertThat(service.cancelSchedulesForAssessment(assessmentId)).isZero();
         verify(assessmentScheduleRepository, never()).save(any());
     }
 
@@ -216,8 +211,6 @@ class AssessmentScheduleClosureServiceTests {
 
         assertThat(changed).isEqualTo(1);
         assertThat(ended.getStatus()).isEqualTo(AssessmentScheduleStatus.COMPLETED);
-        assertThat(ended.getUpdatedAt()).isEqualTo(afterEnd);
-        assertThat(ended.getUpdatedBy()).isNull();
         verify(assessmentScheduleRepository).save(ended);
     }
 

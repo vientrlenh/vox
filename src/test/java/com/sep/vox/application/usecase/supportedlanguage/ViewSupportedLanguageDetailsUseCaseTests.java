@@ -72,17 +72,16 @@ class ViewSupportedLanguageDetailsUseCaseTests {
     }
 
     private static SupportedLanguage language(UUID id, boolean active) {
-        Instant now = Instant.now();
-        return new SupportedLanguage(
-            id,
-            new LanguageCode("EN"),
-            "English",
-            null,
-            active,
-            now,
-            now,
-            UUID.randomUUID(),
-            UUID.randomUUID()
-        );
+        return SupportedLanguage.builder()
+            .id(id)
+            .code(new LanguageCode("EN"))
+            .name("English")
+            .description(null)
+            .active(active)
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
+            .createdBy(UUID.randomUUID().toString())
+            .updatedBy(UUID.randomUUID().toString())
+            .build();
     }
 }

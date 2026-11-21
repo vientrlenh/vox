@@ -1,10 +1,10 @@
 package com.sep.vox.domain.model.question;
 
-import java.time.Instant;
 import java.util.UUID;
 
-public class Question {
-    private UUID id;
+import com.sep.vox.domain.model.BaseModel;
+
+public class Question extends BaseModel {
     private UUID questionBankId;
     private UUID questionTopicId;
     private String code;
@@ -22,77 +22,8 @@ public class Question {
     private QuestionStatus status;
     private QuestionConfidentiality confidentiality;
     private UUID securePoolId;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private UUID createdBy;
-    private UUID updatedBy;
 
     public Question() {}
-
-    public Question(UUID id, UUID questionBankId, UUID questionTopicId, String code, String instructionText,
-            String questionText, String promptText, String preparationText, QuestionType type,
-            int preparationTimeSeconds, int minResponseSeconds, int maxResponseSeconds, QuestionSharing sharing,
-            UUID sourceQuestionId, boolean locked, QuestionConfidentiality confidentiality, UUID securePoolId, QuestionStatus status, Instant createdAt,
-            Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.id = id;
-        this.questionBankId = questionBankId;
-        this.questionTopicId = questionTopicId;
-        this.code = code;
-        this.instructionText = instructionText;
-        this.questionText = questionText;
-        this.promptText = promptText;
-        this.preparationText = preparationText;
-        this.type = type;
-        this.preparationTimeSeconds = preparationTimeSeconds;
-        this.minResponseSeconds = minResponseSeconds;
-        this.maxResponseSeconds = maxResponseSeconds;
-        this.sharing = sharing;
-        this.sourceQuestionId = sourceQuestionId;
-        this.locked = locked;
-        this.confidentiality = confidentiality;
-        this.securePoolId = securePoolId;
-        this.status = status;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public Question(UUID questionBankId, UUID questionTopicId, String code, String instructionText, String questionText,
-            String promptText, String preparationText, QuestionType type, int preparationTimeSeconds,
-            int minResponseSeconds, int maxResponseSeconds, QuestionSharing sharing, UUID sourceQuestionId,
-            boolean locked, QuestionConfidentiality confidentiality, UUID securePoolId,  QuestionStatus status, Instant createdAt, Instant updatedAt, UUID createdBy,
-            UUID updatedBy) {
-        this.questionBankId = questionBankId;
-        this.questionTopicId = questionTopicId;
-        this.code = code;
-        this.instructionText = instructionText;
-        this.questionText = questionText;
-        this.promptText = promptText;
-        this.preparationText = preparationText;
-        this.type = type;
-        this.preparationTimeSeconds = preparationTimeSeconds;
-        this.minResponseSeconds = minResponseSeconds;
-        this.maxResponseSeconds = maxResponseSeconds;
-        this.sharing = sharing;
-        this.sourceQuestionId = sourceQuestionId;
-        this.locked = locked;
-        this.confidentiality = confidentiality;
-        this.securePoolId = securePoolId;
-        this.status = status;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
 
     public UUID getQuestionBankId() {
         return questionBankId;
@@ -214,38 +145,6 @@ public class Question {
         this.status = status;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
-
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
-    }
-
     public QuestionConfidentiality getConfidentiality() {
         return confidentiality;
     }
@@ -262,4 +161,104 @@ public class Question {
         this.securePoolId = securePoolId;
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder extends BaseModel.Builder<Question, Builder> {
+
+        private Builder() {
+            super(new Question());
+        }
+
+        @Override
+        protected Builder self() {
+            return this;
+        }
+
+        public Builder questionBankId(UUID questionBankId) {
+            target.questionBankId = questionBankId;
+            return this;
+        }
+
+        public Builder questionTopicId(UUID questionTopicId) {
+            target.questionTopicId = questionTopicId;
+            return this;
+        }
+
+        public Builder code(String code) {
+            target.code = code;
+            return this;
+        }
+
+        public Builder instructionText(String instructionText) {
+            target.instructionText = instructionText;
+            return this;
+        }
+
+        public Builder questionText(String questionText) {
+            target.questionText = questionText;
+            return this;
+        }
+
+        public Builder promptText(String promptText) {
+            target.promptText = promptText;
+            return this;
+        }
+
+        public Builder preparationText(String preparationText) {
+            target.preparationText = preparationText;
+            return this;
+        }
+
+        public Builder type(QuestionType type) {
+            target.type = type;
+            return this;
+        }
+
+        public Builder preparationTimeSeconds(int preparationTimeSeconds) {
+            target.preparationTimeSeconds = preparationTimeSeconds;
+            return this;
+        }
+
+        public Builder minResponseSeconds(int minResponseSeconds) {
+            target.minResponseSeconds = minResponseSeconds;
+            return this;
+        }
+
+        public Builder maxResponseSeconds(int maxResponseSeconds) {
+            target.maxResponseSeconds = maxResponseSeconds;
+            return this;
+        }
+
+        public Builder sharing(QuestionSharing sharing) {
+            target.sharing = sharing;
+            return this;
+        }
+
+        public Builder sourceQuestionId(UUID sourceQuestionId) {
+            target.sourceQuestionId = sourceQuestionId;
+            return this;
+        }
+
+        public Builder locked(boolean locked) {
+            target.locked = locked;
+            return this;
+        }
+
+        public Builder status(QuestionStatus status) {
+            target.status = status;
+            return this;
+        }
+
+        public Builder confidentiality(QuestionConfidentiality confidentiality) {
+            target.confidentiality = confidentiality;
+            return this;
+        }
+
+        public Builder securePoolId(UUID securePoolId) {
+            target.securePoolId = securePoolId;
+            return this;
+        }
+    }
 }

@@ -22,7 +22,7 @@ import org.springframework.data.domain.Pageable;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
-import com.sep.vox.infrastructure.persistence.entity.RubricJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.rubric.RubricJpaEntity;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataRubricRepository;
 
 /**

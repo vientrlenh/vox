@@ -14,8 +14,8 @@ public class SubmitPracticeTurn {
     private String audioUrl;
     private String transcript;
     private int durationSeconds;
-    // Chi phí AI thật (USD) của turn này -- xem SubmitPracticeTurnUseCase, dùng số này để trừ
-    // SchoolSubscriptionQuotaRecord(PRACTICE) thay vì durationSeconds. Nullable: client Python cũ chưa gửi.
+    // The real AI cost (USD) of this turn -- see SubmitPracticeTurnUseCase, which uses this number to deduct from
+    // SchoolSubscriptionQuotaRecord(PRACTICE) instead of durationSeconds. Nullable: the old Python client does not send it yet.
     private BigDecimal turnCostUsd;
     private String wordFeedbackJson;
     private Double turnScore;
@@ -23,35 +23,6 @@ public class SubmitPracticeTurn {
     private List<TurnCorrectionSubmission> corrections;
 
     public SubmitPracticeTurn() {
-    }
-
-    public SubmitPracticeTurn(
-            UUID sessionId,
-            UUID questionId,
-            int turnOrder,
-            String turnType,
-            String promptText,
-            String audioUrl,
-            String transcript,
-            int durationSeconds,
-            BigDecimal turnCostUsd,
-            String wordFeedbackJson,
-            Double turnScore,
-            boolean questionComplete,
-            List<TurnCorrectionSubmission> corrections) {
-        this.sessionId = sessionId;
-        this.questionId = questionId;
-        this.turnOrder = turnOrder;
-        this.turnType = turnType;
-        this.promptText = promptText;
-        this.audioUrl = audioUrl;
-        this.transcript = transcript;
-        this.durationSeconds = durationSeconds;
-        this.turnCostUsd = turnCostUsd;
-        this.wordFeedbackJson = wordFeedbackJson;
-        this.turnScore = turnScore;
-        this.questionComplete = questionComplete;
-        this.corrections = corrections;
     }
 
     public UUID getSessionId() {
@@ -156,5 +127,87 @@ public class SubmitPracticeTurn {
 
     public void setCorrections(List<TurnCorrectionSubmission> corrections) {
         this.corrections = corrections;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final SubmitPracticeTurn target = new SubmitPracticeTurn();
+
+        private Builder() {
+        }
+
+        public Builder sessionId(UUID sessionId) {
+            target.sessionId = sessionId;
+            return this;
+        }
+
+        public Builder questionId(UUID questionId) {
+            target.questionId = questionId;
+            return this;
+        }
+
+        public Builder turnOrder(int turnOrder) {
+            target.turnOrder = turnOrder;
+            return this;
+        }
+
+        public Builder turnType(String turnType) {
+            target.turnType = turnType;
+            return this;
+        }
+
+        public Builder promptText(String promptText) {
+            target.promptText = promptText;
+            return this;
+        }
+
+        public Builder audioUrl(String audioUrl) {
+            target.audioUrl = audioUrl;
+            return this;
+        }
+
+        public Builder transcript(String transcript) {
+            target.transcript = transcript;
+            return this;
+        }
+
+        public Builder durationSeconds(int durationSeconds) {
+            target.durationSeconds = durationSeconds;
+            return this;
+        }
+
+        public Builder turnCostUsd(BigDecimal turnCostUsd) {
+            target.turnCostUsd = turnCostUsd;
+            return this;
+        }
+
+        public Builder wordFeedbackJson(String wordFeedbackJson) {
+            target.wordFeedbackJson = wordFeedbackJson;
+            return this;
+        }
+
+        public Builder turnScore(Double turnScore) {
+            target.turnScore = turnScore;
+            return this;
+        }
+
+        public Builder questionComplete(boolean questionComplete) {
+            target.questionComplete = questionComplete;
+            return this;
+        }
+
+        public Builder corrections(List<TurnCorrectionSubmission> corrections) {
+            target.corrections = corrections;
+            return this;
+        }
+
+        public SubmitPracticeTurn build() {
+            return target;
+        }
+
     }
 }

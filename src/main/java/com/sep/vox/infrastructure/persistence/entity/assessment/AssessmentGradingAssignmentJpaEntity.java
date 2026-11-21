@@ -1,0 +1,111 @@
+package com.sep.vox.infrastructure.persistence.entity.assessment;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.UUID;
+
+import org.hibernate.annotations.UuidGenerator;
+
+import jakarta.persistence.CheckConstraint;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.SuperBuilder;
+
+/**
+ * One table for all four grading rounds ({@code round_type}).
+ *
+ * <p>The invariant "each attempt has at most one open assignment" lives in the unique index on
+ * {@code active_result_id}, NOT on {@code candidate_result_id}: the active column
+ * equals the attempt itself when ASSIGNED and is {@code NULL} when COMPLETED, and Postgres treats NULLs
+ * as distinct -- so an <em>ordinary</em> unique index gives exactly the semantics of the partial
+ * index {@code WHERE status='ASSIGNED'}.
+ *
+ * <p>That index only guards the OPENING direction of an assignment. The closing/editing direction is guarded by the pessimistic lock
+ * in {@code findByIdForUpdate} -- see
+ * {@code AssessmentGradingAccessService#loadForUpdate}.
+ */
+@Entity
+@Table(name = "assessment_grading_assignments", indexes = {
+    @Index(columnList = "active_result_id", name = "uq_grading_assignment_active_result", unique = true),
+    @Index(columnList = "candidate_result_id", name = "idx_grading_assignments_result"),
+    @Index(columnList = "teacher_id, status", name = "idx_grading_assignments_teacher_status"),
+    @Index(columnList = "appeal_id", name = "idx_grading_assignments_appeal"),
+    @Index(columnList = "status, deadline_at", name = "idx_grading_assignments_status_deadline")
+})
+@Getter
+@Setter
+@SuperBuilder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class AssessmentGradingAssignmentJpaEntity {
+
+    @Id
+    @UuidGenerator(style = UuidGenerator.Style.VERSION_7)
+    @Column(name = "id", nullable = false, updatable = false)
+    private UUID id;
+
+    @Column(name = "candidate_result_id", nullable = false, updatable = false)
+    private UUID candidateResultId;
+
+    @Column(name = "teacher_id", nullable = false)
+    private UUID teacherId;
+
+    @Column(name = "round_type", nullable = false, length = 20, check = {
+        @CheckConstraint(
+            name = "chk_assessment_grading_assignments_round_type_valid",
+            constraint = "round_type IN ('INITIAL', 'SPOT_CHECK', 'REMEDIATION', 'APPEAL')"
+        )
+    })
+    private String roundType;
+
+    @Column(name = "appeal_id")
+    private UUID appealId;
+
+    @Column(name = "status", nullable = false, length = 20, check = {
+        @CheckConstraint(
+            name = "chk_assessment_grading_assignments_status_valid",
+            constraint = "status IN ('ASSIGNED', 'COMPLETED')"
+        )
+    })
+    private String status;
+
+    @Column(name = "outcome", length = 20, check = {
+        @CheckConstraint(
+            name = "chk_assessment_grading_assignments_outcome_valid",
+            constraint = "outcome IS NULL OR outcome IN "
+                + "('UPHELD', 'REGRADED', 'INVALIDATED', 'CLEARED_INVALID', 'DECLINED')"
+        )
+    })
+    private String outcome;
+
+    @Column(name = "score_before", precision = 5, scale = 2)
+    private BigDecimal scoreBefore;
+
+    @Column(name = "assigned_at", nullable = false)
+    private Instant assignedAt;
+
+    @Column(name = "assigned_by")
+    private UUID assignedBy;
+
+    @Column(name = "completed_at")
+    private Instant completedAt;
+
+    @Column(name = "deadline_at")
+    private Instant deadlineAt;
+
+    @Column(name = "reminded_at")
+    private Instant remindedAt;
+
+    @Column(name = "reason", columnDefinition = "TEXT")
+    private String reason;
+
+    /** = candidate_result_id while ASSIGNED, NULL once COMPLETED. See the class Javadoc. */
+    @Column(name = "active_result_id")
+    private UUID activeResultId;
+}

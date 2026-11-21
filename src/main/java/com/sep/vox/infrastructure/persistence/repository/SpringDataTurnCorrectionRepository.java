@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.sep.vox.infrastructure.persistence.entity.TurnCorrectionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.personalization.TurnCorrectionJpaEntity;
 
 public interface SpringDataTurnCorrectionRepository
         extends JpaRepository<TurnCorrectionJpaEntity, UUID> {

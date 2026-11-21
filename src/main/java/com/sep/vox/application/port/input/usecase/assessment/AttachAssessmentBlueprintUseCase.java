@@ -2,7 +2,6 @@ package com.sep.vox.application.port.input.usecase.assessment;
 
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersion;
-import java.time.Instant;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -104,7 +103,7 @@ public class AttachAssessmentBlueprintUseCase implements IUseCase<AttachAssessme
                 throw new ForbiddenException("Quyền truy cập bị từ chối");
             }
             requireNoExistingPapers(assessment.getId());
-            AssessmentBlueprint createdBlueprint = createInlineBlueprint(input.newBlueprint(), assessment.getSchoolId(), assessment.getLanguageId(), currentUserId);
+            AssessmentBlueprint createdBlueprint = createInlineBlueprint(input.newBlueprint(), assessment.getSchoolId(), assessment.getLanguageId());
             assessment.setBlueprintId(createdBlueprint.getId());
             assessment.setBlueprintVersionId(null);
         }
@@ -137,8 +136,6 @@ public class AttachAssessmentBlueprintUseCase implements IUseCase<AttachAssessme
             assessment.setBlueprintVersionId(input.blueprintVersionId());
         }
 
-        assessment.setUpdatedAt(Instant.now());
-        assessment.setUpdatedBy(currentUserId);
         return AssessmentDtoMapper.toDto(assessmentRepository.save(assessment));
     }
 
@@ -152,31 +149,25 @@ public class AttachAssessmentBlueprintUseCase implements IUseCase<AttachAssessme
     private AssessmentBlueprint createInlineBlueprint(
             CreateBlueprintInlineCommand command,
             UUID schoolId,
-            UUID assessmentLanguageId,
-            UUID currentUserId) {
-        Instant now = Instant.now();
+            UUID assessmentLanguageId) {
         String name = StringNormalization.trimAndCollapseSpaces(command.name());
         if (name == null || name.isBlank()) {
             throw new IllegalStateException("Tên blueprint là bắt buộc");
         }
-        // Khối lớp là catalog dùng chung: chỉ cần tồn tại, không còn ràng buộc thuộc trường nào.
+        // Grade level is a shared catalog: it only has to exist, it no longer belongs to a school.
         if (command.gradeLevelId() != null
                 && gradeLevelRepository.findById(command.gradeLevelId()).isEmpty()) {
             throw new NotFoundException("Không tìm thấy khối lớp");
         }
-        AssessmentBlueprint blueprint = new AssessmentBlueprint(
-            schoolId,
-            command.languageId() == null ? assessmentLanguageId : command.languageId(),
-            command.gradeLevelId(),
-            blueprintCodeOf(command.code()),
-            name,
-            StringNormalization.trimAndCollapseSpaces(command.description()),
-            true,
-            now,
-            now,
-            currentUserId,
-            currentUserId
-        );
+        AssessmentBlueprint blueprint = AssessmentBlueprint.builder()
+            .schoolId(schoolId)
+            .languageId(command.languageId() == null ? assessmentLanguageId : command.languageId())
+            .gradeLevelId(command.gradeLevelId())
+            .code(blueprintCodeOf(command.code()))
+            .name(name)
+            .description(StringNormalization.trimAndCollapseSpaces(command.description()))
+            .active(true)
+            .build();
         return assessmentBlueprintRepository.save(blueprint);
     }
 

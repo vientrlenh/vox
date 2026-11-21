@@ -23,7 +23,6 @@ import com.sep.vox.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -101,11 +100,8 @@ public class PublishSchoolAssessmentPolicyUseCase implements IUseCase<PublishSch
         rubricVersionRepository.findById(policy.getRubricVersionId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản Rubric liên kết."));
 
-        // 6. Lưu trạng thái mới
-        Instant now = Instant.now();
+        // 6. Save the new status
         policy.setStatus(AssessmentPolicyStatus.PUBLISHED);
-        policy.setUpdatedAt(now);
-        policy.setUpdatedBy(currentUserId);
 
         AssessmentPolicy saved = assessmentPolicyRepository.save(policy);
         return saved.getId();

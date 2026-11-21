@@ -120,7 +120,14 @@ class CreateClassTestSetupTests {
         ));
         when(schoolClassRepository.findById(CLASS_ID)).thenReturn(Optional.of(schoolClass()));
         when(schoolClassUserRepository.findByUserIdAndSchoolClassId(TEACHER_ID, CLASS_ID))
-            .thenReturn(Optional.of(new SchoolClassUser(TEACHER_ID, CLASS_ID, true, Instant.now(), Instant.now(), TEACHER_ID)));
+            .thenReturn(Optional.of(SchoolClassUser.builder()
+                .userId(TEACHER_ID)
+                .schoolClassId(CLASS_ID)
+                .active(true)
+                .joinedAt(Instant.now())
+                .leftAt(Instant.now())
+                .assignedBy(TEACHER_ID)
+                .build()));
         when(assessmentPolicyRepository.findById(POLICY_ID))
             .thenReturn(Optional.of(policy()));
 
@@ -141,7 +148,14 @@ class CreateClassTestSetupTests {
 
         // The class has exactly one active student.
         when(schoolClassUserRepository.findBySchoolClassId(CLASS_ID, 1, 2000)).thenReturn(new PageResult<>(
-            List.of(new SchoolClassUser(STUDENT_ID, CLASS_ID, true, Instant.now(), null, TEACHER_ID)),
+            List.of(SchoolClassUser.builder()
+                .userId(STUDENT_ID)
+                .schoolClassId(CLASS_ID)
+                .active(true)
+                .joinedAt(Instant.now())
+                .leftAt(null)
+                .assignedBy(TEACHER_ID)
+                .build()),
             1, 2000, 1, 1));
         // The roles of the whole class are asked for with ONE batch query, not one student at a
         // time.
@@ -298,7 +312,14 @@ class CreateClassTestSetupTests {
     void should_skip_non_student_class_members() {
         UUID teacherOnlyMember = UUID.randomUUID();
         when(schoolClassUserRepository.findBySchoolClassId(CLASS_ID, 1, 2000)).thenReturn(new PageResult<>(
-            List.of(new SchoolClassUser(teacherOnlyMember, CLASS_ID, true, Instant.now(), null, TEACHER_ID)),
+            List.of(SchoolClassUser.builder()
+                .userId(teacherOnlyMember)
+                .schoolClassId(CLASS_ID)
+                .active(true)
+                .joinedAt(Instant.now())
+                .leftAt(null)
+                .assignedBy(TEACHER_ID)
+                .build()),
             1, 2000, 1, 1));
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(teacherOnlyMember)).thenReturn(List.of(
             new UserRoleInfo(UUID.randomUUID(), teacherOnlyMember, UUID.randomUUID(), Instant.now(), "TEACHER", "Giáo viên")
@@ -355,10 +376,20 @@ class CreateClassTestSetupTests {
     }
 
     private SchoolClass schoolClass() {
-        return new SchoolClass(
-            CLASS_ID, SCHOOL_ID, UUID.randomUUID(), UUID.randomUUID(),
-            new ClassCode("10A1"), "Lớp 10A1", null, SchoolClassStatus.ACTIVE,
-            Instant.now(), Instant.now(), TEACHER_ID, TEACHER_ID);
+        return SchoolClass.builder()
+            .id(CLASS_ID)
+            .schoolId(SCHOOL_ID)
+            .languageId(UUID.randomUUID())
+            .schoolGradeId(UUID.randomUUID())
+            .code(new ClassCode("10A1"))
+            .name("Lớp 10A1")
+            .description(null)
+            .status(SchoolClassStatus.ACTIVE)
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
+            .createdBy(TEACHER_ID.toString())
+            .updatedBy(TEACHER_ID.toString())
+            .build();
     }
 
     private AssessmentPolicy policy() {

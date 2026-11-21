@@ -53,7 +53,7 @@ public class GetQuestionAssetUploadUrlUseCase implements IUseCase<GetQuestionAss
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        boolean owner = currentUserId.equals(question.getCreatedBy());
+        boolean owner = question.isCreatedBy(currentUserId);
         boolean editorCollaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId)
             .filter(collaborator -> collaborator.getPermission() == QuestionCollaboratorPermission.CAN_EDIT)
             .isPresent();

@@ -93,36 +93,29 @@ public class CreateAssessmentUseCase implements IUseCase<CreateAssessmentCommand
 
         validateOpenClose(command.openAt(), command.closeAt(), currentSchoolId);
 
-        Instant now = Instant.now();
-        Assessment assessment = new Assessment(
-            command.blueprintId(),
-            null,
-            assessmentCodeOf(command.code()),
-            command.name(),
-            command.description(),
-            currentSchoolId,
-            command.languageId(),
-            AssessmentKind.CENTRALIZED,
-            // Kỳ thi tập trung mặc định thi trên thiết bị nhà trường; trường nào cho thí sinh
-            // mang máy riêng vào phòng thì chọn STUDENT_DEVICE ngay lúc tạo.
-            Objects.requireNonNullElse(command.deliveryMode(), AssessmentDeliveryMode.LAB),
-            AssessmentStatus.DRAFT,
-            Objects.requireNonNullElse(command.maxAttempt(), 1),
-            command.assessmentTimeDurationSecond(),
-            Objects.requireNonNullElse(command.resultDecisionMethod(), ResultDecisionMethod.HIGHEST),
-            command.openAt(),
-            command.closeAt(),
-            command.assessmentPolicyId(),
-            command.requiresOtp() == null || command.requiresOtp(),
-            now,
-            streamConfig.requiredStreamType(),
-            streamConfig.streamTypePermission(),
-            now,
-            currentUserId,
-            currentUserId
-        );
-        // Assigned through the setter: the Assessment constructor does not take this field (see AssessmentMapper).
-        assessment.setAiConfidenceThresholdPercent(command.aiConfidenceThresholdPercent());
+        Assessment assessment = Assessment.builder()
+                .blueprintId(command.blueprintId())
+                .code(assessmentCodeOf(command.code()))
+                .name(command.name())
+                .description(command.description())
+                .schoolId(currentSchoolId)
+                .languageId(command.languageId())
+                .kind(AssessmentKind.CENTRALIZED)
+                // A centralized assessment is taken on school devices by default; a school that lets candidates
+                // bring their own device into the room picks STUDENT_DEVICE when creating it.
+                .deliveryMode(Objects.requireNonNullElse(command.deliveryMode(), AssessmentDeliveryMode.LAB))
+                .status(AssessmentStatus.DRAFT)
+                .maxAttempt(Objects.requireNonNullElse(command.maxAttempt(), 1))
+                .assessmentTimeDurationSecond(command.assessmentTimeDurationSecond())
+                .resultDecisionMethod(Objects.requireNonNullElse(command.resultDecisionMethod(), ResultDecisionMethod.HIGHEST))
+                .openAt(command.openAt())
+                .closeAt(command.closeAt())
+                .assessmentPolicyId(command.assessmentPolicyId())
+                .requiresOtp(command.requiresOtp() == null || command.requiresOtp())
+                .requiredStreamType(streamConfig.requiredStreamType())
+                .streamTypePermission(streamConfig.streamTypePermission())
+                .aiConfidenceThresholdPercent(command.aiConfidenceThresholdPercent())
+                .build();
         return AssessmentDtoMapper.toDto(assessmentRepository.save(assessment));
     }
 

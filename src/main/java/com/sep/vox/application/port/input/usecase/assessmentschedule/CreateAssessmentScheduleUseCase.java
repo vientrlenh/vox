@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.assessmentschedule;
 
-import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -58,7 +57,7 @@ public class CreateAssessmentScheduleUseCase implements IUseCase<CreateAssessmen
     public AssessmentScheduleDto execute(CreateAssessmentScheduleCommand input) {
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
-        UUID currentUserId = authorize(assessment);
+        authorize(assessment);
         AssessmentEditingGuard.requireScheduleEditable(assessment);
 
         if (input.startDate() == null || input.endDate() == null) {
@@ -78,8 +77,7 @@ public class CreateAssessmentScheduleUseCase implements IUseCase<CreateAssessmen
             input.schoolRoomId(), assessment, input.startDate(), input.endDate());
 
         AssessmentSchedule schedule = AssessmentSchedule.createFresh(
-            assessment.getId(), input.schoolRoomId(), input.startDate(), input.endDate(),
-            currentUserId, Instant.now());
+            assessment.getId(), input.schoolRoomId(), input.startDate(), input.endDate());
         return AssessmentScheduleDtoMapper.toDto(assessmentScheduleRepository.save(schedule));
     }
 

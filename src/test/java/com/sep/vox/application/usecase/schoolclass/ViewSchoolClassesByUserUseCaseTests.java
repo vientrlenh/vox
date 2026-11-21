@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -113,10 +112,7 @@ class ViewSchoolClassesByUserUseCaseTests {
             UUID.randomUUID(),
             "ENG-01",
             "English 01",
-            "Starter class",
-            UUID.randomUUID(),
-            Instant.now()
-        );
+            "Starter class");
         schoolClass.setId(UUID.randomUUID());
         return schoolClass;
     }

@@ -69,7 +69,7 @@ class UpdateSupportedLanguageUseCaseTests {
             eq(false),
             eq(true),
             any(Instant.class),
-            eq(userId)
+            eq(userId.toString())
         )).thenReturn(1);
 
         UpdateSupportedLanguageResponse result = useCase.execute(command);
@@ -86,7 +86,7 @@ class UpdateSupportedLanguageUseCaseTests {
             eq(false),
             eq(true),
             any(Instant.class),
-            eq(userId)
+            eq(userId.toString())
         );
     }
 
@@ -107,7 +107,7 @@ class UpdateSupportedLanguageUseCaseTests {
             isNull(),
             eq(false),
             any(Instant.class),
-            eq(userId)
+            eq(userId.toString())
         )).thenReturn(1);
 
         useCase.execute(command);
@@ -123,7 +123,7 @@ class UpdateSupportedLanguageUseCaseTests {
             isNull(),
             eq(false),
             any(Instant.class),
-            eq(userId)
+            eq(userId.toString())
         );
     }
 
@@ -160,7 +160,7 @@ class UpdateSupportedLanguageUseCaseTests {
             isNull(),
             eq(false),
             any(Instant.class),
-            eq(userId)
+            eq(userId.toString())
         )).thenReturn(1);
 
         UpdateSupportedLanguageResponse result = useCase.execute(command);
@@ -233,7 +233,7 @@ class UpdateSupportedLanguageUseCaseTests {
             isNull(),
             eq(false),
             any(Instant.class),
-            eq(userId)
+            eq(userId.toString())
         )).thenReturn(0);
 
         NotFoundException exception = assertThrows(NotFoundException.class, () -> useCase.execute(command));
@@ -259,7 +259,7 @@ class UpdateSupportedLanguageUseCaseTests {
             isNull(),
             eq(false),
             any(Instant.class),
-            eq(userId)
+            eq(userId.toString())
         )).thenThrow(new DataIntegrityViolationException("duplicate"));
 
         DuplicatedException exception = assertThrows(DuplicatedException.class, () -> useCase.execute(command));
@@ -268,17 +268,16 @@ class UpdateSupportedLanguageUseCaseTests {
     }
 
     private static SupportedLanguage language(UUID id, String code, String name, String description, boolean active) {
-        Instant now = Instant.now();
-        return new SupportedLanguage(
-            id,
-            new LanguageCode(code),
-            name,
-            description,
-            active,
-            now,
-            now,
-            UUID.randomUUID(),
-            UUID.randomUUID()
-        );
+        return SupportedLanguage.builder()
+            .id(id)
+            .code(new LanguageCode(code))
+            .name(name)
+            .description(description)
+            .active(active)
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
+            .createdBy(UUID.randomUUID().toString())
+            .updatedBy(UUID.randomUUID().toString())
+            .build();
     }
 }

@@ -37,7 +37,7 @@ public class JpaQuestionQueryRepository implements QuestionQueryRepository {
           AND (
                 :scope IS NULL
                 OR :scope = 'ALL'
-                OR (:scope = 'MINE' AND q.createdBy = :currentUserId)
+                OR (:scope = 'MINE' AND q.createdBy = cast(:currentUserId as string))
                 OR (
                     :scope = 'COLLABORATING'
                     AND EXISTS (
@@ -112,7 +112,7 @@ public class JpaQuestionQueryRepository implements QuestionQueryRepository {
                     OR (
                         :schoolAdmin = false
                         AND (
-                            q.createdBy = :currentUserId
+                            q.createdBy = cast(:currentUserId as string)
                             OR EXISTS (
                                 SELECT 1
                                 FROM QuestionCollaboratorJpaEntity qc

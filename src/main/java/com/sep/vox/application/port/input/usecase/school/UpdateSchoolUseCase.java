@@ -103,7 +103,7 @@ public class UpdateSchoolUseCase implements IUseCase<UpdateSchoolCommand, UUID> 
                 address,
                 command.studentCount(),
                 Instant.now(),
-                currentUserId
+                currentUserId.toString()
         );
 
         if (updatedRows == 0) {

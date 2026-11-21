@@ -1,55 +1,15 @@
 package com.sep.vox.domain.model.supportedlanguage;
 
-import java.time.Instant;
-import java.util.UUID;
-
+import com.sep.vox.domain.model.BaseModel;
 import com.sep.vox.domain.valueobject.LanguageCode;
 
-public class SupportedLanguage {
-    private UUID id;
+public class SupportedLanguage extends BaseModel {
     private LanguageCode code;
     private String name;
     private String description;
     private boolean isActive;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private UUID createdBy;
-    private UUID updatedBy;
-    
+
     public SupportedLanguage() {
-    }
-
-    public SupportedLanguage(UUID id, LanguageCode code, String name, String description, boolean isActive, Instant createdAt,
-            Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.id = id;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.isActive = isActive;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public SupportedLanguage(LanguageCode code, String name, String description, boolean isActive, Instant createdAt,
-            Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.isActive = isActive;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
     }
 
     public LanguageCode getCode() {
@@ -76,38 +36,6 @@ public class SupportedLanguage {
         this.description = description;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
-
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
-    }
-
     public boolean isActive() {
         return isActive;
     }
@@ -116,5 +44,39 @@ public class SupportedLanguage {
         this.isActive = isActive;
     }
 
-    
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder extends BaseModel.Builder<SupportedLanguage, Builder> {
+
+        private Builder() {
+            super(new SupportedLanguage());
+        }
+
+        @Override
+        protected Builder self() {
+            return this;
+        }
+
+        public Builder code(LanguageCode code) {
+            target.code = code;
+            return this;
+        }
+
+        public Builder name(String name) {
+            target.name = name;
+            return this;
+        }
+
+        public Builder description(String description) {
+            target.description = description;
+            return this;
+        }
+
+        public Builder active(boolean isActive) {
+            target.isActive = isActive;
+            return this;
+        }
+    }
 }

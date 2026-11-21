@@ -16,25 +16,6 @@ public class InterestDimension {
     public InterestDimension() {
     }
 
-    public InterestDimension(
-            String code,
-            String label,
-            String description,
-            boolean active,
-            boolean quizEligible,
-            int displayOrder,
-            Instant createdAt,
-            Instant updatedAt) {
-        this.code = code;
-        this.label = label;
-        this.description = description;
-        this.active = active;
-        this.quizEligible = quizEligible;
-        this.displayOrder = displayOrder;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-    }
-
     public String getCode() {
         return code;
     }
@@ -97,5 +78,62 @@ public class InterestDimension {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final InterestDimension target = new InterestDimension();
+
+        private Builder() {
+        }
+
+        public Builder code(String code) {
+            target.code = code;
+            return this;
+        }
+
+        public Builder label(String label) {
+            target.label = label;
+            return this;
+        }
+
+        public Builder description(String description) {
+            target.description = description;
+            return this;
+        }
+
+        public Builder active(boolean active) {
+            target.active = active;
+            return this;
+        }
+
+        public Builder quizEligible(boolean quizEligible) {
+            target.quizEligible = quizEligible;
+            return this;
+        }
+
+        public Builder displayOrder(int displayOrder) {
+            target.displayOrder = displayOrder;
+            return this;
+        }
+
+        public Builder createdAt(Instant createdAt) {
+            target.createdAt = createdAt;
+            return this;
+        }
+
+        public Builder updatedAt(Instant updatedAt) {
+            target.updatedAt = updatedAt;
+            return this;
+        }
+
+        public InterestDimension build() {
+            return target;
+        }
+
     }
 }

@@ -121,29 +121,33 @@ public class CreateAssessmentAppealUseCase implements IUseCase<CreateAssessmentA
         }
 
         Instant now = Instant.now();
-        AssessmentResultAppeal appeal = new AssessmentResultAppeal(
-            command.candidateResultId(),
-            currentUserId,
-            command.reason(),
-            now,
-            AssessmentAppealStatus.PENDING,
-            candidateResult.getTotalScore(),
-            null,
-            null,
-            null,
-            command.notes(),
-            null,
-            null,
-            null,
-            null,
-            null
-        );
+        AssessmentResultAppeal appeal = AssessmentResultAppeal.builder()
+                .candidateResultId(command.candidateResultId())
+                .requestedBy(currentUserId)
+                .reason(command.reason())
+                .requestedAt(now)
+                .status(AssessmentAppealStatus.PENDING)
+                .scoreBefore(candidateResult.getTotalScore())
+                .scoreAfter(null)
+                .resolvedBy(null)
+                .resolvedAt(null)
+                .notes(command.notes())
+                .deadline(null)
+                .approvedAt(null)
+                .decisionNote(null)
+                .withdrawnAt(null)
+                .reviewerOverrideReason(null)
+                .build();
         AssessmentResultAppeal saved = assessmentResultAppealRepository.save(appeal);
 
         // Id của đơn chỉ có sau khi INSERT trả về, nên phần thi phải lưu ở bước sau.
         assessmentResultAppealItemRepository.saveAll(distinctPaperItemIds.stream()
-            .map(paperItemId -> new AssessmentResultAppealItem(
-                saved.getId(), paperItemId, responsesByPaperItem.get(paperItemId).getId(), null))
+            .map(paperItemId -> AssessmentResultAppealItem.builder()
+                    .appealId(saved.getId())
+                    .paperItemId(paperItemId)
+                    .responseId(responsesByPaperItem.get(paperItemId).getId())
+                    .finalScore(null)
+                    .build())
             .toList());
 
         // Đóng vòng chấm đang mở (thường là hậu kiểm) trước khi kéo bài sang APPEALED.
@@ -162,8 +166,6 @@ public class CreateAssessmentAppealUseCase implements IUseCase<CreateAssessmentA
 
         ResultStatusHistoryRecorder.Snapshot before = resultStatusHistoryRecorder.snapshot(candidateResult);
         candidateResult.setStatus(AssessmentCandidateResultStatus.APPEALED);
-        candidateResult.setUpdatedAt(now);
-        candidateResult.setUpdatedBy(currentUserId);
         assessmentCandidateResultRepository.save(candidateResult);
         resultStatusHistoryRecorder.record(before, candidateResult,
             ResultStatusChangeSource.SYSTEM, currentUserId, "Học sinh nộp đơn phúc khảo.");

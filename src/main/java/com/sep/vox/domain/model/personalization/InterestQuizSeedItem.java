@@ -13,17 +13,6 @@ public class InterestQuizSeedItem {
     public InterestQuizSeedItem() {
     }
 
-    public InterestQuizSeedItem(
-            UUID id,
-            List<String> dimensionPerStatement,
-            List<String> statements,
-            String note) {
-        this.id = id;
-        this.dimensionPerStatement = dimensionPerStatement;
-        this.statements = statements;
-        this.note = note;
-    }
-
     public UUID getId() {
         return id;
     }
@@ -54,5 +43,42 @@ public class InterestQuizSeedItem {
 
     public void setNote(String note) {
         this.note = note;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final InterestQuizSeedItem target = new InterestQuizSeedItem();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder dimensionPerStatement(List<String> dimensionPerStatement) {
+            target.dimensionPerStatement = dimensionPerStatement;
+            return this;
+        }
+
+        public Builder statements(List<String> statements) {
+            target.statements = statements;
+            return this;
+        }
+
+        public Builder note(String note) {
+            target.note = note;
+            return this;
+        }
+
+        public InterestQuizSeedItem build() {
+            return target;
+        }
+
     }
 }

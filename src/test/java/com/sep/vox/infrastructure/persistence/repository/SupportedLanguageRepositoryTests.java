@@ -18,6 +18,8 @@ import com.sep.vox.domain.valueobject.LanguageCode;
 import com.sep.vox.infrastructure.persistence.adapter.SupportedLanguageRepositoryImpl;
 import com.sep.vox.support.RepositoryTest;
 
+import jakarta.persistence.EntityManager;
+
 @RepositoryTest
 @Import({
     SupportedLanguageRepositoryImpl.class
@@ -26,6 +28,9 @@ class SupportedLanguageRepositoryTests {
 
     @Autowired
     private SupportedLanguageRepository supportedLanguageRepository;
+
+    @Autowired
+    private EntityManager entityManager;
 
     @Test
     void whenSave_thenReturnsPersistedSupportedLanguage() {
@@ -114,8 +119,13 @@ class SupportedLanguageRepositoryTests {
 
     @Test
     void whenFindAll_thenReturnsRequestedPageSortedByCreatedAtDescending() {
-        supportedLanguageRepository.save(newSupportedLanguage("SV", "Swedish", true, Instant.parse("2026-06-01T10:00:00Z")));
-        supportedLanguageRepository.save(newSupportedLanguage("DA", "Danish", true, Instant.parse("2026-06-02T10:00:00Z")));
+        SupportedLanguage older = supportedLanguageRepository.save(newSupportedLanguage("SV", "Swedish", true));
+        entityManager.flush();
+        entityManager.createNativeQuery(
+                "update supported_languages set created_at = created_at - interval '1 second' where id = :id")
+            .setParameter("id", older.getId())
+            .executeUpdate();
+        supportedLanguageRepository.save(newSupportedLanguage("DA", "Danish", true));
 
         PageResult<SupportedLanguage> result = supportedLanguageRepository.findAll(null, null, 1, 1);
 
@@ -131,7 +141,7 @@ class SupportedLanguageRepositoryTests {
     void whenUpdateMutableFields_thenOnlyProvidedFieldsAreUpdated() {
         SupportedLanguage saved = supportedLanguageRepository.save(newSupportedLanguage("RU", "Russian", true));
         Instant updatedAt = Instant.parse("2026-06-10T10:00:00Z");
-        UUID updatedBy = UUID.randomUUID();
+        String updatedBy = UUID.randomUUID().toString();
 
         int updatedRows = supportedLanguageRepository.updateMutableFields(
             saved.getId(),
@@ -172,7 +182,7 @@ class SupportedLanguageRepositoryTests {
             null,
             false,
             Instant.now(),
-            UUID.randomUUID()
+            UUID.randomUUID().toString()
         );
 
         SupportedLanguage updated = supportedLanguageRepository.findById(saved.getId()).orElseThrow();
@@ -193,7 +203,7 @@ class SupportedLanguageRepositoryTests {
             true,
             true,
             Instant.now(),
-            UUID.randomUUID()
+            UUID.randomUUID().toString()
         );
 
         assertThat(updatedRows).isZero();
@@ -204,19 +214,11 @@ class SupportedLanguageRepositoryTests {
     }
 
     private static SupportedLanguage newSupportedLanguage(String code, String name, boolean active) {
-        return newSupportedLanguage(code, name, active, Instant.now());
-    }
-
-    private static SupportedLanguage newSupportedLanguage(String code, String name, boolean active, Instant now) {
-        return new SupportedLanguage(
-            new LanguageCode(code),
-            name,
-            name + " language",
-            active,
-            now,
-            now,
-            UUID.randomUUID(),
-            UUID.randomUUID()
-        );
+        return SupportedLanguage.builder()
+            .code(new LanguageCode(code))
+            .name(name)
+            .description(name + " language")
+            .active(active)
+            .build();
     }
 }

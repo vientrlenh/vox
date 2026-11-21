@@ -7,7 +7,7 @@ import java.util.UUID;
 
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
-import com.sep.vox.infrastructure.persistence.entity.RubricJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.rubric.RubricJpaEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;

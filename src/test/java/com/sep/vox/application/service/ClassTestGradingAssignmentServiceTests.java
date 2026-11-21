@@ -56,7 +56,13 @@ class ClassTestGradingAssignmentServiceTests {
 
         when(assessmentRepository.findById(ASSESSMENT_ID)).thenReturn(Optional.of(assessment(AssessmentKind.CLASS_TEST)));
         when(assessmentMemberRepository.findByAssessmentId(ASSESSMENT_ID)).thenReturn(List.of(
-            new AssessmentMember(ASSESSMENT_ID, CHAIR_ID, AssessmentMemberRole.CHAIR, Instant.now(), CHAIR_ID)
+            AssessmentMember.builder()
+                    .assessmentId(ASSESSMENT_ID)
+                    .userId(CHAIR_ID)
+                    .role(AssessmentMemberRole.CHAIR)
+                    .grantedAt(Instant.now())
+                    .grantedBy(CHAIR_ID)
+                    .build()
         ));
         when(assessmentGradingAssignmentRepository.findOpenByCandidateResultId(any())).thenReturn(Optional.empty());
     }
@@ -140,7 +146,13 @@ class ClassTestGradingAssignmentServiceTests {
     @Test
     void should_ignore_assessment_without_chair() {
         when(assessmentMemberRepository.findByAssessmentId(ASSESSMENT_ID)).thenReturn(List.of(
-            new AssessmentMember(ASSESSMENT_ID, UUID.randomUUID(), AssessmentMemberRole.AUTHOR, Instant.now(), CHAIR_ID)
+            AssessmentMember.builder()
+                    .assessmentId(ASSESSMENT_ID)
+                    .userId(UUID.randomUUID())
+                    .role(AssessmentMemberRole.AUTHOR)
+                    .grantedAt(Instant.now())
+                    .grantedBy(CHAIR_ID)
+                    .build()
         ));
 
         service.ensureAssignmentForResult(result(AssessmentCandidateResultStatus.PENDING_REVIEW));

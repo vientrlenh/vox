@@ -13,7 +13,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.AssessmentScheduleJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentScheduleJpaEntity;
 
 import jakarta.persistence.LockModeType;
 
@@ -89,7 +89,7 @@ public interface SpringDataAssessmentScheduleRepository extends JpaRepository<As
       @Param("start") Instant start,
       @Param("end") Instant end,
       @Param("now") Instant now,
-      @Param("updatedBy") UUID updatedBy);
+      @Param("updatedBy") String updatedBy);
 
   @Query("""
       SELECT s FROM AssessmentScheduleJpaEntity s

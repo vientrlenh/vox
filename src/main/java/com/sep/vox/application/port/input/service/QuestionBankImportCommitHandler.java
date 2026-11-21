@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.service;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -70,7 +69,6 @@ public class QuestionBankImportCommitHandler implements ImportCommitHandler {
         Set<String> codesInThisFile = new HashSet<String>();
         long importedCount = 0;
         long invalidCount = 0;
-        Instant now = Instant.now();
 
         for (ImportRow row : rows) {
             if (row.getStatus() != ImportRowStatus.PENDING) {
@@ -127,8 +125,6 @@ public class QuestionBankImportCommitHandler implements ImportCommitHandler {
                     if (languageId != null) {
                         existing.setLanguageId(languageId);
                     }
-                    existing.setUpdatedAt(now);
-                    existing.setUpdatedBy(session.getCreatedBy());
                     toSave.add(existing);
                 } else {
                     toSave.add(QuestionBank.create(
@@ -137,9 +133,7 @@ public class QuestionBankImportCommitHandler implements ImportCommitHandler {
                         code,
                         name,
                         description,
-                        ownerType,
-                        now,
-                        session.getCreatedBy()
+                        ownerType
                     ));
                 }
 

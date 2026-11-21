@@ -18,42 +18,22 @@ public class AssessmentCandidate {
 
     public AssessmentCandidate() {}
 
-    public AssessmentCandidate(UUID id, UUID assessmentId, UUID studentId, UUID assignedPaperId, UUID scheduleId,
-            AssessmentCandidateStatus status, Instant assignedAt, Instant updatedAt, Instant blockedAt, UUID assignedBy,
-            UUID updatedBy) {
-        this.id = id;
-        this.assessmentId = assessmentId;
-        this.studentId = studentId;
-        this.assignedPaperId = assignedPaperId;
-        this.scheduleId = scheduleId;
-        this.status = status;
-        this.assignedAt = assignedAt;
-        this.updatedAt = updatedAt;
-        this.blockedAt = blockedAt;
-        this.assignedBy = assignedBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public AssessmentCandidate(UUID assessmentId, UUID studentId, UUID assignedPaperId, UUID scheduleId, AssessmentCandidateStatus status,
-            Instant assignedAt, Instant updatedAt, Instant blockedAt, UUID assignedBy, UUID updatedBy) {
-        this.assessmentId = assessmentId;
-        this.studentId = studentId;
-        this.assignedPaperId = assignedPaperId;
-        this.scheduleId = scheduleId;
-        this.status = status;
-        this.assignedAt = assignedAt;
-        this.updatedAt = updatedAt;
-        this.blockedAt = blockedAt;
-        this.assignedBy = assignedBy;
-        this.updatedBy = updatedBy;
-    }
-
     /**
      * Tạo mới một thí sinh cho kỳ thi ở trạng thái ASSIGNED (id do DB sinh), chưa gán ca và chưa gán đề.
      */
     public static AssessmentCandidate createFresh(UUID assessmentId, UUID studentId, UUID createdBy, Instant now) {
-        return new AssessmentCandidate(assessmentId, studentId, null, null,
-                AssessmentCandidateStatus.ASSIGNED, now, now, null, createdBy, createdBy);
+        return AssessmentCandidate.builder()
+                .assessmentId(assessmentId)
+                .studentId(studentId)
+                .assignedPaperId(null)
+                .scheduleId(null)
+                .status(AssessmentCandidateStatus.ASSIGNED)
+                .assignedAt(now)
+                .updatedAt(now)
+                .blockedAt(null)
+                .assignedBy(createdBy)
+                .updatedBy(createdBy)
+                .build();
     }
 
     /**
@@ -179,5 +159,77 @@ public class AssessmentCandidate {
 
     public void setBlockedAt(Instant blockedAt) {
         this.blockedAt = blockedAt;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final AssessmentCandidate target = new AssessmentCandidate();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder assessmentId(UUID assessmentId) {
+            target.assessmentId = assessmentId;
+            return this;
+        }
+
+        public Builder studentId(UUID studentId) {
+            target.studentId = studentId;
+            return this;
+        }
+
+        public Builder assignedPaperId(UUID assignedPaperId) {
+            target.assignedPaperId = assignedPaperId;
+            return this;
+        }
+
+        public Builder scheduleId(UUID scheduleId) {
+            target.scheduleId = scheduleId;
+            return this;
+        }
+
+        public Builder status(AssessmentCandidateStatus status) {
+            target.status = status;
+            return this;
+        }
+
+        public Builder assignedAt(Instant assignedAt) {
+            target.assignedAt = assignedAt;
+            return this;
+        }
+
+        public Builder updatedAt(Instant updatedAt) {
+            target.updatedAt = updatedAt;
+            return this;
+        }
+
+        public Builder blockedAt(Instant blockedAt) {
+            target.blockedAt = blockedAt;
+            return this;
+        }
+
+        public Builder assignedBy(UUID assignedBy) {
+            target.assignedBy = assignedBy;
+            return this;
+        }
+
+        public Builder updatedBy(UUID updatedBy) {
+            target.updatedBy = updatedBy;
+            return this;
+        }
+
+        public AssessmentCandidate build() {
+            return target;
+        }
+
     }
 }

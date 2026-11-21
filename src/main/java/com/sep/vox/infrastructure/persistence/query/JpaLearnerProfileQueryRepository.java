@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.query;
 
-import com.sep.vox.infrastructure.persistence.entity.LearnerProfileJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.personalization.LearnerProfileJpaEntity;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import com.sep.vox.application.query.dto.LearnerProfileInfo;
 import com.sep.vox.application.query.repository.LearnerProfileQueryRepository;
-import com.sep.vox.infrastructure.persistence.entity.FrameworkResultBandJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.framework.FrameworkResultBandJpaEntity;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataLearnerProfileRepository;
 
 @Repository

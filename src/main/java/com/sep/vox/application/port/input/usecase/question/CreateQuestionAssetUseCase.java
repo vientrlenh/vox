@@ -60,7 +60,7 @@ public class CreateQuestionAssetUseCase implements IUseCase<CreateQuestionAssetM
         QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
-        boolean owner = currentUserId.equals(question.getCreatedBy());
+        boolean owner = question.isCreatedBy(currentUserId);
         boolean editorCollaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId)
             .filter(collaborator -> collaborator.getPermission() == QuestionCollaboratorPermission.CAN_EDIT)
             .isPresent();
@@ -101,17 +101,17 @@ public class CreateQuestionAssetUseCase implements IUseCase<CreateQuestionAssetM
 
         String transcript = sanitizeTranscript(assetType, command.transcript());
         String description = command.description();
-        QuestionAsset asset = new QuestionAsset(
-            targetQuestion.getId(),
-            command.title(),
-            command.durationSeconds(),
-            command.altText(),
-            assetType,
-            assetType == QuestionAssetType.TEXT_PASSAGE ? null : command.url(),
-            transcript,
-            description,
-            command.order()
-        );
+        QuestionAsset asset = QuestionAsset.builder()
+                .questionId(targetQuestion.getId())
+                .title(command.title())
+                .durationSeconds(command.durationSeconds())
+                .altText(command.altText())
+                .type(assetType)
+                .url(assetType == QuestionAssetType.TEXT_PASSAGE ? null : command.url())
+                .transcript(transcript)
+                .description(description)
+                .order(command.order())
+                .build();
 
         QuestionAsset saved = questionAssetRepository.save(asset);
         // Tạm thời bỏ auto-publish yêu cầu AI phân tích asset để luồng lưu asset

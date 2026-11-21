@@ -80,7 +80,12 @@ public class BulkDeleteAssessmentCandidatesUseCaseTests {
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(adminId);
         when(schoolUserRepository.findByUserId(adminId))
-            .thenReturn(Optional.of(new SchoolUser(schoolId, adminId, null, null)));
+            .thenReturn(Optional.of(SchoolUser.builder()
+                .schoolId(schoolId)
+                .userId(adminId)
+                .startDate(null)
+                .endDate(null)
+                .build()));
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(adminId)).thenReturn(List.of(
             new UserRoleInfo(UUID.randomUUID(), adminId, UUID.randomUUID(), null, "SCHOOL_ADMIN", "School Admin")));
 
@@ -158,7 +163,12 @@ public class BulkDeleteAssessmentCandidatesUseCaseTests {
         UUID outsider = UUID.randomUUID();
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(outsider);
         when(schoolUserRepository.findByUserId(outsider))
-            .thenReturn(Optional.of(new SchoolUser(UUID.randomUUID(), outsider, null, null)));
+            .thenReturn(Optional.of(SchoolUser.builder()
+                .schoolId(UUID.randomUUID())
+                .userId(outsider)
+                .startDate(null)
+                .endDate(null)
+                .build()));
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(outsider)).thenReturn(List.of(
             new UserRoleInfo(UUID.randomUUID(), outsider, UUID.randomUUID(), null, "TEACHER", "Teacher")));
 

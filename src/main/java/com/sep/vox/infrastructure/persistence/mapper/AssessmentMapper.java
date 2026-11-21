@@ -7,37 +7,37 @@ import com.sep.vox.domain.model.assessment.AssessmentRequiredStreamType;
 import com.sep.vox.domain.model.assessment.AssessmentStatus;
 import com.sep.vox.domain.model.assessment.AssessmentStreamTypePermission;
 import com.sep.vox.domain.model.assessment.ResultDecisionMethod;
-import com.sep.vox.infrastructure.persistence.entity.AssessmentJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentJpaEntity;
 
 public final class AssessmentMapper {
 
     public static Assessment toDomain(AssessmentJpaEntity jpa) {
-        Assessment assessment = new Assessment(
-            jpa.getId(),
-            jpa.getBlueprintId(),
-            jpa.getBlueprintVersionId(),
-            jpa.getCode(),
-            jpa.getName(),
-            jpa.getDescription(),
-            jpa.getSchoolId(),
-            jpa.getLanguageId(),
-            kindFromString(jpa.getKind()),
-            deliveryModeFromString(jpa.getDeliveryMode()),
-            statusFromString(jpa.getStatus()),
-            jpa.getMaxAttempt(),
-            jpa.getAssessmentTimeDurationSecond(),
-            resultDecisionMethodFromString(jpa.getResultDecisionMethod()),
-            requiredStreamTypeFromString(jpa.getRequiredStreamType()), 
-            streamTypePermissionFromString(jpa.getStreamTypePermission()), 
-            jpa.getOpenAt(),
-            jpa.getCloseAt(),
-            jpa.getAssessmentPolicyId(),
-            jpa.isRequiresOtp(),
-            jpa.getCreatedAt(),
-            jpa.getUpdatedAt(),
-            jpa.getCreatedBy(),
-            jpa.getUpdatedBy()
-        );
+        Assessment assessment = Assessment.builder()
+                .id(jpa.getId())
+                .blueprintId(jpa.getBlueprintId())
+                .blueprintVersionId(jpa.getBlueprintVersionId())
+                .code(jpa.getCode())
+                .name(jpa.getName())
+                .description(jpa.getDescription())
+                .schoolId(jpa.getSchoolId())
+                .languageId(jpa.getLanguageId())
+                .kind(kindFromString(jpa.getKind()))
+                .deliveryMode(deliveryModeFromString(jpa.getDeliveryMode()))
+                .status(statusFromString(jpa.getStatus()))
+                .maxAttempt(jpa.getMaxAttempt())
+                .assessmentTimeDurationSecond(jpa.getAssessmentTimeDurationSecond())
+                .resultDecisionMethod(resultDecisionMethodFromString(jpa.getResultDecisionMethod()))
+                .requiredStreamType(requiredStreamTypeFromString(jpa.getRequiredStreamType()))
+                .streamTypePermission(streamTypePermissionFromString(jpa.getStreamTypePermission()))
+                .openAt(jpa.getOpenAt())
+                .closeAt(jpa.getCloseAt())
+                .assessmentPolicyId(jpa.getAssessmentPolicyId())
+                .requiresOtp(jpa.isRequiresOtp())
+                .createdAt(jpa.getCreatedAt())
+                .updatedAt(jpa.getUpdatedAt())
+                .createdBy(jpa.getCreatedBy())
+                .updatedBy(jpa.getUpdatedBy())
+                .build();
         assessment.setAssessmentTimeDurationSecond(jpa.getAssessmentTimeDurationSecond());
         // Set through a setter instead of the constructor: the Assessment constructor is already long and has many
         // variants, and adding a parameter would mean editing every caller just to carry one optional field.
@@ -47,32 +47,32 @@ public final class AssessmentMapper {
     }
 
     public static AssessmentJpaEntity toJpa(Assessment assessment) {
-        AssessmentJpaEntity jpa = new AssessmentJpaEntity(
-            assessment.getId(),
-            assessment.getBlueprintId(),
-            assessment.getBlueprintVersionId(),
-            assessment.getCode(),
-            assessment.getName(),
-            assessment.getDescription(),
-            assessment.getSchoolId(),
-            assessment.getLanguageId(),
-            assessment.getKind().name(),
-            assessment.getDeliveryMode() == null ? null : assessment.getDeliveryMode().name(),
-            assessment.getStatus().name(),
-            assessment.getMaxAttempt(),
-            assessment.getAssessmentTimeDurationSecond(),
-            assessment.getResultDecisionMethod() == null ? null : assessment.getResultDecisionMethod().name(),
-            valueOf(assessment.getRequiredStreamType()), 
-            valueOf(assessment.getStreamTypePermission()), 
-            assessment.getOpenAt(),
-            assessment.getCloseAt(),
-            assessment.getAssessmentPolicyId(),
-            assessment.isRequiresOtp(),
-            assessment.getCreatedAt(),
-            assessment.getUpdatedAt(),
-            assessment.getCreatedBy(),
-            assessment.getUpdatedBy()
-        );
+        AssessmentJpaEntity jpa = AssessmentJpaEntity.builder()
+                .id(assessment.getId())
+                .blueprintId(assessment.getBlueprintId())
+                .blueprintVersionId(assessment.getBlueprintVersionId())
+                .code(assessment.getCode())
+                .name(assessment.getName())
+                .description(assessment.getDescription())
+                .schoolId(assessment.getSchoolId())
+                .languageId(assessment.getLanguageId())
+                .kind(assessment.getKind().name())
+                .deliveryMode(assessment.getDeliveryMode() == null ? null : assessment.getDeliveryMode().name())
+                .status(assessment.getStatus().name())
+                .maxAttempt(assessment.getMaxAttempt())
+                .assessmentTimeDurationSecond(assessment.getAssessmentTimeDurationSecond())
+                .resultDecisionMethod(assessment.getResultDecisionMethod() == null ? null : assessment.getResultDecisionMethod().name())
+                .requiredStreamType(valueOf(assessment.getRequiredStreamType()))
+                .streamTypePermission(valueOf(assessment.getStreamTypePermission()))
+                .openAt(assessment.getOpenAt())
+                .closeAt(assessment.getCloseAt())
+                .assessmentPolicyId(assessment.getAssessmentPolicyId())
+                .requiresOtp(assessment.isRequiresOtp())
+                .createdAt(assessment.getCreatedAt())
+                .updatedAt(assessment.getUpdatedAt())
+                .createdBy(assessment.getCreatedBy())
+                .updatedBy(assessment.getUpdatedBy())
+                .build();
         jpa.setAssessmentTimeDurationSecond(assessment.getAssessmentTimeDurationSecond());
         jpa.setHumanGradingNotifiedAt(assessment.getHumanGradingNotifiedAt());
         jpa.setAiConfidenceThresholdPercent(assessment.getAiConfidenceThresholdPercent());

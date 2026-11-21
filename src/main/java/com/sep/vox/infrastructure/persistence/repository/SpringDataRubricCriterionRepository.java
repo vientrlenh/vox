@@ -10,7 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.sep.vox.infrastructure.persistence.entity.RubricCriterionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.rubric.RubricCriterionJpaEntity;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -47,7 +47,7 @@ public interface SpringDataRubricCriterionRepository extends JpaRepository<Rubri
             @Param("order") Integer order,
             @Param("isRequired") Boolean isRequired,
             @Param("updatedAt") Instant updatedAt,
-            @Param("updatedBy") UUID updatedBy
+            @Param("updatedBy") String updatedBy
     );
 
     Page<RubricCriterionJpaEntity> findAllByRubricVersionId(UUID rubricVersionId, Pageable pageable);

@@ -1,16 +1,16 @@
 package com.sep.vox.domain.model.user;
 
 import java.time.LocalDate;
-import java.time.Instant;
-import java.util.UUID;
 
+import com.sep.vox.domain.model.BaseModel;
 import com.sep.vox.domain.valueobject.DateOfBirth;
 import com.sep.vox.domain.valueobject.Email;
 import com.sep.vox.domain.valueobject.FullName;
 import com.sep.vox.domain.valueobject.Phone;
 
-public class User {
-    private UUID id;
+public class User extends BaseModel {
+    private static final String PASSWORD_NOT_SET = "__PASSWORD_NOT_SET__";
+
     private Email email;
     private String passwordHash;
     private Phone phone;
@@ -20,78 +20,13 @@ public class User {
     private String address;
     private String avatarUrl;
     private UserStatus status;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private UUID createdBy;
-    private UUID updatedBy;
 
     public User() {}
-
-    public User(UUID id, Email email, String passwordHash, Phone phone,
-            FullName fullName, Gender gender, DateOfBirth dateOfBirth, String address, String avatarUrl, UserStatus status,
-            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.id = id;
-        this.email = email;
-        this.passwordHash = passwordHash;
-        this.phone = phone;
-        this.fullName = fullName;
-        this.gender = gender;
-        this.dateOfBirth = dateOfBirth;
-        this.address = address;
-        this.avatarUrl = avatarUrl;
-        this.status = status;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public User(Email email, String passwordHash, Phone phone,
-            FullName fullName, Gender gender, DateOfBirth dateOfBirth, String address, String avatarUrl, UserStatus status,
-            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.email = email;
-        this.passwordHash = passwordHash;
-        this.phone = phone;
-        this.fullName = fullName;
-        this.gender = gender;
-        this.dateOfBirth = dateOfBirth;
-        this.address = address;
-        this.avatarUrl = avatarUrl;
-        this.status = status;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
-
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
 
     public Email getEmail() {
         return email;
     }
+
     public void setEmail(Email email) {
         this.email = email;
     }
@@ -144,20 +79,12 @@ public class User {
         this.address = address;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
+    public String getAvatarUrl() {
+        return avatarUrl;
     }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-    
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
     }
 
     public UserStatus getStatus() {
@@ -168,74 +95,101 @@ public class User {
         this.status = status;
     }
 
-
-
     /**
-     * Người dùng do trường import/tạo tay nằm ở trạng thái INACTIVE cho tới khi họ tự đặt mật khẩu
-     * qua mail mời, nhưng trường vẫn phải xếp lớp cho họ ngay từ đầu năm. Vì vậy chỉ tài khoản đã
-     * bị khoá hoặc vô hiệu hoá mới không được thêm vào lớp.
+     * Users created by a school (imported or added by hand) stay INACTIVE until they set their own password through
+     * the invitation mail, but the school still has to place them in classes from the start of the year. So only an
+     * account that was locked or disabled cannot be added to a class.
      */
     public boolean canBeAssignedToSchoolClass() {
         return status != UserStatus.DISABLED && status != UserStatus.LOCKED;
     }
 
-    public void updatePasswordAndActivate(String passwordHash, Instant now) {
+    public void updatePasswordAndActivate(String passwordHash) {
         this.passwordHash = passwordHash;
         this.status = UserStatus.ACTIVE;
-        this.updatedAt = now;
     }
 
-    private static final String PASSWORD_NOT_SET = "__PASSWORD_NOT_SET__";
-
-    
-    public static User createSchoolAdmin(String email, String phone, String fullName, LocalDate dateOfBirth, String address, String avatarUrl, UUID createdUserId, Instant now) {
-        return new User(
-            new Email(email), 
-            PASSWORD_NOT_SET, 
-            new Phone(phone), 
-            new FullName(fullName), 
-            null, 
-            new DateOfBirth(dateOfBirth), 
-            address, 
-            avatarUrl,
-            UserStatus.INACTIVE, 
-            now, 
-            now, 
-            createdUserId, 
-            createdUserId
-        );
+    public static User createSchoolAdmin(String email, String phone, String fullName, LocalDate dateOfBirth,
+            String address, String avatarUrl) {
+        return create(email, phone, fullName, dateOfBirth, address, avatarUrl);
     }
 
-    public String getAvatarUrl() {
-        return avatarUrl;
+    public static User create(String email, String phone, String fullName, LocalDate dateOfBirth, String address,
+            String avatarUrl) {
+        return builder()
+            .email(new Email(email))
+            .passwordHash(PASSWORD_NOT_SET)
+            .phone(new Phone(phone))
+            .fullName(new FullName(fullName))
+            .dateOfBirth(new DateOfBirth(dateOfBirth))
+            .address(address)
+            .avatarUrl(avatarUrl)
+            .status(UserStatus.INACTIVE)
+            .build();
     }
 
-    public void setAvatarUrl(String avatarUrl) {
-        this.avatarUrl = avatarUrl;
-    }
-
-    public static User create(String email, String phone, String fullName, LocalDate dateOfBirth, String address, String avatarUrl, UUID createdBy, Instant now) {
-        return new User(
-            new Email(email),
-            PASSWORD_NOT_SET,
-            new Phone(phone),
-            new FullName(fullName),
-            null,
-            new DateOfBirth(dateOfBirth),
-            address,
-            avatarUrl,
-            UserStatus.INACTIVE,
-            now,
-            now,
-            createdBy,
-            createdBy
-        );
-    }
-
-    public void softDelete(UUID updatedBy, Instant now) {
+    public void softDelete() {
         this.status = UserStatus.DISABLED;
-        this.updatedBy = updatedBy;
-        this.updatedAt = now;
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder extends BaseModel.Builder<User, Builder> {
+
+        private Builder() {
+            super(new User());
+        }
+
+        @Override
+        protected Builder self() {
+            return this;
+        }
+
+        public Builder email(Email email) {
+            target.email = email;
+            return this;
+        }
+
+        public Builder passwordHash(String passwordHash) {
+            target.passwordHash = passwordHash;
+            return this;
+        }
+
+        public Builder phone(Phone phone) {
+            target.phone = phone;
+            return this;
+        }
+
+        public Builder fullName(FullName fullName) {
+            target.fullName = fullName;
+            return this;
+        }
+
+        public Builder gender(Gender gender) {
+            target.gender = gender;
+            return this;
+        }
+
+        public Builder dateOfBirth(DateOfBirth dateOfBirth) {
+            target.dateOfBirth = dateOfBirth;
+            return this;
+        }
+
+        public Builder address(String address) {
+            target.address = address;
+            return this;
+        }
+
+        public Builder avatarUrl(String avatarUrl) {
+            target.avatarUrl = avatarUrl;
+            return this;
+        }
+
+        public Builder status(UserStatus status) {
+            target.status = status;
+            return this;
+        }
+    }
 }

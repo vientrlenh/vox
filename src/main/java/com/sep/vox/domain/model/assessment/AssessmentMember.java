@@ -13,24 +13,6 @@ public class AssessmentMember {
 
     public AssessmentMember() {}
 
-    public AssessmentMember(UUID id, UUID assessmentId, UUID userId, AssessmentMemberRole role, Instant grantedAt,
-            UUID grantedBy) {
-        this.id = id;
-        this.assessmentId = assessmentId;
-        this.userId = userId;
-        this.role = role;
-        this.grantedAt = grantedAt;
-        this.grantedBy = grantedBy;
-    }
-
-    public AssessmentMember(UUID assessmentId, UUID userId, AssessmentMemberRole role, Instant grantedAt, UUID grantedBy) {
-        this.assessmentId = assessmentId;
-        this.userId = userId;
-        this.role = role;
-        this.grantedAt = grantedAt;
-        this.grantedBy = grantedBy;
-    }
-
     public UUID getId() {
         return id;
     }
@@ -79,5 +61,50 @@ public class AssessmentMember {
         this.grantedBy = grantedBy;
     }
 
-    
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final AssessmentMember target = new AssessmentMember();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder assessmentId(UUID assessmentId) {
+            target.assessmentId = assessmentId;
+            return this;
+        }
+
+        public Builder userId(UUID userId) {
+            target.userId = userId;
+            return this;
+        }
+
+        public Builder role(AssessmentMemberRole role) {
+            target.role = role;
+            return this;
+        }
+
+        public Builder grantedAt(Instant grantedAt) {
+            target.grantedAt = grantedAt;
+            return this;
+        }
+
+        public Builder grantedBy(UUID grantedBy) {
+            target.grantedBy = grantedBy;
+            return this;
+        }
+
+        public AssessmentMember build() {
+            return target;
+        }
+
+    }
 }

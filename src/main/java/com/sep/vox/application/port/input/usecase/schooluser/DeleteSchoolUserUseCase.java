@@ -54,11 +54,11 @@ public class DeleteSchoolUserUseCase implements IUseCase<DeleteSchoolUserCommand
             throw new NotFoundException("Không tìm thấy người dùng");
         }
 
-        targetUser.softDelete(callerId, now);
+        targetUser.softDelete();
         userRepository.save(targetUser);
 
-        // SchoolUser không có cờ isActive: kết thúc membership bằng endDate để vô hiệu hóa,
-        // đảm bảo ràng buộc DB start_date < end_date luôn thỏa mãn.
+        // SchoolUser has no isActive flag: the membership is deactivated by setting its endDate, which keeps the
+        // database constraint start_date < end_date satisfied.
         Instant startDate = targetSchoolUser.getStartDate();
         Instant membershipEnd = (startDate != null && !startDate.isBefore(now))
             ? startDate.plusSeconds(1)

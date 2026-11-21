@@ -2,34 +2,34 @@ package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.devicesession.DeviceSession;
 import com.sep.vox.domain.model.devicesession.SessionPlatform;
-import com.sep.vox.infrastructure.persistence.entity.DeviceSessionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.devicesession.DeviceSessionJpaEntity;
 
 public final class DeviceSessionMapper {
     
     public static DeviceSession toDomain(DeviceSessionJpaEntity jpa) {
-        return new DeviceSession(
-            jpa.getId(), 
-            jpa.getUserId(), 
-            jpa.getDeviceId(), 
-            jpa.getDeviceName(), 
-            sessionPlatform(jpa.getPlatform()), 
-            jpa.getIpAddress(), 
-            jpa.getUserAgent(), 
-            jpa.getRevokedAt()
-        );
+        return DeviceSession.builder()
+            .id(jpa.getId())
+            .userId(jpa.getUserId())
+            .deviceId(jpa.getDeviceId())
+            .deviceName(jpa.getDeviceName())
+            .platform(sessionPlatform(jpa.getPlatform()))
+            .ipAddress(jpa.getIpAddress())
+            .userAgent(jpa.getUserAgent())
+            .revokedAt(jpa.getRevokedAt())
+            .build();
     }
 
     public static DeviceSessionJpaEntity toJpa(DeviceSession session) {
-        return new DeviceSessionJpaEntity(
-            session.getId(), 
-            session.getUserId(), 
-            session.getDeviceId(), 
-            session.getDeviceName(), 
-            valueOf(session.getPlatform()), 
-            session.getIpAddress(), 
-            session.getUserAgent(), 
-            session.getRevokedAt()
-        );
+        return DeviceSessionJpaEntity.builder()
+            .id(session.getId())
+            .userId(session.getUserId())
+            .deviceId(session.getDeviceId())
+            .deviceName(session.getDeviceName())
+            .platform(valueOf(session.getPlatform()))
+            .ipAddress(session.getIpAddress())
+            .userAgent(session.getUserAgent())
+            .revokedAt(session.getRevokedAt())
+            .build();
     }
 
     private static SessionPlatform sessionPlatform(String platform) {

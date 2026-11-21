@@ -59,7 +59,6 @@ public class AssessmentStatusAutoTransitionJob {
                 continue;
             }
             assessment.setStatus(AssessmentStatus.IN_PROGRESS);
-            assessment.setUpdatedAt(now);
             assessmentRepository.save(assessment);
             // Matches exactly the side-effect of UpdateAssessmentStatusUseCase.START — locks the paper when the official assessment opens for students,
             // so behavior does not drift between the automatic opening (openAt) and the CHAIR pressing it manually.
@@ -87,11 +86,10 @@ public class AssessmentStatusAutoTransitionJob {
                 continue;
             }
             assessment.setStatus(AssessmentStatus.CLOSED);
-            assessment.setUpdatedAt(now);
             assessmentRepository.save(assessment);
             // Matches exactly the side-effect of UpdateAssessmentStatusUseCase.CLOSE: most class tests are closed through
             // this path, and missing it here leaves the assessment shift in PUBLISHED forever.
-            assessmentScheduleClosureService.closeSchedulesForAssessment(assessment.getId(), null, now);
+            assessmentScheduleClosureService.closeSchedulesForAssessment(assessment.getId(), now);
             assessmentQuestionSecureLockService.releaseIfAutoAfterClose(assessment.getId());
             zeroScoreAssessmentResultService.ensureZeroResultsForMissingOrEmptyAttempts(assessment.getId());
             // Most class tests are closed through this path rather than by the CHAIR manually — missing

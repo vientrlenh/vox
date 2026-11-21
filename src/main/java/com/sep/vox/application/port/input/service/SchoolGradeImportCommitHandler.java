@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.service;
 
 import java.time.LocalDate;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -59,10 +58,9 @@ public class SchoolGradeImportCommitHandler implements ImportCommitHandler {
     @Override
     public ImportCommitResult commit(ImportSession session, List<ImportRow> rows) {
         UUID schoolId = session.getSchoolId();
-        UUID currentUserId = session.getCreatedBy();
         Map<String, String> mapping = jsonSerializationPort.toStringMap(session.getConfirmedMappingJson());
         validateMappingKeys(rows, mapping);
-        return processRows(rows, mapping, schoolId, currentUserId);
+        return processRows(rows, mapping, schoolId);
     }
 
     private void validateMappingKeys(List<ImportRow> rows, Map<String, String> confirmedMapping) {
@@ -85,7 +83,7 @@ public class SchoolGradeImportCommitHandler implements ImportCommitHandler {
         }
     }
 
-    private ImportCommitResult processRows(List<ImportRow> rows, Map<String, String> confirmedMapping, UUID schoolId, UUID currentUserId) {
+    private ImportCommitResult processRows(List<ImportRow> rows, Map<String, String> confirmedMapping, UUID schoolId) {
         long createdRows = 0L;
         long updatedRows = 0L;
         long invalidRows = 0L;
@@ -126,11 +124,11 @@ public class SchoolGradeImportCommitHandler implements ImportCommitHandler {
             try {
                 if (existing != null) {
                     transactionTemplate.executeWithoutResult(status ->
-                            updateGrade(existing, normalized, startDate, endDate, currentUserId));
+                            updateGrade(existing, normalized, startDate, endDate));
                     updatedRows++;
                 } else {
                     transactionTemplate.executeWithoutResult(status ->
-                            createGrade(normalized, schoolId, gradeLevel.getId(), startDate, endDate, currentUserId));
+                            createGrade(normalized, schoolId, gradeLevel.getId(), startDate, endDate));
                     createdRows++;
                 }
             } catch (DataIntegrityViolationException | IllegalArgumentException exception) {
@@ -147,34 +145,27 @@ public class SchoolGradeImportCommitHandler implements ImportCommitHandler {
         return new ImportCommitResult(createdRows, updatedRows, 0L, invalidRows);
     }
 
-    private void createGrade(Map<String, String> data, UUID schoolId, UUID gradeLevelId, LocalDate startDate, LocalDate endDate, UUID currentUserId) {
-        Instant now = Instant.now();
-        schoolGradeRepository.save(new SchoolGrade(
-                schoolId,
-                gradeLevelId,
-                data.get("code"),
-                data.get("name"),
-                data.get("description"),
-                startDate,
-                endDate,
-                // Cùng trạng thái với thêm tay (CreateSchoolGradeUseCase): năm học INACTIVE bị
-                // CreateSchoolClassUseCase / SchoolClassImportCommitHandler từ chối, mà không có
-                // API nào bật lại được nên bản ghi import sẽ kẹt vĩnh viễn.
-                SchoolGradeStatus.ACTIVE,
-                now,
-                now,
-                currentUserId,
-                currentUserId));
+    private void createGrade(Map<String, String> data, UUID schoolId, UUID gradeLevelId, LocalDate startDate, LocalDate endDate) {
+        schoolGradeRepository.save(SchoolGrade.builder()
+            .schoolId(schoolId)
+            .gradeLevelId(gradeLevelId)
+            .code(data.get("code"))
+            .name(data.get("name"))
+            .description(data.get("description"))
+            .startDate(startDate)
+            .endDate(endDate)
+            // Same status as manual creation (CreateSchoolGradeUseCase): an INACTIVE school year is rejected by
+            // CreateSchoolClassUseCase / SchoolClassImportCommitHandler, and no API can re-activate it, so the
+            // imported record would be stuck forever.
+            .status(SchoolGradeStatus.ACTIVE)
+            .build());
     }
 
-    private void updateGrade(SchoolGrade existing, Map<String, String> data, LocalDate startDate, LocalDate endDate, UUID currentUserId) {
-        Instant now = Instant.now();
+    private void updateGrade(SchoolGrade existing, Map<String, String> data, LocalDate startDate, LocalDate endDate) {
         existing.setName(data.get("name"));
         existing.setDescription(data.get("description"));
         existing.setStartDate(startDate);
         existing.setEndDate(endDate);
-        existing.setUpdatedAt(now);
-        existing.setUpdatedBy(currentUserId);
         schoolGradeRepository.save(existing);
     }
 

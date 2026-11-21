@@ -103,10 +103,15 @@ class SchoolClassUserImportCommitHandlerTests {
         UUID classId = UUID.randomUUID();
         User student = activeUser(UUID.randomUUID(), schoolId, "student@example.com");
         SchoolClass schoolClass = activeSchoolClass(classId, schoolId, "ENG-01");
-        SchoolClassUser inactiveMembership = new SchoolClassUser(
-            UUID.randomUUID(), student.getId(), classId,
-            false, Instant.now().minus(30, ChronoUnit.DAYS), Instant.now().minus(10, ChronoUnit.DAYS), UUID.randomUUID()
-        );
+        SchoolClassUser inactiveMembership = SchoolClassUser.builder()
+            .id(UUID.randomUUID())
+            .userId(student.getId())
+            .schoolClassId(classId)
+            .active(false)
+            .joinedAt(Instant.now().minus(30, ChronoUnit.DAYS))
+            .leftAt(Instant.now().minus(10, ChronoUnit.DAYS))
+            .assignedBy(UUID.randomUUID())
+            .build();
         List<ImportRow> rows = List.of(row(sessionId, 1L, Map.of("Email", "student@example.com", "Mã lớp", "ENG-01")));
 
         when(userRepository.findByEmailIn(Set.of("student@example.com"))).thenReturn(List.of(student));
@@ -136,10 +141,15 @@ class SchoolClassUserImportCommitHandlerTests {
         UUID originalAssigner = UUID.randomUUID();
         User student = activeUser(UUID.randomUUID(), schoolId, "student@example.com");
         SchoolClass schoolClass = activeSchoolClass(classId, schoolId, "ENG-01");
-        SchoolClassUser activeMembership = new SchoolClassUser(
-            UUID.randomUUID(), student.getId(), classId,
-            true, Instant.now().minus(10, ChronoUnit.DAYS), null, originalAssigner
-        );
+        SchoolClassUser activeMembership = SchoolClassUser.builder()
+            .id(UUID.randomUUID())
+            .userId(student.getId())
+            .schoolClassId(classId)
+            .active(true)
+            .joinedAt(Instant.now().minus(10, ChronoUnit.DAYS))
+            .leftAt(null)
+            .assignedBy(originalAssigner)
+            .build();
         List<ImportRow> rows = List.of(row(sessionId, 1L, Map.of("Email", "student@example.com", "Mã lớp", "ENG-01")));
 
         when(userRepository.findByEmailIn(Set.of("student@example.com"))).thenReturn(List.of(student));
@@ -340,10 +350,15 @@ class SchoolClassUserImportCommitHandlerTests {
         User existingStudent = activeUser(UUID.randomUUID(), schoolId, "existing@example.com");
         SchoolClass newClass = activeSchoolClass(newClassId, schoolId, "NEW-01");
         SchoolClass existingClass = activeSchoolClass(existingClassId, schoolId, "EXT-01");
-        SchoolClassUser existingMembership = new SchoolClassUser(
-            UUID.randomUUID(), existingStudent.getId(), existingClassId,
-            false, Instant.now().minus(5, ChronoUnit.DAYS), Instant.now().minus(1, ChronoUnit.DAYS), UUID.randomUUID()
-        );
+        SchoolClassUser existingMembership = SchoolClassUser.builder()
+            .id(UUID.randomUUID())
+            .userId(existingStudent.getId())
+            .schoolClassId(existingClassId)
+            .active(false)
+            .joinedAt(Instant.now().minus(5, ChronoUnit.DAYS))
+            .leftAt(Instant.now().minus(1, ChronoUnit.DAYS))
+            .assignedBy(UUID.randomUUID())
+            .build();
         List<ImportRow> rows = List.of(
             row(sessionId, 1L, Map.of("Email", "new@example.com", "Mã lớp", "NEW-01")),
             row(sessionId, 2L, Map.of("Email", "existing@example.com", "Mã lớp", "EXT-01"))
@@ -368,18 +383,44 @@ class SchoolClassUserImportCommitHandlerTests {
     }
 
     private ImportRow row(UUID sessionId, long rowNumber, Map<String, String> rawData) {
-        return new ImportRow(UUID.randomUUID(), sessionId, rowNumber, jsonSerializationPort.toJson(rawData), null, null, ImportRowStatus.PENDING);
+        return ImportRow.builder()
+            .id(UUID.randomUUID())
+            .sessionId(sessionId)
+            .rowNumber(rowNumber)
+            .rawDataJson(jsonSerializationPort.toJson(rawData))
+            .mappedDataJson(null)
+            .errorsJson(null)
+            .status(ImportRowStatus.PENDING)
+            .build();
     }
 
     private ImportSession session(UUID id, UUID schoolId, UUID createdBy) {
-        return new ImportSession(
-            id, schoolId, ImportType.SCHOOL_CLASS_USER, "class-users.csv", "[]", "{}",
-            jsonSerializationPort.toJson(Map.of("Email", "email", "Mã lớp", "classCode")),
-            0L, 0L, 0L, 0L, 0L, null, ImportSessionStatus.IMPORTING, null,
-            Instant.now().plus(1, ChronoUnit.DAYS), null, null, null, 0,
-            Instant.now(), Instant.now(),
-            createdBy, createdBy
-        );
+        return ImportSession.builder()
+            .id(id)
+            .schoolId(schoolId)
+            .type(ImportType.SCHOOL_CLASS_USER)
+            .fileName("class-users.csv")
+            .originalHeadersJson("[]")
+            .suggestedMappingJson("{}")
+            .confirmedMappingJson(jsonSerializationPort.toJson(Map.of("Email", "email", "Mã lớp", "classCode")))
+            .validRows(0L)
+            .invalidRows(0L)
+            .importedRows(0L)
+            .skippedRows(0L)
+            .totalRows(0L)
+            .failureReason(null)
+            .status(ImportSessionStatus.IMPORTING)
+            .importedEntityId(null)
+            .expiresAt(Instant.now().plus(1, ChronoUnit.DAYS))
+            .claimedAt(null)
+            .claimedBy(null)
+            .leaseExpiresAt(null)
+            .attempts(0)
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
+            .createdBy(createdBy.toString())
+            .updatedBy(createdBy.toString())
+            .build();
     }
 
     private User activeUser(UUID id, UUID schoolId, String email) {
@@ -400,7 +441,12 @@ class SchoolClassUserImportCommitHandlerTests {
 
     private void mockUsersBelongToSchool(UUID schoolId, User... users) {
         List<SchoolUser> schoolUsers = Arrays.stream(users)
-            .map(user -> new SchoolUser(schoolId, user.getId(), Instant.now(), null))
+            .map(user -> SchoolUser.builder()
+                .schoolId(schoolId)
+                .userId(user.getId())
+                .startDate(Instant.now())
+                .endDate(null)
+                .build())
             .toList();
         when(schoolUserRepository.findByUserIdIn(any())).thenReturn(schoolUsers);
     }

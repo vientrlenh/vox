@@ -59,7 +59,7 @@ public class UpsertQuestionEvaluationGuideUseCase implements IUseCase<UpsertQues
         QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
-        boolean owner = currentUserId.equals(question.getCreatedBy());
+        boolean owner = question.isCreatedBy(currentUserId);
         boolean editorCollaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId)
             .filter(collaborator -> collaborator.getPermission() == QuestionCollaboratorPermission.CAN_EDIT)
             .isPresent();
@@ -85,15 +85,15 @@ public class UpsertQuestionEvaluationGuideUseCase implements IUseCase<UpsertQues
             : question;
 
         QuestionEvaluationGuide guide = questionEvaluationGuideRepository.findByQuestionId(targetQuestion.getId())
-            .orElseGet(() -> new QuestionEvaluationGuide(
-                targetQuestion.getId(),
-                null,
-                null,
-                null,
-                null,
-                null,
-                null
-            ));
+            .orElseGet(() -> QuestionEvaluationGuide.builder()
+                    .questionId(targetQuestion.getId())
+                    .expectedContent(null)
+                    .keyPoints(null)
+                    .acceptableResponses(null)
+                    .offTopicExamples(null)
+                    .scoringHints(null)
+                    .commonMistakes(null)
+                    .build());
 
         if (command.expectedContent() != null) {
             guide.setExpectedContent(command.expectedContent());

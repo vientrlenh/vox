@@ -26,16 +26,16 @@ class AssessmentSessionRepositoryTests {
     private AssessmentSessionRepository assessmentSessionRepository;
 
     private AssessmentSession newSession(AssessmentSessionStatus status) {
-        return assessmentSessionRepository.save(new AssessmentSession(
-            UUID.randomUUID(),
-            UUID.randomUUID(),
-            UUID.randomUUID(),
-            Instant.now(),
-            null,
-            status,
-            false,
-            null
-        ));
+        return assessmentSessionRepository.save(AssessmentSession.builder()
+                .assessmentId(UUID.randomUUID())
+                .candidateId(UUID.randomUUID())
+                .paperId(UUID.randomUUID())
+                .startedAt(Instant.now())
+                .submittedAt(null)
+                .status(status)
+                .flagged(false)
+                .flagReason(null)
+                .build());
     }
 
     @Test

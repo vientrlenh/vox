@@ -18,37 +18,6 @@ public class Outbox {
 
     public Outbox() {}
 
-    public Outbox(UUID id, String aggregateType, UUID aggregateId, String eventType, String payload,
-            OutboxStatus status, int retryCount, Instant createdAt, Instant publishedAt,
-            Instant nextRetryAt, String lastError) {
-        this.id = id;
-        this.aggregateType = aggregateType;
-        this.aggregateId = aggregateId;
-        this.eventType = eventType;
-        this.payload = payload;
-        this.status = status;
-        this.retryCount = retryCount;
-        this.createdAt = createdAt;
-        this.publishedAt = publishedAt;
-        this.nextRetryAt = nextRetryAt;
-        this.lastError = lastError;
-    }
-
-    public Outbox(String aggregateType, UUID aggregateId, String eventType, String payload, OutboxStatus status,
-            int retryCount, Instant createdAt, Instant publishedAt, Instant nextRetryAt,
-            String lastError) {
-        this.aggregateType = aggregateType;
-        this.aggregateId = aggregateId;
-        this.eventType = eventType;
-        this.payload = payload;
-        this.status = status;
-        this.retryCount = retryCount;
-        this.createdAt = createdAt;
-        this.publishedAt = publishedAt;
-        this.nextRetryAt = nextRetryAt;
-        this.lastError = lastError;
-    }
-
     public UUID getId() {
         return id;
     }
@@ -138,17 +107,89 @@ public class Outbox {
     }
 
     public static Outbox create(String aggregateType, UUID aggregateId, String eventType, String payload, Instant now) {
-        return new Outbox(
-            aggregateType, 
-            aggregateId, 
-            eventType, 
-            payload, 
-            OutboxStatus.PENDING, 
-            0, 
-            now, 
-            null, 
-            null, 
-            null
-        );
+        return Outbox.builder()
+                .aggregateType(aggregateType)
+                .aggregateId(aggregateId)
+                .eventType(eventType)
+                .payload(payload)
+                .status(OutboxStatus.PENDING)
+                .retryCount(0)
+                .createdAt(now)
+                .publishedAt(null)
+                .nextRetryAt(null)
+                .lastError(null)
+                .build();
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final Outbox target = new Outbox();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder aggregateType(String aggregateType) {
+            target.aggregateType = aggregateType;
+            return this;
+        }
+
+        public Builder aggregateId(UUID aggregateId) {
+            target.aggregateId = aggregateId;
+            return this;
+        }
+
+        public Builder eventType(String eventType) {
+            target.eventType = eventType;
+            return this;
+        }
+
+        public Builder payload(String payload) {
+            target.payload = payload;
+            return this;
+        }
+
+        public Builder status(OutboxStatus status) {
+            target.status = status;
+            return this;
+        }
+
+        public Builder retryCount(int retryCount) {
+            target.retryCount = retryCount;
+            return this;
+        }
+
+        public Builder createdAt(Instant createdAt) {
+            target.createdAt = createdAt;
+            return this;
+        }
+
+        public Builder publishedAt(Instant publishedAt) {
+            target.publishedAt = publishedAt;
+            return this;
+        }
+
+        public Builder nextRetryAt(Instant nextRetryAt) {
+            target.nextRetryAt = nextRetryAt;
+            return this;
+        }
+
+        public Builder lastError(String lastError) {
+            target.lastError = lastError;
+            return this;
+        }
+
+        public Outbox build() {
+            return target;
+        }
+
     }
 }

@@ -67,8 +67,12 @@ class AssessmentDirectoryAccessServiceTests {
     void should_list_only_active_classes_the_caller_belongs_to() {
         UUID classId = UUID.randomUUID();
         SchoolClass schoolClass = SchoolClass.create(
-            schoolId, UUID.randomUUID(), UUID.randomUUID(), "ENG-01", "English 01", null,
-            UUID.randomUUID(), Instant.now());
+            schoolId,
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            "ENG-01",
+            "English 01",
+            null);
         schoolClass.setId(classId);
         when(schoolClassRepository.findByUserId(schoolId, callerId, null, SchoolClassStatus.ACTIVE, 1, 200))
             .thenReturn(new PageResult<>(List.of(schoolClass), 1, 200, 1, 1));

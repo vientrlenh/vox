@@ -152,8 +152,6 @@ public class GradingActionSupport {
             if (targetStatus == AssessmentCandidateResultStatus.PENDING_REVIEW) {
                 result.setFinalizedAt(null);
             }
-            result.setUpdatedAt(now);
-            result.setUpdatedBy(prepared.currentUserId());
             assessmentCandidateResultRepository.save(result);
         }
 

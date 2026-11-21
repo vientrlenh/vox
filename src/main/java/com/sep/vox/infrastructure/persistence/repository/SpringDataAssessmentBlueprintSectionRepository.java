@@ -6,7 +6,7 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.sep.vox.infrastructure.persistence.entity.AssessmentBlueprintSectionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentBlueprintSectionJpaEntity;
 
 public interface SpringDataAssessmentBlueprintSectionRepository extends JpaRepository<AssessmentBlueprintSectionJpaEntity, UUID> {
     List<AssessmentBlueprintSectionJpaEntity> findByBlueprintVersionIdOrderByOrderAsc(UUID blueprintVersionId);

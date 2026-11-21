@@ -24,8 +24,8 @@ public final class AssessmentBlueprintSlotDtoMapper {
             QuestionSelectionSpecDtoMapper.toDto(domain.getSelectionSpec()),
             domain.getCreatedAt(),
             domain.getUpdatedAt(),
-            domain.getCreatedBy(),
-            domain.getUpdatedBy()
+            domain.createdByUserId().orElse(null),
+            domain.updatedByUserId().orElse(null)
         );
     }
 

@@ -2,34 +2,34 @@ package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.notification.NotificationDevice;
 import com.sep.vox.domain.model.notification.NotificationDevicePlatform;
-import com.sep.vox.infrastructure.persistence.entity.NotificationDeviceJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.notification.NotificationDeviceJpaEntity;
 
 public final class NotificationDeviceMapper {
 
     private NotificationDeviceMapper() {}
 
     public static NotificationDevice toDomain(NotificationDeviceJpaEntity jpa) {
-        return new NotificationDevice(
-            jpa.getId(),
-            jpa.getUserId(),
-            jpa.getDeviceId(),
-            platformFromString(jpa.getPlatform()),
-            jpa.getInstallationId(),
-            jpa.getCreatedAt(),
-            jpa.getLastSeenAt()
-        );
+        return NotificationDevice.builder()
+                .id(jpa.getId())
+                .userId(jpa.getUserId())
+                .deviceId(jpa.getDeviceId())
+                .platform(platformFromString(jpa.getPlatform()))
+                .installationId(jpa.getInstallationId())
+                .createdAt(jpa.getCreatedAt())
+                .lastSeenAt(jpa.getLastSeenAt())
+                .build();
     }
 
     public static NotificationDeviceJpaEntity toJpa(NotificationDevice device) {
-        return new NotificationDeviceJpaEntity(
-            device.getId(),
-            device.getUserId(),
-            device.getDeviceId(),
-            valueOf(device.getPlatform()),
-            device.getInstallationId(),
-            device.getCreatedAt(),
-            device.getLastSeenAt()
-        );
+        return NotificationDeviceJpaEntity.builder()
+                .id(device.getId())
+                .userId(device.getUserId())
+                .deviceId(device.getDeviceId())
+                .platform(valueOf(device.getPlatform()))
+                .installationId(device.getInstallationId())
+                .createdAt(device.getCreatedAt())
+                .lastSeenAt(device.getLastSeenAt())
+                .build();
     }
 
     private static NotificationDevicePlatform platformFromString(String platform) {

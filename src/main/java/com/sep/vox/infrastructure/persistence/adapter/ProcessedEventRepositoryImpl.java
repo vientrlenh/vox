@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.ProcessedEventJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.outbox.ProcessedEventJpaEntity;
 import java.util.UUID;
 
 import org.springframework.stereotype.Repository;

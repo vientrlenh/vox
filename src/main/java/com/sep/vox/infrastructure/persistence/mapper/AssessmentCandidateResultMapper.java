@@ -2,7 +2,7 @@ package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.assessment.AssessmentCandidateResult;
 import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
-import com.sep.vox.infrastructure.persistence.entity.AssessmentCandidateResultJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentCandidateResultJpaEntity;
 
 public final class AssessmentCandidateResultMapper {
 
@@ -10,48 +10,48 @@ public final class AssessmentCandidateResultMapper {
     }
 
     public static AssessmentCandidateResult toDomain(AssessmentCandidateResultJpaEntity jpa) {
-        return new AssessmentCandidateResult(
-            jpa.getId(),
-            jpa.getAssessmentId(),
-            jpa.getCandidateId(),
-            jpa.getSessionId(),
-            jpa.getAssessmentPolicyId(),
-            jpa.getPolicyVersion(),
-            jpa.getRubricVersionId(),
-            jpa.getFrameworkVersionId(),
-            jpa.getTargetFrameworkBandId(),
-            jpa.getRubricResultBandId(),
-            jpa.getTotalScore(),
-            AssessmentCandidateResultStatus.valueOf(jpa.getStatus()),
-            jpa.getReleasedAt(),
-            jpa.getFinalizedAt(),
-            jpa.getCreatedAt(),
-            jpa.getUpdatedAt(),
-            jpa.getCreatedBy(),
-            jpa.getUpdatedBy()
-        );
+        return AssessmentCandidateResult.builder()
+                .id(jpa.getId())
+                .assessmentId(jpa.getAssessmentId())
+                .candidateId(jpa.getCandidateId())
+                .sessionId(jpa.getSessionId())
+                .assessmentPolicyId(jpa.getAssessmentPolicyId())
+                .policyVersion(jpa.getPolicyVersion())
+                .rubricVersionId(jpa.getRubricVersionId())
+                .frameworkVersionId(jpa.getFrameworkVersionId())
+                .targetFrameworkBandId(jpa.getTargetFrameworkBandId())
+                .rubricResultBandId(jpa.getRubricResultBandId())
+                .totalScore(jpa.getTotalScore())
+                .status(AssessmentCandidateResultStatus.valueOf(jpa.getStatus()))
+                .releasedAt(jpa.getReleasedAt())
+                .finalizedAt(jpa.getFinalizedAt())
+                .createdAt(jpa.getCreatedAt())
+                .updatedAt(jpa.getUpdatedAt())
+                .createdBy(jpa.getCreatedBy())
+                .updatedBy(jpa.getUpdatedBy())
+                .build();
     }
 
     public static AssessmentCandidateResultJpaEntity toJpa(AssessmentCandidateResult domain) {
-        return new AssessmentCandidateResultJpaEntity(
-            domain.getId(),
-            domain.getAssessmentId(),
-            domain.getCandidateId(),
-            domain.getSessionId(),
-            domain.getAssessmentPolicyId(),
-            domain.getPolicyVersion(),
-            domain.getRubricVersionId(),
-            domain.getFrameworkVersionId(),
-            domain.getTargetFrameworkBandId(),
-            domain.getRubricResultBandId(),
-            domain.getTotalScore(),
-            domain.getStatus().name(),
-            domain.getReleasedAt(),
-            domain.getFinalizedAt(),
-            domain.getCreatedAt(),
-            domain.getUpdatedAt(),
-            domain.getCreatedBy(),
-            domain.getUpdatedBy()
-        );
+        return AssessmentCandidateResultJpaEntity.builder()
+                .id(domain.getId())
+                .assessmentId(domain.getAssessmentId())
+                .candidateId(domain.getCandidateId())
+                .sessionId(domain.getSessionId())
+                .assessmentPolicyId(domain.getAssessmentPolicyId())
+                .policyVersion(domain.getPolicyVersion())
+                .rubricVersionId(domain.getRubricVersionId())
+                .frameworkVersionId(domain.getFrameworkVersionId())
+                .targetFrameworkBandId(domain.getTargetFrameworkBandId())
+                .rubricResultBandId(domain.getRubricResultBandId())
+                .totalScore(domain.getTotalScore())
+                .status(domain.getStatus().name())
+                .releasedAt(domain.getReleasedAt())
+                .finalizedAt(domain.getFinalizedAt())
+                .createdAt(domain.getCreatedAt())
+                .updatedAt(domain.getUpdatedAt())
+                .createdBy(domain.getCreatedBy())
+                .updatedBy(domain.getUpdatedBy())
+                .build();
     }
 }

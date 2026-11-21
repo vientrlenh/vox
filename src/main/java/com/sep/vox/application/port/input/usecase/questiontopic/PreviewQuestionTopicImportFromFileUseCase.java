@@ -100,31 +100,27 @@ public class PreviewQuestionTopicImportFromFileUseCase
         ParseImportFileResult parsed = fileProcessingPort.parse(input.file(), ImportType.QUESTION_TOPIC);
         Instant now = Instant.now();
         Instant expiresAt = now.plus(SESSION_EXPIRY_DAYS, ChronoUnit.DAYS);
-        ImportSession savedSession = importSessionRepository.save(new ImportSession(
-            questionBank.getOwnerType() == QuestionBankOwnerType.SCHOOL ? questionBank.getSchoolId() : null,
-            ImportType.QUESTION_TOPIC,
-            safeFileName(input.file().fileName()),
-            jsonSerializationPort.toJson(parsed.originalHeaders()),
-            jsonSerializationPort.toJson(parsed.suggestedMapping()),
-            null,
-            0L,
-            0L,
-            0L,
-            0L,
-            parsed.totalRows(),
-            null,
-            ImportSessionStatus.PREVIEWED,
-            questionBank.getId(),
-            expiresAt,
-            null,
-            null,
-            null,
-            0,
-            now,
-            now,
-            currentUserId,
-            currentUserId
-        ));
+        ImportSession savedSession = importSessionRepository.save(ImportSession.builder()
+            .schoolId(questionBank.getOwnerType() == QuestionBankOwnerType.SCHOOL ? questionBank.getSchoolId() : null)
+            .type(ImportType.QUESTION_TOPIC)
+            .fileName(safeFileName(input.file().fileName()))
+            .originalHeadersJson(jsonSerializationPort.toJson(parsed.originalHeaders()))
+            .suggestedMappingJson(jsonSerializationPort.toJson(parsed.suggestedMapping()))
+            .confirmedMappingJson(null)
+            .validRows(0L)
+            .invalidRows(0L)
+            .importedRows(0L)
+            .skippedRows(0L)
+            .totalRows(parsed.totalRows())
+            .failureReason(null)
+            .status(ImportSessionStatus.PREVIEWED)
+            .importedEntityId(questionBank.getId())
+            .expiresAt(expiresAt)
+            .claimedAt(null)
+            .claimedBy(null)
+            .leaseExpiresAt(null)
+            .attempts(0)
+            .build());
         saveRows(savedSession.getId(), parsed.rows());
 
         return new PreviewImportResponse(
@@ -145,14 +141,14 @@ public class PreviewQuestionTopicImportFromFileUseCase
         List<ImportRow> importRows = new ArrayList<ImportRow>();
         long rowNumber = 1L;
         for (Map<String, String> row : rows) {
-            importRows.add(new ImportRow(
-                sessionId,
-                rowNumber,
-                jsonSerializationPort.toJson(new LinkedHashMap<>(row)),
-                null,
-                null,
-                ImportRowStatus.PENDING
-            ));
+            importRows.add(ImportRow.builder()
+                .sessionId(sessionId)
+                .rowNumber(rowNumber)
+                .rawDataJson(jsonSerializationPort.toJson(new LinkedHashMap<>(row)))
+                .mappedDataJson(null)
+                .errorsJson(null)
+                .status(ImportRowStatus.PENDING)
+                .build());
             rowNumber++;
         }
         importRowRepository.saveAll(importRows);

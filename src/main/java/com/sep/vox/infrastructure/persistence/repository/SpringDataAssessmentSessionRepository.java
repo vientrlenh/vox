@@ -11,7 +11,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.AssessmentSessionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentSessionJpaEntity;
 
 
 public interface SpringDataAssessmentSessionRepository extends JpaRepository<AssessmentSessionJpaEntity, UUID> {

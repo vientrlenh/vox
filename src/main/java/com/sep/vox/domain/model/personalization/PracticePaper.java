@@ -8,7 +8,7 @@ public class PracticePaper {
     private UUID id;
     private UUID studentId;
     private UUID practiceTopicId;
-    /** Bậc học sinh CHỌN cho phiên này -- null với đề dựng trước khi có màn hình chọn bậc. */
+    /** The band the student CHOSE for this session -- null for papers built before the band-selection screen existed. */
     private UUID targetFrameworkBandId;
     private String origin;
     private String goalAtBuild;
@@ -21,35 +21,6 @@ public class PracticePaper {
     private Instant createdAt;
 
     public PracticePaper() {
-    }
-
-    public PracticePaper(
-            UUID id,
-            UUID studentId,
-            UUID practiceTopicId,
-            UUID targetFrameworkBandId,
-            String origin,
-            String goalAtBuild,
-            String offeredTopicIdsJson,
-            String previousOfferedTopicIdsJson,
-            int plannedSeconds,
-            int reservedQuotaSeconds,
-            Instant expiresAt,
-            String status,
-            Instant createdAt) {
-        this.id = id;
-        this.studentId = studentId;
-        this.practiceTopicId = practiceTopicId;
-        this.targetFrameworkBandId = targetFrameworkBandId;
-        this.origin = origin;
-        this.goalAtBuild = goalAtBuild;
-        this.offeredTopicIdsJson = offeredTopicIdsJson;
-        this.previousOfferedTopicIdsJson = previousOfferedTopicIdsJson;
-        this.plannedSeconds = plannedSeconds;
-        this.reservedQuotaSeconds = reservedQuotaSeconds;
-        this.expiresAt = expiresAt;
-        this.status = status;
-        this.createdAt = createdAt;
     }
 
     public UUID getId() {
@@ -157,20 +128,102 @@ public class PracticePaper {
     }
 
     public PracticePaper withStatus(String newStatus) {
-        return new PracticePaper(
-            id,
-            studentId,
-            practiceTopicId,
-            targetFrameworkBandId,
-            origin,
-            goalAtBuild,
-            offeredTopicIdsJson,
-            previousOfferedTopicIdsJson,
-            plannedSeconds,
-            reservedQuotaSeconds,
-            expiresAt,
-            newStatus,
-            createdAt
-        );
+        return PracticePaper.builder()
+                .id(id)
+                .studentId(studentId)
+                .practiceTopicId(practiceTopicId)
+                .targetFrameworkBandId(targetFrameworkBandId)
+                .origin(origin)
+                .goalAtBuild(goalAtBuild)
+                .offeredTopicIdsJson(offeredTopicIdsJson)
+                .previousOfferedTopicIdsJson(previousOfferedTopicIdsJson)
+                .plannedSeconds(plannedSeconds)
+                .reservedQuotaSeconds(reservedQuotaSeconds)
+                .expiresAt(expiresAt)
+                .status(newStatus)
+                .createdAt(createdAt)
+                .build();
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final PracticePaper target = new PracticePaper();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder studentId(UUID studentId) {
+            target.studentId = studentId;
+            return this;
+        }
+
+        public Builder practiceTopicId(UUID practiceTopicId) {
+            target.practiceTopicId = practiceTopicId;
+            return this;
+        }
+
+        public Builder targetFrameworkBandId(UUID targetFrameworkBandId) {
+            target.targetFrameworkBandId = targetFrameworkBandId;
+            return this;
+        }
+
+        public Builder origin(String origin) {
+            target.origin = origin;
+            return this;
+        }
+
+        public Builder goalAtBuild(String goalAtBuild) {
+            target.goalAtBuild = goalAtBuild;
+            return this;
+        }
+
+        public Builder offeredTopicIdsJson(String offeredTopicIdsJson) {
+            target.offeredTopicIdsJson = offeredTopicIdsJson;
+            return this;
+        }
+
+        public Builder previousOfferedTopicIdsJson(String previousOfferedTopicIdsJson) {
+            target.previousOfferedTopicIdsJson = previousOfferedTopicIdsJson;
+            return this;
+        }
+
+        public Builder plannedSeconds(int plannedSeconds) {
+            target.plannedSeconds = plannedSeconds;
+            return this;
+        }
+
+        public Builder reservedQuotaSeconds(int reservedQuotaSeconds) {
+            target.reservedQuotaSeconds = reservedQuotaSeconds;
+            return this;
+        }
+
+        public Builder expiresAt(Instant expiresAt) {
+            target.expiresAt = expiresAt;
+            return this;
+        }
+
+        public Builder status(String status) {
+            target.status = status;
+            return this;
+        }
+
+        public Builder createdAt(Instant createdAt) {
+            target.createdAt = createdAt;
+            return this;
+        }
+
+        public PracticePaper build() {
+            return target;
+        }
+
     }
 }

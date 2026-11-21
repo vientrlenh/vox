@@ -3,7 +3,7 @@ package com.sep.vox.infrastructure.persistence.mapper;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlot;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlotType;
 import com.sep.vox.domain.valueobject.QuestionSelectionSpec;
-import com.sep.vox.infrastructure.persistence.entity.AssessmentBlueprintSlotJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentBlueprintSlotJpaEntity;
 
 public final class AssessmentBlueprintSlotMapper {
 
@@ -11,41 +11,41 @@ public final class AssessmentBlueprintSlotMapper {
     }
 
     public static AssessmentBlueprintSlot toDomain(AssessmentBlueprintSlotJpaEntity jpa) {
-        return new AssessmentBlueprintSlot(
-            jpa.getId(),
-            jpa.getSectionId(),
-            jpa.getBlueprintVersionId(),
-            jpa.getOrder(),
-            jpa.getWeight(),
-            jpa.getPrepTimeSecondsOverride(),
-            jpa.getResponseTimeSecondsOverride(),
-            slotTypeFromString(jpa.getSlotType()),
-            jpa.getFixedQuestionId(),
-            selectionSpecFromJson(jpa.getSelectionSpec()),
-            jpa.getCreatedAt(),
-            jpa.getUpdatedAt(),
-            jpa.getCreatedBy(),
-            jpa.getUpdatedBy()
-        );
+        return AssessmentBlueprintSlot.builder()
+                .id(jpa.getId())
+                .sectionId(jpa.getSectionId())
+                .blueprintVersionId(jpa.getBlueprintVersionId())
+                .order(jpa.getOrder())
+                .weight(jpa.getWeight())
+                .prepTimeSecondsOverride(jpa.getPrepTimeSecondsOverride())
+                .responseTimeSecondsOverride(jpa.getResponseTimeSecondsOverride())
+                .slotType(slotTypeFromString(jpa.getSlotType()))
+                .fixedQuestionId(jpa.getFixedQuestionId())
+                .selectionSpec(selectionSpecFromJson(jpa.getSelectionSpec()))
+                .createdAt(jpa.getCreatedAt())
+                .updatedAt(jpa.getUpdatedAt())
+                .createdBy(jpa.getCreatedBy())
+                .updatedBy(jpa.getUpdatedBy())
+                .build();
     }
 
     public static AssessmentBlueprintSlotJpaEntity toJpa(AssessmentBlueprintSlot domain) {
-        return new AssessmentBlueprintSlotJpaEntity(
-            domain.getId(),
-            domain.getSectionId(),
-            domain.getBlueprintVersionId(),
-            domain.getOrder(),
-            domain.getWeight(),
-            domain.getPrepTimeSecondsOverride(),
-            domain.getResponseTimeSecondsOverride(),
-            domain.getSlotType().name(),
-            domain.getFixedQuestionId(),
-            selectionSpecToJson(domain.getSelectionSpec()),
-            domain.getCreatedAt(),
-            domain.getUpdatedAt(),
-            domain.getCreatedBy(),
-            domain.getUpdatedBy()
-        );
+        return AssessmentBlueprintSlotJpaEntity.builder()
+                .id(domain.getId())
+                .sectionId(domain.getSectionId())
+                .blueprintVersionId(domain.getBlueprintVersionId())
+                .order(domain.getOrder())
+                .weight(domain.getWeight())
+                .prepTimeSecondsOverride(domain.getPrepTimeSecondsOverride())
+                .responseTimeSecondsOverride(domain.getResponseTimeSecondsOverride())
+                .slotType(domain.getSlotType().name())
+                .fixedQuestionId(domain.getFixedQuestionId())
+                .selectionSpec(selectionSpecToJson(domain.getSelectionSpec()))
+                .createdAt(domain.getCreatedAt())
+                .updatedAt(domain.getUpdatedAt())
+                .createdBy(domain.getCreatedBy())
+                .updatedBy(domain.getUpdatedBy())
+                .build();
     }
 
     private static AssessmentBlueprintSlotType slotTypeFromString(String value) {

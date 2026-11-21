@@ -127,30 +127,30 @@ public class InterestVectorService {
                 // hạ không được dùng một chút nào. Bấm loại bao nhiêu lần thứ hạng cũng y nguyên.
                 standalone.merge(event.getTopicId(), 1, (current, delta) -> current + delta);
             }
-            // Chỉ LẦN CUỐI mới phải lọc theo loại.
+            // Only the LAST-event timestamp has to be filtered by type.
             //
-            // last_mentioned_at đi vào recency = e^(-dt/7 ngày), rồi vào hệ số phạt
-            // (1 - 0,4·recency) với ý nghĩa "vừa luyện xong thì khoan mời lại". Chủ đề chỉ mới
-            // HIỆN LÊN rồi bị lướt qua chưa hề được luyện, nên đóng dấu "vừa mới đây" cho nó là
-            // phạt 40% một việc chưa xảy ra.
+            // last_mentioned_at goes into recency = e^(-dt/7 days), then into the penalty factor
+            // (1 - 0.4*recency) meaning "just practised, so hold off on offering it again". A topic that was only
+            // SHOWN and then scrolled past was never practised, so stamping it "very recent" would
+            // penalise it by 40% for something that did not happen.
             //
-            // Vô hại chừng nào bảng chỉ có SESSION_OUTCOME; từ lúc OFFERED_NOT_CHOSEN xuất hiện
-            // thì thành lỗi thật. Cột này nullable và SQL xếp hạng đã có
-            // CASE WHEN last_mentioned_at IS NULL THEN 0.0 -- chưa luyện thì recency = 0, không
-            // phạt, đúng nghĩa.
+            // Harmless while the table only holds SESSION_OUTCOME; once OFFERED_NOT_CHOSEN appears
+            // it becomes a real bug. This column is nullable and the ranking SQL already has
+            // CASE WHEN last_mentioned_at IS NULL THEN 0.0 -- never practised means recency = 0, no
+            // penalty, which is the right meaning.
             if (event.isSessionOutcome()) {
                 last.put(event.getTopicId(), event.getOccurredAt());
             }
         }
         List<TopicInterestScoreEntry> newScores = new ArrayList<TopicInterestScoreEntry>();
         for (Map.Entry<UUID, Double> entry : scores.entrySet()) {
-            newScores.add(new TopicInterestScoreEntry(
-                entry.getKey(),
-                entry.getValue(),
-                sessions.getOrDefault(entry.getKey(), Set.of()).size()
-                    + standalone.getOrDefault(entry.getKey(), 0),
-                last.get(entry.getKey())
-            ));
+            newScores.add(TopicInterestScoreEntry.builder()
+                    .topicId(entry.getKey())
+                    .score(entry.getValue())
+                    .sessionCount(sessions.getOrDefault(entry.getKey(), Set.of()).size()
+                            + standalone.getOrDefault(entry.getKey(), 0))
+                    .lastEventAt(last.get(entry.getKey()))
+                    .build());
         }
         scoreRepository.replaceForStudent(studentId, newScores);
         recomputeDimensionInterest(studentId, events);

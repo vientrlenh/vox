@@ -2,28 +2,28 @@ package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.subscription.SubscriptionPlanQuota;
-import com.sep.vox.infrastructure.persistence.entity.SubscriptionPlanQuotaJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.subscription.SubscriptionPlanQuotaJpaEntity;
 
 public final class SubscriptionPlanQuotaMapper {
 
     private SubscriptionPlanQuotaMapper() {}
 
     public static SubscriptionPlanQuota toDomain(SubscriptionPlanQuotaJpaEntity jpa) {
-        return new SubscriptionPlanQuota(
-            jpa.getId(),
-            jpa.getSubscriptionPlanId(),
-            fromString(jpa.getQuotaType()),
-            jpa.getIncludedAmountVnd()
-        );
+        return SubscriptionPlanQuota.builder()
+            .id(jpa.getId())
+            .subscriptionPlanId(jpa.getSubscriptionPlanId())
+            .quotaType(fromString(jpa.getQuotaType()))
+            .includedAmountVnd(jpa.getIncludedAmountVnd())
+            .build();
     }
 
     public static SubscriptionPlanQuotaJpaEntity toJpa(SubscriptionPlanQuota domain) {
-        return new SubscriptionPlanQuotaJpaEntity(
-            domain.getId(),
-            domain.getSubscriptionPlanId(),
-            valueOf(domain.getQuotaType()),
-            domain.getIncludedAmountVnd()
-        );
+        return SubscriptionPlanQuotaJpaEntity.builder()
+            .id(domain.getId())
+            .subscriptionPlanId(domain.getSubscriptionPlanId())
+            .quotaType(valueOf(domain.getQuotaType()))
+            .includedAmountVnd(domain.getIncludedAmountVnd())
+            .build();
     }
 
     private static QuotaType fromString(String type) {

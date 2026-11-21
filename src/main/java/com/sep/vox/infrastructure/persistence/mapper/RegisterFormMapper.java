@@ -13,64 +13,64 @@ import com.sep.vox.domain.valueobject.Phone;
 import com.sep.vox.domain.valueobject.PostalCode;
 import com.sep.vox.domain.valueobject.SchoolDomain;
 import com.sep.vox.domain.valueobject.StudentCount;
-import com.sep.vox.infrastructure.persistence.entity.RegisterFormJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.registerform.RegisterFormJpaEntity;
 
 public final class RegisterFormMapper {
     
     public static RegisterForm toDomain(RegisterFormJpaEntity jpa) {
-        return new RegisterForm(
-            jpa.getId(), 
-            jpa.getSchoolDirectoryId(), 
-            jpa.getSchoolName(), 
-            new SchoolDomain(jpa.getSchoolDomain()), 
-            jpa.getSchoolDistrict(), 
-            jpa.getSchoolProvince(), 
-            jpa.getSchoolAddress(),
-            new FullName(jpa.getContactFullName()), 
-            new IdentityNumber(jpa.getIdentityNumber()), 
-            new Phone(jpa.getContactPhone()),
-            new Email(jpa.getContactEmail()), 
-            new DateOfBirth(jpa.getDateOfBirth()), 
-            jpa.getContactAddress(), 
-            new PostalCode(jpa.getPostalCode()), 
-            jpa.getPosition(), 
-            new StudentCount(jpa.getStudentCount()), 
-            verificationMethodFromString(jpa.getVerificationMethod()), 
-            jpa.getVerifiedAt(), 
-            jpa.getRejectedReason(), 
-            statusFromString(jpa.getStatus()), 
-            jpa.getCreatedAt(), 
-            jpa.getUpdatedAt(), 
-            jpa.getReviewedBy()
-        );
+        return RegisterForm.builder()
+            .id(jpa.getId())
+            .schoolDirectoryId(jpa.getSchoolDirectoryId())
+            .schoolName(jpa.getSchoolName())
+            .schoolDomain(new SchoolDomain(jpa.getSchoolDomain()))
+            .schoolDistrict(jpa.getSchoolDistrict())
+            .schoolProvince(jpa.getSchoolProvince())
+            .schoolAddress(jpa.getSchoolAddress())
+            .contactFullName(new FullName(jpa.getContactFullName()))
+            .identityNumber(new IdentityNumber(jpa.getIdentityNumber()))
+            .contactPhone(new Phone(jpa.getContactPhone()))
+            .contactEmail(new Email(jpa.getContactEmail()))
+            .dateOfBirth(new DateOfBirth(jpa.getDateOfBirth()))
+            .contactAddress(jpa.getContactAddress())
+            .postalCode(new PostalCode(jpa.getPostalCode()))
+            .position(jpa.getPosition())
+            .studentCount(new StudentCount(jpa.getStudentCount()))
+            .verificationMethod(verificationMethodFromString(jpa.getVerificationMethod()))
+            .verifiedAt(jpa.getVerifiedAt())
+            .rejectedReason(jpa.getRejectedReason())
+            .status(statusFromString(jpa.getStatus()))
+            .createdAt(jpa.getCreatedAt())
+            .updatedAt(jpa.getUpdatedAt())
+            .reviewedBy(jpa.getReviewedBy())
+            .build();
     }
 
     public static RegisterFormJpaEntity toJpa(RegisterForm registerForm) {
-        return new RegisterFormJpaEntity(
-            registerForm.getId(), 
-            registerForm.getSchoolDirectoryId(), 
-            registerForm.getSchoolName(),
-            valueOf(registerForm.getSchoolDomain()), 
-            registerForm.getSchoolDistrict(), 
-            registerForm.getSchoolProvince(), 
-            registerForm.getSchoolAddress(), 
-            valueOf(registerForm.getContactFullName()), 
-            valueOf(registerForm.getIdentityNumber()), 
-            valueOf(registerForm.getContactPhone()), 
-            valueOf(registerForm.getContactEmail()), 
-            valueOf(registerForm.getDateOfBirth()), 
-            registerForm.getContactAddress(), 
-            valueOf(registerForm.getPostalCode()), 
-            registerForm.getPosition(), 
-            valueOf(registerForm.getStudentCount()), 
-            valueOf(registerForm.getVerificationMethod()), 
-            registerForm.getVerifiedAt(), 
-            registerForm.getRejectedReason(), 
-            valueOf(registerForm.getStatus()), 
-            registerForm.getCreatedAt(), 
-            registerForm.getUpdatedAt(), 
-            registerForm.getReviewedBy()
-        );
+        return RegisterFormJpaEntity.builder()
+            .id(registerForm.getId())
+            .schoolDirectoryId(registerForm.getSchoolDirectoryId())
+            .schoolName(registerForm.getSchoolName())
+            .schoolDomain(valueOf(registerForm.getSchoolDomain()))
+            .schoolDistrict(registerForm.getSchoolDistrict())
+            .schoolProvince(registerForm.getSchoolProvince())
+            .schoolAddress(registerForm.getSchoolAddress())
+            .contactFullName(valueOf(registerForm.getContactFullName()))
+            .identityNumber(valueOf(registerForm.getIdentityNumber()))
+            .contactPhone(valueOf(registerForm.getContactPhone()))
+            .contactEmail(valueOf(registerForm.getContactEmail()))
+            .dateOfBirth(valueOf(registerForm.getDateOfBirth()))
+            .contactAddress(registerForm.getContactAddress())
+            .postalCode(valueOf(registerForm.getPostalCode()))
+            .position(registerForm.getPosition())
+            .studentCount(valueOf(registerForm.getStudentCount()))
+            .verificationMethod(valueOf(registerForm.getVerificationMethod()))
+            .verifiedAt(registerForm.getVerifiedAt())
+            .rejectedReason(registerForm.getRejectedReason())
+            .status(valueOf(registerForm.getStatus()))
+            .createdAt(registerForm.getCreatedAt())
+            .updatedAt(registerForm.getUpdatedAt())
+            .reviewedBy(registerForm.getReviewedBy())
+            .build();
     }
 
     private static String valueOf(FullName fullName) {

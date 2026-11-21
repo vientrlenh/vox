@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.SchoolClassUserJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolClassUserJpaEntity;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;

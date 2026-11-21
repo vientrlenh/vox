@@ -8,7 +8,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
@@ -70,10 +69,7 @@ class ViewSchoolClassesUseCaseTests {
             gradeId,
             "ENG-01",
             "English 01",
-            "Starter class",
-            userId,
-            Instant.now()
-        );
+            "Starter class");
         schoolClass.setId(UUID.randomUUID());
         PageResult<SchoolClass> page = new PageResult<>(List.of(schoolClass), 1, 20, 1, 1);
 
@@ -129,7 +125,12 @@ class ViewSchoolClassesUseCaseTests {
         user.setId(id);
         user.setStatus(status);
         when(schoolUserRepository.findByUserId(id)).thenReturn(
-            schoolId != null ? Optional.of(new SchoolUser(schoolId, id, java.time.Instant.now(), java.time.Instant.now().plus(36500, ChronoUnit.DAYS))) : Optional.empty()
+            schoolId != null ? Optional.of(SchoolUser.builder()
+                .schoolId(schoolId)
+                .userId(id)
+                .startDate(java.time.Instant.now())
+                .endDate(java.time.Instant.now().plus(36500, ChronoUnit.DAYS))
+                .build()) : Optional.empty()
         );
         return user;
     }

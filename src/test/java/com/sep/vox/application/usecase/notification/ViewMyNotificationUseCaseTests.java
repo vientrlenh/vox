@@ -49,10 +49,17 @@ class ViewMyNotificationUseCaseTests {
     void should_return_the_notification_with_its_navigation_payload() {
         String payload = "{\"eventType\":\"AssessmentResultReleased\",\"target\":\"ASSESSMENT_RESULT_DETAIL\"}";
         when(notificationRepository.findByIdAndUserId(notificationId, userId))
-            .thenReturn(Optional.of(new Notification(
-                notificationId, userId, UUID.randomUUID(), "AssessmentResultReleased",
-                "Điểm thi của bạn đã có", "Kỳ thi giữa kỳ: 8.5 điểm", payload,
-                null, Instant.parse("2026-09-01T03:00:00Z"))));
+            .thenReturn(Optional.of(Notification.builder()
+                    .id(notificationId)
+                    .userId(userId)
+                    .eventId(UUID.randomUUID())
+                    .eventType("AssessmentResultReleased")
+                    .title("Điểm thi của bạn đã có")
+                    .body("Kỳ thi giữa kỳ: 8.5 điểm")
+                    .payload(payload)
+                    .readAt(null)
+                    .createdAt(Instant.parse("2026-09-01T03:00:00Z"))
+                    .build()));
 
         NotificationDto result = useCase.execute(new ViewMyNotificationQuery(notificationId));
 

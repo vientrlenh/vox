@@ -9,46 +9,46 @@ import com.sep.vox.domain.valueobject.DateOfBirth;
 import com.sep.vox.domain.valueobject.Email;
 import com.sep.vox.domain.valueobject.FullName;
 import com.sep.vox.domain.valueobject.Phone;
-import com.sep.vox.infrastructure.persistence.entity.UserJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.user.UserJpaEntity;
 
 public final class UserMapper {
     
     public static User toDomain(UserJpaEntity jpa) {
-        return new User(
-            jpa.getId(),
-            new Email(jpa.getEmail()),
-            jpa.getPasswordHash(),
-            new Phone(jpa.getPhone()),
-            new FullName(jpa.getFullName()),
-            gender(jpa.getGender()),
-            new DateOfBirth(jpa.getDateOfBirth()),
-            jpa.getAddress(),
-            jpa.getAvatarUrl(),
-            UserStatus.valueOf(jpa.getStatus()),
-            jpa.getCreatedAt(),
-            jpa.getUpdatedAt(),
-            jpa.getCreatedBy(),
-            jpa.getUpdatedBy()
-        );
+        return User.builder()
+            .id(jpa.getId())
+            .email(new Email(jpa.getEmail()))
+            .passwordHash(jpa.getPasswordHash())
+            .phone(new Phone(jpa.getPhone()))
+            .fullName(new FullName(jpa.getFullName()))
+            .gender(gender(jpa.getGender()))
+            .dateOfBirth(new DateOfBirth(jpa.getDateOfBirth()))
+            .address(jpa.getAddress())
+            .avatarUrl(jpa.getAvatarUrl())
+            .status(UserStatus.valueOf(jpa.getStatus()))
+            .createdAt(jpa.getCreatedAt())
+            .updatedAt(jpa.getUpdatedAt())
+            .createdBy(jpa.getCreatedBy())
+            .updatedBy(jpa.getUpdatedBy())
+            .build();
     }
 
     public static UserJpaEntity toJpa(User user) {
-        return new UserJpaEntity(
-            user.getId(),  
-            valueOf(user.getEmail()), 
-            user.getPasswordHash(),  
-            valueOf(user.getPhone()), 
-            valueOf(user.getFullName()), 
-            genderValue(user.getGender()), 
-            valueOf(user.getDateOfBirth()), 
-            user.getAddress(), 
-            user.getAvatarUrl(),
-            user.getStatus().name(), 
-            user.getCreatedAt(), 
-            user.getUpdatedAt(), 
-            user.getCreatedBy(), 
-            user.getUpdatedBy()
-        );
+        return UserJpaEntity.builder()
+            .id(user.getId())
+            .email(valueOf(user.getEmail()))
+            .passwordHash(user.getPasswordHash())
+            .phone(valueOf(user.getPhone()))
+            .fullName(valueOf(user.getFullName()))
+            .gender(genderValue(user.getGender()))
+            .dateOfBirth(valueOf(user.getDateOfBirth()))
+            .address(user.getAddress())
+            .avatarUrl(user.getAvatarUrl())
+            .status(user.getStatus().name())
+            .createdAt(user.getCreatedAt())
+            .updatedAt(user.getUpdatedAt())
+            .createdBy(user.getCreatedBy())
+            .updatedBy(user.getUpdatedBy())
+            .build();
     }
 
     private static String valueOf(Email email) {

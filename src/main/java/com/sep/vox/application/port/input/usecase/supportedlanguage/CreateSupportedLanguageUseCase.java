@@ -1,8 +1,5 @@
 package com.sep.vox.application.port.input.usecase.supportedlanguage;
 
-import java.time.Instant;
-
-import java.util.UUID;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,7 +9,6 @@ import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.mapper.supportedlanguage.CreateSupportedLanguageResponseMapper;
 import com.sep.vox.application.port.input.command.CreateSupportedLanguageCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.supportedlanguage.CreateSupportedLanguageResponse;
 import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
@@ -26,13 +22,9 @@ public class CreateSupportedLanguageUseCase implements IUseCase<CreateSupportedL
     private static final int MAX_DESCRIPTION_LENGTH = 2048;
 
     private final SupportedLanguageRepository supportedLanguageRepository;
-    private final UserContextPort userContextPort;
 
-    public CreateSupportedLanguageUseCase(
-            SupportedLanguageRepository supportedLanguageRepository,
-            UserContextPort userContextPort) {
+    public CreateSupportedLanguageUseCase(SupportedLanguageRepository supportedLanguageRepository) {
         this.supportedLanguageRepository = supportedLanguageRepository;
-        this.userContextPort = userContextPort;
     }
 
     @Override
@@ -45,18 +37,12 @@ public class CreateSupportedLanguageUseCase implements IUseCase<CreateSupportedL
             throw new DuplicatedException("Ngôn ngữ đã tồn tại với mã: " + command.code());
         }
 
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        Instant now = Instant.now();
-        SupportedLanguage language = new SupportedLanguage(
-            new LanguageCode(command.code()),
-            command.name(),
-            command.description(),
-            true,
-            now,
-            now,
-            currentUserId,
-            currentUserId
-        );
+        SupportedLanguage language = SupportedLanguage.builder()
+            .code(new LanguageCode(command.code()))
+            .name(command.name())
+            .description(command.description())
+            .active(true)
+            .build();
 
         try {
             SupportedLanguage saved = supportedLanguageRepository.save(language);

@@ -1,25 +1,25 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.registerform.RegisterFormDocument;
-import com.sep.vox.infrastructure.persistence.entity.RegisterFormDocumentJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.registerform.RegisterFormDocumentJpaEntity;
 
 public final class RegisterFormDocumentMapper {
     
     public static RegisterFormDocument toDomain(RegisterFormDocumentJpaEntity jpa) {
-        return new RegisterFormDocument(
-            jpa.getId(), 
-            jpa.getRegisterFormId(), 
-            jpa.getUrl(), 
-            jpa.getCreatedAt()
-        );
+        return RegisterFormDocument.builder()
+            .id(jpa.getId())
+            .registerFormId(jpa.getRegisterFormId())
+            .url(jpa.getUrl())
+            .createdAt(jpa.getCreatedAt())
+            .build();
     }
 
     public static RegisterFormDocumentJpaEntity toJpa(RegisterFormDocument document) {
-        return new RegisterFormDocumentJpaEntity(
-            document.getId(), 
-            document.getRegisterFormId(), 
-            document.getUrl(), 
-            document.getCreatedAt()
-        );
+        return RegisterFormDocumentJpaEntity.builder()
+            .id(document.getId())
+            .registerFormId(document.getRegisterFormId())
+            .url(document.getUrl())
+            .createdAt(document.getCreatedAt())
+            .build();
     }
 }

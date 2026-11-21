@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.SchoolBalanceJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolBalanceJpaEntity;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;

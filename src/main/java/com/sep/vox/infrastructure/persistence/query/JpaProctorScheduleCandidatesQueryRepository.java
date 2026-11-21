@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 
 import com.sep.vox.application.query.dto.ProctorCandidateSummary;
 import com.sep.vox.application.query.repository.ProctorScheduleCandidatesQueryRepository;
-import com.sep.vox.infrastructure.persistence.entity.AssessmentSessionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentSessionJpaEntity;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

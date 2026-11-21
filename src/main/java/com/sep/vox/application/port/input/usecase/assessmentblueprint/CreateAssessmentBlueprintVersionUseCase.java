@@ -91,51 +91,37 @@ public class CreateAssessmentBlueprintVersionUseCase implements IUseCase<CreateA
 
         Instant now = Instant.now();
         int versionNumber = assessmentBlueprintVersionRepository.nextVersionNumber(blueprint.getId());
-        AssessmentBlueprintVersion version = new AssessmentBlueprintVersion(
-            blueprint.getId(),
-            versionNumber,
-            blueprint.getCode() + "-V" + versionNumber,
-            null,
-            AssessmentBlueprintVersionStatus.DRAFT,
-            null,
-            command.effectiveFrom() == null ? now : command.effectiveFrom(),
-            command.effectiveTo(),
-            now,
-            now,
-            currentUserId,
-            currentUserId
-        );
+        AssessmentBlueprintVersion version = AssessmentBlueprintVersion.builder()
+            .blueprintId(blueprint.getId())
+            .version(versionNumber)
+            .code(blueprint.getCode() + "-V" + versionNumber)
+            .status(AssessmentBlueprintVersionStatus.DRAFT)
+            .effectiveFrom(command.effectiveFrom() == null ? now : command.effectiveFrom())
+            .effectiveTo(command.effectiveTo())
+            .build();
         AssessmentBlueprintVersion savedVersion = assessmentBlueprintVersionRepository.save(version);
 
         for (CreateAssessmentBlueprintSectionCommand sectionCommand : command.sections()) {
-            AssessmentBlueprintSection savedSection = assessmentBlueprintSectionRepository.save(new AssessmentBlueprintSection(
-                savedVersion.getId(),
-                sectionCommand.order(),
-                sectionCommand.title(),
-                sectionCommand.instruction(),
-                sectionCommand.sectionTimeLimitSeconds(),
-                defaultWeight(sectionCommand.sectionWeight()),
-                now,
-                now,
-                currentUserId,
-                currentUserId
-            ));
+            AssessmentBlueprintSection savedSection = assessmentBlueprintSectionRepository.save(AssessmentBlueprintSection.builder()
+                .blueprintVersionId(savedVersion.getId())
+                .order(sectionCommand.order())
+                .title(sectionCommand.title())
+                .instruction(sectionCommand.instruction())
+                .sectionTimeLimitSeconds(sectionCommand.sectionTimeLimitSeconds())
+                .sectionWeight(defaultWeight(sectionCommand.sectionWeight()))
+                .build());
             for (CreateAssessmentBlueprintSlotCommand slotCommand : slotsOf(sectionCommand)) {
-                assessmentBlueprintSlotRepository.save(new AssessmentBlueprintSlot(
-                    savedSection.getId(),
-                    savedVersion.getId(),
-                    slotCommand.order(),
-                    defaultWeight(slotCommand.weight()),
-                    slotCommand.prepTimeSecondsOverride(),
-                    slotCommand.responseTimeSecondsOverride(),
-                    slotCommand.slotType(),
-                    slotCommand.fixedQuestionId(),
-                    selectionSpecOf(slotCommand.selectionSpec()),
-                    now,
-                    now,
-                    currentUserId,
-                    currentUserId
-                ));
+                assessmentBlueprintSlotRepository.save(AssessmentBlueprintSlot.builder()
+                    .sectionId(savedSection.getId())
+                    .blueprintVersionId(savedVersion.getId())
+                    .order(slotCommand.order())
+                    .weight(defaultWeight(slotCommand.weight()))
+                    .prepTimeSecondsOverride(slotCommand.prepTimeSecondsOverride())
+                    .responseTimeSecondsOverride(slotCommand.responseTimeSecondsOverride())
+                    .slotType(slotCommand.slotType())
+                    .fixedQuestionId(slotCommand.fixedQuestionId())
+                    .selectionSpec(selectionSpecOf(slotCommand.selectionSpec()))
+                    .build());
             }
         }
 

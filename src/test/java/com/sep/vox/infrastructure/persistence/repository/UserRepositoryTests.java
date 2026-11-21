@@ -122,20 +122,16 @@ public class UserRepositoryTests {
 
     private static User newUser(String email, String phone, UserStatus status) {
         Instant now = Instant.now();
-        return new User(
-            new Email(email),
-            "password-hash",
-            new Phone(phone),
-            new FullName("Test User"),
-            null,
-            new DateOfBirth(LocalDate.of(2000, 1, 1)),
-            "Ho Chi Minh City",
-            null,
-            status,
-            now,
-            now,
-            null,
-            null
-        );
+        return User.builder()
+            .email(new Email(email))
+            .passwordHash("password-hash")
+            .phone(new Phone(phone))
+            .fullName(new FullName("Test User"))
+            .dateOfBirth(new DateOfBirth(LocalDate.of(2000, 1, 1)))
+            .address("Ho Chi Minh City")
+            .status(status)
+            .createdAt(now)
+            .updatedAt(now)
+            .build();
     }
 }

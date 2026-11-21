@@ -162,42 +162,47 @@ public class FrameworkInitializer implements ApplicationRunner {
 
         Instant now = Instant.now();
 
-        Framework framework = frameworkRepository.save(new Framework(
-            new FrameworkCode(FRAMEWORK_CODE),
-            "Khung năng lực ngoại ngữ 6 bậc dùng cho Việt Nam",
-            "Khung đánh giá năng lực nói mặc định của hệ thống, gồm 5 tiêu chí và 6 bậc từ Bậc 1 đến Bậc 6 "
-                + "(Thông tư 01/2014/TT-BGDĐT, tương đương CEFR A1-C2).",
-            true,
-            now, now, null, null
-        ));
+        Framework framework = frameworkRepository.save(Framework.builder()
+            .code(new FrameworkCode(FRAMEWORK_CODE))
+            .name("Khung năng lực ngoại ngữ 6 bậc dùng cho Việt Nam")
+            .description("Khung đánh giá năng lực nói mặc định của hệ thống, gồm 5 tiêu chí và 6 bậc từ Bậc 1 đến Bậc 6 " + "(Thông tư 01/2014/TT-BGDĐT, tương đương CEFR A1-C2).")
+            .active(true)
+            .build());
 
         // effectiveFrom = now and effectiveTo = null are what let findActiveVersionId see
         // this version; without effectiveFrom practice still does not run even though it is PUBLISHED.
-        FrameworkVersion version = frameworkVersionRepository.save(new FrameworkVersion(
-            framework.getId(),
-            FRAMEWORK_VERSION_CODE,
-            "KNLNNVN phiên bản 1",
-            "Phiên bản khởi tạo, dùng cho cả đường thi lẫn đường luyện tập.",
-            1,
-            now,
-            null,
-            FrameworkVersionStatus.PUBLISHED,
-            now, now, null, null
-        ));
+        FrameworkVersion version = frameworkVersionRepository.save(FrameworkVersion.builder()
+            .frameworkId(framework.getId())
+            .code(FRAMEWORK_VERSION_CODE)
+            .name("KNLNNVN phiên bản 1")
+            .description("Phiên bản khởi tạo, dùng cho cả đường thi lẫn đường luyện tập.")
+            .version(1)
+            .effectiveFrom(now)
+            .effectiveTo(null)
+            .status(FrameworkVersionStatus.PUBLISHED)
+            .build());
 
         List<FrameworkCriterion> criteria = frameworkCriterionRepository.saveAll(CRITERIA.stream()
-            .map(seed -> new FrameworkCriterion(
-                version.getId(), seed.code(), seed.name(), seed.description(), seed.order(),
-                now, now, null, null))
+            .map(seed -> FrameworkCriterion.builder()
+                .frameworkVersionId(version.getId())
+                .code(seed.code())
+                .name(seed.name())
+                .description(seed.description())
+                .order(seed.order())
+                .build())
             .toList());
 
         List<FrameworkResultBand> resultBands = frameworkResultBandRepository.saveAll(RESULT_BANDS.stream()
-            .map(seed -> new FrameworkResultBand(
-                version.getId(), seed.code(), seed.label(), seed.description(), seed.order(),
-                now, now, null, null))
+            .map(seed -> FrameworkResultBand.builder()
+                .frameworkVersionId(version.getId())
+                .code(seed.code())
+                .label(seed.label())
+                .description(seed.description())
+                .order(seed.order())
+                .build())
             .toList());
 
-        frameworkCriterionBandRepository.saveAll(buildCriterionBands(criteria, resultBands, now));
+        frameworkCriterionBandRepository.saveAll(buildCriterionBands(criteria, resultBands));
 
         LOGGER.info("Đã khởi tạo framework {} ({}) với {} tiêu chí và {} thang kết quả",
             FRAMEWORK_CODE, FRAMEWORK_VERSION_CODE, criteria.size(), resultBands.size());
@@ -209,7 +214,7 @@ public class FrameworkInitializer implements ApplicationRunner {
      * no longer valid to keep in the PUBLISHED state.
      */
     private List<FrameworkCriterionBand> buildCriterionBands(
-            List<FrameworkCriterion> criteria, List<FrameworkResultBand> resultBands, Instant now) {
+            List<FrameworkCriterion> criteria, List<FrameworkResultBand> resultBands) {
         Map<String, Map<String, BandContent>> contentByCriterion = bandContent();
         List<FrameworkCriterionBand> bands = new ArrayList<FrameworkCriterionBand>();
 
@@ -217,14 +222,13 @@ public class FrameworkInitializer implements ApplicationRunner {
             Map<String, BandContent> contentByBand = contentByCriterion.get(criterion.getCode());
             for (FrameworkResultBand resultBand : resultBands) {
                 BandContent content = contentByBand.get(resultBand.getCode());
-                bands.add(new FrameworkCriterionBand(
-                    criterion.getId(),
-                    resultBand.getId(),
-                    content.descriptor(),
-                    signals(criterion.getCode() + "_" + resultBand.getCode() + "_POS", content.positive()),
-                    signals(criterion.getCode() + "_" + resultBand.getCode() + "_NEG", content.negative()),
-                    now, now, null, null
-                ));
+                bands.add(FrameworkCriterionBand.builder()
+                    .frameworkCriterionId(criterion.getId())
+                    .frameworkResultBandId(resultBand.getId())
+                    .descriptor(content.descriptor())
+                    .positiveSignals(signals(criterion.getCode() + "_" + resultBand.getCode() + "_POS", content.positive()))
+                    .negativeSignals(signals(criterion.getCode() + "_" + resultBand.getCode() + "_NEG", content.negative()))
+                    .build());
             }
         }
         return bands;

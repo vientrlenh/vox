@@ -32,8 +32,8 @@ public class RubricCriterionDtoMapper {
                 criterion.isRequired(),
                 criterion.getCreatedAt(),
                 criterion.getUpdatedAt(),
-                criterion.getCreatedBy(),
-                criterion.getUpdatedBy()
+                criterion.createdByUserId().orElse(null),
+                criterion.updatedByUserId().orElse(null)
         );
     }
 

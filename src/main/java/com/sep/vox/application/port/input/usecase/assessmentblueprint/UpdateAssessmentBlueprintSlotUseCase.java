@@ -5,7 +5,6 @@ import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlot;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersion;
 import com.sep.vox.domain.model.question.Question;
 import java.math.BigDecimal;
-import java.time.Instant;
 
 import java.util.List;
 import java.util.UUID;
@@ -98,8 +97,6 @@ public class UpdateAssessmentBlueprintSlotUseCase implements IUseCase<UpdateAsse
         slot.setSlotType(command.slotType());
         slot.setFixedQuestionId(command.fixedQuestionId());
         slot.setSelectionSpec(selectionSpecOf(command.selectionSpec()));
-        slot.setUpdatedAt(Instant.now());
-        slot.setUpdatedBy(currentUserId);
 
         AssessmentBlueprintSlot savedSlot = assessmentBlueprintSlotRepository.save(slot);
         recalculateBlueprintVersionTimeLimitService.recalculate(version.getId());

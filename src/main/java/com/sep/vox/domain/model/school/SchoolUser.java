@@ -6,26 +6,11 @@ import java.util.UUID;
 public class SchoolUser {
     private UUID id;
     private UUID schoolId;
-    private UUID userId; 
+    private UUID userId;
     private Instant startDate;
     private Instant endDate;
 
-    
-    public SchoolUser() {}
-
-    public SchoolUser(UUID id, UUID schoolId, UUID userId, Instant startDate, Instant endDate) {
-        this.id = id;
-        this.schoolId = schoolId;
-        this.userId = userId;
-        this.startDate = startDate;
-        this.endDate = endDate;
-    }
-
-    public SchoolUser(UUID schoolId, UUID userId, Instant startDate, Instant endDate) {
-        this.schoolId = schoolId;
-        this.userId = userId;
-        this.startDate = startDate;
-        this.endDate = endDate;
+    public SchoolUser() {
     }
 
     public UUID getId() {
@@ -35,7 +20,6 @@ public class SchoolUser {
     public void setId(UUID id) {
         this.id = id;
     }
-
 
     public UUID getSchoolId() {
         return schoolId;
@@ -70,11 +54,51 @@ public class SchoolUser {
     }
 
     public static SchoolUser create(UUID userId, UUID schoolId, Instant now, Instant endDate) {
-        return new SchoolUser(
-            schoolId, 
-            userId, 
-            now, 
-            endDate
-        );
+        return builder()
+            .schoolId(schoolId)
+            .userId(userId)
+            .startDate(now)
+            .endDate(endDate)
+            .build();
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private final SchoolUser target = new SchoolUser();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder schoolId(UUID schoolId) {
+            target.schoolId = schoolId;
+            return this;
+        }
+
+        public Builder userId(UUID userId) {
+            target.userId = userId;
+            return this;
+        }
+
+        public Builder startDate(Instant startDate) {
+            target.startDate = startDate;
+            return this;
+        }
+
+        public Builder endDate(Instant endDate) {
+            target.endDate = endDate;
+            return this;
+        }
+
+        public SchoolUser build() {
+            return target;
+        }
     }
 }

@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.DimensionInterestScoreJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.personalization.DimensionInterestScoreJpaEntity;
 
 public interface SpringDataDimensionInterestScoreRepository
         extends JpaRepository<DimensionInterestScoreJpaEntity, UUID> {

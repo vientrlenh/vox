@@ -180,9 +180,14 @@ class SubmitPracticeTurnUseCaseReplayTests {
         turn.setDurationSeconds(30);
         turn.setTurnCostUsd(new BigDecimal("0.0125"));
         turn.setQuestionComplete(true);
-        turn.setCorrections(List.of(new TurnCorrectionSubmission(
-            "grammar", "I go to school yesterday", "I went to school yesterday",
-            "Thì quá khứ đơn", null, 0.95)));
+        turn.setCorrections(List.of(TurnCorrectionSubmission.builder()
+                .category("grammar")
+                .originalText("I go to school yesterday")
+                .correctedText("I went to school yesterday")
+                .explanation("Thì quá khứ đơn")
+                .correctAudioUrl(null)
+                .confidence(0.95)
+                .build()));
         return turn;
     }
 }

@@ -3,42 +3,42 @@ package com.sep.vox.infrastructure.persistence.mapper;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.valueobject.ClassCode;
-import com.sep.vox.infrastructure.persistence.entity.SchoolClassJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolClassJpaEntity;
 
 public final class SchoolClassMapper {
 
     public static SchoolClass toDomain(SchoolClassJpaEntity jpa) {
-        return new SchoolClass(
-            jpa.getId(),
-            jpa.getSchoolId(),
-            jpa.getLanguageId(),
-            jpa.getSchoolGradeId(),
-            new ClassCode(jpa.getCode()),
-            jpa.getName(),
-            jpa.getDescription(),
-            statusFromString(jpa.getStatus()),
-            jpa.getCreatedAt(),
-            jpa.getUpdatedAt(),
-            jpa.getCreatedBy(),
-            jpa.getUpdatedBy()
-        );
+        return SchoolClass.builder()
+            .id(jpa.getId())
+            .schoolId(jpa.getSchoolId())
+            .languageId(jpa.getLanguageId())
+            .schoolGradeId(jpa.getSchoolGradeId())
+            .code(new ClassCode(jpa.getCode()))
+            .name(jpa.getName())
+            .description(jpa.getDescription())
+            .status(statusFromString(jpa.getStatus()))
+            .createdAt(jpa.getCreatedAt())
+            .updatedAt(jpa.getUpdatedAt())
+            .createdBy(jpa.getCreatedBy())
+            .updatedBy(jpa.getUpdatedBy())
+            .build();
     }
 
     public static SchoolClassJpaEntity toJpa(SchoolClass schoolClass) {
-        return new SchoolClassJpaEntity(
-            schoolClass.getId(),
-            schoolClass.getSchoolId(),
-            schoolClass.getLanguageId(),
-            schoolClass.getSchoolGradeId(),
-            valueOf(schoolClass.getCode()),
-            schoolClass.getName(),
-            schoolClass.getDescription(),
-            valueOf(schoolClass.getStatus()),
-            schoolClass.getCreatedAt(),
-            schoolClass.getUpdatedAt(),
-            schoolClass.getCreatedBy(),
-            schoolClass.getUpdatedBy()
-        );
+        return SchoolClassJpaEntity.builder()
+            .id(schoolClass.getId())
+            .schoolId(schoolClass.getSchoolId())
+            .languageId(schoolClass.getLanguageId())
+            .schoolGradeId(schoolClass.getSchoolGradeId())
+            .code(valueOf(schoolClass.getCode()))
+            .name(schoolClass.getName())
+            .description(schoolClass.getDescription())
+            .status(valueOf(schoolClass.getStatus()))
+            .createdAt(schoolClass.getCreatedAt())
+            .updatedAt(schoolClass.getUpdatedAt())
+            .createdBy(schoolClass.getCreatedBy())
+            .updatedBy(schoolClass.getUpdatedBy())
+            .build();
     }
 
     private static String valueOf(ClassCode code) {

@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.PracticeSessionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.personalization.PracticeSessionJpaEntity;
 
 /**
  * Repository chỉ-đọc gộp điểm thi + điểm luyện tập theo tiêu chí -- không có entity chủ, dùng

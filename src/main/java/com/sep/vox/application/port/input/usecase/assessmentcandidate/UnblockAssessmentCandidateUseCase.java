@@ -144,10 +144,7 @@ public class UnblockAssessmentCandidateUseCase implements IUseCase<UnblockAssess
      */
     private void moveToPendingReviewWithoutScores(
             AssessmentCandidateResult result, UUID sessionId) {
-        Instant now = Instant.now();
         result.setStatus(AssessmentCandidateResultStatus.PENDING_REVIEW);
-        result.setUpdatedAt(now);
-        result.setUpdatedBy(moderationAccessService.getCurrentUserId());
         assessmentCandidateResultRepository.save(result);
         LOGGER.info(
             "Gỡ chặn phiên {}: chưa có evaluation nào, chuyển PENDING_REVIEW cho giáo viên chấm tay (không gọi AI).",

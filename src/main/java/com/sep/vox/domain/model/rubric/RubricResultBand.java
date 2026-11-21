@@ -1,11 +1,11 @@
 package com.sep.vox.domain.model.rubric;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.UUID;
 
-public class RubricResultBand {
-    private UUID id;
+import com.sep.vox.domain.model.BaseModel;
+
+public class RubricResultBand extends BaseModel {
     private UUID rubricVersionId;
     private String code;
     private String name;
@@ -13,53 +13,8 @@ public class RubricResultBand {
     private BigDecimal scoreMin;
     private BigDecimal scoreMax;
     private int order;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private UUID createdBy;
-    private UUID updatedBy;
 
     public RubricResultBand() {}
-
-    public RubricResultBand(UUID id, UUID rubricVersionId, String code, String name, String description,
-            BigDecimal scoreMin, BigDecimal scoreMax, int order, Instant createdAt, Instant updatedAt,
-            UUID createdBy, UUID updatedBy) {
-        this.id = id;
-        this.rubricVersionId = rubricVersionId;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.scoreMin = scoreMin;
-        this.scoreMax = scoreMax;
-        this.order = order;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public RubricResultBand(UUID rubricVersionId, String code, String name, String description, BigDecimal scoreMin,
-            BigDecimal scoreMax, int order, Instant createdAt, Instant updatedAt, UUID createdBy,
-            UUID updatedBy) {
-        this.rubricVersionId = rubricVersionId;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.scoreMin = scoreMin;
-        this.scoreMax = scoreMax;
-        this.order = order;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
 
     public UUID getRubricVersionId() {
         return rubricVersionId;
@@ -117,38 +72,54 @@ public class RubricResultBand {
         this.order = order;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
+    public static class Builder extends BaseModel.Builder<RubricResultBand, Builder> {
 
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
+        private Builder() {
+            super(new RubricResultBand());
+        }
 
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
+        @Override
+        protected Builder self() {
+            return this;
+        }
 
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
+        public Builder rubricVersionId(UUID rubricVersionId) {
+            target.rubricVersionId = rubricVersionId;
+            return this;
+        }
 
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
+        public Builder code(String code) {
+            target.code = code;
+            return this;
+        }
 
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
+        public Builder name(String name) {
+            target.name = name;
+            return this;
+        }
 
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
-    }
+        public Builder description(String description) {
+            target.description = description;
+            return this;
+        }
 
-    
-    
+        public Builder scoreMin(BigDecimal scoreMin) {
+            target.scoreMin = scoreMin;
+            return this;
+        }
+
+        public Builder scoreMax(BigDecimal scoreMax) {
+            target.scoreMax = scoreMax;
+            return this;
+        }
+
+        public Builder order(int order) {
+            target.order = order;
+            return this;
+        }
+    }
 }

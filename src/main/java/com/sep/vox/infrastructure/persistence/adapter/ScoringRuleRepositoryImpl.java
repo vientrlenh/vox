@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.ScoringRuleJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.scoringrule.ScoringRuleJpaEntity;
 import java.util.Optional;
 import java.util.UUID;
 

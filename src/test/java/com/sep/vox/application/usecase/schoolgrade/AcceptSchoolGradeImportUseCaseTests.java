@@ -72,12 +72,12 @@ class AcceptSchoolGradeImportUseCaseTests {
     @Test
     void execute_should_mark_queued_with_grade_type() {
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(previewedSession()));
-        when(importSessionRepository.markQueued(eq(sessionId), eq("SCHOOL_GRADE"), any(), any(), eq(userId)))
+        when(importSessionRepository.markQueued(eq(sessionId), eq("SCHOOL_GRADE"), any(), any(), eq(userId.toString())))
             .thenReturn(1);
 
         useCase.execute(new AcceptSchoolGradeImportCommand(schoolId, sessionId, validMapping()));
 
-        verify(importSessionRepository).markQueued(eq(sessionId), eq("SCHOOL_GRADE"), any(), any(), eq(userId));
+        verify(importSessionRepository).markQueued(eq(sessionId), eq("SCHOOL_GRADE"), any(), any(), eq(userId.toString()));
     }
 
     @Test
@@ -124,12 +124,32 @@ class AcceptSchoolGradeImportUseCaseTests {
     }
 
     private ImportSession session(ImportType type, ImportSessionStatus status) {
-        return new ImportSession(
-            sessionId, schoolId, type, "grades.csv", "[]", "{}", null,
-            0L, 0L, 0L, 0L, 0L, null, status, null,
-            Instant.now().plus(1, ChronoUnit.DAYS), null, null, null, 0,
-            Instant.now(), Instant.now(), userId, userId
-        );
+        return ImportSession.builder()
+            .id(sessionId)
+            .schoolId(schoolId)
+            .type(type)
+            .fileName("grades.csv")
+            .originalHeadersJson("[]")
+            .suggestedMappingJson("{}")
+            .confirmedMappingJson(null)
+            .validRows(0L)
+            .invalidRows(0L)
+            .importedRows(0L)
+            .skippedRows(0L)
+            .totalRows(0L)
+            .failureReason(null)
+            .status(status)
+            .importedEntityId(null)
+            .expiresAt(Instant.now().plus(1, ChronoUnit.DAYS))
+            .claimedAt(null)
+            .claimedBy(null)
+            .leaseExpiresAt(null)
+            .attempts(0)
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
+            .createdBy(userId.toString())
+            .updatedBy(userId.toString())
+            .build();
     }
 
     private User activeUser(UUID id, UUID userSchoolId) {
@@ -137,7 +157,12 @@ class AcceptSchoolGradeImportUseCaseTests {
         user.setId(id);
         user.setStatus(UserStatus.ACTIVE);
         when(schoolUserRepository.findByUserId(id)).thenReturn(
-            Optional.of(new SchoolUser(userSchoolId, id, Instant.now(), Instant.now().plus(36500, ChronoUnit.DAYS)))
+            Optional.of(SchoolUser.builder()
+                .schoolId(userSchoolId)
+                .userId(id)
+                .startDate(Instant.now())
+                .endDate(Instant.now().plus(36500, ChronoUnit.DAYS))
+                .build())
         );
         return user;
     }

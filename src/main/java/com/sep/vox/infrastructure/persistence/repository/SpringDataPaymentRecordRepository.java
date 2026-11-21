@@ -7,7 +7,7 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.sep.vox.infrastructure.persistence.entity.PaymentRecordJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.payment.PaymentRecordJpaEntity;
 
 public interface SpringDataPaymentRecordRepository extends JpaRepository<PaymentRecordJpaEntity, UUID> {
     List<PaymentRecordJpaEntity> findByOrderId(UUID orderId);

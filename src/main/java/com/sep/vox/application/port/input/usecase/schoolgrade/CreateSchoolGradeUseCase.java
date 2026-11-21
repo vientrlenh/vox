@@ -20,7 +20,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.UUID;
 
 
@@ -94,18 +93,16 @@ public class CreateSchoolGradeUseCase implements IUseCase<CreateSchoolGradeComma
     }
 
     private UUID saveNewGrade(CreateSchoolGradeCommand command, String code, UUID creatorId) {
-        Instant now = Instant.now();
-        SchoolGrade newGrade = new SchoolGrade(
-                command.schoolId(),
-                command.gradeLevelId(),
-                code,
-                StringNormalization.trimAndCollapseSpaces(command.name()),
-                command.description() != null ? StringNormalization.trimAndCollapseSpaces(command.description()) : null,
-                command.startDate(),
-                command.endDate(),
-                SchoolGradeStatus.ACTIVE,
-                now, now, creatorId, creatorId
-        );
+        SchoolGrade newGrade = SchoolGrade.builder()
+            .schoolId(command.schoolId())
+            .gradeLevelId(command.gradeLevelId())
+            .code(code)
+            .name(StringNormalization.trimAndCollapseSpaces(command.name()))
+            .description(command.description() != null ? StringNormalization.trimAndCollapseSpaces(command.description()) : null)
+            .startDate(command.startDate())
+            .endDate(command.endDate())
+            .status(SchoolGradeStatus.ACTIVE)
+            .build();
         try {
             return schoolGradeRepository.save(newGrade).getId();
         } catch (DataIntegrityViolationException e) {

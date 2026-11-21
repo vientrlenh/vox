@@ -104,28 +104,28 @@ public class MissingResponseBackfillService {
             );
             return false;
         }
-        assessmentItemEvaluationRepository.save(new AssessmentItemEvaluation(
-            responseId,
-            paperItemId,
-            AssessmentEvaluationEngineType.AI_SINGLE,
-            GRADED_BY,
-            null,
-            null,
-            BigDecimal.ZERO,
-            BigDecimal.ZERO,
-            null,
-            false,
-            NO_RECORDING,
-            false,
-            false,
-            null,
-            null,
-            "Thí sinh không đưa ra câu trả lời nào cho câu hỏi này.",
-            null,
-            null,
-            AssessmentItemEvaluationStatus.FINALIZED,
-            Instant.now()
-        ));
+        assessmentItemEvaluationRepository.save(AssessmentItemEvaluation.builder()
+                .responseId(responseId)
+                .paperItemId(paperItemId)
+                .engineType(AssessmentEvaluationEngineType.AI_SINGLE)
+                .gradedByModel(GRADED_BY)
+                .sampleCount(null)
+                .reviewerId(null)
+                .rawItemScore(BigDecimal.ZERO)
+                .itemScore(BigDecimal.ZERO)
+                .overallConfidence(null)
+                .requiresHumanReview(false)
+                .reviewReasonCode(NO_RECORDING)
+                .markedInvalid(false)
+                .requiresRetake(false)
+                .signals(null)
+                .validityJson(null)
+                .feedbackSummary("Thí sinh không đưa ra câu trả lời nào cho câu hỏi này.")
+                .suggestionsJson(null)
+                .promptVersion(null)
+                .status(AssessmentItemEvaluationStatus.FINALIZED)
+                .evaluatedAt(Instant.now())
+                .build());
         LOGGER.info("Câu {} không có nội dung trả lời -- ghi 0 điểm, không gọi LLM.", responseId);
         return true;
     }
@@ -161,44 +161,50 @@ public class MissingResponseBackfillService {
             // the exception here rolls back the whole transaction and swallows the event-firing loop too: the Python side
             // publishes AnswerTurnsRecorded and then waits forever with no grading request coming back. The symptom
             // is "the attempt is not graded", not "backfill is broken", so it is very easy to blame Kafka by mistake.
-            AssessmentItemResponse response = assessmentItemResponseRepository.save(new AssessmentItemResponse(
-                UUID.randomUUID(),
-                sessionId, paperItem.getId(), null, 0, null, NO_RECORDING, now
-            ));
-            assessmentItemEvaluationRepository.save(new AssessmentItemEvaluation(
-                response.getId(),
-                paperItem.getId(),
-                AssessmentEvaluationEngineType.AI_SINGLE,
-                GRADED_BY,
-                null,
-                null,
-                BigDecimal.ZERO,
-                BigDecimal.ZERO,
-                null,
-                // requiresHumanReview = FALSE. Không có bản ghi thì 0 điểm là đúng, không cần
-                // ai xem lại.
-                //
-                // Đã thử đặt true với lý lẽ "học sinh có thể khiếu nại máy không ghi được" rồi
-                // bỏ: dữ liệu KHÔNG phân biệt được "em không trả lời" với "máy hỏng" -- cả hai
-                // đều chỉ là thiếu dòng response. Bật cờ là khẳng định một điều hệ thống không
-                // biết, và gắn cờ cho mọi câu trắng thì hàng chờ duyệt ngập những bài mà 0 điểm
-                // vốn đã đúng, khiến cờ mất luôn ý nghĩa.
-                //
-                // Đường khiếu nại đã có sẵn và đúng chỗ: học sinh nộp đơn phúc khảo thì vòng
-                // APPEAL mở ra, và nhờ backfill này giáo viên MỚI có câu để chấm lại. Đó mới là
-                // giá trị của việc lấp -- làm cho câu TỒN TẠI, không phải bắt ai đó đi duyệt.
-                false,
-                NO_RECORDING,
-                false,
-                false,
-                null,
-                null,
-                "Không thu được bản ghi cho câu này.",
-                null,
-                null,
-                AssessmentItemEvaluationStatus.FINALIZED,
-                now
-            ));
+            AssessmentItemResponse response = assessmentItemResponseRepository.save(AssessmentItemResponse.builder()
+                    .id(UUID.randomUUID())
+                    .sessionId(sessionId)
+                    .paperItemId(paperItem.getId())
+                    .audioUrl(null)
+                    .durationSeconds(0)
+                    .transcript(null)
+                    .terminationReason(NO_RECORDING)
+                    .submittedAt(now)
+                    .build());
+            // requiresHumanReview = FALSE. With no recording a score of 0 is correct and nobody needs to
+            // review it again.
+            //
+            // Setting it to true was tried, with the argument "the student may appeal that the machine failed to
+            // record", and dropped: the data CANNOT tell "the student gave no answer" from "the machine broke" -- both
+            // are just a missing response row. Raising the flag would assert something the system does not
+            // know, and flagging every blank question would flood the review queue with results where 0 is
+            // already right, making the flag meaningless.
+            //
+            // The appeal path already exists and is in the right place: when the student files an appeal the
+            // APPEAL round opens, and thanks to this backfill the teacher HAS a question to regrade. That is
+            // the value of the backfill -- it makes the question EXIST, not make someone go and review it.
+            assessmentItemEvaluationRepository.save(AssessmentItemEvaluation.builder()
+                    .responseId(response.getId())
+                    .paperItemId(paperItem.getId())
+                    .engineType(AssessmentEvaluationEngineType.AI_SINGLE)
+                    .gradedByModel(GRADED_BY)
+                    .sampleCount(null)
+                    .reviewerId(null)
+                    .rawItemScore(BigDecimal.ZERO)
+                    .itemScore(BigDecimal.ZERO)
+                    .overallConfidence(null)
+                    .requiresHumanReview(false)
+                    .reviewReasonCode(NO_RECORDING)
+                    .markedInvalid(false)
+                    .requiresRetake(false)
+                    .signals(null)
+                    .validityJson(null)
+                    .feedbackSummary("Không thu được bản ghi cho câu này.")
+                    .suggestionsJson(null)
+                    .promptVersion(null)
+                    .status(AssessmentItemEvaluationStatus.FINALIZED)
+                    .evaluatedAt(now)
+                    .build());
             created++;
         }
         if (created > 0) {

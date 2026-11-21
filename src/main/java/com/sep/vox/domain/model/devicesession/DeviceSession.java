@@ -15,29 +15,6 @@ public class DeviceSession {
 
     public DeviceSession() {}
 
-    public DeviceSession(UUID id, UUID userId, String deviceId, String deviceName, SessionPlatform platform,
-            String ipAddress, String userAgent, Instant revokedAt) {
-        this.id = id;
-        this.userId = userId;
-        this.deviceId = deviceId;
-        this.deviceName = deviceName;
-        this.platform = platform;
-        this.ipAddress = ipAddress;
-        this.userAgent = userAgent;
-        this.revokedAt = revokedAt;
-    }
-
-    public DeviceSession(UUID userId, String deviceId, String deviceName, SessionPlatform platform, String ipAddress,
-            String userAgent, Instant revokedAt) {
-        this.userId = userId;
-        this.deviceId = deviceId;
-        this.deviceName = deviceName;
-        this.platform = platform;
-        this.ipAddress = ipAddress;
-        this.userAgent = userAgent;
-        this.revokedAt = revokedAt;
-    }
-
     public UUID getId() {
         return id;
     }
@@ -104,15 +81,14 @@ public class DeviceSession {
 
     
     public static DeviceSession create(UUID userId, String deviceId, String deviceName, SessionPlatform platform, String ipAddress, String userAgent) {
-        return new DeviceSession(
-            userId, 
-            deviceId, 
-            deviceName, 
-            platform, 
-            ipAddress, 
-            userAgent, 
-            null
-        );
+        return builder()
+            .userId(userId)
+            .deviceId(deviceId)
+            .deviceName(deviceName)
+            .platform(platform)
+            .ipAddress(ipAddress)
+            .userAgent(userAgent)
+            .build();
     }
     
     public boolean isRevoked() {
@@ -121,5 +97,60 @@ public class DeviceSession {
 
     public boolean isDeviceIdMismatches(String deviceId) {
         return !this.deviceId.equals(deviceId);
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private final DeviceSession target = new DeviceSession();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder userId(UUID userId) {
+            target.userId = userId;
+            return this;
+        }
+
+        public Builder deviceId(String deviceId) {
+            target.deviceId = deviceId;
+            return this;
+        }
+
+        public Builder deviceName(String deviceName) {
+            target.deviceName = deviceName;
+            return this;
+        }
+
+        public Builder platform(SessionPlatform platform) {
+            target.platform = platform;
+            return this;
+        }
+
+        public Builder ipAddress(String ipAddress) {
+            target.ipAddress = ipAddress;
+            return this;
+        }
+
+        public Builder userAgent(String userAgent) {
+            target.userAgent = userAgent;
+            return this;
+        }
+
+        public Builder revokedAt(Instant revokedAt) {
+            target.revokedAt = revokedAt;
+            return this;
+        }
+
+        public DeviceSession build() {
+            return target;
+        }
     }
 }

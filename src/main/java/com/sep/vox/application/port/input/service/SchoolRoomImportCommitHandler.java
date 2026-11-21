@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.service;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -50,10 +49,9 @@ public class SchoolRoomImportCommitHandler implements ImportCommitHandler {
     @Override
     public ImportCommitResult commit(ImportSession session, List<ImportRow> rows) {
         UUID schoolId = session.getSchoolId();
-        UUID currentUserId = session.getCreatedBy();
         Map<String, String> mapping = jsonSerializationPort.toStringMap(session.getConfirmedMappingJson());
         validateMappingKeys(rows, mapping);
-        return processRows(rows, mapping, schoolId, currentUserId);
+        return processRows(rows, mapping, schoolId);
     }
 
     private void validateMappingKeys(List<ImportRow> rows, Map<String, String> confirmedMapping) {
@@ -76,7 +74,7 @@ public class SchoolRoomImportCommitHandler implements ImportCommitHandler {
         }
     }
 
-    private ImportCommitResult processRows(List<ImportRow> rows, Map<String, String> confirmedMapping, UUID schoolId, UUID currentUserId) {
+    private ImportCommitResult processRows(List<ImportRow> rows, Map<String, String> confirmedMapping, UUID schoolId) {
         long createdRows = 0L;
         long updatedRows = 0L;
         long invalidRows = 0L;
@@ -112,11 +110,11 @@ public class SchoolRoomImportCommitHandler implements ImportCommitHandler {
             try {
                 if (existing != null) {
                     transactionTemplate.executeWithoutResult(status ->
-                            updateRoom(existing, normalized, currentUserId));
+                            updateRoom(existing, normalized));
                     updatedRows++;
                 } else {
                     transactionTemplate.executeWithoutResult(status ->
-                            createRoom(normalized, schoolId, currentUserId));
+                            createRoom(normalized, schoolId));
                     createdRows++;
                 }
             } catch (DataIntegrityViolationException | IllegalArgumentException exception) {
@@ -133,32 +131,25 @@ public class SchoolRoomImportCommitHandler implements ImportCommitHandler {
         return new ImportCommitResult(createdRows, updatedRows, 0L, invalidRows);
     }
 
-    private void createRoom(Map<String, String> data, UUID schoolId, UUID currentUserId) {
-        Instant now = Instant.now();
-        schoolRoomRepository.save(new SchoolRoom(
-                schoolId,
-                data.get("code"),
-                data.get("name"),
-                data.get("description"),
-                // Cùng trạng thái với thêm tay (AddSchoolRoomUseCase): isActive=false là cờ xóa mềm,
-                // DeleteSchoolRoomUseCase từ chối xóa phòng đã inactive mà không có API nào bật lại
-                // nên phòng import ra sẽ kẹt vĩnh viễn ở trạng thái "đã xóa".
-                true,
-                now,
-                now,
-                currentUserId,
-                currentUserId));
+    private void createRoom(Map<String, String> data, UUID schoolId) {
+        schoolRoomRepository.save(SchoolRoom.builder()
+            .schoolId(schoolId)
+            .code(data.get("code"))
+            .name(data.get("name"))
+            .description(data.get("description"))
+            // Same status as manual creation (AddSchoolRoomUseCase): isActive=false is the soft-delete flag,
+            // DeleteSchoolRoomUseCase refuses to delete an inactive room and no API can re-activate it,
+            // so an imported room would be stuck forever in the "deleted" state.
+            .active(true)
+            .build());
     }
 
-    private void updateRoom(SchoolRoom existing, Map<String, String> data, UUID currentUserId) {
-        Instant now = Instant.now();
+    private void updateRoom(SchoolRoom existing, Map<String, String> data) {
         existing.setName(data.get("name"));
         existing.setDescription(data.get("description"));
         // Import lại mã phòng đang inactive = khôi phục phòng đó, vì không có API nào bật lại
         // và unique (school_id, code) chặn tạo mới cùng mã.
         existing.setActive(true);
-        existing.setUpdatedAt(now);
-        existing.setUpdatedBy(currentUserId);
         schoolRoomRepository.save(existing);
     }
 

@@ -119,6 +119,12 @@ public class ViewSchoolUserUseCaseTests {
 
     private SchoolUser schoolUser(UUID id, UUID userSchoolId, UUID userId) {
         Instant now = Instant.now();
-        return new SchoolUser(id, userSchoolId, userId, now, now.plus(365, ChronoUnit.DAYS));
+        return SchoolUser.builder()
+            .id(id)
+            .schoolId(userSchoolId)
+            .userId(userId)
+            .startDate(now)
+            .endDate(now.plus(365, ChronoUnit.DAYS))
+            .build();
     }
 }

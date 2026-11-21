@@ -302,12 +302,6 @@ public class SubmitAssessmentSessionUseCase implements IUseCase<SubmitAssessment
         result.setTotalScore(null);
         result.setStatus(AssessmentCandidateResultStatus.INVALID);
         result.setFinalizedAt(now);
-        if (existing == null) {
-            result.setCreatedAt(now);
-            result.setCreatedBy(null);
-        }
-        result.setUpdatedAt(now);
-        result.setUpdatedBy(null);
         assessmentCandidateResultRepository.save(result);
 
         session.setStatus(AssessmentSessionStatus.GRADED);

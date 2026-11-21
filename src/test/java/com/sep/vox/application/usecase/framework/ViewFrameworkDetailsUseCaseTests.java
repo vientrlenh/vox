@@ -6,7 +6,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -25,7 +24,6 @@ public class ViewFrameworkDetailsUseCaseTests {
 
     private FrameworkRepository frameworkRepository;
     private ViewFrameworkDetailsUseCase useCase;
-    private Instant now = Instant.now();
 
     @BeforeEach
     void setUp() {
@@ -38,10 +36,13 @@ public class ViewFrameworkDetailsUseCaseTests {
         UUID frameworkId = UUID.randomUUID();
         ViewFrameworkDetailsQuery query = new ViewFrameworkDetailsQuery(frameworkId);
 
-        Framework framework = new Framework(
-            frameworkId, new FrameworkCode("CEFR"), "CEFR Framework", "European Framework",
-            true, now, now, null, null
-        );
+        Framework framework = Framework.builder()
+            .id(frameworkId)
+            .code(new FrameworkCode("CEFR"))
+            .name("CEFR Framework")
+            .description("European Framework")
+            .active(true)
+            .build();
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
 
@@ -68,10 +69,13 @@ public class ViewFrameworkDetailsUseCaseTests {
         UUID frameworkId = UUID.randomUUID();
         ViewFrameworkDetailsQuery query = new ViewFrameworkDetailsQuery(frameworkId);
 
-        Framework framework = new Framework(
-            frameworkId, new FrameworkCode("TOEIC"), "TOEIC Framework", "TOEIC Test",
-            false, now, now, null, null
-        );
+        Framework framework = Framework.builder()
+            .id(frameworkId)
+            .code(new FrameworkCode("TOEIC"))
+            .name("TOEIC Framework")
+            .description("TOEIC Test")
+            .active(false)
+            .build();
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
 

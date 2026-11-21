@@ -76,7 +76,13 @@ class LockClassTestPaperTests {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(TEACHER_ID);
         when(assessmentRepository.findById(ASSESSMENT_ID)).thenReturn(Optional.of(classTest()));
         when(assessmentMemberRepository.findByAssessmentIdAndUserId(ASSESSMENT_ID, TEACHER_ID)).thenReturn(Optional.of(
-            new AssessmentMember(ASSESSMENT_ID, TEACHER_ID, AssessmentMemberRole.CHAIR, Instant.now(), TEACHER_ID)));
+            AssessmentMember.builder()
+                    .assessmentId(ASSESSMENT_ID)
+                    .userId(TEACHER_ID)
+                    .role(AssessmentMemberRole.CHAIR)
+                    .grantedAt(Instant.now())
+                    .grantedBy(TEACHER_ID)
+                    .build()));
         when(assessmentPaperItemRepository.existsUnassignedItemByPaperId(PAPER_ID)).thenReturn(false);
         when(assessmentPaperRepository.save(any(AssessmentPaper.class))).thenAnswer(inv -> inv.getArgument(0));
     }
@@ -142,7 +148,7 @@ class LockClassTestPaperTests {
         paper.setStatus(status);
         // The teacher who created the test is also the one who drafted the paper -- exactly the
         // case requireNotAuthor would block.
-        paper.setCreatedBy(TEACHER_ID);
+        paper.setCreatedBy(TEACHER_ID.toString());
         return paper;
     }
 }

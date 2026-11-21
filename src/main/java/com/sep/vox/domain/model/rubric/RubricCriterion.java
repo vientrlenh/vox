@@ -1,14 +1,13 @@
 package com.sep.vox.domain.model.rubric;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.UUID;
+
+import com.sep.vox.domain.model.BaseModel;
 
 import com.sep.vox.domain.valueobject.rubric.RubricCriterionExamples;
 
-
-public class RubricCriterion {
-    private UUID id;
+public class RubricCriterion extends BaseModel {
     private UUID rubricVersionId;
     private UUID frameworkCriterionId;
     private String code;
@@ -20,61 +19,8 @@ public class RubricCriterion {
     private BigDecimal maxScore;
     private int order;
     private boolean isRequired;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private UUID createdBy;
-    private UUID updatedBy;
 
     public RubricCriterion() {}
-
-    public RubricCriterion(UUID id, UUID rubricVersionId, UUID frameworkCriterionId, String code, String name,
-            String description, RubricCriterionExamples examples, BigDecimal weight, BigDecimal minScore, BigDecimal maxScore, int order,
-            boolean isRequired, Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.id = id;
-        this.rubricVersionId = rubricVersionId;
-        this.frameworkCriterionId = frameworkCriterionId;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.examples = examples;
-        this.weight = weight;
-        this.minScore = minScore;
-        this.maxScore = maxScore;
-        this.order = order;
-        this.isRequired = isRequired;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public RubricCriterion(UUID rubricVersionId, UUID frameworkCriterionId, String code, String name,
-            String description, RubricCriterionExamples examples, BigDecimal weight, BigDecimal minScore, BigDecimal maxScore, int order,
-            boolean isRequired, Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.rubricVersionId = rubricVersionId;
-        this.frameworkCriterionId = frameworkCriterionId;
-        this.code = code;
-        this.name = name;
-        this.description = description;
-        this.examples = examples;
-        this.weight = weight;
-        this.minScore = minScore;
-        this.maxScore = maxScore;
-        this.order = order;
-        this.isRequired = isRequired;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
 
     public UUID getRubricVersionId() {
         return rubricVersionId;
@@ -164,38 +110,74 @@ public class RubricCriterion {
         this.isRequired = isRequired;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
+    public static class Builder extends BaseModel.Builder<RubricCriterion, Builder> {
 
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
+        private Builder() {
+            super(new RubricCriterion());
+        }
 
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
+        @Override
+        protected Builder self() {
+            return this;
+        }
 
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
+        public Builder rubricVersionId(UUID rubricVersionId) {
+            target.rubricVersionId = rubricVersionId;
+            return this;
+        }
 
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
+        public Builder frameworkCriterionId(UUID frameworkCriterionId) {
+            target.frameworkCriterionId = frameworkCriterionId;
+            return this;
+        }
 
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
+        public Builder code(String code) {
+            target.code = code;
+            return this;
+        }
 
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
+        public Builder name(String name) {
+            target.name = name;
+            return this;
+        }
+
+        public Builder description(String description) {
+            target.description = description;
+            return this;
+        }
+
+        public Builder examples(RubricCriterionExamples examples) {
+            target.examples = examples;
+            return this;
+        }
+
+        public Builder weight(BigDecimal weight) {
+            target.weight = weight;
+            return this;
+        }
+
+        public Builder minScore(BigDecimal minScore) {
+            target.minScore = minScore;
+            return this;
+        }
+
+        public Builder maxScore(BigDecimal maxScore) {
+            target.maxScore = maxScore;
+            return this;
+        }
+
+        public Builder order(int order) {
+            target.order = order;
+            return this;
+        }
+
+        public Builder required(boolean isRequired) {
+            target.isRequired = isRequired;
+            return this;
+        }
     }
-   
-    
-    
 }

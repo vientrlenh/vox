@@ -6,7 +6,7 @@ import com.sep.vox.domain.model.scoringrule.ScoringRuleConditionType;
 import com.sep.vox.domain.model.scoringrule.ScoringRuleSeverity;
 import com.sep.vox.domain.valueobject.scoringruleaction.ScoringRuleActionParams;
 import com.sep.vox.domain.valueobject.scoringrulecondition.ScoringRuleConditionParams;
-import com.sep.vox.infrastructure.persistence.entity.ScoringRuleJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.scoringrule.ScoringRuleJpaEntity;
 
 public final class ScoringRuleMapper {
 
@@ -15,47 +15,47 @@ public final class ScoringRuleMapper {
     public static ScoringRule toDomain(ScoringRuleJpaEntity jpa) {
         ScoringRuleConditionType conditionType = fromConditionType(jpa.getConditionType());
         ScoringRuleActionType actionType = fromActionType(jpa.getActionType());
-        return new ScoringRule(
-            jpa.getId(),
-            jpa.getPolicyId(),
-            jpa.getCode(),
-            jpa.getName(),
-            jpa.getDescription(),
-            conditionType,
-            JsonValueObjectMapper.fromJson(jpa.getConditionParamsJson(), conditionParamsType(conditionType)),
-            actionType,
-            JsonValueObjectMapper.fromJson(jpa.getActionParamsJson(), actionParamsType(actionType)),
-            jpa.getPriority(),
-            fromSeverity(jpa.getSeverity()),
-            jpa.isStopProcessing(),
-            jpa.isActive(),
-            jpa.getCreatedAt(),
-            jpa.getUpdatedAt(),
-            jpa.getCreatedBy(),
-            jpa.getUpdatedBy()
-        );
+        return ScoringRule.builder()
+            .id(jpa.getId())
+            .policyId(jpa.getPolicyId())
+            .code(jpa.getCode())
+            .name(jpa.getName())
+            .description(jpa.getDescription())
+            .conditionType(conditionType)
+            .conditionParams(JsonValueObjectMapper.fromJson(jpa.getConditionParamsJson(), conditionParamsType(conditionType)))
+            .actionType(actionType)
+            .actionParams(JsonValueObjectMapper.fromJson(jpa.getActionParamsJson(), actionParamsType(actionType)))
+            .priority(jpa.getPriority())
+            .severity(fromSeverity(jpa.getSeverity()))
+            .stopProcessing(jpa.isStopProcessing())
+            .active(jpa.isActive())
+            .createdAt(jpa.getCreatedAt())
+            .updatedAt(jpa.getUpdatedAt())
+            .createdBy(jpa.getCreatedBy())
+            .updatedBy(jpa.getUpdatedBy())
+            .build();
     }
 
     public static ScoringRuleJpaEntity toJpa(ScoringRule rule) {
-        return new ScoringRuleJpaEntity(
-            rule.getId(),
-            rule.getPolicyId(),
-            rule.getCode(),
-            rule.getName(),
-            rule.getDescription(),
-            valueOf(rule.getConditionType()),
-            JsonValueObjectMapper.toJson(rule.getConditionParams()),
-            valueOf(rule.getActionType()),
-            JsonValueObjectMapper.toJson(rule.getActionParams()),
-            rule.getPriority(),
-            valueOf(rule.getSeverity()),
-            rule.isStopProcessing(),
-            rule.isActive(),
-            rule.getCreatedAt(),
-            rule.getUpdatedAt(),
-            rule.getCreatedBy(),
-            rule.getUpdatedBy()
-        );
+        return ScoringRuleJpaEntity.builder()
+            .id(rule.getId())
+            .policyId(rule.getPolicyId())
+            .code(rule.getCode())
+            .name(rule.getName())
+            .description(rule.getDescription())
+            .conditionType(valueOf(rule.getConditionType()))
+            .conditionParamsJson(JsonValueObjectMapper.toJson(rule.getConditionParams()))
+            .actionType(valueOf(rule.getActionType()))
+            .actionParamsJson(JsonValueObjectMapper.toJson(rule.getActionParams()))
+            .priority(rule.getPriority())
+            .severity(valueOf(rule.getSeverity()))
+            .stopProcessing(rule.isStopProcessing())
+            .isActive(rule.isActive())
+            .createdAt(rule.getCreatedAt())
+            .updatedAt(rule.getUpdatedAt())
+            .createdBy(rule.getCreatedBy())
+            .updatedBy(rule.getUpdatedBy())
+            .build();
     }
 
     private static String valueOf(ScoringRuleSeverity severity) {

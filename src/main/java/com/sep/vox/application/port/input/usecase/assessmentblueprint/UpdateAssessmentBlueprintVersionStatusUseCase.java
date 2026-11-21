@@ -116,8 +116,6 @@ public class UpdateAssessmentBlueprintVersionStatusUseCase
             default -> throw new IllegalStateException("Action không hợp lệ");
         }
 
-        version.setUpdatedAt(Instant.now());
-        version.setUpdatedBy(currentUserId);
         AssessmentBlueprintVersion saved = assessmentBlueprintVersionRepository.save(version);
 
         if (command.action().equals("PUBLISH")) {
@@ -165,7 +163,7 @@ public class UpdateAssessmentBlueprintVersionStatusUseCase
         boolean isChair = assessmentBlueprintRepository.isChairOfAssessmentUsingBlueprint(
             blueprint.getId(), currentUserId, currentSchoolId
         );
-        if (!isAdmin && !isChair && currentUserId.equals(version.getCreatedBy())) {
+        if (!isAdmin && !isChair && version.isCreatedBy(currentUserId)) {
             throw new ForbiddenException("Người tạo version không được tự đổi trạng thái version của chính mình");
         }
     }

@@ -17,7 +17,6 @@ import com.sep.vox.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.UUID;
 @Service
 public class AddSchoolRoomUseCase implements IUseCase<AddSchoolRoomCommand, UUID> {
@@ -79,14 +78,13 @@ public class AddSchoolRoomUseCase implements IUseCase<AddSchoolRoomCommand, UUID
     }
 
     private SchoolRoom saveRoom(AddSchoolRoomCommand command, String code, UUID creatorId) {
-        Instant now = Instant.now();
-        SchoolRoom newRoom = new SchoolRoom(
-                command.schoolId(),
-                code,
-                StringNormalization.trimAndCollapseSpaces(command.name()),
-                StringNormalization.trimAndCollapseSpaces(command.description()),
-                true, now, now, creatorId, creatorId
-        );
+        SchoolRoom newRoom = SchoolRoom.builder()
+            .schoolId(command.schoolId())
+            .code(code)
+            .name(StringNormalization.trimAndCollapseSpaces(command.name()))
+            .description(StringNormalization.trimAndCollapseSpaces(command.description()))
+            .active(true)
+            .build();
         return schoolRoomRepository.save(newRoom);
     }
 }

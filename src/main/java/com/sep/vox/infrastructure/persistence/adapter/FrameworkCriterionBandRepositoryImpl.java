@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.FrameworkCriterionBandJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.framework.FrameworkCriterionBandJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;

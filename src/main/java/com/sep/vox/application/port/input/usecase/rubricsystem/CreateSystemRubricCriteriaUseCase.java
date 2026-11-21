@@ -29,7 +29,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -103,9 +102,6 @@ public class CreateSystemRubricCriteriaUseCase implements IUseCase<CreateSystemR
             throw new NotFoundException("Dữ liệu không hợp lệ: Một hoặc nhiều Framework Criterion ID gửi lên không tồn tại trong hệ thống.");
         }
 
-
-        Instant now = Instant.now();
-
         // 4. Lặp và xử lý danh sách tiêu chí (CÓ CHỐNG TRÙNG LẶP NỘI BỘ)
         Set<String> uniqueCodes = new HashSet<>();
         Set<UUID> uniqueFrameworkIds = new HashSet<>();
@@ -163,20 +159,19 @@ public class CreateSystemRubricCriteriaUseCase implements IUseCase<CreateSystemR
                 examplesVO = new RubricCriterionExamples(exampleList);
             }
 
-            return new RubricCriterion(
-                    command.versionId(),
-                    cCmd.frameworkCriterionId(),
-                    safeCode,
-                    safeName,
-                    cCmd.description() != null ? StringNormalization.trimAndCollapseSpaces(cCmd.description()) : null,
-                    examplesVO,
-                    cCmd.weight(),
-                    cCmd.minScore(),
-                    cCmd.maxScore(),
-                    cCmd.order(),
-                    cCmd.isRequired(),
-                    now, now, currentUserId, currentUserId
-            );
+            return RubricCriterion.builder()
+                    .rubricVersionId(command.versionId())
+                    .frameworkCriterionId(cCmd.frameworkCriterionId())
+                    .code(safeCode)
+                    .name(safeName)
+                    .description(cCmd.description() != null ? StringNormalization.trimAndCollapseSpaces(cCmd.description()) : null)
+                    .examples(examplesVO)
+                    .weight(cCmd.weight())
+                    .minScore(cCmd.minScore())
+                    .maxScore(cCmd.maxScore())
+                    .order(cCmd.order())
+                    .required(cCmd.isRequired())
+                    .build();
         }).collect(Collectors.toList());
 
         // 5. Lưu toàn bộ xuống SQL Server

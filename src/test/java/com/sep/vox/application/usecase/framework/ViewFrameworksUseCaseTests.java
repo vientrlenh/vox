@@ -5,7 +5,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,7 +23,6 @@ public class ViewFrameworksUseCaseTests {
 
     private FrameworkRepository frameworkRepository;
     private ViewFrameworksUseCase useCase;
-    private Instant now = Instant.now();
 
     @BeforeEach
     void setUp() {
@@ -36,14 +34,20 @@ public class ViewFrameworksUseCaseTests {
     void should_return_paginated_frameworks() {
         ViewFrameworksQuery query = new ViewFrameworksQuery(1, 10, null, null);
 
-        Framework fw1 = new Framework(
-            UUID.randomUUID(), new FrameworkCode("CEFR"), "CEFR Framework", "Description 1",
-            true, now, now, null, null
-        );
-        Framework fw2 = new Framework(
-            UUID.randomUUID(), new FrameworkCode("TOEIC"), "TOEIC Framework", "Description 2",
-            true, now, now, null, null
-        );
+        Framework fw1 = Framework.builder()
+            .id(UUID.randomUUID())
+            .code(new FrameworkCode("CEFR"))
+            .name("CEFR Framework")
+            .description("Description 1")
+            .active(true)
+            .build();
+        Framework fw2 = Framework.builder()
+            .id(UUID.randomUUID())
+            .code(new FrameworkCode("TOEIC"))
+            .name("TOEIC Framework")
+            .description("Description 2")
+            .active(true)
+            .build();
 
         PageResult<Framework> pageResult = new PageResult<>(
             List.of(fw1, fw2),
@@ -83,10 +87,13 @@ public class ViewFrameworksUseCaseTests {
     void should_convert_page_to_zero_based_index() {
         ViewFrameworksQuery query = new ViewFrameworksQuery(2, 10, null, null);
 
-        Framework fw1 = new Framework(
-            UUID.randomUUID(), new FrameworkCode("CEFR"), "CEFR", "Description",
-            true, now, now, null, null
-        );
+        Framework fw1 = Framework.builder()
+            .id(UUID.randomUUID())
+            .code(new FrameworkCode("CEFR"))
+            .name("CEFR")
+            .description("Description")
+            .active(true)
+            .build();
 
         PageResult<Framework> pageResult = new PageResult<>(
             List.of(fw1),

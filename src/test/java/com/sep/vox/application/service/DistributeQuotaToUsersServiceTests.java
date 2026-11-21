@@ -113,7 +113,9 @@ class DistributeQuotaToUsersServiceTests {
         when(schoolSubscriptionRepository.findActiveBySchoolId(schoolId)).thenReturn(Optional.of(subscription));
 
         when(roleRepository.findByCode(any()))
-            .thenReturn(Optional.of(new Role(roleId, null, null, null, null, null, null)));
+            .thenReturn(Optional.of(Role.builder()
+            .id(roleId)
+            .build()));
 
         when(schoolQuotaPolicyRepository.findBySchoolIdAndQuotaType(eq(schoolId), any()))
             .thenReturn(SchoolQuotaPolicy.fullyDistributable(schoolId, QuotaType.ASSESSMENT));
@@ -316,8 +318,12 @@ class DistributeQuotaToUsersServiceTests {
     }
 
     private void givenPool(long totalVnd, long usedVnd) {
-        SchoolSubscriptionQuotaRecord pool = new SchoolSubscriptionQuotaRecord(
-            subscriptionId, QuotaType.ASSESSMENT, BigDecimal.valueOf(totalVnd), BigDecimal.valueOf(usedVnd));
+        SchoolSubscriptionQuotaRecord pool = SchoolSubscriptionQuotaRecord.builder()
+            .schoolSubscriptionId(subscriptionId)
+            .quotaType(QuotaType.ASSESSMENT)
+            .totalAllocatedAmountVnd(BigDecimal.valueOf(totalVnd))
+            .usedAmountVnd(BigDecimal.valueOf(usedVnd))
+            .build();
         pool.setId(UUID.randomUUID());
         when(subscriptionQuotaRepository.findBySchoolSubscriptionIdAndQuotaType(subscriptionId, QuotaType.ASSESSMENT))
             .thenReturn(Optional.of(pool));
@@ -325,7 +331,12 @@ class DistributeQuotaToUsersServiceTests {
 
     private void givenEligible(UUID... userIds) {
         List<SchoolUser> content = java.util.Arrays.stream(userIds)
-            .map(userId -> new SchoolUser(schoolId, userId, null, null))
+            .map(userId -> SchoolUser.builder()
+                .schoolId(schoolId)
+                .userId(userId)
+                .startDate(null)
+                .endDate(null)
+                .build())
             .toList();
         when(schoolUserRepository.findBySchoolId(
                 any(), any(), any(), any(), any(), anyBoolean(), anyInt(), anyInt()))
@@ -345,12 +356,21 @@ class DistributeQuotaToUsersServiceTests {
 
     private void givenWallet(long balanceVnd) {
         when(schoolBalanceRepository.findBySchoolId(schoolId))
-            .thenReturn(Optional.of(new SchoolBalance(schoolId, BigDecimal.valueOf(balanceVnd), null, null)));
+            .thenReturn(Optional.of(SchoolBalance.builder()
+                .schoolId(schoolId)
+                .balanceVnd(BigDecimal.valueOf(balanceVnd))
+                .createdAt(null)
+                .updatedAt(null)
+                .build()));
     }
 
     private SchoolSubscriptionQuotaUserAllocation allocation(UUID userId, long allocatedVnd, long usedVnd) {
-        return new SchoolSubscriptionQuotaUserAllocation(
-            subscriptionId, QuotaType.ASSESSMENT, userId,
-            BigDecimal.valueOf(allocatedVnd), BigDecimal.valueOf(usedVnd));
+        return SchoolSubscriptionQuotaUserAllocation.builder()
+            .schoolSubscriptionId(subscriptionId)
+            .quotaType(QuotaType.ASSESSMENT)
+            .userId(userId)
+            .allocatedAmountVnd(BigDecimal.valueOf(allocatedVnd))
+            .usedAmountVnd(BigDecimal.valueOf(usedVnd))
+            .build();
     }
 }

@@ -134,11 +134,21 @@ class ViewSchoolGradeDetailsUseCaseTests {
 
     private SchoolGrade grade(UUID ownerSchoolId) {
         Instant now = Instant.now();
-        return new SchoolGrade(
-            gradeId, ownerSchoolId, gradeLevelId, "NH2024", "Năm học 2024", "desc",
-            LocalDate.of(2024, 9, 1), LocalDate.of(2025, 6, 30), SchoolGradeStatus.ACTIVE,
-            now, now, UUID.randomUUID(), UUID.randomUUID()
-        );
+        return SchoolGrade.builder()
+            .id(gradeId)
+            .schoolId(ownerSchoolId)
+            .gradeLevelId(gradeLevelId)
+            .code("NH2024")
+            .name("Năm học 2024")
+            .description("desc")
+            .startDate(LocalDate.of(2024, 9, 1))
+            .endDate(LocalDate.of(2025, 6, 30))
+            .status(SchoolGradeStatus.ACTIVE)
+            .createdAt(now)
+            .updatedAt(now)
+            .createdBy(UUID.randomUUID().toString())
+            .updatedBy(UUID.randomUUID().toString())
+            .build();
     }
 
 }

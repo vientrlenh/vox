@@ -55,7 +55,7 @@ public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormC
             throw new IllegalStateException("Đơn đăng ký không ở trạng thái chờ hoặc không tồn tại");
         }
 
-        SchoolDirectory schoolDirectory = resolveSchoolDirectory(registerForm, command, currentUserId, now);
+        SchoolDirectory schoolDirectory = resolveSchoolDirectory(registerForm, command);
 
         provisionSchoolService.provision(new ProvisionSchoolCommand(
             schoolDirectory.getCode(),
@@ -70,20 +70,19 @@ public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormC
             registerForm.getDateOfBirth().value(),
             registerForm.getContactAddress(),
             null,
-            currentUserId,
             now)
         );
 
         return null;
     }
 
-    private SchoolDirectory resolveSchoolDirectory(RegisterForm registerForm, ApproveRegisterFormCommand command, UUID currentUserId, Instant now) {
+    private SchoolDirectory resolveSchoolDirectory(RegisterForm registerForm, ApproveRegisterFormCommand command) {
         // Đơn từ danh mục: trường đã có entry sẵn -> dùng lại, xác minh nếu chưa
         if (registerForm.getSchoolDirectoryId() != null) {
             SchoolDirectory directory = schoolDirectoryRepository.findById(registerForm.getSchoolDirectoryId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy danh mục trường theo yêu cầu"));
             if (!directory.isVerified()) {
-                directory.verify(currentUserId, now);
+                directory.verify();
                 schoolDirectoryRepository.save(directory);
             }
             return directory;
@@ -100,11 +99,9 @@ public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormC
             registerForm.getSchoolProvince(),
             registerForm.getSchoolDistrict(),
             valueOf(registerForm.getSchoolDomain()),
-            registerForm.getSchoolAddress(),
-            now,
-            currentUserId
+            registerForm.getSchoolAddress()
         );
-        directory.verify(currentUserId, now);
+        directory.verify();
         return schoolDirectoryRepository.save(directory);
     }
 

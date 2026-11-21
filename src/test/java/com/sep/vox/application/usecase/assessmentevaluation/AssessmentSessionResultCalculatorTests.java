@@ -115,11 +115,29 @@ public class AssessmentSessionResultCalculatorTests {
             section(listeningSectionId, 2, "Listening", new BigDecimal("0.40")),
             section(speakingSectionId, 1, "Speaking", new BigDecimal("0.60"))));
         when(assessmentPaperItemRepository.findByPaperId(paperId)).thenReturn(List.of(
-            new AssessmentPaperItem(speakingItemId, null, speakingSectionId, paperId, null, 1, new BigDecimal("1.00")),
-            new AssessmentPaperItem(listeningItemId, null, listeningSectionId, paperId, null, 1, new BigDecimal("1.00"))));
+            AssessmentPaperItem.builder().id(speakingItemId).sectionId(speakingSectionId).paperId(paperId).order(1).weight(new BigDecimal("1.00")).build(),
+            AssessmentPaperItem.builder().id(listeningItemId).sectionId(listeningSectionId).paperId(paperId).order(1).weight(new BigDecimal("1.00")).build()));
         when(assessmentItemResponseRepository.findBySessionId(sessionId)).thenReturn(List.of(
-            new AssessmentItemResponse(speakingResponseId, sessionId, speakingItemId, null, null, null, null, null),
-            new AssessmentItemResponse(listeningResponseId, sessionId, listeningItemId, null, null, null, null, null)));
+            AssessmentItemResponse.builder()
+                    .id(speakingResponseId)
+                    .sessionId(sessionId)
+                    .paperItemId(speakingItemId)
+                    .audioUrl(null)
+                    .durationSeconds(null)
+                    .transcript(null)
+                    .terminationReason(null)
+                    .submittedAt(null)
+                    .build(),
+            AssessmentItemResponse.builder()
+                    .id(listeningResponseId)
+                    .sessionId(sessionId)
+                    .paperItemId(listeningItemId)
+                    .audioUrl(null)
+                    .durationSeconds(null)
+                    .transcript(null)
+                    .terminationReason(null)
+                    .submittedAt(null)
+                    .build()));
 
         when(rubricResultBandRepository.findByRubricVersionId(rubricVersionId)).thenReturn(List.of(
             band("B1", "Trung cấp", "0.00", "6.49", 1),
@@ -211,13 +229,40 @@ public class AssessmentSessionResultCalculatorTests {
         UUID secondItemId = UUID.randomUUID();
         UUID secondResponseId = UUID.randomUUID();
         when(assessmentPaperItemRepository.findByPaperId(paperId)).thenReturn(List.of(
-            new AssessmentPaperItem(speakingItemId, null, speakingSectionId, paperId, null, 1, new BigDecimal("1.00")),
-            new AssessmentPaperItem(secondItemId, null, speakingSectionId, paperId, null, 2, new BigDecimal("1.00")),
-            new AssessmentPaperItem(listeningItemId, null, listeningSectionId, paperId, null, 1, new BigDecimal("1.00"))));
+            AssessmentPaperItem.builder().id(speakingItemId).sectionId(speakingSectionId).paperId(paperId).order(1).weight(new BigDecimal("1.00")).build(),
+            AssessmentPaperItem.builder().id(secondItemId).sectionId(speakingSectionId).paperId(paperId).order(2).weight(new BigDecimal("1.00")).build(),
+            AssessmentPaperItem.builder().id(listeningItemId).sectionId(listeningSectionId).paperId(paperId).order(1).weight(new BigDecimal("1.00")).build()));
         when(assessmentItemResponseRepository.findBySessionId(sessionId)).thenReturn(List.of(
-            new AssessmentItemResponse(speakingResponseId, sessionId, speakingItemId, null, null, null, null, null),
-            new AssessmentItemResponse(secondResponseId, sessionId, secondItemId, null, null, null, null, null),
-            new AssessmentItemResponse(listeningResponseId, sessionId, listeningItemId, null, null, null, null, null)));
+            AssessmentItemResponse.builder()
+                    .id(speakingResponseId)
+                    .sessionId(sessionId)
+                    .paperItemId(speakingItemId)
+                    .audioUrl(null)
+                    .durationSeconds(null)
+                    .transcript(null)
+                    .terminationReason(null)
+                    .submittedAt(null)
+                    .build(),
+            AssessmentItemResponse.builder()
+                    .id(secondResponseId)
+                    .sessionId(sessionId)
+                    .paperItemId(secondItemId)
+                    .audioUrl(null)
+                    .durationSeconds(null)
+                    .transcript(null)
+                    .terminationReason(null)
+                    .submittedAt(null)
+                    .build(),
+            AssessmentItemResponse.builder()
+                    .id(listeningResponseId)
+                    .sessionId(sessionId)
+                    .paperItemId(listeningItemId)
+                    .audioUrl(null)
+                    .durationSeconds(null)
+                    .transcript(null)
+                    .terminationReason(null)
+                    .submittedAt(null)
+                    .build()));
         when(assessmentItemEvaluationRepository.findLatestByResponseIdIn(anyCollection())).thenReturn(List.of(
             evaluation(speakingResponseId, "6.00", false),
             evaluation(secondResponseId, "8.00", false),
@@ -237,8 +282,8 @@ public class AssessmentSessionResultCalculatorTests {
     @Test
     void should_fall_back_to_plain_mean_when_every_item_weight_in_a_section_is_zero() {
         when(assessmentPaperItemRepository.findByPaperId(paperId)).thenReturn(List.of(
-            new AssessmentPaperItem(speakingItemId, null, speakingSectionId, paperId, null, 1, new BigDecimal("0.00")),
-            new AssessmentPaperItem(listeningItemId, null, listeningSectionId, paperId, null, 1, new BigDecimal("1.00"))));
+            AssessmentPaperItem.builder().id(speakingItemId).sectionId(speakingSectionId).paperId(paperId).order(1).weight(new BigDecimal("0.00")).build(),
+            AssessmentPaperItem.builder().id(listeningItemId).sectionId(listeningSectionId).paperId(paperId).order(1).weight(new BigDecimal("1.00")).build()));
         givenStoredScores("6.00", "8.00");
 
         AssessmentSessionResultCalculator.CalculatedAssessmentSessionResult result = calculator.calculate(sessionId);

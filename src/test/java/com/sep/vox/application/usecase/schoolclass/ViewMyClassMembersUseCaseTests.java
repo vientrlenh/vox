@@ -108,14 +108,14 @@ class ViewMyClassMembersUseCaseTests {
     }
 
     private SchoolClassUser member(UUID userId) {
-        return new SchoolClassUser(
-            UUID.randomUUID(),
-            userId,
-            classId,
-            true,
-            Instant.now(),
-            null,
-            UUID.randomUUID()
-        );
+        return SchoolClassUser.builder()
+            .id(UUID.randomUUID())
+            .userId(userId)
+            .schoolClassId(classId)
+            .active(true)
+            .joinedAt(Instant.now())
+            .leftAt(null)
+            .assignedBy(UUID.randomUUID())
+            .build();
     }
 }

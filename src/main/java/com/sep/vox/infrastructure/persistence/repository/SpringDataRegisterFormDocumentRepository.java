@@ -6,7 +6,7 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.sep.vox.infrastructure.persistence.entity.RegisterFormDocumentJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.registerform.RegisterFormDocumentJpaEntity;
 
 public interface SpringDataRegisterFormDocumentRepository extends JpaRepository<RegisterFormDocumentJpaEntity, UUID> {
     List<RegisterFormDocumentJpaEntity> findByRegisterFormId(UUID registerFormId);

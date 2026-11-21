@@ -93,7 +93,12 @@ class ViewImportSessionsUseCaseTests {
         user.setId(id);
         user.setStatus(UserStatus.ACTIVE);
         when(schoolUserRepository.findByUserId(id)).thenReturn(
-            schoolId != null ? Optional.of(new SchoolUser(schoolId, id, java.time.Instant.now(), java.time.Instant.now().plus(36500, ChronoUnit.DAYS))) : Optional.empty()
+            schoolId != null ? Optional.of(SchoolUser.builder()
+                .schoolId(schoolId)
+                .userId(id)
+                .startDate(java.time.Instant.now())
+                .endDate(java.time.Instant.now().plus(36500, ChronoUnit.DAYS))
+                .build()) : Optional.empty()
         );
         return user;
     }

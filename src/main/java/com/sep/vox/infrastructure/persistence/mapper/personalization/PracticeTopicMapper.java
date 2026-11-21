@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.persistence.mapper.personalization;
 
 import com.sep.vox.domain.model.personalization.PracticeTopic;
-import com.sep.vox.infrastructure.persistence.entity.PracticeTopicJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.personalization.PracticeTopicJpaEntity;
 
 public final class PracticeTopicMapper {
 
@@ -9,33 +9,33 @@ public final class PracticeTopicMapper {
     }
 
     public static PracticeTopic toDomain(PracticeTopicJpaEntity entity) {
-        return new PracticeTopic(
-            entity.getId(),
-            entity.getName(),
-            entity.getNormalizedName(),
-            entity.getDescription(),
-            entity.getSource(),
-            entity.getInterestDimension(),
-            entity.getCurriculumGroup(),
-            entity.isActive(),
-            entity.getCreatedAt(),
-            entity.getSourceQuestionTopicId(),
-            entity.getTemporalAffordance()
-        );
+        return PracticeTopic.builder()
+                .id(entity.getId())
+                .name(entity.getName())
+                .normalizedName(entity.getNormalizedName())
+                .description(entity.getDescription())
+                .source(entity.getSource())
+                .interestDimension(entity.getInterestDimension())
+                .curriculumGroup(entity.getCurriculumGroup())
+                .active(entity.isActive())
+                .createdAt(entity.getCreatedAt())
+                .sourceQuestionTopicId(entity.getSourceQuestionTopicId())
+                .temporalAffordance(entity.getTemporalAffordance())
+                .build();
     }
 
     public static PracticeTopicJpaEntity toJpa(PracticeTopic topic) {
-        return new PracticeTopicJpaEntity(
-            topic.getName(),
-            topic.getNormalizedName(),
-            topic.getDescription(),
-            topic.getSource(),
-            topic.getInterestDimension(),
-            topic.getCurriculumGroup(),
-            topic.isActive(),
-            topic.getCreatedAt(),
-            topic.getSourceQuestionTopicId(),
-            topic.getTemporalAffordance()
-        );
+        return PracticeTopicJpaEntity.builder()
+                .name(topic.getName())
+                .normalizedName(topic.getNormalizedName())
+                .description(topic.getDescription())
+                .source(topic.getSource())
+                .interestDimension(topic.getInterestDimension())
+                .curriculumGroup(topic.getCurriculumGroup())
+                .active(topic.isActive())
+                .createdAt(topic.getCreatedAt())
+                .sourceQuestionTopicId(topic.getSourceQuestionTopicId())
+                .temporalAffordance(topic.getTemporalAffordance())
+                .build();
     }
 }

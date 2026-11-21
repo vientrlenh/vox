@@ -24,51 +24,8 @@ public class AiUsageRecord {
     private Instant occurredAt;
 
     public AiUsageRecord() {}
-
-    public AiUsageRecord(UUID id, UUID assessmentSessionId, UUID turnId, UUID usageEventId, AiUsageType usageType,
-            String provider, String modelName, Integer inputTokens, Integer outputTokens,
-            Integer cacheCreationInputTokens, Integer cacheReadInputTokens, Long durationMs, String unitPriceJson,
-            BigDecimal costUsd, BigDecimal costVnd, BigDecimal fxRateUsed, Instant occurredAt) {
-        this.id = id;
-        this.assessmentSessionId = assessmentSessionId;
-        this.turnId = turnId;
-        this.usageEventId = usageEventId;
-        this.usageType = usageType;
-        this.provider = provider;
-        this.modelName = modelName;
-        this.inputTokens = inputTokens;
-        this.outputTokens = outputTokens;
-        this.cacheCreationInputTokens = cacheCreationInputTokens;
-        this.cacheReadInputTokens = cacheReadInputTokens;
-        this.durationMs = durationMs;
-        this.unitPriceJson = unitPriceJson;
-        this.costUsd = costUsd;
-        this.costVnd = costVnd;
-        this.fxRateUsed = fxRateUsed;
-        this.occurredAt = occurredAt;
-    }
-
-    public AiUsageRecord(UUID assessmentSessionId, UUID turnId, UUID usageEventId, AiUsageType usageType, String provider,
-            String modelName, Integer inputTokens, Integer outputTokens, Integer cacheCreationInputTokens,
-            Integer cacheReadInputTokens, Long durationMs, String unitPriceJson, BigDecimal costUsd, BigDecimal costVnd, BigDecimal fxRateUsed, 
-            Instant occurredAt) {
-        this.assessmentSessionId = assessmentSessionId;
-        this.turnId = turnId;
-        this.usageEventId = usageEventId;
-        this.usageType = usageType;
-        this.provider = provider;
-        this.modelName = modelName;
-        this.inputTokens = inputTokens;
-        this.outputTokens = outputTokens;
-        this.cacheCreationInputTokens = cacheCreationInputTokens;
-        this.cacheReadInputTokens = cacheReadInputTokens;
-        this.durationMs = durationMs;
-        this.unitPriceJson = unitPriceJson;
-        this.costUsd = costUsd; 
-        this.costVnd = costVnd;
-        this.fxRateUsed = fxRateUsed;
-        this.occurredAt = occurredAt;
-    }
+
+
 
     public UUID getId() {
         return id;
@@ -207,4 +164,106 @@ public class AiUsageRecord {
     }
     
     
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final AiUsageRecord target = new AiUsageRecord();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder assessmentSessionId(UUID assessmentSessionId) {
+            target.assessmentSessionId = assessmentSessionId;
+            return this;
+        }
+
+        public Builder turnId(UUID turnId) {
+            target.turnId = turnId;
+            return this;
+        }
+
+        public Builder usageEventId(UUID usageEventId) {
+            target.usageEventId = usageEventId;
+            return this;
+        }
+
+        public Builder usageType(AiUsageType usageType) {
+            target.usageType = usageType;
+            return this;
+        }
+
+        public Builder provider(String provider) {
+            target.provider = provider;
+            return this;
+        }
+
+        public Builder modelName(String modelName) {
+            target.modelName = modelName;
+            return this;
+        }
+
+        public Builder inputTokens(Integer inputTokens) {
+            target.inputTokens = inputTokens;
+            return this;
+        }
+
+        public Builder outputTokens(Integer outputTokens) {
+            target.outputTokens = outputTokens;
+            return this;
+        }
+
+        public Builder cacheCreationInputTokens(Integer cacheCreationInputTokens) {
+            target.cacheCreationInputTokens = cacheCreationInputTokens;
+            return this;
+        }
+
+        public Builder cacheReadInputTokens(Integer cacheReadInputTokens) {
+            target.cacheReadInputTokens = cacheReadInputTokens;
+            return this;
+        }
+
+        public Builder durationMs(Long durationMs) {
+            target.durationMs = durationMs;
+            return this;
+        }
+
+        public Builder unitPriceJson(String unitPriceJson) {
+            target.unitPriceJson = unitPriceJson;
+            return this;
+        }
+
+        public Builder costUsd(BigDecimal costUsd) {
+            target.costUsd = costUsd;
+            return this;
+        }
+
+        public Builder costVnd(BigDecimal costVnd) {
+            target.costVnd = costVnd;
+            return this;
+        }
+
+        public Builder fxRateUsed(BigDecimal fxRateUsed) {
+            target.fxRateUsed = fxRateUsed;
+            return this;
+        }
+
+        public Builder occurredAt(Instant occurredAt) {
+            target.occurredAt = occurredAt;
+            return this;
+        }
+
+        public AiUsageRecord build() {
+            return target;
+        }
+
+    }
 }

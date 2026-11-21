@@ -13,7 +13,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.FrameworkVersionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.framework.FrameworkVersionJpaEntity;
 
 import jakarta.persistence.LockModeType;
 

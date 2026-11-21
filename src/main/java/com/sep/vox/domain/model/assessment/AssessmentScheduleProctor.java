@@ -9,17 +9,6 @@ public class AssessmentScheduleProctor {
 
     public AssessmentScheduleProctor() {}
 
-    public AssessmentScheduleProctor(UUID id, UUID scheduleId, UUID teacherId) {
-        this.id = id;
-        this.scheduleId = scheduleId;
-        this.teacherId = teacherId;
-    }
-
-    public AssessmentScheduleProctor(UUID scheduleId, UUID teacherId) {
-        this.scheduleId = scheduleId;
-        this.teacherId = teacherId;
-    }
-
     public UUID getId() {
         return id;
     }
@@ -44,5 +33,35 @@ public class AssessmentScheduleProctor {
         this.teacherId = teacherId;
     }
 
-    
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final AssessmentScheduleProctor target = new AssessmentScheduleProctor();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder scheduleId(UUID scheduleId) {
+            target.scheduleId = scheduleId;
+            return this;
+        }
+
+        public Builder teacherId(UUID teacherId) {
+            target.teacherId = teacherId;
+            return this;
+        }
+
+        public AssessmentScheduleProctor build() {
+            return target;
+        }
+
+    }
 }

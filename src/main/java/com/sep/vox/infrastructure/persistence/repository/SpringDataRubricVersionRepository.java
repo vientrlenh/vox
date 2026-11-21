@@ -11,7 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.sep.vox.infrastructure.persistence.entity.RubricVersionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.rubric.RubricVersionJpaEntity;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -53,7 +53,7 @@ public interface SpringDataRubricVersionRepository extends JpaRepository<RubricV
             @Param("scoringScaleMax") BigDecimal scoringScaleMax,
             @Param("totalScoreMethod") String totalScoreMethod,
             @Param("updatedAt") Instant updatedAt,
-            @Param("updatedBy") UUID updatedBy
+            @Param("updatedBy") String updatedBy
     );
 
 

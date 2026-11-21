@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.DeviceSessionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.devicesession.DeviceSessionJpaEntity;
 
 
 public interface SpringDataDeviceSessionRepository extends JpaRepository<DeviceSessionJpaEntity, UUID>{

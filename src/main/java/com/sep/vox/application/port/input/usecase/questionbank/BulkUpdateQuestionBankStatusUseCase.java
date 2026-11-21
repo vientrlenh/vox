@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.usecase.questionbank;
 
 import com.sep.vox.domain.dto.QuestionBankDto;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -79,7 +78,6 @@ public class BulkUpdateQuestionBankStatusUseCase
 
         List<BulkUpdateQuestionScopeStatusFailure> failed = new ArrayList<BulkUpdateQuestionScopeStatusFailure>();
         List<QuestionBank> toSave = new ArrayList<QuestionBank>();
-        Instant now = Instant.now();
 
         for (UUID id : ids) {
             QuestionBank bank = banksById.get(id);
@@ -104,8 +102,6 @@ public class BulkUpdateQuestionBankStatusUseCase
             }
 
             bank.setStatus(QuestionBankStatus.valueOf(QuestionScopeStatusTransition.nextStatusName(action)));
-            bank.setUpdatedAt(now);
-            bank.setUpdatedBy(currentUserId);
             toSave.add(bank);
         }
 

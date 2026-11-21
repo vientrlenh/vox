@@ -19,56 +19,12 @@ public class AssessmentResultAppeal {
     private Instant deadline;
     private Instant approvedAt;
     private String decisionNote;
-    /** Học sinh tự rút đơn lúc nào; lượt phúc khảo được hoàn lại. */
+    /** When the student withdrew the appeal themselves; the appeal attempt is given back. */
     private Instant withdrawnAt;
-    /** Lý do admin giao cho người đã từng chấm bài này (override xung đột lợi ích). */
+    /** Reason an admin assigned the appeal to someone who graded this result before (conflict-of-interest override). */
     private String reviewerOverrideReason;
 
     public AssessmentResultAppeal() {}
-
-    public AssessmentResultAppeal(UUID id, UUID candidateResultId, UUID requestedBy, String reason,
-            Instant requestedAt, AssessmentAppealStatus status, BigDecimal scoreBefore, BigDecimal scoreAfter,
-            UUID resolvedBy, Instant resolvedAt, String notes, Instant deadline,
-            Instant approvedAt, String decisionNote, Instant withdrawnAt,
-            String reviewerOverrideReason) {
-        this.id = id;
-        this.candidateResultId = candidateResultId;
-        this.requestedBy = requestedBy;
-        this.reason = reason;
-        this.requestedAt = requestedAt;
-        this.status = status;
-        this.scoreBefore = scoreBefore;
-        this.scoreAfter = scoreAfter;
-        this.resolvedBy = resolvedBy;
-        this.resolvedAt = resolvedAt;
-        this.notes = notes;
-        this.deadline = deadline;
-        this.approvedAt = approvedAt;
-        this.decisionNote = decisionNote;
-        this.withdrawnAt = withdrawnAt;
-        this.reviewerOverrideReason = reviewerOverrideReason;
-    }
-
-    public AssessmentResultAppeal(UUID candidateResultId, UUID requestedBy, String reason, Instant requestedAt,
-            AssessmentAppealStatus status, BigDecimal scoreBefore, BigDecimal scoreAfter, UUID resolvedBy,
-            Instant resolvedAt, String notes, Instant deadline, Instant approvedAt,
-            String decisionNote, Instant withdrawnAt, String reviewerOverrideReason) {
-        this.candidateResultId = candidateResultId;
-        this.requestedBy = requestedBy;
-        this.reason = reason;
-        this.requestedAt = requestedAt;
-        this.status = status;
-        this.scoreBefore = scoreBefore;
-        this.scoreAfter = scoreAfter;
-        this.resolvedBy = resolvedBy;
-        this.resolvedAt = resolvedAt;
-        this.notes = notes;
-        this.deadline = deadline;
-        this.approvedAt = approvedAt;
-        this.decisionNote = decisionNote;
-        this.withdrawnAt = withdrawnAt;
-        this.reviewerOverrideReason = reviewerOverrideReason;
-    }
 
     /** Đơn còn đang chiếm chỗ — chặn học sinh nộp đơn thứ hai cho cùng một bài. */
     public boolean isOpen() {
@@ -208,5 +164,102 @@ public class AssessmentResultAppeal {
 
     public void setReviewerOverrideReason(String reviewerOverrideReason) {
         this.reviewerOverrideReason = reviewerOverrideReason;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final AssessmentResultAppeal target = new AssessmentResultAppeal();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder candidateResultId(UUID candidateResultId) {
+            target.candidateResultId = candidateResultId;
+            return this;
+        }
+
+        public Builder requestedBy(UUID requestedBy) {
+            target.requestedBy = requestedBy;
+            return this;
+        }
+
+        public Builder reason(String reason) {
+            target.reason = reason;
+            return this;
+        }
+
+        public Builder requestedAt(Instant requestedAt) {
+            target.requestedAt = requestedAt;
+            return this;
+        }
+
+        public Builder status(AssessmentAppealStatus status) {
+            target.status = status;
+            return this;
+        }
+
+        public Builder scoreBefore(BigDecimal scoreBefore) {
+            target.scoreBefore = scoreBefore;
+            return this;
+        }
+
+        public Builder scoreAfter(BigDecimal scoreAfter) {
+            target.scoreAfter = scoreAfter;
+            return this;
+        }
+
+        public Builder resolvedBy(UUID resolvedBy) {
+            target.resolvedBy = resolvedBy;
+            return this;
+        }
+
+        public Builder resolvedAt(Instant resolvedAt) {
+            target.resolvedAt = resolvedAt;
+            return this;
+        }
+
+        public Builder notes(String notes) {
+            target.notes = notes;
+            return this;
+        }
+
+        public Builder deadline(Instant deadline) {
+            target.deadline = deadline;
+            return this;
+        }
+
+        public Builder approvedAt(Instant approvedAt) {
+            target.approvedAt = approvedAt;
+            return this;
+        }
+
+        public Builder decisionNote(String decisionNote) {
+            target.decisionNote = decisionNote;
+            return this;
+        }
+
+        public Builder withdrawnAt(Instant withdrawnAt) {
+            target.withdrawnAt = withdrawnAt;
+            return this;
+        }
+
+        public Builder reviewerOverrideReason(String reviewerOverrideReason) {
+            target.reviewerOverrideReason = reviewerOverrideReason;
+            return this;
+        }
+
+        public AssessmentResultAppeal build() {
+            return target;
+        }
+
     }
 }

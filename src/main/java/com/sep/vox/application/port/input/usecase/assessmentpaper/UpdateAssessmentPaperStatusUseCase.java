@@ -132,8 +132,6 @@ public class UpdateAssessmentPaperStatusUseCase implements IUseCase<UpdateAssess
         }
 
         Instant now = Instant.now();
-        paper.setUpdatedAt(now);
-        paper.setUpdatedBy(currentUserId);
         AssessmentPaper saved = assessmentPaperRepository.save(paper);
 
         // Backfill AFTER saving: AssessmentPaperAutoAssigner re-reads the paper variant statuses to decide "every paper variant is
@@ -164,7 +162,7 @@ public class UpdateAssessmentPaperStatusUseCase implements IUseCase<UpdateAssess
      * trung mà chính người quyết định là người soạn ra mã đề này.
      */
     private boolean isOneStepLock(Assessment assessment, AssessmentPaper paper, UUID currentUserId) {
-        return assessment.getKind() == AssessmentKind.CLASS_TEST || currentUserId.equals(paper.getCreatedBy());
+        return assessment.getKind() == AssessmentKind.CLASS_TEST || paper.isCreatedBy(currentUserId);
     }
 
     private void requireCanAuthor(PaperActor actor) {
@@ -186,7 +184,7 @@ public class UpdateAssessmentPaperStatusUseCase implements IUseCase<UpdateAssess
     }
 
     private void requireNotAuthor(AssessmentPaper paper, UUID currentUserId) {
-        if (currentUserId.equals(paper.getCreatedBy())) {
+        if (paper.isCreatedBy(currentUserId)) {
             throw new ForbiddenException("Không được tự duyệt đề thi do chính mình tạo");
         }
     }

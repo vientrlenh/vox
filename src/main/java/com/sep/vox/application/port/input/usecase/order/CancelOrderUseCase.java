@@ -24,18 +24,18 @@ import com.sep.vox.domain.repository.OrderRepository;
 import com.sep.vox.domain.repository.PaymentRecordRepository;
 
 /**
- * Trường tự bỏ một đơn chưa trả tiền.
+ * The school abandons an order it has not paid yet.
  *
- * <p>Có mặt vì {@code uq_orders_one_open_subscription_order} chỉ cho phép MỘT đơn đăng ký còn mở
- * mỗi trường: không có đường hủy thì một trường đặt nhầm gói bị chặn đặt đơn mới cho tới khi đơn cũ
- * tự hết hạn (tối đa 24 tiếng theo Order.PENDING_TTL). Đây là bản THỦ CÔNG của việc mà
- * PendingOrderReconciler làm tự động khi đơn quá hạn.
+ * <p>It exists because {@code uq_orders_one_open_subscription_order} only allows ONE open subscription order per school:
+ * without a cancel path, a school that ordered the wrong plan is blocked from placing a new order until the old one
+ * expires by itself (at most 24 hours per Order.PENDING_TTL). This is the MANUAL version of what PendingOrderReconciler
+ * does automatically when an order is overdue.
  *
- * <p>Phần khó KHÔNG nằm ở việc đổi trạng thái đơn mà ở phiên thanh toán còn sống bên cổng: đóng đơn
- * mà để link sống tiếp nghĩa là trường vẫn trả vào đó được, và lúc tiền về thì
- * OrderSettlementService thấy đơn không còn PENDING nên không giao hàng -- thu tiền xong không cấp
- * gì, mà hệ thống hiện chưa có luồng hoàn tiền nào. Nên quy tắc ở đây là: chỉ đóng đơn khi CHẮC
- * CHẮN không còn đường nào ra tiền nữa.
+ * <p>The hard part is NOT changing the order status but the payment session that is still alive on the gateway side:
+ * closing the order while leaving the link alive means the school can still pay into it, and when the money arrives
+ * OrderSettlementService sees the order is no longer PENDING and delivers nothing -- the money is collected and nothing is
+ * granted, and the system has no refund flow yet. So the rule here is: only close the order when it is CERTAIN that no
+ * path for money remains.
  */
 @Service
 public class CancelOrderUseCase implements IUseCase<CancelOrderCommand, UUID> {
@@ -63,9 +63,9 @@ public class CancelOrderUseCase implements IUseCase<CancelOrderCommand, UUID> {
     @Override
     @Transactional
     public UUID execute(CancelOrderCommand input) {
-        // Khóa đơn: hủy và callback "đã trả" hoàn toàn có thể về cùng lúc. Không khóa thì cả hai
-        // cùng thấy đơn PENDING, một bên đóng CANCELLED, một bên đóng SUCCESS -- thứ tự ghi quyết
-        // định kết quả, và một trong hai kết quả là sai.
+        // Lock the order: a cancellation and a "paid" callback may well arrive at the same time. Without the lock both see the
+        // order as PENDING, one closes it CANCELLED and the other closes it SUCCESS -- the write order decides the outcome, and one
+        // of the two outcomes is wrong.
         Order order = orderRepository.findByIdForUpdate(input.orderId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn hàng"));
 
@@ -79,7 +79,6 @@ public class CancelOrderUseCase implements IUseCase<CancelOrderCommand, UUID> {
         closeLivePaymentAttempt(order);
 
         order.setStatus(OrderStatus.CANCELLED);
-        order.setUpdatedAt(Instant.now());
         orderRepository.save(order);
 
         LOGGER.info("Trường {} hủy đơn {}", order.getSchoolId(), order.getId());

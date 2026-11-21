@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.sep.vox.infrastructure.persistence.entity.StudentQuestionExposureJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.question.StudentQuestionExposureJpaEntity;
 
 public interface SpringDataStudentQuestionExposureRepository
         extends JpaRepository<StudentQuestionExposureJpaEntity, UUID> {

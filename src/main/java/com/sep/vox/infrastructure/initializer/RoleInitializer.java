@@ -1,6 +1,5 @@
 package com.sep.vox.infrastructure.initializer;
 
-import java.time.Instant;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,54 +43,31 @@ public class RoleInitializer implements ApplicationRunner {
     }
 
     private Role studentRole() {
-        Instant initializedAt = Instant.now();
-        return new Role(
-            new RoleCode(STUDENT_CODE), 
-            "Học sinh", 
-            initializedAt, 
-            initializedAt, 
-            null, 
-            null
-        );
+        return Role.builder()
+            .code(new RoleCode(STUDENT_CODE))
+            .name("Học sinh")
+            .build();
     }
 
     private Role teacherRole() {
-        Instant initializedAt = Instant.now();
-        return new Role(
-            new RoleCode(TEACHER_CODE),
-            "Giáo viên",
-            initializedAt,
-            initializedAt,
-            null,
-            null
-        );
+        return Role.builder()
+            .code(new RoleCode(TEACHER_CODE))
+            .name("Giáo viên")
+            .build();
     }
 
     private Role schoolAdminRole() {
-        Instant initializedAt = Instant.now();
-        return new Role(
-            new RoleCode(SCHOOL_ADMIN_CODE),
-            "Quản trị nhà trường",
-            initializedAt,
-            initializedAt,
-            null,
-            null
-        );
+        return Role.builder()
+            .code(new RoleCode(SCHOOL_ADMIN_CODE))
+            .name("Quản trị nhà trường")
+            .build();
     }
 
     private Role systemAdminRole() {
-        Instant initializedAt = Instant.now();
-        return new Role(
-            new RoleCode(SYSTEM_ADMIN_CODE), 
-            "Quản trị hệ thống", 
-            initializedAt, 
-            initializedAt, 
-            null, 
-            null
-        );
+        return Role.builder()
+            .code(new RoleCode(SYSTEM_ADMIN_CODE))
+            .name("Quản trị hệ thống")
+            .build();
     }
-
-
-
 
 }

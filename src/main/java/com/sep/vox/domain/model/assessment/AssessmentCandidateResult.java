@@ -4,8 +4,9 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
-public class AssessmentCandidateResult {
-    private UUID id;
+import com.sep.vox.domain.model.BaseModel;
+
+public class AssessmentCandidateResult extends BaseModel {
     private UUID assessmentId;
     private UUID candidateId;
     private UUID sessionId;
@@ -19,69 +20,10 @@ public class AssessmentCandidateResult {
     private AssessmentCandidateResultStatus status;
     private Instant releasedAt;
     private Instant finalizedAt;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private UUID createdBy;
-    private UUID updatedBy;
 
     public AssessmentCandidateResult() {}
 
-    public AssessmentCandidateResult(UUID id, UUID assessmentId, UUID candidateId, UUID sessionId, UUID assessmentPolicyId,
-            int policyVersion, UUID rubricVersionId, UUID frameworkVersionId, UUID targetFrameworkBandId, UUID rubricResultBandId, 
-            BigDecimal totalScore, AssessmentCandidateResultStatus status, Instant releasedAt,
-            Instant finalizedAt, Instant createdAt, Instant updatedAt, UUID createdBy,
-            UUID updatedBy) {
-        this.id = id;
-        this.assessmentId = assessmentId;
-        this.candidateId = candidateId;
-        this.sessionId = sessionId;
-        this.assessmentPolicyId = assessmentPolicyId;
-        this.policyVersion = policyVersion;
-        this.rubricVersionId = rubricVersionId;
-        this.frameworkVersionId = frameworkVersionId;
-        this.targetFrameworkBandId = targetFrameworkBandId;
-        this.rubricResultBandId = rubricResultBandId;
-        this.totalScore = totalScore;
-        this.status = status;
-        this.releasedAt = releasedAt;
-        this.finalizedAt = finalizedAt;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
 
-    public AssessmentCandidateResult(UUID assessmentId, UUID candidateId, UUID sessionId, UUID assessmentPolicyId,
-            int policyVersion, UUID rubricVersionId, UUID frameworkVersionId, UUID targetFrameworkBandId, UUID rubricResultBandId, 
-            BigDecimal totalScore, AssessmentCandidateResultStatus status, Instant releasedAt,
-            Instant finalizedAt, Instant createdAt, Instant updatedAt, UUID createdBy,
-            UUID updatedBy) {
-        this.assessmentId = assessmentId;
-        this.candidateId = candidateId;
-        this.sessionId = sessionId;
-        this.assessmentPolicyId = assessmentPolicyId;
-        this.policyVersion = policyVersion;
-        this.rubricVersionId = rubricVersionId;
-        this.frameworkVersionId = frameworkVersionId;
-        this.targetFrameworkBandId = targetFrameworkBandId;
-        this.rubricResultBandId = rubricResultBandId;
-        this.totalScore = totalScore;
-        this.status = status;
-        this.releasedAt = releasedAt;
-        this.finalizedAt = finalizedAt;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
 
     public UUID getAssessmentId() {
         return assessmentId;
@@ -179,37 +121,13 @@ public class AssessmentCandidateResult {
         this.finalizedAt = finalizedAt;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
 
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
 
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
 
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
 
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
 
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
 
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
-    }
 
     public UUID getRubricResultBandId() {
         return rubricResultBandId;
@@ -219,5 +137,85 @@ public class AssessmentCandidateResult {
         this.rubricResultBandId = rubricResultBandId;
     }
 
-    
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder extends BaseModel.Builder<AssessmentCandidateResult, Builder> {
+
+        private Builder() {
+            super(new AssessmentCandidateResult());
+        }
+
+        @Override
+        protected Builder self() {
+            return this;
+        }
+
+        public Builder assessmentId(UUID assessmentId) {
+            target.assessmentId = assessmentId;
+            return this;
+        }
+
+        public Builder candidateId(UUID candidateId) {
+            target.candidateId = candidateId;
+            return this;
+        }
+
+        public Builder sessionId(UUID sessionId) {
+            target.sessionId = sessionId;
+            return this;
+        }
+
+        public Builder assessmentPolicyId(UUID assessmentPolicyId) {
+            target.assessmentPolicyId = assessmentPolicyId;
+            return this;
+        }
+
+        public Builder policyVersion(int policyVersion) {
+            target.policyVersion = policyVersion;
+            return this;
+        }
+
+        public Builder rubricVersionId(UUID rubricVersionId) {
+            target.rubricVersionId = rubricVersionId;
+            return this;
+        }
+
+        public Builder frameworkVersionId(UUID frameworkVersionId) {
+            target.frameworkVersionId = frameworkVersionId;
+            return this;
+        }
+
+        public Builder targetFrameworkBandId(UUID targetFrameworkBandId) {
+            target.targetFrameworkBandId = targetFrameworkBandId;
+            return this;
+        }
+
+        public Builder rubricResultBandId(UUID rubricResultBandId) {
+            target.rubricResultBandId = rubricResultBandId;
+            return this;
+        }
+
+        public Builder totalScore(BigDecimal totalScore) {
+            target.totalScore = totalScore;
+            return this;
+        }
+
+        public Builder status(AssessmentCandidateResultStatus status) {
+            target.status = status;
+            return this;
+        }
+
+        public Builder releasedAt(Instant releasedAt) {
+            target.releasedAt = releasedAt;
+            return this;
+        }
+
+        public Builder finalizedAt(Instant finalizedAt) {
+            target.finalizedAt = finalizedAt;
+            return this;
+        }
+
+    }
 }

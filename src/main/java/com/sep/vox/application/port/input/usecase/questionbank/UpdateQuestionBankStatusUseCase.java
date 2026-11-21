@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.usecase.questionbank;
 
 import com.sep.vox.domain.model.question.QuestionBank;
-import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -59,8 +58,6 @@ public class UpdateQuestionBankStatusUseCase implements IUseCase<UpdateQuestionB
             default -> throw new IllegalStateException("Action không hợp lệ");
         }
 
-        questionBank.setUpdatedAt(Instant.now());
-        questionBank.setUpdatedBy(currentUserId);
 
         QuestionBank saved = questionBankRepository.save(questionBank);
         return QuestionBankDtoMapper.toDto(saved);

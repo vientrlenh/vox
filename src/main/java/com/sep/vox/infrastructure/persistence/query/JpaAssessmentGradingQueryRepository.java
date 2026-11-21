@@ -32,7 +32,7 @@ import com.sep.vox.application.query.dto.GradingTaskInfo;
 import com.sep.vox.application.query.dto.GradingTaskItemInfo;
 import com.sep.vox.domain.dto.QuestionAssetDto;
 import com.sep.vox.domain.mapper.QuestionAssetDtoMapper;
-import com.sep.vox.infrastructure.persistence.entity.QuestionAssetJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.question.QuestionAssetJpaEntity;
 import com.sep.vox.infrastructure.persistence.mapper.QuestionAssetMapper;
 import com.sep.vox.application.query.dto.GradingTurnInfo;
 import com.sep.vox.application.query.repository.AssessmentGradingQueryRepository;

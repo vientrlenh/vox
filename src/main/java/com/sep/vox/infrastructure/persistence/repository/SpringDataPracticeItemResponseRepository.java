@@ -11,7 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.sep.vox.domain.repository.PendingEvaluationResponse;
-import com.sep.vox.infrastructure.persistence.entity.PracticeItemResponseJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.personalization.PracticeItemResponseJpaEntity;
 
 public interface SpringDataPracticeItemResponseRepository
         extends JpaRepository<PracticeItemResponseJpaEntity, UUID> {

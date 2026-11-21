@@ -2,7 +2,6 @@ package com.sep.vox.domain.service.question;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.Instant;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -278,11 +277,28 @@ class QuestionStatusTransitionTests {
     }
 
     private Question question(QuestionStatus status) {
-        Instant now = Instant.now();
-        return new Question(
-            UUID.randomUUID(), bankId, UUID.randomUUID(), "Q-1", null, "Câu hỏi", null, null,
-            QuestionType.SHORT_ANSWER, 10, 10, 60, QuestionSharing.PRIVATE, null, false,
-            QuestionConfidentiality.OPEN, null, status, now, now, ownerId, ownerId);
+        return Question.builder()
+                .id(UUID.randomUUID())
+                .questionBankId(bankId)
+                .questionTopicId(UUID.randomUUID())
+                .code("Q-1")
+                .instructionText(null)
+                .questionText("Câu hỏi")
+                .promptText(null)
+                .preparationText(null)
+                .type(QuestionType.SHORT_ANSWER)
+                .preparationTimeSeconds(10)
+                .minResponseSeconds(10)
+                .maxResponseSeconds(60)
+                .sharing(QuestionSharing.PRIVATE)
+                .sourceQuestionId(null)
+                .locked(false)
+                .confidentiality(QuestionConfidentiality.OPEN)
+                .securePoolId(null)
+                .status(status)
+                .createdBy(ownerId.toString())
+                .updatedBy(ownerId.toString())
+                .build();
     }
 
     private QuestionBank systemBank() {
@@ -294,9 +310,17 @@ class QuestionStatusTransitionTests {
     }
 
     private QuestionBank bank(QuestionBankOwnerType ownerType, UUID bankSchoolId) {
-        Instant now = Instant.now();
-        return new QuestionBank(
-            bankId, UUID.randomUUID(), bankSchoolId, "BANK-1", "Ngân hàng", null,
-            ownerType, QuestionBankStatus.PUBLISHED, now, now, ownerId, ownerId);
+        return QuestionBank.builder()
+                .id(bankId)
+                .languageId(UUID.randomUUID())
+                .schoolId(bankSchoolId)
+                .code("BANK-1")
+                .name("Ngân hàng")
+                .description(null)
+                .ownerType(ownerType)
+                .status(QuestionBankStatus.PUBLISHED)
+                .createdBy(ownerId.toString())
+                .updatedBy(ownerId.toString())
+                .build();
     }
 }

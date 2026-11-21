@@ -14,37 +14,6 @@ public class AssessmentItemCriterionScore {
 
     public AssessmentItemCriterionScore() {}
 
-    public AssessmentItemCriterionScore(UUID id, UUID evaluationId, UUID rubricCriterionId, BigDecimal rawScore,
-            BigDecimal finalScore, String rationale) {
-        this(id, evaluationId, rubricCriterionId, rawScore, finalScore, rationale, null);
-    }
-
-    public AssessmentItemCriterionScore(UUID id, UUID evaluationId, UUID rubricCriterionId, BigDecimal rawScore,
-            BigDecimal finalScore, String rationale, String matchedBandCode) {
-        this.id = id;
-        this.evaluationId = evaluationId;
-        this.rubricCriterionId = rubricCriterionId;
-        this.rawScore = rawScore;
-        this.finalScore = finalScore;
-        this.rationale = rationale;
-        this.matchedBandCode = matchedBandCode;
-    }
-
-    public AssessmentItemCriterionScore(UUID evaluationId, UUID rubricCriterionId, BigDecimal rawScore, BigDecimal finalScore,
-            String rationale) {
-        this(evaluationId, rubricCriterionId, rawScore, finalScore, rationale, null);
-    }
-
-    public AssessmentItemCriterionScore(UUID evaluationId, UUID rubricCriterionId, BigDecimal rawScore, BigDecimal finalScore,
-            String rationale, String matchedBandCode) {
-        this.evaluationId = evaluationId;
-        this.rubricCriterionId = rubricCriterionId;
-        this.rawScore = rawScore;
-        this.finalScore = finalScore;
-        this.rationale = rationale;
-        this.matchedBandCode = matchedBandCode;
-    }
-
     public UUID getId() {
         return id;
     }
@@ -99,5 +68,57 @@ public class AssessmentItemCriterionScore {
 
     public void setMatchedBandCode(String matchedBandCode) {
         this.matchedBandCode = matchedBandCode;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final AssessmentItemCriterionScore target = new AssessmentItemCriterionScore();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder evaluationId(UUID evaluationId) {
+            target.evaluationId = evaluationId;
+            return this;
+        }
+
+        public Builder rubricCriterionId(UUID rubricCriterionId) {
+            target.rubricCriterionId = rubricCriterionId;
+            return this;
+        }
+
+        public Builder rawScore(BigDecimal rawScore) {
+            target.rawScore = rawScore;
+            return this;
+        }
+
+        public Builder finalScore(BigDecimal finalScore) {
+            target.finalScore = finalScore;
+            return this;
+        }
+
+        public Builder rationale(String rationale) {
+            target.rationale = rationale;
+            return this;
+        }
+
+        public Builder matchedBandCode(String matchedBandCode) {
+            target.matchedBandCode = matchedBandCode;
+            return this;
+        }
+
+        public AssessmentItemCriterionScore build() {
+            return target;
+        }
+
     }
 }

@@ -22,7 +22,6 @@ import com.sep.vox.domain.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -85,7 +84,6 @@ public class CreateSystemAssessmentPolicyUseCase implements IUseCase<List<Create
         User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản đã bị khóa.");
 
-        Instant now = Instant.now();
         List<AssessmentPolicy> policiesToSave = new ArrayList<>();
         Map<VersionScopeKey, Integer> nextVersionByScope = new HashMap<>();
         Set<VersionScopeKey> scopeClaimsInBatch = new HashSet<>();
@@ -181,19 +179,26 @@ public class CreateSystemAssessmentPolicyUseCase implements IUseCase<List<Create
                             key.gradeLevelId(), null, null) + 1);
             nextVersionByScope.put(versionScopeKey, nextVersion + 1);
 
-            AssessmentPolicy newPolicy = new AssessmentPolicy(
-                    null, command.gradeLevelId(), null, null,
-                    command.languageId(), command.frameworkVersionId(),
-                    rubricVersionId,
-                    command.targetFrameworkBandId(),
-                    command.passingScore(), strictness, nextVersion, AssessmentPolicyStatus.DRAFT,
-                    command.effectiveFrom(), command.effectiveTo(),
-                    now, now, currentUserId, currentUserId
-            );
+            AssessmentPolicy newPolicy = AssessmentPolicy.builder()
+                .schoolId(null)
+                .gradeLevelId(command.gradeLevelId())
+                .schoolGradeId(null)
+                .schoolClassId(null)
+                .languageId(command.languageId())
+                .frameworkVersionId(command.frameworkVersionId())
+                .rubricVersionId(rubricVersionId)
+                .targetFrameworkBandId(command.targetFrameworkBandId())
+                .passingScore(command.passingScore())
+                .strictness(strictness)
+                .version(nextVersion)
+                .status(AssessmentPolicyStatus.DRAFT)
+                .effectiveFrom(command.effectiveFrom())
+                .effectiveTo(command.effectiveTo())
+                .build();
             policiesToSave.add(newPolicy);
         }
 
-        // 6. Lưu 1 lần xuống DB
+        // 6. Save to the DB in one go
         List<AssessmentPolicy> savedPolicies = assessmentPolicyRepository.saveAll(policiesToSave);
         return savedPolicies.stream().map(ap -> ap.getId()).toList();
     }

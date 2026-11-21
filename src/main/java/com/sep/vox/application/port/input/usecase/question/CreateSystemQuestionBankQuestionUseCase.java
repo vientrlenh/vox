@@ -2,7 +2,6 @@ package com.sep.vox.application.port.input.usecase.question;
 
 import com.sep.vox.domain.model.question.QuestionBank;
 import com.sep.vox.domain.model.question.QuestionTopic;
-import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -105,31 +104,26 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
         validateResponseDurationRange(command);
         validateAssetOrders(command.assets());
 
-        Instant now = Instant.now();
         QuestionSharing sharing = command.sharing() == null ? QuestionSharing.PRIVATE : command.sharing();
-        Question question = new Question(
-            command.questionBankId(),
-            command.questionTopicId(),
-            questionCodeOf(command),
-            command.instructionText(),
-            command.questionText(),
-            command.promptText(),
-            command.preparationText(),
-            command.type(),
-            command.preparationTimeSeconds(),
-            command.minResponseSeconds(),
-            command.maxResponseSeconds(),
-            sharing,
-            null,
-            false,
-            QuestionConfidentiality.OPEN,
-            null,
-            QuestionStatus.DRAFT,
-            now,
-            now,
-            currentUserId,
-            currentUserId
-        );
+        Question question = Question.builder()
+                .questionBankId(command.questionBankId())
+                .questionTopicId(command.questionTopicId())
+                .code(questionCodeOf(command))
+                .instructionText(command.instructionText())
+                .questionText(command.questionText())
+                .promptText(command.promptText())
+                .preparationText(command.preparationText())
+                .type(command.type())
+                .preparationTimeSeconds(command.preparationTimeSeconds())
+                .minResponseSeconds(command.minResponseSeconds())
+                .maxResponseSeconds(command.maxResponseSeconds())
+                .sharing(sharing)
+                .sourceQuestionId(null)
+                .locked(false)
+                .confidentiality(QuestionConfidentiality.OPEN)
+                .securePoolId(null)
+                .status(QuestionStatus.DRAFT)
+                .build();
 
         Question savedQuestion = questionRepository.save(question);
         List<QuestionAsset> savedAssets = createAssets(savedQuestion.getId(), command.assets());
@@ -215,15 +209,15 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
             return null;
         }
 
-        QuestionEvaluationGuide evaluationGuide = new QuestionEvaluationGuide(
-            questionId,
-            command.expectedContent(),
-            command.keyPoints(),
-            command.acceptableResponses(),
-            command.offTopicExamples(),
-            command.scoringHints(),
-            command.commonMistakes()
-        );
+        QuestionEvaluationGuide evaluationGuide = QuestionEvaluationGuide.builder()
+                .questionId(questionId)
+                .expectedContent(command.expectedContent())
+                .keyPoints(command.keyPoints())
+                .acceptableResponses(command.acceptableResponses())
+                .offTopicExamples(command.offTopicExamples())
+                .scoringHints(command.scoringHints())
+                .commonMistakes(command.commonMistakes())
+                .build();
         return questionEvaluationGuideRepository.save(evaluationGuide);
     }
 
@@ -243,17 +237,17 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
         }
 
         List<QuestionAsset> assets = assetCommands.stream()
-            .map(asset -> new QuestionAsset(
-                questionId,
-                asset.title(),
-                asset.durationSeconds(),
-                asset.altText(),
-                asset.type(),
-                asset.url(),
-                asset.transcript(),
-                asset.description(),
-                asset.order()
-            ))
+            .map(asset -> QuestionAsset.builder()
+                    .questionId(questionId)
+                    .title(asset.title())
+                    .durationSeconds(asset.durationSeconds())
+                    .altText(asset.altText())
+                    .type(asset.type())
+                    .url(asset.url())
+                    .transcript(asset.transcript())
+                    .description(asset.description())
+                    .order(asset.order())
+                    .build())
             .toList();
         return questionAssetRepository.saveAll(assets);
     }

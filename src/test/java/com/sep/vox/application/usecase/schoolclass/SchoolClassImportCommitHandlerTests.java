@@ -103,11 +103,20 @@ class SchoolClassImportCommitHandlerTests {
         UUID oldGradeId = UUID.randomUUID();
         UUID newGradeId = UUID.randomUUID();
         Instant createdAt = Instant.now().minus(10, ChronoUnit.DAYS);
-        SchoolClass existingClass = new SchoolClass(
-            existingClassId, schoolId, oldLanguageId, oldGradeId,
-            new ClassCode("ENG-01"), "English Old", "Old description",
-            SchoolClassStatus.ACTIVE, createdAt, createdAt, createdBy, createdBy
-        );
+        SchoolClass existingClass = SchoolClass.builder()
+            .id(existingClassId)
+            .schoolId(schoolId)
+            .languageId(oldLanguageId)
+            .schoolGradeId(oldGradeId)
+            .code(new ClassCode("ENG-01"))
+            .name("English Old")
+            .description("Old description")
+            .status(SchoolClassStatus.ACTIVE)
+            .createdAt(createdAt)
+            .updatedAt(createdAt)
+            .createdBy(createdBy.toString())
+            .updatedBy(createdBy.toString())
+            .build();
         List<ImportRow> rows = List.of(row(sessionId, 1L, classDataWithDescription("ENG-01", "English Updated", "VI", "G11", "Updated description")));
 
         when(supportedLanguageRepository.findByCodeIn(Set.of("VI"))).thenReturn(List.of(activeLanguage(newLanguageId, "VI")));
@@ -126,7 +135,6 @@ class SchoolClassImportCommitHandlerTests {
         assertThat(existingClass.getLanguageId()).isEqualTo(newLanguageId);
         assertThat(existingClass.getSchoolGradeId()).isEqualTo(newGradeId);
         assertThat(existingClass.getCreatedAt()).isEqualTo(createdAt);
-        assertThat(existingClass.getUpdatedBy()).isEqualTo(createdBy);
         verify(schoolClassRepository).save(existingClass);
     }
 
@@ -205,7 +213,15 @@ class SchoolClassImportCommitHandlerTests {
     }
 
     private ImportRow row(UUID sessionId, long rowNumber, Map<String, String> rawData) {
-        return new ImportRow(UUID.randomUUID(), sessionId, rowNumber, jsonSerializationPort.toJson(rawData), null, null, ImportRowStatus.PENDING);
+        return ImportRow.builder()
+            .id(UUID.randomUUID())
+            .sessionId(sessionId)
+            .rowNumber(rowNumber)
+            .rawDataJson(jsonSerializationPort.toJson(rawData))
+            .mappedDataJson(null)
+            .errorsJson(null)
+            .status(ImportRowStatus.PENDING)
+            .build();
     }
 
     private ImportSession session(UUID id, UUID schoolId, UUID createdBy) {
@@ -217,14 +233,32 @@ class SchoolClassImportCommitHandlerTests {
     }
 
     private ImportSession buildSession(UUID id, UUID schoolId, UUID createdBy, Map<String, String> mapping) {
-        return new ImportSession(
-            id, schoolId, ImportType.SCHOOL_CLASS, "classes.csv", "[]", "{}",
-            jsonSerializationPort.toJson(mapping),
-            0L, 0L, 0L, 0L, 0L, null, ImportSessionStatus.IMPORTING, null,
-            Instant.now().plus(1, ChronoUnit.DAYS), null, null, null, 0,
-            Instant.now(), Instant.now(),
-            createdBy, createdBy
-        );
+        return ImportSession.builder()
+            .id(id)
+            .schoolId(schoolId)
+            .type(ImportType.SCHOOL_CLASS)
+            .fileName("classes.csv")
+            .originalHeadersJson("[]")
+            .suggestedMappingJson("{}")
+            .confirmedMappingJson(jsonSerializationPort.toJson(mapping))
+            .validRows(0L)
+            .invalidRows(0L)
+            .importedRows(0L)
+            .skippedRows(0L)
+            .totalRows(0L)
+            .failureReason(null)
+            .status(ImportSessionStatus.IMPORTING)
+            .importedEntityId(null)
+            .expiresAt(Instant.now().plus(1, ChronoUnit.DAYS))
+            .claimedAt(null)
+            .claimedBy(null)
+            .leaseExpiresAt(null)
+            .attempts(0)
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
+            .createdBy(createdBy.toString())
+            .updatedBy(createdBy.toString())
+            .build();
     }
 
     private static Map<String, String> mapping() {

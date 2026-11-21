@@ -96,7 +96,11 @@ public class RejectRegisterFormEventConsumer {
 
     private void markProcessed(UUID eventId) {
         try {
-            ProcessedEvent event = new ProcessedEvent(eventId, CONSUMER_GROUP, Instant.now());
+            ProcessedEvent event = ProcessedEvent.builder()
+                    .eventId(eventId)
+                    .consumerGroup(CONSUMER_GROUP)
+                    .processedAt(Instant.now())
+                    .build();
             processedEventRepository.save(event);
         } catch (DataIntegrityViolationException e) {
             LOGGER.warn("This event was already marked by another instance: eventId={}", eventId);

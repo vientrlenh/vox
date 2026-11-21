@@ -4,7 +4,7 @@ import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.school.SchoolAiSpendEntry;
 import com.sep.vox.domain.repository.SchoolAiSpendEntryRepository;
-import com.sep.vox.infrastructure.persistence.entity.SchoolAiSpendEntryJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolAiSpendEntryJpaEntity;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolAiSpendEntryRepository;
 
 @Repository
@@ -23,16 +23,16 @@ public class SchoolAiSpendEntryRepositoryImpl implements SchoolAiSpendEntryRepos
      */
     @Override
     public SchoolAiSpendEntry save(SchoolAiSpendEntry entry) {
-        SchoolAiSpendEntryJpaEntity saved = springDataSchoolAiSpendEntryRepository.save(new SchoolAiSpendEntryJpaEntity(
-            entry.getSchoolId(),
-            entry.getSubscriptionId(),
-            entry.getQuotaType().name(),
-            entry.getUserId(),
-            entry.getAssessmentSessionId(),
-            entry.getPracticeSessionId(),
-            entry.getAmountVnd(),
-            entry.getOccurredAt()
-        ));
+        SchoolAiSpendEntryJpaEntity saved = springDataSchoolAiSpendEntryRepository.save(SchoolAiSpendEntryJpaEntity.builder()
+            .schoolId(entry.getSchoolId())
+            .subscriptionId(entry.getSubscriptionId())
+            .quotaType(entry.getQuotaType().name())
+            .userId(entry.getUserId())
+            .assessmentSessionId(entry.getAssessmentSessionId())
+            .practiceSessionId(entry.getPracticeSessionId())
+            .amountVnd(entry.getAmountVnd())
+            .occurredAt(entry.getOccurredAt())
+            .build());
         entry.setId(saved.getId());
         return entry;
     }

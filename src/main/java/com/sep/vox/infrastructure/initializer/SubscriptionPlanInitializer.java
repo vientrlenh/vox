@@ -1,7 +1,6 @@
 package com.sep.vox.infrastructure.initializer;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -22,24 +21,24 @@ import com.sep.vox.domain.repository.SubscriptionPlanQuotaRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 
 /**
- * Dựng sẵn một THANG gói đăng ký ACTIVE để trường mới đăng ký được ngay, không phải tạo tay trước.
+ * Seeds a LADDER of ACTIVE subscription plans so that a new school can register immediately, without anyone creating
+ * them by hand first.
  *
- * <p>Sáu gói trải đủ ba loại chu kỳ: một gói dùng thử 7 ngày, ba gói tháng (1/3/6) và hai gói năm
- * (1/2). Một gói duy nhất như bản trước đủ để đăng ký, nhưng KHÔNG đủ để chạy thử luồng đổi gói:
- * quyết định "hiệu lực ngay và bù phần chưa dùng" hay "xếp hàng sau kỳ hiện tại" dựa trên phép so
- * GIÁ giữa gói mới và gói đang chạy, mà một gói thì không có gì để so.
+ * <p>The six plans cover all three period types: one 7-day trial plan, three monthly plans (1/3/6) and two yearly plans
+ * (1/2). A single plan, as in the earlier version, is enough to register but NOT enough to exercise the plan-change flow:
+ * the decision "take effect immediately and credit the unused part" or "queue after the current period" rests on a PRICE
+ * comparison between the new plan and the running plan, and one plan gives nothing to compare.
  *
- * <p><b>Bỏ qua theo TỪNG GÓI, không phải cả lượt.</b> Bản trước bỏ qua toàn bộ nếu đã tồn tại bất kỳ
- * gói ACTIVE nào, nghĩa là một cơ sở dữ liệu đang chạy sẽ không bao giờ nhận được các gói mới thêm
- * vào danh sách này. Giờ mỗi gói được đối chiếu theo TÊN, nên thêm một gói vào {@link #PLANS} là nó
- * xuất hiện ở lần khởi động kế tiếp mà không đụng gì tới các gói đã có.
+ * <p><b>Skipping is per PLAN, not per run.</b> The earlier version skipped everything if any ACTIVE plan already existed,
+ * which meant a running database would never receive plans added to this list later. Now each plan is matched by NAME, so
+ * adding a plan to {@link #PLANS} makes it appear at the next startup without touching the plans that already exist.
  *
- * <p>Đối chiếu trên MỌI trạng thái chứ không riêng ACTIVE: quản trị viên lưu trữ (ARCHIVED) một gói
- * là một quyết định, và dựng lại nó ở lần khởi động sau là ghi đè lên quyết định đó.
+ * <p>The match is over EVERY status, not only ACTIVE: an administrator archiving (ARCHIVED) a plan is a decision, and
+ * re-creating it at the next startup would overwrite that decision.
  *
- * <p><b>Hạn mức đo bằng TIỀN.</b> Từ V2, {@code plan_quota.included_quantity} đổi thành
- * {@code subscription_plan_quotas.included_amount_vnd} và {@code token_unit_price} bị bỏ hẳn -- lớp
- * này vì thế không cần {@code QuotaPricingPort}, không còn con số đơn giá nào để tra.
+ * <p><b>The quota is measured in MONEY.</b> Since V2, {@code plan_quota.included_quantity} became
+ * {@code subscription_plan_quotas.included_amount_vnd} and {@code token_unit_price} was dropped entirely -- so this class
+ * no longer needs {@code QuotaPricingPort}, there is no unit price left to look up.
  */
 @Component
 @Order(10)
@@ -164,37 +163,31 @@ public class SubscriptionPlanInitializer implements ApplicationRunner {
     }
 
     private void createPlan(PlanSeed seed) {
-        Instant now = Instant.now();
         BigDecimal includedAmountVnd = seed.includedAmountVnd();
 
-        SubscriptionPlan plan = subscriptionPlanRepository.save(new SubscriptionPlan(
-            seed.name(),
-            seed.tagline(),
-            seed.priceVnd(),
-            seed.periodType(),
-            seed.periodCount(),
-            MAX_TIME_PER_ATTEMPT_MIN,
+        SubscriptionPlan plan = subscriptionPlanRepository.save(SubscriptionPlan.builder()
+            .name(seed.name())
+            .tagline(seed.tagline())
+            .priceVnd(seed.priceVnd())
+            .periodType(seed.periodType())
+            .periodCount(seed.periodCount())
+            .maxTimePerAttemptMin(MAX_TIME_PER_ATTEMPT_MIN)
             // ACTIVE right away, not DRAFT: the purpose of this plan ladder is to be usable immediately, and with DRAFT
             // schools cannot subscribe. Different from SubscriptionPlan.create() -- that function is for
             // plans drafted by an administrator that must be approved before being sold.
-            SubscriptionPlanStatus.ACTIVE,
-            1L,
-            now,
-            now,
-            // No user is logged in at startup; the created_by/updated_by columns allow null.
-            null,
-            null
-        ));
+            .status(SubscriptionPlanStatus.ACTIVE)
+            .version(1L)
+            .build());
 
         // Grant EQUAL amounts to both types: no real data says which way the school's spending leans, and
         // guessing the ratio wrong would drain one wallet early while the other stays untouched -- and the two wallets cannot
         // be spent across each other.
         for (QuotaType quotaType : QUOTA_TYPES) {
-            subscriptionPlanQuotaRepository.save(new SubscriptionPlanQuota(
-                plan.getId(),
-                quotaType,
-                includedAmountVnd
-            ));
+            subscriptionPlanQuotaRepository.save(SubscriptionPlanQuota.builder()
+                .subscriptionPlanId(plan.getId())
+                .quotaType(quotaType)
+                .includedAmountVnd(includedAmountVnd)
+                .build());
         }
 
         LOGGER.info(

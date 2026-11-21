@@ -6,7 +6,7 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.sep.vox.infrastructure.persistence.entity.AssessmentResultStatusHistoryJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentResultStatusHistoryJpaEntity;
 
 public interface SpringDataAssessmentResultStatusHistoryRepository
         extends JpaRepository<AssessmentResultStatusHistoryJpaEntity, UUID> {

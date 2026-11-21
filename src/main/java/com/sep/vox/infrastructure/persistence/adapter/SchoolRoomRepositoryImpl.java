@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.SchoolRoomJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolRoomJpaEntity;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -90,7 +90,7 @@ public class SchoolRoomRepositoryImpl implements SchoolRoomRepository {
     }
 
     @Override
-    public int updateSchoolRoomAtomic(UUID id, String name, String description, Instant now, UUID updatedBy) {
+    public int updateSchoolRoomAtomic(UUID id, String name, String description, Instant now, String updatedBy) {
         return springDataSchoolRoomRepository.updateSchoolRoomAtomic(id, name, description, now, updatedBy);
     }
 }

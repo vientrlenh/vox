@@ -369,37 +369,37 @@ public class TopicSuggestionService {
             String curriculumGroup,
             String source,
             String temporalAffordance) {
-        PracticeTopic saved = practiceTopicRepository.save(new PracticeTopic(
-            null,
-            name,
-            normalize(name),
-            name,
-            source,
-            dimension,
-            curriculumGroup == null ? "OUT_OF_CURRICULUM" : curriculumGroup,
-            true,
-            Instant.now(),
-            null,
-            temporalAffordance == null ? TensePolicy.AFFORDANCE_MIXED : temporalAffordance
-        ));
+        PracticeTopic saved = practiceTopicRepository.save(PracticeTopic.builder()
+                .id(null)
+                .name(name)
+                .normalizedName(normalize(name))
+                .description(name)
+                .source(source)
+                .interestDimension(dimension)
+                .curriculumGroup(curriculumGroup == null ? "OUT_OF_CURRICULUM" : curriculumGroup)
+                .active(true)
+                .createdAt(Instant.now())
+                .sourceQuestionTopicId(null)
+                .temporalAffordance(temporalAffordance == null ? TensePolicy.AFFORDANCE_MIXED : temporalAffordance)
+                .build());
         return saved.getId();
     }
 
     private void recordKeywordRequest(UUID studentId, String keyword, String outcome) {
-        topicSuggestionRepository.save(new TopicSuggestion(
-            null,
-            studentId,
-            keyword,
-            keyword,
-            "UNKNOWN",
-            null,
-            BigDecimal.ZERO,
-            outcome,
-            "{}",
-            "REQUESTED",
-            Instant.now(),
-            null
-        ));
+        topicSuggestionRepository.save(TopicSuggestion.builder()
+                .id(null)
+                .studentId(studentId)
+                .suggestedTopicName(keyword)
+                .keyword(keyword)
+                .interestDimension("UNKNOWN")
+                .curriculumGroup(null)
+                .confidence(BigDecimal.ZERO)
+                .reasonText(outcome)
+                .evidenceJson("{}")
+                .status("REQUESTED")
+                .createdAt(Instant.now())
+                .respondedAt(null)
+                .build());
     }
 
     // GỠ 2026-08-11: topicNames(). Nó nạp toàn bộ chủ đề đang hoạt động chỉ để lấy tên, rồi gửi

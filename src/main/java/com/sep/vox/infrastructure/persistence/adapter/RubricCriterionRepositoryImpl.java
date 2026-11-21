@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.RubricCriterionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.rubric.RubricCriterionJpaEntity;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -61,7 +61,7 @@ public class RubricCriterionRepositoryImpl implements RubricCriterionRepository 
     }
 
     @Override
-    public void updateCriterionAtomic(UUID id, String code, String name, String description, String examplesJson, BigDecimal weight, BigDecimal minScore, BigDecimal maxScore, Integer order, Boolean isRequired, Instant updatedAt, UUID updatedBy) {
+    public void updateCriterionAtomic(UUID id, String code, String name, String description, String examplesJson, BigDecimal weight, BigDecimal minScore, BigDecimal maxScore, Integer order, Boolean isRequired, Instant updatedAt, String updatedBy) {
         springDataRubricCriterionRepository.updateCriterionAtomic(id, code, name, description, examplesJson, weight, minScore, maxScore, order, isRequired, updatedAt, updatedBy);
     }
 

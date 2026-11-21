@@ -10,7 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 
-import com.sep.vox.infrastructure.persistence.entity.UserRoleJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.user.UserRoleJpaEntity;
 
 public interface SpringDataUserRoleRepository extends JpaRepository<UserRoleJpaEntity, UUID> {
     List<UserRoleJpaEntity> findByUserId(UUID userId);

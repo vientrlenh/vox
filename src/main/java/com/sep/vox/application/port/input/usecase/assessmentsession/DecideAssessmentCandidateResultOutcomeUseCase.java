@@ -96,8 +96,6 @@ public class DecideAssessmentCandidateResultOutcomeUseCase
         UUID actorId = moderationAccessService.getCurrentUserId();
         ResultStatusHistoryRecorder.Snapshot before = resultStatusHistoryRecorder.snapshot(result);
         result.setStatus(input.decision());
-        result.setUpdatedAt(now);
-        result.setUpdatedBy(actorId);
         assessmentCandidateResultRepository.save(result);
 
         // Hành vi nghiệp vụ giữ nguyên; chỉ thêm dấu vết và thông báo — đây là mốc

@@ -79,7 +79,7 @@ public class UpdateSchoolGradeUseCase implements IUseCase<UpdateSchoolGradeComma
                 command.startDate(),
                 command.endDate(),
                 Instant.now(),
-                currentUserId
+                currentUserId.toString()
         );
 
         if (updatedRows == 0) {

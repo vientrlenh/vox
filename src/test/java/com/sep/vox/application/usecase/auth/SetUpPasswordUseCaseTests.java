@@ -84,7 +84,6 @@ public class SetUpPasswordUseCaseTests {
         assertThat(savedUser.getId()).isEqualTo(userId);
         assertThat(savedUser.getPasswordHash()).isEqualTo("hashed-password");
         assertThat(savedUser.getStatus()).isEqualTo(UserStatus.ACTIVE);
-        assertThat(savedUser.getUpdatedAt()).isEqualTo(tokenUsedAtCaptor.getValue());
     }
 
     @Test
@@ -133,21 +132,17 @@ public class SetUpPasswordUseCaseTests {
 
     private User inactiveUser(UUID userId) {
         Instant now = Instant.now();
-        return new User(
-            userId,
-            new Email("admin@example.com"),
-            "__PASSWORD_NOT_SET__",
-            new Phone("0987654321"),
-            new FullName("Nguyen Van A"),
-            null,
-            new DateOfBirth(LocalDate.of(2000, 5, 24)),
-            "123 Street",
-            null,
-            UserStatus.INACTIVE,
-            now,
-            now,
-            null,
-            null
-        );
+        return User.builder()
+            .id(userId)
+            .email(new Email("admin@example.com"))
+            .passwordHash("__PASSWORD_NOT_SET__")
+            .phone(new Phone("0987654321"))
+            .fullName(new FullName("Nguyen Van A"))
+            .dateOfBirth(new DateOfBirth(LocalDate.of(2000, 5, 24)))
+            .address("123 Street")
+            .status(UserStatus.INACTIVE)
+            .createdAt(now)
+            .updatedAt(now)
+            .build();
     }
 }

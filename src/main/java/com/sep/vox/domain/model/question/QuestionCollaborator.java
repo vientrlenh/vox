@@ -12,15 +12,6 @@ public class QuestionCollaborator {
 
     public QuestionCollaborator() {}
 
-    public QuestionCollaborator(UUID id, UUID userId, UUID questionId, QuestionCollaboratorPermission permission,
-            Instant assignedAt) {
-        this.id = id;
-        this.userId = userId;
-        this.questionId = questionId;
-        this.permission = permission;
-        this.assignedAt = assignedAt;
-    }
-
     public UUID getId() {
         return id;
     }
@@ -61,5 +52,43 @@ public class QuestionCollaborator {
         this.assignedAt = assignedAt;
     }
 
-    
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private final QuestionCollaborator target = new QuestionCollaborator();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder userId(UUID userId) {
+            target.userId = userId;
+            return this;
+        }
+
+        public Builder questionId(UUID questionId) {
+            target.questionId = questionId;
+            return this;
+        }
+
+        public Builder permission(QuestionCollaboratorPermission permission) {
+            target.permission = permission;
+            return this;
+        }
+
+        public Builder assignedAt(Instant assignedAt) {
+            target.assignedAt = assignedAt;
+            return this;
+        }
+
+        public QuestionCollaborator build() {
+            return target;
+        }
+    }
 }

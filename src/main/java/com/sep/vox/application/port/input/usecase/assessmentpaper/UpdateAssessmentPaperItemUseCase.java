@@ -5,7 +5,6 @@ import com.sep.vox.domain.model.assessment.AssessmentPaper;
 import com.sep.vox.domain.model.assessment.AssessmentPaperItem;
 import com.sep.vox.domain.model.question.QuestionAsset;
 import com.sep.vox.domain.model.question.QuestionCollaborator;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -143,7 +142,7 @@ public class UpdateAssessmentPaperItemUseCase implements IUseCase<UpdateAssessme
             requireMatchesSelectionSpec(slot.getSelectionSpec(), question);
         }
 
-        boolean isOwner = currentUserId.equals(question.getCreatedBy());
+        boolean isOwner = question.isCreatedBy(currentUserId);
         boolean isSchoolShared = question.getSharing() == QuestionSharing.SCHOOL_SHARED;
         if (!isOwner && !isSchoolShared) {
             Optional<QuestionCollaborator> collaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId);
@@ -172,8 +171,6 @@ public class UpdateAssessmentPaperItemUseCase implements IUseCase<UpdateAssessme
         if (paper.getStatus() == AssessmentPaperStatus.APPROVED) {
             paper.setStatus(AssessmentPaperStatus.IN_REVIEW);
         }
-        paper.setUpdatedAt(Instant.now());
-        paper.setUpdatedBy(currentUserId);
         assessmentPaperRepository.save(paper);
 
         recalculateAssessmentTimeDurationService.recalculate(paper.getAssessmentId());

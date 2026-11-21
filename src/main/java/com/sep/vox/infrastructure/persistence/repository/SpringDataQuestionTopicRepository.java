@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.QuestionTopicJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.question.QuestionTopicJpaEntity;
 
 public interface SpringDataQuestionTopicRepository extends JpaRepository<QuestionTopicJpaEntity, UUID> {
     List<QuestionTopicJpaEntity> findByQuestionBankId(UUID bankId);

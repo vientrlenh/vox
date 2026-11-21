@@ -58,9 +58,17 @@ class RetryGradingAssessmentSessionUseCaseTests {
         userContextPort = mock(UserContextPort.class);
         submitAssessmentSessionUseCase = mock(SubmitAssessmentSessionUseCase.class);
 
-        session = new AssessmentSession(SESSION_ID, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
-            Instant.now().minusSeconds(3600), Instant.now().minusSeconds(600),
-            AssessmentSessionStatus.GRADING_FAILED, false, null);
+        session = AssessmentSession.builder()
+                .id(SESSION_ID)
+                .assessmentId(UUID.randomUUID())
+                .candidateId(UUID.randomUUID())
+                .paperId(UUID.randomUUID())
+                .startedAt(Instant.now().minusSeconds(3600))
+                .submittedAt(Instant.now().minusSeconds(600))
+                .status(AssessmentSessionStatus.GRADING_FAILED)
+                .flagged(false)
+                .flagReason(null)
+                .build();
 
         Assessment assessment = new Assessment();
         assessment.setId(UUID.randomUUID());

@@ -16,33 +16,6 @@ public class QuestionAsset {
 
     public QuestionAsset() {}
 
-    public QuestionAsset(UUID id, UUID questionId, String title, Integer durationSeconds, String altText, QuestionAssetType type, String url, String transcript,
-            String description, int order) {
-        this.id = id;
-        this.questionId = questionId;
-        this.title = title;
-        this.durationSeconds = durationSeconds;
-        this.altText = altText;
-        this.type = type;
-        this.url = url;
-        this.transcript = transcript;
-        this.description = description;
-        this.order = order;
-    }
-
-    public QuestionAsset(UUID questionId, String title, Integer durationSeconds, String altText, QuestionAssetType type, String url, String transcript, String description,
-            int order) {
-        this.questionId = questionId;
-        this.title = title;
-        this.durationSeconds = durationSeconds;
-        this.altText = altText;
-        this.type = type;
-        this.url = url;
-        this.transcript = transcript;
-        this.description = description;
-        this.order = order;
-    }
-
     public UUID getId() {
         return id;
     }
@@ -123,5 +96,68 @@ public class QuestionAsset {
         this.altText = altText;
     }
 
-    
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private final QuestionAsset target = new QuestionAsset();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder questionId(UUID questionId) {
+            target.questionId = questionId;
+            return this;
+        }
+
+        public Builder title(String title) {
+            target.title = title;
+            return this;
+        }
+
+        public Builder durationSeconds(Integer durationSeconds) {
+            target.durationSeconds = durationSeconds;
+            return this;
+        }
+
+        public Builder altText(String altText) {
+            target.altText = altText;
+            return this;
+        }
+
+        public Builder type(QuestionAssetType type) {
+            target.type = type;
+            return this;
+        }
+
+        public Builder url(String url) {
+            target.url = url;
+            return this;
+        }
+
+        public Builder transcript(String transcript) {
+            target.transcript = transcript;
+            return this;
+        }
+
+        public Builder description(String description) {
+            target.description = description;
+            return this;
+        }
+
+        public Builder order(int order) {
+            target.order = order;
+            return this;
+        }
+
+        public QuestionAsset build() {
+            return target;
+        }
+    }
 }

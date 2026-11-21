@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
-import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -13,7 +12,6 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateFrameworkCriterionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.framework.FrameworkCriterion;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
@@ -27,15 +25,12 @@ public class UpdateFrameworkCriterionUseCase
 
     private final FrameworkVersionRepository frameworkVersionRepository;
     private final FrameworkCriterionRepository frameworkCriterionRepository;
-    private final UserContextPort userContextPort;
 
     public UpdateFrameworkCriterionUseCase(
             FrameworkVersionRepository frameworkVersionRepository,
-            FrameworkCriterionRepository frameworkCriterionRepository,
-            UserContextPort userContextPort) {
+            FrameworkCriterionRepository frameworkCriterionRepository) {
         this.frameworkVersionRepository = frameworkVersionRepository;
         this.frameworkCriterionRepository = frameworkCriterionRepository;
-        this.userContextPort = userContextPort;
     }
 
     @Override
@@ -106,7 +101,5 @@ public class UpdateFrameworkCriterionUseCase
         criterion.setName(StringNormalization.trimAndCollapseSpaces(command.name()));
         criterion.setDescription(StringNormalization.trimAndCollapseSpaces(command.description()));
         criterion.setOrder(command.order());
-        criterion.setUpdatedAt(Instant.now());
-        criterion.setUpdatedBy(userContextPort.getCurrentAuthenticatedUserId());
     }
 }

@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.usecase.assessmentblueprint;
 
 import com.sep.vox.domain.model.assessment.AssessmentBlueprint;
-import java.time.Instant;
 
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -49,8 +48,6 @@ public class UpdateAssessmentBlueprintActiveStatusUseCase
         }
 
         blueprint.setActive(input.isActive());
-        blueprint.setUpdatedAt(Instant.now());
-        blueprint.setUpdatedBy(currentUserId);
         return AssessmentBlueprintDtoMapper.toDto(assessmentBlueprintRepository.save(blueprint));
     }
 }

@@ -45,7 +45,7 @@ public class DeleteQuestionCollaboratorUseCase implements IUseCase<DeleteQuestio
             .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi"));
         QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
-        if (!currentUserId.equals(question.getCreatedBy())) {
+        if (!question.isCreatedBy(currentUserId)) {
             throw new ForbiddenException("Chỉ owner mới được quản lý collaborator");
         }
         if (bank.getOwnerType() != QuestionBankOwnerType.SCHOOL) {

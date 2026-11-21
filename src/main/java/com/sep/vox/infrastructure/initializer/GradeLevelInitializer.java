@@ -1,7 +1,6 @@
 package com.sep.vox.infrastructure.initializer;
 
 import com.sep.vox.domain.common.PageResult;
-import java.time.Instant;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -90,21 +89,14 @@ public class GradeLevelInitializer implements ApplicationRunner {
             return;
         }
 
-        Instant now = Instant.now();
         for (GradeLevelSeed seed : GRADE_LEVELS) {
-            gradeLevelRepository.save(new GradeLevel(
-                seed.code(),
-                seed.name(),
-                seed.description(),
-                seed.order(),
-                GradeLevelStatus.ACTIVE,
-                now,
-                now,
-                // No login session exists at startup, so there is no identity to write into
-                // created_by/updated_by. Null here reads correctly: built by the system.
-                null,
-                null
-            ));
+            gradeLevelRepository.save(GradeLevel.builder()
+                .code(seed.code())
+                .name(seed.name())
+                .description(seed.description())
+                .order(seed.order())
+                .status(GradeLevelStatus.ACTIVE)
+                .build());
         }
 
         LOGGER.info("Đã khởi tạo {} khối lớp mặc định bậc THPT", GRADE_LEVELS.size());

@@ -8,14 +8,14 @@ public class TopicInterestEvent {
     private UUID topicId;
     private UUID sessionId;
     /**
-     * {@code SESSION_OUTCOME} (học sinh ĐÃ luyện chủ đề này) hoặc {@code OFFERED_NOT_CHOSEN}
-     * (chỉ được chào rồi bỏ qua).
+     * {@code SESSION_OUTCOME} (the student DID practise this topic) or {@code OFFERED_NOT_CHOSEN}
+     * (only offered and then skipped).
      *
-     * <p>Trước đây cột này có trong bảng nhưng KHÔNG được đọc lên domain, nên
-     * {@code recomputeInterest} coi mọi sự kiện như nhau -- kể cả khi tính "lần cuối chạm chủ
-     * đề này" và "đã luyện qua bao nhiêu phiên". Hai đại lượng đó chỉ đúng với sự kiện ĐÃ
-     * LUYỆN; tính cả sự kiện bị bỏ qua thì chủ đề chưa từng luyện vẫn bị phạt như vừa luyện
-     * xong. Xem chú thích ở {@code InterestVectorService.recomputeInterest}.
+     * <p>This column used to be in the table but was NOT read into the domain, so
+     * {@code recomputeInterest} treated every event the same -- including when computing "the last time this
+     * topic was touched" and "how many sessions it was practised in". Those two quantities are only right for PRACTISED
+     * events; counting skipped events as well made a topic that was never practised be penalised as if it had just been
+     * practised. See the comment in {@code InterestVectorService.recomputeInterest}.
      */
     private String eventType;
     private double signal;
@@ -24,20 +24,7 @@ public class TopicInterestEvent {
     public TopicInterestEvent() {
     }
 
-    public TopicInterestEvent(
-            UUID topicId,
-            UUID sessionId,
-            String eventType,
-            double signal,
-            Instant occurredAt) {
-        this.topicId = topicId;
-        this.sessionId = sessionId;
-        this.eventType = eventType;
-        this.signal = signal;
-        this.occurredAt = occurredAt;
-    }
-
-    /** Sự kiện này có phải "học sinh đã thật sự luyện chủ đề" không. */
+    /** Whether this event means "the student really practised the topic". */
     public boolean isSessionOutcome() {
         return "SESSION_OUTCOME".equals(eventType);
     }
@@ -80,5 +67,47 @@ public class TopicInterestEvent {
 
     public void setOccurredAt(Instant occurredAt) {
         this.occurredAt = occurredAt;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final TopicInterestEvent target = new TopicInterestEvent();
+
+        private Builder() {
+        }
+
+        public Builder topicId(UUID topicId) {
+            target.topicId = topicId;
+            return this;
+        }
+
+        public Builder sessionId(UUID sessionId) {
+            target.sessionId = sessionId;
+            return this;
+        }
+
+        public Builder eventType(String eventType) {
+            target.eventType = eventType;
+            return this;
+        }
+
+        public Builder signal(double signal) {
+            target.signal = signal;
+            return this;
+        }
+
+        public Builder occurredAt(Instant occurredAt) {
+            target.occurredAt = occurredAt;
+            return this;
+        }
+
+        public TopicInterestEvent build() {
+            return target;
+        }
+
     }
 }

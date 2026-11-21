@@ -2,7 +2,6 @@ package com.sep.vox.application.port.input.usecase.questiontopic;
 
 import com.sep.vox.domain.model.question.QuestionBank;
 import com.sep.vox.domain.model.question.QuestionTopic;
-import java.time.Instant;
 
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -66,8 +65,6 @@ public class UpdateQuestionTopicStatusUseCase implements IUseCase<UpdateQuestion
             default -> throw new IllegalStateException("Action không hợp lệ");
         }
 
-        topic.setUpdatedAt(Instant.now());
-        topic.setUpdatedBy(currentUserId);
 
         QuestionTopic saved = questionTopicRepository.save(topic);
         return QuestionTopicDtoMapper.toDto(saved);

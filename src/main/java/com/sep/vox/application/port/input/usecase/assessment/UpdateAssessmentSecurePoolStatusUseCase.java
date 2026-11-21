@@ -65,14 +65,10 @@ public class UpdateAssessmentSecurePoolStatusUseCase implements IUseCase<UpdateA
         pool.setStatus(AssessmentSecurePoolStatus.RELEASED);
         pool.setReleasedAt(now);
         pool.setReleasedBy(currentUserId);
-        pool.setUpdatedAt(now);
-        pool.setUpdatedBy(currentUserId);
         AssessmentSecurePool savedPool = assessmentSecurePoolRepository.save(pool);
 
         for (Question question : questionRepository.findBySecurePoolId(savedPool.getId())) {
             question.setConfidentiality(QuestionConfidentiality.RELEASED);
-            question.setUpdatedAt(now);
-            question.setUpdatedBy(currentUserId);
             questionRepository.save(question);
         }
 

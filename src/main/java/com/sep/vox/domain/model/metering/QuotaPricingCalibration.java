@@ -6,62 +6,35 @@ import java.util.UUID;
 
 public class QuotaPricingCalibration {
     private UUID id;
-    // Thời điểm job tính ra row này -- dùng để lấy row mới nhất (ORDER BY computed_at DESC).
+    // The moment the job computed this row -- used to pick the latest row (ORDER BY computed_at DESC).
     private Instant computedAt;
-    // Cửa sổ trailing (số ngày nhìn lại) đã dùng LÚC TÍNH row này -- lưu lại để tra được lịch sử
-    // đang dùng cấu hình bao nhiêu ngày, phòng khi sau này đổi .env.
-    //VD => "chỉ gom những session nào diễn ra TRONG VÒNG 90 ngày gần đây, bỏ qua session cũ hơn".
+    // The trailing window (number of days looked back) used WHEN this row was computed -- stored so the history shows how
+    // many days the configuration used, in case .env is changed later.
+    // E.g. "only collect sessions that took place WITHIN the last 90 days, skip older sessions".
     private int windowDays;
-    // Số session THẬT SỰ dùng để tính -- chỉ tính session nào khớp được cả cost_usd lẫn
-    // duration_seconds (thiếu 1 trong 2 thì bị loại khỏi mẫu).
+    // Number of sessions ACTUALLY used for the computation -- only sessions that match both cost_usd and
+    // duration_seconds are counted (missing either one excludes the session from the sample).
     private int sessionCount;
-    // Tổng cost_usd cộng dồn từ đúng sessionCount session ở trên.
+    // Sum of cost_usd accumulated from exactly the sessionCount sessions above.
     private BigDecimal totalCostUsd;
-    // Tổng giây trả lời THẬT (không phải giây cấu hình) cộng dồn từ đúng các session đó.
+    // Sum of REAL answered seconds (not configured seconds) accumulated from exactly those sessions.
     private long totalAnsweredSeconds;
-    // Số tính THẲNG, chưa qua xử lý gì: totalCostUsd / totalAnsweredSeconds.
+    // The DIRECT number, with no processing: totalCostUsd / totalAnsweredSeconds.
     private BigDecimal rawRateUsdPerSecond;
-    // Số THẬT SỰ dùng cho guard (QuotaPricingService đọc field này) -- rawRateUsdPerSecond sau khi
-    // đã làm mượt (không lệch quá maxChangeRatio so với applied lần trước) và chặn biên an toàn
-    // (kẹp trong [minRateBound, maxRateBound]).
+    // The number ACTUALLY used by the guard (QuotaPricingService reads this field) -- rawRateUsdPerSecond after
+    // smoothing (not deviating more than maxChangeRatio from the previous applied) and the safety bound
+    // (clamped within [minRateBound, maxRateBound]).
     private BigDecimal appliedRateUsdPerSecond;
-    // Lý do applied khác raw (bị làm mượt hoặc chặn biên) -- null nếu 2 số bằng nhau, không cần
-    // điều chỉnh gì.
+    // The reason applied differs from raw (smoothed or bound-clamped) -- null if the two numbers are equal and no
+    // adjustment was needed.
     private String note;
     // The data source used to calibrate this row -- ASSESSMENT (join assessment_item_responses) or PRACTICE
     // (join practice_response_turns), see QuotaPricingSource.
     private QuotaPricingSource pricingSource;
 
     public QuotaPricingCalibration() {}
-
-    public QuotaPricingCalibration(UUID id, Instant computedAt, int windowDays, int sessionCount,
-            BigDecimal totalCostUsd, long totalAnsweredSeconds, BigDecimal rawRateUsdPerSecond,
-            BigDecimal appliedRateUsdPerSecond, String note, QuotaPricingSource pricingSource) {
-        this.id = id;
-        this.computedAt = computedAt;
-        this.windowDays = windowDays;
-        this.sessionCount = sessionCount;
-        this.totalCostUsd = totalCostUsd;
-        this.totalAnsweredSeconds = totalAnsweredSeconds;
-        this.rawRateUsdPerSecond = rawRateUsdPerSecond;
-        this.appliedRateUsdPerSecond = appliedRateUsdPerSecond;
-        this.note = note;
-        this.pricingSource = pricingSource;
-    }
-
-    public QuotaPricingCalibration(Instant computedAt, int windowDays, int sessionCount,
-            BigDecimal totalCostUsd, long totalAnsweredSeconds, BigDecimal rawRateUsdPerSecond,
-            BigDecimal appliedRateUsdPerSecond, String note, QuotaPricingSource pricingSource) {
-        this.computedAt = computedAt;
-        this.windowDays = windowDays;
-        this.sessionCount = sessionCount;
-        this.totalCostUsd = totalCostUsd;
-        this.totalAnsweredSeconds = totalAnsweredSeconds;
-        this.rawRateUsdPerSecond = rawRateUsdPerSecond;
-        this.appliedRateUsdPerSecond = appliedRateUsdPerSecond;
-        this.note = note;
-        this.pricingSource = pricingSource;
-    }
+
+
 
     public UUID getId() {
         return id;
@@ -141,5 +114,72 @@ public class QuotaPricingCalibration {
 
     public void setPricingSource(QuotaPricingSource pricingSource) {
         this.pricingSource = pricingSource;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final QuotaPricingCalibration target = new QuotaPricingCalibration();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder computedAt(Instant computedAt) {
+            target.computedAt = computedAt;
+            return this;
+        }
+
+        public Builder windowDays(int windowDays) {
+            target.windowDays = windowDays;
+            return this;
+        }
+
+        public Builder sessionCount(int sessionCount) {
+            target.sessionCount = sessionCount;
+            return this;
+        }
+
+        public Builder totalCostUsd(BigDecimal totalCostUsd) {
+            target.totalCostUsd = totalCostUsd;
+            return this;
+        }
+
+        public Builder totalAnsweredSeconds(long totalAnsweredSeconds) {
+            target.totalAnsweredSeconds = totalAnsweredSeconds;
+            return this;
+        }
+
+        public Builder rawRateUsdPerSecond(BigDecimal rawRateUsdPerSecond) {
+            target.rawRateUsdPerSecond = rawRateUsdPerSecond;
+            return this;
+        }
+
+        public Builder appliedRateUsdPerSecond(BigDecimal appliedRateUsdPerSecond) {
+            target.appliedRateUsdPerSecond = appliedRateUsdPerSecond;
+            return this;
+        }
+
+        public Builder note(String note) {
+            target.note = note;
+            return this;
+        }
+
+        public Builder pricingSource(QuotaPricingSource pricingSource) {
+            target.pricingSource = pricingSource;
+            return this;
+        }
+
+        public QuotaPricingCalibration build() {
+            return target;
+        }
+
     }
 }

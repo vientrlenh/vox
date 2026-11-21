@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.assessment;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -109,20 +108,17 @@ public class DeleteAssessmentUseCase implements IUseCase<DeleteAssessmentCommand
                 yield new DeleteAssessmentResponse(true, false);
             }
             default -> {
-                cancel(assessment, currentUserId);
+                cancel(assessment);
                 yield new DeleteAssessmentResponse(false, true);
             }
         };
     }
 
-    private void cancel(Assessment assessment, UUID currentUserId) {
-        Instant now = Instant.now();
+    private void cancel(Assessment assessment) {
         assessment.setStatus(AssessmentStatus.CANCELLED);
-        assessment.setUpdatedAt(now);
-        assessment.setUpdatedBy(currentUserId);
         assessmentRepository.save(assessment);
         // Cancelling an assessment must carry its sessions along -- see AssessmentScheduleClosureService for why.
-        assessmentScheduleClosureService.cancelSchedulesForAssessment(assessment.getId(), currentUserId, now);
+        assessmentScheduleClosureService.cancelSchedulesForAssessment(assessment.getId());
     }
 
     /**

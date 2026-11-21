@@ -171,11 +171,26 @@ public class DeleteSchoolUserUseCaseTests {
     private User user(UUID id, UUID userSchoolId, UserStatus status) {
         Instant now = Instant.now();
         when(schoolUserRepository.findByUserId(id)).thenReturn(Optional.of(
-            new SchoolUser(userSchoolId, id, now, now.plus(36500, ChronoUnit.DAYS))
+            SchoolUser.builder()
+                .schoolId(userSchoolId)
+                .userId(id)
+                .startDate(now)
+                .endDate(now.plus(36500, ChronoUnit.DAYS))
+                .build()
         ));
-        return new User(id, new Email("user@school.edu.vn"), "hash",
-            new Phone("0987654321"), new FullName("Nguyen Van A"), null,
-            new DateOfBirth(LocalDate.of(2000, 1, 1)), "123 Street", null,
-            status, now, now, id, id);
+        return User.builder()
+            .id(id)
+            .email(new Email("user@school.edu.vn"))
+            .passwordHash("hash")
+            .phone(new Phone("0987654321"))
+            .fullName(new FullName("Nguyen Van A"))
+            .dateOfBirth(new DateOfBirth(LocalDate.of(2000, 1, 1)))
+            .address("123 Street")
+            .status(status)
+            .createdAt(now)
+            .updatedAt(now)
+            .createdBy(id.toString())
+            .updatedBy(id.toString())
+            .build();
     }
 }

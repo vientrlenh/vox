@@ -10,7 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.sep.vox.application.query.dto.QuestionWithTopicInfo;
-import com.sep.vox.infrastructure.persistence.entity.PracticeQuestionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.personalization.PracticeQuestionJpaEntity;
 
 public interface SpringDataPracticeQuestionRepository
         extends JpaRepository<PracticeQuestionJpaEntity, UUID> {

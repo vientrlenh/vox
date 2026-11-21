@@ -80,8 +80,13 @@ class SchoolSubscriptionQuotaRecordTests {
     }
 
     private SchoolSubscriptionQuotaRecord record(long totalVnd, long usedVnd, long fundedVnd) {
-        return new SchoolSubscriptionQuotaRecord(
-            UUID.randomUUID(), subscriptionId, QuotaType.PRACTICE,
-            BigDecimal.valueOf(totalVnd), BigDecimal.valueOf(usedVnd), BigDecimal.valueOf(fundedVnd));
+        return SchoolSubscriptionQuotaRecord.builder()
+            .id(UUID.randomUUID())
+            .schoolSubscriptionId(subscriptionId)
+            .quotaType(QuotaType.PRACTICE)
+            .totalAllocatedAmountVnd(BigDecimal.valueOf(totalVnd))
+            .usedAmountVnd(BigDecimal.valueOf(usedVnd))
+            .fundedFromBalanceVnd(BigDecimal.valueOf(fundedVnd))
+            .build();
     }
 }

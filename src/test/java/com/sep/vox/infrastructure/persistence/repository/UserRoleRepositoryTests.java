@@ -30,7 +30,11 @@ class UserRoleRepositoryTests {
         UUID userId = UUID.randomUUID();
         UUID roleId = UUID.randomUUID();
 
-        UserRole saved = userRoleRepository.save(new UserRole(userId, roleId, Instant.now()));
+        UserRole saved = userRoleRepository.save(UserRole.builder()
+            .userId(userId)
+            .roleId(roleId)
+            .createdAt(Instant.now())
+            .build());
 
         assertThat(saved.getUserId()).isEqualTo(userId);
         assertThat(saved.getRoleId()).isEqualTo(roleId);
@@ -41,7 +45,11 @@ class UserRoleRepositoryTests {
     void whenFindByUserIdAndRoleId_thenReturnsMatchingUserRole() {
         UUID userId = UUID.randomUUID();
         UUID roleId = UUID.randomUUID();
-        userRoleRepository.save(new UserRole(userId, roleId, Instant.now()));
+        userRoleRepository.save(UserRole.builder()
+            .userId(userId)
+            .roleId(roleId)
+            .createdAt(Instant.now())
+            .build());
 
         Optional<UserRole> found = userRoleRepository.findByUserIdAndRoleId(userId, roleId);
 
@@ -56,9 +64,21 @@ class UserRoleRepositoryTests {
         UUID otherUserId = UUID.randomUUID();
         UUID roleId = UUID.randomUUID();
         UUID anotherRoleId = UUID.randomUUID();
-        userRoleRepository.save(new UserRole(userId, roleId, Instant.now()));
-        userRoleRepository.save(new UserRole(userId, anotherRoleId, Instant.now()));
-        userRoleRepository.save(new UserRole(otherUserId, UUID.randomUUID(), Instant.now()));
+        userRoleRepository.save(UserRole.builder()
+            .userId(userId)
+            .roleId(roleId)
+            .createdAt(Instant.now())
+            .build());
+        userRoleRepository.save(UserRole.builder()
+            .userId(userId)
+            .roleId(anotherRoleId)
+            .createdAt(Instant.now())
+            .build());
+        userRoleRepository.save(UserRole.builder()
+            .userId(otherUserId)
+            .roleId(UUID.randomUUID())
+            .createdAt(Instant.now())
+            .build());
 
         List<UserRole> found = userRoleRepository.findByUserId(userId);
 
@@ -73,9 +93,21 @@ class UserRoleRepositoryTests {
         UUID roleId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         UUID anotherUserId = UUID.randomUUID();
-        userRoleRepository.save(new UserRole(userId, roleId, Instant.now()));
-        userRoleRepository.save(new UserRole(anotherUserId, roleId, Instant.now()));
-        userRoleRepository.save(new UserRole(UUID.randomUUID(), UUID.randomUUID(), Instant.now()));
+        userRoleRepository.save(UserRole.builder()
+            .userId(userId)
+            .roleId(roleId)
+            .createdAt(Instant.now())
+            .build());
+        userRoleRepository.save(UserRole.builder()
+            .userId(anotherUserId)
+            .roleId(roleId)
+            .createdAt(Instant.now())
+            .build());
+        userRoleRepository.save(UserRole.builder()
+            .userId(UUID.randomUUID())
+            .roleId(UUID.randomUUID())
+            .createdAt(Instant.now())
+            .build());
 
         List<UserRole> found = userRoleRepository.findByRoleId(roleId);
 
@@ -88,7 +120,11 @@ class UserRoleRepositoryTests {
     @Test
     void whenExistsByRoleId_thenReturnsTrueOnlyForExistingRole() {
         UUID roleId = UUID.randomUUID();
-        userRoleRepository.save(new UserRole(UUID.randomUUID(), roleId, Instant.now()));
+        userRoleRepository.save(UserRole.builder()
+            .userId(UUID.randomUUID())
+            .roleId(roleId)
+            .createdAt(Instant.now())
+            .build());
 
         assertThat(userRoleRepository.existsByRoleId(roleId)).isTrue();
         assertThat(userRoleRepository.existsByRoleId(UUID.randomUUID())).isFalse();

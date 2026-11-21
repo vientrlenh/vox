@@ -24,7 +24,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.*;
 
 @Service
@@ -94,8 +93,6 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
         }
 
-        Instant now = Instant.now();
-
         // Khởi tạo Set để chống trùng lặp dữ liệu nội bộ
         Set<String> uniqueCodes = new HashSet<>();
 
@@ -137,20 +134,15 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
                     bCmd.mappedScoreMin(), bCmd.mappedScoreMax(), safeName);
 
             // Để ID là null để đảm bảo JPA hiểu đây là record mới, chừa cho DB sinh UUID
-            RubricResultBand band = new RubricResultBand(
-                    null,
-                    command.versionId(),
-                    safeCode,
-                    safeName,
-                    bCmd.description() != null ? StringNormalization.trimAndCollapseSpaces(bCmd.description()) : null,
-                    bCmd.mappedScoreMin(),
-                    bCmd.mappedScoreMax(),
-                    bCmd.order(),
-                    now,
-                    now,
-                    currentUserId,
-                    currentUserId
-            );
+            RubricResultBand band = RubricResultBand.builder()
+                    .rubricVersionId(command.versionId())
+                    .code(safeCode)
+                    .name(safeName)
+                    .description(bCmd.description() != null ? StringNormalization.trimAndCollapseSpaces(bCmd.description()) : null)
+                    .scoreMin(bCmd.mappedScoreMin())
+                    .scoreMax(bCmd.mappedScoreMax())
+                    .order(bCmd.order())
+                    .build();
             bandsSoFarByMin.put(band.getScoreMin(), band);
             return band;
         }).toList();

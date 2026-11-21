@@ -99,10 +99,18 @@ class SchoolRoomImportCommitHandlerTests {
         UUID createdBy = UUID.randomUUID();
         UUID sessionId = UUID.randomUUID();
         Instant createdAt = Instant.now().minus(5, ChronoUnit.DAYS);
-        SchoolRoom existing = new SchoolRoom(
-            UUID.randomUUID(), schoolId, "P101", "Phòng cũ", "Mô tả cũ", true,
-            createdAt, createdAt, createdBy, createdBy
-        );
+        SchoolRoom existing = SchoolRoom.builder()
+            .id(UUID.randomUUID())
+            .schoolId(schoolId)
+            .code("P101")
+            .name("Phòng cũ")
+            .description("Mô tả cũ")
+            .active(true)
+            .createdAt(createdAt)
+            .updatedAt(createdAt)
+            .createdBy(createdBy.toString())
+            .updatedBy(createdBy.toString())
+            .build();
         List<ImportRow> rows = List.of(row(sessionId, 1L, dataWithDescription("P101", "Phòng mới", "Mô tả mới")));
 
         when(schoolRoomRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("P101"))).thenReturn(List.of(existing));
@@ -117,7 +125,6 @@ class SchoolRoomImportCommitHandlerTests {
         assertThat(existing.getName()).isEqualTo("Phòng mới");
         assertThat(existing.getDescription()).isEqualTo("Mô tả mới");
         assertThat(existing.getCreatedAt()).isEqualTo(createdAt);
-        assertThat(existing.getUpdatedBy()).isEqualTo(createdBy);
         verify(schoolRoomRepository).save(existing);
     }
 
@@ -127,10 +134,18 @@ class SchoolRoomImportCommitHandlerTests {
         UUID createdBy = UUID.randomUUID();
         UUID sessionId = UUID.randomUUID();
         Instant createdAt = Instant.now().minus(5, ChronoUnit.DAYS);
-        SchoolRoom existing = new SchoolRoom(
-            UUID.randomUUID(), schoolId, "P101", "Phòng cũ", "Mô tả cũ", false,
-            createdAt, createdAt, createdBy, createdBy
-        );
+        SchoolRoom existing = SchoolRoom.builder()
+            .id(UUID.randomUUID())
+            .schoolId(schoolId)
+            .code("P101")
+            .name("Phòng cũ")
+            .description("Mô tả cũ")
+            .active(false)
+            .createdAt(createdAt)
+            .updatedAt(createdAt)
+            .createdBy(createdBy.toString())
+            .updatedBy(createdBy.toString())
+            .build();
         List<ImportRow> rows = List.of(row(sessionId, 1L, dataWithDescription("P101", "Phòng mới", "Mô tả mới")));
 
         when(schoolRoomRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("P101"))).thenReturn(List.of(existing));
@@ -187,7 +202,15 @@ class SchoolRoomImportCommitHandlerTests {
     }
 
     private ImportRow row(UUID sessionId, long rowNumber, Map<String, String> rawData) {
-        return new ImportRow(UUID.randomUUID(), sessionId, rowNumber, jsonSerializationPort.toJson(rawData), null, null, ImportRowStatus.PENDING);
+        return ImportRow.builder()
+            .id(UUID.randomUUID())
+            .sessionId(sessionId)
+            .rowNumber(rowNumber)
+            .rawDataJson(jsonSerializationPort.toJson(rawData))
+            .mappedDataJson(null)
+            .errorsJson(null)
+            .status(ImportRowStatus.PENDING)
+            .build();
     }
 
     private ImportSession session(UUID id, UUID schoolId, UUID createdBy) {
@@ -199,14 +222,32 @@ class SchoolRoomImportCommitHandlerTests {
     }
 
     private ImportSession buildSession(UUID id, UUID schoolId, UUID createdBy, Map<String, String> mapping) {
-        return new ImportSession(
-            id, schoolId, ImportType.SCHOOL_ROOM, "rooms.csv", "[]", "{}",
-            jsonSerializationPort.toJson(mapping),
-            0L, 0L, 0L, 0L, 0L, null, ImportSessionStatus.IMPORTING, null,
-            Instant.now().plus(1, ChronoUnit.DAYS), null, null, null, 0,
-            Instant.now(), Instant.now(),
-            createdBy, createdBy
-        );
+        return ImportSession.builder()
+            .id(id)
+            .schoolId(schoolId)
+            .type(ImportType.SCHOOL_ROOM)
+            .fileName("rooms.csv")
+            .originalHeadersJson("[]")
+            .suggestedMappingJson("{}")
+            .confirmedMappingJson(jsonSerializationPort.toJson(mapping))
+            .validRows(0L)
+            .invalidRows(0L)
+            .importedRows(0L)
+            .skippedRows(0L)
+            .totalRows(0L)
+            .failureReason(null)
+            .status(ImportSessionStatus.IMPORTING)
+            .importedEntityId(null)
+            .expiresAt(Instant.now().plus(1, ChronoUnit.DAYS))
+            .claimedAt(null)
+            .claimedBy(null)
+            .leaseExpiresAt(null)
+            .attempts(0)
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
+            .createdBy(createdBy.toString())
+            .updatedBy(createdBy.toString())
+            .build();
     }
 
     private static Map<String, String> mapping() {

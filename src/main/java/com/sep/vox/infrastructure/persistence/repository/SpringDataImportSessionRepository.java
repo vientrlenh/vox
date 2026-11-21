@@ -12,7 +12,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.ImportSessionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.importfile.ImportSessionJpaEntity;
 
 public interface SpringDataImportSessionRepository extends JpaRepository<ImportSessionJpaEntity, UUID> {
     @Query("""
@@ -41,7 +41,7 @@ public interface SpringDataImportSessionRepository extends JpaRepository<ImportS
                     @Param("type") String type,
                     @Param("confirmedMapping") String confirmedMapping,
                     @Param("now") Instant now,
-                    @Param("updatedBy") UUID updatedBy);
+                    @Param("updatedBy") String updatedBy);
 
     @Modifying
     @Query("""
@@ -59,7 +59,7 @@ public interface SpringDataImportSessionRepository extends JpaRepository<ImportS
                     @Param("type") String type,
                     @Param("confirmedMapping") String confirmedMapping,
                     @Param("now") Instant now,
-                    @Param("updatedBy") UUID updatedBy);
+                    @Param("updatedBy") String updatedBy);
 
 
     @Query(value = """
@@ -79,13 +79,14 @@ public interface SpringDataImportSessionRepository extends JpaRepository<ImportS
                 i.claimedAt = :now, 
                 i.leaseExpiresAt = :leaseUntil, 
                 i.updatedAt = :now, 
-                i.updatedBy = :worker
+                i.updatedBy = :workerActor
         WHERE i.id IN :ids
     """)
     int markClaimed(@Param("ids") Collection<UUID> ids, 
                     @Param("worker") UUID worker, 
                     @Param("now") Instant now, 
-                    @Param("leaseUntil") Instant leaseUntil);
+                    @Param("leaseUntil") Instant leaseUntil,
+                    @Param("workerActor") String workerActor);
 
     
     @Modifying

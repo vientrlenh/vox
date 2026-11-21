@@ -3,7 +3,6 @@ package com.sep.vox.application.port.input.usecase.subscription;
 import com.sep.vox.application.port.input.command.UpdateSubscriptionPlanQuotaCommand;
 import com.sep.vox.domain.model.subscription.SubscriptionPlan;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +15,6 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateSubscriptionPlanCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.subscription.SubscriptionPlanQuota;
 import com.sep.vox.domain.model.subscription.SubscriptionPlanStatus;
@@ -38,15 +36,12 @@ public class UpdateSubscriptionPlanUseCase implements IUseCase<UpdateSubscriptio
 
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final SubscriptionPlanQuotaRepository subscriptionPlanQuotaRepository;
-    private final UserContextPort userContextPort;
 
     public UpdateSubscriptionPlanUseCase(
             SubscriptionPlanRepository subscriptionPlanRepository,
-            SubscriptionPlanQuotaRepository subscriptionPlanQuotaRepository,
-            UserContextPort userContextPort) {
+            SubscriptionPlanQuotaRepository subscriptionPlanQuotaRepository) {
         this.subscriptionPlanRepository = subscriptionPlanRepository;
         this.subscriptionPlanQuotaRepository = subscriptionPlanQuotaRepository;
-        this.userContextPort = userContextPort;
     }
 
     @Override
@@ -55,20 +50,19 @@ public class UpdateSubscriptionPlanUseCase implements IUseCase<UpdateSubscriptio
         SubscriptionPlan plan = subscriptionPlanRepository.findById(input.subscriptionPlanId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
 
-        // Gói đã publish (ACTIVE/ARCHIVED) bị khóa sửa hoàn toàn, kể cả field không liên quan
-        // tiền/quota: renewal (CreatePaymentLinkForRenewalUseCase / InvoiceSettlementService) đọc
-        // giá và quota LIVE từ đúng plan này, không qua snapshot nào -- sửa tại chỗ sẽ âm thầm đổi
-        // giá/quota cho trường đang dùng/gia hạn mà không qua bước xác nhận. Chỉ được sửa khi còn
-        // DRAFT (chưa publish nên chưa trường nào dùng); muốn đổi gói đã publish thì phải archive
-        // và tạo gói mới (kèm replacedByPlanId).
+        // A published plan (ACTIVE/ARCHIVED) is locked against editing entirely, even fields unrelated to money/quota: renewal
+        // (CreatePaymentLinkForRenewalUseCase / InvoiceSettlementService) reads the price and quota LIVE from this very plan, with
+        // no snapshot -- editing in place would silently change the price/quota for a school that is using/renewing without any
+        // confirmation step. It can only be edited while DRAFT (not published, so no school uses it yet); to change a published
+        // plan, archive it and create a new plan (with replacedByPlanId).
         if (plan.getStatus() != SubscriptionPlanStatus.DRAFT) {
             throw new IllegalStateException(
                 "Chỉ có thể chỉnh sửa gói khi đang ở trạng thái nháp. Gói đã xuất bản thì phải lưu trữ và tạo gói mới thay thế.");
         }
 
-        // Kiểm TOÀN BỘ đầu vào trước khi đụng vào plan: nửa chừng mà ném lỗi thì transaction rollback
-        // nhưng object plan trong bộ nhớ đã bị sửa dở, và bộ hạn mức thì được xóa-ghi lại ở dưới --
-        // gom phần kiểm lên đầu để không bao giờ có trạng thái sửa một nửa.
+        // Validate ALL input before touching the plan: if an error is thrown halfway, the transaction rolls back but the plan
+        // object in memory has already been half-edited, and the quota set is deleted and rewritten below -- gathering the
+        // checks at the top ensures there is never a half-edited state.
         String name = normalizedName(input.name());
         String tagline = normalizedTagline(input.tagline());
         validatePriceVnd(input.priceVnd());
@@ -92,27 +86,29 @@ public class UpdateSubscriptionPlanUseCase implements IUseCase<UpdateSubscriptio
             plan.setMaxTimePerAttemptMin(input.maxTimePerAttemptMin());
         }
 
-        // KHÔNG tự tăng version ở đây: cột version do Hibernate quản lý qua @Version. Mapper dựng
-        // entity MỚI mỗi lần lưu nên entity luôn detached, save() đi đường merge và merge SO version
-        // của entity với version dưới DB -- tăng sẵn thành N+1 trong khi DB còn N thì mọi lần sửa đều
-        // bị coi là ghi đè lên bản cũ và ném OptimisticLockException.
-        plan.setUpdatedAt(Instant.now());
-        plan.setUpdatedBy(userContextPort.getCurrentAuthenticatedUserId());
+        // Do NOT increment the version here: the version column is managed by Hibernate through @Version. The mapper builds a NEW
+        // entity on every save so the entity is always detached, save() goes through merge, and merge COMPARES the entity's version
+        // with the version in the DB -- incrementing it to N+1 while the DB still holds N makes every edit look like an overwrite of
+        // an older copy and throws OptimisticLockException.
         SubscriptionPlan savedPlan = subscriptionPlanRepository.save(plan);
 
         if (includedAmountByQuotaType != null) {
-            // Thay TOÀN BỘ bộ hạn mức chứ không sửa từng dòng: dòng hạn mức không có khóa nghiệp vụ
-            // nào ngoài (plan, quotaType), và gói còn DRAFT nên chưa có gì tham chiếu tới id của
-            // chúng -- xóa hết rồi ghi lại là cách duy nhất diễn đạt được "bỏ hẳn loại hạn mức này".
+            // Replace the WHOLE quota set instead of editing row by row: a quota row has no business key other than (plan, quotaType),
+            // and the plan is still DRAFT so nothing references their ids yet -- deleting everything and writing again is the only
+            // way to express "drop this quota type entirely".
             subscriptionPlanQuotaRepository.deleteBySubscriptionPlanId(savedPlan.getId());
             List<SubscriptionPlanQuota> quotas = includedAmountByQuotaType.entrySet().stream()
-                .map(entry -> new SubscriptionPlanQuota(savedPlan.getId(), entry.getKey(), entry.getValue()))
+                .map(entry -> SubscriptionPlanQuota.builder()
+                    .subscriptionPlanId(savedPlan.getId())
+                    .quotaType(entry.getKey())
+                    .includedAmountVnd(entry.getValue())
+                    .build())
                 .toList();
             subscriptionPlanQuotaRepository.saveAll(quotas);
         }
 
-        // Hạn mức không nằm trong SubscriptionPlanDto -- client GraphQL nào cần thì chọn trường
-        // quotas và resolver nạp qua DataLoader quotasBySubscriptionPlanId.
+        // Quota is not part of SubscriptionPlanDto -- a GraphQL client that needs it selects the quotas field, and the resolver
+        // loads it through the quotasBySubscriptionPlanId DataLoader.
         return savedPlan.getId();
     }
 

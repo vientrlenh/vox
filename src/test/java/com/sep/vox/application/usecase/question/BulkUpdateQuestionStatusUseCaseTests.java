@@ -175,7 +175,7 @@ class BulkUpdateQuestionStatusUseCaseTests {
     @Test
     void should_reject_questions_the_actor_may_not_touch() {
         Question otherAuthorQuestion = question(QuestionStatus.DRAFT);
-        otherAuthorQuestion.setCreatedBy(UUID.randomUUID());
+        otherAuthorQuestion.setCreatedBy(UUID.randomUUID().toString());
         mockQuestions(otherAuthorQuestion);
 
         BulkUpdateQuestionStatusResponse response = useCase.execute(new BulkUpdateQuestionStatusCommand(
@@ -189,11 +189,16 @@ class BulkUpdateQuestionStatusUseCaseTests {
     @Test
     void should_treat_an_editor_collaborator_as_allowed_to_submit() {
         Question otherAuthorQuestion = question(QuestionStatus.DRAFT);
-        otherAuthorQuestion.setCreatedBy(UUID.randomUUID());
+        otherAuthorQuestion.setCreatedBy(UUID.randomUUID().toString());
         mockQuestions(otherAuthorQuestion);
         when(questionCollaboratorRepository.findByQuestionIdIn(anyCollection())).thenReturn(List.of(
-            new QuestionCollaborator(UUID.randomUUID(), currentUserId, otherAuthorQuestion.getId(),
-                QuestionCollaboratorPermission.CAN_EDIT, Instant.now())));
+            QuestionCollaborator.builder()
+                    .id(UUID.randomUUID())
+                    .userId(currentUserId)
+                    .questionId(otherAuthorQuestion.getId())
+                    .permission(QuestionCollaboratorPermission.CAN_EDIT)
+                    .assignedAt(Instant.now())
+                    .build()));
 
         BulkUpdateQuestionStatusResponse response = useCase.execute(new BulkUpdateQuestionStatusCommand(
             List.of(otherAuthorQuestion.getId()), "SUBMIT", null));
@@ -209,11 +214,16 @@ class BulkUpdateQuestionStatusUseCaseTests {
     @Test
     void should_ignore_edit_permission_granted_to_another_user() {
         Question otherAuthorQuestion = question(QuestionStatus.DRAFT);
-        otherAuthorQuestion.setCreatedBy(UUID.randomUUID());
+        otherAuthorQuestion.setCreatedBy(UUID.randomUUID().toString());
         mockQuestions(otherAuthorQuestion);
         when(questionCollaboratorRepository.findByQuestionIdIn(anyCollection())).thenReturn(List.of(
-            new QuestionCollaborator(UUID.randomUUID(), UUID.randomUUID(), otherAuthorQuestion.getId(),
-                QuestionCollaboratorPermission.CAN_EDIT, Instant.now())));
+            QuestionCollaborator.builder()
+                    .id(UUID.randomUUID())
+                    .userId(UUID.randomUUID())
+                    .questionId(otherAuthorQuestion.getId())
+                    .permission(QuestionCollaboratorPermission.CAN_EDIT)
+                    .assignedAt(Instant.now())
+                    .build()));
 
         BulkUpdateQuestionStatusResponse response = useCase.execute(new BulkUpdateQuestionStatusCommand(
             List.of(otherAuthorQuestion.getId()), "SUBMIT", null));
@@ -274,17 +284,42 @@ class BulkUpdateQuestionStatusUseCaseTests {
     }
 
     private Question question(QuestionStatus status) {
-        Instant now = Instant.now();
-        return new Question(
-            UUID.randomUUID(), bankId, UUID.randomUUID(), "Q-1", null, "Câu hỏi", null, null,
-            QuestionType.SHORT_ANSWER, 10, 10, 60, QuestionSharing.PRIVATE, null, false,
-            QuestionConfidentiality.OPEN, null, status, now, now, currentUserId, currentUserId);
+        return Question.builder()
+                .id(UUID.randomUUID())
+                .questionBankId(bankId)
+                .questionTopicId(UUID.randomUUID())
+                .code("Q-1")
+                .instructionText(null)
+                .questionText("Câu hỏi")
+                .promptText(null)
+                .preparationText(null)
+                .type(QuestionType.SHORT_ANSWER)
+                .preparationTimeSeconds(10)
+                .minResponseSeconds(10)
+                .maxResponseSeconds(60)
+                .sharing(QuestionSharing.PRIVATE)
+                .sourceQuestionId(null)
+                .locked(false)
+                .confidentiality(QuestionConfidentiality.OPEN)
+                .securePoolId(null)
+                .status(status)
+                .createdBy(currentUserId.toString())
+                .updatedBy(currentUserId.toString())
+                .build();
     }
 
     private QuestionBank bank() {
-        Instant now = Instant.now();
-        return new QuestionBank(
-            bankId, UUID.randomUUID(), null, "BANK-1", "Ngân hàng", null,
-            QuestionBankOwnerType.SYSTEM, QuestionBankStatus.PUBLISHED, now, now, currentUserId, currentUserId);
+        return QuestionBank.builder()
+                .id(bankId)
+                .languageId(UUID.randomUUID())
+                .schoolId(null)
+                .code("BANK-1")
+                .name("Ngân hàng")
+                .description(null)
+                .ownerType(QuestionBankOwnerType.SYSTEM)
+                .status(QuestionBankStatus.PUBLISHED)
+                .createdBy(currentUserId.toString())
+                .updatedBy(currentUserId.toString())
+                .build();
     }
 }

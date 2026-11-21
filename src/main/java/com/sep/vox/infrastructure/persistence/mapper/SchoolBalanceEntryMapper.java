@@ -3,50 +3,50 @@ package com.sep.vox.infrastructure.persistence.mapper;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.school.SchoolBalanceEntry;
 import com.sep.vox.domain.model.school.SchoolBalanceEntryType;
-import com.sep.vox.infrastructure.persistence.entity.SchoolBalanceEntryJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolBalanceEntryJpaEntity;
 
 public final class SchoolBalanceEntryMapper {
 
     private SchoolBalanceEntryMapper() {}
 
     public static SchoolBalanceEntry toDomain(SchoolBalanceEntryJpaEntity jpa) {
-        return new SchoolBalanceEntry(
-            jpa.getId(),
-            jpa.getSchoolId(),
-            jpa.getSubscriptionId(),
-            entryTypeFromString(jpa.getEntryType()),
-            jpa.getAmountVnd(),
-            jpa.getBalanceAfterVnd(),
-            jpa.getOrderId(),
-            jpa.getAssessmentSessionId(),
-            jpa.getPracticeSessionId(),
-            quotaTypeFromString(jpa.getQuotaType()),
-            jpa.getCostUsd(),
-            jpa.getFxRateUsed(),
-            jpa.getActorId(),
-            jpa.getReason(),
-            jpa.getOccurredAt()
-        );
+        return SchoolBalanceEntry.builder()
+            .id(jpa.getId())
+            .schoolId(jpa.getSchoolId())
+            .subscriptionId(jpa.getSubscriptionId())
+            .entryType(entryTypeFromString(jpa.getEntryType()))
+            .amountVnd(jpa.getAmountVnd())
+            .balanceAfterVnd(jpa.getBalanceAfterVnd())
+            .orderId(jpa.getOrderId())
+            .assessmentSessionId(jpa.getAssessmentSessionId())
+            .practiceSessionId(jpa.getPracticeSessionId())
+            .quotaType(quotaTypeFromString(jpa.getQuotaType()))
+            .costUsd(jpa.getCostUsd())
+            .fxRateUsed(jpa.getFxRateUsed())
+            .actorId(jpa.getActorId())
+            .reason(jpa.getReason())
+            .occurredAt(jpa.getOccurredAt())
+            .build();
     }
 
     public static SchoolBalanceEntryJpaEntity toJpa(SchoolBalanceEntry domain) {
-        return new SchoolBalanceEntryJpaEntity(
-            domain.getId(),
-            domain.getSchoolId(),
-            domain.getSubscriptionId(),
-            valueOf(domain.getEntryType()),
-            domain.getAmountVnd(),
-            domain.getBalanceAfterVnd(),
-            domain.getOrderId(),
-            domain.getAssessmentSessionId(),
-            domain.getPracticeSessionId(),
-            valueOf(domain.getQuotaType()),
-            domain.getCostUsd(),
-            domain.getFxRateUsed(),
-            domain.getActorId(),
-            domain.getReason(),
-            domain.getOccurredAt()
-        );
+        return SchoolBalanceEntryJpaEntity.builder()
+            .id(domain.getId())
+            .schoolId(domain.getSchoolId())
+            .subscriptionId(domain.getSubscriptionId())
+            .entryType(valueOf(domain.getEntryType()))
+            .amountVnd(domain.getAmountVnd())
+            .balanceAfterVnd(domain.getBalanceAfterVnd())
+            .orderId(domain.getOrderId())
+            .assessmentSessionId(domain.getAssessmentSessionId())
+            .practiceSessionId(domain.getPracticeSessionId())
+            .quotaType(valueOf(domain.getQuotaType()))
+            .costUsd(domain.getCostUsd())
+            .fxRateUsed(domain.getFxRateUsed())
+            .actorId(domain.getActorId())
+            .reason(domain.getReason())
+            .occurredAt(domain.getOccurredAt())
+            .build();
     }
 
     private static SchoolBalanceEntryType entryTypeFromString(String entryType) {
@@ -59,7 +59,7 @@ public final class SchoolBalanceEntryMapper {
         }
     }
 
-    // quota_type nullable ở đây (chỉ OVERAGE_CHARGE bắt buộc có) nên null là hợp lệ, không phải lỗi.
+    // quota_type is nullable here (only OVERAGE_CHARGE requires it), so null is valid, not an error.
     private static QuotaType quotaTypeFromString(String quotaType) {
         if (quotaType == null)
             return null;

@@ -12,22 +12,6 @@ public class QuestionBankGrade {
 
     public QuestionBankGrade() {}
 
-    public QuestionBankGrade(UUID id, UUID questionBankId, UUID schoolGradeId, Instant attachedAt,
-            UUID attachedBy) {
-        this.id = id;
-        this.questionBankId = questionBankId;
-        this.schoolGradeId = schoolGradeId;
-        this.attachedAt = attachedAt;
-        this.attachedBy = attachedBy;
-    }
-
-    public QuestionBankGrade(UUID questionBankId, UUID schoolGradeId, Instant attachedAt, UUID attachedBy) {
-        this.questionBankId = questionBankId;
-        this.schoolGradeId = schoolGradeId;
-        this.attachedAt = attachedAt;
-        this.attachedBy = attachedBy;
-    }
-
     public UUID getId() {
         return id;
     }
@@ -68,5 +52,43 @@ public class QuestionBankGrade {
         this.attachedBy = attachedBy;
     }
 
-    
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private final QuestionBankGrade target = new QuestionBankGrade();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder questionBankId(UUID questionBankId) {
+            target.questionBankId = questionBankId;
+            return this;
+        }
+
+        public Builder schoolGradeId(UUID schoolGradeId) {
+            target.schoolGradeId = schoolGradeId;
+            return this;
+        }
+
+        public Builder attachedAt(Instant attachedAt) {
+            target.attachedAt = attachedAt;
+            return this;
+        }
+
+        public Builder attachedBy(UUID attachedBy) {
+            target.attachedBy = attachedBy;
+            return this;
+        }
+
+        public QuestionBankGrade build() {
+            return target;
+        }
+    }
 }

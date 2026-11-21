@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.QuotaPricingCalibrationJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.metering.QuotaPricingCalibrationJpaEntity;
 import java.util.Optional;
 
 import org.springframework.stereotype.Repository;

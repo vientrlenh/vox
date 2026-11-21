@@ -4,60 +4,58 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Sổ audit append-only cho những lần System Admin can thiệp vào vòng đời một gói đăng ký.
+ * Append-only audit ledger of the times the System Admin intervened in the lifecycle of a subscription.
  *
- * <p>Cần một bảng riêng vì ba cột {@code suspendedAt/suspendedReason/suspendedBy} trên
- * SchoolSubscription là TRẠNG THÁI, không phải LỊCH SỬ: gỡ đình chỉ xóa sạch cả ba về null, nên sau
- * đó không còn dấu vết nào cho thấy trường từng bị đình chỉ, ai làm, vì sao. Với một thao tác cưỡng
- * chế nhắm vào khách hàng đang trả tiền thì mất dấu vết là không chấp nhận được.
+ * <p>A separate table is needed because the three columns {@code suspendedAt/suspendedReason/suspendedBy} on
+ * SchoolSubscription are STATE, not HISTORY: lifting a suspension clears all three to null, so afterwards nothing
+ * shows that the school was ever suspended, by whom, or why. For a forced action aimed at a paying customer, losing
+ * the trail is unacceptable.
  *
- * <p>KHÔNG dùng lại financial_events: bảng đó sinh ra cho tiền, có amount_signed/currency/payment_method
- * đều NOT NULL, nên mỗi lần đình chỉ phải nhét vào đó một khoản 0 VND trả bằng "MANUAL" -- ba con số
- * vô nghĩa chỉ để thỏa mãn ràng buộc. Phần TIỀN của bảng đó giờ đã thuộc về orders/payment_records/
- * invoices/school_balance_entries; phần vòng đời thì thuộc về đây.
+ * <p>financial_events is NOT reused: that table was made for money, and its amount_signed/currency/payment_method
+ * are all NOT NULL, so every suspension would have to put a 0 VND payment by "MANUAL" into it -- three meaningless
+ * values just to satisfy constraints. The MONEY part of that table now belongs to orders/payment_records/invoices/
+ * school_balance_entries; the lifecycle part belongs here.
  *
- * <p>Đi theo đúng lối school_debt_event đã mở: mỗi mối quan tâm một bảng sự kiện, cột nào cũng có
- * nghĩa với mọi dòng.
+ * <p>It follows the path school_debt_event opened: one event table per concern, with every column meaningful for
+ * every row.
  */
 public class SchoolSubscriptionEvent {
     private UUID id;
     private UUID schoolId;
     private UUID subscriptionId;
     private SchoolSubscriptionEventType eventType;
-    /** Người thực hiện -- luôn là System Admin, không bao giờ null. */
+    /** The person who acted -- always a System Admin, never null. */
     private UUID actorId;
-    /** Bắt buộc với SUSPENDED; với UNSUSPENDED là ghi chú tùy chọn. */
+    /** Required for SUSPENDED; for UNSUSPENDED it is an optional note. */
     private String reason;
     private Instant occurredAt;
 
     public SchoolSubscriptionEvent() {}
-
-    public SchoolSubscriptionEvent(UUID id, UUID schoolId, UUID subscriptionId,
-            SchoolSubscriptionEventType eventType, UUID actorId, String reason, Instant occurredAt) {
-        this.id = id;
-        this.schoolId = schoolId;
-        this.subscriptionId = subscriptionId;
-        this.eventType = eventType;
-        this.actorId = actorId;
-        this.reason = reason;
-        this.occurredAt = occurredAt;
-    }
-
-    public SchoolSubscriptionEvent(UUID schoolId, UUID subscriptionId,
-            SchoolSubscriptionEventType eventType, UUID actorId, String reason, Instant occurredAt) {
-        this(null, schoolId, subscriptionId, eventType, actorId, reason, occurredAt);
-    }
+
+
 
     public static SchoolSubscriptionEvent suspended(UUID schoolId, UUID subscriptionId, UUID actorId,
             String reason, Instant now) {
-        return new SchoolSubscriptionEvent(schoolId, subscriptionId,
-            SchoolSubscriptionEventType.SUSPENDED, actorId, reason, now);
+        return builder()
+            .schoolId(schoolId)
+            .subscriptionId(subscriptionId)
+            .eventType(SchoolSubscriptionEventType.SUSPENDED)
+            .actorId(actorId)
+            .reason(reason)
+            .occurredAt(now)
+            .build();
     }
 
     public static SchoolSubscriptionEvent unsuspended(UUID schoolId, UUID subscriptionId, UUID actorId,
             String note, Instant now) {
-        return new SchoolSubscriptionEvent(schoolId, subscriptionId,
-            SchoolSubscriptionEventType.UNSUSPENDED, actorId, note, now);
+        return builder()
+            .schoolId(schoolId)
+            .subscriptionId(subscriptionId)
+            .eventType(SchoolSubscriptionEventType.UNSUSPENDED)
+            .actorId(actorId)
+            .reason(note)
+            .occurredAt(now)
+            .build();
     }
 
     public UUID getId() {
@@ -114,5 +112,57 @@ public class SchoolSubscriptionEvent {
 
     public void setOccurredAt(Instant occurredAt) {
         this.occurredAt = occurredAt;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final SchoolSubscriptionEvent target = new SchoolSubscriptionEvent();
+
+        private Builder() {
+        }
+
+        public Builder id(UUID id) {
+            target.id = id;
+            return this;
+        }
+
+        public Builder schoolId(UUID schoolId) {
+            target.schoolId = schoolId;
+            return this;
+        }
+
+        public Builder subscriptionId(UUID subscriptionId) {
+            target.subscriptionId = subscriptionId;
+            return this;
+        }
+
+        public Builder eventType(SchoolSubscriptionEventType eventType) {
+            target.eventType = eventType;
+            return this;
+        }
+
+        public Builder actorId(UUID actorId) {
+            target.actorId = actorId;
+            return this;
+        }
+
+        public Builder reason(String reason) {
+            target.reason = reason;
+            return this;
+        }
+
+        public Builder occurredAt(Instant occurredAt) {
+            target.occurredAt = occurredAt;
+            return this;
+        }
+
+        public SchoolSubscriptionEvent build() {
+            return target;
+        }
+
     }
 }

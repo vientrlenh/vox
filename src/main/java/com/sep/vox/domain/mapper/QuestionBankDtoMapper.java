@@ -21,8 +21,8 @@ public class QuestionBankDtoMapper {
             domain.getStatus().name(),
             domain.getCreatedAt(),
             domain.getUpdatedAt(),
-            domain.getCreatedBy(),
-            domain.getUpdatedBy()
+            domain.createdByUserId().orElse(null),
+            domain.updatedByUserId().orElse(null)
         );
     }
 

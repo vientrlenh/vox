@@ -1,56 +1,16 @@
 package com.sep.vox.domain.model.framework;
 
-import java.time.Instant;
+import com.sep.vox.domain.model.BaseModel;
 import java.util.UUID;
 
-public class FrameworkCriterion {
-    private UUID id;
+public class FrameworkCriterion extends BaseModel {
     private UUID frameworkVersionId;
     private String code;
     private String name;
     private String description;
     private int order;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private UUID createdBy;
-    private UUID updatedBy;
 
     public FrameworkCriterion() {}
-
-    public FrameworkCriterion(UUID id, UUID frameworkVersionId, String code, String name, String description, int order, 
-            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.id = id;
-        this.frameworkVersionId = frameworkVersionId;
-        this.code = code;
-        this.name = name;
-        this.description = description; 
-        this.order = order;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public FrameworkCriterion(UUID frameworkVersionId, String code, String name, String description, int order, 
-            Instant createdAt, Instant updatedAt, UUID createdBy, UUID updatedBy) {
-        this.frameworkVersionId = frameworkVersionId;
-        this.code = code;
-        this.name = name;
-        this.description = description; 
-        this.order = order;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.createdBy = createdBy;
-        this.updatedBy = updatedBy;
-    }
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
 
     public UUID getFrameworkVersionId() {
         return frameworkVersionId;
@@ -84,38 +44,6 @@ public class FrameworkCriterion {
         this.description = description;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public UUID getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(UUID createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    public UUID getUpdatedBy() {
-        return updatedBy;
-    }
-
-    public void setUpdatedBy(UUID updatedBy) {
-        this.updatedBy = updatedBy;
-    }
-
     public int getOrder() {
         return order;
     }
@@ -124,5 +52,44 @@ public class FrameworkCriterion {
         this.order = order;
     }
 
-    
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder extends BaseModel.Builder<FrameworkCriterion, Builder> {
+
+        private Builder() {
+            super(new FrameworkCriterion());
+        }
+
+        @Override
+        protected Builder self() {
+            return this;
+        }
+
+        public Builder frameworkVersionId(UUID frameworkVersionId) {
+            target.frameworkVersionId = frameworkVersionId;
+            return this;
+        }
+
+        public Builder code(String code) {
+            target.code = code;
+            return this;
+        }
+
+        public Builder name(String name) {
+            target.name = name;
+            return this;
+        }
+
+        public Builder description(String description) {
+            target.description = description;
+            return this;
+        }
+
+        public Builder order(int order) {
+            target.order = order;
+            return this;
+        }
+    }
 }

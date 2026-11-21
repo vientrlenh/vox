@@ -51,16 +51,16 @@ public class ManageInterestDimensionUseCase {
             throw new DuplicatedException("Mã chiều sở thích đã tồn tại: " + code);
         }
         requireLabel(input.label());
-        InterestDimensionResponses.InterestDimensionResponse saved = toResponse(repository.save(new InterestDimension(
-            code,
-            input.label().strip(),
-            input.description() == null ? null : input.description().strip(),
-            input.active() == null || input.active(),
-            input.quizEligible() == null || input.quizEligible(),
-            input.displayOrder() == null ? 0 : input.displayOrder(),
-            null,
-            null
-        )));
+        InterestDimensionResponses.InterestDimensionResponse saved = toResponse(repository.save(InterestDimension.builder()
+                .code(code)
+                .label(input.label().strip())
+                .description(input.description() == null ? null : input.description().strip())
+                .active(input.active() == null || input.active())
+                .quizEligible(input.quizEligible() == null || input.quizEligible())
+                .displayOrder(input.displayOrder() == null ? 0 : input.displayOrder())
+                .createdAt(null)
+                .updatedAt(null)
+                .build()));
         // Thêm chiều KHÔNG tự làm nó xuất hiện trong quiz: mọi triplet đã có đều gắn 3 chiều
         // cũ. Không sinh bổ sung thì chiều mới không bao giờ được hỏi -> điểm luôn rỗng.
         // Chạy nền để admin không phải chờ LLM.
@@ -77,16 +77,16 @@ public class ManageInterestDimensionUseCase {
             .orElseThrow(() -> new NotFoundException("Không tìm thấy chiều sở thích: " + code));
         // Mã là khoá và đã được gán vào practice_topics/dimension_interest_scores -- không cho
         // đổi, chỉ sửa phần hiển thị và cờ. Muốn đổi mã thì tạo mới rồi tắt cái cũ.
-        InterestDimensionResponses.InterestDimensionResponse saved = toResponse(repository.save(new InterestDimension(
-            existing.getCode(),
-            input.label() == null ? existing.getLabel() : input.label().strip(),
-            input.description() == null ? existing.getDescription() : input.description().strip(),
-            input.active() == null ? existing.isActive() : input.active(),
-            input.quizEligible() == null ? existing.isQuizEligible() : input.quizEligible(),
-            input.displayOrder() == null ? existing.getDisplayOrder() : input.displayOrder(),
-            existing.getCreatedAt(),
-            null
-        )));
+        InterestDimensionResponses.InterestDimensionResponse saved = toResponse(repository.save(InterestDimension.builder()
+                .code(existing.getCode())
+                .label(input.label() == null ? existing.getLabel() : input.label().strip())
+                .description(input.description() == null ? existing.getDescription() : input.description().strip())
+                .active(input.active() == null ? existing.isActive() : input.active())
+                .quizEligible(input.quizEligible() == null ? existing.isQuizEligible() : input.quizEligible())
+                .displayOrder(input.displayOrder() == null ? existing.getDisplayOrder() : input.displayOrder())
+                .createdAt(existing.getCreatedAt())
+                .updatedAt(null)
+                .build()));
         // Bật lại một chiều từng tắt cũng cần kiểm tra phủ: trong lúc nó tắt, kho có thể đã
         // được sinh thêm mà bỏ qua chiều này.
         boolean becameUsable = saved.active() && saved.quizEligible()

@@ -228,7 +228,13 @@ class AssessmentMemberManagementTests {
     }
 
     private void givenExistingMember(AssessmentMemberRole role) {
-        AssessmentMember member = new AssessmentMember(ASSESSMENT_ID, TARGET_USER_ID, role, Instant.now(), CALLER_ID);
+        AssessmentMember member = AssessmentMember.builder()
+                .assessmentId(ASSESSMENT_ID)
+                .userId(TARGET_USER_ID)
+                .role(role)
+                .grantedAt(Instant.now())
+                .grantedBy(CALLER_ID)
+                .build();
         member.setId(MEMBER_ID);
         when(assessmentMemberRepository.findById(MEMBER_ID)).thenReturn(Optional.of(member));
     }

@@ -43,7 +43,7 @@ public class SetUpPasswordUseCase implements IUseCase<SetUpPasswordCommand, Void
         String passwordHash = passwordEncoderPort.hash(input.password());
         User user = userRepository.findById(input.userId())
             .orElseThrow(() -> new NotFoundException("Không tỉm thấy người dùng"));
-        user.updatePasswordAndActivate(passwordHash, now);
+        user.updatePasswordAndActivate(passwordHash);
         userRepository.save(user);
 
         return null;

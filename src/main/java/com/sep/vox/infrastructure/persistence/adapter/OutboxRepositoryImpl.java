@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.OutboxJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.outbox.OutboxJpaEntity;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;

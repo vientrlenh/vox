@@ -105,32 +105,32 @@ class ViewImportSessionUseCaseTests {
     }
 
     private static ImportSession session(UUID id, UUID schoolId) {
-        return new ImportSession(
-            id,
-            schoolId,
-            ImportType.SCHOOL_CLASS,
-            "classes.csv",
-            "[]",
-            "{}",
-            null,
-            0L,
-            0L,
-            0L,
-            0L,
-            1L,
-            null,
-            ImportSessionStatus.PREVIEWED,
-            null,
-            Instant.now().plus(1, ChronoUnit.DAYS), 
-            null, 
-            null, 
-            null, 
-            0, 
-            Instant.now(),
-            Instant.now(),
-            UUID.randomUUID(),
-            UUID.randomUUID()
-        );
+        return ImportSession.builder()
+            .id(id)
+            .schoolId(schoolId)
+            .type(ImportType.SCHOOL_CLASS)
+            .fileName("classes.csv")
+            .originalHeadersJson("[]")
+            .suggestedMappingJson("{}")
+            .confirmedMappingJson(null)
+            .validRows(0L)
+            .invalidRows(0L)
+            .importedRows(0L)
+            .skippedRows(0L)
+            .totalRows(1L)
+            .failureReason(null)
+            .status(ImportSessionStatus.PREVIEWED)
+            .importedEntityId(null)
+            .expiresAt(Instant.now().plus(1, ChronoUnit.DAYS))
+            .claimedAt(null)
+            .claimedBy(null)
+            .leaseExpiresAt(null)
+            .attempts(0)
+            .createdAt(Instant.now())
+            .updatedAt(Instant.now())
+            .createdBy(UUID.randomUUID().toString())
+            .updatedBy(UUID.randomUUID().toString())
+            .build();
     }
 
     private User activeUser(UUID id, UUID schoolId) {
@@ -138,7 +138,12 @@ class ViewImportSessionUseCaseTests {
         user.setId(id);
         user.setStatus(UserStatus.ACTIVE);
         when(schoolUserRepository.findByUserId(id)).thenReturn(
-            schoolId != null ? Optional.of(new SchoolUser(schoolId, id, java.time.Instant.now(), java.time.Instant.now().plus(36500, ChronoUnit.DAYS))) : Optional.empty()
+            schoolId != null ? Optional.of(SchoolUser.builder()
+                .schoolId(schoolId)
+                .userId(id)
+                .startDate(java.time.Instant.now())
+                .endDate(java.time.Instant.now().plus(36500, ChronoUnit.DAYS))
+                .build()) : Optional.empty()
         );
         return user;
     }

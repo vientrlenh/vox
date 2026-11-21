@@ -156,22 +156,20 @@ public class BulkFinalizeAssessmentResultsUseCase
             if (result.getReleasedAt() == null) {
                 result.setReleasedAt(now);
             }
-            result.setUpdatedAt(now);
-            result.setUpdatedBy(currentUserId);
             assessmentCandidateResultRepository.save(result);
             released.add(result);
 
-            histories.add(new AssessmentResultStatusHistory(
-                result.getId(),
-                AssessmentCandidateResultStatus.PENDING_REVIEW,
-                AssessmentCandidateResultStatus.RELEASED,
-                result.getTotalScore(),
-                result.getTotalScore(),
-                ResultStatusChangeSource.ADMIN_BULK_FINALIZE,
-                currentUserId,
-                BULK_AI_REASON,
-                now
-            ));
+            histories.add(AssessmentResultStatusHistory.builder()
+                    .candidateResultId(result.getId())
+                    .fromStatus(AssessmentCandidateResultStatus.PENDING_REVIEW)
+                    .toStatus(AssessmentCandidateResultStatus.RELEASED)
+                    .scoreBefore(result.getTotalScore())
+                    .scoreAfter(result.getTotalScore())
+                    .source(ResultStatusChangeSource.ADMIN_BULK_FINALIZE)
+                    .actorId(currentUserId)
+                    .reason(BULK_AI_REASON)
+                    .createdAt(now)
+                    .build());
         }
 
         closeSettledAssignments(released, now);

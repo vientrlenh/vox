@@ -2,7 +2,6 @@ package com.sep.vox.application.port.input.usecase.question;
 
 import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionBank;
-import java.time.Instant;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -74,8 +73,6 @@ public class UpdateQuestionStatusUseCase implements IUseCase<UpdateQuestionStatu
         }
 
         QuestionStatusTransition.apply(question, action);
-        question.setUpdatedAt(Instant.now());
-        question.setUpdatedBy(actor.userId());
         Question saved = questionRepository.save(question);
         return QuestionDtoMapper.toQuestionDto(saved);
     }

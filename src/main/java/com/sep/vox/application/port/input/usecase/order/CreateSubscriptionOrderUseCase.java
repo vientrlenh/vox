@@ -28,11 +28,12 @@ import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 
 /**
- * Đặt đơn mua một CHU KỲ gói cho trường. Thay cho SubmitRequestUseCase cũ.
+ * Places an order to buy ONE BILLING PERIOD of a plan for a school. Replaces the old SubmitRequestUseCase.
  *
- * <p>Use case này KHÔNG cấp gói. Nó chỉ ghi nhận ý định mua ở trạng thái PENDING; gói chỉ thực sự
- * được tạo khi tiền về (xem OrderSettlementService). Đây là khác biệt lớn nhất so với luồng cũ, nơi
- * ApproveRequestUseCase tạo thẳng subscription ACTIVE mà không có cổng nào xác nhận đã thu được tiền.
+ * <p>This use case does NOT grant the plan. It only records the intent to buy in the PENDING state; the subscription is
+ * only really created when the money arrives (see OrderSettlementService). This is the biggest difference from the old
+ * flow, where ApproveRequestUseCase created an ACTIVE subscription directly without any gateway confirming the money had
+ * been collected.
  */
 @Service
 public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscriptionOrderCommand, UUID> {
@@ -92,9 +93,9 @@ public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscripti
             throw new IllegalStateException("Gói này hiện không được mở bán.");
         }
 
-        // Chặn TRƯỚC cho ra thông báo đọc được. Nếu bỏ qua, uq_orders_one_open_subscription_order vẫn
-        // chặn nhưng dưới dạng DataIntegrityViolationException -- trường nhận lỗi 500 thay vì biết
-        // mình đang có một đơn dở dang cần trả hoặc hủy.
+        // Block BEFORE the database does, to give a readable message. If skipped, uq_orders_one_open_subscription_order still
+        // blocks but as a DataIntegrityViolationException -- the school gets a 500 error instead of learning that it has an
+        // unfinished order to pay or cancel.
         if (orderRepository.findOpenSubscriptionOrderBySchoolId(schoolId).isPresent()) {
             throw new IllegalStateException(
                 "Trường đang có một đơn đăng ký chờ thanh toán, hãy hoàn tất hoặc hủy đơn đó trước khi đặt đơn mới.");
@@ -102,13 +103,14 @@ public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscripti
 
         Instant now = Instant.now();
 
-        // Tối đa MỘT kỳ được xếp hàng chờ. Không chặn gia hạn sớm -- trường vẫn mua trước được ngay
-        // ngày đầu, việc phải làm khi ngân sách phải tiêu trong năm tài chính -- chỉ chặn việc xếp
-        // chồng nhiều kỳ.
+        // At most ONE period may be queued. Early renewal is not blocked -- a school can still buy ahead on the very first day,
+        // which is what it needs to do when budget has to be spent within the financial year -- only stacking several periods is
+        // blocked.
         //
-        // Cố ý KHÔNG dùng ngưỡng kiểu "phải dùng hết 80% mới cho gia hạn": ngưỡng đó nhắm sai đích.
-        // Nó không ngăn xếp chồng (vẫn xếp được, chỉ muộn hơn) mà lại chặn đúng trường có tiền muốn
-        // trả sớm. Chặn theo SỐ KỲ ĐANG CHỜ mới đúng thứ cần chặn: giữ rủi ro khóa giá ở đúng một kỳ.
+        // DELIBERATELY not a threshold like "must use 80% before renewal is allowed": that threshold aims at the wrong target. It
+        // does not prevent stacking (it can still be stacked, just later) yet it blocks exactly the schools that have money and
+        // want to pay early. Blocking by the NUMBER OF WAITING PERIODS is what really needs blocking: it keeps the price-lock
+        // risk to exactly one period.
         if (hasQueuedPeriod(schoolId, now)) {
             throw new IllegalStateException(
                 "Trường đã có một kỳ đã thanh toán đang chờ tới ngày chạy, hãy đợi kỳ đó bắt đầu rồi mới mua tiếp.");
@@ -116,37 +118,36 @@ public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscripti
 
         Order savedOrder = orderRepository.save(buildOrder(schoolId, plan, now));
 
-        // Đơn gói luôn có ĐÚNG MỘT dòng: mỗi đơn mua một chu kỳ của một gói. Dòng này là chỗ DUY NHẤT
-        // ghi lại gói nào được mua (orders không có cột plan_id) nên settlement đọc nó để biết cấp gì.
-        orderItemRepository.save(new OrderItem(
-            savedOrder.getId(),
-            OrderItemType.SUBSCRIPTION,
-            plan.getId(),
-            plan.getPriceVnd(),
-            plan.getPriceVnd(),
-            1
-        ));
+        // A subscription order always has EXACTLY ONE line: each order buys one period of one plan. This line is the ONLY place
+        // that records which plan was bought (orders has no plan_id column), so settlement reads it to know what to grant.
+        orderItemRepository.save(OrderItem.builder()
+            .orderId(savedOrder.getId())
+            .type(OrderItemType.SUBSCRIPTION)
+            .itemId(plan.getId())
+            .unitPriceVnd(plan.getPriceVnd())
+            .amountVnd(plan.getPriceVnd())
+            .quantity(1)
+            .build());
 
         return savedOrder.getId();
     }
 
     /**
-     * NÂNG CẤP khi trường đang chạy một gói KHÁC, còn lại là SUBSCRIPTION_REQUEST -- gồm cả đăng ký
-     * lần đầu lẫn gia hạn đúng gói đang dùng.
+     * An UPGRADE when the school is running a DIFFERENT plan, otherwise SUBSCRIPTION_REQUEST -- covering both first-time
+     * registration and renewal of the plan currently in use.
      *
-     * <p>Gia hạn cố ý KHÔNG có OrderType riêng: settlement của nó giống hệt đăng ký lần đầu (tạo kỳ
-     * mới + bộ hạn mức mới), chỉ khác mốc bắt đầu, mà mốc đó suy ra được từ dữ liệu chứ không cần
-     * nhãn trên đơn. Nâng cấp thì KHÁC thật: kỳ đang chạy bị cắt ngang và có khoản bù, nên nó xứng
-     * đáng một kiểu riêng.
+     * <p>Renewal DELIBERATELY has no OrderType of its own: its settlement is identical to first-time registration (create a
+     * new period + a new quota set), differing only in the start point, and that point can be derived from the data without
+     * needing a label on the order. An upgrade really is DIFFERENT: the running period is cut short and there is a credit,
+     * so it deserves a type of its own.
      */
     private Order buildOrder(UUID schoolId, SubscriptionPlan plan, Instant now) {
-        UUID createdBy = userContextPort.getCurrentAuthenticatedUserId();
         SchoolSubscription inForce = schoolSubscriptionRepository.findActiveBySchoolId(schoolId).orElse(null);
 
         if (inForce != null && isUpgradeTo(plan, inForce)) {
-            return upgradeOrder(schoolId, plan, now, createdBy, inForce);
+            return upgradeOrder(schoolId, plan, now, inForce);
         }
-        return chainedOrder(schoolId, plan, now, createdBy);
+        return chainedOrder(schoolId, plan, now);
     }
 
     /**
@@ -171,28 +172,27 @@ public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscripti
             .orElse(false);
     }
 
-    private Order upgradeOrder(UUID schoolId, SubscriptionPlan plan, Instant now, UUID createdBy,
-            SchoolSubscription inForce) {
+    private Order upgradeOrder(UUID schoolId, SubscriptionPlan plan, Instant now, SchoolSubscription inForce) {
         upgradePolicyService.requireUpgradeEligible(inForce, now);
 
-        // Bù cho MỌI kỳ chưa kết thúc, vì settlement sẽ đóng hết -- kể cả kỳ đã trả tiền đang xếp
-        // hàng chờ.
+        // Credit EVERY period that has not finished, because settlement will close them all -- including a paid period waiting in
+        // the queue.
         //
-        // Tính ở ĐÂY, lúc đặt đơn, chứ không phải lúc settlement: trường phải nhìn thấy số phải trả
-        // trước khi bấm thanh toán, và cổng thu đúng total của đơn. Hệ quả là đơn nằm chờ càng lâu
-        // thì khoản bù càng rộng tay so với thực tế lúc đổi gói (tối đa lệch một ngày, theo
-        // Order.PENDING_TTL) -- chấp nhận lệch về phía có lợi cho trường, vì tính lại lúc settlement
-        // sẽ làm số tiền đã thu không còn khớp đơn, và đó mới là thứ không sửa được.
+        // Computed HERE, when the order is placed, not at settlement: the school must see the amount to pay before pressing pay,
+        // and the gateway collects exactly the order's total. The consequence is that the longer the order waits, the more
+        // generous the credit is compared with the moment of the plan change (off by at most one day, per Order.PENDING_TTL) --
+        // accepted as a deviation in the school's favour, because recomputing at settlement would make the money already collected
+        // no longer match the order, and that is the thing that cannot be fixed.
         BigDecimal unusedCredit = upgradePolicyService.calculateUnusedCredit(
             schoolSubscriptionRepository.findUnfinishedBySchoolId(schoolId, now), plan.getPriceVnd(), now);
 
-        // Phí dịch vụ cộng thêm (từ phần tiền sau trừ)
+        // Service fee added on top (of the amount after the credit)
         BigDecimal serviceFeeVnd = plan.getPriceVnd().subtract(unusedCredit)
             .multiply(serviceFeePort.serviceFeeRatio())
             .setScale(0, RoundingMode.HALF_UP);
 
         return Order.forSubscriptionUpgrade(schoolId,
-            "Nâng cấp lên " + plan.getName(), plan.getPriceVnd(), unusedCredit, serviceFeeVnd, now, createdBy);
+            "Nâng cấp lên " + plan.getName(), plan.getPriceVnd(), unusedCredit, serviceFeeVnd, now);
     }
 
     /**
@@ -207,10 +207,10 @@ public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscripti
         return unfinished - inForce > 0;
     }
 
-    /** Đăng ký mới, gia hạn, hoặc chuyển sang gói rẻ hơn -- tất cả đều nối tiếp kỳ đang chạy. */
-    private Order chainedOrder(UUID schoolId, SubscriptionPlan plan, Instant now, UUID createdBy) {
+    /** A new registration, a renewal, or a switch to a cheaper plan -- all of them chain after the running period. */
+    private Order chainedOrder(UUID schoolId, SubscriptionPlan plan, Instant now) {
         BigDecimal serviceFeeVnd = plan.getPriceVnd().multiply(serviceFeePort.serviceFeeRatio()).setScale(0, RoundingMode.HALF_UP);
         return Order.forSubscription(schoolId, OrderType.SUBSCRIPTION_REQUEST,
-            "Đăng ký " + plan.getName(), plan.getPriceVnd(), serviceFeeVnd, now, createdBy);
+            "Đăng ký " + plan.getName(), plan.getPriceVnd(), serviceFeeVnd, now);
     }
 }

@@ -6,7 +6,7 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.sep.vox.infrastructure.persistence.entity.AssessmentRecordingJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentRecordingJpaEntity;
 
 public interface SpringDataAssessmentRecordingRepository extends JpaRepository<AssessmentRecordingJpaEntity, UUID> {
     List<AssessmentRecordingJpaEntity> findByAssessmentSessionId(UUID assessmentSessionId);

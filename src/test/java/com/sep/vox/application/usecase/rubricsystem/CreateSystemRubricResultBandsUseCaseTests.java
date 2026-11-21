@@ -58,13 +58,32 @@ public class CreateSystemRubricResultBandsUseCaseTests {
                 rubricResultBandRepository, rubricVersionRepository, rubricRepository,
                 userContextPort, userRepository);
 
-        RubricVersion version = new RubricVersion(versionId, rubricId, 1, "V1", "Version 1", "Desc", RubricStatus.DRAFT,
-                now, now.plus(30, ChronoUnit.DAYS), BigDecimal.valueOf(0), BigDecimal.valueOf(10),
-                RubricTotalScoreMethod.WEIGHTED_AVERAGE, now, now, userId, userId);
+        RubricVersion version = RubricVersion.builder()
+                .id(versionId)
+                .rubricId(rubricId)
+                .version(1)
+                .code("V1")
+                .name("Version 1")
+                .description("Desc")
+                .status(RubricStatus.DRAFT)
+                .effectiveFrom(now)
+                .effectiveTo(now.plus(30, ChronoUnit.DAYS))
+                .scoringScaleMin(BigDecimal.valueOf(0))
+                .scoringScaleMax(BigDecimal.valueOf(10))
+                .totalScoreMethod(RubricTotalScoreMethod.WEIGHTED_AVERAGE)
+                .build();
         when(rubricVersionRepository.findById(versionId)).thenReturn(Optional.of(version));
 
-        Rubric rubric = new Rubric(rubricId, UUID.randomUUID(), UUID.randomUUID(), "R1", "Rubric 1", "Desc",
-                RubricOwnerType.SYSTEM, null);
+        Rubric rubric = Rubric.builder()
+                .id(rubricId)
+                .languageId(UUID.randomUUID())
+                .frameworkId(UUID.randomUUID())
+                .code("R1")
+                .name("Rubric 1")
+                .description("Desc")
+                .ownerType(RubricOwnerType.SYSTEM)
+                .schoolId(null)
+                .build();
         when(rubricRepository.findById(rubricId)).thenReturn(Optional.of(rubric));
 
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
@@ -106,9 +125,20 @@ public class CreateSystemRubricResultBandsUseCaseTests {
 
     @Test
     void should_throw_when_version_not_draft() {
-        RubricVersion publishedVersion = new RubricVersion(versionId, rubricId, 1, "V1", "Version 1", "Desc",
-                RubricStatus.PUBLISHED, now, now.plus(30, ChronoUnit.DAYS), BigDecimal.valueOf(0), BigDecimal.valueOf(10),
-                RubricTotalScoreMethod.WEIGHTED_AVERAGE, now, now, userId, userId);
+        RubricVersion publishedVersion = RubricVersion.builder()
+                .id(versionId)
+                .rubricId(rubricId)
+                .version(1)
+                .code("V1")
+                .name("Version 1")
+                .description("Desc")
+                .status(RubricStatus.PUBLISHED)
+                .effectiveFrom(now)
+                .effectiveTo(now.plus(30, ChronoUnit.DAYS))
+                .scoringScaleMin(BigDecimal.valueOf(0))
+                .scoringScaleMax(BigDecimal.valueOf(10))
+                .totalScoreMethod(RubricTotalScoreMethod.WEIGHTED_AVERAGE)
+                .build();
         when(rubricVersionRepository.findById(versionId)).thenReturn(Optional.of(publishedVersion));
 
         CreateSystemRubricResultBandsCommand command = new CreateSystemRubricResultBandsCommand(versionId, fourLevels());
@@ -118,8 +148,16 @@ public class CreateSystemRubricResultBandsUseCaseTests {
 
     @Test
     void should_throw_forbidden_when_rubric_belongs_to_school() {
-        Rubric schoolRubric = new Rubric(rubricId, UUID.randomUUID(), UUID.randomUUID(), "R1", "Rubric 1", "Desc",
-                RubricOwnerType.SCHOOL, UUID.randomUUID());
+        Rubric schoolRubric = Rubric.builder()
+                .id(rubricId)
+                .languageId(UUID.randomUUID())
+                .frameworkId(UUID.randomUUID())
+                .code("R1")
+                .name("Rubric 1")
+                .description("Desc")
+                .ownerType(RubricOwnerType.SCHOOL)
+                .schoolId(UUID.randomUUID())
+                .build();
         when(rubricRepository.findById(rubricId)).thenReturn(Optional.of(schoolRubric));
 
         CreateSystemRubricResultBandsCommand command = new CreateSystemRubricResultBandsCommand(versionId, fourLevels());

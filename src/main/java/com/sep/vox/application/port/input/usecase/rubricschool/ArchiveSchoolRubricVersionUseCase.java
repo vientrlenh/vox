@@ -106,8 +106,6 @@ public class ArchiveSchoolRubricVersionUseCase implements IUseCase<ArchiveSchool
         version.setStatus(RubricStatus.ARCHIVED);
         // Không cho effectiveTo lùi về trước effectiveFrom nếu version chưa tới ngày hiệu lực
         version.setEffectiveTo(now.isBefore(version.getEffectiveFrom()) ? version.getEffectiveFrom() : now);
-        version.setUpdatedAt(now);
-        version.setUpdatedBy(currentUserId);
 
         RubricVersion saved = rubricVersionRepository.save(version);
         return saved.getId();

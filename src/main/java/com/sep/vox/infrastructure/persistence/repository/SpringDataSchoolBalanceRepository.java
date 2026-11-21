@@ -10,7 +10,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.SchoolBalanceJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.school.SchoolBalanceJpaEntity;
 
 import jakarta.persistence.LockModeType;
 

@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.RoleJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.user.RoleJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;

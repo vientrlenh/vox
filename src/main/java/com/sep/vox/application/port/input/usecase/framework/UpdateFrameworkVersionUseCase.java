@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
-import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -10,7 +9,6 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateFrameworkVersionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
@@ -19,13 +17,10 @@ import com.sep.vox.domain.repository.FrameworkVersionRepository;
 public class UpdateFrameworkVersionUseCase implements IUseCase<UpdateFrameworkVersionCommand, UUID> {
 
     private final FrameworkVersionRepository frameworkVersionRepository;
-    private final UserContextPort userContextPort;
 
     public UpdateFrameworkVersionUseCase(
-            FrameworkVersionRepository frameworkVersionRepository,
-            UserContextPort userContextPort) {
+            FrameworkVersionRepository frameworkVersionRepository) {
         this.frameworkVersionRepository = frameworkVersionRepository;
-        this.userContextPort = userContextPort;
     }
 
     @Override
@@ -45,15 +40,19 @@ public class UpdateFrameworkVersionUseCase implements IUseCase<UpdateFrameworkVe
     }
 
     private FrameworkVersion updateVersion(UpdateFrameworkVersionCommand input, FrameworkVersion version) {
-        return new FrameworkVersion(
-            version.getId(), version.getFrameworkId(),
-            StringNormalization.normalizeCode(input.code()),
-            StringNormalization.trimAndCollapseSpaces(input.name()),
-            StringNormalization.trimAndCollapseSpaces(input.description()),
-            version.getVersion(), input.effectiveFrom(), input.effectiveTo(),
-            version.getStatus(), 
-            version.getCreatedAt(), Instant.now(),
-            version.getCreatedBy(), userContextPort.getCurrentAuthenticatedUserId());
+        return FrameworkVersion.builder()
+            .id(version.getId())
+            .frameworkId(version.getFrameworkId())
+            .code(StringNormalization.normalizeCode(input.code()))
+            .name(StringNormalization.trimAndCollapseSpaces(input.name()))
+            .description(StringNormalization.trimAndCollapseSpaces(input.description()))
+            .version(version.getVersion())
+            .effectiveFrom(input.effectiveFrom())
+            .effectiveTo(input.effectiveTo())
+            .status(version.getStatus())
+            .createdAt(version.getCreatedAt())
+            .createdBy(version.getCreatedBy())
+            .build();
     }
 
     private void checkValidRequest(UpdateFrameworkVersionCommand input, FrameworkVersion version) {

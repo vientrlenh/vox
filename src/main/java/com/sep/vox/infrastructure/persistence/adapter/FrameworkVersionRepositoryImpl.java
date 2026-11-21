@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.FrameworkVersionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.framework.FrameworkVersionJpaEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;

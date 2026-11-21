@@ -230,21 +230,20 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
     private UUID materializeAssessmentTopic(QuestionTopicInfo row) {
         return practiceTopicRepository.findBySourceQuestionTopicId(row.getId())
             .map(existing -> existing.getId())
-            .orElseGet(() -> practiceTopicRepository.save(new PracticeTopic(
-                null,
-                row.getName(),
-                TopicSuggestionService.normalize(row.getName()),
-                row.getDescription(),
-                "ASSESSMENT_QUESTION_BANK",
-                ASSESSMENT_TOPIC_INTEREST_DIMENSION,
-                ASSESSMENT_TOPIC_CURRICULUM_GROUP,
-                true,
-                Instant.now(),
-                row.getId(),
-                // Chủ đề lấy từ ngân hàng đề của trường: không có ai gán khung thời gian, và
-                // đoán từ tên chủ đề thì không có cơ sở. MIXED để thang xoay vòng tự rải thì.
-                TensePolicy.AFFORDANCE_MIXED
-            )).getId());
+            .orElseGet(() -> practiceTopicRepository.save(PracticeTopic.builder()
+                .name(row.getName())
+                .normalizedName(TopicSuggestionService.normalize(row.getName()))
+                .description(row.getDescription())
+                .source("ASSESSMENT_QUESTION_BANK")
+                .interestDimension(ASSESSMENT_TOPIC_INTEREST_DIMENSION)
+                .curriculumGroup(ASSESSMENT_TOPIC_CURRICULUM_GROUP)
+                .active(true)
+                .createdAt(Instant.now())
+                .sourceQuestionTopicId(row.getId())
+                // The topic comes from the school's question bank: nobody assigned a tense, and guessing from the
+                // topic name has no basis. MIXED lets the rotating scale spread the tenses itself.
+                .temporalAffordance(TensePolicy.AFFORDANCE_MIXED)
+                .build()).getId());
     }
 
     private boolean explorationAllowed(UUID studentId) {

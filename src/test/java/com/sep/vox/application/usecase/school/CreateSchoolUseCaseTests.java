@@ -8,7 +8,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
@@ -22,7 +21,6 @@ import com.sep.vox.application.port.input.command.CreateSchoolCommand;
 import com.sep.vox.application.port.input.command.ProvisionSchoolCommand;
 import com.sep.vox.application.port.input.service.ProvisionSchoolService;
 import com.sep.vox.application.port.input.usecase.school.CreateSchoolUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.school.SchoolDirectory;
 import com.sep.vox.domain.repository.SchoolDirectoryRepository;
 
@@ -35,14 +33,12 @@ class CreateSchoolUseCaseTests {
 
     private SchoolDirectoryRepository schoolDirectoryRepository;
     private ProvisionSchoolService provisionSchoolService;
-    private UserContextPort userContextPort;
     private CreateSchoolUseCase useCase;
 
     private static final String ALLOWED_AVATAR_HOSTS = "firebasestorage.googleapis.com";
     private static final String VALID_AVATAR_URL =
         "https://firebasestorage.googleapis.com/v0/b/vox.appspot.com/o/avatars%2Fa%2Fb.png?alt=media";
 
-    private final UUID currentUserId = UUID.randomUUID();
     private final UUID directoryId = UUID.randomUUID();
     private final UUID createdSchoolId = UUID.randomUUID();
 
@@ -50,22 +46,24 @@ class CreateSchoolUseCaseTests {
     void setUp() {
         schoolDirectoryRepository = mock(SchoolDirectoryRepository.class);
         provisionSchoolService = mock(ProvisionSchoolService.class);
-        userContextPort = mock(UserContextPort.class);
         useCase = new CreateSchoolUseCase(
             schoolDirectoryRepository,
             provisionSchoolService,
-            userContextPort,
             ALLOWED_AVATAR_HOSTS
         );
-        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(provisionSchoolService.provision(any())).thenReturn(createdSchoolId);
     }
 
     @Test
     void should_take_all_school_info_from_directory_when_directory_id_given() {
         givenDirectory(SchoolDirectory.createByAdmin(
-            "THPT-A", "Trường THPT A", "01", "Hà Nội", "Ba Đình",
-            "thpta.edu.vn", "12 Phố A", Instant.now(), currentUserId));
+            "THPT-A",
+            "Trường THPT A",
+            "01",
+            "Hà Nội",
+            "Ba Đình",
+            "thpta.edu.vn",
+            "12 Phố A"));
 
         // The self-declared part below deliberately differs from the catalog -- it must not make it
         // into the result.
@@ -81,8 +79,13 @@ class CreateSchoolUseCaseTests {
     @Test
     void should_create_from_unverified_directory_and_mark_it_verified() {
         SchoolDirectory unverified = SchoolDirectory.createByUserSubmitted(
-            "THPT-B", "Trường THPT B", "02", "Huế", "Phú Vang",
-            "thptb.edu.vn", "34 Phố B", Instant.now(), currentUserId);
+            "THPT-B",
+            "Trường THPT B",
+            "02",
+            "Huế",
+            "Phú Vang",
+            "thptb.edu.vn",
+            "34 Phố B");
         assertThat(unverified.isVerified()).isFalse();
         givenDirectory(unverified);
 
@@ -95,8 +98,13 @@ class CreateSchoolUseCaseTests {
     @Test
     void should_not_save_directory_when_already_verified() {
         givenDirectory(SchoolDirectory.createByAdmin(
-            "THPT-C", "Trường THPT C", "03", "Đà Nẵng", "Hải Châu",
-            "thptc.edu.vn", "56 Phố C", Instant.now(), currentUserId));
+            "THPT-C",
+            "Trường THPT C",
+            "03",
+            "Đà Nẵng",
+            "Hải Châu",
+            "thptc.edu.vn",
+            "56 Phố C"));
 
         useCase.execute(commandWith(directoryId, null, null, null, null));
 
@@ -118,8 +126,13 @@ class CreateSchoolUseCaseTests {
     @Test
     void should_return_created_school_id() {
         givenDirectory(SchoolDirectory.createByAdmin(
-            "THPT-E", "Trường THPT E", "04", "Cần Thơ", "Ninh Kiều",
-            null, "90 Phố E", Instant.now(), currentUserId));
+            "THPT-E",
+            "Trường THPT E",
+            "04",
+            "Cần Thơ",
+            "Ninh Kiều",
+            null,
+            "90 Phố E"));
 
         assertThat(useCase.execute(commandWith(directoryId, null, null, null, null)))
             .isEqualTo(createdSchoolId);

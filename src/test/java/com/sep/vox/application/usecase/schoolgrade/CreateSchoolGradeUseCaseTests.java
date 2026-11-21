@@ -6,7 +6,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
-import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -61,10 +60,14 @@ class CreateSchoolGradeUseCaseTests {
 
     @Test
     void should_create_grade_with_active_status() {
-        Instant now = Instant.now();
-        GradeLevel gradeLevel = new GradeLevel(
-            gradeLevelId, "K1", "Khối 1", "desc", 1, GradeLevelStatus.ACTIVE, now, now,
-            UUID.randomUUID(), UUID.randomUUID());
+        GradeLevel gradeLevel = GradeLevel.builder()
+            .id(gradeLevelId)
+            .code("K1")
+            .name("Khối 1")
+            .description("desc")
+            .order(1)
+            .status(GradeLevelStatus.ACTIVE)
+            .build();
         when(gradeLevelRepository.findById(gradeLevelId)).thenReturn(Optional.of(gradeLevel));
         when(schoolGradeRepository.existsBySchoolIdAndGradeLevelIdAndCode(any(), any(), any())).thenReturn(false);
         when(schoolGradeRepository.save(any(SchoolGrade.class))).thenAnswer(invocation -> {

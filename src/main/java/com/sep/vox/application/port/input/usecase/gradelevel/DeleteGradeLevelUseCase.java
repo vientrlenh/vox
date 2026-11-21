@@ -16,7 +16,6 @@ import com.sep.vox.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -67,10 +66,8 @@ public class DeleteGradeLevelUseCase implements IUseCase<DeleteGradeLevelCommand
             throw new IllegalStateException("Không thể xóa vì Khối này đang được các trường sử dụng.");
         }
 
-        // Xóa mềm: chuyển sang INACTIVE.
+        // Soft delete: switch to INACTIVE.
         gradeLevel.setStatus(GradeLevelStatus.INACTIVE);
-        gradeLevel.setUpdatedAt(Instant.now());
-        gradeLevel.setUpdatedBy(currentUserId);
         gradeLevelRepository.save(gradeLevel);
 
         return null;

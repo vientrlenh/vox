@@ -201,7 +201,7 @@ class SchoolClassRepositoryTests {
     @Test
     void whenUpdateMutableFieldsWithMatchingSchool_thenUpdatesSchoolClass() {
         UUID schoolId = UUID.randomUUID();
-        UUID updatedBy = UUID.randomUUID();
+        String updatedBy = UUID.randomUUID().toString();
         SchoolClass saved = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-UPD", "English Old"));
         Instant updatedAt = Instant.now().plus(1, ChronoUnit.DAYS);
 
@@ -233,7 +233,7 @@ class SchoolClassRepositoryTests {
     @Test
     void whenUpdateMutableFieldsNameOnly_thenPreservesDescriptionAndStatus() {
         UUID schoolId = UUID.randomUUID();
-        UUID updatedBy = UUID.randomUUID();
+        String updatedBy = UUID.randomUUID().toString();
         SchoolClass saved = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-NAME-UPD", "English Old"));
 
         int updatedRows = schoolClassRepository.updateMutableFields(
@@ -273,7 +273,7 @@ class SchoolClassRepositoryTests {
             null,
             false,
             Instant.now().plus(1, ChronoUnit.MINUTES),
-            UUID.randomUUID()
+            UUID.randomUUID().toString()
         );
 
         Optional<SchoolClass> found = schoolClassRepository.findById(saved.getId());
@@ -299,7 +299,7 @@ class SchoolClassRepositoryTests {
             SchoolClassStatus.ARCHIVED,
             true,
             Instant.now().plus(1, ChronoUnit.MINUTES),
-            UUID.randomUUID()
+            UUID.randomUUID().toString()
         );
 
         Optional<SchoolClass> found = schoolClassRepository.findById(saved.getId());
@@ -325,7 +325,7 @@ class SchoolClassRepositoryTests {
             SchoolClassStatus.INACTIVE,
             true,
             Instant.now().plus(1, ChronoUnit.MINUTES),
-            UUID.randomUUID()
+            UUID.randomUUID().toString()
         );
 
         Optional<SchoolClass> found = schoolClassRepository.findById(saved.getId());
@@ -347,10 +347,38 @@ class SchoolClassRepositoryTests {
         SchoolClass otherSchoolClass = schoolClassRepository.save(newSchoolClass(otherSchoolId, "ENG-CU-02", "Other School CU"));
         Instant now = Instant.now();
 
-        schoolClassUserRepository.save(new SchoolClassUser(userId, activeClass.getId(), true, now, null, UUID.randomUUID()));
-        schoolClassUserRepository.save(new SchoolClassUser(userId, leftClass.getId(), false, now, now.plus(1, ChronoUnit.DAYS), UUID.randomUUID()));
-        schoolClassUserRepository.save(new SchoolClassUser(UUID.randomUUID(), otherUserClass.getId(), true, now, null, UUID.randomUUID()));
-        schoolClassUserRepository.save(new SchoolClassUser(userId, otherSchoolClass.getId(), true, now, null, UUID.randomUUID()));
+        schoolClassUserRepository.save(SchoolClassUser.builder()
+            .userId(userId)
+            .schoolClassId(activeClass.getId())
+            .active(true)
+            .joinedAt(now)
+            .leftAt(null)
+            .assignedBy(UUID.randomUUID())
+            .build());
+        schoolClassUserRepository.save(SchoolClassUser.builder()
+            .userId(userId)
+            .schoolClassId(leftClass.getId())
+            .active(false)
+            .joinedAt(now)
+            .leftAt(now.plus(1, ChronoUnit.DAYS))
+            .assignedBy(UUID.randomUUID())
+            .build());
+        schoolClassUserRepository.save(SchoolClassUser.builder()
+            .userId(UUID.randomUUID())
+            .schoolClassId(otherUserClass.getId())
+            .active(true)
+            .joinedAt(now)
+            .leftAt(null)
+            .assignedBy(UUID.randomUUID())
+            .build());
+        schoolClassUserRepository.save(SchoolClassUser.builder()
+            .userId(userId)
+            .schoolClassId(otherSchoolClass.getId())
+            .active(true)
+            .joinedAt(now)
+            .leftAt(null)
+            .assignedBy(UUID.randomUUID())
+            .build());
 
         PageResult<SchoolClass> found = schoolClassRepository.findByUserId(schoolId, userId, null, 1, 20);
 
@@ -388,8 +416,22 @@ class SchoolClassRepositoryTests {
         SchoolClass activeClass = schoolClassRepository.save(newSchoolClass(schoolId, UUID.randomUUID(), UUID.randomUUID(), "ENG-CU-ACT", "Active CU", SchoolClassStatus.ACTIVE));
         SchoolClass archivedClass = schoolClassRepository.save(newSchoolClass(schoolId, UUID.randomUUID(), UUID.randomUUID(), "ENG-CU-ARCH", "Archived CU", SchoolClassStatus.ARCHIVED));
         Instant now = Instant.now();
-        schoolClassUserRepository.save(new SchoolClassUser(userId, activeClass.getId(), true, now, null, UUID.randomUUID()));
-        schoolClassUserRepository.save(new SchoolClassUser(userId, archivedClass.getId(), true, now, null, UUID.randomUUID()));
+        schoolClassUserRepository.save(SchoolClassUser.builder()
+            .userId(userId)
+            .schoolClassId(activeClass.getId())
+            .active(true)
+            .joinedAt(now)
+            .leftAt(null)
+            .assignedBy(UUID.randomUUID())
+            .build());
+        schoolClassUserRepository.save(SchoolClassUser.builder()
+            .userId(userId)
+            .schoolClassId(archivedClass.getId())
+            .active(true)
+            .joinedAt(now)
+            .leftAt(null)
+            .assignedBy(UUID.randomUUID())
+            .build());
 
         PageResult<SchoolClass> defaultView = schoolClassRepository.findByUserId(schoolId, userId, null, 1, 20);
 
@@ -425,9 +467,30 @@ class SchoolClassRepositoryTests {
         SchoolClass englishByName = schoolClassRepository.save(newSchoolClass(schoolId, "KH-SEARCH-02", "English nang cao"));
         SchoolClass unrelated = schoolClassRepository.save(newSchoolClass(schoolId, "MATH-SEARCH-03", "Toan hoc"));
         Instant now = Instant.now();
-        schoolClassUserRepository.save(new SchoolClassUser(userId, englishByCode.getId(), true, now, null, UUID.randomUUID()));
-        schoolClassUserRepository.save(new SchoolClassUser(userId, englishByName.getId(), true, now, null, UUID.randomUUID()));
-        schoolClassUserRepository.save(new SchoolClassUser(userId, unrelated.getId(), true, now, null, UUID.randomUUID()));
+        schoolClassUserRepository.save(SchoolClassUser.builder()
+            .userId(userId)
+            .schoolClassId(englishByCode.getId())
+            .active(true)
+            .joinedAt(now)
+            .leftAt(null)
+            .assignedBy(UUID.randomUUID())
+            .build());
+        schoolClassUserRepository.save(SchoolClassUser.builder()
+            .userId(userId)
+            .schoolClassId(englishByName.getId())
+            .active(true)
+            .joinedAt(now)
+            .leftAt(null)
+            .assignedBy(UUID.randomUUID())
+            .build());
+        schoolClassUserRepository.save(SchoolClassUser.builder()
+            .userId(userId)
+            .schoolClassId(unrelated.getId())
+            .active(true)
+            .joinedAt(now)
+            .leftAt(null)
+            .assignedBy(UUID.randomUUID())
+            .build());
 
         PageResult<SchoolClass> found = schoolClassRepository.findByUserId(schoolId, userId, "eng", null, 1, 20);
 
@@ -443,7 +506,14 @@ class SchoolClassRepositoryTests {
         UUID userId = UUID.randomUUID();
         SchoolClass schoolClass = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-BLANK-01", "Blank search"));
         schoolClassUserRepository.save(
-            new SchoolClassUser(userId, schoolClass.getId(), true, Instant.now(), null, UUID.randomUUID())
+            SchoolClassUser.builder()
+                .userId(userId)
+                .schoolClassId(schoolClass.getId())
+                .active(true)
+                .joinedAt(Instant.now())
+                .leftAt(null)
+                .assignedBy(UUID.randomUUID())
+                .build()
         );
 
         PageResult<SchoolClass> found = schoolClassRepository.findByUserId(schoolId, userId, "   ", null, 1, 20);
@@ -464,7 +534,14 @@ class SchoolClassRepositoryTests {
                 newSchoolClass(schoolId, "ENG-PAGE-0" + index, "Paged English " + index)
             );
             schoolClassUserRepository.save(
-                new SchoolClassUser(userId, schoolClass.getId(), true, now, null, UUID.randomUUID())
+                SchoolClassUser.builder()
+                    .userId(userId)
+                    .schoolClassId(schoolClass.getId())
+                    .active(true)
+                    .joinedAt(now)
+                    .leftAt(null)
+                    .assignedBy(UUID.randomUUID())
+                    .build()
             );
         }
 
@@ -490,18 +567,18 @@ class SchoolClassRepositoryTests {
             SchoolClassStatus status) {
         Instant now = Instant.now();
         UUID userId = UUID.randomUUID();
-        return new SchoolClass(
-            schoolId,
-            languageId,
-            gradeId,
-            new ClassCode(code),
-            name,
-            "Repository test class",
-            status,
-            now,
-            now,
-            userId,
-            userId
-        );
+        return SchoolClass.builder()
+            .schoolId(schoolId)
+            .languageId(languageId)
+            .schoolGradeId(gradeId)
+            .code(new ClassCode(code))
+            .name(name)
+            .description("Repository test class")
+            .status(status)
+            .createdAt(now)
+            .updatedAt(now)
+            .createdBy(userId.toString())
+            .updatedBy(userId.toString())
+            .build();
     }
 }

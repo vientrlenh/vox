@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.sep.vox.infrastructure.persistence.entity.AssessmentItemEvaluationJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentItemEvaluationJpaEntity;
 
 public interface SpringDataAssessmentItemEvaluationRepository extends JpaRepository<AssessmentItemEvaluationJpaEntity, UUID> {
     List<AssessmentItemEvaluationJpaEntity> findByResponseIdIn(Collection<UUID> responseIds);

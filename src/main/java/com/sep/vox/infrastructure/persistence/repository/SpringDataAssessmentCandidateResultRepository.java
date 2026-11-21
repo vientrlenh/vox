@@ -12,7 +12,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
 
-import com.sep.vox.infrastructure.persistence.entity.AssessmentCandidateResultJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentCandidateResultJpaEntity;
 
 public interface SpringDataAssessmentCandidateResultRepository extends JpaRepository<AssessmentCandidateResultJpaEntity, UUID> {
     Optional<AssessmentCandidateResultJpaEntity> findBySessionId(UUID sessionId);

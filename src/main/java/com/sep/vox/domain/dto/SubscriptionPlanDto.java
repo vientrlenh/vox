@@ -38,8 +38,8 @@ public record SubscriptionPlanDto(
             plan.getVersion(), 
             plan.getCreatedAt(), 
             plan.getUpdatedAt(), 
-            plan.getCreatedBy(), 
-            plan.getUpdatedBy(), 
+            plan.createdByUserId().orElse(null),
+            plan.updatedByUserId().orElse(null),
             plan.getReplacedByPlanId()
         );
     }

@@ -1,6 +1,6 @@
 package com.sep.vox.domain.model.personalization;
 
-/** Một lỗi được client báo kèm khi nộp lượt nói, trước khi được chấm/xác nhận. */
+/** An error the client reports together with a speaking turn, before it is graded/confirmed. */
 
 public class TurnCorrectionSubmission {
 
@@ -12,21 +12,6 @@ public class TurnCorrectionSubmission {
     private double confidence;
 
     public TurnCorrectionSubmission() {
-    }
-
-    public TurnCorrectionSubmission(
-            String category,
-            String originalText,
-            String correctedText,
-            String explanation,
-            String correctAudioUrl,
-            double confidence) {
-        this.category = category;
-        this.originalText = originalText;
-        this.correctedText = correctedText;
-        this.explanation = explanation;
-        this.correctAudioUrl = correctAudioUrl;
-        this.confidence = confidence;
     }
 
     public String getCategory() {
@@ -75,5 +60,52 @@ public class TurnCorrectionSubmission {
 
     public void setConfidence(double confidence) {
         this.confidence = confidence;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final TurnCorrectionSubmission target = new TurnCorrectionSubmission();
+
+        private Builder() {
+        }
+
+        public Builder category(String category) {
+            target.category = category;
+            return this;
+        }
+
+        public Builder originalText(String originalText) {
+            target.originalText = originalText;
+            return this;
+        }
+
+        public Builder correctedText(String correctedText) {
+            target.correctedText = correctedText;
+            return this;
+        }
+
+        public Builder explanation(String explanation) {
+            target.explanation = explanation;
+            return this;
+        }
+
+        public Builder correctAudioUrl(String correctAudioUrl) {
+            target.correctAudioUrl = correctAudioUrl;
+            return this;
+        }
+
+        public Builder confidence(double confidence) {
+            target.confidence = confidence;
+            return this;
+        }
+
+        public TurnCorrectionSubmission build() {
+            return target;
+        }
+
     }
 }

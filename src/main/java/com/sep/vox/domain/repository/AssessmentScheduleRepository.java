@@ -50,11 +50,12 @@ public interface AssessmentScheduleRepository {
     boolean existsOverlapping(UUID schoolRoomId, Instant start, Instant end, UUID excludeScheduleId);
 
     /**
-     * Cập nhật nguyên tử phòng/giờ của ca thi. Chỉ áp dụng khi ca đang ở DRAFT (WHERE ... status='DRAFT').
-     * Trả về số dòng bị ảnh hưởng.
+     * Atomically updates the room/time of a schedule. Applied only while the schedule is DRAFT (WHERE ... status='DRAFT').
+     * Returns the number of affected rows. {@code updatedBy} is the acting user's id as text: a bulk update bypasses the
+     * auditing listener, so the audit values are written here.
      */
     int updateAtomic(UUID id, UUID schoolRoomId, Instant start, Instant end,
-            Instant now, UUID updatedBy);
+            Instant now, String updatedBy);
     /**
      * Ca đã công bố nhưng đã qua giờ kết thúc, cũ nhất trước, tối đa {@code limit} dòng — dùng cho
      * job tự chuyển ca sang COMPLETED. Có trần vì lần chạy đầu sau khi triển khai phải quét cả tồn

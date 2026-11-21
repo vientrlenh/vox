@@ -3,7 +3,6 @@ package com.sep.vox.application.port.input.usecase.assessmentblueprint;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprint;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersion;
 import java.math.BigDecimal;
-import java.time.Instant;
 
 import java.util.List;
 import java.util.UUID;
@@ -73,19 +72,14 @@ public class CreateAssessmentBlueprintSectionUseCase implements IUseCase<CreateA
             throw new IllegalStateException("Thứ tự section đã tồn tại trong version này");
         }
 
-        Instant now = Instant.now();
-        AssessmentBlueprintSection section = new AssessmentBlueprintSection(
-            version.getId(),
-            command.order(),
-            command.title(),
-            command.instruction(),
-            command.sectionTimeLimitSeconds(),
-            command.sectionWeight() == null ? BigDecimal.ONE : command.sectionWeight(),
-            now,
-            now,
-            currentUserId,
-            currentUserId
-        );
+        AssessmentBlueprintSection section = AssessmentBlueprintSection.builder()
+            .blueprintVersionId(version.getId())
+            .order(command.order())
+            .title(command.title())
+            .instruction(command.instruction())
+            .sectionTimeLimitSeconds(command.sectionTimeLimitSeconds())
+            .sectionWeight(command.sectionWeight() == null ? BigDecimal.ONE : command.sectionWeight())
+            .build();
         return AssessmentBlueprintSectionDtoMapper.toDto(assessmentBlueprintSectionRepository.save(section));
     }
 

@@ -18,7 +18,6 @@ import com.sep.vox.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -80,8 +79,7 @@ public class UpdateSystemAssessmentPolicyUseCase implements IUseCase<UpdateAsses
             throw new IllegalArgumentException("Ngày bắt đầu hiệu lực không được sau ngày kết thúc hiệu lực.");
         }
 
-        // 7. Cập nhật các field nghiệp vụ (không đổi frameworkVersionId/rubricVersionId/languageId/scope)
-        Instant now = Instant.now();
+        // 7. Update the business fields (frameworkVersionId/rubricVersionId/languageId/scope do not change)
         AssessmentPolicyStrictness strictness = command.strictness() != null ? command.strictness() : AssessmentPolicyStrictness.STANDARD;
 
         policy.setTargetFrameworkBandId(command.targetFrameworkBandId());
@@ -89,8 +87,6 @@ public class UpdateSystemAssessmentPolicyUseCase implements IUseCase<UpdateAsses
         policy.setStrictness(strictness);
         policy.setEffectiveFrom(command.effectiveFrom());
         policy.setEffectiveTo(command.effectiveTo());
-        policy.setUpdatedAt(now);
-        policy.setUpdatedBy(currentUserId);
 
         AssessmentPolicy saved = assessmentPolicyRepository.save(policy);
         return saved.getId();

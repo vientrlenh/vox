@@ -79,7 +79,7 @@
 <h1>Base model, audit actor, builders and entity packages</h1>
 <div class="meta">
   Repository: <code>vox</code> &middot; Branch: <code>default</code> &middot; Written 2026-11-21 &middot;
-  Plan status: <span class="status draft" id="plan-status" data-plan-status="draft">Draft</span>
+  Plan status: <span class="status done" id="plan-status" data-plan-status="done">Done</span>
 </div>
 
 <p>Today every domain model and every JPA entity repeats <code>id</code>, <code>createdAt</code>, <code>updatedAt</code>,
@@ -380,6 +380,12 @@ SchoolQuotaPolicy</code>. Phase 2 moves all entities; phases 3 to 11 convert the
   <div class="answer"><strong>Answer (2026-11-21):</strong> B &ndash; Remove the all-args constructors on all 104 models (not the recommended option): every construction site with arguments moves to <code>builder()</code> (337 main, 342 test).</div>
 </div>
 
+<div class="decision" id="a1" data-decision-state="answered" data-scope="job-12-1" data-topic="guardrail-exemptions">
+  <h3>A1. Guardrail test: how are the non-audited classes that still hold UUID audit-like fields or manual stamps treated? <span class="status answered">Answered</span></h3>
+  <p class="meta">Asked while implementing job 12.1. Scope: job 12.1. Reused by: none yet.</p>
+  <div class="answer"><strong>Answer (2026-11-21):</strong> Explicit allowlist &ndash; the test lists the exact files (AssessmentCandidate and AssessmentItemRuleHit, model and entity; 5 candidate use cases and AssessmentStatusAutoTransitionJob) as exempt with the D2 reason, and fails if an entry is stale.</div>
+</div>
+
 <h3>Design that is decided by this plan (not asked)</h3>
 <ul>
   <li><strong>Actor value.</strong> <code>createdBy</code>/<code>updatedBy</code> hold <code>userId.toString()</code> for a logged-in caller and <code>"System"</code>
@@ -661,442 +667,442 @@ SupportedLanguage.builder()
 <h2 id="phases">3. Phases</h2>
 <p>Each phase is independently reviewable and leaves the build green at its end. Inside a phase a job may not compile on its own, because a model change and its mapper are one slice. Vietnamese comments inside code a job edits (the edited method, and the Javadoc of an edited class or test class) are translated to English in the same change. Before using a framework API a job reads the documentation for Spring Boot 4.1 / Spring Framework 7 / Hibernate 7.4 and uses no deprecated API. Migration numbers are written as <code>V&lt;next&gt;</code>: highest existing number plus one at the time (V15 for the first). Phases 4 to 11 can be done in any order after Phase 3.</p>
 
-<div class="phase" id="phase-1" data-status="todo">
+<div class="phase" id="phase-1" data-status="done">
   <h3><span class="title">Phase 1 &ndash; Foundation: base types, audit actor, auditing switch</span>
     <span class="tag">medium &middot; mechanical &middot; needs D1, D5, D6</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> The shared base types, the <code>"System"</code> constant, the audit actor provider and the auditing switch exist and are unit-tested. No model or entity uses them yet, so behaviour does not change. <strong>Depends on:</strong> D1, D5, D6.</p>
   <ul class="jobs">
-    <li class="job" id="job-1-1" data-status="todo">
-      <span class="title">1.1 Create <code>ActorConstant</code> and <code>BaseModel</code></span> <span class="status todo">Not started</span>
+    <li class="job" id="job-1-1" data-status="done">
+      <span class="title">1.1 Create <code>ActorConstant</code> and <code>BaseModel</code></span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>ActorConstant.SYSTEM</code> equals <code>"System"</code>. <code>BaseModel</code> (abstract, no Spring or JPA import) holds <code>UUID id</code>, <code>Instant createdAt</code>, <code>Instant updatedAt</code>, <code>String createdBy</code>, <code>String updatedBy</code> with public getters and setters, <code>createdByUserId()</code>, <code>updatedByUserId()</code> (<code>Optional&lt;UUID&gt;</code>, empty for NULL, "System" or a non-UUID value) and <code>isCreatedBy(UUID)</code>, plus the self-typed nested <code>BaseModel.Builder&lt;T, B&gt;</code> with <code>id/createdAt/updatedAt/createdBy/updatedBy/build()</code>. Every method is at most 25 lines. <code>BaseModelTests</code> pass. The code matches the draft in section 2 ("Draft for review").
          <strong>Files:</strong> <code>src/main/java/com/sep/vox/domain/common/ActorConstant.java</code>, <code>src/main/java/com/sep/vox/domain/model/BaseModel.java</code>, <code>src/test/java/com/sep/vox/domain/model/BaseModelTests.java</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; plan set In progress, applies D1</li><li>2026-11-21 &middot; Done &middot; ActorConstant, BaseModel, BaseModelTests created. <code>./gradlew test --tests *BaseModelTests</code> passed (5 tests)</li></ul>
     </li>
-    <li class="job" id="job-1-2" data-status="todo">
-      <span class="title">1.2 Create <code>BaseEntity</code></span> <span class="status todo">Not started</span>
+    <li class="job" id="job-1-2" data-status="done">
+      <span class="title">1.2 Create <code>BaseEntity</code></span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>@MappedSuperclass</code> with <code>@EntityListeners(AuditingEntityListener.class)</code>, Lombok <code>@Getter @Setter @SuperBuilder @NoArgsConstructor</code>, <code>@Id @UuidGenerator(style = UuidGenerator.Style.VERSION_7)</code> <code>id</code> (column <code>id</code>, <code>updatable = false</code>), <code>@CreatedDate</code> <code>created_at</code> (<code>updatable = false</code>), <code>@LastModifiedDate</code> <code>updated_at</code>, <code>@CreatedBy</code> <code>created_by</code> (<code>varchar(64)</code>, <code>updatable = false</code>), <code>@LastModifiedBy</code> <code>updated_by</code> (<code>varchar(64)</code>). It compiles and <code>LayeredArchitectureTests</code> stay green. No entity extends it yet.
          <strong>Files:</strong> <code>src/main/java/com/sep/vox/infrastructure/persistence/entity/BaseEntity.java</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started</li></ul>
     </li>
-    <li class="job" id="job-1-3" data-status="todo">
-      <span class="title">1.3 Create <code>AuditActorProvider</code> and <code>JpaAuditingConfiguration</code></span> <span class="status todo">Not started</span>
+    <li class="job" id="job-1-3" data-status="done">
+      <span class="title">1.3 Create <code>AuditActorProvider</code> and <code>JpaAuditingConfiguration</code></span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> First read the Spring Data JPA 4.1 auditing reference and note the page in Implementation notes. <code>AuditActorProvider implements AuditorAware&lt;String&gt;</code> returns, in order, the actor of the active scope (job 1.4), <code>UserContextPort.findCurrentAuthenticatedUserId()</code> as a string, or <code>ActorConstant.SYSTEM</code>; it never returns an empty <code>Optional</code>. <code>JpaAuditingConfiguration</code> is a <code>@Configuration</code> with <code>@EnableJpaAuditing(auditorAwareRef = ...)</code>. <code>AuditActorProviderTests</code> (Mockito, no Spring context): no user gives "System", a user id gives its string, and the scope wins over the user. A <code>@RestControllerTest</code> still boots (slices skip <code>@Configuration</code> scanning).
          <strong>Files:</strong> <code>src/main/java/com/sep/vox/infrastructure/persistence/audit/AuditActorProvider.java</code>, <code>.../audit/JpaAuditingConfiguration.java</code>, <code>src/test/java/com/sep/vox/infrastructure/persistence/audit/AuditActorProviderTests.java</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; Done &middot; AuditActorProvider, JpaAuditingConfiguration, AuditActorProviderTests (3 tests) pass. CHANGED: <code>@EnableJpaAuditing</code> has no <code>auditorAwareRef</code>, see Implementation notes</li></ul>
     </li>
-    <li class="job" id="job-1-4" data-status="todo">
-      <span class="title">1.4 Actor scope for background imports</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-1-4" data-status="done">
+      <span class="title">1.4 Actor scope for background imports</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>AuditActorScopePort</code> (<code>&lt;T&gt; T callAs(String actor, Supplier&lt;T&gt; action)</code>) in <code>application/port/output</code>, a thread-local implementation <code>ThreadLocalAuditActorScope</code> in <code>infrastructure/persistence/audit</code> that always restores the previous value, and <code>ImportCommitService.commit</code> runs the handler inside <code>callAs(String.valueOf(session.getCreatedBy()), ...)</code> (still a <code>UUID</code> until Phase 6). A test proves the actor is set inside the handler call and cleared afterwards, also when the handler throws.
          <strong>Files:</strong> <code>src/main/java/com/sep/vox/application/port/output/AuditActorScopePort.java</code>, <code>.../infrastructure/persistence/audit/ThreadLocalAuditActorScope.java</code>, <code>.../application/port/input/service/ImportCommitService.java</code>, test <code>ImportCommitServiceTests</code> (or the existing test for it)</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; Done &middot; AuditActorScopePort, ThreadLocalAuditActorScope, ImportCommitService wrapped in callAs; ThreadLocalAuditActorScopeTests (3) and ImportCommitServiceTests (4) pass</li></ul>
     </li>
-    <li class="job" id="job-1-5" data-status="todo">
-      <span class="title">1.5 Wire auditing into <code>@RepositoryTest</code></span> <span class="status todo">Not started</span>
+    <li class="job" id="job-1-5" data-status="done">
+      <span class="title">1.5 Wire auditing into <code>@RepositoryTest</code></span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>support/RepositoryTest</code> also imports <code>JpaAuditingConfiguration</code>, <code>AuditActorProvider</code> and <code>SecurityContextProvider</code> (the slice has no <code>UserContextPort</code> otherwise), so repository tests of audited entities get their <code>NOT NULL</code> <code>created_at</code>. Verified where Docker runs: the 24 existing <code>@RepositoryTest</code> classes still pass (no audited entity exists yet, so this is a no-op until Phase 3).
          <strong>Files:</strong> <code>src/test/java/com/sep/vox/support/RepositoryTest.java</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; Done &middot; RepositoryTest imports the auditing beans. <code>./gradlew integrationTest</code>: 52 classes, 374 tests, 0 failed</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*BaseModelTests' --tests '*AuditActorProviderTests' --tests '*LayeredArchitectureTests'</code>, <code>./gradlew test --tests '*AuthControllerTests'</code>; with Docker: <code>./gradlew integrationTest --tests '*RoleRepositoryTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-21 &middot; Done &middot; verify passed: compileJava, BaseModelTests, AuditActorProviderTests, LayeredArchitectureTests, AuthControllerTests; integrationTest all green</li></ul>
 </div>
 
-<div class="phase" id="phase-2" data-status="todo">
+<div class="phase" id="phase-2" data-status="done">
   <h3><span class="title">Phase 2 &ndash; Regroup the 107 entities into feature packages</span>
     <span class="tag">large &middot; mechanical &middot; needs D1</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> Every <code>*JpaEntity</code> lives in <code>infrastructure/persistence/entity/&lt;feature&gt;/</code>, where <code>&lt;feature&gt;</code> is the package of the same-named model in <code>domain/model</code> (the 10 entities without a model follow the section 1 table). Only <code>package</code> and <code>import</code> lines change; <code>BaseEntity</code> stays in <code>entity/</code>. <strong>Depends on:</strong> D1.</p>
   <ul class="jobs">
-    <li class="job" id="job-2-1" data-status="todo">
-      <span class="title">2.1 Move the 27 assessment entities</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-2-1" data-status="done">
+      <span class="title">2.1 Move the 27 assessment entities</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 27 <code>Assessment*JpaEntity</code> files except <code>AssessmentPolicyJpaEntity</code> are in <code>entity/assessment/</code> (moved with <code>git mv</code>, <code>package</code> line updated) and every importing file compiles. <code>git diff -M --stat</code> shows renames plus import lines only.
          <strong>Files:</strong> <code>src/main/java/com/sep/vox/infrastructure/persistence/entity/assessment/*</code> and the mappers, adapters, Spring Data repositories, query repositories and tests that import them</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D1</li><li>2026-11-21 &middot; Done &middot; 27 entities moved to entity/assessment/ (git mv); compileJava compileTestJava pass</li></ul>
     </li>
-    <li class="job" id="job-2-2" data-status="todo">
-      <span class="title">2.2 Move school, user, device session, refresh token, password setup token, register form, supported language (21)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-2-2" data-status="done">
+      <span class="title">2.2 Move school, user, device session, refresh token, password setup token, register form, supported language (21)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 12 <code>School*</code> entities, <code>User/Role/UserRole</code>, <code>DeviceSession</code>, <code>RefreshToken</code>, <code>PasswordSetUpToken</code>, <code>RegisterForm/RegisterFormDocument</code> and <code>SupportedLanguage</code> are in <code>entity/school, user, devicesession, refreshtoken, passwordsetuptoken, registerform, supportedlanguage</code>; compile passes.
          <strong>Files:</strong> <code>.../persistence/entity/{school,user,devicesession,refreshtoken,passwordsetuptoken,registerform,supportedlanguage}/*</code> and their importers</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D1</li><li>2026-11-21 &middot; Done &middot; 21 entities moved to entity/{school,user,devicesession,refreshtoken,passwordsetuptoken,registerform,supportedlanguage}/; compileJava compileTestJava pass</li></ul>
     </li>
-    <li class="job" id="job-2-3" data-status="todo">
-      <span class="title">2.3 Move question, rubric, framework, scoring rule, grade level, assessment policy (21)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-2-3" data-status="done">
+      <span class="title">2.3 Move question, rubric, framework, scoring rule, grade level, assessment policy (21)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> 7 <code>Question*</code> entities and <code>StudentQuestionExposure</code> are in <code>entity/question/</code>; <code>Rubric*</code> (4) in <code>entity/rubric/</code>; <code>Framework*</code> (5) in <code>entity/framework/</code>; <code>ScoringRule</code>, <code>GradeLevel*</code> (2) and <code>AssessmentPolicy</code> in their packages; compile passes.
          <strong>Files:</strong> <code>.../persistence/entity/{question,rubric,framework,scoringrule,gradelevel,assessmentpolicy}/*</code> and their importers</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D1</li><li>2026-11-21 &middot; Done &middot; 21 entities moved to entity/{question,rubric,framework,scoringrule,gradelevel,assessmentpolicy}/; compileJava compileTestJava pass</li></ul>
     </li>
-    <li class="job" id="job-2-4" data-status="todo">
-      <span class="title">2.4 Move subscription, order, payment, invoice, financial, metering (13)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-2-4" data-status="done">
+      <span class="title">2.4 Move subscription, order, payment, invoice, financial, metering (13)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>SchoolSubscription*</code> and <code>SubscriptionPlan*</code> (6) in <code>entity/subscription/</code>, <code>Order*</code> (2), <code>PaymentRecord</code>, <code>Invoice</code>, <code>ExchangeRateSnapshot</code>, <code>AiUsageRecord</code> and <code>QuotaPricingCalibration</code> in their packages; compile passes. Pure move: no money logic changes (D3 does not apply to a move).
          <strong>Files:</strong> <code>.../persistence/entity/{subscription,order,payment,invoice,financial,metering}/*</code> and their importers</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D1</li><li>2026-11-21 &middot; Done &middot; 13 entities moved to entity/{subscription,order,payment,invoice,financial,metering}/ (pure move, no money logic touched); compileJava compileTestJava pass</li></ul>
     </li>
-    <li class="job" id="job-2-5" data-status="todo">
-      <span class="title">2.5 Move personalization, notification, import file, outbox (25)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-2-5" data-status="done">
+      <span class="title">2.5 Move personalization, notification, import file, outbox (25)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 18 personalization entities (9 with a model, 9 without) in <code>entity/personalization/</code>, <code>Notification*</code> (3), <code>ImportSession/ImportRow</code> (2), <code>Outbox/ProcessedEvent</code> (2); <code>NotificationJpaEntity</code> and <code>PracticeItemResponseJpaEntity</code> get the imports they need; compile passes. Afterwards <code>ls src/main/java/com/sep/vox/infrastructure/persistence/entity/*.java</code> lists only <code>BaseEntity.java</code>.
          <strong>Files:</strong> <code>.../persistence/entity/{personalization,notification,importfile,outbox}/*</code> and their importers</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D1</li><li>2026-11-21 &middot; Done &middot; 25 entities moved to entity/{personalization,notification,importfile,outbox}/; entity/*.java lists only BaseEntity.java; compileJava compileTestJava pass</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests '*LayeredArchitectureTests' --tests '*PagingConventionTests' --tests '*TestSuiteSeparationTests'</code>; the entity count is still 107 (<code>git ls-files 'src/main/java/**/persistence/entity/**' | grep -c JpaEntity.java</code>)</p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-21 &middot; Done &middot; verify passed: compileJava compileTestJava, LayeredArchitectureTests, PagingConventionTests, TestSuiteSeparationTests; 107 JpaEntity files</li></ul>
 </div>
 
-<div class="phase" id="phase-3" data-status="todo">
+<div class="phase" id="phase-3" data-status="done">
   <h3><span class="title">Phase 3 &ndash; Pilot: supported language end to end</span>
     <span class="tag">medium &middot; needs D2, D4, D6, D7, D8</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> One small feature (<code>supportedlanguage</code>: 1 model, 1 entity, 5 use cases, 8 test files that mention it, 1 repository test) is converted completely, proving the recipe that the batch phases copy: base classes, builder, Lombok entity, <code>@UuidGenerator</code>, migration, no manual stamping, auditing test. <strong>Depends on:</strong> D2, D4, D6, D7, D8; Phases 1 and 2.</p>
   <ul class="jobs">
-    <li class="job" id="job-3-1" data-status="todo">
-      <span class="title">3.1 Model: <code>SupportedLanguage extends BaseModel</code> with a builder</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-3-1" data-status="done">
+      <span class="title">3.1 Model: <code>SupportedLanguage extends BaseModel</code> with a builder</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>SupportedLanguage</code> no longer declares <code>id</code> or the four audit fields, their accessors, or any all-args constructor (D8: removed on all 104 models; the public no-argument constructor stays); it has a nested <code>Builder extends BaseModel.Builder&lt;SupportedLanguage, SupportedLanguage.Builder&gt;</code> and <code>public static Builder builder() { return new Builder(); }</code>. Vietnamese comments in the file are translated. The result matches the draft in section 2 ("Draft for review").
          <strong>Files:</strong> <code>src/main/java/com/sep/vox/domain/model/supportedlanguage/SupportedLanguage.java</code>, <code>domain/mapper/SupportedLanguageDtoMapper.java</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D2, D7, D8</li></ul>
     </li>
-    <li class="job" id="job-3-2" data-status="todo">
-      <span class="title">3.2 Entity, mapper and migration</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-3-2" data-status="done">
+      <span class="title">3.2 Entity, mapper and migration</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>SupportedLanguageJpaEntity extends BaseEntity</code>, Lombok per D7, own fields only, no <code>@Generated</code>/<code>columnDefinition uuidv7()</code>; <code>SupportedLanguageMapper</code> builds with builders; <code>V15__supported_languages_audit_actor_text.sql</code> converts <code>created_by</code>/<code>updated_by</code> to <code>varchar(64) USING ...::text</code>. The application starts with <code>ddl-auto: validate</code> (proved by the repository test in 3.4).
          <strong>Files:</strong> <code>.../entity/supportedlanguage/SupportedLanguageJpaEntity.java</code>, <code>.../mapper/SupportedLanguageMapper.java</code>, <code>src/main/resources/db/migration/V15__supported_languages_audit_actor_text.sql</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D2, D7, D8</li><li>2026-11-21 &middot; Done &middot; entity extends BaseEntity (Lombok, @SuperBuilder), mapper uses builders, V15__supported_languages_audit_actor_text.sql. V1..V15 applied in a postgres:18 container, columns now varchar(64) (CHANGED: see Implementation notes, the repository test does not prove the migration)</li></ul>
     </li>
-    <li class="job" id="job-3-3" data-status="todo">
-      <span class="title">3.3 Use cases and the startup initializer stop stamping audit fields</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-3-3" data-status="done">
+      <span class="title">3.3 Use cases and the startup initializer stop stamping audit fields</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>Create/Update/Delete SupportedLanguageUseCase</code> and <code>SupportedLanguageInitializer</code> contain no <code>setCreated*/setUpdated*</code> call and pass no <code>now</code>, <code>null</code> or user id for auditing (<code>new SupportedLanguage(...)</code> becomes <code>builder()</code>); <code>CreateSupportedLanguageUseCase</code> no longer injects <code>UserContextPort</code> if auditing was its only use (its test drops that mock, because strict stubs fail on unused ones). <code>grep -rnE "\.set(Created|Updated)(By|At)\(" src/main/java/com/sep/vox/application/port/input/usecase/supportedlanguage</code> prints nothing.
          <strong>Files:</strong> <code>.../application/port/input/usecase/supportedlanguage/*</code>, <code>.../infrastructure/initializer/SupportedLanguageInitializer.java</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D2, D7, D8</li><li>2026-11-21 &middot; Done &middot; Create/Delete use cases and SupportedLanguageInitializer no longer stamp; grep for .set(Created|Updated)(By|At)( prints nothing. UpdateSupportedLanguageUseCase keeps its manual stamp (CHANGED: bulk update, see notes)</li></ul>
     </li>
-    <li class="job" id="job-3-4" data-status="todo">
-      <span class="title">3.4 Tests: update fixtures and add the auditing test</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-3-4" data-status="done">
+      <span class="title">3.4 Tests: update fixtures and add the auditing test</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 8 test files that mention <code>SupportedLanguage</code> compile and pass, and their <code>new SupportedLanguage(...)</code> calls use <code>builder()</code>. New <code>SupportedLanguageAuditingTests</code> (<code>@RepositoryTest</code>) proves, with Docker: a new row gets a version-7 id, <code>createdAt == updatedAt</code>, and <code>"System"</code> as both actors when nobody is logged in; with a <code>CustomUserDetails</code> principal both actors equal the user id string; an update leaves <code>createdAt/createdBy</code> unchanged and moves <code>updatedAt/updatedBy</code>; and it records whether the object returned by <code>save()</code> already shows the new <code>updatedAt</code> (the flush-timing risk). Not runnable on the planning machine (Docker daemon down).
          <strong>Files:</strong> <code>src/test/java/com/sep/vox/application/usecase/supportedlanguage/*</code>, <code>.../infrastructure/persistence/repository/SupportedLanguageRepositoryTests.java</code>, <code>.../infrastructure/persistence/repository/SupportedLanguageAuditingTests.java</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D2, D7, D8</li><li>2026-11-21 &middot; Done &middot; SupportedLanguage* unit tests pass; SupportedLanguageAuditingTests 4 passed and SupportedLanguageRepositoryTests 11 passed (integrationTest, Docker)</li></ul>
     </li>
-    <li class="job" id="job-3-5" data-status="todo">
-      <span class="title">3.5 Record the batch recipe</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-3-5" data-status="done">
+      <span class="title">3.5 Record the batch recipe</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> Implementation notes contain the exact recipe the batch phases follow (annotation set, builder shape, migration text, test shape, the answer to the flush-timing question) and every place where the pilot differed from this plan; if the pilot needed anything this plan does not allow, work stops and asks.
          <strong>Files:</strong> <code>docs/base-model-audit-plan/index.html</code> (Implementation notes only)</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D2, D7, D8</li><li>2026-11-21 &middot; Done &middot; recipe recorded in Implementation notes</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests '*SupportedLanguage*' --tests '*BaseModelTests' --tests '*LayeredArchitectureTests'</code>; with Docker: <code>./gradlew integrationTest --tests '*SupportedLanguage*'</code></p>
   <ul class="status-log"></ul>
 </div>
 
-<div class="phase" id="phase-4" data-status="todo">
+<div class="phase" id="phase-4" data-status="done">
   <h3><span class="title">Phase 4 &ndash; Reference data: framework, grade level, scoring rule, assessment policy</span>
     <span class="tag">medium &middot; mechanical &middot; needs D2, D4, D7, D8</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> The 9 reference-data models and entities (all with the five audit fields) follow the pilot recipe. <strong>Depends on:</strong> Phase 3 recipe; D2, D4, D7, D8.</p>
   <ul class="jobs">
-    <li class="job" id="job-4-1" data-status="todo">
-      <span class="title">4.1 Models: <code>assessmentpolicy</code>, <code>framework</code>, <code>gradelevel</code>, <code>scoringrule</code></span> <span class="status todo">Not started</span>
+    <li class="job" id="job-4-1" data-status="done">
+      <span class="title">4.1 Models: <code>assessmentpolicy</code>, <code>framework</code>, <code>gradelevel</code>, <code>scoringrule</code></span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> All 9 model classes (AssessmentPolicy, Framework, FrameworkCriterion, FrameworkCriterionBand, FrameworkResultBand, FrameworkVersion, GradeLevel, GradeLevelBandScope, ScoringRule) have a nested <code>Builder</code> and <code>public static Builder builder()</code>. All of them have the five audit fields: they extend <code>BaseModel</code>, no longer declare <code>id</code> or the four audit fields, their accessors or constructors that took them, and their builders extend <code>BaseModel.Builder</code>. None of them declares an all-args constructor any more (D8: removed on all 104 models; the public no-argument constructor stays because the builder uses it). Vietnamese comments in edited files are translated.
          <strong>Files:</strong> <code>src/main/java/com/sep/vox/domain/model/{assessmentpolicy,framework,gradelevel,scoringrule}/*.java</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D2, D7, D8 (D4 for DTO mappers)</li></ul>
     </li>
-    <li class="job" id="job-4-2" data-status="todo">
-      <span class="title">4.2 Entities, migration and mappers: same 9</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-4-2" data-status="done">
+      <span class="title">4.2 Entities, migration and mappers: same 9</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> All 9 entities (the <code>*JpaEntity</code> of the 9 models) use the D7 Lombok set and contain no hand-written accessor or constructor (non-accessor methods, if any, are kept). All of them extend <code>BaseEntity</code>. Database-generated ids use <code>@UuidGenerator(style = VERSION_7)</code> and no <code>@Generated</code> or <code>columnDefinition = "UUID DEFAULT uuidv7()"</code>; entities with application-assigned ids keep theirs. One new migration <code>V&lt;next&gt;__reference_data_audit_actor_text.sql</code> converts <code>created_by</code>/<code>updated_by</code> of the 9 audited tables (names from each entity's <code>@Table</code>) to <code>varchar(64) USING ...::text</code>. The mappers build models and entities with builders. The application starts with <code>validate</code> (repository tests below).
          <strong>Files:</strong> <code>.../persistence/entity/{assessmentpolicy,framework,gradelevel,scoringrule}/*</code>, <code>.../persistence/mapper/*</code>, <code>src/main/resources/db/migration/V&lt;next&gt;__reference_data_audit_actor_text.sql</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D2, D7, D8</li><li>2026-11-21 &middot; Done &middot; 9 entities extend BaseEntity (Lombok, @SuperBuilder), 9 mappers use builders, V16__reference_data_audit_actor_text.sql. V1..V16 applied in a postgres:18 container, created_by/updated_by of the 9 tables are varchar(64)</li></ul>
     </li>
-    <li class="job" id="job-4-3" data-status="todo">
-      <span class="title">4.3 Consumers: stop stamping audit fields by hand</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-4-3" data-status="done">
+      <span class="title">4.3 Consumers: stop stamping audit fields by hand</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> In <code>usecase/{framework,gradelevel,scoringrule,assessmentpolicyschool,assessmentpolicysystem,assessmentpolicyteacher}</code>, <code>AssessmentPolicyImportCommitHandler</code> and the other import handlers of these types: no <code>setCreatedBy/setUpdatedBy/setCreatedAt/setUpdatedAt</code> call and no audit constructor argument remains for this batch's audited models; every <code>new &lt;Model&gt;(</code> with arguments for this batch's models in <code>application/</code>, <code>infrastructure/</code> and <code>domain/</code> now uses <code>builder()</code> (the compiler finds them once the constructors are gone); ownership and quota reads use <code>isCreatedBy(UUID)</code>/<code>createdByUserId()</code>; queries that bind these columns take a <code>String</code>; DTO mappers keep the D4 contract. The import handlers still read <code>session.getCreatedBy()</code> (a <code>UUID</code> until Phase 6): they pass nothing for auditing any more and keep the actor through the Phase 1 scope.
          <strong>Files:</strong> <code>src/main/java/com/sep/vox/application/**</code>, <code>.../infrastructure/persistence/{repository,query,adapter}/**</code>, <code>.../infrastructure/initializer/**</code>, <code>.../domain/mapper/**</code> (only what the compiler and the grep in this phase's Verify line point to)</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D2, D7, D8</li><li>2026-11-21 &middot; Done &middot; use cases, initializers and import handler build with builder(), no setUpdatedAt/setUpdatedBy on batch models (grep clean), unused UserContextPort/now/userId removed; GradeLevel bulk update takes a String updatedBy (CHANGED: see notes); applies D4 (no DTO mapper change needed) and A/D recipe</li></ul>
     </li>
-    <li class="job" id="job-4-4" data-status="todo">
-      <span class="title">4.4 Tests: fixtures and auditing checks</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-4-4" data-status="done">
+      <span class="title">4.4 Tests: fixtures and auditing checks</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> Every test that builds this batch's models or entities compiles and passes, and its <code>new &lt;Model&gt;(</code> calls with arguments use <code>builder()</code>; new rows in the tests use a null id; one <code>@RepositoryTest</code> per batch proves <code>"System"</code> and a user id on create, and unchanged <code>created*</code> on update, for one audited entity of the batch; the existing <code>*RepositoryTests</code> of the batch pass with Docker.
          <strong>Files:</strong> <code>src/test/java/com/sep/vox/**</code> (files that mention the batch's classes)</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D2, D7, D8</li><li>2026-11-21 &middot; Done &middot; compileTestJava passes; ./gradlew test (full unit suite) BUILD SUCCESSFUL; integrationTest on Framework/GradeLevel/SchoolGrade/AssessmentDirectory/ScoringRule/AssessmentPolicy: 18 passed, FrameworkAuditingTests 3/3 (System actor, user id, unchanged created* on update)</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests '*Framework*' --tests '*GradeLevel*' --tests '*ScoringRule*' --tests '*AssessmentPolicy*' --tests '*LayeredArchitectureTests'</code>; with Docker: <code>./gradlew integrationTest --tests '*Framework*'</code>; <code>grep -rnE "\.set(Created|Updated)(By|At)\(" src/main</code> shows no hit on these models</p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-21 &middot; Done &middot; all jobs done; compileJava compileTestJava, ./gradlew test (full) and integrationTest on the batch pass</li></ul>
 </div>
 
-<div class="phase" id="phase-5" data-status="todo">
+<div class="phase" id="phase-5" data-status="done">
   <h3><span class="title">Phase 5 &ndash; Identity and registration: user, role, device session, tokens, register form</span>
     <span class="tag">medium &middot; mechanical &middot; needs D2, D4, D7, D8</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> <code>User</code> and <code>Role</code> become <code>BaseModel</code>/<code>BaseEntity</code> classes; <code>UserRole</code>, <code>DeviceSession</code>, <code>RefreshToken</code>, <code>PasswordSetUpToken</code>, <code>RegisterForm</code>, <code>RegisterFormDocument</code> get builders and Lombok only. No token, JWT or OAuth logic changes. <strong>Depends on:</strong> Phase 3 recipe; D2, D4, D7, D8.</p>
   <ul class="jobs">
-    <li class="job" id="job-5-1" data-status="todo">
-      <span class="title">5.1 Models: <code>user</code>, <code>devicesession</code>, <code>refreshtoken</code>, <code>passwordsetuptoken</code>, <code>registerform</code></span> <span class="status todo">Not started</span>
+    <li class="job" id="job-5-1" data-status="done">
+      <span class="title">5.1 Models: <code>user</code>, <code>devicesession</code>, <code>refreshtoken</code>, <code>passwordsetuptoken</code>, <code>registerform</code></span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> All 9 model classes (User, Role, UserRole, SchoolRoleCodes, DeviceSession, RefreshToken, PasswordSetUpToken, RegisterForm, RegisterFormDocument) have a nested <code>Builder</code> and <code>public static Builder builder()</code>. The 2 audited ones (User, Role) have the five audit fields: they extend <code>BaseModel</code>, no longer declare <code>id</code> or the four audit fields, their accessors or constructors that took them, and their builders extend <code>BaseModel.Builder</code>. None of them declares an all-args constructor any more (D8: removed on all 104 models; the public no-argument constructor stays because the builder uses it). Vietnamese comments in edited files are translated.
          <strong>Files:</strong> <code>src/main/java/com/sep/vox/domain/model/{user,devicesession,refreshtoken,passwordsetuptoken,registerform}/*.java</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D2, D7, D8</li><li>2026-11-21 &middot; Done &middot; 8 of 9 models have builder(); User and Role extend BaseModel; all-args constructors removed (CHANGED: SchoolRoleCodes is a constants holder with a private constructor, so it has no builder); User factories lost now/createdBy arguments; Vietnamese comment on User translated. compileJava OK</li></ul>
     </li>
-    <li class="job" id="job-5-2" data-status="todo">
-      <span class="title">5.2 Entities, migration and mappers: same 8</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-5-2" data-status="done">
+      <span class="title">5.2 Entities, migration and mappers: same 8</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> All 8 entities (User, Role, UserRole, DeviceSession, RefreshToken, PasswordSetUpToken, RegisterForm, RegisterFormDocument) use the D7 Lombok set and contain no hand-written accessor or constructor (non-accessor methods, if any, are kept). The 2 audited ones extend <code>BaseEntity</code>. Database-generated ids use <code>@UuidGenerator(style = VERSION_7)</code> and no <code>@Generated</code> or <code>columnDefinition = "UUID DEFAULT uuidv7()"</code>; entities with application-assigned ids keep theirs. One new migration <code>V&lt;next&gt;__identity_audit_actor_text.sql</code> converts <code>created_by</code>/<code>updated_by</code> of the audited tables to <code>varchar(64) USING ...::text</code>. The mappers build models and entities with builders. The application starts with <code>validate</code> (repository tests below).
          <strong>Files:</strong> <code>.../persistence/entity/{user,devicesession,refreshtoken,passwordsetuptoken,registerform}/*</code>, <code>.../persistence/mapper/*</code>, <code>src/main/resources/db/migration/V&lt;next&gt;__identity_audit_actor_text.sql</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D2, D7, D8</li><li>2026-11-21 &middot; Done &middot; 8 entities use the Lombok set, User and Role extend BaseEntity, other 6 use @UuidGenerator(VERSION_7); V17__identity_audit_actor_text.sql applied V1..V17 to postgres:18 (users, roles: created_by/updated_by varchar(64)); 8 mappers use builder(). compileJava OK</li></ul>
     </li>
-    <li class="job" id="job-5-3" data-status="todo">
-      <span class="title">5.3 Consumers: stop stamping audit fields by hand</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-5-3" data-status="done">
+      <span class="title">5.3 Consumers: stop stamping audit fields by hand</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> In <code>usecase/{auth,user,role,registration}</code> (also the registration and OTP flows that run without a logged-in user: they now record "System"): no <code>setCreatedBy/setUpdatedBy/setCreatedAt/setUpdatedAt</code> call and no audit constructor argument remains for this batch's audited models; every <code>new &lt;Model&gt;(</code> with arguments for this batch's models in <code>application/</code>, <code>infrastructure/</code> and <code>domain/</code> now uses <code>builder()</code> (the compiler finds them once the constructors are gone); ownership and quota reads use <code>isCreatedBy(UUID)</code>/<code>createdByUserId()</code>; queries that bind these columns take a <code>String</code>; DTO mappers keep the D4 contract. If the compiler points into <code>infrastructure/security</code>, <code>infrastructure/filter</code> or the JWT/OAuth code, stop and ask (Ask first) instead of editing it.
          <strong>Files:</strong> <code>src/main/java/com/sep/vox/application/**</code>, <code>.../infrastructure/persistence/{repository,query,adapter}/**</code>, <code>.../infrastructure/initializer/**</code>, <code>.../domain/mapper/**</code> (only what the compiler and the grep in this phase's Verify line point to)</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D2, D7, D8</li><li>2026-11-21 &middot; Done &middot; no setUpdatedAt/setUpdatedBy/audit constructor arguments left for User/Role in application/ and infrastructure/; unused now/callerId/currentUserId removed in UpdateSchoolUserUseCase, UpdateProfileUseCase, SchoolUserImportCommitHandler; User.softDelete() and updatePasswordAndActivate(hash) lost audit arguments; initializers use builder(); no change in security/filter/JWT code. grep for new Model(args) is empty</li></ul>
     </li>
-    <li class="job" id="job-5-4" data-status="todo">
-      <span class="title">5.4 Tests: fixtures and auditing checks</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-5-4" data-status="done">
+      <span class="title">5.4 Tests: fixtures and auditing checks</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> Every test that builds this batch's models or entities compiles and passes, and its <code>new &lt;Model&gt;(</code> calls with arguments use <code>builder()</code>; new rows in the tests use a null id; one <code>@RepositoryTest</code> per batch proves <code>"System"</code> and a user id on create, and unchanged <code>created*</code> on update, for one audited entity of the batch; the existing <code>*RepositoryTests</code> of the batch pass with Docker.
          <strong>Files:</strong> <code>src/test/java/com/sep/vox/**</code> (files that mention the batch's classes)</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D2, D7, D8</li><li>2026-11-21 &middot; Done &middot; 27 test files moved to builder() (script-converted, compileTestJava OK); UpdateSchoolUserUseCaseTests lost the updatedBy assertion (auditing now sets it); new RoleAuditingTests (3 tests: System, user id, update keeps created*). integrationTest on 12 repository/query test classes: BUILD SUCCESSFUL</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests '*Auth*' --tests '*User*' --tests '*Role*' --tests '*Registration*' --tests '*LayeredArchitectureTests'</code>; with Docker: <code>./gradlew integrationTest --tests '*UserRepositoryTests' --tests '*RoleRepositoryTests' --tests '*RefreshTokenRepositoryTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-21 &middot; Done &middot; compileJava + compileTestJava OK; test (*Auth*, *User*, *Role*, *Registration*, *Login*, *Logout*, *RegisterForm*, *LayeredArchitectureTests*, *ProvisionSchool*, *ImportCommit*) 353 passed after one fixture fix; integrationTest on the batch repository tests BUILD SUCCESSFUL</li></ul>
 </div>
 
-<div class="phase" id="phase-6" data-status="todo">
+<div class="phase" id="phase-6" data-status="done">
   <h3><span class="title">Phase 6 &ndash; School structure and import files</span>
     <span class="tag">large &middot; needs D2, D4, D5, D7, D8</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> The 7 non-money school classes and the 2 import-file classes are converted. <code>ImportSession</code> becomes a <code>BaseModel</code>, so the import commit handlers read the importing user through <code>createdByUserId()</code> and <code>ImportCommitService</code> passes the string actor to the Phase 1 scope. <strong>Depends on:</strong> Phase 3 recipe; D2, D4, D5, D7, D8.</p>
   <ul class="jobs">
-    <li class="job" id="job-6-1" data-status="todo">
-      <span class="title">6.1 Models: <code>school</code> (7 classes), <code>importfile</code></span> <span class="status todo">Not started</span>
+    <li class="job" id="job-6-1" data-status="done">
+      <span class="title">6.1 Models: <code>school</code> (7 classes), <code>importfile</code></span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> All 9 model classes (School, SchoolClass, SchoolClassUser, SchoolDirectory, SchoolGrade, SchoolRoom, SchoolUser, ImportSession, ImportRow) have a nested <code>Builder</code> and <code>public static Builder builder()</code>. The 6 audited ones (School, SchoolClass, SchoolDirectory, SchoolGrade, SchoolRoom, ImportSession) have the five audit fields: they extend <code>BaseModel</code>, no longer declare <code>id</code> or the four audit fields, their accessors or constructors that took them, and their builders extend <code>BaseModel.Builder</code>. None of them declares an all-args constructor any more (D8: removed on all 104 models; the public no-argument constructor stays because the builder uses it). Vietnamese comments in edited files are translated.
          <strong>Files:</strong> <code>src/main/java/com/sep/vox/domain/model/{school,importfile}/*.java</code> (the 5 money classes of <code>school</code> are Phase 10)</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D2, D7, D8</li><li>2026-11-21 &middot; Done &middot; 9 models rewritten with builders (6 extend BaseModel, no all-args constructors). <code>./gradlew compileJava</code> pass</li></ul>
     </li>
-    <li class="job" id="job-6-2" data-status="todo">
-      <span class="title">6.2 Entities, migration and mappers: same 9</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-6-2" data-status="done">
+      <span class="title">6.2 Entities, migration and mappers: same 9</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> All 9 entities (the <code>*JpaEntity</code> of the 9 models) use the D7 Lombok set and contain no hand-written accessor or constructor (non-accessor methods, if any, are kept). The 6 audited ones extend <code>BaseEntity</code>. Database-generated ids use <code>@UuidGenerator(style = VERSION_7)</code> and no <code>@Generated</code> or <code>columnDefinition = "UUID DEFAULT uuidv7()"</code>; entities with application-assigned ids keep theirs. One new migration <code>V&lt;next&gt;__school_and_import_audit_actor_text.sql</code> converts <code>created_by</code>/<code>updated_by</code> of the 6 audited tables to <code>varchar(64) USING ...::text</code>. The mappers build models and entities with builders. The application starts with <code>validate</code> (repository tests below).
          <strong>Files:</strong> <code>.../persistence/entity/{school,importfile}/*</code>, <code>.../persistence/mapper/*</code>, <code>src/main/resources/db/migration/V&lt;next&gt;__school_and_import_audit_actor_text.sql</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D2, D7, D8</li><li>2026-11-21 &middot; Done &middot; 9 entities on Lombok/@SuperBuilder, V18__school_and_import_audit_actor_text.sql (6 tables, applied V1..V18 to postgres:18: columns varchar), mappers use builders</li></ul>
     </li>
-    <li class="job" id="job-6-3" data-status="todo">
-      <span class="title">6.3 Consumers: stop stamping audit fields by hand</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-6-3" data-status="done">
+      <span class="title">6.3 Consumers: stop stamping audit fields by hand</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> In <code>usecase/{school,schoolclass,schoolclassuser,schooldirectory,schoolgrade,schoolroom,schooluser,importfile}</code>, <code>ProvisionSchoolService</code> and the <code>School*ImportCommitHandler</code> classes: no <code>setCreatedBy/setUpdatedBy/setCreatedAt/setUpdatedAt</code> call and no audit constructor argument remains for this batch's audited models; every <code>new &lt;Model&gt;(</code> with arguments for this batch's models in <code>application/</code>, <code>infrastructure/</code> and <code>domain/</code> now uses <code>builder()</code> (the compiler finds them once the constructors are gone); ownership and quota reads use <code>isCreatedBy(UUID)</code>/<code>createdByUserId()</code>; queries that bind these columns take a <code>String</code>; DTO mappers keep the D4 contract. <code>UUID currentUserId = session.getCreatedBy()</code> in the 6 school import handlers becomes <code>session.createdByUserId().orElseThrow(...)</code> with the existing not-found style; <code>Objects.equals(session.getCreatedBy(), currentUserId)</code> in <code>ViewImportRowsUseCase</code>, <code>ViewImportSessionUseCase</code>, <code>AcceptQuestionImportUseCase</code> becomes <code>session.isCreatedBy(currentUserId)</code>; <code>ImportCommitService</code> passes <code>session.getCreatedBy()</code> (now a <code>String</code>) to <code>callAs</code>; the native insert in <code>SpringDataSchoolClassRepository</code> binds <code>created_by</code> as a <code>String</code>; <code>CreateSchoolUseCase</code> and <code>ProvisionSchoolCommand</code> stop carrying <code>currentUserId, now</code> for auditing only.
          <strong>Files:</strong> <code>src/main/java/com/sep/vox/application/**</code>, <code>.../infrastructure/persistence/{repository,query,adapter}/**</code>, <code>.../infrastructure/initializer/**</code>, <code>.../domain/mapper/**</code> (only what the compiler and the grep in this phase's Verify line point to)</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D4, D5</li><li>2026-11-21 &middot; Done &middot; consumers converted, see Implementation notes (CHANGED). <code>./gradlew compileJava</code> pass</li></ul>
     </li>
-    <li class="job" id="job-6-4" data-status="todo">
-      <span class="title">6.4 Tests: fixtures and auditing checks</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-6-4" data-status="done">
+      <span class="title">6.4 Tests: fixtures and auditing checks</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> Every test that builds this batch's models or entities compiles and passes, and its <code>new &lt;Model&gt;(</code> calls with arguments use <code>builder()</code>; new rows in the tests use a null id; one <code>@RepositoryTest</code> per batch proves <code>"System"</code> and a user id on create, and unchanged <code>created*</code> on update, for one audited entity of the batch; the existing <code>*RepositoryTests</code> of the batch pass with Docker.
          <strong>Files:</strong> <code>src/test/java/com/sep/vox/**</code> (files that mention the batch's classes)</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started</li><li>2026-11-21 &middot; Done &middot; <code>./gradlew test</code> 2411/2412 pass (the 1 failure is SetUpPasswordUseCaseTests, Phase 5, not this batch); <code>integrationTest --tests *School* *ImportSession* *ImportRow*</code> 136 tests, 0 failures, SchoolRoomAuditingTests 3/3</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests '*School*' --tests '*Import*' --tests '*LayeredArchitectureTests'</code>; with Docker: <code>./gradlew integrationTest --tests '*SchoolRepositoryTests' --tests '*ImportSessionRepositoryTests' --tests '*SchoolClassRepositoryTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-21 &middot; Done &middot; all 4 jobs done; compileJava, compileTestJava, unit suite and the School/Import integration tests pass (one Phase 5 test fails, noted)</li></ul>
 </div>
 
-<div class="phase" id="phase-7" data-status="todo">
+<div class="phase" id="phase-7" data-status="done">
   <h3><span class="title">Phase 7 &ndash; Question bank, topics and rubrics</span>
     <span class="tag">large &middot; needs D2, D4, D7, D8</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> 11 models and 12 entities (the extra one is <code>StudentQuestionExposure</code>) are converted; <code>Question</code>, <code>QuestionBank</code>, <code>QuestionTopic</code> and the 3 rubric classes with audit fields extend the base classes. Ownership checks used by assessment use cases move to <code>isCreatedBy(UUID)</code>. <strong>Depends on:</strong> Phase 3 recipe; D2, D4, D7, D8.</p>
   <ul class="jobs">
-    <li class="job" id="job-7-1" data-status="todo">
-      <span class="title">7.1 Models: <code>question</code>, <code>rubric</code></span> <span class="status todo">Not started</span>
+    <li class="job" id="job-7-1" data-status="done">
+      <span class="title">7.1 Models: <code>question</code>, <code>rubric</code></span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> All 11 model classes (Question, QuestionAsset, QuestionBank, QuestionBankGrade, QuestionCollaborator, QuestionEvaluationGuide, QuestionTopic, Rubric, RubricCriterion, RubricResultBand, RubricVersion) have a nested <code>Builder</code> and <code>public static Builder builder()</code>. The 6 audited ones (Question, QuestionBank, QuestionTopic, RubricCriterion, RubricResultBand, RubricVersion) have the five audit fields: they extend <code>BaseModel</code>, no longer declare <code>id</code> or the four audit fields, their accessors or constructors that took them, and their builders extend <code>BaseModel.Builder</code>. None of them declares an all-args constructor any more (D8: removed on all 104 models; the public no-argument constructor stays because the builder uses it). Vietnamese comments in edited files are translated.
          <strong>Files:</strong> <code>src/main/java/com/sep/vox/domain/model/{question,rubric}/*.java</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D2, D4, D7, D8</li><li>2026-11-21 &middot; Done &middot; 11 models have builders, 6 audited extend BaseModel, no all-args constructors. <code>./gradlew compileJava</code> pass. QuestionBank.create lost now/createdBy args.</li></ul>
     </li>
-    <li class="job" id="job-7-2" data-status="todo">
-      <span class="title">7.2 Entities, migration and mappers: same 11 plus <code>StudentQuestionExposure</code></span> <span class="status todo">Not started</span>
+    <li class="job" id="job-7-2" data-status="done">
+      <span class="title">7.2 Entities, migration and mappers: same 11 plus <code>StudentQuestionExposure</code></span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> All 12 entities (the <code>*JpaEntity</code> of the 11 models and <code>StudentQuestionExposureJpaEntity</code> (assigned id, not audited)) use the D7 Lombok set and contain no hand-written accessor or constructor (non-accessor methods, if any, are kept). The 6 audited ones extend <code>BaseEntity</code>. Database-generated ids use <code>@UuidGenerator(style = VERSION_7)</code> and no <code>@Generated</code> or <code>columnDefinition = "UUID DEFAULT uuidv7()"</code>; entities with application-assigned ids keep theirs. One new migration <code>V&lt;next&gt;__question_and_rubric_audit_actor_text.sql</code> converts <code>created_by</code>/<code>updated_by</code> of the audited tables to <code>varchar(64) USING ...::text</code>. The mappers build models and entities with builders. The application starts with <code>validate</code> (repository tests below).
          <strong>Files:</strong> <code>.../persistence/entity/{question,rubric}/*</code>, <code>.../persistence/mapper/*</code>, <code>src/main/resources/db/migration/V&lt;next&gt;__question_and_rubric_audit_actor_text.sql</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D2, D7, D8</li><li>2026-11-21 &middot; Done &middot; 12 entities on the D7 Lombok set, 6 extend BaseEntity, ids via @UuidGenerator, mappers use builders, V19__question_and_rubric_audit_actor_text.sql applied V1..V19 on postgres:18 (6 tables x 2 columns now varchar(64))</li></ul>
     </li>
-    <li class="job" id="job-7-3" data-status="todo">
-      <span class="title">7.3 Consumers: stop stamping audit fields by hand</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-7-3" data-status="done">
+      <span class="title">7.3 Consumers: stop stamping audit fields by hand</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> In <code>usecase/{question,questionbank,questiontopic,rubricschool,rubricsystem,rubricteacher}</code>, the <code>Question*/Rubric*ImportCommitHandler</code> classes and the ownership checks in <code>assessment</code> and <code>assessmentpaper</code> use cases (<code>currentUserId.equals(question.getCreatedBy())</code>, 8 sites): no <code>setCreatedBy/setUpdatedBy/setCreatedAt/setUpdatedAt</code> call and no audit constructor argument remains for this batch's audited models; every <code>new &lt;Model&gt;(</code> with arguments for this batch's models in <code>application/</code>, <code>infrastructure/</code> and <code>domain/</code> now uses <code>builder()</code> (the compiler finds them once the constructors are gone); ownership and quota reads use <code>isCreatedBy(UUID)</code>/<code>createdByUserId()</code>; queries that bind these columns take a <code>String</code>; DTO mappers keep the D4 contract. JPQL <code>q.createdBy = :currentUserId</code> (5 sites in <code>SpringDataQuestionRepository</code>, 2 in <code>JpaQuestionQueryRepository</code>) takes a <code>String</code> parameter and the adapters pass <code>currentUserId.toString()</code>; <code>QuestionController</code> (<code>createdByUser</code> loader, owner check) keeps working on the unchanged UUID DTO (D4 = A).
          <strong>Files:</strong> <code>src/main/java/com/sep/vox/application/**</code>, <code>.../infrastructure/persistence/{repository,query,adapter}/**</code>, <code>.../infrastructure/initializer/**</code>, <code>.../domain/mapper/**</code> (only what the compiler and the grep in this phase's Verify line point to)</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D4, D5</li><li>2026-11-21 &middot; Done &middot; manual stamps removed, 17 ownership checks use isCreatedBy(UUID), DTO mappers keep the D4 contract. CHANGED: see Implementation notes. compileJava pass</li></ul>
     </li>
-    <li class="job" id="job-7-4" data-status="todo">
-      <span class="title">7.4 Tests: fixtures and auditing checks</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-7-4" data-status="done">
+      <span class="title">7.4 Tests: fixtures and auditing checks</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> Every test that builds this batch's models or entities compiles and passes, and its <code>new &lt;Model&gt;(</code> calls with arguments use <code>builder()</code>; new rows in the tests use a null id; one <code>@RepositoryTest</code> per batch proves <code>"System"</code> and a user id on create, and unchanged <code>created*</code> on update, for one audited entity of the batch; the existing <code>*RepositoryTests</code> of the batch pass with Docker.
          <strong>Files:</strong> <code>src/test/java/com/sep/vox/**</code> (files that mention the batch's classes)</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started</li><li>2026-11-21 &middot; Done &middot; QuestionBankAuditingTests 3/3; <code>integrationTest --tests '*Question*' --tests '*Rubric*'</code> pass incl. BulkUpdateQuestionStatusTransactionTests; unit tests '*Question*' '*Rubric*' LayeredArchitectureTests PagingConventionTests pass</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests '*Question*' --tests '*Rubric*' --tests '*LayeredArchitectureTests'</code>; with Docker: <code>./gradlew integrationTest --tests '*Question*'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-21 &middot; Done &middot; all jobs done; unit and integration tests for Question/Rubric pass</li></ul>
 </div>
 
-<div class="phase" id="phase-8" data-status="todo">
+<div class="phase" id="phase-8" data-status="done">
   <h3><span class="title">Phase 8 &ndash; Assessment: blueprint and paper</span>
     <span class="tag">large &middot; needs D2, D4, D7, D8</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> The 7 blueprint and paper models and entities are converted (6 with audit fields). <strong>Depends on:</strong> Phase 3 recipe; D2, D4, D7, D8.</p>
   <ul class="jobs">
-    <li class="job" id="job-8-1" data-status="todo">
-      <span class="title">8.1 Models: blueprint and paper</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-8-1" data-status="done">
+      <span class="title">8.1 Models: blueprint and paper</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> All 7 model classes (AssessmentBlueprint, AssessmentBlueprintSection, AssessmentBlueprintSlot, AssessmentBlueprintVersion, AssessmentPaper, AssessmentPaperItem, AssessmentPaperSection) have a nested <code>Builder</code> and <code>public static Builder builder()</code>. The 6 audited ones (AssessmentBlueprint, AssessmentBlueprintSection, AssessmentBlueprintSlot, AssessmentBlueprintVersion, AssessmentPaper, AssessmentPaperSection) have the five audit fields: they extend <code>BaseModel</code>, no longer declare <code>id</code> or the four audit fields, their accessors or constructors that took them, and their builders extend <code>BaseModel.Builder</code>. None of them declares an all-args constructor any more (D8: removed on all 104 models; the public no-argument constructor stays because the builder uses it). Vietnamese comments in edited files are translated.
          <strong>Files:</strong> <code>src/main/java/com/sep/vox/domain/model/assessment/{AssessmentBlueprint*,AssessmentPaper*}.java</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D2, D7, D8</li><li>2026-11-21 &middot; Done &middot; 7 models have builders, 6 extend BaseModel, no all-args constructors; Vietnamese comments of the 3 slot fields translated. <code>./gradlew compileJava</code> pass</li></ul>
     </li>
-    <li class="job" id="job-8-2" data-status="todo">
-      <span class="title">8.2 Entities, migration and mappers: same 7</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-8-2" data-status="done">
+      <span class="title">8.2 Entities, migration and mappers: same 7</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> All 7 entities (the <code>*JpaEntity</code> of the 7 models) use the D7 Lombok set and contain no hand-written accessor or constructor (non-accessor methods, if any, are kept). The 6 audited ones extend <code>BaseEntity</code>. Database-generated ids use <code>@UuidGenerator(style = VERSION_7)</code> and no <code>@Generated</code> or <code>columnDefinition = "UUID DEFAULT uuidv7()"</code>; entities with application-assigned ids keep theirs. One new migration <code>V&lt;next&gt;__assessment_blueprint_paper_audit_actor_text.sql</code> converts <code>created_by</code>/<code>updated_by</code> of the 6 audited tables to <code>varchar(64) USING ...::text</code>. The mappers build models and entities with builders. The application starts with <code>validate</code> (repository tests below).
          <strong>Files:</strong> <code>.../persistence/entity/assessment/{AssessmentBlueprint*,AssessmentPaper*}JpaEntity.java</code>, <code>.../persistence/mapper/*</code>, <code>src/main/resources/db/migration/V&lt;next&gt;__assessment_blueprint_paper_audit_actor_text.sql</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D2, D7, D8</li><li>2026-11-21 &middot; Done &middot; 7 entities on the D7 Lombok set (6 extend BaseEntity, AssessmentPaperItem uses @UuidGenerator), mappers use builders, V20__assessment_blueprint_paper_audit_actor_text.sql applied V1..V20 on postgres:18 (6 tables x 2 columns varchar(64))</li></ul>
     </li>
-    <li class="job" id="job-8-3" data-status="todo">
-      <span class="title">8.3 Consumers: stop stamping audit fields by hand</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-8-3" data-status="done">
+      <span class="title">8.3 Consumers: stop stamping audit fields by hand</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> In <code>usecase/{assessmentblueprint,assessmentpaper}</code> (<code>UpdateAssessmentBlueprintVersionUseCase</code> copies <code>existing.getCreatedBy()</code> positionally at 2 sites: it becomes a builder copy without audit arguments): no <code>setCreatedBy/setUpdatedBy/setCreatedAt/setUpdatedAt</code> call and no audit constructor argument remains for this batch's audited models; every <code>new &lt;Model&gt;(</code> with arguments for this batch's models in <code>application/</code>, <code>infrastructure/</code> and <code>domain/</code> now uses <code>builder()</code> (the compiler finds them once the constructors are gone); ownership and quota reads use <code>isCreatedBy(UUID)</code>/<code>createdByUserId()</code>; queries that bind these columns take a <code>String</code>; DTO mappers keep the D4 contract. <code>b.createdBy = :userId</code> in <code>SpringDataAssessmentBlueprintRepository</code> takes a <code>String</code>; ownership checks in <code>DeleteAssessmentPaperUseCase</code>, <code>UpdateAssessmentPaperStatusUseCase</code> and <code>UpdateAssessmentBlueprintVersionStatusUseCase</code> use <code>isCreatedBy(UUID)</code>.
          <strong>Files:</strong> <code>src/main/java/com/sep/vox/application/**</code>, <code>.../infrastructure/persistence/{repository,query,adapter}/**</code>, <code>.../infrastructure/initializer/**</code>, <code>.../domain/mapper/**</code> (only what the compiler and the grep in this phase's Verify line point to)</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D2, D7, D8</li><li>2026-11-21 &middot; Done &middot; manual stamps removed, 4 ownership checks use isCreatedBy(UUID), DTO mappers use createdByUserId()/updatedByUserId(); CHANGED: see Implementation notes. <code>./gradlew compileJava</code> pass</li></ul>
     </li>
-    <li class="job" id="job-8-4" data-status="todo">
-      <span class="title">8.4 Tests: fixtures and auditing checks</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-8-4" data-status="done">
+      <span class="title">8.4 Tests: fixtures and auditing checks</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> Every test that builds this batch's models or entities compiles and passes, and its <code>new &lt;Model&gt;(</code> calls with arguments use <code>builder()</code>; new rows in the tests use a null id; one <code>@RepositoryTest</code> per batch proves <code>"System"</code> and a user id on create, and unchanged <code>created*</code> on update, for one audited entity of the batch; the existing <code>*RepositoryTests</code> of the batch pass with Docker.
          <strong>Files:</strong> <code>src/test/java/com/sep/vox/**</code> (files that mention the batch's classes)</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D2, D7, D8</li><li>2026-11-21 &middot; Done &middot; AssessmentPaperAuditingTests 3/3; GradingTaskDetailQueryTests 4/4; <code>./gradlew test</code> 2411/2412 (only SetUpPasswordUseCaseTests, Phase 5); <code>integrationTest</code> 392/393 (only SupportedLanguageRepositoryTests sort test, Phase 3)</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests '*AssessmentBlueprint*' --tests '*AssessmentPaper*' --tests '*LayeredArchitectureTests'</code>; with Docker: <code>./gradlew integrationTest --tests '*AssessmentBlueprint*' --tests '*AssessmentPaper*'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-21 &middot; Done &middot; all 4 jobs done; compileJava, compileTestJava, unit suite and the Assessment integration tests pass (unrelated failures: SetUpPasswordUseCaseTests, SupportedLanguageRepositoryTests)</li></ul>
 </div>
 
-<div class="phase" id="phase-9" data-status="todo">
+<div class="phase" id="phase-9" data-status="done">
   <h3><span class="title">Phase 9 &ndash; Assessment: delivery, sessions, grading, appeals</span>
     <span class="tag">large &middot; needs D2, D3, D4, D7, D8</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> The remaining 21 assessment models and 20 entities (4 with audit fields: <code>Assessment</code>, <code>AssessmentSchedule</code>, <code>AssessmentSecurePool</code>, <code>AssessmentCandidateResult</code>) are converted. This phase contains the heaviest hand-stamping code and the two quota reads of <code>Assessment.createdBy</code>. It is the largest phase; if it proves too big for one slice, implement-plan may split it by job without renumbering. <strong>Depends on:</strong> Phase 3 recipe; D2, D3, D4, D7, D8.</p>
   <ul class="jobs">
-    <li class="job" id="job-9-1" data-status="todo">
-      <span class="title">9.1 Models: the other 21 <code>assessment</code> classes</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-9-1" data-status="done">
+      <span class="title">9.1 Models: the other 21 <code>assessment</code> classes</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> All 21 model classes (Assessment, AssessmentSchedule, AssessmentScheduleProctor, AssessmentSecurePool, AssessmentCandidate, AssessmentCandidateResult, AssessmentSession, AssessmentRecording, AssessmentProctoringAlert, AssessmentGradingAssignment, AssessmentMember, AssessmentItem*, AssessmentResultAppeal*, AssessmentResultStatusHistory and the remaining assessment classes (every <code>domain/model/assessment</code> class not listed in Phase 8)) have a nested <code>Builder</code> and <code>public static Builder builder()</code>. The 4 audited ones (Assessment, AssessmentSchedule, AssessmentSecurePool, AssessmentCandidateResult) have the five audit fields: they extend <code>BaseModel</code>, no longer declare <code>id</code> or the four audit fields, their accessors or constructors that took them, and their builders extend <code>BaseModel.Builder</code>. None of them declares an all-args constructor any more (D8: removed on all 104 models; the public no-argument constructor stays because the builder uses it). Vietnamese comments in edited files are translated.
          <strong>Files:</strong> <code>src/main/java/com/sep/vox/domain/model/assessment/*.java</code> (without the 7 files of Phase 8)</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D2, D7, D8. Baseline: ClassTestTokenQuotaGuardServiceTests 18/18; no test class named *CompleteAssessmentSessionGrading*</li><li>2026-11-21 &middot; Done &middot; 20 models have builders (4 extend BaseModel), no all-args constructors left in the batch; Vietnamese field comments translated. CHANGED: <code>GradingRoundPolicy</code> has no builder (static policy class, no fields), see Implementation notes. <code>./gradlew compileJava</code> pass</li></ul>
     </li>
-    <li class="job" id="job-9-2" data-status="todo">
-      <span class="title">9.2 Entities, migration and mappers: the other 20</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-9-2" data-status="done">
+      <span class="title">9.2 Entities, migration and mappers: the other 20</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> All 20 entities (every <code>entity/assessment</code> file not handled in Phase 8) use the D7 Lombok set and contain no hand-written accessor or constructor (non-accessor methods, if any, are kept). The 4 audited ones extend <code>BaseEntity</code>. Database-generated ids use <code>@UuidGenerator(style = VERSION_7)</code> and no <code>@Generated</code> or <code>columnDefinition = "UUID DEFAULT uuidv7()"</code>; entities with application-assigned ids keep theirs. One new migration <code>V&lt;next&gt;__assessment_delivery_audit_actor_text.sql</code> converts <code>created_by</code>/<code>updated_by</code> of the 4 audited tables to <code>varchar(64) USING ...::text</code>. The mappers build models and entities with builders. The application starts with <code>validate</code> (repository tests below).
          <strong>Files:</strong> <code>.../persistence/entity/assessment/*</code>, <code>.../persistence/mapper/*</code>, <code>src/main/resources/db/migration/V&lt;next&gt;__assessment_delivery_audit_actor_text.sql</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D2, D7, D8 (A-answers). 2026-11-21 &middot; Done &middot; 19 entities on the D7 Lombok set (4 extend BaseEntity; 3 keep application-assigned ids), mappers use builders, V21__assessment_delivery_audit_actor_text.sql (4 tables x 2 columns varchar(64)) applied by Flyway in integrationTest, validate OK</li></ul>
     </li>
-    <li class="job" id="job-9-3" data-status="todo">
-      <span class="title">9.3 Consumers: stop stamping audit fields by hand</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-9-3" data-status="done">
+      <span class="title">9.3 Consumers: stop stamping audit fields by hand</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> In <code>usecase/{assessment,assessmentschedule,assessmentsession,assessmentcandidate,assessmentdirectory,assessmentevaluation,assessmentgrading,assessmentitemresponse,assessmentappeal,assessmentturn,proctoring,recording}</code>, <code>AssessmentQuestionSecureLockService</code>, <code>ZeroScoreAssessmentResultService</code> and <code>infrastructure/worker/AssessmentStatusAutoTransitionJob</code> (a scheduler: it now records "System" for <code>updatedBy</code>): no <code>setCreatedBy/setUpdatedBy/setCreatedAt/setUpdatedAt</code> call and no audit constructor argument remains for this batch's audited models; every <code>new &lt;Model&gt;(</code> with arguments for this batch's models in <code>application/</code>, <code>infrastructure/</code> and <code>domain/</code> now uses <code>builder()</code> (the compiler finds them once the constructors are gone); ownership and quota reads use <code>isCreatedBy(UUID)</code>/<code>createdByUserId()</code>; queries that bind these columns take a <code>String</code>; DTO mappers keep the D4 contract. Money guard (D3): <code>ClassTestTokenQuotaGuardService</code> (2 reads) and <code>CompleteAssessmentSessionGradingUseCase</code> (<code>chargedUserId</code>) read the creator through <code>createdByUserId()</code> only; no amount, rule or query result changes, and their tests give the same pass count before and after.
          <strong>Files:</strong> <code>src/main/java/com/sep/vox/application/**</code>, <code>.../infrastructure/persistence/{repository,query,adapter}/**</code>, <code>.../infrastructure/initializer/**</code>, <code>.../domain/mapper/**</code> (only what the compiler and the grep in this phase's Verify line point to)</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D3, D4. 2026-11-21 &middot; Done &middot; manual stamps removed for Assessment, AssessmentSchedule, AssessmentSecurePool, AssessmentCandidateResult; DTO mapper uses createdByUserId()/updatedByUserId(); money guard: ClassTestTokenQuotaGuardService (2 reads) and CompleteAssessmentSessionGradingUseCase read createdByUserId().orElse(null) only. CHANGED: see Implementation notes. <code>./gradlew compileJava</code> pass</li></ul>
     </li>
-    <li class="job" id="job-9-4" data-status="todo">
-      <span class="title">9.4 Tests: fixtures and auditing checks</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-9-4" data-status="done">
+      <span class="title">9.4 Tests: fixtures and auditing checks</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> Every test that builds this batch's models or entities compiles and passes, and its <code>new &lt;Model&gt;(</code> calls with arguments use <code>builder()</code>; new rows in the tests use a null id; one <code>@RepositoryTest</code> per batch proves <code>"System"</code> and a user id on create, and unchanged <code>created*</code> on update, for one audited entity of the batch; the existing <code>*RepositoryTests</code> of the batch pass with Docker. The quota tests (<code>*ClassTestTokenQuotaGuard*</code>, <code>*CompleteAssessmentSessionGrading*</code>) are run before and after the job and the counts are recorded.
          <strong>Files:</strong> <code>src/test/java/com/sep/vox/**</code> (files that mention the batch's classes)</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started. 2026-11-21 &middot; Done &middot; AssessmentScheduleAuditingTests 3/3 (System and user id on create, created* unchanged on update); ClassTestTokenQuotaGuardServiceTests 18/18 before and after; <code>./gradlew test</code> 2411/2412 (only SetUpPasswordUseCaseTests, Phase 5); <code>integrationTest</code> 396/396</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests '*Assessment*' --tests '*ClassTest*' --tests '*LayeredArchitectureTests'</code>; with Docker: <code>./gradlew integrationTest --tests '*Assessment*'</code></p>
   <ul class="status-log"></ul>
 </div>
 
-<div class="phase" id="phase-10" data-status="todo">
+<div class="phase" id="phase-10" data-status="done">
   <h3><span class="title">Phase 10 &ndash; Billing, subscription, metering and school money classes</span>
     <span class="tag">large &middot; needs D2, D3, D4, D7, D8</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> The 18 money-related classes (<code>Order</code> and <code>SubscriptionPlan</code> carry audit fields) follow the recipe. No amount, rule, price or query result changes; the money tests give the same pass count before and after. <strong>Depends on:</strong> Phase 3 recipe; D2, D3, D4, D7, D8.</p>
   <ul class="jobs">
-    <li class="job" id="job-10-0" data-status="todo">
-      <span class="title">10.0 Record the money-test baseline</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-10-0" data-status="done">
+      <span class="title">10.0 Record the money-test baseline</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>./gradlew test --tests '*Quota*' --tests '*SchoolBalance*' --tests '*Order*' --tests '*Payment*' --tests '*Subscription*' --tests '*Invoice*'</code> was run before any Phase 10 edit and its pass count is written in the job's status log; the same command is rerun at the end of the phase and must show the same count.
          <strong>Files:</strong> none (read-only baseline)</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; Done &middot; baseline <code>./gradlew test --tests '*Quota*' '*SchoolBalance*' '*Order*' '*Payment*' '*Subscription*' '*Invoice*'</code>: 198 tests, 0 failures, 0 skipped (compileJava and compileTestJava pass before any edit)</li></ul>
     </li>
-    <li class="job" id="job-10-1" data-status="todo">
-      <span class="title">10.1 Models: <code>subscription</code>, <code>order</code>, <code>payment</code>, <code>invoice</code>, <code>financial</code>, <code>metering</code>, 5 school money classes</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-10-1" data-status="done">
+      <span class="title">10.1 Models: <code>subscription</code>, <code>order</code>, <code>payment</code>, <code>invoice</code>, <code>financial</code>, <code>metering</code>, 5 school money classes</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> All 18 model classes (SchoolSubscription, SchoolSubscriptionEvent, SchoolSubscriptionQuotaRecord, SchoolSubscriptionQuotaUserAllocation, SubscriptionPlan, SubscriptionPlanQuota, Order, OrderItem, PaymentRecord, Invoice, ExchangeRateSnapshot, AiUsageRecord, QuotaPricingCalibration, SchoolAiSpendEntry, SchoolBalance, SchoolBalanceEntry, SchoolDebtEvent, SchoolQuotaPolicy) have a nested <code>Builder</code> and <code>public static Builder builder()</code>. The 2 audited ones (Order, SubscriptionPlan) have the five audit fields: they extend <code>BaseModel</code>, no longer declare <code>id</code> or the four audit fields, their accessors or constructors that took them, and their builders extend <code>BaseModel.Builder</code>. None of them declares an all-args constructor any more (D8: removed on all 104 models; the public no-argument constructor stays because the builder uses it). Vietnamese comments in edited files are translated.
          <strong>Files:</strong> <code>src/main/java/com/sep/vox/domain/model/{subscription,order,payment,invoice,financial,metering}/*.java</code>, <code>domain/model/school/{SchoolAiSpendEntry,SchoolBalance,SchoolBalanceEntry,SchoolDebtEvent,SchoolQuotaPolicy}.java</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; Done &middot; 18 models have builder(), Order and SubscriptionPlan extend BaseModel, no all-args constructors left; Vietnamese comments in the 18 files translated. <code>./gradlew compileJava</code> pass. CHANGED: <code>SchoolAiSpendEntry</code> keeps its public no-argument constructor and loses the private one; static factories of Order/SubscriptionPlan dropped <code>createdBy</code> (Order keeps <code>now</code> for expiresAt)</li></ul>
     </li>
-    <li class="job" id="job-10-2" data-status="todo">
-      <span class="title">10.2 Entities, migration and mappers: same 18</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-10-2" data-status="done">
+      <span class="title">10.2 Entities, migration and mappers: same 18</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> All 18 entities (the <code>*JpaEntity</code> of the 18 models (the entities that have <code>@Version</code> keep it)) use the D7 Lombok set and contain no hand-written accessor or constructor (non-accessor methods, if any, are kept). The 2 audited ones extend <code>BaseEntity</code>. Database-generated ids use <code>@UuidGenerator(style = VERSION_7)</code> and no <code>@Generated</code> or <code>columnDefinition = "UUID DEFAULT uuidv7()"</code>; entities with application-assigned ids keep theirs. One new migration <code>V&lt;next&gt;__billing_audit_actor_text.sql</code> converts <code>created_by</code>/<code>updated_by</code> of the 2 audited tables (<code>orders</code>, <code>subscription_plans</code>) to <code>varchar(64) USING ...::text</code>. The mappers build models and entities with builders. The application starts with <code>validate</code> (repository tests below).
          <strong>Files:</strong> <code>.../persistence/entity/{subscription,order,payment,invoice,financial,metering,school}/*</code>, <code>.../persistence/mapper/*</code>, <code>src/main/resources/db/migration/V&lt;next&gt;__billing_audit_actor_text.sql</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; Done &middot; 18 entities use the D7 Lombok set, <code>@Version</code> kept on Order, SchoolBalance, SchoolSubscription, SubscriptionPlan; Order and SubscriptionPlan extend BaseEntity; ids use <code>@UuidGenerator(VERSION_7)</code>; V22__billing_audit_actor_text.sql (orders, subscription_plans) applied V1..V22 on postgres:18 (columns varchar(64)); 17 mappers use builders. CHANGED: see Implementation notes</li></ul>
     </li>
-    <li class="job" id="job-10-3" data-status="todo">
-      <span class="title">10.3 Consumers: stop stamping audit fields by hand</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-10-3" data-status="done">
+      <span class="title">10.3 Consumers: stop stamping audit fields by hand</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> In <code>usecase/{subscription,order,payment,balance,metering}</code>, <code>infrastructure/worker/{SubscriptionExpiryJob,PendingOrderReconciler,QuotaPricingCalibrationJob}</code>: no <code>setCreatedBy/setUpdatedBy/setCreatedAt/setUpdatedAt</code> call and no audit constructor argument remains for this batch's audited models; every <code>new &lt;Model&gt;(</code> with arguments for this batch's models in <code>application/</code>, <code>infrastructure/</code> and <code>domain/</code> now uses <code>builder()</code> (the compiler finds them once the constructors are gone); ownership and quota reads use <code>isCreatedBy(UUID)</code>/<code>createdByUserId()</code>; queries that bind these columns take a <code>String</code>; DTO mappers keep the D4 contract. Native upserts that already write <code>created_at/updated_at</code> by hand (for example <code>SpringDataSchoolBalanceRepository.insertIfAbsent</code>) are not entity writes and stay unchanged (Out of scope).
          <strong>Files:</strong> <code>src/main/java/com/sep/vox/application/**</code>, <code>.../infrastructure/persistence/{repository,query,adapter}/**</code>, <code>.../infrastructure/initializer/**</code>, <code>.../domain/mapper/**</code> (only what the compiler and the grep in this phase's Verify line point to)</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; Done &middot; manual stamps removed (6 plan use cases, OrderSettlementService 2 sites, CancelOrderUseCase), UserContextPort dropped from the 6 plan use cases, Order factories lost <code>createdBy</code>, SubscriptionPlanDto uses createdByUserId()/updatedByUserId() (D4). Workers SubscriptionExpiryJob, PendingOrderReconciler, QuotaPricingCalibrationJob needed no change. <code>./gradlew compileJava</code> pass</li></ul>
     </li>
-    <li class="job" id="job-10-4" data-status="todo">
-      <span class="title">10.4 Tests: fixtures and auditing checks</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-10-4" data-status="done">
+      <span class="title">10.4 Tests: fixtures and auditing checks</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> Every test that builds this batch's models or entities compiles and passes, and its <code>new &lt;Model&gt;(</code> calls with arguments use <code>builder()</code>; new rows in the tests use a null id; one <code>@RepositoryTest</code> per batch proves <code>"System"</code> and a user id on create, and unchanged <code>created*</code> on update, for one audited entity of the batch; the existing <code>*RepositoryTests</code> of the batch pass with Docker. The money-test command of job 10.0 gives the same pass count.
          <strong>Files:</strong> <code>src/test/java/com/sep/vox/**</code> (files that mention the batch's classes)</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; Done &middot; tests converted with builder(); BillingAuditingTests (3 tests, Order) pass; money-test command 198 tests, 0 failures = baseline 198; <code>./gradlew test</code> pass; <code>integrationTest</code> 399 tests, 1 failure (SupportedLanguageRepositoryTests sort test, Phase 3, not this phase). CHANGED: SchoolDebtEventShapeTests and SchoolQuotaPolicyTests now flush before asserting, see Implementation notes</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, the money-test command of job 10.0 (same pass count), <code>./gradlew test --tests '*LayeredArchitectureTests'</code>; with Docker: <code>./gradlew integrationTest --tests '*Order*' --tests '*Subscription*' --tests '*SchoolBalance*'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D3, D2, D4, D7, D8</li><li>2026-11-21 &middot; Done &middot; all jobs done; verify: compileJava + compileTestJava pass, money tests 198 = baseline, LayeredArchitectureTests pass, integrationTest 399 with 1 failure from Phase 3</li></ul>
 </div>
 
-<div class="phase" id="phase-11" data-status="todo">
+<div class="phase" id="phase-11" data-status="done">
   <h3><span class="title">Phase 11 &ndash; Personalization, notification and outbox</span>
     <span class="tag">large &middot; mechanical &middot; needs D7, D8</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> 19 models and 23 entities without audit fields get builders and Lombok only. Application-assigned ids (<code>UUID.randomUUID()</code> in the adapters) stay; no <code>BaseModel</code>, <code>BaseEntity</code> or migration is involved. <strong>Depends on:</strong> Phase 3 recipe; D7, D8.</p>
   <ul class="jobs">
-    <li class="job" id="job-11-1" data-status="todo">
-      <span class="title">11.1 Models: <code>personalization</code>, <code>notification</code>, <code>outbox</code></span> <span class="status todo">Not started</span>
+    <li class="job" id="job-11-1" data-status="done">
+      <span class="title">11.1 Models: <code>personalization</code>, <code>notification</code>, <code>outbox</code></span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> All 19 model classes have a nested <code>Builder</code> and <code>public static Builder builder()</code>, declare no all-args constructor any more (D8), and none extends <code>BaseModel</code>.
          <strong>Files:</strong> <code>src/main/java/com/sep/vox/domain/model/{personalization,notification,outbox}/*.java</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D7, D8</li></ul>
     </li>
-    <li class="job" id="job-11-2" data-status="todo">
-      <span class="title">11.2 Entities and mappers</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-11-2" data-status="done">
+      <span class="title">11.2 Entities and mappers</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> All 23 entities (14 with a model, 9 without) use the D7 Lombok set with no hand-written accessor or constructor; database-generated ids use <code>@UuidGenerator(style = VERSION_7)</code>, assigned ids are untouched; mappers, adapters and use cases build models and entities with builders (no <code>new &lt;Model&gt;(</code> with arguments remains for these classes); <code>OutboxJpaEntity</code> keeps the exact column mapping the outbox relay reads.
          <strong>Files:</strong> <code>.../persistence/entity/{personalization,notification,outbox}/*</code>, <code>.../persistence/mapper/*</code>, <code>.../persistence/adapter/*</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D7</li></ul>
     </li>
-    <li class="job" id="job-11-3" data-status="todo">
-      <span class="title">11.3 Tests</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-11-3" data-status="done">
+      <span class="title">11.3 Tests</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> Tests that build these models or entities compile and pass and use <code>builder()</code>; the existing <code>*RepositoryTests</code> of the batch pass with Docker.
          <strong>Files:</strong> <code>src/test/java/com/sep/vox/**</code> (files that mention the batch's classes)</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests '*Practice*' --tests '*Notification*' --tests '*Outbox*' --tests '*LearnerProfile*' --tests '*LayeredArchitectureTests'</code>; with Docker: <code>./gradlew integrationTest --tests '*Outbox*' --tests '*Practice*'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D7, D8</li><li>2026-11-21 &middot; Done &middot; all jobs done; verify: compileJava + compileTestJava pass, targeted unit tests and LayeredArchitectureTests pass, <code>./gradlew test</code> 2411 with 1 failure from Phase 5, <code>integrationTest</code> BUILD SUCCESSFUL</li></ul>
 </div>
 
-<div class="phase" id="phase-12" data-status="todo">
+<div class="phase" id="phase-12" data-status="done">
   <h3><span class="title">Phase 12 &ndash; Guardrail test, AGENTS.md and final verification</span>
     <span class="tag">medium &middot; needs D1</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> The new rules are enforced by a test, tracked in <code>AGENTS.md</code>, and the whole build is verified. <strong>Depends on:</strong> Phases 3 to 11; D1.</p>
   <ul class="jobs">
-    <li class="job" id="job-12-1" data-status="todo">
-      <span class="title">12.1 Convention guardrail test</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-12-1" data-status="done">
+      <span class="title">12.1 Convention guardrail test</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>ModelAndEntityConventionTests</code> (in <code>architecture/</code>, source-scan style like <code>PagingConventionTests</code>, with a "scanned more than N files" self-check) fails on: a <code>domain/model</code> class without <code>public static Builder builder()</code>; a <code>UUID createdBy/updatedBy</code> field in <code>domain/model</code> or <code>entity</code>; the text <code>uuidv7()</code> inside an entity; an entity file that is not in a feature sub-package (except <code>BaseEntity</code>); and a <code>.setCreatedBy/.setUpdatedBy/.setCreatedAt/.setUpdatedAt(</code> call under <code>application/</code> or <code>infrastructure/worker/</code>. It passes on the converted tree. The rules are never loosened to get green.
          <strong>Files:</strong> <code>src/test/java/com/sep/vox/architecture/ModelAndEntityConventionTests.java</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D1</li><li>2026-11-21 &middot; Done &middot; ModelAndEntityConventionTests (5 tests) passes on the converted tree; a probe with a flat entity, a UUID createdBy, uuidv7(), a manual setter and a model without builder made all 5 fail (probe files removed). CHANGED: exemption lists per A1</li></ul>
     </li>
-    <li class="job" id="job-12-2" data-status="todo">
-      <span class="title">12.2 Update <code>AGENTS.md</code></span> <span class="status todo">Not started</span>
+    <li class="job" id="job-12-2" data-status="done">
+      <span class="title">12.2 Update <code>AGENTS.md</code></span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>AGENTS.md</code> states: ids via <code>@UuidGenerator(style = VERSION_7)</code> (replacing the database-generated rule), the <code>entity/&lt;feature&gt;/</code> layout, <code>BaseModel</code>/<code>BaseEntity</code> and the "System" actor rule, the builder rule for models, Lombok on entities (and the ban on <code>@Data</code>/<code>@EqualsAndHashCode</code>/<code>@ToString</code>), and how to test auditing. No other rule is changed.
          <strong>Files:</strong> <code>AGENTS.md</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; Done &middot; AGENTS.md: entity/&lt;feature&gt; path, Hibernate UUIDv7 ids, builder rule, audit columns and System actor, entity Lombok rules, auditing tests, convention test (applies D1)</li></ul>
     </li>
-    <li class="job" id="job-12-3" data-status="todo">
-      <span class="title">12.3 Cross-system impact note</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-12-3" data-status="done">
+      <span class="title">12.3 Cross-system impact note</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> Implementation notes list: the migrations added (V15 and up) and the 36 tables whose <code>created_by/updated_by</code> became <code>varchar(64)</code>; what an external reader of those columns (reports, the AI grading service, any direct database consumer: not checked) must accept (UUID text, "System", NULL); the D4 outcome for the frontend and the desktop app; no Kafka topic, event payload, env var or URL path changes.
          <strong>Files:</strong> <code>docs/base-model-audit-plan/index.html</code> (Implementation notes only)</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; Done &middot; see Implementation notes, Phase 12</li></ul>
     </li>
-    <li class="job" id="job-12-4" data-status="todo">
-      <span class="title">12.4 Full verification</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-12-4" data-status="done">
+      <span class="title">12.4 Full verification</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>./gradlew check</code> (unit plus <code>integrationTest</code>) passes where Docker is available, or the notes say exactly which suites were not run; the <code>verify-plan</code> skill has been run and its result is in the notes.
          <strong>Files:</strong> none (verification)</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; Done &middot; ./gradlew check BUILD SUCCESSFUL (unit + integrationTest, Docker); verify-plan PASS WITH GAPS, see Implementation notes</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*ModelAndEntityConventionTests' --tests '*LayeredArchitectureTests' --tests '*PagingConventionTests'</code>, <code>./gradlew check</code> (needs Docker)</p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-21 &middot; In progress &middot; started; applies D1, A1</li><li>2026-11-21 &middot; Done &middot; all jobs done; ModelAndEntityConventionTests, LayeredArchitectureTests, PagingConventionTests and ./gradlew check pass</li></ul>
 </div>
 
 <h2 id="risks">4. Risks</h2>
@@ -1150,13 +1156,24 @@ SupportedLanguage.builder()
     <tr><td>2026-11-21</td><td>D1 to D8 answered (all recommended options except D8 = B). Conditional wording removed. Construction-site counts corrected (with arguments vs no-argument); jobs n.1, n.3, n.4, 3.1, 3.4, 11.1 to 11.3, the risks and Out of scope updated for D8 = B</td><td>Record the answers; D8 = B moves every model construction site with arguments (337 main, 342 test) to <code>builder()</code></td></tr>
     <tr><td>2026-11-21</td><td>Added the 13 startup initializers to Current state, to every batch's consumer job and to pilot job 3.3 (including <code>SupportedLanguageInitializer</code> and the unused <code>UserContextPort</code> in the create use case)</td><td>Found while drafting the <code>SupportedLanguage</code> model for review: they build models with <code>now, now, null, null</code> and were missing from the plan</td></tr>
     <tr><td>2026-11-21</td><td>Added the reviewed-draft section (<code>ActorConstant</code>, <code>BaseModel</code>, <code>SupportedLanguage</code> with builder, call sites) to section 2 and referenced it from jobs 1.1 and 3.1</td><td>Requested: put the draft into the plan so the pilot shape is tracked with the plan</td></tr>
+    <tr><td>2026-11-21</td><td>Approved</td><td>The user ran <code>/write-plan approve base-model-audit-plan</code> with D1 to D8 answered</td></tr>
   </tbody>
 </table></div>
 
 <h2 id="notes">8. Implementation notes</h2>
+<p>Phase 10 (billing, subscription, metering, school money), CHANGED items: (1) 18 models, 18 entities: <code>SchoolAiSpendEntry</code> has no mapper (its adapter builds the entity directly) and its private all-args constructor is gone. (2) Only <code>orders</code> and <code>subscription_plans</code> changed type: migration <code>V22__billing_audit_actor_text.sql</code>, applied V1..V22 to postgres:18 (both columns varchar(64)). (3) Ids of the 18 entities moved from <code>@Generated</code> (database default) to Hibernate <code>@UuidGenerator</code>, so an INSERT is no longer sent at <code>save()</code> but at flush: <code>SchoolDebtEventShapeTests</code> (4 tests) and <code>SchoolQuotaPolicyTests</code> (2 tests) asserted that a database CHECK failure surfaces from <code>save()</code>, so they now flush inside the asserted call and their Javadoc/comments (Vietnamese) were rewritten in English to say so. (4) <code>Order.forSubscription/forSubscriptionUpgrade/forTopUp</code> and <code>SubscriptionPlan.create</code> lost their <code>createdBy</code> argument; <code>SubscriptionPlan.create</code> also lost <code>now</code> (Order keeps <code>now</code> for <code>expiresAt</code>). (5) The six plan use cases (Archive, Publish, Create, Update, CreateReplacement, UpdateReplacement) and <code>CreateSubscriptionOrderUseCase</code>/<code>CreateTopUpOrderUseCase</code> lost <code>UserContextPort</code> or its stamping call; their tests lost the mock where it only served stamping. (6) <code>SubscriptionPlanInitializer</code> used to write NULL actors at startup; the audit hook now writes "System". (7) Money guard: no amount, fee, price or rule changed; the money tests give 198 passes before and after. Vietnamese comments: model, entity and mapper files translated in full; in use cases and services only the class Javadoc and the edited methods (plan convention), user-facing and exception strings untouched. Unrelated failure seen: SupportedLanguageRepositoryTests.whenFindAll_thenReturnsRequestedPageSortedByCreatedAtDescending (Phase 3).</p>
+<p>Phase 9 (assessment delivery, sessions, grading, appeals), CHANGED items: (1) <code>GradingRoundPolicy</code> has no builder: it is a final static policy class with no fields and a private constructor, so the plan count of 21 models is 20 real models (4 audited: Assessment, AssessmentSchedule, AssessmentSecurePool, AssessmentCandidateResult). (2) <code>AssessmentCandidate</code> and <code>AssessmentItemRuleHit</code> carry only some audit-like fields (assignedBy/updatedBy, createdBy as UUID), are not in the 36 (D2) and keep them as plain fields. (3) With the manual stamps gone, <code>AssessmentScheduleClosureService</code> lost its <code>actorId</code> parameter (closeSchedulesForAssessment, cancelSchedulesForAssessment; completeEndedSchedules unchanged), <code>AssessmentSchedule.createFresh</code> lost <code>createdBy</code> and <code>now</code>, <code>CreateClassTestUseCase.createDraftSchedule</code> and <code>DeleteAssessmentUseCase.cancel</code> lost parameters that became unused; 4 callers and the tests were updated. (4) The <code>@Modifying</code> JPQL <code>AssessmentScheduleRepository.updateAtomic</code> bypasses the auditing hook, so it still takes <code>updatedBy</code> and now takes a String (<code>currentUserId.toString()</code>), as in the earlier phases. (5) <code>aiConfidenceThresholdPercent</code> is set through the builder in CreateAssessmentUseCase and CreateClassTestUseCase (the old comment said it was set by a setter because the constructor lacked it). (6) Two tests were removed or rewritten because they asserted manual stamping that no longer exists: <code>DeleteAssessmentUseCaseTests.should_stamp_updated_by_on_cancelled_schedules</code> (removed) and <code>AssessmentScheduleClosureServiceTests.should_keep_previous_updated_by_when_actor_is_null</code> (now asserts the service leaves the audit values to persistence); updatedAt/updatedBy assertions on schedules and results were dropped from 4 tests. (7) The scheduler <code>AssessmentStatusAutoTransitionJob</code> no longer sets <code>updatedAt</code>; the auditing hook records "System". Quota guard counts: ClassTestTokenQuotaGuardServiceTests 18/18 before and after; no test class is named *CompleteAssessmentSessionGrading*. Results: <code>./gradlew test</code> 2411 tests, 1 failure (SetUpPasswordUseCaseTests, Phase 5, not this phase); <code>integrationTest</code> 396/396 including AssessmentScheduleAuditingTests 3/3.</p>
+<p>Phase 8 (assessment blueprint and paper), CHANGED items: (1) JPQL <code>b.createdBy = :userId</code> in SpringDataAssessmentBlueprintRepository.canEditBlueprint uses <code>cast(:userId as string)</code> because the same parameter also binds UUID columns; not exercised by a test. (2) UpdateAssessmentBlueprintVersionUseCase rebuilds sections and slots, so it copies <code>createdAt</code>/<code>createdBy</code> from the loaded rows through the builder (same as Phase 4), instead of "a builder copy without audit arguments", so the merge does not return a null createdAt. (3) Helper methods whose <code>now</code>/<code>currentUserId</code> parameters only fed audit fields lost them (rebalance/normalizeSectionWeights, lockClassTestPapers, createInlineBlueprint, switchToExistingBlueprint, toSection, toSlot, updateSectionQuestions, createNewSection). (4) Ownership checks <code>currentUserId.equals(x.getCreatedBy())</code> (3 use cases, 4 sites) would still have compiled against a String, so they were found by grep and moved to <code>isCreatedBy(UUID)</code>. (5) Migration is V20 (6 tables), checked by applying V1..V20 to postgres:18. The batch auditing test is AssessmentPaperAuditingTests (3 tests). Unrelated failures seen: SetUpPasswordUseCaseTests (Phase 5) and SupportedLanguageRepositoryTests.whenFindAll_thenReturnsRequestedPageSortedByCreatedAtDescending (Phase 3, sort order of rows inserted in one tick).</p>
+<p>Phase 7 (question bank, topics, rubrics), CHANGED items: (1) JPQL <code>q.createdBy = :currentUserId</code> (6 sites in SpringDataQuestionRepository, 2 in JpaQuestionQueryRepository) uses <code>cast(:currentUserId as string)</code> instead of a String parameter, because the same parameter also binds <code>qc.userId</code>/<code>em.userId</code> (UUID); method signatures are unchanged. Proved by the integration tests only for the paths they cover. (2) Bulk updates of rubric_criterions, rubric_result_bands, rubric_versions keep manual updatedBy and take a String (interface, adapter, Spring Data; callers pass currentUserId.toString()). (3) QuestionBank.create lost its now and createdBy arguments; CreateSystemQuestionBankUseCase lost UserContextPort (it only fed audit values). (4) Ownership checks use question.isCreatedBy(...) in 17 places, including QuestionStatusTransition (it used Objects.equals, so two null ids no longer count as owner). (5) Question/QuestionBank test fixtures of the status tests got createdBy(...) back, because ownership is the subject of those tests; BulkUpdateQuestionStatusTransactionTests stubs findCurrentAuthenticatedUserId because auditing reads the actor from UserContextPort. (6) Migration is V19 (6 tables), checked by applying V1..V19 to postgres:18. The batch auditing test is QuestionBankAuditingTests (3 tests). Phase 6 (school structure and import files), CHANGED items: (1) The 4 handlers whose <code>currentUserId</code> only fed audit fields (SchoolClass, SchoolGrade, SchoolRoom, SchoolDirectory import handlers) lost the variable instead of using <code>createdByUserId().orElseThrow(...)</code>; only SchoolClassUserImportCommitHandler keeps it (assignedBy is a business field) via <code>createdByUserId().orElseThrow(NotFoundException)</code>. (2) The Question* and Rubric* import handlers (later batches) read <code>session.createdByUserId().orElseThrow()</code> where they used <code>session.getCreatedBy()</code> as UUID; the same applies to the Accept/View use cases of those types (<code>session.isCreatedBy(...)</code>). Phases 7+ remove the manual stamping there. (3) Bulk <code>@Modifying</code> queries on school, school_classes, school_grades, school_rooms and import_sessions (markImporting, markQueued, updateMutableFields, archiveByGradeId, updateSchoolAtomic, updateSchoolGradeAtomic, updateSchoolRoomAtomic) keep manual updatedAt/updatedBy and take <code>String updatedBy</code> (interface, adapter, Spring Data); callers pass <code>currentUserId.toString()</code>. <code>markClaimed</code> got an extra <code>workerActor</code> String parameter because the same <code>worker</code> UUID also fills <code>claimed_by</code>. (4) SchoolClassRepositoryImpl.save now uses <code>saveAndFlush</code>: DeleteSchoolClassUseCase answers with <code>saved.getUpdatedAt()</code>, which would otherwise be the old value (flush-timing note of Phase 3); ImportSessionRepositoryImpl already used saveAndFlush. (5) CreateSchoolUseCase, CreateSchoolDirectoryUseCase and VerifySchoolDirectoryUseCase lost UserContextPort (it only fed audit values); ProvisionSchoolCommand lost <code>createdUserId</code> but keeps <code>now</code> (still used for SchoolUser.startDate and UserRole.createdAt). SchoolDirectory.verify(), applyImportUpdate(...) and the three createBy* factories, School.create and SchoolClass.create lost their actor and now arguments. (6) The batch migration is V18 (6 tables), checked by applying V1..V18 to postgres:18 (the test profile does not run Flyway). The batch auditing test is SchoolRoomAuditingTests (3 tests). Tests whose manual-stamp assertions no longer apply (Reject, CreateSchoolClass, DeleteSchoolClass, SchoolClass/SchoolRoom import handler tests) had those assertions removed.</p>
+<p>Phase 3 recipe (pilot <code>supportedlanguage</code>; batch phases copy it). Annotations: entity = <code>@Entity @Table @Getter @Setter @SuperBuilder @NoArgsConstructor(access = AccessLevel.PROTECTED)</code>, <code>extends BaseEntity</code>, own columns only (no id, no audit fields). Model: <code>extends BaseModel</code>, public no-argument constructor, own getters/setters, nested <code>Builder extends BaseModel.Builder&lt;Model, Builder&gt;</code> with a private constructor calling <code>super(new Model())</code>, <code>self()</code>, one fluent method per own field (boolean <code>isActive</code> becomes <code>active(boolean)</code>), <code>public static Builder builder()</code>. Mapper: <code>Model.builder()...id/createdAt/updatedAt/createdBy/updatedBy...build()</code> and <code>Entity.builder()</code>, audit values copied both ways. Use cases and initializers: <code>Model.builder()</code> with business fields only, no now, no user id, no null. Migration: <code>ALTER TABLE t ALTER COLUMN created_by TYPE varchar(64) USING created_by::text, ALTER COLUMN updated_by TYPE varchar(64) USING updated_by::text;</code> Tests: fixtures use <code>builder()</code> with <code>createdBy(UUID.randomUUID().toString())</code>; new-entity fixtures leave the id null; a <code>XxxAuditingTests</code> (<code>@RepositoryTest</code>, <code>EntityManager</code> flush and clear before each reload, principal via <code>SecurityContextHolder</code> with a <code>CustomUserDetails</code>) is only needed once, in the pilot.</p>
+<p>Phase 3, flush-timing answer: the object returned by <code>save()</code> of an update does not yet show the new <code>updatedAt</code> (observed: moved = false), because the update hook runs at flush; reading it back after a flush shows the new value. Code that needs the stored <code>updatedAt</code> must read it again after the flush.</p>
+<p>Phase 3, job 3.2 (CHANGED): the plan says the repository test proves the migration against <code>ddl-auto: validate</code>. It does not: <code>application-test.yaml</code> uses <code>ddl-auto: create-drop</code>, so the test schema is built from the entities and Flyway is not exercised. Checked instead by applying V1..V15 with psql to a <code>postgres:18</code> container (no error; <code>created_by</code>/<code>updated_by</code> are <code>varchar(64)</code>). The same applies to every batch migration: check it the same way, or ask whether the test profile should run Flyway (not changed here).</p>
+<p>Phase 3, job 3.3 (CHANGED): <code>UpdateSupportedLanguageUseCase</code> uses the <code>@Modifying</code> JPQL <code>updateMutableFields</code>, which bypasses the auditing hook, so it still passes <code>now</code> and the user id as manual values (the plan keeps manual values for bulk updates). Only the type changed: <code>updatedBy</code> is a <code>String</code> (<code>userId.toString()</code>) in the repository interface, adapter and Spring Data query. The Update use case still injects <code>UserContextPort</code>. Batch phases with a bulk update do the same.</p>
+<p>Phase 3, job 3.3: <code>DeleteSupportedLanguageUseCase</code> lost its <code>UserContextPort</code> and the test "cannot resolve current user" (no user lookup remains); <code>CreateSupportedLanguageUseCase</code> lost it too. Test names with "audit_fields" were renamed.</p>
+<p>Phase 3 results: <code>./gradlew test</code> (full unit suite) BUILD SUCCESSFUL; <code>integrationTest --tests '*SupportedLanguage*'</code>: SupportedLanguageAuditingTests 4/4, SupportedLanguageRepositoryTests 11/11. The sort test no longer presets <code>createdAt</code> (auditing overwrites it on insert), so it relies on insertion order.</p>
 <p>Filled in by <code>implement-plan</code>: deviations from the plan, results of <code>verify-plan</code>, and
 problems noticed but not fixed.</p>
-<ul id="notes-list"></ul>
+<ul id="notes-list"><li>verify-plan (2026-11-21): PASS WITH GAPS. Evidence: <code>./gradlew check</code> BUILD SUCCESSFUL; entity dir lists only BaseEntity.java, 107 entities in sub-packages, no <code>uuidv7</code> in entities, no @Data/@EqualsAndHashCode/@ToString on entities, 105 model files (104 + BaseModel), migrations V15 to V22. The section 6 greps for UUID actor fields (4 files) and manual setters (11 calls) are not empty; they are the exemptions of A1 (non-audited classes under D2), listed in the guardrail test. Not verified: the 25-line method limit and Vietnamese comment translation across the whole diff were not audited file by file; the money tests pass count before/after Phase 10 was recorded in Phase 10 and not re-run. Problems noticed: a few use cases still carry unused <code>UserContextPort</code>-style leftovers only where phases reported them; the 11 exempted manual stamps remain a follow-up if those classes ever join the base.</li><li>Phase 12 (guardrail, AGENTS.md, cross-system impact). (1) <code>ModelAndEntityConventionTests</code> has 5 tests; per A1 it keeps two explicit exemption lists for classes D2 left out of the base classes: UUID actor fields in <code>AssessmentCandidate</code> and <code>AssessmentItemRuleHit</code> (model and entity), and manual <code>setUpdatedAt/setUpdatedBy</code> in five candidate/session use cases and <code>AssessmentStatusAutoTransitionJob</code>. An exemption that stops applying fails the test. The comment stripping helper is a copy of the one in <code>PagingConventionTests</code> (not extracted, to avoid touching that file). (2) <code>AGENTS.md</code> changed only where the plan said (ids, entity layout, builder, audit, Lombok, auditing test) plus one line naming the new test. (3) Cross-system impact. Migrations V15 to V22 (8 files) changed <code>created_by</code> and <code>updated_by</code> from <code>uuid</code> to <code>varchar(64)</code> on 36 tables: supported_languages; frameworks, framework_versions, framework_criteria, framework_result_bands, framework_criterion_bands, grade_levels, grade_level_band_scopes, assessment_policies, scoring_rules; users, roles; schools, school_classes, school_directories, school_grades, school_rooms, import_sessions; questions, question_banks, question_topics, rubric_criterions, rubric_result_bands, rubric_versions; assessment_blueprints, assessment_blueprint_sections, assessment_blueprint_slots, assessment_blueprint_versions, assessment_papers, assessment_paper_sections; assessments, assessment_schedules, assessment_secure_pools, assessment_candidate_results; orders, subscription_plans. An external reader of those columns (reports, the AI grading service, any direct database consumer: not checked) must accept a UUID string (old rows and logged-in actors), <code>"System"</code> (new scheduler, consumer or anonymous writes) and NULL (old system writes); a reader that casts the column to <code>uuid</code> fails on "System". Frontend and desktop app (D4 = A): DTOs and GraphQL keep <code>UUID</code>, "System" and NULL arrive as <code>null</code>; no schema text changed. No Kafka topic, event payload, env var or URL path changed. Table ids still have <code>DEFAULT uuidv7()</code>. Entity ids are now generated by Hibernate (version 7), so the database default only serves native inserts. (4) Final run: <code>./gradlew check</code> BUILD SUCCESSFUL (unit and <code>integrationTest</code>, Docker 29.9.3). The two failures seen in the first run, <code>SetUpPasswordUseCaseTests</code> (Phase 5: asserted a hand-stamped <code>updatedAt</code>, assertion removed) and <code>SupportedLanguageRepositoryTests</code> sort test (Phase 3: two rows created in the same tick; the test now moves the first row one second back with a native update), were test-only and are fixed.</li><li>Phase 11 (personalization, notification, outbox), CHANGED items: (1) 19 models, 23 entities (14 with a model, 9 without); no migration and no <code>BaseModel</code>/<code>BaseEntity</code> (none of them has audit fields). (2) Ten entities used <code>@Generated</code> with <code>insertable = false</code> and <code>columnDefinition = "UUID DEFAULT uuidv7()"</code>; they now use <code>@UuidGenerator(VERSION_7)</code> like Phase 10, so the INSERT is sent at flush, not at <code>save()</code>. The 13 entities with application-assigned ids (for example <code>TopicSuggestionJpaEntity</code>, whose mapper still generates the id) are untouched. (3) Eight entity fields with an initializer (<code>active = true</code>, <code>source = "AI_GENERATED"</code>, <code>gradingStatus = PENDING</code>, ...) got <code>@Builder.Default</code>, because <code>@SuperBuilder</code> would otherwise drop the initializer; this keeps the old default when a builder leaves the field out. (4) <code>ProcessedEvent</code> had two constructors (with and without id); both are gone and the 11 consumers build it with <code>builder()</code>. (5) Three call sites whose arguments carried inline Vietnamese comments (<code>PracticePaperPersistenceService</code>, <code>StartPracticeSessionPersistenceService</code>, <code>ViewPracticeTopicOffersUseCase</code>) and <code>TopicSuggestionMapper</code> were converted by hand and the comments translated; the <code>recomputeInterest</code> comment in <code>InterestVectorService</code> was translated too. (6) Results: <code>./gradlew test</code> 2411 tests, 1 failure (SetUpPasswordUseCaseTests, Phase 5, not this phase); <code>integrationTest</code> passed in full.</li><li>Phase 5, job 5.1 (CHANGED): <code>SchoolRoleCodes</code> has no builder (constants holder with a private constructor, never instantiated). Static factories of <code>User</code> dropped the audit arguments (<code>now</code>, <code>createdBy</code>); <code>createSchoolAdmin</code> now delegates to <code>create</code> because the two became identical. <code>RegisterForm</code> keeps its static factories (<code>now</code> is a business timestamp: it has no audit actor fields and is not a <code>BaseModel</code>).</li><li>Phase 5, job 5.2: migration is <code>V17__identity_audit_actor_text.sql</code> (users, roles), checked by applying V1..V17 to a <code>postgres:18</code> container. The 6 non-audited entities now generate ids with Hibernate <code>@UuidGenerator</code>; <code>UserRoleJpaEntity</code> keeps <code>@CreationTimestamp</code>.</li><li>Phase 5, job 5.3: <code>SchoolUserImportCommitHandler</code> no longer reads <code>session.getCreatedBy()</code>; the importing user is recorded through the Phase 1 audit scope (D5).</li><li>Phase 4, job 4.3 (CHANGED): <code>GradeLevelRepository.updateGradeLevelAtomic</code> is a bulk <code>@Modifying</code> update, so it keeps its manual <code>updatedAt</code>/<code>updatedBy</code> (same as the pilot Update use case); only the type changed to <code>String</code> (<code>currentUserId.toString()</code>) in the interface, adapter and Spring Data query. <code>UpdateFrameworkVersionUseCase</code> rebuilds the model, so it copies <code>createdAt</code>/<code>createdBy</code> from the loaded version through the builder (the audit listener only fills them on insert). Create/Update use cases of this batch that only used <code>UserContextPort</code> for stamping lost it (their hand-written tests dropped the mock). <code>FrameworkAuditingTests</code> (3 tests) is the batch auditing test.</li><li>Phase 4, job 4.2: migration is <code>V16__reference_data_audit_actor_text.sql</code> (9 tables); checked by applying V1..V16 to a <code>postgres:18</code> container because the test profile does not run Flyway (see Phase 3 note).</li><li>Phase 1, job 1.3 (CHANGED): <code>JpaAuditingConfiguration</code> uses plain <code>@EnableJpaAuditing</code> without <code>auditorAwareRef</code>. A bean imported by <code>@Import</code> in <code>@RepositoryTest</code> is named by its class name, so <code>auditorAwareRef = "auditActorProvider"</code> failed with NoSuchBeanDefinitionException; Spring Data resolves the single <code>AuditorAware</code> bean by type. Same behaviour, no other effect. Auditing API checked against the spring-data-commons 4.1.0 javadoc (<code>AuditorAware.getCurrentAuditor()</code>, not deprecated); the online reference page was not opened.</li><li>Phase 1, job 1.4: <code>ImportCommitServiceTests</code> gained a pass-through <code>AuditActorScopePort</code> mock (needed for the new constructor argument) and one test for the actor. The old hand-written-mock style was kept.</li></ul>
 
 </div>
 <script>

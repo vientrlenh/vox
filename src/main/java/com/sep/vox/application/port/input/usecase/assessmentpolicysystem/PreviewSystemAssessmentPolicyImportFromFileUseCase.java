@@ -70,37 +70,40 @@ public class PreviewSystemAssessmentPolicyImportFromFileUseCase implements IUseC
         Instant now = Instant.now();
         Instant expiresAt = now.plus(1, ChronoUnit.DAYS);
 
-        ImportSession session = new ImportSession(
-                null,
-                null,
-                ImportType.ASSESSMENT_POLICY,
-                command.file().fileName(),
-                jsonSerializationPort.toJson(parsedResult.originalHeaders()),
-                jsonSerializationPort.toJson(parsedResult.suggestedMapping()),
-                null,
-                0, 0, 0, 0,
-                parsedResult.rows().size(),
-                null,
-                ImportSessionStatus.PREVIEWED,
-                null,
-                expiresAt,
-                null, null, null, 0,
-                now, now, currentUserId, currentUserId
-        );
+        ImportSession session = ImportSession.builder()
+            .schoolId(null)
+            .type(ImportType.ASSESSMENT_POLICY)
+            .fileName(command.file().fileName())
+            .originalHeadersJson(jsonSerializationPort.toJson(parsedResult.originalHeaders()))
+            .suggestedMappingJson(jsonSerializationPort.toJson(parsedResult.suggestedMapping()))
+            .confirmedMappingJson(null)
+            .validRows(0)
+            .invalidRows(0)
+            .importedRows(0)
+            .skippedRows(0)
+            .totalRows(parsedResult.rows().size())
+            .failureReason(null)
+            .status(ImportSessionStatus.PREVIEWED)
+            .importedEntityId(null)
+            .expiresAt(expiresAt)
+            .claimedAt(null)
+            .claimedBy(null)
+            .leaseExpiresAt(null)
+            .attempts(0)
+            .build();
 
         ImportSession savedSession = importSessionRepository.save(session);
         UUID generatedSessionId = savedSession.getId();
 
         List<ImportRow> importRows = IntStream.range(0, parsedResult.rows().size())
-                .mapToObj(i -> new ImportRow(
-                        null,
-                        generatedSessionId,
-                        i + 1,
-                        jsonSerializationPort.toJson(parsedResult.rows().get(i)),
-                        null,
-                        null,
-                        ImportRowStatus.PENDING
-                )).toList();
+                .mapToObj(i -> ImportRow.builder()
+                    .sessionId(generatedSessionId)
+                    .rowNumber(i + 1)
+                    .rawDataJson(jsonSerializationPort.toJson(parsedResult.rows().get(i)))
+                    .mappedDataJson(null)
+                    .errorsJson(null)
+                    .status(ImportRowStatus.PENDING)
+                    .build()).toList();
 
         importRowRepository.saveAll(importRows);
 

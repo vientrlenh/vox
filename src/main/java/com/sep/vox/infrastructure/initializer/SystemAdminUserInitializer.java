@@ -78,32 +78,26 @@ public class SystemAdminUserInitializer implements ApplicationRunner {
         User systemAdminUser = systemAdminUser();
         User savedUser = userRepository.save(systemAdminUser);
 
-        UserRole userRole = new UserRole(
-            savedUser.getId(), 
-            systemAdminRole.getId(), 
-            Instant.now()
-        );
+        UserRole userRole = UserRole.builder()
+            .userId(savedUser.getId())
+            .roleId(systemAdminRole.getId())
+            .createdAt(Instant.now())
+            .build();
         userRoleRepository.save(userRole);
         LOGGER.info("System admin initialized successfully");
     }
 
     private User systemAdminUser() {
-        Instant now = Instant.now();
-        return new User(
-            new Email(email),
-            passwordEncoderPort.hash(password),
-            new Phone(phone),
-            new FullName(fullName),
-            Gender.MALE,
-            new DateOfBirth(DateMapper.toLocalDate(dateOfBirth)),
-            address,
-            null,
-            UserStatus.ACTIVE,
-            now,
-            now,
-            null,
-            null
-        );
+        return User.builder()
+            .email(new Email(email))
+            .passwordHash(passwordEncoderPort.hash(password))
+            .phone(new Phone(phone))
+            .fullName(new FullName(fullName))
+            .gender(Gender.MALE)
+            .dateOfBirth(new DateOfBirth(DateMapper.toLocalDate(dateOfBirth)))
+            .address(address)
+            .status(UserStatus.ACTIVE)
+            .build();
     }
     
 }

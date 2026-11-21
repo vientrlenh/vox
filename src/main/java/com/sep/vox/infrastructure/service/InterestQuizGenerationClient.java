@@ -99,12 +99,12 @@ public class InterestQuizGenerationClient implements InterestQuizGenerationPort 
             for (JsonNode statement : node.path("statements")) {
                 statements.add(statement.asString());
             }
-            items.add(new InterestQuizSeedItem(
-                null,
-                dimensions,
-                statements,
-                node.path("desirability_check").asString()
-            ));
+            items.add(InterestQuizSeedItem.builder()
+                    .id(null)
+                    .dimensionPerStatement(dimensions)
+                    .statements(statements)
+                    .note(node.path("desirability_check").asString())
+                    .build());
         }
         return items;
     }

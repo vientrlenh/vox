@@ -1,33 +1,33 @@
 package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.assessment.AssessmentPaperItem;
-import com.sep.vox.infrastructure.persistence.entity.AssessmentPaperItemJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentPaperItemJpaEntity;
 
 public final class AssessmentPaperItemMapper {
 
     private AssessmentPaperItemMapper() {}
 
     public static AssessmentPaperItem toDomain(AssessmentPaperItemJpaEntity jpa) {
-        return new AssessmentPaperItem(
-            jpa.getId(),
-            jpa.getBlueprintSlotId(),
-            jpa.getSectionId(),
-            jpa.getPaperId(),
-            jpa.getQuestionId(),
-            jpa.getOrder(),
-            jpa.getWeight()
-        );
+        return AssessmentPaperItem.builder()
+                .id(jpa.getId())
+                .blueprintSlotId(jpa.getBlueprintSlotId())
+                .sectionId(jpa.getSectionId())
+                .paperId(jpa.getPaperId())
+                .questionId(jpa.getQuestionId())
+                .order(jpa.getOrder())
+                .weight(jpa.getWeight())
+                .build();
     }
 
     public static AssessmentPaperItemJpaEntity toJpa(AssessmentPaperItem domain) {
-        return new AssessmentPaperItemJpaEntity(
-            domain.getId(),
-            domain.getBlueprintSlotId(),
-            domain.getSectionId(),
-            domain.getPaperId(),
-            domain.getQuestionId(),
-            domain.getOrder(),
-            domain.getWeight()
-        );
+        return AssessmentPaperItemJpaEntity.builder()
+                .id(domain.getId())
+                .blueprintSlotId(domain.getBlueprintSlotId())
+                .sectionId(domain.getSectionId())
+                .paperId(domain.getPaperId())
+                .questionId(domain.getQuestionId())
+                .order(domain.getOrder())
+                .weight(domain.getWeight())
+                .build();
     }
 }

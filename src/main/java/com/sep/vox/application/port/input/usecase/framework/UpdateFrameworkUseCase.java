@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
-import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -10,7 +9,6 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateFrameworkCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.framework.Framework;
 import com.sep.vox.domain.repository.FrameworkRepository;
 
@@ -18,11 +16,9 @@ import com.sep.vox.domain.repository.FrameworkRepository;
 public class UpdateFrameworkUseCase implements IUseCase<UpdateFrameworkCommand, UUID> {
 
     private final FrameworkRepository frameworkRepository;
-    private final UserContextPort userContextPort;
 
-    public UpdateFrameworkUseCase(FrameworkRepository frameworkRepository, UserContextPort userContextPort) {
+    public UpdateFrameworkUseCase(FrameworkRepository frameworkRepository) {
         this.frameworkRepository = frameworkRepository;
-        this.userContextPort = userContextPort;
     }
 
     @Override
@@ -41,7 +37,5 @@ public class UpdateFrameworkUseCase implements IUseCase<UpdateFrameworkCommand, 
     private void updateFramework(UpdateFrameworkCommand input, Framework framework) {
         framework.setName(StringNormalization.trimAndCollapseSpaces(input.name()));
         framework.setDescription(StringNormalization.trimAndCollapseSpaces(input.description()));
-        framework.setUpdatedAt(Instant.now());
-        framework.setUpdatedBy(userContextPort.getCurrentAuthenticatedUserId());
     }
 }

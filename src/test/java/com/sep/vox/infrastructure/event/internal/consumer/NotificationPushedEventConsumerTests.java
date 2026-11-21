@@ -287,8 +287,13 @@ class NotificationPushedEventConsumerTests {
     @Test
     void should_skip_push_when_preference_disabled() {
         when(notificationPreferenceRepository.findByUserIdAndCategory(any(), any()))
-            .thenReturn(Optional.of(new NotificationPreference(
-                userId, NotificationCategory.ASSESSMENT_RESULT, false, true, Instant.now())));
+            .thenReturn(Optional.of(NotificationPreference.builder()
+                    .userId(userId)
+                    .category(NotificationCategory.ASSESSMENT_RESULT)
+                    .pushEnabled(false)
+                    .emailEnabled(true)
+                    .updatedAt(Instant.now())
+                    .build()));
 
         consumer.consume(record(EventTypeConstant.ASSESSMENT_RESULT_RELEASED, releasedPayload()), ack);
 
@@ -730,8 +735,14 @@ class NotificationPushedEventConsumerTests {
     }
 
     private NotificationDevice device(String installationId) {
-        return new NotificationDevice(
-            userId, "device-1", NotificationDevicePlatform.WEB, installationId, Instant.now(), Instant.now());
+        return NotificationDevice.builder()
+                .userId(userId)
+                .deviceId("device-1")
+                .platform(NotificationDevicePlatform.WEB)
+                .installationId(installationId)
+                .createdAt(Instant.now())
+                .lastSeenAt(Instant.now())
+                .build();
     }
 
     private ConsumerRecord<String, String> record(String eventType, Object payload) {

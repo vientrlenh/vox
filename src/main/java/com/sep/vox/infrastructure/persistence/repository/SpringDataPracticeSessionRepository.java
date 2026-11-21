@@ -13,7 +13,7 @@ import org.springframework.data.repository.query.Param;
 import com.sep.vox.application.query.dto.CriterionFrameworkInfo;
 import com.sep.vox.application.query.dto.PracticeDashboardCountsInfo;
 import com.sep.vox.application.query.dto.SessionRowInfo;
-import com.sep.vox.infrastructure.persistence.entity.PracticeSessionJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.personalization.PracticeSessionJpaEntity;
 
 public interface SpringDataPracticeSessionRepository
         extends JpaRepository<PracticeSessionJpaEntity, UUID> {

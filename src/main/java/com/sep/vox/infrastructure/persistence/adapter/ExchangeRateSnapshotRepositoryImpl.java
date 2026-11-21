@@ -1,6 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
-import com.sep.vox.infrastructure.persistence.entity.ExchangeRateSnapshotJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.financial.ExchangeRateSnapshotJpaEntity;
 import java.util.Optional;
 
 import org.springframework.stereotype.Repository;

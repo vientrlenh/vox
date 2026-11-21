@@ -2,34 +2,34 @@ package com.sep.vox.infrastructure.persistence.mapper;
 
 import com.sep.vox.domain.model.importfile.ImportRow;
 import com.sep.vox.domain.model.importfile.ImportRowStatus;
-import com.sep.vox.infrastructure.persistence.entity.ImportRowJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.importfile.ImportRowJpaEntity;
 
 public final class ImportRowMapper {
 
     private ImportRowMapper() {}
 
     public static ImportRow toDomain(ImportRowJpaEntity jpa) {
-        return new ImportRow(
-            jpa.getId(),
-            jpa.getSessionId(),
-            jpa.getRowNumber(),
-            jpa.getRawDataJson(),
-            jpa.getMappedDataJson(),
-            jpa.getErrorsJson(),
-            statusFromString(jpa.getStatus())
-        );
+        return ImportRow.builder()
+            .id(jpa.getId())
+            .sessionId(jpa.getSessionId())
+            .rowNumber(jpa.getRowNumber())
+            .rawDataJson(jpa.getRawDataJson())
+            .mappedDataJson(jpa.getMappedDataJson())
+            .errorsJson(jpa.getErrorsJson())
+            .status(statusFromString(jpa.getStatus()))
+            .build();
     }
 
     public static ImportRowJpaEntity toJpa(ImportRow row) {
-        return new ImportRowJpaEntity(
-            row.getId(),
-            row.getSessionId(),
-            row.getRowNumber(),
-            row.getRawDataJson(),
-            row.getMappedDataJson(),
-            row.getErrorsJson(),
-            valueOf(row.getStatus())
-        );
+        return ImportRowJpaEntity.builder()
+            .id(row.getId())
+            .sessionId(row.getSessionId())
+            .rowNumber(row.getRowNumber())
+            .rawDataJson(row.getRawDataJson())
+            .mappedDataJson(row.getMappedDataJson())
+            .errorsJson(row.getErrorsJson())
+            .status(valueOf(row.getStatus()))
+            .build();
     }
 
     private static ImportRowStatus statusFromString(String status) {

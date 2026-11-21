@@ -107,37 +107,37 @@ public class RegradeResultUseCase implements IUseCase<SubmitGradingCommand, Grad
 
         List<AssessmentItemCriterionScore> criterionScores = new ArrayList<AssessmentItemCriterionScore>();
         for (GradingItemScoreResolver.ResolvedItem item : resolvedItems) {
-            AssessmentItemEvaluation savedEvaluation = assessmentItemEvaluationRepository.save(new AssessmentItemEvaluation(
-                item.responseId(),
-                item.paperItemId(),
-                AssessmentEvaluationEngineType.HUMAN,
-                HUMAN_GRADER,
-                null,
-                prepared.currentUserId(),
-                item.itemScore(),
-                item.itemScore(),
-                null,
-                // false là điều kiện để calculator không giữ bài lại chờ người chấm:
-                // người đã chấm thì không còn gì để chờ nữa.
-                false,
-                null,
-                false,
-                false,
-                null,
-                null,
-                item.feedbackSummary(),
-                null,
-                null,
-                AssessmentItemEvaluationStatus.FINALIZED,
-                now
-            ));
-            item.criterionScores().forEach(score -> criterionScores.add(new AssessmentItemCriterionScore(
-                savedEvaluation.getId(),
-                score.rubricCriterionId(),
-                score.score(),
-                score.score(),
-                score.rationale()
-            )));
+            AssessmentItemEvaluation savedEvaluation = assessmentItemEvaluationRepository.save(AssessmentItemEvaluation.builder()
+                    .responseId(item.responseId())
+                    .paperItemId(item.paperItemId())
+                    .engineType(AssessmentEvaluationEngineType.HUMAN)
+                    .gradedByModel(HUMAN_GRADER)
+                    .sampleCount(null)
+                    .reviewerId(prepared.currentUserId())
+                    .rawItemScore(item.itemScore())
+                    .itemScore(item.itemScore())
+                    .overallConfidence(null)
+                    // false is the condition for the calculator not to keep the result waiting for a grader:
+                    // a person has already graded it, so there is nothing left to wait for.
+                    .requiresHumanReview(false)
+                    .reviewReasonCode(null)
+                    .markedInvalid(false)
+                    .requiresRetake(false)
+                    .signals(null)
+                    .validityJson(null)
+                    .feedbackSummary(item.feedbackSummary())
+                    .suggestionsJson(null)
+                    .promptVersion(null)
+                    .status(AssessmentItemEvaluationStatus.FINALIZED)
+                    .evaluatedAt(now)
+                    .build());
+            item.criterionScores().forEach(score -> criterionScores.add(AssessmentItemCriterionScore.builder()
+                    .evaluationId(savedEvaluation.getId())
+                    .rubricCriterionId(score.rubricCriterionId())
+                    .rawScore(score.score())
+                    .finalScore(score.score())
+                    .rationale(score.rationale())
+                    .build()));
         }
         assessmentItemCriterionScoreRepository.saveAll(criterionScores);
 

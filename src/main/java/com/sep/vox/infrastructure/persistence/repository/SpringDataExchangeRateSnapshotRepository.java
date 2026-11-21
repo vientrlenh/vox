@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.sep.vox.infrastructure.persistence.entity.ExchangeRateSnapshotJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.financial.ExchangeRateSnapshotJpaEntity;
 
 public interface SpringDataExchangeRateSnapshotRepository
         extends JpaRepository<ExchangeRateSnapshotJpaEntity, UUID> {

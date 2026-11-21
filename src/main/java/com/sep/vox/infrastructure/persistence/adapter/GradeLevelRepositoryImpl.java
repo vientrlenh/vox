@@ -4,7 +4,7 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.gradelevel.GradeLevel;
 import com.sep.vox.domain.model.gradelevel.GradeLevelStatus;
 import com.sep.vox.domain.repository.GradeLevelRepository;
-import com.sep.vox.infrastructure.persistence.entity.GradeLevelJpaEntity;
+import com.sep.vox.infrastructure.persistence.entity.gradelevel.GradeLevelJpaEntity;
 import com.sep.vox.infrastructure.persistence.mapper.GradeLevelMapper;
 import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataGradeLevelRepository;
@@ -107,7 +107,7 @@ public class GradeLevelRepositoryImpl implements GradeLevelRepository {
 
     @Override
     public int updateGradeLevelAtomic(UUID id, String name, String description, Integer order,
-            Instant updatedAt, UUID updatedBy) {
+            Instant updatedAt, String updatedBy) {
         return gradeLevelRepository.updateGradeLevelAtomic(id, name, description, order, updatedAt, updatedBy);
     }
 

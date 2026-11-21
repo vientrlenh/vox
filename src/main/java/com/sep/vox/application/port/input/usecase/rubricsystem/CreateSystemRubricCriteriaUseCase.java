@@ -29,7 +29,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -102,9 +101,6 @@ public class CreateSystemRubricCriteriaUseCase implements IUseCase<CreateSystemR
         if (existingFwCriteria.size() != inputFrameworkIds.size()) {
             throw new NotFoundException("Dữ liệu không hợp lệ: Một hoặc nhiều Framework Criterion ID gửi lên không tồn tại trong hệ thống.");
         }
-
-
-        Instant now = Instant.now();
 
         // 4. Lặp và xử lý danh sách tiêu chí (CÓ CHỐNG TRÙNG LẶP NỘI BỘ)
         Set<String> uniqueCodes = new HashSet<>();

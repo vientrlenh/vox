@@ -6,7 +6,6 @@ import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionCollaborator;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -118,7 +117,6 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
         AssessmentPaper paper = classTestPaperResolver.resolve(assessment.getId(), input.paperId());
         int order = assessmentPaperSectionRepository.findByPaperId(paper.getId()).size() + 1;
 
-        Instant now = Instant.now();
         AssessmentPaperSection paperSection = assessmentPaperSectionRepository.save(AssessmentPaperSection.builder()
             .paperId(paper.getId())
             .order(order)

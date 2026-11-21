@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.question;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -33,7 +32,6 @@ public class QuestionCloneService {
 
     @Transactional
     public Question cloneAsDraftWithDetails(Question source, UUID currentUserId) {
-        Instant now = Instant.now();
         Question clonedQuestion = Question.builder()
                 .questionBankId(source.getQuestionBankId())
                 .questionTopicId(source.getQuestionTopicId())

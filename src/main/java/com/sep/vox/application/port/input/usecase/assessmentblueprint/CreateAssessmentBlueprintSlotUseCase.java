@@ -5,7 +5,6 @@ import com.sep.vox.domain.model.assessment.AssessmentBlueprintSection;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersion;
 import com.sep.vox.domain.model.question.Question;
 import java.math.BigDecimal;
-import java.time.Instant;
 
 import java.util.List;
 import java.util.UUID;

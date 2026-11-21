@@ -3,7 +3,6 @@ package com.sep.vox.application.port.input.usecase.assessmentpaper;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentPaper;
 import com.sep.vox.domain.model.assessment.AssessmentPaperSection;
-import java.time.Instant;
 
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -66,7 +65,6 @@ public class UpdateAssessmentPaperSectionUseCase implements IUseCase<UpdateAsses
         }
         assessmentPaperAuthoringAccessService.requireCanAuthor(assessment, currentUserId);
 
-        Instant now = Instant.now();
         if (input.title() != null) {
             section.setTitle(input.title());
         }

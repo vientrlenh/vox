@@ -5,7 +5,6 @@ import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersion;
 import com.sep.vox.domain.model.assessment.AssessmentPaperItem;
 import com.sep.vox.domain.model.question.Question;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -125,7 +124,6 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
             validateExistingBlueprintDuration(input, assessment);
         }
 
-        Instant now = Instant.now();
         // Đổi blueprint viết lại toàn bộ nội dung của mã đề. Bài có nhiều mã đề thì không có mã đề
         // nào là "mã đề của blueprint" cả — chặn hẳn thay vì âm thầm ghi đè mã đề đầu tiên.
         List<AssessmentPaper> papers = assessmentPaperRepository.findByAssessmentId(assessment.getId());

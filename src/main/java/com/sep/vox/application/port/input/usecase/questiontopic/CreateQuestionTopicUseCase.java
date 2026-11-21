@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.usecase.questiontopic;
 
 import com.sep.vox.domain.model.question.QuestionBank;
-import java.time.Instant;
 
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -64,7 +63,6 @@ public class CreateQuestionTopicUseCase implements IUseCase<CreateQuestionTopicC
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        Instant now = Instant.now();
         QuestionTopic topic = QuestionTopic.builder()
                 .questionBankId(command.questionBankId())
                 .code(command.code())

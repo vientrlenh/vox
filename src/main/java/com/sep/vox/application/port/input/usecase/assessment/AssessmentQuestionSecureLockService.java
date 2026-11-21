@@ -78,7 +78,6 @@ public class AssessmentQuestionSecureLockService {
         if (pool == null) {
             return;
         }
-        Instant now = Instant.now();
         for (Question question : questionRepository.findBySecurePoolId(pool.getId())) {
             question.setLocked(false);
             question.setConfidentiality(QuestionConfidentiality.RELEASED);

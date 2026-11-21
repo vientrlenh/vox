@@ -144,7 +144,6 @@ public class UnblockAssessmentCandidateUseCase implements IUseCase<UnblockAssess
      */
     private void moveToPendingReviewWithoutScores(
             AssessmentCandidateResult result, UUID sessionId) {
-        Instant now = Instant.now();
         result.setStatus(AssessmentCandidateResultStatus.PENDING_REVIEW);
         assessmentCandidateResultRepository.save(result);
         LOGGER.info(

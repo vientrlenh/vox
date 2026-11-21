@@ -5,7 +5,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -40,7 +39,6 @@ public class DeleteFrameworkVersionUseCaseTests {
 
     private UUID frameworkId = UUID.randomUUID();
     private UUID versionId = UUID.randomUUID();
-    private Instant now = Instant.now();
 
     @BeforeEach
     void setUp() {

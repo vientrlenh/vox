@@ -15,7 +15,6 @@ import com.sep.vox.domain.service.rubric.RubricScoringConsistencyValidator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -65,8 +64,6 @@ public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSy
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             throw new ForbiddenException("Hành động bị từ chối: Không thể chuyển trạng thái Rubric thuộc về Trường học (School).");
         }
-
-        Instant now = Instant.now();
 
         // 4. XỬ LÝ LOGIC MÁY TRẠNG THÁI (STATE MACHINE) CHẶT CHẼ
         if (command.status() == RubricStatus.PUBLISHED) {

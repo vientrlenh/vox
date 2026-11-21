@@ -6,7 +6,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
-import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -61,7 +60,6 @@ class CreateSchoolGradeUseCaseTests {
 
     @Test
     void should_create_grade_with_active_status() {
-        Instant now = Instant.now();
         GradeLevel gradeLevel = GradeLevel.builder()
             .id(gradeLevelId)
             .code("K1")

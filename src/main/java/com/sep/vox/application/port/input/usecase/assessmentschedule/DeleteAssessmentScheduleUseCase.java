@@ -63,7 +63,7 @@ public class DeleteAssessmentScheduleUseCase implements IUseCase<DeleteAssessmen
         }
         Assessment assessment = assessmentRepository.findById(schedule.getAssessmentId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
-        UUID currentUserId = authorize(assessment);
+        authorize(assessment);
 
         if (assessmentCandidateRepository.countByScheduleId(schedule.getId()) > 0) {
             throw new IllegalStateException("Không thể xoá ca thi đang có thí sinh");

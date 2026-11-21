@@ -53,7 +53,6 @@ class SchoolGradeRepositoryTests {
     }
 
     private GradeLevelJpaEntity persistGradeLevel(String code, int order) {
-        Instant now = Instant.now();
         GradeLevelJpaEntity level = GradeLevelJpaEntity.builder()
             .code(code)
             .name(code)

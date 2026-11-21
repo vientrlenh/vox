@@ -3,7 +3,6 @@ package com.sep.vox.application.port.input.usecase.assessment;
 import com.sep.vox.domain.model.question.QuestionAsset;
 import com.sep.vox.domain.model.question.QuestionCollaborator;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -157,7 +156,6 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
             .sorted((a, b) -> Integer.compare(a.getOrder(), b.getOrder()))
             .toList();
 
-        Instant now = Instant.now();
         int commonCount = Math.min(existingPaperSections.size(), input.sections().size());
         List<BigDecimal> sectionWeights = ClassTestSectionWeightPolicy.resolveRequestedWeights(input.sections());
 

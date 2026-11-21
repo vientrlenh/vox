@@ -3,7 +3,6 @@ package com.sep.vox.application.port.input.usecase.assessment;
 import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionCollaborator;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -93,8 +92,6 @@ public class UpdateClassTestSectionUseCase implements IUseCase<UpdateClassTestSe
 
         AssessmentPaperSection paperSection = assessmentPaperSectionRepository.findById(input.sectionId())
             .orElseThrow(() -> new NotFoundException("Không tìm thấy section"));
-
-        Instant now = Instant.now();
 
         if (input.title() != null) {
             paperSection.setTitle(input.title());

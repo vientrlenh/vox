@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.service;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -79,7 +78,6 @@ public class QuestionTopicImportCommitHandler implements ImportCommitHandler {
         Set<String> codesInThisFile = new HashSet<String>();
         long importedCount = 0;
         long invalidCount = 0;
-        Instant now = Instant.now();
 
         for (ImportRow row : rows) {
             if (row.getStatus() != ImportRowStatus.PENDING) {

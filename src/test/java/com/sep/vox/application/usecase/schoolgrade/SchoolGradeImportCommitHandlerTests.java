@@ -217,7 +217,6 @@ class SchoolGradeImportCommitHandlerTests {
     }
 
     private GradeLevel gradeLevel(String code) {
-        Instant now = Instant.now();
         return GradeLevel.builder()
             .id(levelId)
             .code(code)

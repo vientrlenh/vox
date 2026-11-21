@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.service;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -464,7 +463,6 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
     }
 
     private void createQuestion(Map<String, String> data, ImportContext importContext, UUID currentUserId) {
-        Instant now = Instant.now();
         Question question = Question.builder()
                 .questionBankId(importContext.questionBank().getId())
                 .questionTopicId(importContext.questionTopic().getId())

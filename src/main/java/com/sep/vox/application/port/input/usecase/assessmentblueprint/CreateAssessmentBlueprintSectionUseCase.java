@@ -3,7 +3,6 @@ package com.sep.vox.application.port.input.usecase.assessmentblueprint;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprint;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersion;
 import java.math.BigDecimal;
-import java.time.Instant;
 
 import java.util.List;
 import java.util.UUID;

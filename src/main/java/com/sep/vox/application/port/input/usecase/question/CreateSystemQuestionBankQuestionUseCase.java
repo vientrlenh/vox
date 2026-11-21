@@ -2,7 +2,6 @@ package com.sep.vox.application.port.input.usecase.question;
 
 import com.sep.vox.domain.model.question.QuestionBank;
 import com.sep.vox.domain.model.question.QuestionTopic;
-import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -105,7 +104,6 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
         validateResponseDurationRange(command);
         validateAssetOrders(command.assets());
 
-        Instant now = Instant.now();
         QuestionSharing sharing = command.sharing() == null ? QuestionSharing.PRIVATE : command.sharing();
         Question question = Question.builder()
                 .questionBankId(command.questionBankId())

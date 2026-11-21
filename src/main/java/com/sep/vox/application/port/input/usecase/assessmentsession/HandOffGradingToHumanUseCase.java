@@ -4,7 +4,6 @@ import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentCandidate;
 import com.sep.vox.domain.model.assessment.AssessmentSession;
-import java.time.Instant;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -121,7 +120,6 @@ public class HandOffGradingToHumanUseCase implements IUseCase<HandOffGradingToHu
         AssessmentPolicy policy = assessment.getAssessmentPolicyId() == null
             ? null
             : assessmentPolicyRepository.findById(assessment.getAssessmentPolicyId()).orElse(null);
-        Instant now = Instant.now();
 
         // The same set of fields as persistInvalidBlockedResult (SubmitAssessmentSessionUseCase): the rubric and
         // framework must be fixed RIGHT when it is created, because the grading screen reads the scale and the list of criteria

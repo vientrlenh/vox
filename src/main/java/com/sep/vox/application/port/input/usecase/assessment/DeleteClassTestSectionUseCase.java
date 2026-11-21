@@ -4,7 +4,6 @@ import com.sep.vox.domain.model.assessment.AssessmentPaper;
 import com.sep.vox.domain.model.assessment.AssessmentPaperItem;
 import com.sep.vox.domain.model.assessment.AssessmentPaperSection;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -103,7 +102,6 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
         }
         assessmentPaperSectionRepository.deleteById(paperSection.getId());
 
-        Instant now = Instant.now();
         List<AssessmentPaperSection> remainingPaperSections = allPaperSections.stream().filter(item -> !item.getId().equals(paperSection.getId())).toList();
         for (int i = 0; i < remainingPaperSections.size(); i++) {
             AssessmentPaperSection remaining = remainingPaperSections.get(i);

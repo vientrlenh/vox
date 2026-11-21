@@ -93,7 +93,6 @@ public class CreateAssessmentUseCase implements IUseCase<CreateAssessmentCommand
 
         validateOpenClose(command.openAt(), command.closeAt(), currentSchoolId);
 
-        Instant now = Instant.now();
         Assessment assessment = Assessment.builder()
                 .blueprintId(command.blueprintId())
                 .code(assessmentCodeOf(command.code()))

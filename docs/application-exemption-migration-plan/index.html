@@ -1,0 +1,894 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Application exemption migration plan</title>
+<style>
+  :root {
+    --bg: #fafaf8; --surface: #ffffff; --text: #1d1d1b; --muted: #5f5f5a; --border: #e2e1dc;
+    --accent: #1f5fbf; --accent-soft: #e8f0fc; --warn: #8a5a00; --warn-soft: #fdf3dc;
+    --ok: #17673a; --ok-soft: #e3f4ea; --bad: #9b1c1c; --bad-soft: #fbe6e6; --code-bg: #f3f2ee;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #151514; --surface: #1d1d1b; --text: #ecebe6; --muted: #a2a19a; --border: #33332f;
+      --accent: #7fb0f5; --accent-soft: #1b2a40; --warn: #f0c36a; --warn-soft: #3a2f14;
+      --ok: #7fd3a0; --ok-soft: #14301f; --bad: #f19a9a; --bad-soft: #3d1b1b; --code-bg: #262623;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #151514; --surface: #1d1d1b; --text: #ecebe6; --muted: #a2a19a; --border: #33332f;
+    --accent: #7fb0f5; --accent-soft: #1b2a40; --warn: #f0c36a; --warn-soft: #3a2f14;
+    --ok: #7fd3a0; --ok-soft: #14301f; --bad: #f19a9a; --bad-soft: #3d1b1b; --code-bg: #262623;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 32px 16px 96px; }
+  h1 { font-size: 1.9rem; line-height: 1.2; margin: 0 0 8px; }
+  h2 { font-size: 1.35rem; margin: 48px 0 12px; padding-top: 16px; border-top: 1px solid var(--border); }
+  h3 { font-size: 1.05rem; margin: 28px 0 8px; }
+  p, li { max-width: 72ch; }
+  .meta { color: var(--muted); font-size: .92rem; margin-bottom: 20px; }
+  .status { display: inline-block; border-radius: 999px; padding: 2px 12px; font-size: .8rem;
+    font-weight: 600; white-space: nowrap; background: var(--code-bg); color: var(--muted); }
+  .status.draft, .status.open { background: var(--warn-soft); color: var(--warn); }
+  .status.approved, .status.progress { background: var(--accent-soft); color: var(--accent); }
+  .status.done, .status.answered { background: var(--ok-soft); color: var(--ok); }
+  .status.blocked { background: var(--bad-soft); color: var(--bad); }
+  nav { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 18px; margin: 20px 0; }
+  nav ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 32px; }
+  nav a, td a { color: var(--accent); text-decoration: none; }
+  code { background: var(--code-bg); padding: 1px 6px; border-radius: 4px;
+    font: .88em ui-monospace, "SF Mono", Menlo, monospace; }
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; font: .85rem/1.5 ui-monospace, "SF Mono", Menlo, monospace; }
+  pre code { background: none; padding: 0; }
+  .table-scroll { overflow-x: auto; margin: 12px 0; }
+  table { border-collapse: collapse; width: 100%; background: var(--surface);
+    border: 1px solid var(--border); font-size: .92rem; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--code-bg); font-weight: 600; white-space: nowrap; }
+  td.indent { padding-left: 32px; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .callout { border-left: 4px solid var(--accent); background: var(--accent-soft);
+    padding: 10px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+  .callout.warn { border-color: var(--warn); background: var(--warn-soft); }
+  .callout.ok { border-color: var(--ok); background: var(--ok-soft); }
+  .callout p { margin: 4px 0; }
+  .decision, .phase { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 4px 18px 14px; margin: 14px 0; }
+  .decision h3, .phase h3 { margin-top: 14px; }
+  .rec { color: var(--ok); font-weight: 600; }
+  .answer { background: var(--code-bg); border-radius: 8px; padding: 8px 12px; margin: 10px 0 0; color: var(--muted); }
+  .decision[data-decision-state="answered"] .answer { background: var(--ok-soft); color: var(--text); }
+  .tag { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .jobs { list-style: none; padding: 0; margin: 10px 0; }
+  .job { border-top: 1px solid var(--border); padding: 10px 0; }
+  .job > .title { font-weight: 600; }
+  .status-log { font-size: .85rem; color: var(--muted); margin: 8px 0 0; padding-left: 20px; }
+  .status-log:empty { display: none; }
+  @media (max-width: 600px) { nav ol { columns: 1; } h1 { font-size: 1.5rem; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Application exemption migration plan</h1>
+<div class="meta">
+  Repository: <code>vox</code> &middot; Branch: <code>default</code> &middot; Written 2026-11-21 &middot;
+  Plan status: <span class="status approved" id="plan-status" data-plan-status="approved">Approved</span>
+</div>
+
+<p>59 classes in <code>application/</code> are listed in <code>APPLICATION_EXEMPTIONS</code> of
+<code>LayeredArchitectureTests</code> because they still use a framework or library type that <code>AGENTS.md</code> keeps out of that layer
+(Spring DAO and transaction types, <code>@Value</code>, Jackson, POI, <code>@Async</code>, servlet and security types, and so on).
+This plan moves each of those usages behind a port in <code>application/port/output</code> (or removes it where it is dead or
+replaceable by an allowed type, or moves the code to the layer that owns it), so that <code>APPLICATION_EXEMPTIONS</code> ends empty in both
+<code>LayeredArchitectureTests</code> and <code>LombokUsageConventionTests</code>. It changes no REST, GraphQL, Kafka, database or
+configuration contract. <code>AGENTS.md</code> asks for exactly this: &ldquo;those lists may only shrink, so remove a class from them
+when you fix it&rdquo;.</p>
+
+<nav aria-label="Contents">
+  <ol>
+    <li><a href="#progress">Progress</a></li>
+    <li><a href="#current">Current state</a></li>
+    <li><a href="#decisions">Decisions</a></li>
+    <li><a href="#phases">Phases</a></li>
+    <li><a href="#risks">Risks</a></li>
+    <li><a href="#scope">Out of scope</a></li>
+    <li><a href="#verify">Verification</a></li>
+    <li><a href="#changelog">Change log</a></li>
+    <li><a href="#notes">Implementation notes</a></li>
+  </ol>
+</nav>
+
+<h2 id="progress">Progress</h2>
+<p id="overview-summary" class="meta"></p>
+<div class="table-scroll"><table>
+  <thead><tr><th>Phase / job</th><th>Status</th></tr></thead>
+  <tbody id="overview-body"></tbody>
+</table></div>
+
+<h2 id="current">1. Current state (measured)</h2>
+
+<p>Measured on 2026-11-21 on branch <code>default</code> (clean tree at the start).</p>
+<ul>
+  <li><code>./gradlew compileJava</code> passes, so the plan takes on no existing compile failure.
+      <code>./gradlew test --tests '*LayeredArchitectureTests' --tests '*LombokUsageConventionTests'</code> passes (7 s).
+      The full unit suite and <code>integrationTest</code> were <strong>not</strong> run for a baseline (not checked).
+      <code>docker ps</code> works on this machine, so <code>integrationTest</code> and <code>@RepositoryTest</code> can run.</li>
+  <li><strong>How the exemptions work.</strong> <code>LayeredArchitectureTests.APPLICATION_EXEMPTIONS</code> holds 59 top-level
+      class names. The rule <code>applicationOnlyDependsOnAllowedPackages</code> skips them, and
+      <code>applicationExemptionsStillApply</code> fails when a listed class no longer breaks the rule, so a name must be removed in the
+      same change that fixes its last violation. The allowed set is plain Java, <code>domain</code>, <code>application</code>,
+      <code>org.slf4j</code>, <code>@Service</code> and <code>org.springframework.transaction.annotation</code>.
+      <code>LombokUsageConventionTests.APPLICATION_EXEMPTIONS</code> holds 1 name (<code>UpdateSchoolRoomCommand.java</code>).</li>
+  <li><strong>How it was measured.</strong> A throw-away ArchUnit program (kept outside the repository, in the session scratchpad)
+      imported <code>build/classes/java/main/com/sep/vox/application</code> and listed every dependency that fails the same
+      predicate the test uses. It found <strong>59 classes, identical to the 59 names in the list</strong> (<code>comm</code> of the two
+      sorted lists prints nothing in either direction). An import-line grep over <code>src/main/java/com/sep/vox/application</code>
+      finds the same 59 files, plus one extra line that ArchUnit does not report (see Risks, R10).
+      Some comments in the list are slightly wrong (for example <code>CreateSchoolUseCase</code> is under
+      &ldquo;DataIntegrityViolationException plus @Value&rdquo; but only uses <code>@Value</code>); the measured table below is the source of truth.</li>
+</ul>
+
+<h3>The 59 classes by kind of violation</h3>
+<div class="table-scroll"><table>
+  <thead><tr><th>Kind</th><th class="num">Classes</th><th>Which</th><th>Fix</th><th>Phase</th></tr></thead>
+  <tbody>
+    <tr><td><code>DataIntegrityViolationException</code> caught</td><td class="num">36</td>
+        <td>27 use cases (28 catch sites) and 9 import commit handlers</td>
+        <td>translated by infrastructure into an application exception (D1)</td><td><a href="#phase-8">8</a></td></tr>
+    <tr><td><code>PlatformTransactionManager</code> / <code>TransactionTemplate</code></td><td class="num">10</td>
+        <td><code>CreatePaymentCheckoutUrlUseCase</code>, <code>RecordAssessmentAttemptEvaluationUseCase</code>,
+            <code>SubmitPracticeTurnUseCase</code>, 7 import commit handlers (Question, SchoolClass, SchoolClassUser, SchoolDirectory,
+            SchoolGrade, SchoolRoom, SchoolUser)</td>
+        <td>new <code>RequiresNewTransactionPort</code></td><td><a href="#phase-4">4</a></td></tr>
+    <tr><td>Jackson (<code>tools.jackson</code> in 4 classes, <code>com.fasterxml</code> in 2)</td><td class="num">6</td>
+        <td><code>CreatePaymentCheckoutUrlUseCase</code>, <code>PracticeQuestionGenerationPort</code>,
+            <code>PracticeQuestionSelectionService</code>, <code>ResolveNextPracticeQuestionUseCase</code>,
+            <code>UpdateSchoolRubricCriterionUseCase</code>, <code>UpdateSystemRubricCriterionUseCase</code></td>
+        <td>existing <code>JsonSerializationPort</code>, extended</td><td><a href="#phase-3">3</a></td></tr>
+    <tr><td><code>@Value</code></td><td class="num">5</td>
+        <td><code>CreateSchoolUseCase</code>, <code>UpdateSchoolUserUseCase</code>, <code>UpdateProfileUseCase</code> (all
+            <code>app.avatar.allowed-hosts</code>), <code>RecordRecordingPartChangedUseCase</code> (<code>app.recording.bucket</code>),
+            <code>PracticeTopicOfferEnrichmentService</code> (<code>app.practice.framework-version-code</code>)</td>
+        <td>config ports, like <code>QuotaDebtConfigPort</code></td><td><a href="#phase-2">2</a></td></tr>
+    <tr><td><code>@Async</code>, <code>AsyncTaskExecutor</code>, <code>@Qualifier</code></td><td class="num">3</td>
+        <td><code>InterestQuizBankTopUpService</code>, <code>TopicOfferBackfillService</code>, <code>PracticePaperDraftService</code></td>
+        <td>new <code>PracticeGenerationExecutorPort</code> (D4)</td><td><a href="#phase-5">5</a></td></tr>
+    <tr><td>Apache POI</td><td class="num">2</td>
+        <td><code>ExportAssessmentScoresExcelUseCase</code> (207 lines), <code>QuestionSpreadsheetService</code> (351 lines)</td>
+        <td>new spreadsheet port (D3)</td><td><a href="#phase-6">6</a></td></tr>
+    <tr><td><code>jakarta.servlet</code> in a port</td><td class="num">1</td><td><code>CookieManagerPort</code></td>
+        <td>OAuth success handler moves to <code>interfaces/handler</code>, <code>HttpCookieProvider</code> to <code>interfaces/shared</code>, port deleted (D5)</td><td><a href="#phase-7">7</a></td></tr>
+    <tr><td><code>@Component</code></td><td class="num">3</td><td><code>ImportRowResponseMapper</code>, <code>ImportSessionResponseMapper</code>, <code>MyClassAccessGuard</code></td>
+        <td><code>@Service</code></td><td><a href="#phase-1">1</a></td></tr>
+    <tr><td>Spring Security exception</td><td class="num">2</td><td><code>ViewSchoolRubricDetailsUseCase</code> (<code>AccessDeniedException</code>),
+        <code>ViewSubscriptionPlansUseCase</code> (<code>AuthenticationCredentialsNotFoundException</code>)</td>
+        <td><code>ForbiddenException</code>; existing <code>findCurrentAuthenticatedUserId()</code></td><td><a href="#phase-1">1</a></td></tr>
+    <tr><td><code>ApplicationEventPublisher</code></td><td class="num">1</td><td><code>PracticeSessionClosedHandler</code></td>
+        <td>existing <code>EventPublisherPort</code></td><td><a href="#phase-1">1</a></td></tr>
+    <tr><td><code>jakarta.validation</code> on a command</td><td class="num">1</td><td><code>SendRegisterFormDocumentCommand</code></td>
+        <td>unused: delete (D6)</td><td><a href="#phase-1">1</a></td></tr>
+    <tr><td>Lombok <code>@Builder</code> on a command</td><td class="num">1</td><td><code>UpdateSchoolRoomCommand</code></td>
+        <td>unused builder: remove</td><td><a href="#phase-1">1</a></td></tr>
+  </tbody>
+</table></div>
+<p>71 violations in 59 classes: 47 classes have one kind, <strong>12 have two</strong>. A class leaves the list in the job that
+removes its <em>last</em> violation:</p>
+<div class="table-scroll"><table>
+  <thead><tr><th>Class</th><th>Kinds</th><th>Leaves the list in</th></tr></thead>
+  <tbody>
+    <tr><td><code>CreatePaymentCheckoutUrlUseCase</code></td><td>transaction + Jackson</td><td>job 4.4 (Jackson goes in 3.5)</td></tr>
+    <tr><td>7 import commit handlers (Question, SchoolClass, SchoolClassUser, SchoolDirectory, SchoolGrade, SchoolRoom, SchoolUser)</td>
+        <td>exception + transaction</td><td>job 8.8 (transaction goes in 4.5 and 4.6)</td></tr>
+    <tr><td><code>UpdateProfileUseCase</code>, <code>UpdateSchoolUserUseCase</code></td><td>exception + <code>@Value</code></td><td>job 8.5 (<code>@Value</code> goes in 2.1)</td></tr>
+    <tr><td><code>UpdateSchoolRubricCriterionUseCase</code></td><td>exception + Jackson</td><td>job 8.6 (Jackson goes in 3.4)</td></tr>
+    <tr><td><code>UpdateSystemRubricCriterionUseCase</code></td><td>exception + Jackson</td><td>job 8.7 (Jackson goes in 3.4)</td></tr>
+  </tbody>
+</table></div>
+<p>Classes leaving per phase: 8 (phase 1), 3, 3, 3, 3, 2, 1, and 36 (phase 8). Total 59.</p>
+
+<h3>Findings that shape the design</h3>
+<ul>
+  <li><strong><code>DataIntegrityViolationException</code> (36).</strong> The 27 use cases contain 28 catch sites that rethrow
+      <strong>12 <code>DuplicatedException</code></strong> (message differs per site), <strong>9 <code>IllegalStateException</code></strong> and
+      <strong>7 <code>IllegalArgumentException</code></strong>. The 9 import commit handlers have 7 sites that record a failed row and 2 that rethrow
+      <code>IllegalStateException</code>. Neither <code>GlobalExceptionHandler</code> nor <code>GlobalExceptionResolver</code> mentions
+      <code>DataIntegrityViolationException</code> or <code>DataAccessException</code>: an unmapped exception ends in the generic 500 /
+      <code>INTERNAL_ERROR</code>. Outside <code>application/</code> the exception is caught 15 times in 14 files (all in <code>infrastructure</code>, none in
+      <code>interfaces</code>): 10 event consumers wrapping <code>processedEventRepository.save</code>, and 4 adapters
+      (<code>AssessmentCandidate</code> twice, <code>AssessmentProctoringAlert</code>, <code>AssessmentScheduleProctor</code>, <code>Notification</code>);
+      none wraps the repositories behind these 36 classes.
+      Precedent for translating in an adapter: <code>AssessmentCandidateRepositoryImpl</code> throws <code>DuplicatedException</code>.</li>
+  <li><strong>Some of these catches may never fire (suspected, not run).</strong> 27 of the 36 classes are <code>@Transactional</code> and the
+      9 import handlers are not. <code>AGENTS.md</code> says &ldquo;the insert is sent at flush, not at <code>save()</code>&rdquo;. Of the adapters
+      behind these sites, the ones I read for the plain <code>save</code> / <code>saveAll</code> paths
+      (<code>Framework</code>, <code>FrameworkCriterion</code>, <code>FrameworkResultBand</code>, <code>SupportedLanguage</code>,
+      <code>SchoolGrade</code>, <code>SchoolClassUser</code>, <code>RubricCriterion</code>, <code>RubricResultBand</code>, <code>GradeLevel</code>)
+      do not flush, so a unique-index violation would surface at commit, after the use case's <code>try</code> block. The sites that can fire are the
+      <code>@Modifying</code> atomic updates (<code>updateGradeLevelAtomic</code>, <code>updateCriterionAtomic</code>,
+      <code>updateResultBandAtomic</code>, <code>updateRubricVersionAtomic</code>), <code>UserRepositoryImpl.saveAndFlush</code> and the
+      import handlers (the commit happens inside <code>TransactionTemplate</code>). The plan migrates every catch as it is, proves which are live
+      (job 8.2), and reports the rest; it does not change flush behaviour (see Out of scope).</li>
+  <li><strong>Transactions (10 classes, 16 <code>execute</code> / <code>executeWithoutResult</code> calls).</strong> Every
+      <code>TransactionTemplate</code> is set to <code>PROPAGATION_REQUIRES_NEW</code> and no lambda uses its <code>TransactionStatus</code>
+      (<code>grep setRollbackOnly|TransactionStatus</code> finds 0). One port with <code>run</code> and <code>call</code> covers all of them.
+      Two of the ten are money paths: <code>SubmitPracticeTurnUseCase</code> (quota consumption) and
+      <code>CreatePaymentCheckoutUrlUseCase</code> (payment checkout) &ndash; see D2.</li>
+  <li><strong>Jackson (6).</strong> <code>JsonSerializationPort</code> already has 8 methods; commit <code>734d6f3b</code> extended it the same way
+      (port + <code>JacksonJsonSerializationService</code> + <code>FakeJsonSerializationPort</code> + <code>JacksonJsonSerializationServiceTests</code>).
+      The four shapes are: a <code>JsonNode</code> inside a port record (<code>sourceJson</code>, never read inside <code>application/</code>; only
+      <code>PracticeQuestionGenerationClient</code> writes and reads it), read one string field, parse a <code>List&lt;String&gt;</code>, and
+      typed read/write. <code>UpdateSchoolRubricCriterionUseCase</code> and <code>UpdateSystemRubricCriterionUseCase</code> hold a
+      near-identical 12-line block that does <code>new ObjectMapper()</code> (<strong>Jackson 2</strong>, <code>com.fasterxml</code>) parse of
+      <code>List&lt;RubricCriterionExample&gt;</code> and re-serialise <code>RubricCriterionExamples</code>; this is duplicated logic, so the plan extracts it
+      once. The port's mapper is the Spring-configured Jackson 3 mapper, so the stored string could differ (R3).</li>
+  <li><strong><code>@Value</code> (5, three keys).</strong> The pattern exists: <code>QuotaDebtProperties</code> is a
+      <code>@ConfigurationProperties</code> record in <code>infrastructure/properties</code> that implements <code>QuotaDebtConfigPort</code>;
+      <code>VoxApplication</code> has <code>@ConfigurationPropertiesScan</code>. Three classes share <code>app.avatar.allowed-hosts</code>, so one port serves them.</li>
+  <li><strong>POI (2).</strong> Both classes only <em>write</em> a workbook: header row, typed cells, bold/grey header style, date format, freeze pane
+      and auto-filter, column-width cap, and (in <code>QuestionSpreadsheetService</code>) dropdown validations on 2 columns. Only the scores export guards
+      cells that start with <code>= + - @ \t \r</code> against formula injection; the question export writes plain text (R8).
+      <code>QuestionController</code> (an <code>interfaces</code> class) calls <code>QuestionSpreadsheetService</code> directly, without a use case.</li>
+  <li><strong>Async (3).</strong> <code>practiceGenerationExecutor</code> in <code>AsyncConfig</code> is a
+      <code>DelegatingSecurityContextAsyncTaskExecutor</code> with <code>CallerRunsPolicy</code>. <code>topUpAsync</code> has 2 callers
+      (<code>ManageInterestDimensionUseCase</code>); <code>backfillAsync</code> has 3 (<code>PracticeSessionClosedHandler</code>,
+      <code>PracticePlanningController</code>, <code>PracticeController</code>).</li>
+  <li><strong>Small ones.</strong> <code>EventPublisherPort.publish(Object)</code> + <code>SpringEventPublisherAdapter</code> already exist.
+      <code>CookieManagerPort</code> is used by <strong>no</strong> application class: only <code>AuthController</code> (4 calls),
+      <code>OAuth2AuthenticationSuccessHandler</code> (1 call) and <code>HttpCookieProvider</code>.
+      The handler lives in <code>infrastructure/security</code>, calls <code>OAuth2LoginUseCase</code> and then writes the refresh-token cookie; it is wired only by
+      <code>SecurityConfig</code> (a constructor parameter and <code>.successHandler(...)</code>), is the only class implementing <code>AuthenticationSuccessHandler</code>, and imports nothing from
+      <code>infrastructure</code>. <code>infrastructure</code> imports nothing from <code>interfaces</code> today (0 files). <code>SendRegisterFormDocumentCommand</code> has
+      <strong>0 references</strong> outside the exemption list (<code>grep -rIn</code> over the repo, <code>build/.gradle/.git</code> excluded; added in <code>85ce42dc</code>).
+      <code>UpdateSchoolRoomCommand.builder</code> has 0 uses in <code>src</code>; the GraphQL mapper uses <code>new</code>.
+      <code>ViewSchoolRubricDetailsUseCase</code> and <code>ViewSubscriptionPlansUseCase</code> are reached only from GraphQL controllers.
+      <code>SecurityContextProvider.findCurrentAuthenticatedUserId()</code> returns empty in exactly the cases where <code>isSystemAdmin()</code> throws
+      <code>AuthenticationCredentialsNotFoundException</code> (no authentication, not authenticated, anonymous, principal not <code>CustomUserDetails</code>).</li>
+  <li><strong>Test coverage.</strong> Outside <code>architecture/</code>, 48 of the 59 classes are referenced by some test; <strong>11 are not</strong>:
+      <code>InterestQuizBankTopUpService</code>, <code>PracticeQuestionGenerationPort</code>, <code>PracticeSessionClosedHandler</code>,
+      <code>QuestionImportCommitHandler</code>, <code>RecordRecordingPartChangedUseCase</code>, <code>ResolveNextPracticeQuestionUseCase</code>,
+      <code>RubricCriterionImportCommitHandler</code>, <code>RubricResultBandImportCommitHandler</code>, <code>SchoolDirectoryImportCommitHandler</code>,
+      <code>SendRegisterFormDocumentCommand</code>, <code>UpdateSchoolRoomCommand</code>. Several of the 48 are only mocked in GraphQL tests
+      (<code>ViewSchoolRubricDetailsUseCase</code>, <code>ViewSubscriptionPlansUseCase</code>, <code>UpdateSchoolRubricCriterionUseCase</code>,
+      <code>UpdateSystemRubricCriterionUseCase</code>, <code>UpdateProfileUseCase</code>), so they have no unit test of their own.
+      Tests that build a class by hand with a <code>PlatformTransactionManager</code>/<code>JsonMapper</code>/<code>@Value</code> string
+      (8 files mention <code>PlatformTransactionManager</code>, 13 mention <code>JsonMapper</code>) need their constructor call updated in the job that changes it.</li>
+</ul>
+
+<h2 id="decisions">2. Decisions</h2>
+<p>Each of these is on the <code>AGENTS.md</code> &ldquo;Ask first&rdquo; list (a new file outside the listed patterns, a payment or quota path,
+OAuth/refresh-token code, deleting a file) or has several workable shapes.</p>
+
+<div class="decision" id="d1" data-decision-state="answered">
+  <h3>D1. How does application code learn that the database rejected a write? (replaces <code>DataIntegrityViolationException</code> in 36 classes) <span class="status answered">Answered</span></h3>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) A new <code>DataConflictException</code> in <code>application/exception</code>
+     (a new file outside the patterns listed in &ldquo;Ask first&rdquo;, hence this question). Persistence adapters, through one shared helper, and the new
+     transaction adapter translate Spring&rsquo;s exception into it. Use cases catch it and throw exactly what they throw today. REST and GraphQL do not map it, so a caller that
+     does not catch it still ends in the same generic 500 as today. Cost: one new exception, one helper, edits to the adapters behind the 27 use cases.</p>
+  <p><strong>B.</strong> Reuse <code>DuplicatedException</code> as the carrier (no new file; precedent <code>AssessmentCandidateRepositoryImpl</code>).
+     Trade-off: any caller that does not catch it would answer 409 / <code>BAD_REQUEST</code> instead of 500 (a visible API change, including on the
+     payment and quota paths that use the transaction port), and a foreign-key or not-null violation would be reported as a duplicate.</p>
+  <p><strong>C.</strong> Defer the 36 classes: keep their names in the list and do phases 1&ndash;7 only (23 classes leave).</p>
+  <div class="answer"><strong>Answer (2026-11-21):</strong> A &ndash; new <code>DataConflictException</code> (recommended).</div>
+</div>
+
+<div class="decision" id="d2" data-decision-state="answered">
+  <h3>D2. Include the two money-related classes? <span class="status answered">Answered</span></h3>
+  <p>These touch code that moves money (&ldquo;Ask first&rdquo;): <code>SubmitPracticeTurnUseCase</code> (consumes quota in a
+     <code>REQUIRES_NEW</code> transaction) and <code>CreatePaymentCheckoutUrlUseCase</code> (payment checkout: <code>REQUIRES_NEW</code> plus the QR payload JSON
+     stored in <code>provider_payload_json</code>). Jobs 3.5, 4.3 and 4.4 depend on this answer.</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Include them. The change keeps the same propagation, the same call shape and the same JSON; no amount,
+     quota or order logic is edited. Their existing tests are updated to the new port, and job 3.5 pins the stored QR payload string before touching it.</p>
+  <p><strong>B.</strong> Leave both exempted until a separate review of money paths. Phases 3 and 4 skip them; 2 classes stay in the list.</p>
+  <div class="answer"><strong>Answer (2026-11-21):</strong> A &ndash; include them (recommended).</div>
+</div>
+
+<div class="decision" id="d3" data-decision-state="answered">
+  <h3>D3. What shape does the Excel port take? (2 POI classes) <span class="status answered">Answered</span></h3>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) One <code>SpreadsheetWriterPort</code> that takes a neutral document model built in
+     <code>application</code> (sheet name, header row, rows of typed cells, freeze pane, auto-filter, column-width cap, dropdown lists, and a flag that
+     turns the formula-trigger guard on) and returns <code>byte[]</code>. All POI code lives in one infrastructure adapter, which also removes the
+     duplicated helpers (header style, auto-size, <code>toBytes</code>). New files: the port, about 4 small model records, the adapter. The flag keeps today&rsquo;s
+     difference (only the scores export guards formulas), so no output changes.</p>
+  <p><strong>B.</strong> Two purpose-built ports (<code>AssessmentScoresWorkbookPort</code>, <code>QuestionWorkbookPort</code>) that receive already-loaded rows and
+     return bytes. Fewer new types, but the column layout and Vietnamese headers move into infrastructure and the POI helpers are duplicated or need a shared base.</p>
+  <p><strong>C.</strong> Defer both classes (2 stay in the list).</p>
+  <div class="answer"><strong>Answer (2026-11-21):</strong> A &ndash; one port plus a neutral document model (recommended).</div>
+</div>
+
+<div class="decision" id="d4" data-decision-state="answered">
+  <h3>D4. How is background work moved out of <code>@Async</code> and the executor? (3 classes) <span class="status answered">Answered</span></h3>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) A new <code>PracticeGenerationExecutorPort</code> with <code>runAsync(Runnable)</code> and
+     <code>supplyAsync(Supplier&lt;T&gt;)</code>, implemented over the existing <code>practiceGenerationExecutor</code> bean (so the security context is still passed on and
+     <code>CallerRunsPolicy</code> still applies). <code>topUpAsync</code> and <code>backfillAsync</code> keep their names and callers; their bodies schedule through the port
+     instead of using <code>@Async</code>.</p>
+  <p><strong>B.</strong> Defer these 3 classes (they stay in the list). Nothing else depends on them.</p>
+  <div class="answer"><strong>Answer (2026-11-21):</strong> A &ndash; new executor port (recommended).</div>
+</div>
+
+<div class="decision" id="d5" data-decision-state="answered">
+  <h3>D5. Remove the servlet type from <code>CookieManagerPort</code>? <span class="status answered">Answered</span></h3>
+  <p>This changes how the refresh-token cookie is written in <code>AuthController</code> and <code>OAuth2AuthenticationSuccessHandler</code> (OAuth/JWT code is on the
+     &ldquo;Ask first&rdquo; list). The port is used by no application class today.</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Change the port to return the <code>Set-Cookie</code> header value
+     (<code>buildSetCookieHeaderValue</code>, <code>buildClearCookieHeaderValue</code>); the two callers call <code>response.addHeader</code>. A new test pins the exact
+     attributes (<code>HttpOnly</code>, <code>Secure</code>, <code>Path</code>, <code>Max-Age</code>, <code>SameSite</code>), and that clearing uses the same attributes with <code>Max-Age=0</code>.</p>
+  <p><strong>B.</strong> Defer it (1 class stays in the list).</p>
+  <div class="answer"><strong>Answer (2026-11-21):</strong> Other &ndash; &ldquo;Move OAuth2AuthenticationSuccessHandler to interfaces, put it into interfaces/handler package, so the refresh token cookie is only set when the use case already done it job instead&rdquo;.<br>
+     <strong>How phase 7 applies it</strong> (my reading; change it in review if you disagree): the cookie is a delivery concern, written by the interface adapter after the use case has returned.
+     With the handler in <code>interfaces</code>, every user of the cookie code (<code>AuthController</code>, the handler) is in <code>interfaces</code> and no application class uses it, so
+     <code>CookieManagerPort</code> has no reason to exist: <code>HttpCookieProvider</code> moves to <code>interfaces/shared</code> as a plain class and the port is deleted.
+     <code>SecurityConfig</code> must then take the handler by Spring&rsquo;s <code>AuthenticationSuccessHandler</code> type so <code>infrastructure</code> does not import <code>interfaces</code>.
+     <code>OAuth2AuthenticationFailureHandler</code> stays where it is (not asked).</div>
+</div>
+
+<div class="decision" id="d6" data-decision-state="answered">
+  <h3>D6. What happens to the unused <code>SendRegisterFormDocumentCommand</code>? <span class="status answered">Answered</span></h3>
+  <p>It has 0 references outside the exemption list. Deleting a file is on the &ldquo;Ask first&rdquo; list.</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Delete the record. Git history keeps it.</p>
+  <p><strong>B.</strong> Keep the file and remove only the <code>@NotBlank</code> annotation (dead code stays).</p>
+  <div class="answer"><strong>Answer (2026-11-21):</strong> A &ndash; delete the record (recommended).</div>
+</div>
+
+<h2 id="phases">3. Phases</h2>
+<p>Each phase is independently reviewable and leaves the build green. Phases 1&ndash;7 do not depend on each other except where a phase says so; phase 8 is last
+because it uses the transaction adapter from phase 4 and finishes classes that phases 2 and 3 only half-fixed.
+You can stop after any phase.</p>
+
+<div class="callout">
+  <p><strong>Rules for every job</strong> (they come from <code>AGENTS.md</code>; jobs do not repeat them):</p>
+  <p>1. Remove the migrated class&rsquo;s name from <code>LayeredArchitectureTests.APPLICATION_EXEMPTIONS</code> in the job that removes its last violation; delete a group
+     comment when its group becomes empty; never add a name.
+     2. Behaviour stays the same: no change to REST/GraphQL responses, event payloads, DB schema, or config keys and env var names. If a job finds it cannot keep that, it stops and asks.
+     3. New ports go in <code>application/port/output</code> with no Spring or library type in the signature; implementations go in <code>infrastructure</code>
+     (model: <code>QuotaPricingPort</code> / <code>QuotaPricingService</code>). Logic shared by several use cases goes in <code>application/port/input/service/</code>.
+     4. Methods stay at most 25 lines; explicit types instead of <code>var</code>.
+     5. Translate every Vietnamese comment in code a job edits into English, keeping its meaning and its &ldquo;why&rdquo;; leave user-facing string literals (exception messages) as they are.
+     6. Tests: Mockito with <code>@ExtendWith(MockitoExtension.class)</code>, strict stubs, no <code>lenient()</code>; <code>@RepositoryTest</code> for adapters; classes named <code>XxxTests</code> in the mirrored package.
+     Existing tests that hand-build a class keep their style; they are not converted as a drive-by.
+     7. Every job also runs <code>./gradlew compileJava</code> and <code>./gradlew test --tests '*LayeredArchitectureTests' --tests '*LombokUsageConventionTests'</code>.</p>
+</div>
+
+<!-- ========================= PHASE 1 ========================= -->
+<div class="phase" id="phase-1" data-status="todo">
+  <h3><span class="title">Phase 1 &ndash; Fixes that need no new abstraction</span>
+    <span class="tag">small &middot; mechanical &middot; job 1.2 needs D6</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> 8 classes leave the list with edits that add no port. <strong>Depends on:</strong> D6 (job 1.2 only).</p>
+  <ul class="jobs">
+    <li class="job" id="job-1-1" data-status="todo">
+      <span class="title">1.1 Remove the unused <code>@Builder</code> from <code>UpdateSchoolRoomCommand</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the record has no <code>lombok</code> reference; its name is gone from both <code>APPLICATION_EXEMPTIONS</code> sets (the Lombok one becomes <code>Set.of()</code>);
+         <code>grep -rn "UpdateSchoolRoomCommand.builder" src</code> prints nothing (0 today).
+         <strong>Files:</strong> <code>application/port/input/command/UpdateSchoolRoomCommand.java</code>, <code>LayeredArchitectureTests.java</code>, <code>LombokUsageConventionTests.java</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*LombokUsageConventionTests' --tests '*LayeredArchitectureTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-1-2" data-status="todo">
+      <span class="title">1.2 <code>SendRegisterFormDocumentCommand</code> (needs D6)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the record is deleted (D6: A); its name is gone from the list; <code>./gradlew compileJava</code> passes.
+         <strong>Files:</strong> <code>application/port/input/command/SendRegisterFormDocumentCommand.java</code> (deleted), <code>LayeredArchitectureTests.java</code>.<br>
+         <strong>Verify:</strong> <code>grep -rIn SendRegisterFormDocument src</code> prints nothing; <code>./gradlew test --tests '*LayeredArchitectureTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-1-3" data-status="todo">
+      <span class="title">1.3 <code>@Component</code> becomes <code>@Service</code> on <code>ImportRowResponseMapper</code>, <code>ImportSessionResponseMapper</code>, <code>MyClassAccessGuard</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the 3 classes import <code>org.springframework.stereotype.Service</code> and not <code>Component</code>; their names leave the list. Safe because <code>@Service</code> is meta-annotated with
+         <code>@Component</code> (same scanned singleton bean), and in <code>application/mapper</code> and <code>application/port/input/service</code> 97 classes already use <code>@Service</code> against these 2.
+         <strong>Files:</strong> the 3 classes, <code>LayeredArchitectureTests.java</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*ViewImportRowsUseCaseTests' --tests '*ViewMyClassDetailsUseCaseTests' --tests '*ViewMyClassesUseCaseTests' --tests '*ViewMyClassMembersUseCaseTests' --tests '*ViewSchoolRoomsUseCaseTests'</code>;
+         <code>./gradlew integrationTest --tests '*VoxApplicationTests'</code> (the context still wires all three).</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-1-4" data-status="todo">
+      <span class="title">1.4 <code>PracticeSessionClosedHandler</code> publishes through the existing <code>EventPublisherPort</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the handler has no <code>org.springframework.context</code> import; <code>afterClosed</code> still ends with one <code>publish(new PracticeSessionEndedEvent(studentId, sessionId))</code>;
+         its name leaves the list. <code>SpringEventPublisherAdapter.publish</code> calls <code>publishEvent</code> directly, so the event reaches the same listeners.
+         No test references this class today (measured), and this job adds none: the change is a 1:1 type swap. Recorded as not covered by a test.
+         <strong>Files:</strong> <code>application/port/input/service/PracticeSessionClosedHandler.java</code>, <code>LayeredArchitectureTests.java</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew integrationTest --tests '*VoxApplicationTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-1-5" data-status="todo">
+      <span class="title">1.5 <code>ViewSchoolRubricDetailsUseCase</code> throws <code>ForbiddenException</code> instead of Spring&rsquo;s <code>AccessDeniedException</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> a new <code>ViewSchoolRubricDetailsUseCaseTests</code> asserts that a caller from another school gets <code>ForbiddenException</code> with the same message
+         (&ldquo;BẢO MẬT: Bạn không có quyền xem Rubric của trường khác.&rdquo;), and fails before the change; the name leaves the list.
+         The response does not change: the only entry point is GraphQL (<code>RubricController</code>), and for an authenticated caller <code>GlobalExceptionResolver</code> returns
+         <code>FORBIDDEN</code> with the exception&rsquo;s message for both types (the REST handler would differ, but this use case is not exposed by REST).
+         <strong>Files:</strong> <code>application/port/input/usecase/rubricschool/ViewSchoolRubricDetailsUseCase.java</code>, new test, <code>LayeredArchitectureTests.java</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*ViewSchoolRubricDetailsUseCaseTests' --tests '*RubricGraphQlTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-1-6" data-status="todo">
+      <span class="title">1.6 <code>ViewSubscriptionPlansUseCase</code> stops catching a Spring Security exception</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the try/catch is replaced by
+         <code>userContextPort.findCurrentAuthenticatedUserId().isPresent() &amp;&amp; userContextPort.isSystemAdmin()</code>; a new <code>ViewSubscriptionPlansUseCaseTests</code> asserts
+         (a) anonymous caller (the port returns an empty <code>Optional</code>) sees only ACTIVE plans and <code>isSystemAdmin()</code> is never called (strict stubs), (b) a system admin also sees ARCHIVED plans;
+         the name leaves the list. Equivalent because <code>findCurrentAuthenticatedUserId()</code> is empty in exactly the cases where <code>isSystemAdmin()</code> throws (see Current state).
+         The Vietnamese comment about the landing page is translated, not shortened.
+         <strong>Files:</strong> <code>application/port/input/usecase/subscription/ViewSubscriptionPlansUseCase.java</code>, new test, <code>LayeredArchitectureTests.java</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*ViewSubscriptionPlansUseCaseTests' --tests '*SubscriptionGraphQlTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify (phase):</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*LayeredArchitectureTests' --tests '*LombokUsageConventionTests'</code>; the list now has 51 names.</p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ========================= PHASE 2 ========================= -->
+<div class="phase" id="phase-2" data-status="todo">
+  <h3><span class="title">Phase 2 &ndash; Configuration values behind config ports</span>
+    <span class="tag">small &middot; mechanical</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> no <code>@Value</code> in <code>application/</code>. 3 classes leave the list now; <code>UpdateSchoolUserUseCase</code> and <code>UpdateProfileUseCase</code> still catch the Spring exception and leave in 8.5.
+     <strong>Depends on:</strong> nothing. Pattern: <code>QuotaDebtConfigPort</code> implemented by <code>QuotaDebtProperties</code> (<code>@ConfigurationProperties</code> record, picked up by <code>@ConfigurationPropertiesScan</code>).
+     YAML keys and env vars do not change. Like <code>QuotaDebtProperties</code>, each record turns a missing key into the same default the <code>@Value("...:")</code> gave (empty string).</p>
+  <ul class="jobs">
+    <li class="job" id="job-2-1" data-status="todo">
+      <span class="title">2.1 Avatar host allow-list: <code>AvatarConfigPort</code> + <code>AvatarProperties</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>CreateSchoolUseCase</code>, <code>UpdateSchoolUserUseCase</code> and <code>UpdateProfileUseCase</code> take <code>AvatarConfigPort</code> (<code>String allowedHosts()</code>) instead of
+         <code>@Value("${app.avatar.allowed-hosts:}") String</code>, and pass the same string to <code>AvatarUrlPolicy.normalizeOrThrow</code>; <code>AvatarPropertiesTests</code> shows a missing key gives <code>""</code> and a
+         configured list is returned unchanged; <code>CreateSchoolUseCase</code> leaves the list.
+         <strong>Files:</strong> <code>application/port/output/AvatarConfigPort.java</code>, <code>infrastructure/properties/AvatarProperties.java</code> (prefix <code>app.avatar</code>), the 3 use cases,
+         <code>CreateSchoolUseCaseTests</code>, <code>UpdateSchoolUserUseCaseTests</code> (constructor argument), new <code>AvatarPropertiesTests</code>, <code>LayeredArchitectureTests.java</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*AvatarPropertiesTests' --tests '*CreateSchoolUseCaseTests' --tests '*UpdateSchoolUserUseCaseTests'</code>; <code>./gradlew integrationTest --tests '*VoxApplicationTests'</code> (the record binds).</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-2-2" data-status="todo">
+      <span class="title">2.2 Recording bucket: <code>RecordingStorageConfigPort</code> + <code>RecordingProperties</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>RecordRecordingPartChangedUseCase</code> takes the port instead of <code>@Value("${app.recording.bucket:}")</code>; a new <code>RecordRecordingPartChangedUseCaseTests</code> asserts that an event with an
+         <code>objectKey</code> stores the configured bucket and that key on the recording, and an event without one leaves bucket and key empty; the class leaves the list.
+         <strong>Files:</strong> <code>application/port/output/RecordingStorageConfigPort.java</code>, <code>infrastructure/properties/RecordingProperties.java</code> (prefix <code>app.recording</code>), the use case, new test, <code>LayeredArchitectureTests.java</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*RecordRecordingPartChangedUseCaseTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-2-3" data-status="todo">
+      <span class="title">2.3 Practice framework version code: <code>PracticeFrameworkConfigPort</code> + <code>PracticeProperties</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>PracticeTopicOfferEnrichmentService</code> takes the port; it keeps its own normalisation (blank becomes <code>null</code>, otherwise trimmed); a new
+         <code>PracticeTopicOfferEnrichmentServiceTests</code> asserts a blank code and a padded code reach <code>findActiveVersionId</code> as <code>null</code> and as the trimmed value;
+         <code>BuildPracticePaperUseCaseTests</code> and <code>SubmitPracticeTurnUseCaseReplayTests</code> still pass (updated where they construct the service); the class leaves the list.
+         The prefix <code>app.practice</code> already holds <code>heartbeat-cleanup-ms</code>; unknown keys are ignored by default binding, so it is unaffected.
+         <strong>Files:</strong> <code>application/port/output/PracticeFrameworkConfigPort.java</code>, <code>infrastructure/properties/PracticeProperties.java</code>, the service, the tests above, <code>LayeredArchitectureTests.java</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*PracticeTopicOfferEnrichmentServiceTests' --tests '*BuildPracticePaperUseCaseTests' --tests '*SubmitPracticeTurnUseCaseReplayTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify (phase):</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*LayeredArchitectureTests'</code>, <code>./gradlew integrationTest --tests '*VoxApplicationTests'</code>; <code>grep -rn "@Value" src/main/java/com/sep/vox/application</code> prints nothing; the list has 48 names.</p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ========================= PHASE 3 ========================= -->
+<div class="phase" id="phase-3" data-status="todo">
+  <h3><span class="title">Phase 3 &ndash; Jackson behind <code>JsonSerializationPort</code></span>
+    <span class="tag">medium &middot; needs golden strings &middot; job 3.5 needs D2</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> no Jackson type in <code>application/</code>. 3 classes leave now (<code>PracticeQuestionGenerationPort</code>, <code>PracticeQuestionSelectionService</code>,
+     <code>ResolveNextPracticeQuestionUseCase</code>); the other 3 leave in 4.4, 8.6 and 8.7. <strong>Depends on:</strong> D2 for 3.5.
+     The port gets up to 3 methods, each added in the job that first needs it, with the adapter, <code>FakeJsonSerializationPort</code> and
+     <code>JacksonJsonSerializationServiceTests</code> updated in the same job (as commit <code>734d6f3b</code> did):
+     <code>&lt;T&gt; T fromJson(String json, Class&lt;T&gt; targetType)</code>, <code>&lt;T&gt; List&lt;T&gt; fromJsonList(String json, Class&lt;T&gt; elementType)</code>,
+     <code>String toStringField(String json, String field)</code> (null when absent). They use the Spring-configured mapper, like <code>toJson</code>, and wrap failures like the existing methods.</p>
+  <ul class="jobs">
+    <li class="job" id="job-3-1" data-status="todo">
+      <span class="title">3.1 <code>GeneratedQuestion.sourceJson</code>: <code>JsonNode</code> becomes <code>String</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>PracticeQuestionGenerationPort</code> has no <code>tools.jackson</code> import; <code>PracticeQuestionGenerationClient.toQuestion</code> stores the item as JSON text and <code>index</code> parses it back before
+         putting it under <code>"question"</code>; a new <code>PracticeQuestionGenerationClientTests</code> (local JDK <code>HttpServer</code>, no Docker) shows that <code>generate</code> returns a question whose <code>sourceJson</code> parses to the same JSON
+         as the response item, and that the body <code>index</code> sends is <code>{"question": &lt;that item&gt;}</code> exactly as before; the class leaves the list. Application code never reads <code>sourceJson</code> (grep in <code>application/</code> finds only the record component).
+         <strong>Files:</strong> <code>application/port/output/PracticeQuestionGenerationPort.java</code>, <code>infrastructure/service/PracticeQuestionGenerationClient.java</code>, new test, <code>LayeredArchitectureTests.java</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*PracticeQuestionGenerationClientTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-3-2" data-status="todo">
+      <span class="title">3.2 <code>PracticeQuestionSelectionService.reasoningType</code> uses <code>toStringField</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the static <code>JSON_MAPPER</code> is gone and the service takes <code>JsonSerializationPort</code>; a new <code>PracticeQuestionSelectionServiceTests</code> drives <code>resolveNextQuestion</code> to show that a candidate whose
+         <code>difficultyFeaturesJson</code> has the same <code>reasoning_type</code> as the previously chosen one is skipped, one with a different or absent value is kept, and a blank JSON is treated as absent (all as today);
+         <code>toStringField</code> is added with its adapter test (absent field gives <code>null</code>; invalid JSON still throws an unchecked exception, not wrapped, like <code>toStringListField</code>); the class leaves the list.
+         <strong>Files:</strong> the port, <code>JacksonJsonSerializationService</code>, <code>FakeJsonSerializationPort</code>, <code>JacksonJsonSerializationServiceTests</code>, the service, new test, <code>LayeredArchitectureTests.java</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*PracticeQuestionSelectionServiceTests' --tests '*JacksonJsonSerializationServiceTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-3-3" data-status="todo">
+      <span class="title">3.3 <code>ResolveNextPracticeQuestionUseCase.parseIdeas</code> uses <code>toStringList</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the fully qualified <code>new tools.jackson...JsonMapper()</code> is gone; the use case calls <code>jsonSerializationPort.toStringList</code> inside its existing <code>try</code> (any failure still gives <code>List.of()</code>);
+         a new <code>ResolveNextPracticeQuestionUseCaseTests</code> drives <code>execute</code> with mocked claim, selection and persistence services and the cache port, and asserts <code>question().suggestedIdeas()</code> for a valid JSON array, a blank value, malformed JSON,
+         and a JSON object (all four as today: list, empty, empty, empty); the class leaves the list.
+         <strong>Files:</strong> <code>application/port/input/usecase/practicesession/ResolveNextPracticeQuestionUseCase.java</code>, new test, <code>LayeredArchitectureTests.java</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*ResolveNextPracticeQuestionUseCaseTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-3-4" data-status="todo">
+      <span class="title">3.4 One shared normaliser for rubric criterion examples (removes Jackson 2 from two use cases)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> a new <code>RubricCriterionExamplesNormalizer</code> in <code>application/port/input/service/</code> (<code>String normalize(String examplesJson)</code>) does the parse, <code>new RubricCriterionExamples(list)</code> and re-serialise, with the same two
+         failure behaviours (the validation message passes through; anything else becomes <code>IllegalArgumentException("Định dạng JSON của phần Examples không hợp lệ.")</code>);
+         <code>UpdateSchoolRubricCriterionUseCase</code> and <code>UpdateSystemRubricCriterionUseCase</code> call it and have no <code>com.fasterxml</code> import; <code>fromJsonList</code> is added to the port.
+         <strong>First step of the job:</strong> run the current Jackson 2 block on 2 or 3 fixtures and keep the exact output strings as literals in <code>RubricCriterionExamplesNormalizerTests</code>; the new code must produce the same strings.
+         If it does not (Jackson 3 can order properties differently), stop and ask: the stored format must not change silently (R3).
+         <strong>Files:</strong> new normaliser and test, the 2 use cases, the port, adapter, fake, adapter test.<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*RubricCriterionExamplesNormalizerTests' --tests '*JacksonJsonSerializationServiceTests' --tests '*RubricGraphQlTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-3-5" data-status="todo">
+      <span class="title">3.5 <code>CreatePaymentCheckoutUrlUseCase</code> stored QR payload through the port (needs D2)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the use case has no <code>JsonMapper</code>; <code>qrPayloadJson</code> uses <code>toJson</code> and <code>readQrPayload</code> uses <code>fromJson</code>, both inside the existing <code>catch (RuntimeException)</code> that logs and returns <code>null</code>;
+         <code>CreatePaymentCheckoutUrlUseCaseTests</code> pins, before the change, the exact stored string for a QR action (literal) and a round trip, and still passes after; a malformed stored payload still falls back to the checkout URL path.
+         <strong>Files:</strong> the use case, <code>CreatePaymentCheckoutUrlUseCaseTests</code>, port, adapter, fake, adapter test. The class stays in the list until 4.4 (still uses a transaction).<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*CreatePaymentCheckoutUrlUseCaseTests' --tests '*JacksonJsonSerializationServiceTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify (phase):</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*LayeredArchitectureTests'</code>; <code>grep -rn "tools.jackson\|com.fasterxml" src/main/java/com/sep/vox/application</code> prints nothing; the list has 45 names.</p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ========================= PHASE 4 ========================= -->
+<div class="phase" id="phase-4" data-status="todo">
+  <h3><span class="title">Phase 4 &ndash; Programmatic transactions behind <code>RequiresNewTransactionPort</code></span>
+    <span class="tag">medium &middot; needs D2 for 4.3 and 4.4</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> no <code>PlatformTransactionManager</code>, <code>TransactionTemplate</code> or <code>TransactionDefinition</code> in <code>application/</code>.
+     3 classes leave now; the 7 import handlers leave in 8.8. <strong>Depends on:</strong> D2 (4.3, 4.4); 3.5 before 4.4.
+     Port (proposed names): <code>void runInNewTransaction(Runnable work)</code> and <code>&lt;T&gt; T callInNewTransaction(Supplier&lt;T&gt; work)</code>.
+     Implementation: <code>SpringRequiresNewTransactionService</code> in <code>infrastructure/service</code>, one <code>TransactionTemplate</code> with <code>PROPAGATION_REQUIRES_NEW</code>.
+     Lambdas lose the unused <code>status</code> parameter.</p>
+  <ul class="jobs">
+    <li class="job" id="job-4-1" data-status="todo">
+      <span class="title">4.1 Port, Spring implementation and its test</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>SpringRequiresNewTransactionServiceTests</code> (<code>@RepositoryTest</code>) shows (a) work done in <code>callInNewTransaction</code> is committed even when the enclosing transaction rolls back,
+         (b) an exception thrown by the work reaches the caller with the same type and message and rolls back only the inner transaction, (c) <code>runInNewTransaction</code> behaves the same.
+         <strong>Files:</strong> <code>application/port/output/RequiresNewTransactionPort.java</code>, <code>infrastructure/service/SpringRequiresNewTransactionService.java</code>, test.<br>
+         <strong>Verify:</strong> <code>./gradlew integrationTest --tests '*SpringRequiresNewTransactionServiceTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-4-2" data-status="todo">
+      <span class="title">4.2 <code>RecordAssessmentAttemptEvaluationUseCase</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>phaseOneTransactionTemplate</code> is replaced by <code>callInNewTransaction</code> around the same lambda; no <code>org.springframework.transaction.PlatformTransactionManager/support/TransactionDefinition</code> import;
+         <code>RecordAssessmentAttemptEvaluationHumanGuardTests</code> passes with a mocked port that runs the supplier; the class leaves the list.
+         <strong>Files:</strong> the use case, that test, <code>LayeredArchitectureTests.java</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*RecordAssessmentAttemptEvaluationHumanGuardTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-4-3" data-status="todo">
+      <span class="title">4.3 <code>SubmitPracticeTurnUseCase</code> quota consumption (needs D2)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>consumeQuotaTransactionTemplate</code> is replaced by <code>callInNewTransaction</code> around the same <code>consumeQuotaService.consumePracticeAllowingDebt(...)</code> call with the same arguments;
+         <code>SubmitPracticeTurnUseCaseReplayTests</code> still passes and shows the consume call is made through the port and its <code>fundsExhausted</code> result is still read; the class leaves the list.
+         The long Vietnamese comment above the call (why <code>REQUIRES_NEW</code>) is translated in full.
+         <strong>Files:</strong> the use case, <code>SubmitPracticeTurnUseCaseReplayTests</code>, <code>LayeredArchitectureTests.java</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*SubmitPracticeTurnUseCaseReplayTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-4-4" data-status="todo">
+      <span class="title">4.4 <code>CreatePaymentCheckoutUrlUseCase</code> phases (needs D2, after 3.5)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>inTransaction(Supplier)</code> delegates to <code>callInNewTransaction</code>; no transaction import remains; <code>CreatePaymentCheckoutUrlUseCaseTests</code> passes unchanged in what it asserts (only its construction changes);
+         the Javadoc explaining <code>REQUIRES_NEW</code> versus <code>REQUIRED</code> is translated in full; the class leaves the list.
+         <strong>Files:</strong> the use case, its test, <code>LayeredArchitectureTests.java</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*CreatePaymentCheckoutUrlUseCaseTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-4-5" data-status="todo">
+      <span class="title">4.5 Five import commit handlers that have tests: SchoolClass, SchoolClassUser, SchoolGrade, SchoolRoom, SchoolUser</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> each handler takes <code>RequiresNewTransactionPort</code> instead of <code>PlatformTransactionManager</code> and uses <code>runInNewTransaction</code>; the five <code>...ImportCommitHandlerTests</code> pass with the port mocked to run the work;
+         no handler imports a transaction type. The names stay in the list (they still catch the Spring exception until 8.8).
+         <strong>Files:</strong> the 5 handlers and their 5 tests.<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*SchoolClassImportCommitHandlerTests' --tests '*SchoolClassUserImportCommitHandlerTests' --tests '*SchoolGradeImportCommitHandlerTests' --tests '*SchoolRoomImportCommitHandlerTests' --tests '*SchoolUserImportCommitHandlerTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-4-6" data-status="todo">
+      <span class="title">4.6 Two import commit handlers without tests: <code>QuestionImportCommitHandler</code>, <code>SchoolDirectoryImportCommitHandler</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> both use the port and import no transaction type. They have no tests today (measured); this job adds none because it replaces one call 1:1, and records them as not covered. Names stay in the list until 8.8.
+         <strong>Files:</strong> the 2 handlers.<br>
+         <strong>Verify:</strong> <code>./gradlew compileJava</code>; <code>./gradlew integrationTest --tests '*VoxApplicationTests'</code> (the port bean is injected into all 7 handlers).</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify (phase):</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*LayeredArchitectureTests'</code>;
+     <code>grep -rn "PlatformTransactionManager\|TransactionTemplate\|TransactionDefinition" src/main/java/com/sep/vox/application</code> prints nothing; the list has 42 names.</p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ========================= PHASE 5 ========================= -->
+<div class="phase" id="phase-5" data-status="todo">
+  <h3><span class="title">Phase 5 &ndash; Background work behind <code>PracticeGenerationExecutorPort</code></span>
+    <span class="tag">medium &middot; needs D4</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> no <code>@Async</code>, <code>AsyncTaskExecutor</code> or <code>@Qualifier</code> in <code>application/</code>; 3 classes leave. <strong>Depends on:</strong> D4.</p>
+  <ul class="jobs">
+    <li class="job" id="job-5-1" data-status="todo">
+      <span class="title">5.1 Port, implementation over <code>practiceGenerationExecutor</code>, and its test</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>PracticeGenerationExecutorPort</code> (<code>void runAsync(Runnable)</code>, <code>&lt;T&gt; CompletableFuture&lt;T&gt; supplyAsync(Supplier&lt;T&gt;)</code>) has a Spring implementation that delegates to the existing
+         <code>practiceGenerationExecutor</code> bean; its test shows the work runs on a <code>practice-gen-</code> thread, sees the caller&rsquo;s <code>SecurityContext</code>, and that an exception thrown inside <code>runAsync</code> is logged and does not escape
+         (what <code>@Async void</code> did through the default uncaught-exception handler).
+         <strong>Files:</strong> <code>application/port/output/PracticeGenerationExecutorPort.java</code>, <code>infrastructure/service/SpringPracticeGenerationExecutorService.java</code>, test.<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*SpringPracticeGenerationExecutorServiceTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-5-2" data-status="todo">
+      <span class="title">5.2 <code>InterestQuizBankTopUpService.topUpAsync</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> no <code>@Async</code>; <code>topUpAsync()</code> keeps its name and returns immediately by scheduling its existing body (<code>topUp()</code> with the swallow-and-warn <code>catch</code>) through <code>runAsync</code>;
+         a new <code>InterestQuizBankTopUpServiceTests</code> (port mocked to run inline) shows a <code>RuntimeException</code> from <code>topUp()</code> is swallowed; <code>ManageInterestDimensionUseCase</code> compiles unchanged; the class leaves the list.
+         <strong>Files:</strong> the service, new test, <code>LayeredArchitectureTests.java</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*InterestQuizBankTopUpServiceTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-5-3" data-status="todo">
+      <span class="title">5.3 <code>TopicOfferBackfillService.backfillAsync</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> no <code>@Async</code>; the current body moves unchanged into a private <code>backfill(UUID)</code> and <code>backfillAsync(UUID)</code> schedules it through <code>runAsync</code> (so its 3 callers need no change);
+         a new <code>TopicOfferBackfillServiceTests</code> (port mocked to run inline) shows a <code>null</code> student id does nothing and a student without a completed interest quiz triggers no generation (the guard described in the existing comment);
+         <code>PracticeLearnerProfileGraphQlTests</code> still passes; the class leaves the list.
+         <strong>Files:</strong> the service, new test, <code>LayeredArchitectureTests.java</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*TopicOfferBackfillServiceTests' --tests '*PracticeLearnerProfileGraphQlTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-5-4" data-status="todo">
+      <span class="title">5.4 <code>PracticePaperDraftService</code> executor</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the constructor takes the port instead of <code>@Qualifier("practiceGenerationExecutor") AsyncTaskExecutor</code>, and <code>CompletableFuture.supplyAsync(buildPaper, executor)</code> becomes <code>supplyAsync(buildPaper)</code> on the port;
+         <code>PracticePaperDraftEntrySerializationTests</code> still passes; the class leaves the list. The 4 interface controllers keep injecting the executor bean directly (the <code>interfaces</code> layer has no restriction).
+         <strong>Files:</strong> the service, any test that constructs it, <code>LayeredArchitectureTests.java</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*PracticePaperDraftEntrySerializationTests'</code>; <code>./gradlew integrationTest --tests '*VoxApplicationTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify (phase):</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*LayeredArchitectureTests'</code>; <code>grep -rn "@Async\|AsyncTaskExecutor\|@Qualifier" src/main/java/com/sep/vox/application</code> prints nothing; the list has 39 names.</p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ========================= PHASE 6 ========================= -->
+<div class="phase" id="phase-6" data-status="todo">
+  <h3><span class="title">Phase 6 &ndash; Excel generation behind a spreadsheet port</span>
+    <span class="tag">large &middot; needs D3</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> no <code>org.apache.poi</code> in <code>application/</code>; 2 classes leave. <strong>Depends on:</strong> D3. D3 was answered A, so the jobs below use one port and a neutral document model.</p>
+  <ul class="jobs">
+    <li class="job" id="job-6-1" data-status="todo">
+      <span class="title">6.1 Pin today&rsquo;s workbook output before moving anything</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> tests that read the produced <code>.xlsx</code> with POI pass against the <em>current</em> code and pin: for the scores export, header texts and order, numeric score cells, date cells with format <code>HH:mm dd/MM/yyyy</code>, blank cells for nulls,
+         the <code>'</code> prefix on text starting with <code>= + - @ \t \r</code>, freeze pane on row 1, auto-filter range, column-width cap of 60 characters; for <code>QuestionSpreadsheetService</code>, the 16 template headers, dropdown validations on columns 1 and 9 over rows 1 to 1000,
+         export rows, and that <em>no</em> formula guard is applied (today&rsquo;s behaviour). Extends <code>ExportAssessmentScoresExcelUseCaseTests</code>; adds <code>QuestionSpreadsheetServiceTests</code> (today only mocked in <code>QuestionControllerTests</code>).
+         <strong>Files:</strong> those two test classes.<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*ExportAssessmentScoresExcelUseCaseTests' --tests '*QuestionSpreadsheetServiceTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-6-2" data-status="todo">
+      <span class="title">6.2 Port, document model and POI adapter</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>SpreadsheetWriterPort.write(SpreadsheetDocument)</code> returns <code>byte[]</code>; the model (proposed names: <code>SpreadsheetDocument</code>, <code>SpreadsheetCell</code> with text, number, date-time with display pattern and blank cases, <code>ColumnDropdown</code>) carries exactly the features listed in 6.1;
+         <code>PoiSpreadsheetWriterService</code> is the only class that imports POI; <code>PoiSpreadsheetWriterServiceTests</code> reads the result back and checks each feature, with the formula guard both on and off. Methods stay at most 25 lines.
+         <strong>Files:</strong> port, model records (in <code>application/response/output</code> or next to the port, to be decided in review), adapter, test.<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*PoiSpreadsheetWriterServiceTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-6-3" data-status="todo">
+      <span class="title">6.3 <code>ExportAssessmentScoresExcelUseCase</code> builds a document and calls the port</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the class imports no POI; its tests from 6.1 pass unchanged in what they assert (built with the real adapter); <code>AssessmentResultControllerTests</code> passes; the class leaves the list. The Vietnamese comment about formula injection moves with the logic to the adapter and is translated in full.
+         <strong>Files:</strong> the use case, <code>ExportAssessmentScoresExcelUseCaseTests</code>, <code>LayeredArchitectureTests.java</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*ExportAssessmentScoresExcelUseCaseTests' --tests '*AssessmentResultControllerTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-6-4" data-status="todo">
+      <span class="title">6.4 <code>QuestionSpreadsheetService</code> builds documents and calls the port</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the class imports no POI; its tests from 6.1 pass unchanged in what they assert; <code>QuestionControllerTests</code> passes; the class leaves the list.
+         <strong>Files:</strong> the service, <code>QuestionSpreadsheetServiceTests</code>, <code>LayeredArchitectureTests.java</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*QuestionSpreadsheetServiceTests' --tests '*QuestionControllerTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify (phase):</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*LayeredArchitectureTests'</code>; <code>grep -rn "org.apache.poi" src/main/java/com/sep/vox/application</code> prints nothing; the list has 37 names.</p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ========================= PHASE 7 ========================= -->
+<div class="phase" id="phase-7" data-status="todo">
+  <h3><span class="title">Phase 7 &ndash; <code>CookieManagerPort</code> leaves the application layer</span>
+    <span class="tag">medium &middot; moves OAuth wiring &middot; D5 answered</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> <code>CookieManagerPort</code> no longer exists; 1 class leaves the list. <strong>Depends on:</strong> D5 (answered: the OAuth success handler moves to <code>interfaces/handler</code>).
+     Design (my reading of the answer, reviewable in D5): the refresh-token cookie is written by the interface adapter after the use case has returned, so the handler goes to <code>interfaces/handler</code>,
+     <code>HttpCookieProvider</code> goes to <code>interfaces/shared</code> as a plain class, and the port, used by no application class, is deleted. <code>OAuth2AuthenticationFailureHandler</code> stays in
+     <code>infrastructure/security</code> (not asked). Three jobs so every step leaves the build green. These touch OAuth and security wiring (&ldquo;Ask first&rdquo;); the move itself is what D5 asks for, and the only
+     <code>SecurityConfig</code> edit is the type of one constructor parameter.</p>
+  <ul class="jobs">
+    <li class="job" id="job-7-1" data-status="todo">
+      <span class="title">7.1 Move <code>OAuth2AuthenticationSuccessHandler</code> to <code>interfaces/handler</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the class lives in <code>com.sep.vox.interfaces.handler</code> with the same code (it still uses <code>CookieManagerPort</code> for now); <code>SecurityConfig</code> takes it as Spring&rsquo;s <code>AuthenticationSuccessHandler</code>
+         (the only bean of that type) for the constructor parameter and the <code>.successHandler(...)</code> call, so <code>grep -rn "import com.sep.vox.interfaces" src/main/java/com/sep/vox/infrastructure</code> still prints nothing;
+         <code>OAuth2AuthenticationSuccessHandlerTests</code> moves to the mirrored <code>interfaces/handler</code> test package with unchanged assertions; the redirect URLs, session attributes and error redirects are untouched.
+         <strong>Files:</strong> the handler (moved), <code>infrastructure/config/SecurityConfig.java</code>, the test (moved).<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*OAuth2AuthenticationSuccessHandlerTests' --tests '*LayeredArchitectureTests'</code>; <code>./gradlew integrationTest --tests '*VoxApplicationTests'</code> (the context wires the handler into the security chain).</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-7-2" data-status="todo">
+      <span class="title">7.2 Pin the refresh-token cookie attributes before moving the class</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> a new <code>HttpCookieProviderTests</code> (in the current <code>infrastructure/security</code> test package) passes against the current class and pins the <code>Set-Cookie</code> value: <code>HttpOnly</code>, <code>Secure</code> and <code>SameSite</code> from the constructor arguments,
+         <code>Path=/</code>, the given <code>Max-Age</code>; and that clearing writes the same attributes with an empty value and <code>Max-Age=0</code> (the existing Javadoc explains why they must match exactly).
+         <strong>Files:</strong> the new test.<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*HttpCookieProviderTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-7-3" data-status="todo">
+      <span class="title">7.3 Move <code>HttpCookieProvider</code> to <code>interfaces/shared</code> and delete <code>CookieManagerPort</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>HttpCookieProvider</code> is a plain <code>@Component</code> in <code>interfaces/shared</code> (no <code>implements</code>); <code>AuthController</code> and the handler use it directly; <code>CookieManagerPort.java</code> is deleted and its name leaves the list;
+         <code>AuthControllerTests</code> and <code>OAuth2AuthenticationSuccessHandlerTests</code> mock the class instead of the port and still assert the same cookie calls; <code>HttpCookieProviderTests</code> moves with the class and passes with the same assertions;
+         tests show that no cookie is written when the login use case throws (added if missing), so the cookie is still set only after the use case has returned; nothing references <code>CookieManagerPort</code> any more.
+         <strong>Files:</strong> <code>HttpCookieProvider.java</code> (moved), <code>CookieManagerPort.java</code> (deleted), <code>AuthController.java</code>, the handler, the 3 tests, <code>LayeredArchitectureTests.java</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*AuthControllerTests' --tests '*OAuth2AuthenticationSuccessHandlerTests' --tests '*HttpCookieProviderTests' --tests '*LayeredArchitectureTests'</code>; <code>./gradlew integrationTest --tests '*VoxApplicationTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify (phase):</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*LayeredArchitectureTests'</code>; <code>grep -rn "jakarta.servlet" src/main/java/com/sep/vox/application</code> and
+     <code>grep -rn "import com.sep.vox.interfaces" src/main/java/com/sep/vox/infrastructure</code> print nothing; the list has 36 names (all <code>DataIntegrityViolationException</code>).</p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ========================= PHASE 8 ========================= -->
+<div class="phase" id="phase-8" data-status="todo">
+  <h3><span class="title">Phase 8 &ndash; <code>DataIntegrityViolationException</code> (36 classes)</span>
+    <span class="tag">large &middot; needs D1 &middot; after phases 2, 3 and 4</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> <code>APPLICATION_EXEMPTIONS</code> is empty. <strong>Depends on:</strong> D1 (answered A: new <code>DataConflictException</code>);
+     phase 4 (the transaction adapter is changed in 8.1); phases 2 and 3 (so the 2 + 2 classes with a second violation can leave).
+     Every catch is migrated as it is: same rethrown exception type, same message, same trigger. Every job re-greps the callers of each repository method it wraps and confirms none catches the Spring exception (today none does outside <code>processedEventRepository</code> and adapter-internal code), because a wrapped method now throws the carrier.</p>
+  <ul class="jobs">
+    <li class="job" id="job-8-1" data-status="todo">
+      <span class="title">8.1 Carrier exception, translation helper, and commit-time translation in the transaction adapter</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>DataConflictException(String message, Throwable cause)</code> exists in <code>application/exception</code> and no handler maps it; a static helper (proposed: <code>DataConflictTranslation</code> in <code>infrastructure/persistence</code>, with <code>translating(Supplier)</code> and <code>translating(Runnable)</code>) turns
+         <code>DataIntegrityViolationException</code> into it, keeping the cause, and lets every other exception through unchanged; <code>SpringRequiresNewTransactionService</code> uses the helper so a violation raised at the inner commit also becomes the carrier;
+         <code>DataConflictTranslationTests</code> and an addition to <code>SpringRequiresNewTransactionServiceTests</code> (a unique violation at the inner commit surfaces as <code>DataConflictException</code>) pass.
+         The three non-catching transaction users (<code>RecordAssessmentAttemptEvaluationUseCase</code>, <code>SubmitPracticeTurnUseCase</code>, <code>CreatePaymentCheckoutUrlUseCase</code>) now see the carrier instead of the Spring exception; both end in the generic 500 as before (no handler mentions either type).
+         <strong>Files:</strong> the exception, the helper, <code>SpringRequiresNewTransactionService.java</code>, 2 tests.<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*DataConflictTranslationTests'</code>; <code>./gradlew integrationTest --tests '*SpringRequiresNewTransactionServiceTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-8-2" data-status="todo">
+      <span class="title">8.2 Classify the 28 use-case catch sites as live or suspected dead (no source change committed)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the Implementation notes contain a table of the 28 sites with the repository method each <code>try</code> calls, whether it flushes inside the call (atomic <code>@Modifying</code> update, <code>saveAndFlush</code>, or plain <code>save</code>/<code>saveAll</code> inside a <code>@Transactional</code> use case), and the evidence
+         (a throw-away <code>@RepositoryTest</code> run on a duplicate key, not committed, or reading). It also lists the exact adapter methods that jobs 8.3&ndash;8.8 will wrap. The suspected dead catches are migrated like the live ones and reported (Out of scope).
+         <strong>Files:</strong> none committed.<br>
+         <strong>Verify:</strong> the table is present and covers all 28 sites; <code>git status</code> shows no source change from this job.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-8-3" data-status="todo">
+      <span class="title">8.3 Framework family (7 classes): <code>CreateFramework</code>, <code>CreateFrameworkVersion</code>, <code>CreateFrameworkCriteria</code>, <code>CreateFrameworkCriterionBands</code>, <code>CreateFrameworkResultBands</code>, <code>UpdateFrameworkCriterion</code>, <code>UpdateFrameworkResultBand</code> (all <code>...UseCase</code>)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the framework adapters named in 8.2 translate through the helper; each use case catches <code>DataConflictException</code> and throws what it throws today (<code>DuplicatedException</code> in 2, <code>IllegalStateException</code> in 5); for each class a test makes the mocked repository throw the carrier and asserts the exact
+         exception type and message (existing <code>CreateFrameworkVersionUseCaseTests</code> and <code>CreateFrameworkCriterionBandsUseCaseTests</code> are updated, the other five classes get new tests); an adapter <code>@RepositoryTest</code> shows a call that flushes and violates a unique key throws the carrier; the 7 names leave the list.
+         <strong>Files:</strong> the adapters, the 7 use cases, tests, <code>LayeredArchitectureTests.java</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*Framework*UseCaseTests'</code>; <code>./gradlew integrationTest --tests '*Framework*RepositoryImpl*'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-8-4" data-status="todo">
+      <span class="title">8.4 Catalog family (7 classes): <code>CreateGradeLevel</code>, <code>UpdateGradeLevel</code>, <code>CreateSupportedLanguage</code>, <code>UpdateSupportedLanguage</code>, <code>CreateSchoolGrade</code>, <code>CreateSchoolClassUser</code>, <code>BulkCreateSchoolClassUsers</code> (all <code>...UseCase</code>)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the adapters for grade level (including <code>updateGradeLevelAtomic</code>), supported language, school grade and school class user translate through the helper; each use case catches the carrier and throws its current <code>DuplicatedException</code> with its current message; tests per class as in 8.3
+         (existing tests for 5 of them are updated, <code>CreateGradeLevel</code> and <code>UpdateGradeLevel</code> get new ones); the 7 names leave the list.
+         <strong>Files:</strong> the adapters, the 7 use cases, tests, <code>LayeredArchitectureTests.java</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*GradeLevel*UseCaseTests' --tests '*SupportedLanguage*UseCaseTests' --tests '*SchoolGrade*UseCaseTests' --tests '*SchoolClassUser*UseCaseTests'</code>; <code>./gradlew integrationTest --tests '*GradeLevel*RepositoryImpl*'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-8-5" data-status="todo">
+      <span class="title">8.5 User family (3 classes): <code>CreateSchoolUserUseCase</code> (2 sites), <code>UpdateSchoolUserUseCase</code>, <code>UpdateProfileUseCase</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>UserRepositoryImpl.save</code> / <code>saveAndFlush</code> and <code>SchoolUserRepositoryImpl.save</code> translate through the helper (their other callers were grepped and none catches the Spring exception); the three use cases catch the carrier and throw what they throw today
+         (<code>DuplicatedException</code> for the user and for the phone number, <code>IllegalArgumentException</code> for the school-user link); tests per site; the 3 names leave the list (the <code>@Value</code> part left in 2.1).
+         <strong>Files:</strong> 2 adapters, 3 use cases, tests (<code>CreateSchoolUserUseCaseTests</code> and <code>UpdateSchoolUserUseCaseTests</code> updated, <code>UpdateProfileUseCaseTests</code> new), <code>LayeredArchitectureTests.java</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*CreateSchoolUserUseCaseTests' --tests '*UpdateSchoolUserUseCaseTests' --tests '*UpdateProfileUseCaseTests'</code>; <code>./gradlew integrationTest --tests '*UserRepositoryImpl*'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-8-6" data-status="todo">
+      <span class="title">8.6 School rubric family (5 classes): <code>CreateSchoolRubricCriterion</code>, <code>CreateSchoolRubricResultBands</code>, <code>UpdateSchoolRubricCriterion</code>, <code>UpdateSchoolRubricResultBand</code>, <code>UpdateSchoolRubricVersion</code> (all <code>...UseCase</code>)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the rubric criterion, result band and rubric version adapters (<code>saveAll</code> and the atomic updates) translate through the helper; each use case catches the carrier and throws its current exception
+         (<code>IllegalStateException</code> in 2, <code>IllegalArgumentException</code> in 3) with its current message; tests per class (all five are new; the two criterion use cases also cover the examples path through <code>RubricCriterionExamplesNormalizer</code>); the 5 names leave the list.
+         <strong>Files:</strong> the adapters, the 5 use cases, 5 new tests, <code>LayeredArchitectureTests.java</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*SchoolRubric*UseCaseTests'</code>; <code>./gradlew integrationTest --tests '*Rubric*RepositoryImpl*'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-8-7" data-status="todo">
+      <span class="title">8.7 System rubric family (5 classes): <code>CreateSystemRubricCriteria</code>, <code>CreateSystemRubricResultBands</code>, <code>UpdateSystemRubricCriterion</code>, <code>UpdateSystemRubricResultBand</code>, <code>UpdateSystemRubricVersion</code> (all <code>...UseCase</code>)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the use cases catch the carrier and throw their current exception and message (<code>IllegalStateException</code> in 2, <code>IllegalArgumentException</code> in 3); the adapters were already translated in 8.6, so this job edits use cases and tests only;
+         <code>CreateSystemRubricResultBandsUseCaseTests</code> is updated and the other four get new tests; the 5 names leave the list.
+         <strong>Files:</strong> the 5 use cases, tests, <code>LayeredArchitectureTests.java</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*SystemRubric*UseCaseTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-8-8" data-status="todo">
+      <span class="title">8.8 Import commit handlers (9 classes)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the 7 handlers that use the transaction port (the commit-time violation now arrives as the carrier from 8.1) catch <code>DataConflictException | IllegalArgumentException</code> where they caught <code>DataIntegrityViolationException | IllegalArgumentException</code>, and still mark the row
+         <code>FAILED</code> with the same error JSON; <code>RubricCriterionImportCommitHandler</code> and <code>RubricResultBandImportCommitHandler</code> catch the carrier from the rubric adapters (8.6) and rethrow the same <code>IllegalStateException</code>;
+         the five existing handler tests are updated (the mocked port or repository throws the carrier), and the four handlers without tests get one focused test each for the failed-row path; the 9 names leave the list and <strong><code>APPLICATION_EXEMPTIONS</code> is empty</strong>.
+         <strong>Files:</strong> the 9 handlers, tests, <code>LayeredArchitectureTests.java</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*ImportCommitHandlerTests'</code>; <code>./gradlew test --tests '*LayeredArchitectureTests' --tests '*LombokUsageConventionTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify (phase):</strong> <code>./gradlew compileJava</code>, <code>./gradlew test</code>, <code>./gradlew integrationTest</code>;
+     <code>grep -rn "DataIntegrityViolationException" src/main/java/com/sep/vox/application</code> prints nothing except translated-away comments (none expected).</p>
+  <ul class="status-log"></ul>
+</div>
+
+<h2 id="risks">4. Risks</h2>
+<ul>
+  <li><strong>R1. Some catches may be dead code.</strong> Suspected for the plain <code>save</code>/<code>saveAll</code> sites in <code>@Transactional</code> use cases (see Current state). The plan migrates them as they are and classifies them in 8.2, instead of silently deleting or &ldquo;fixing&rdquo; them.</li>
+  <li><strong>R2. Translating in shared adapters changes what other callers of those methods see.</strong> Measured: today no infrastructure or interface code catches the Spring exception around these repositories. With D1 = A the carrier is unmapped, so a caller that does not catch it ends in the same generic 500. 8.3&ndash;8.8 each re-grep callers before wrapping.</li>
+  <li><strong>R3. Rubric examples are re-serialised by a different mapper.</strong> Today <code>new ObjectMapper()</code> (Jackson 2); after 3.4 the Spring-configured Jackson 3 mapper. Property order or null handling could change the string stored in the database. 3.4 captures golden strings from the old code first and stops if they differ.</li>
+  <li><strong>R4. <code>@Async</code> semantics.</strong> The proxy used to return immediately and route exceptions to the default handler. The port keeps the same executor (security context passed on, <code>CallerRunsPolicy</code> when the queue is full) and logs exceptions; 5.1 tests both. The two services stay public beans called from other beans, as before.</li>
+  <li><strong>R5. <code>@Value</code> versus <code>@ConfigurationProperties</code> defaults.</strong> A missing key must still produce the empty string the services expect. Each properties record sets that default in its constructor and has a test (2.1) or is covered by the consumer&rsquo;s test (2.2, 2.3).</li>
+  <li><strong>R6. Two money paths.</strong> <code>SubmitPracticeTurnUseCase</code> and <code>CreatePaymentCheckoutUrlUseCase</code> change only how the same <code>REQUIRES_NEW</code> transaction is opened. Gated by D2; their existing tests are the safety net, plus the QR payload golden string (3.5).</li>
+  <li><strong>R7. Test coverage is thin.</strong> 11 classes have no test at all and 5 only have controller tests with the use case mocked. The plan adds a focused test wherever it changes behaviour (catch paths, parsing, config defaults) and says &ldquo;not covered&rdquo; for pure type swaps (1.4, 4.6).</li>
+  <li><strong>R8. The two Excel exports differ today.</strong> The scores export guards formula-trigger characters; the question export does not. The document model keeps a flag so output is unchanged. This is a latent injection gap in the question export; it is reported, not fixed.</li>
+  <li><strong>R9. Size.</strong> 39 jobs across 8 phases, with phase 8 alone adding 21 new use-case or handler test classes (5 + 2 + 1 + 5 + 4 + 4) plus adapter tests. Each phase leaves the build green and the list shorter, so the work can stop or be reviewed in pieces.</li>
+  <li><strong>R10. An import the rule does not see.</strong> <code>AuthTokenPort</code> imports <code>org.jspecify.annotations.Nullable</code>, which is outside the allowed set, but ArchUnit 1.5.0 does not report it (it is not in the measured list). Noticed, not changed.</li>
+  <li><strong>R11. Security wiring moves (phase 7).</strong> <code>SecurityConfig</code> wires the handler, so a wrong bean type would break OAuth login at start-up, not in a unit test. The handler is the only <code>AuthenticationSuccessHandler</code> implementation, 7.1 changes only the parameter type, and <code>VoxApplicationTests</code> starts the context. The behaviour of the handler (session attributes, redirects, cookie after the use case) is pinned by its existing tests, which move with it. A manual Google login against a running app is not part of this plan (not checked).</li>
+</ul>
+
+<h2 id="scope">5. Out of scope</h2>
+<ul>
+  <li>Making the suspected-dead catches effective (for example by flushing in the adapters). That changes behaviour (a 500 becomes a 409/400) and flush ordering; 8.2 reports which ones are affected so it can be a separate task.</li>
+  <li>Removing the empty <code>APPLICATION_EXEMPTIONS</code> sets and the <code>applicationExemptionsStillApply</code> / <code>application_exemptions_still_apply</code> tests once the lists are empty, and tightening any ArchUnit rule (for example to see type-use annotations such as the JSpecify one in R10).</li>
+  <li>Any change to REST or GraphQL schemas, error payloads, Kafka topics and event payloads, JWT claims, <code>application.yaml</code> keys or env var names, and Flyway migrations (this plan needs none).</li>
+  <li>Updating the <code>AGENTS.md</code> layer table, which lists <code>interfaces/{rest,graphql,grpc,kafka}</code> and not the new <code>interfaces/handler</code> package from D5 (changing <code>AGENTS.md</code> needs your confirmation), and moving <code>OAuth2AuthenticationFailureHandler</code>.</li>
+  <li><code>QuestionController</code> calling <code>QuestionSpreadsheetService</code> without a use case, and any other layer-shape clean-up outside the 59 classes.</li>
+  <li>Translating Vietnamese comments in files this plan does not edit, and the Vietnamese-named test fields in <code>LayeredArchitectureTests</code>.</li>
+  <li>Adding tests for the 11 uncovered classes beyond the behaviour each job touches.</li>
+  <li>The formula-injection gap in the question export (R8) and the <code>CreateSchoolUseCase</code> comment mismatch in the exemption list (the list shrinks anyway).</li>
+</ul>
+
+<h2 id="verify">6. Verification</h2>
+<p>The plan is finished when all of the following hold on the final commit of the branch:</p>
+<ul>
+  <li><code>./gradlew compileJava</code> passes.</li>
+  <li><code>sed -n '/APPLICATION_EXEMPTIONS = Set.of(/,/);/p' src/test/java/com/sep/vox/architecture/LayeredArchitectureTests.java</code> shows an empty set, and so does the one in <code>LombokUsageConventionTests</code>;
+      <code>./gradlew test --tests '*LayeredArchitectureTests' --tests '*LombokUsageConventionTests'</code> passes. With no exemptions, <code>applicationOnlyDependsOnAllowedPackages</code> itself is the proof that no application class uses a type outside the allowed set.</li>
+  <li>The import-line check prints only the known JSpecify line:
+      <code>grep -rPn "^import (static )?(?!java\.|com\.sep\.vox\.(domain|application)\.|org\.slf4j\.|org\.springframework\.stereotype\.Service;|org\.springframework\.transaction\.annotation\.|lombok\.RequiredArgsConstructor;|lombok\.extern\.slf4j\.Slf4j;)" src/main/java/com/sep/vox/application</code>
+      (today it matches 59 files; at the end only <code>AuthTokenPort.java</code>).</li>
+  <li><code>./gradlew test</code> and <code>./gradlew integrationTest</code> pass (Docker is available here), and <code>./gradlew clean build --no-daemon</code> passes, as CI runs it.</li>
+  <li><code>git diff --stat</code> shows no change under <code>src/main/resources/db/migration</code>, no <code>application.yaml</code> key renamed, and no file under <code>interfaces/</code> other than <code>AuthController</code> and the two files phase 7 moves in
+      (<code>interfaces/handler/OAuth2AuthenticationSuccessHandler</code>, <code>interfaces/shared/HttpCookieProvider</code>).</li>
+</ul>
+<p>Run the <code>verify-plan</code> skill after the last phase.</p>
+
+<h2 id="changelog">7. Change log</h2>
+<div class="table-scroll"><table>
+  <thead><tr><th>Date</th><th>Change</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>2026-11-21</td><td>Plan written (Draft)</td><td>First version</td></tr>
+    <tr><td>2026-11-21</td><td>D1, D2, D3, D4 and D6 answered with the recommended option; intros of phases 6 and 8 and job 1.2 updated to match</td><td>User answers</td></tr>
+    <tr><td>2026-11-21</td><td>D5 answered with a different design (move <code>OAuth2AuthenticationSuccessHandler</code> to <code>interfaces/handler</code>). Phase 7 rewritten: move the handler, pin the cookie attributes, move <code>HttpCookieProvider</code> to <code>interfaces/shared</code> and delete <code>CookieManagerPort</code>. Table row, finding, risk R11, out-of-scope item and verification diff check updated</td><td>The user chose a different layer for the cookie code than either option offered</td></tr>
+    <tr><td>2026-11-21</td><td>Approved</td><td>User approved the plan as written after all six decisions were answered</td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="notes">8. Implementation notes</h2>
+<p>Filled in by <code>implement-plan</code>: deviations from the plan, results of <code>verify-plan</code>, and
+problems noticed but not fixed.</p>
+<ul id="notes-list"></ul>
+
+</div>
+<script>
+  (function () {
+    var labels = { todo: "Not started", progress: "In progress", done: "Done", blocked: "Blocked", skipped: "Deferred" };
+    var body = document.getElementById("overview-body");
+    var summary = document.getElementById("overview-summary");
+    var phaseCounts = {};
+    document.querySelectorAll(".phase[data-status], .job[data-status]").forEach(function (element) {
+      var status = element.getAttribute("data-status");
+      if (element.classList.contains("phase")) { phaseCounts[status] = (phaseCounts[status] || 0) + 1; }
+      var row = body.insertRow();
+      var nameCell = row.insertCell();
+      if (element.classList.contains("job")) { nameCell.className = "indent"; }
+      var link = document.createElement("a");
+      link.href = "#" + element.id;
+      link.textContent = element.querySelector(".title").textContent;
+      nameCell.appendChild(link);
+      var pill = document.createElement("span");
+      pill.className = "status " + status;
+      pill.textContent = labels[status] || status;
+      row.insertCell().appendChild(pill);
+    });
+    var parts = Object.keys(labels).filter(function (key) { return phaseCounts[key]; })
+      .map(function (key) { return phaseCounts[key] + " " + labels[key].toLowerCase(); });
+    summary.textContent = parts.length ? "Phases: " + parts.join(" · ") : "";
+  })();
+</script>
+</body>
+</html>

@@ -1,6 +1,7 @@
 package com.sep.vox.application.usecase.framework;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -17,6 +18,7 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.sep.vox.application.exception.DataConflictException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateFrameworkCriterionBandsCommand;
 import com.sep.vox.application.port.input.command.CreateFrameworkCriterionBandsCommand.CriterionBandItemCommand;
@@ -111,6 +113,16 @@ public class CreateFrameworkCriterionBandsUseCaseTests {
 
         assertThat(ids).hasSize(1);
         assertThat(ids.get(0)).isNotNull();
+    }
+
+    @Test
+    void should_throw_illegal_state_when_repository_reports_a_data_conflict() {
+        when(frameworkCriterionBandRepository.saveAll(any())).thenThrow(new DataConflictException("unique violation", null));
+        CreateFrameworkCriterionBandsCommand command = new CreateFrameworkCriterionBandsCommand(frameworkId, versionId, criterionId, List.of(bandItem("rb1")));
+
+        assertThatThrownBy(() -> useCase.execute(command))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessage("Mã kết quả đã được gán mức đánh giá cho tiêu chí này");
     }
 
     @Test

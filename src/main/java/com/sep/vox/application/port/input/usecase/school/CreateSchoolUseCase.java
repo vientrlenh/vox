@@ -4,7 +4,6 @@ import com.sep.vox.domain.model.school.SchoolDirectory;
 import java.time.Instant;
 import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +14,7 @@ import com.sep.vox.application.port.input.command.CreateSchoolCommand;
 import com.sep.vox.application.port.input.command.ProvisionSchoolCommand;
 import com.sep.vox.application.port.input.service.ProvisionSchoolService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.output.AvatarConfigPort;
 import com.sep.vox.domain.repository.SchoolDirectoryRepository;
 
 /**
@@ -33,15 +33,15 @@ public class CreateSchoolUseCase implements IUseCase<CreateSchoolCommand, UUID> 
 
     private final SchoolDirectoryRepository schoolDirectoryRepository;
     private final ProvisionSchoolService provisionSchoolService;
-    private final String allowedAvatarHosts;
+    private final AvatarConfigPort avatarConfigPort;
 
     public CreateSchoolUseCase(
             SchoolDirectoryRepository schoolDirectoryRepository,
             ProvisionSchoolService provisionSchoolService,
-            @Value("${app.avatar.allowed-hosts:}") String allowedAvatarHosts) {
+            AvatarConfigPort avatarConfigPort) {
         this.schoolDirectoryRepository = schoolDirectoryRepository;
         this.provisionSchoolService = provisionSchoolService;
-        this.allowedAvatarHosts = allowedAvatarHosts;
+        this.avatarConfigPort = avatarConfigPort;
     }
 
     @Override
@@ -88,7 +88,7 @@ public class CreateSchoolUseCase implements IUseCase<CreateSchoolCommand, UUID> 
             // nhận URL bất kỳ, tức là mọi giáo viên mở danh sách chấm sẽ tự gọi sang host lạ đó.
             // Xem AvatarUrlPolicy. Đây là đường DUY NHẤT có avatar do người dùng nhập trong nhóm
             // gọi ProvisionSchoolService; hai đường còn lại (duyệt đơn, xác thực OTP) truyền null.
-            AvatarUrlPolicy.normalizeOrThrow(allowedAvatarHosts, input.adminAvatarUrl())
+            AvatarUrlPolicy.normalizeOrThrow(avatarConfigPort.allowedHosts(), input.adminAvatarUrl())
         );
     }
 

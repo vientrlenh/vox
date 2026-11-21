@@ -10,7 +10,7 @@ import com.sep.vox.domain.model.rubric.RubricResultBand;
 import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.domain.repository.RubricResultBandRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.sep.vox.application.exception.DataConflictException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -194,7 +194,7 @@ public class RubricResultBandImportCommitHandler implements ImportCommitHandler 
         if (!bandsToSave.isEmpty()) {
             try {
                 rubricResultBandRepository.saveAll(bandsToSave);
-            } catch (DataIntegrityViolationException e) {
+            } catch (DataConflictException e) {
                 throw new IllegalStateException("Lỗi lưu dữ liệu: Mã xếp loại (Result Band) bị trùng lặp trong Phiên bản Rubric này.", e);
             }
         }

@@ -50,7 +50,7 @@ import com.sep.vox.infrastructure.properties.CorsProperties;
 import com.sep.vox.infrastructure.security.Argon2PasswordEncodeProvider;
 import com.sep.vox.infrastructure.security.CustomOidcUserService;
 import com.sep.vox.infrastructure.security.OAuth2AuthenticationFailureHandler;
-import com.sep.vox.infrastructure.security.OAuth2AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 
 @Configuration
 @EnableWebSecurity
@@ -58,14 +58,14 @@ import com.sep.vox.infrastructure.security.OAuth2AuthenticationSuccessHandler;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
+    private final AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
     private final OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
     private final CustomOidcUserService customOidcUserService;
     private final CorsProperties corsProperties;
     private final AdminConsoleProperties adminConsoleProperties;
     private final String cookieDomain;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler, OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler, CustomOidcUserService customOidcUserService, CorsProperties corsProperties, AdminConsoleProperties adminConsoleProperties, @Value("${app.cookie.domain:}") String cookieDomain) {
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler, OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler, CustomOidcUserService customOidcUserService, CorsProperties corsProperties, AdminConsoleProperties adminConsoleProperties, @Value("${app.cookie.domain:}") String cookieDomain) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.oAuth2AuthenticationSuccessHandler = oAuth2AuthenticationSuccessHandler;
         this.oAuth2AuthenticationFailureHandler = oAuth2AuthenticationFailureHandler;

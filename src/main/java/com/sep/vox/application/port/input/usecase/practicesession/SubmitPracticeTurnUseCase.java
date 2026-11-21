@@ -12,10 +12,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionTemplate;
 
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.mapper.practicesession.PracticeSessionResponseMapper;
@@ -26,6 +23,7 @@ import com.sep.vox.application.port.input.service.PracticeTopicOfferEnrichmentSe
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.ExternalEventPublisherPort;
 import com.sep.vox.application.port.output.QuotaPricingPort;
+import com.sep.vox.application.port.output.RequiresNewTransactionPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.SubmitTurnResult;
 import com.sep.vox.domain.dto.personalization.SubmitTurnResultDto;
@@ -58,8 +56,8 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
     private final ExternalEventPublisherPort eventPublisher;
     private final UserContextPort userContextPort;
     private final QuotaPricingPort quotaPricingPort;
-    // REQUIRES_NEW riêng cho lời gọi ConsumeQuotaService -- xem lý do đầy đủ tại chỗ dùng bên dưới.
-    private final TransactionTemplate consumeQuotaTransactionTemplate;
+    // Separate REQUIRES_NEW transaction for the ConsumeQuotaService call -- see the full reason where it is used below.
+    private final RequiresNewTransactionPort requiresNewTransactionPort;
 
     public SubmitPracticeTurnUseCase(
             PracticeSessionRepository practiceSessionRepository,
@@ -73,7 +71,7 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
             ExternalEventPublisherPort eventPublisher,
             UserContextPort userContextPort,
             QuotaPricingPort quotaPricingPort,
-            PlatformTransactionManager transactionManager) {
+            RequiresNewTransactionPort requiresNewTransactionPort) {
         this.practiceSessionRepository = practiceSessionRepository;
         this.practiceItemResponseRepository = practiceItemResponseRepository;
         this.practiceResponseTurnRepository = practiceResponseTurnRepository;
@@ -85,8 +83,7 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
         this.eventPublisher = eventPublisher;
         this.userContextPort = userContextPort;
         this.quotaPricingPort = quotaPricingPort;
-        this.consumeQuotaTransactionTemplate = new TransactionTemplate(transactionManager);
-        this.consumeQuotaTransactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        this.requiresNewTransactionPort = requiresNewTransactionPort;
     }
 
     // CẢNH BÁO: lời gọi execute(...) bên dưới là SELF-INVOCATION -- không đi qua proxy, nên
@@ -164,23 +161,25 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
                 .multiply(fxRateUsed)
                 .setScale(COST_VND_SCALE, RoundingMode.HALF_UP);
             UUID subscriptionId = activeSubscriptionId(studentId);
-            // ConsumeQuotaService cũng @Transactional (REQUIRED mặc định) -- gọi thẳng thì nó
-            // tham gia CHUNG transaction với response/turn/corrections vừa lưu ở trên. Nếu nó
-            // ném (giờ chỉ còn các lỗi thật như không tìm thấy hạn mức/gói, không còn
-            // QuotaExceededException), transaction interceptor của lời gọi đó đánh dấu
-            // rollback-only lên transaction DÙNG CHUNG ngay lập tức, TRƯỚC khi exception bay tới
-            // chỗ bắt -- tới lúc method này commit Spring vẫn ném UnexpectedRollbackException
-            // (500), cuốn theo cả response/turn/corrections đã lưu. Bọc trong transaction RIÊNG
-            // (REQUIRES_NEW) thì chỉ transaction cô lập đó bị rollback. Xem
-            // QuestionStatusTransition/PracticeSessionClosedHandler cho các chỗ khác trong repo
-            // đã từng dính đúng cái bẫy này.
+            // ConsumeQuotaService is also @Transactional (REQUIRED by default) -- called directly, it
+            // would join the SAME transaction as the response/turn/corrections saved above. If it
+            // throws (now only real failures such as quota/plan not found, no longer
+            // QuotaExceededException), the transaction interceptor of that call marks the SHARED
+            // transaction rollback-only immediately, BEFORE the exception reaches the place that
+            // catches it -- by the time this method commits, Spring still throws
+            // UnexpectedRollbackException (500), dragging along the response/turn/corrections
+            // already saved. Wrapping it in its OWN transaction (REQUIRES_NEW) means only that
+            // isolated transaction is rolled back. See
+            // QuestionStatusTransition/PracticeSessionClosedHandler for other places in the repo
+            // that have fallen into exactly this trap.
             //
-            // consumePracticeAllowingDebt chứ KHÔNG chặn cứng: lúc chạy tới đây Azure đã tính
-            // tiền xong rồi (costUsd là chi phí THẬT của lượt vừa nói), nên từ chối không giữ
-            // lại được đồng nào mà chỉ làm khoản chi biến mất khỏi sổ sách. Hết tiền hay chưa
-            // giờ đọc từ cờ fundsExhausted của kết quả, không còn qua exception.
-            ConsumeQuotaResponse consumeResult = consumeQuotaTransactionTemplate.execute(
-                status -> consumeQuotaService.consumePracticeAllowingDebt(
+            // consumePracticeAllowingDebt and NOT a hard block: by the time we get here Azure has
+            // already billed (costUsd is the REAL cost of the turn just spoken), so refusing
+            // would not keep a single cent and would only make the expense vanish from the books.
+            // Whether funds are exhausted is now read from the fundsExhausted flag of the
+            // result, no longer through an exception.
+            ConsumeQuotaResponse consumeResult = requiresNewTransactionPort.callInNewTransaction(
+                () -> consumeQuotaService.consumePracticeAllowingDebt(
                     subscriptionId,
                     turn.getSessionId(),
                     costVnd,

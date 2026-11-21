@@ -5,8 +5,7 @@ import com.sep.vox.domain.model.user.User;
 
 import java.util.Optional;
 import java.util.UUID;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.sep.vox.application.exception.DataConflictException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +16,7 @@ import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateSchoolUserCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.output.AvatarConfigPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.schooluser.UpdateSchoolUserResponse;
 import com.sep.vox.domain.model.user.UserStatus;
@@ -32,15 +32,15 @@ public class UpdateSchoolUserUseCase implements IUseCase<UpdateSchoolUserCommand
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
     private final SchoolUserRepository schoolUserRepository;
-    private final String allowedAvatarHosts;
+    private final AvatarConfigPort avatarConfigPort;
 
     public UpdateSchoolUserUseCase(UserContextPort userContextPort, UserRepository userRepository,
             SchoolUserRepository schoolUserRepository,
-            @Value("${app.avatar.allowed-hosts:}") String allowedAvatarHosts) {
+            AvatarConfigPort avatarConfigPort) {
         this.userContextPort = userContextPort;
         this.userRepository = userRepository;
         this.schoolUserRepository = schoolUserRepository;
-        this.allowedAvatarHosts = allowedAvatarHosts;
+        this.avatarConfigPort = avatarConfigPort;
     }
 
     @Override
@@ -105,12 +105,12 @@ public class UpdateSchoolUserUseCase implements IUseCase<UpdateSchoolUserCommand
         // The URL is still checked even though the caller is a school admin: accepting a URL on a foreign host
         // would make every teacher who opens the grading list call out to that host. See AvatarUrlPolicy.
         if (input.avatarUrlProvided()) {
-            target.setAvatarUrl(AvatarUrlPolicy.normalizeOrThrow(allowedAvatarHosts, input.avatarUrl()));
+            target.setAvatarUrl(AvatarUrlPolicy.normalizeOrThrow(avatarConfigPort.allowedHosts(), input.avatarUrl()));
         }
 
         try {
             userRepository.saveAndFlush(target);
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataConflictException e) {
             throw new DuplicatedException("Số điện thoại đã tồn tại");
         }
 

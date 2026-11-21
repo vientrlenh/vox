@@ -19,7 +19,7 @@ import com.sep.vox.domain.model.rubric.RubricResultBand;
 import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.sep.vox.application.exception.DataConflictException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -134,7 +134,7 @@ public class UpdateSchoolRubricResultBandUseCase implements IUseCase<UpdateSchoo
         ScoreRangeValidator.assertWithinScale(version.getScoringScaleMin(), version.getScoringScaleMax(),
                 finalMinScore, finalMaxScore, nameForError);
 
-        // 6. Bắn SQL Atomic Update
+        // 6. Fire the atomic SQL update
         try {
             rubricResultBandRepository.updateResultBandAtomic(
                     command.resultBandId(),
@@ -147,7 +147,7 @@ public class UpdateSchoolRubricResultBandUseCase implements IUseCase<UpdateSchoo
                     Instant.now(),
                     currentUserId.toString()
             );
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataConflictException e) {
             throw new IllegalArgumentException("Không thể cập nhật Dải điểm Kết quả do dữ liệu bị trùng hoặc không hợp lệ.");
         }
 

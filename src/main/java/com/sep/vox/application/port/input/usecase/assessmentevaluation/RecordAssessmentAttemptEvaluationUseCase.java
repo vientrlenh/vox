@@ -19,9 +19,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.support.TransactionTemplate;
 
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.mapper.assessmentevaluation.AssessmentEvaluationSignalMapper;
@@ -32,6 +29,7 @@ import com.sep.vox.application.port.input.command.assessmentevaluation.ValidityR
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentsession.CompleteAssessmentSessionGradingUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
+import com.sep.vox.application.port.output.RequiresNewTransactionPort;
 import com.sep.vox.domain.model.assessment.AssessmentEvaluationEngineType;
 import com.sep.vox.domain.model.assessment.AssessmentItemCriterionScore;
 import com.sep.vox.domain.model.assessment.AssessmentItemEvaluation;
@@ -74,7 +72,7 @@ public class RecordAssessmentAttemptEvaluationUseCase implements IUseCase<Record
     private final UpsertAssessmentCandidateResultUseCase upsertAssessmentCandidateResultUseCase;
     private final CompleteAssessmentSessionGradingUseCase completeAssessmentSessionGradingUseCase;
     private final JsonSerializationPort jsonSerializationPort;
-    private final TransactionTemplate phaseOneTransactionTemplate;
+    private final RequiresNewTransactionPort requiresNewTransactionPort;
     private final ConfidenceReviewCalculator confidenceReviewCalculator;
     private final ClassTestGradingAssignmentService classTestGradingAssignmentService;
     private final AssessmentProctoringAlertRepository assessmentProctoringAlertRepository;
@@ -91,7 +89,7 @@ public class RecordAssessmentAttemptEvaluationUseCase implements IUseCase<Record
             RubricVersionRepository rubricVersionRepository,
             UpsertAssessmentCandidateResultUseCase upsertAssessmentCandidateResultUseCase,
             CompleteAssessmentSessionGradingUseCase completeAssessmentSessionGradingUseCase,
-            PlatformTransactionManager transactionManager,
+            RequiresNewTransactionPort requiresNewTransactionPort,
             JsonSerializationPort jsonSerializationPort,
             ConfidenceReviewCalculator confidenceReviewCalculator,
             ClassTestGradingAssignmentService classTestGradingAssignmentService,
@@ -108,8 +106,7 @@ public class RecordAssessmentAttemptEvaluationUseCase implements IUseCase<Record
         this.upsertAssessmentCandidateResultUseCase = upsertAssessmentCandidateResultUseCase;
         this.completeAssessmentSessionGradingUseCase = completeAssessmentSessionGradingUseCase;
         this.jsonSerializationPort = jsonSerializationPort;
-        this.phaseOneTransactionTemplate = new TransactionTemplate(transactionManager);
-        this.phaseOneTransactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        this.requiresNewTransactionPort = requiresNewTransactionPort;
         this.confidenceReviewCalculator = confidenceReviewCalculator;
         this.classTestGradingAssignmentService = classTestGradingAssignmentService;
         this.assessmentProctoringAlertRepository = assessmentProctoringAlertRepository;
@@ -132,7 +129,7 @@ public class RecordAssessmentAttemptEvaluationUseCase implements IUseCase<Record
     }
 
     private PersistedEvaluation persistEvaluation(RecordAssessmentAttemptEvaluationCommand input) {
-        PersistedEvaluation persisted = phaseOneTransactionTemplate.execute(status -> {
+        PersistedEvaluation persisted = requiresNewTransactionPort.callInNewTransaction(() -> {
             UUID responseId = UUID.fromString(input.answerId());
             AssessmentItemResponse response = assessmentItemResponseRepository.findById(responseId)
                 .orElseThrow(() -> new NotFoundException("không thể tìm thấy câu trả lời cho evaluation"));

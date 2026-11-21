@@ -8,13 +8,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import org.springframework.dao.DataIntegrityViolationException;
+import com.sep.vox.application.exception.DataConflictException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.port.output.JsonSerializationPort;
+import com.sep.vox.application.port.output.RequiresNewTransactionPort;
 import com.sep.vox.domain.model.importfile.ImportRow;
 import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
@@ -27,13 +26,12 @@ public class SchoolDirectoryImportCommitHandler implements ImportCommitHandler {
 
     private final SchoolDirectoryRepository schoolDirectoryRepository;
     private final JsonSerializationPort jsonSerializationPort;
-    private final TransactionTemplate transactionTemplate;
+    private final RequiresNewTransactionPort requiresNewTransactionPort;
 
-    public SchoolDirectoryImportCommitHandler(SchoolDirectoryRepository schoolDirectoryRepository, JsonSerializationPort jsonSerializationPort, PlatformTransactionManager platformTransactionManager) {
+    public SchoolDirectoryImportCommitHandler(SchoolDirectoryRepository schoolDirectoryRepository, JsonSerializationPort jsonSerializationPort, RequiresNewTransactionPort requiresNewTransactionPort) {
         this.schoolDirectoryRepository = schoolDirectoryRepository;
         this.jsonSerializationPort = jsonSerializationPort;
-        this.transactionTemplate = new TransactionTemplate(platformTransactionManager);
-        this.transactionTemplate.setPropagationBehavior(TransactionTemplate.PROPAGATION_REQUIRES_NEW);
+        this.requiresNewTransactionPort = requiresNewTransactionPort;
     }
 
     private static final Pattern DOMAIN_PATTERN = Pattern.compile("^([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+edu\\.vn$", Pattern.CASE_INSENSITIVE);
@@ -95,15 +93,15 @@ public class SchoolDirectoryImportCommitHandler implements ImportCommitHandler {
 
             try {
                 if (existing != null) {
-                    transactionTemplate.executeWithoutResult(status ->
+                    requiresNewTransactionPort.runInNewTransaction(() ->
                             updateDirectory(existing, normalized));
                     updatedRows++;
                 } else {
-                    transactionTemplate.executeWithoutResult(status ->
+                    requiresNewTransactionPort.runInNewTransaction(() ->
                             createDirectory(normalized));
                     createdRows++;
                 }
-            } catch (DataIntegrityViolationException e) {
+            } catch (DataConflictException e) {
                 row.setErrorsJson(jsonSerializationPort.toJson(List.of(error("code", "Mã trường đã tồn tại"))));
                 row.setStatus(ImportRowStatus.FAILED);
                 invalidRows++;

@@ -58,7 +58,7 @@ public class ClassTestGradingAssignmentService {
      *
      * <p>{@code REQUIRED} and not {@code MANDATORY}: the main hook
      * ({@code RecordAssessmentAttemptEvaluationUseCase}) deliberately does NOT run inside an outer
-     * transaction -- it splits itself into phases with {@code TransactionTemplate}. Switching
+     * transaction -- it splits itself into phases with {@code RequiresNewTransactionPort}. Switching
      * to {@code MANDATORY} would make it throw at run time right there.
      *
      * <p>Consequence: the assignment may commit in its own transaction, separate from the transaction

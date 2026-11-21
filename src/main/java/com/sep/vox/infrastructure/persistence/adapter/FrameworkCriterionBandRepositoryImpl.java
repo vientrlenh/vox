@@ -12,6 +12,7 @@ import com.sep.vox.domain.model.framework.FrameworkCriterionBand;
 import com.sep.vox.domain.repository.FrameworkCriterionBandRepository;
 import com.sep.vox.infrastructure.persistence.mapper.FrameworkCriterionBandMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataFrameworkCriterionBandRepository;
+import com.sep.vox.infrastructure.persistence.DataConflictTranslation;
 
 @Repository
 public class FrameworkCriterionBandRepositoryImpl implements FrameworkCriterionBandRepository {
@@ -47,7 +48,7 @@ public class FrameworkCriterionBandRepositoryImpl implements FrameworkCriterionB
     @Override
     public List<FrameworkCriterionBand> saveAll(List<FrameworkCriterionBand> bands) {
         List<FrameworkCriterionBandJpaEntity> entities = bands.stream().map(FrameworkCriterionBandMapper::toJpa).toList();
-        return springDataFrameworkCriterionBandRepository.saveAll(entities)
+        return DataConflictTranslation.translating(() -> springDataFrameworkCriterionBandRepository.saveAll(entities))
             .stream().map(FrameworkCriterionBandMapper::toDomain).toList();
     }
 

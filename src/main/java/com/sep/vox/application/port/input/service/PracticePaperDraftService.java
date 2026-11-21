@@ -11,14 +11,13 @@ import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.QuotaExceededException;
 import com.sep.vox.application.port.output.CacheManagerPort;
+import com.sep.vox.application.port.output.PracticeGenerationExecutorPort;
 import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticePaper;
 import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticePaperDraft;
 
@@ -67,12 +66,12 @@ public class PracticePaperDraftService {
     }
 
     private final CacheManagerPort cacheManagerPort;
-    private final AsyncTaskExecutor executor;
+    private final PracticeGenerationExecutorPort practiceGenerationExecutorPort;
 
     public PracticePaperDraftService(
-            @Qualifier("practiceGenerationExecutor") AsyncTaskExecutor executor,
+            PracticeGenerationExecutorPort practiceGenerationExecutorPort,
             CacheManagerPort cacheManagerPort) {
-        this.executor = executor;
+        this.practiceGenerationExecutorPort = practiceGenerationExecutorPort;
         this.cacheManagerPort = cacheManagerPort;
     }
 
@@ -83,7 +82,7 @@ public class PracticePaperDraftService {
         // Chạy trên executor riêng, KHÔNG trên thread request: đó là điều cho phép OSIV nhả
         // connection DB thay vì giữ suốt lúc chờ LLM (executor đã bọc SecurityContext nên
         // use case bên trong vẫn đọc được người dùng hiện tại).
-        CompletableFuture<PracticePlanningResponses.PracticePaper> future = CompletableFuture.supplyAsync(buildPaper, executor);
+        CompletableFuture<PracticePlanningResponses.PracticePaper> future = practiceGenerationExecutorPort.supplyAsync(buildPaper);
 
         try {
             PracticePlanningResponses.PracticePaper paper = future.get(FAST_PATH_WAIT.toMillis(), TimeUnit.MILLISECONDS);

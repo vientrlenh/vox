@@ -3,8 +3,6 @@ package com.sep.vox.application.port.input.service;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionEvaluationGuide;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -14,21 +12,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.apache.poi.ss.usermodel.DataValidation;
-import org.apache.poi.ss.usermodel.DataValidationConstraint;
-import org.apache.poi.ss.usermodel.DataValidationHelper;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.util.CellRangeAddressList;
-import org.apache.poi.xssf.usermodel.XSSFRow;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.exception.ForbiddenException;
+import com.sep.vox.application.port.output.SpreadsheetWriterPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
+import com.sep.vox.application.response.output.ColumnDropdown;
+import com.sep.vox.application.response.output.SpreadsheetCell;
+import com.sep.vox.application.response.output.SpreadsheetDocument;
+import com.sep.vox.application.response.output.SpreadsheetOptions;
 import com.sep.vox.domain.dto.QuestionDto;
 import com.sep.vox.domain.mapper.QuestionDtoMapper;
 import com.sep.vox.domain.model.question.QuestionSharing;
@@ -45,6 +39,7 @@ import com.sep.vox.domain.repository.UserRepository;
 public class QuestionSpreadsheetService {
 
     private static final int EXPORT_PAGE_SIZE = 500;
+    private static final String SHEET_NAME = "Questions";
 
     private static final List<String> IMPORT_HEADERS = List.of(
         "Mã câu hỏi",
@@ -67,6 +62,7 @@ public class QuestionSpreadsheetService {
 
     private static final int TYPE_COLUMN_INDEX = 1;
     private static final int SHARING_COLUMN_INDEX = 9;
+    private static final int VALIDATION_FIRST_ROW = 1;
     private static final int VALIDATION_LAST_ROW = 1000;
 
     private final QuestionRepository questionRepository;
@@ -77,6 +73,7 @@ public class QuestionSpreadsheetService {
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
+    private final SpreadsheetWriterPort spreadsheetWriterPort;
 
     public QuestionSpreadsheetService(
             QuestionRepository questionRepository,
@@ -86,7 +83,8 @@ public class QuestionSpreadsheetService {
             UserRepository userRepository,
             UserContextPort userContextPort,
             SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository) {
+            UserRoleQueryRepository userRoleQueryRepository,
+            SpreadsheetWriterPort spreadsheetWriterPort) {
         this.questionRepository = questionRepository;
         this.questionEvaluationGuideRepository = questionEvaluationGuideRepository;
         this.questionBankRepository = questionBankRepository;
@@ -95,6 +93,7 @@ public class QuestionSpreadsheetService {
         this.userContextPort = userContextPort;
         this.schoolUserRepository = schoolUserRepository;
         this.userRoleQueryRepository = userRoleQueryRepository;
+        this.spreadsheetWriterPort = spreadsheetWriterPort;
     }
 
     public byte[] exportQuestions(
@@ -107,153 +106,23 @@ public class QuestionSpreadsheetService {
             String scope,
             String keyword) {
         AccessContext access = resolveAccess();
-        List<QuestionDto> questions = new ArrayList<QuestionDto>();
-        // findAccessible là 1-based (QuestionRepositoryImpl trừ 1 trước khi dựng PageRequest), nên
-        // bắt đầu từ 1 chứ KHÔNG phải 0 -- số 0 thành -1 và Spring Data ném "Page index must not be
-        // less than zero" ngay vòng lặp đầu, tức xuất Excel hỏng hoàn toàn.
-        int page = 1;
-        while (true) {
-            PageResult<Question> result = questionRepository.findAccessible(
-                access.currentUserId(),
-                access.currentSchoolId(),
-                access.systemAdmin(),
-                access.schoolAdmin(),
-                questionBankId,
-                questionTopicId,
-                topicName,
-                status,
-                type,
-                sharing,
-                // Xuất Excel không lọc theo loại tài nguyên -- màn xuất không có ô đó.
-                null,
-                scope,
-                keyword,
-                page,
-                EXPORT_PAGE_SIZE
-            );
-            questions.addAll(result.content().stream()
-                .map(QuestionDtoMapper::toQuestionDto)
-                .toList());
-            page++;
-            // `>` chứ không phải `>=`: đi kèm mốc bắt đầu 1-based ở trên. Giữ `>=` thì trang CUỐI
-            // không bao giờ được đọc (totalPages=3: đọc 1, 2 rồi thoát ở 3>=3), mà mất dòng trong
-            // file Excel thì không có gì báo -- lỗi lặng, tệ hơn cả ngoại lệ.
-            if (page > result.totalPages()) {
-                break;
-            }
-        }
-
-        XSSFWorkbook workbook = new XSSFWorkbook();
-        try (workbook) {
-            XSSFSheet sheet = workbook.createSheet("Questions");
-            writeHeaders(sheet, fullExportHeaders());
-            Map<UUID, String> bankCache = new LinkedHashMap<UUID, String>();
-            Map<UUID, String> topicCache = new LinkedHashMap<UUID, String>();
-            Map<UUID, String> userCache = new LinkedHashMap<UUID, String>();
-
-            int rowIndex = 1;
-            for (QuestionDto question : questions) {
-                QuestionEvaluationGuide evaluationGuide = questionEvaluationGuideRepository.findByQuestionId(question.id()).orElse(null);
-                XSSFRow row = sheet.createRow(rowIndex++);
-                writeRow(row, rowValues(
-                    question.code(),
-                    question.type(),
-                    question.questionText(),
-                    question.instructionText(),
-                    question.promptText(),
-                    question.preparationText(),
-                    String.valueOf(question.preparationTimeSeconds()),
-                    String.valueOf(question.minResponseSeconds()),
-                    String.valueOf(question.maxResponseSeconds()),
-                    question.sharing(),
-                    evaluationGuide == null ? null : evaluationGuide.getExpectedContent(),
-                    evaluationGuide == null ? null : evaluationGuide.getKeyPoints(),
-                    evaluationGuide == null ? null : evaluationGuide.getAcceptableResponses(),
-                    evaluationGuide == null ? null : evaluationGuide.getOffTopicExamples(),
-                    evaluationGuide == null ? null : evaluationGuide.getScoringHints(),
-                    evaluationGuide == null ? null : evaluationGuide.getCommonMistakes(),
-                    bankCodeOf(question.questionBankId(), bankCache),
-                    topicNameOf(question.questionTopicId(), topicCache),
-                    question.status(),
-                    createdByNameOf(question.createdBy(), userCache),
-                    question.createdAt() == null ? null : question.createdAt().toString()
-                ));
-            }
-            autoSize(sheet, fullExportHeaders().size());
-            return toBytes(workbook);
-        } catch (IOException exception) {
-            throw new IllegalStateException("Không thể tạo file export câu hỏi", exception);
-        }
+        ExportFilter filter = new ExportFilter(
+            questionBankId, questionTopicId, topicName, status, type, sharing, scope, keyword);
+        List<QuestionDto> questions = loadAllAccessibleQuestions(access, filter);
+        return spreadsheetWriterPort.write(new SpreadsheetDocument(
+            SHEET_NAME, fullExportHeaders(), exportRows(questions), List.of(), SpreadsheetOptions.plain()));
     }
 
     public byte[] downloadTemplate(QuestionType type) {
-        XSSFWorkbook workbook = new XSSFWorkbook();
-        try (workbook) {
-            XSSFSheet sheet = workbook.createSheet("Questions");
-            writeHeaders(sheet, IMPORT_HEADERS);
-            String sampleQuestionType = (type == null ? QuestionType.READ_ALOUD : type).name();
-
-            writeRow(sheet.createRow(1), rowValues(
-                "Q-SAMPLE-001",
-                sampleQuestionType,
-                "Read the passage aloud clearly.",
-                "Speak naturally and clearly.",
-                "You can take a short breath before starting.",
-                "A short text passage for reading aloud.",
-                "15",
-                "30",
-                "60",
-                "PRIVATE",
-                "Pronounce clearly and read the whole passage.",
-                "Pronunciation; fluency",
-                "Reads all key sentences accurately.",
-                "Stops too early or changes the text.",
-                "Check pronunciation, pacing, and completeness.",
-                "Skipping words or reading too fast."
-            ));
-            writeRow(sheet.createRow(2), rowValues(
-                "",
-                "SHORT_ANSWER",
-                "What do you usually do on weekends?",
-                "",
-                "Mention one or two activities you often do.",
-                "",
-                "10",
-                "20",
-                "45",
-                "SCHOOL_SHARED",
-                "Answer directly and give a simple explanation.",
-                "Direct answer; simple explanation",
-                "I usually visit my grandparents and study English.",
-                "",
-                "Reward clear and relevant responses.",
-                "Answering too vaguely."
-            ));
-            writeRow(sheet.createRow(3), rowValues(
-                "",
-                "OPINION",
-                "Do you think students should use mobile phones in class?",
-                "Give your opinion and support it with reasons.",
-                "",
-                "",
-                "20",
-                "40",
-                "90",
-                "PRIVATE",
-                "State a clear opinion and provide supporting reasons.",
-                "Clear opinion; reasons",
-                "I think phones should only be used for learning tasks.",
-                "Talking off topic about social media trends.",
-                "Look for relevance and reasoning.",
-                "No opinion stated."
-            ));
-            addListValidation(sheet, TYPE_COLUMN_INDEX, Arrays.stream(QuestionType.values()).map(e -> e.name()).toArray(String[]::new));
-            addListValidation(sheet, SHARING_COLUMN_INDEX, Arrays.stream(QuestionSharing.values()).map(e -> e.name()).toArray(String[]::new));
-            autoSize(sheet, IMPORT_HEADERS.size());
-            return toBytes(workbook);
-        } catch (IOException exception) {
-            throw new IllegalStateException("Không thể tạo file template import câu hỏi", exception);
-        }
+        List<List<String>> sampleRows = List.of(
+            firstSampleRow((type == null ? QuestionType.READ_ALOUD : type).name()),
+            secondSampleRow(),
+            thirdSampleRow());
+        List<ColumnDropdown> dropdowns = List.of(
+            dropdownOf(TYPE_COLUMN_INDEX, QuestionType.values()),
+            dropdownOf(SHARING_COLUMN_INDEX, QuestionSharing.values()));
+        return spreadsheetWriterPort.write(new SpreadsheetDocument(
+            SHEET_NAME, IMPORT_HEADERS, textRows(sampleRows), dropdowns, SpreadsheetOptions.plain()));
     }
 
     public String exportFileName() {
@@ -278,37 +147,159 @@ public class QuestionSpreadsheetService {
         return new AccessContext(currentUserId, currentSchoolId, systemAdmin, schoolAdmin);
     }
 
-    private void writeHeaders(Sheet sheet, List<String> headers) {
-        Row row = sheet.createRow(0);
-        writeRow(row, headers);
+    /**
+     * {@code findAccessible} is 1-based (QuestionRepositoryImpl subtracts 1 before building the PageRequest), so paging
+     * starts at 1, NOT 0: 0 becomes -1 and Spring Data throws "Page index must not be less than zero" in the first
+     * iteration, which breaks the Excel export completely.
+     *
+     * <p>The loop continues while {@code page <= totalPages}, matching the 1-based start. Stopping at
+     * {@code page >= totalPages} would never read the LAST page (totalPages=3: reads 1 and 2, then stops at 3>=3), and
+     * a row missing from the Excel file is reported by nothing: a silent error, worse than an exception.
+     */
+    private List<QuestionDto> loadAllAccessibleQuestions(AccessContext access, ExportFilter filter) {
+        List<QuestionDto> questions = new ArrayList<QuestionDto>();
+        int page = 1;
+        PageResult<Question> result;
+        do {
+            result = findAccessiblePage(access, filter, page);
+            questions.addAll(result.content().stream().map(QuestionDtoMapper::toQuestionDto).toList());
+            page++;
+        } while (page <= result.totalPages());
+        return questions;
     }
 
-    private void writeRow(org.apache.poi.ss.usermodel.Row row, List<String> values) {
-        for (int index = 0; index < values.size(); index++) {
-            row.createCell(index).setCellValue(values.get(index) == null ? "" : values.get(index));
+    private PageResult<Question> findAccessiblePage(AccessContext access, ExportFilter filter, int page) {
+        return questionRepository.findAccessible(
+            access.currentUserId(),
+            access.currentSchoolId(),
+            access.systemAdmin(),
+            access.schoolAdmin(),
+            filter.questionBankId(),
+            filter.questionTopicId(),
+            filter.topicName(),
+            filter.status(),
+            filter.type(),
+            filter.sharing(),
+            // The export screen has no asset type filter.
+            null,
+            filter.scope(),
+            filter.keyword(),
+            page,
+            EXPORT_PAGE_SIZE
+        );
+    }
+
+    private List<List<SpreadsheetCell>> exportRows(List<QuestionDto> questions) {
+        Map<UUID, String> bankCache = new LinkedHashMap<UUID, String>();
+        Map<UUID, String> topicCache = new LinkedHashMap<UUID, String>();
+        Map<UUID, String> userCache = new LinkedHashMap<UUID, String>();
+        List<List<String>> rows = new ArrayList<List<String>>();
+        for (QuestionDto question : questions) {
+            QuestionEvaluationGuide guide = questionEvaluationGuideRepository.findByQuestionId(question.id()).orElse(null);
+            List<String> values = new ArrayList<String>(questionValues(question, guide));
+            values.add(bankCodeOf(question.questionBankId(), bankCache));
+            values.add(topicNameOf(question.questionTopicId(), topicCache));
+            values.add(question.status());
+            values.add(createdByNameOf(question.createdBy(), userCache));
+            values.add(question.createdAt() == null ? null : question.createdAt().toString());
+            rows.add(values);
         }
+        return textRows(rows);
     }
 
-    private void addListValidation(Sheet sheet, int columnIndex, String[] values) {
-        DataValidationHelper helper = sheet.getDataValidationHelper();
-        CellRangeAddressList addressList = new CellRangeAddressList(1, VALIDATION_LAST_ROW, columnIndex, columnIndex);
-        DataValidationConstraint constraint = helper.createExplicitListConstraint(values);
-        DataValidation validation = helper.createValidation(constraint, addressList);
-        validation.setShowErrorBox(true);
-        sheet.addValidationData(validation);
+    private List<String> questionValues(QuestionDto question, QuestionEvaluationGuide guide) {
+        return rowValues(
+            question.code(),
+            question.type(),
+            question.questionText(),
+            question.instructionText(),
+            question.promptText(),
+            question.preparationText(),
+            String.valueOf(question.preparationTimeSeconds()),
+            String.valueOf(question.minResponseSeconds()),
+            String.valueOf(question.maxResponseSeconds()),
+            question.sharing(),
+            guide == null ? null : guide.getExpectedContent(),
+            guide == null ? null : guide.getKeyPoints(),
+            guide == null ? null : guide.getAcceptableResponses(),
+            guide == null ? null : guide.getOffTopicExamples(),
+            guide == null ? null : guide.getScoringHints(),
+            guide == null ? null : guide.getCommonMistakes()
+        );
     }
 
-    private void autoSize(Sheet sheet, int columnCount) {
-        for (int index = 0; index < columnCount; index++) {
-            sheet.autoSizeColumn(index);
-        }
+    private List<List<SpreadsheetCell>> textRows(List<List<String>> rows) {
+        return rows.stream()
+            .map(row -> row.stream().map(value -> SpreadsheetCell.text(value == null ? "" : value)).toList())
+            .toList();
     }
 
-    private byte[] toBytes(XSSFWorkbook workbook) throws IOException {
-        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-            workbook.write(outputStream);
-            return outputStream.toByteArray();
-        }
+    private ColumnDropdown dropdownOf(int columnIndex, Enum<?>[] values) {
+        List<String> names = Arrays.stream(values).map(e -> e.name()).toList();
+        return new ColumnDropdown(columnIndex, VALIDATION_FIRST_ROW, VALIDATION_LAST_ROW, names);
+    }
+
+    private List<String> firstSampleRow(String sampleQuestionType) {
+        return rowValues(
+            "Q-SAMPLE-001",
+            sampleQuestionType,
+            "Read the passage aloud clearly.",
+            "Speak naturally and clearly.",
+            "You can take a short breath before starting.",
+            "A short text passage for reading aloud.",
+            "15",
+            "30",
+            "60",
+            "PRIVATE",
+            "Pronounce clearly and read the whole passage.",
+            "Pronunciation; fluency",
+            "Reads all key sentences accurately.",
+            "Stops too early or changes the text.",
+            "Check pronunciation, pacing, and completeness.",
+            "Skipping words or reading too fast."
+        );
+    }
+
+    private List<String> secondSampleRow() {
+        return rowValues(
+            "",
+            "SHORT_ANSWER",
+            "What do you usually do on weekends?",
+            "",
+            "Mention one or two activities you often do.",
+            "",
+            "10",
+            "20",
+            "45",
+            "SCHOOL_SHARED",
+            "Answer directly and give a simple explanation.",
+            "Direct answer; simple explanation",
+            "I usually visit my grandparents and study English.",
+            "",
+            "Reward clear and relevant responses.",
+            "Answering too vaguely."
+        );
+    }
+
+    private List<String> thirdSampleRow() {
+        return rowValues(
+            "",
+            "OPINION",
+            "Do you think students should use mobile phones in class?",
+            "Give your opinion and support it with reasons.",
+            "",
+            "",
+            "20",
+            "40",
+            "90",
+            "PRIVATE",
+            "State a clear opinion and provide supporting reasons.",
+            "Clear opinion; reasons",
+            "I think phones should only be used for learning tasks.",
+            "Talking off topic about social media trends.",
+            "Look for relevance and reasoning.",
+            "No opinion stated."
+        );
     }
 
     private List<String> fullExportHeaders() {
@@ -344,6 +335,17 @@ public class QuestionSpreadsheetService {
             createdBy,
             id -> userRepository.findById(id).map(user -> user.getFullName().value()).orElse("")
         );
+    }
+
+    private record ExportFilter(
+            UUID questionBankId,
+            UUID questionTopicId,
+            String topicName,
+            QuestionStatus status,
+            QuestionType type,
+            QuestionSharing sharing,
+            String scope,
+            String keyword) {
     }
 
     private record AccessContext(UUID currentUserId, UUID currentSchoolId, boolean systemAdmin, boolean schoolAdmin) {

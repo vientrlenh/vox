@@ -13,16 +13,15 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
-import org.springframework.dao.DataIntegrityViolationException;
+import com.sep.vox.application.exception.DataConflictException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
 
 import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.event.UserCreatedPayloadV1;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.output.JsonSerializationPort;
+import com.sep.vox.application.port.output.RequiresNewTransactionPort;
 import com.sep.vox.domain.common.AggregateTypeConstant;
 import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.common.UserTypeConstant;
@@ -59,7 +58,7 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
     private final SchoolRepository schoolRepository;
     private final OutboxRepository outboxRepository;
     private final JsonSerializationPort jsonSerializationPort;
-    private final TransactionTemplate transactionTemplate;
+    private final RequiresNewTransactionPort requiresNewTransactionPort;
 
     public SchoolUserImportCommitHandler(
             UserRepository userRepository,
@@ -69,7 +68,7 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
             SchoolRepository schoolRepository,
             OutboxRepository outboxRepository,
             JsonSerializationPort jsonSerializationPort,
-            PlatformTransactionManager transactionManager) {
+            RequiresNewTransactionPort requiresNewTransactionPort) {
         this.userRepository = userRepository;
         this.userRoleRepository = userRoleRepository;
         this.roleRepository = roleRepository;
@@ -77,8 +76,7 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
         this.schoolRepository = schoolRepository;
         this.outboxRepository = outboxRepository;
         this.jsonSerializationPort = jsonSerializationPort;
-        this.transactionTemplate = new TransactionTemplate(transactionManager);
-        this.transactionTemplate.setPropagationBehavior(TransactionTemplate.PROPAGATION_REQUIRES_NEW);
+        this.requiresNewTransactionPort = requiresNewTransactionPort;
     }
 
     @Override
@@ -151,15 +149,15 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
 
             try {
                 if (existingUser != null) {
-                    transactionTemplate.executeWithoutResult(status ->
+                    requiresNewTransactionPort.runInNewTransaction(() ->
                             updateUser(existingUser, normalized, schoolId, membershipsByUserId, roleCode));
                     updatedRows++;
                 } else {
-                    transactionTemplate.executeWithoutResult(status ->
+                    requiresNewTransactionPort.runInNewTransaction(() ->
                             createUser(normalized, role, schoolId, schoolName));
                     createdRows++;
                 }
-            } catch (DataIntegrityViolationException | IllegalArgumentException e) {
+            } catch (DataConflictException | IllegalArgumentException e) {
                 row.setErrorsJson(jsonSerializationPort.toJson(List.of(error("email", "Email hoặc số điện thoại đã tồn tại hoặc dữ liệu không hợp lệ"))));
                 row.setStatus(ImportRowStatus.FAILED);
                 invalidRows++;

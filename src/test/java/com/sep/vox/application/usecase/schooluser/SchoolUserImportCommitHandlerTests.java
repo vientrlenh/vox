@@ -2,6 +2,7 @@ package com.sep.vox.application.usecase.schooluser;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -17,10 +18,9 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionStatus;
+import com.sep.vox.application.exception.DataConflictException;
 
+import com.sep.vox.application.port.output.RequiresNewTransactionPort;
 import com.sep.vox.application.port.input.service.ImportCommitResult;
 import com.sep.vox.application.port.input.service.SchoolUserImportCommitHandler;
 import com.sep.vox.application.support.FakeJsonSerializationPort;
@@ -54,7 +54,7 @@ class SchoolUserImportCommitHandlerTests {
     private SchoolRepository schoolRepository;
     private OutboxRepository outboxRepository;
     private FakeJsonSerializationPort jsonSerializationPort;
-    private PlatformTransactionManager txManager;
+    private RequiresNewTransactionPort requiresNewTransactionPort;
     private SchoolUserImportCommitHandler handler;
 
     @BeforeEach
@@ -66,8 +66,11 @@ class SchoolUserImportCommitHandlerTests {
         schoolRepository = mock(SchoolRepository.class);
         outboxRepository = mock(OutboxRepository.class);
         jsonSerializationPort = new FakeJsonSerializationPort();
-        txManager = mock(PlatformTransactionManager.class);
-        when(txManager.getTransaction(any())).thenReturn(mock(TransactionStatus.class));
+        requiresNewTransactionPort = mock(RequiresNewTransactionPort.class);
+        doAnswer(invocation -> {
+            invocation.<Runnable>getArgument(0).run();
+            return null;
+        }).when(requiresNewTransactionPort).runInNewTransaction(any());
         handler = new SchoolUserImportCommitHandler(
             userRepository,
             userRoleRepository,
@@ -76,7 +79,7 @@ class SchoolUserImportCommitHandlerTests {
             schoolRepository,
             outboxRepository,
             jsonSerializationPort,
-            txManager
+            requiresNewTransactionPort
         );
     }
 
@@ -394,7 +397,7 @@ class SchoolUserImportCommitHandlerTests {
         when(roleRepository.findByCodeIn(Set.of("STUDENT"))).thenReturn(List.of(role));
         when(schoolUserRepository.findByUserIdIn(any())).thenReturn(List.of());
         when(userRepository.save(any()))
-            .thenThrow(new DataIntegrityViolationException("phone conflict"))
+            .thenThrow(new DataConflictException("phone conflict", null))
             .thenReturn(savedUser);
         when(userRoleRepository.save(any(UserRole.class))).thenAnswer(inv -> inv.getArgument(0));
         when(schoolUserRepository.save(any(SchoolUser.class))).thenAnswer(inv -> inv.getArgument(0));

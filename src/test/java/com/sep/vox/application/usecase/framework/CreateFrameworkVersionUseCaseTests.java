@@ -14,7 +14,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.sep.vox.application.exception.DataConflictException;
 
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -97,7 +97,7 @@ public class CreateFrameworkVersionUseCaseTests {
             .build();
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
         when(frameworkVersionRepository.save(any(FrameworkVersion.class)))
-            .thenThrow(new DataIntegrityViolationException("duplicate"));
+            .thenThrow(new DataConflictException("duplicate", null));
 
         assertThrows(DuplicatedException.class, () -> useCase.execute(command));
     }

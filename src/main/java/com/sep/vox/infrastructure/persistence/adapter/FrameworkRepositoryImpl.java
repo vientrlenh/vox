@@ -17,6 +17,7 @@ import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.infrastructure.persistence.mapper.FrameworkMapper;
 import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataFrameworkRepository;
+import com.sep.vox.infrastructure.persistence.DataConflictTranslation;
 
 @Repository
 public class FrameworkRepositoryImpl implements FrameworkRepository {
@@ -64,7 +65,7 @@ public class FrameworkRepositoryImpl implements FrameworkRepository {
     @Override
     public Framework save(Framework framework) {
         FrameworkJpaEntity entity = FrameworkMapper.toJpa(framework);
-        FrameworkJpaEntity saved = springDataFrameworkRepository.save(entity);
+        FrameworkJpaEntity saved = DataConflictTranslation.translating(() -> springDataFrameworkRepository.save(entity));
         return FrameworkMapper.toDomain(saved);
     }
 

@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.supportedlanguage;
 
-import org.springframework.dao.DataIntegrityViolationException;
+import com.sep.vox.application.exception.DataConflictException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,7 +47,7 @@ public class CreateSupportedLanguageUseCase implements IUseCase<CreateSupportedL
         try {
             SupportedLanguage saved = supportedLanguageRepository.save(language);
             return CreateSupportedLanguageResponseMapper.toResponse(saved.getId());
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataConflictException e) {
             throw new DuplicatedException("Ngôn ngữ đã tồn tại với mã: " + command.code());
         }
     }

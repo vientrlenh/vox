@@ -14,12 +14,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.support.SimpleTransactionStatus;
 
 import com.sep.vox.application.port.input.command.assessmentevaluation.RecordAssessmentAttemptEvaluationCommand;
 import com.sep.vox.application.port.input.service.ClassTestGradingAssignmentService;
@@ -28,6 +26,7 @@ import com.sep.vox.application.port.input.usecase.assessmentevaluation.RecordAss
 import com.sep.vox.application.port.input.usecase.assessmentevaluation.UpsertAssessmentCandidateResultUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentsession.CompleteAssessmentSessionGradingUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
+import com.sep.vox.application.port.output.RequiresNewTransactionPort;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentEvaluationEngineType;
@@ -96,16 +95,16 @@ public class RecordAssessmentAttemptEvaluationHumanGuardTests {
         completeAssessmentSessionGradingUseCase = mock(CompleteAssessmentSessionGradingUseCase.class);
         jsonSerializationPort = mock(JsonSerializationPort.class);
 
-        PlatformTransactionManager transactionManager = mock(PlatformTransactionManager.class);
-        when(transactionManager.getTransaction(any())).thenAnswer(
-            invocation -> (TransactionStatus) new SimpleTransactionStatus());
+        RequiresNewTransactionPort requiresNewTransactionPort = mock(RequiresNewTransactionPort.class);
+        when(requiresNewTransactionPort.callInNewTransaction(any())).thenAnswer(
+            invocation -> invocation.<Supplier<?>>getArgument(0).get());
 
         useCase = new RecordAssessmentAttemptEvaluationUseCase(
             assessmentItemResponseRepository, assessmentItemEvaluationRepository, assessmentItemCriterionScoreRepository,
             assessmentItemEvaluationTurnRepository, rubricCriterionRepository, assessmentSessionRepository, assessmentRepository,
             assessmentPolicyRepository, rubricVersionRepository, upsertAssessmentCandidateResultUseCase,
             completeAssessmentSessionGradingUseCase,
-            transactionManager, jsonSerializationPort, new ConfidenceReviewCalculator(),
+            requiresNewTransactionPort, jsonSerializationPort, new ConfidenceReviewCalculator(),
             mock(ClassTestGradingAssignmentService.class), assessmentProctoringAlertRepository);
 
         // Default: NO serious proctoring alert. The tests here check the override-blocking rule and

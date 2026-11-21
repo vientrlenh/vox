@@ -18,7 +18,7 @@ import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.sep.vox.application.exception.DataConflictException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -130,11 +130,11 @@ public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSyst
             return band;
         }).toList();
 
-        // CHỐNG N+1 (PHA INSERT): Đẩy nguyên List xuống Repository bằng saveAll
+        // Avoid N+1 (insert phase): push the whole list to the repository with saveAll
         List<RubricResultBand> savedBands;
         try {
             savedBands = rubricResultBandRepository.saveAll(bandsToSave);
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataConflictException e) {
             throw new IllegalStateException("Lỗi lưu dữ liệu: Mã thang điểm (Code) hoặc Thứ tự (order) đã tồn tại trong phiên bản Rubric hệ thống này từ trước.");
         }
 

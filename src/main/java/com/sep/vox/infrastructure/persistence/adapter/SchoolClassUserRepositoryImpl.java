@@ -19,6 +19,7 @@ import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolClassUserMapper;
 import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolClassUserRepository;
+import com.sep.vox.infrastructure.persistence.DataConflictTranslation;
 
 @Repository
 public class SchoolClassUserRepositoryImpl implements SchoolClassUserRepository {
@@ -123,7 +124,7 @@ public class SchoolClassUserRepositoryImpl implements SchoolClassUserRepository 
     @Override
     public SchoolClassUser save(SchoolClassUser schoolClassUser) {
         SchoolClassUserJpaEntity entity = SchoolClassUserMapper.toJpa(schoolClassUser);
-        SchoolClassUserJpaEntity saved = springDataSchoolClassUserRepository.save(entity);
+        SchoolClassUserJpaEntity saved = DataConflictTranslation.translating(() -> springDataSchoolClassUserRepository.save(entity));
         return SchoolClassUserMapper.toDomain(saved);
     }
 
@@ -145,7 +146,7 @@ public class SchoolClassUserRepositoryImpl implements SchoolClassUserRepository 
         List<SchoolClassUserJpaEntity> entities = schoolClassUsers.stream()
             .map(SchoolClassUserMapper::toJpa)
             .toList();
-        List<SchoolClassUserJpaEntity> saved = springDataSchoolClassUserRepository.saveAll(entities);
+        List<SchoolClassUserJpaEntity> saved = DataConflictTranslation.translating(() -> springDataSchoolClassUserRepository.saveAll(entities));
         return saved.stream()
             .map(SchoolClassUserMapper::toDomain)
             .toList();

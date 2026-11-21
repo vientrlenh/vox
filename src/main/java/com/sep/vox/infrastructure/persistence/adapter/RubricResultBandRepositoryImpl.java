@@ -21,6 +21,7 @@ import com.sep.vox.domain.repository.RubricResultBandRepository;
 import com.sep.vox.infrastructure.persistence.mapper.RubricResultBandMapper;
 import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataRubricResultBandRepository;
+import com.sep.vox.infrastructure.persistence.DataConflictTranslation;
 
 @Repository
 public class RubricResultBandRepositoryImpl implements RubricResultBandRepository {
@@ -65,7 +66,7 @@ public class RubricResultBandRepositoryImpl implements RubricResultBandRepositor
         List<RubricResultBandJpaEntity> entities = bands.stream()
                 .map(RubricResultBandMapper::toJpa)
                 .toList();
-        List<RubricResultBandJpaEntity> savedEntities = springDataRubricResultBandRepository.saveAll(entities);
+        List<RubricResultBandJpaEntity> savedEntities = DataConflictTranslation.translating(() -> springDataRubricResultBandRepository.saveAll(entities));
 
         return savedEntities.stream()
                 .map(RubricResultBandMapper::toDomain)
@@ -74,7 +75,7 @@ public class RubricResultBandRepositoryImpl implements RubricResultBandRepositor
 
     @Override
     public void updateResultBandAtomic(UUID id, String code, String name, String description, BigDecimal scoreMin, BigDecimal scoreMax, Integer order, Instant updatedAt, String updatedBy) {
-        springDataRubricResultBandRepository.updateResultBandAtomic(id, code, name, description, scoreMin, scoreMax, order, updatedAt, updatedBy);
+        DataConflictTranslation.translating(() -> springDataRubricResultBandRepository.updateResultBandAtomic(id, code, name, description, scoreMin, scoreMax, order, updatedAt, updatedBy));
     }
 
     @Override

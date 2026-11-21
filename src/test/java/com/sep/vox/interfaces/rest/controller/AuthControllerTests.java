@@ -38,7 +38,7 @@ import com.sep.vox.application.port.input.usecase.auth.SetUpPasswordUseCase;
 import com.sep.vox.application.port.input.usecase.registration.RegisterBySelfDeclaredUseCase;
 import com.sep.vox.application.port.input.usecase.registration.RegisterFromSchoolDirectoryUseCase;
 import com.sep.vox.application.port.input.usecase.registration.VerifyRegisterFormOtpUseCase;
-import com.sep.vox.application.port.output.CookieManagerPort;
+import com.sep.vox.interfaces.shared.HttpCookieProvider;
 import com.sep.vox.application.response.input.auth.LoginResponse;
 import com.sep.vox.application.response.input.auth.RefreshResponse;
 import com.sep.vox.application.response.input.registration.RegisterFromSchoolDirectoryResponse;
@@ -70,7 +70,7 @@ class AuthControllerTests {
     @MockitoBean
     private ResetPasswordUseCase resetPasswordUseCase;
     @MockitoBean
-    private CookieManagerPort cookieManagerPort;
+    private HttpCookieProvider httpCookieProvider;
 
     @MockitoBean
     private RegisterFromSchoolDirectoryUseCase registerFromSchoolDirectoryUseCase;
@@ -103,7 +103,7 @@ class AuthControllerTests {
         assertThat(result).hasStatusOk().bodyJson()
             .extractingPath("$.data.accessToken").isEqualTo("access-token");
         assertThat(result).bodyJson().extractingPath("$.data.refreshToken").isNull();
-        verify(cookieManagerPort).setCookie(
+        verify(httpCookieProvider).setCookie(
             any(HttpServletResponse.class), eq("refresh_token"), eq("refresh-token"), eq(259200L));
     }
 
@@ -115,7 +115,7 @@ class AuthControllerTests {
             .exchange();
 
         assertThat(result).hasStatus(400).bodyJson().extractingPath("$.message").isEqualTo("BAD_REQUEST");
-        verifyNoInteractions(loginUseCase, cookieManagerPort);
+        verifyNoInteractions(loginUseCase, httpCookieProvider);
     }
 
     @Test
@@ -135,7 +135,7 @@ class AuthControllerTests {
         MvcTestResult result = loginWithPlatform("\"PLAYSTATION\"");
 
         assertThat(result).hasStatus(400).bodyJson().extractingPath("$.errors").isNotNull();
-        verifyNoInteractions(loginUseCase, cookieManagerPort);
+        verifyNoInteractions(loginUseCase, httpCookieProvider);
     }
 
     @Test
@@ -143,7 +143,7 @@ class AuthControllerTests {
         MvcTestResult result = loginWithPlatform("null");
 
         assertThat(result).hasStatus(400).bodyJson().extractingPath("$.errors").isNotNull();
-        verifyNoInteractions(loginUseCase, cookieManagerPort);
+        verifyNoInteractions(loginUseCase, httpCookieProvider);
     }
 
     @Test
@@ -172,7 +172,7 @@ class AuthControllerTests {
             .exchange();
 
         assertThat(result).hasStatus(401).bodyJson().extractingPath("$.error").isEqualTo("UNAUTHORIZED");
-        verifyNoInteractions(cookieManagerPort);
+        verifyNoInteractions(httpCookieProvider);
     }
 
     @Test
@@ -189,7 +189,7 @@ class AuthControllerTests {
         assertThat(result).hasStatusOk().bodyJson()
             .extractingPath("$.data.accessToken").isEqualTo("access-token");
         assertThat(result).bodyJson().extractingPath("$.data.refreshToken").isNull();
-        verify(cookieManagerPort).setCookie(
+        verify(httpCookieProvider).setCookie(
             any(HttpServletResponse.class), eq("refresh_token"), eq("new-refresh-token"), eq(259200L));
     }
 
@@ -204,7 +204,7 @@ class AuthControllerTests {
         assertThat(result).hasStatusOk().bodyJson()
             .extractingPath("$.message").isEqualTo("Đăng xuất thành công");
         verify(logoutUseCase).execute(new LogoutCommand("old-refresh-token", "device-1"));
-        verify(cookieManagerPort).clearCookie(any(HttpServletResponse.class), eq("refresh_token"));
+        verify(httpCookieProvider).clearCookie(any(HttpServletResponse.class), eq("refresh_token"));
     }
 
     /**
@@ -220,7 +220,7 @@ class AuthControllerTests {
 
         assertThat(result).hasStatusOk();
         verify(logoutUseCase).execute(new LogoutCommand(null, "device-1"));
-        verify(cookieManagerPort).clearCookie(any(HttpServletResponse.class), eq("refresh_token"));
+        verify(httpCookieProvider).clearCookie(any(HttpServletResponse.class), eq("refresh_token"));
     }
 
     @Test

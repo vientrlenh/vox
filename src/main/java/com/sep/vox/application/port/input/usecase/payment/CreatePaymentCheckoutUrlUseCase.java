@@ -8,15 +8,14 @@ import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.support.TransactionTemplate;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreatePaymentCheckoutUrlCommand;
 import com.sep.vox.application.port.input.service.PaymentProcessResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.output.JsonSerializationPort;
+import com.sep.vox.application.port.output.RequiresNewTransactionPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.payment.PaymentCheckoutResponse;
 import com.sep.vox.application.response.output.BankTransferDetails;
@@ -31,8 +30,6 @@ import com.sep.vox.domain.model.payment.PaymentRecord;
 import com.sep.vox.domain.model.payment.PaymentStatus;
 import com.sep.vox.domain.repository.OrderRepository;
 import com.sep.vox.domain.repository.PaymentRecordRepository;
-
-import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Phát URL thanh toán cho một đơn. Thay cho CẢ BA use case cũ
@@ -52,23 +49,22 @@ public class CreatePaymentCheckoutUrlUseCase
     private final PaymentRecordRepository paymentRecordRepository;
     private final PaymentProcessResolver paymentProcessResolver;
     private final UserContextPort userContextPort;
-    private final JsonMapper jsonMapper;
-    private final TransactionTemplate transactionTemplate;
+    private final JsonSerializationPort jsonSerializationPort;
+    private final RequiresNewTransactionPort requiresNewTransactionPort;
 
     public CreatePaymentCheckoutUrlUseCase(
             OrderRepository orderRepository,
             PaymentRecordRepository paymentRecordRepository,
             PaymentProcessResolver paymentProcessResolver,
             UserContextPort userContextPort,
-            JsonMapper jsonMapper,
-            PlatformTransactionManager transactionManager) {
+            JsonSerializationPort jsonSerializationPort,
+            RequiresNewTransactionPort requiresNewTransactionPort) {
         this.orderRepository = orderRepository;
         this.paymentRecordRepository = paymentRecordRepository;
         this.paymentProcessResolver = paymentProcessResolver;
         this.userContextPort = userContextPort;
-        this.jsonMapper = jsonMapper;
-        this.transactionTemplate = new TransactionTemplate(transactionManager);
-        this.transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        this.jsonSerializationPort = jsonSerializationPort;
+        this.requiresNewTransactionPort = requiresNewTransactionPort;
     }
 
     /**
@@ -299,7 +295,7 @@ public class CreatePaymentCheckoutUrlUseCase
             return null;
         }
         try {
-            return jsonMapper.writeValueAsString(new StoredQrPayload(result.qrCode(), result.transfer()));
+            return jsonSerializationPort.toJson(new StoredQrPayload(result.qrCode(), result.transfer()));
         } catch (RuntimeException e) {
             // Không làm hỏng cả lần thanh toán chỉ vì không ghi được payload: mã vẫn hiện được ở
             // lượt này, chỉ mất khả năng dựng lại khi trường quay lại đơn. Lúc đó nhánh checkout_url
@@ -317,7 +313,7 @@ public class CreatePaymentCheckoutUrlUseCase
             return null;
         }
         try {
-            StoredQrPayload payload = jsonMapper.readValue(json, StoredQrPayload.class);
+            StoredQrPayload payload = jsonSerializationPort.fromJson(json, StoredQrPayload.class);
             return payload.qrCode() == null ? null : payload;
         } catch (RuntimeException e) {
             LOGGER.warn("Payload QR của lần thanh toán {} không đọc được -- bỏ qua, dùng đường checkout_url",
@@ -352,16 +348,16 @@ public class CreatePaymentCheckoutUrlUseCase
     }
 
     /**
-     * REQUIRES_NEW chứ không phải REQUIRED: nếu một ngày nào đó có người gọi use case này từ bên trong
-     * một transaction sẵn có, REQUIRED sẽ nhập vào transaction đó và cả class quay lại đúng lỗi cũ --
-     * khóa đơn bị giữ qua lượt gọi mạng, dòng PENDING bị rollback cùng. Cờ này khiến mỗi giai đoạn tự
-     * đóng lại bất kể ngữ cảnh gọi.
+     * REQUIRES_NEW and not REQUIRED: if someone ever calls this use case from inside an existing
+     * transaction, REQUIRED would join that transaction and the whole class would fall back into the
+     * original bug -- the order lock held across the network call, and the PENDING row rolled back
+     * with it. This flag makes every phase close itself regardless of the calling context.
      *
-     * <p>An toàn vì người gọi hiện tại là PaymentController (REST, không transaction) nên không có
-     * dòng đơn nào đang bị khóa ở ngoài để mà chờ nhau.
+     * <p>It is safe because the current caller is PaymentController (REST, no transaction), so no
+     * order row is locked outside that could end up waiting on each other.
      */
     private <T> T inTransaction(Supplier<T> work) {
-        return transactionTemplate.execute(status -> work.get());
+        return requiresNewTransactionPort.callInNewTransaction(work);
     }
 
     /** Dữ liệu cần mang qua ranh giới transaction để gọi cổng -- đều là POJO đã tách khỏi persistence context. */

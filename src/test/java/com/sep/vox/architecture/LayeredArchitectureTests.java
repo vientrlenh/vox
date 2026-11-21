@@ -63,39 +63,7 @@ class LayeredArchitectureTests {
      * known debt, not a permission: the list may only shrink. A new violation fails the build, and a class that no
      * longer violates must be removed from here (see {@link #applicationExemptionsStillApply}).
      */
-    private static final Set<String> APPLICATION_EXEMPTIONS = Set.of(
-        // Catches org.springframework.dao.DataIntegrityViolationException to map it to DuplicatedException.
-        "BulkCreateSchoolClassUsersUseCase", "CreateFrameworkCriteriaUseCase", "CreateFrameworkCriterionBandsUseCase",
-        "CreateFrameworkResultBandsUseCase", "CreateFrameworkUseCase", "CreateFrameworkVersionUseCase",
-        "CreateGradeLevelUseCase", "CreateSchoolClassUserUseCase", "CreateSchoolGradeUseCase",
-        "CreateSchoolRubricCriterionUseCase", "CreateSchoolRubricResultBandsUseCase",
-        "CreateSchoolUserUseCase", "CreateSupportedLanguageUseCase", "CreateSystemRubricCriteriaUseCase", "CreateSystemRubricResultBandsUseCase",
-        "UpdateFrameworkCriterionUseCase", "UpdateFrameworkResultBandUseCase", "UpdateGradeLevelUseCase",
-        "UpdateSchoolRubricResultBandUseCase", "UpdateSchoolRubricVersionUseCase", "UpdateSupportedLanguageUseCase",
-        "UpdateSystemRubricResultBandUseCase", "UpdateSystemRubricVersionUseCase", "ViewSchoolRubricDetailsUseCase",
-        "ViewSubscriptionPlansUseCase",
-        // DataIntegrityViolationException plus PlatformTransactionManager/TransactionTemplate (commit handlers).
-        "QuestionImportCommitHandler", "RubricCriterionImportCommitHandler", "RubricResultBandImportCommitHandler",
-        "SchoolClassImportCommitHandler", "SchoolClassUserImportCommitHandler", "SchoolDirectoryImportCommitHandler",
-        "SchoolGradeImportCommitHandler", "SchoolRoomImportCommitHandler", "SchoolUserImportCommitHandler",
-        // DataIntegrityViolationException plus @Value or Jackson.
-        "CreateSchoolUseCase", "UpdateProfileUseCase", "UpdateSchoolUserUseCase",
-        "UpdateSchoolRubricCriterionUseCase", "UpdateSystemRubricCriterionUseCase",
-        // PlatformTransactionManager/TransactionTemplate for manual transaction control.
-        "RecordAssessmentAttemptEvaluationUseCase", "SubmitPracticeTurnUseCase", "CreatePaymentCheckoutUrlUseCase",
-        // @Value, @Qualifier, AsyncTaskExecutor, ApplicationEventPublisher.
-        "PracticeTopicOfferEnrichmentService", "RecordRecordingPartChangedUseCase", "PracticePaperDraftService",
-        "PracticeSessionClosedHandler",
-        // @Component (a mapper or guard registered as a bean).
-        "ImportRowResponseMapper", "ImportSessionResponseMapper", "MyClassAccessGuard",
-        // Jackson (tools.jackson) used directly.
-        "PracticeQuestionGenerationPort", "PracticeQuestionSelectionService", "ResolveNextPracticeQuestionUseCase",
-        // Apache POI used directly for Excel import/export.
-        "ExportAssessmentScoresExcelUseCase", "QuestionSpreadsheetService",
-        // @Async.
-        "InterestQuizBankTopUpService", "TopicOfferBackfillService",
-        // Servlet, validation or security API on an application type, and Lombok-generated code.
-        "CookieManagerPort", "SendRegisterFormDocumentCommand", "UpdateSchoolRoomCommand");
+    private static final Set<String> APPLICATION_EXEMPTIONS = Set.of();
 
     @ArchTest
     static final ArchRule domainKhongDuocPhuThuocTangNgoai = noClasses()

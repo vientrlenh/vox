@@ -22,7 +22,7 @@ import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.sep.vox.application.exception.DataConflictException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -190,7 +190,7 @@ public class UpdateSchoolRubricVersionUseCase
                     Instant.now(),
                     currentUserId.toString()
             );
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataConflictException e) {
             throw new IllegalArgumentException(
                     "Không thể cập nhật Rubric Version do dữ liệu bị trùng hoặc không hợp lệ."
             );

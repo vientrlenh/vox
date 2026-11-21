@@ -4,7 +4,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.springframework.dao.DataIntegrityViolationException;
+import com.sep.vox.application.exception.DataConflictException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,7 +44,7 @@ public class UpdateFrameworkCriterionUseCase
 
         try {
             frameworkCriterionRepository.save(criterion);
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataConflictException e) {
             throw new IllegalStateException("Mã tiêu chí đã tồn tại", e);
         }
 

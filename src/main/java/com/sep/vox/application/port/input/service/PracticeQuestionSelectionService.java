@@ -13,8 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import tools.jackson.databind.json.JsonMapper;
-
+import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.PracticeGenerationConfigPort;
 import com.sep.vox.application.port.output.QuestionDiversityPort;
 import com.sep.vox.application.query.dto.PracticeFocusInfo;
@@ -38,7 +37,6 @@ import com.sep.vox.domain.service.personalization.TensePolicy;
 public class PracticeQuestionSelectionService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PracticeQuestionSelectionService.class);
-    private static final JsonMapper JSON_MAPPER = new JsonMapper();
 
     /**
      * Lấy ngẫu nhiên trong {@value} câu tốt nhất thay vì luôn lấy câu đầu bảng -- randomesque
@@ -66,6 +64,7 @@ public class PracticeQuestionSelectionService {
     private final PracticeGenerationConfigPort generationConfig;
     private final CriterionScoreAverageRepository criterionScoreRepository;
     private final PracticeTopicOfferEnrichmentService enrichmentService;
+    private final JsonSerializationPort jsonSerializationPort;
 
     public PracticeQuestionSelectionService(
             PracticeQuestionRepository questionRepository,
@@ -73,8 +72,10 @@ public class PracticeQuestionSelectionService {
             QuestionDiversityPort diversityPort,
             PracticeGenerationConfigPort generationConfig,
             CriterionScoreAverageRepository criterionScoreRepository,
-            PracticeTopicOfferEnrichmentService enrichmentService) {
+            PracticeTopicOfferEnrichmentService enrichmentService,
+            JsonSerializationPort jsonSerializationPort) {
         this.enrichmentService = enrichmentService;
+        this.jsonSerializationPort = jsonSerializationPort;
         this.questionRepository = questionRepository;
         this.generationService = generationService;
         this.diversityPort = diversityPort;
@@ -380,10 +381,6 @@ public class PracticeQuestionSelectionService {
     }
 
     private String reasoningType(PracticeQuestion question) {
-        String value = question.getDifficultyFeaturesJson();
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        return JSON_MAPPER.readTree(value).path("reasoning_type").asString(null);
+        return jsonSerializationPort.toStringField(question.getDifficultyFeaturesJson(), "reasoning_type");
     }
 }

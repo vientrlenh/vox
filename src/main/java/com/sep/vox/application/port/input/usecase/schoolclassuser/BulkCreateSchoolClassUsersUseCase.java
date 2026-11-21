@@ -11,7 +11,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.springframework.dao.DataIntegrityViolationException;
+import com.sep.vox.application.exception.DataConflictException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -125,8 +125,8 @@ public class BulkCreateSchoolClassUsersUseCase
         if (!toSave.isEmpty()) {
             try {
                 schoolClassUserRepository.saveAll(toSave);
-            } catch (DataIntegrityViolationException e) {
-                // Chống race-condition: một request khác vừa thêm cùng thành viên và đụng unique index.
+            } catch (DataConflictException e) {
+                // Race-condition guard: another request just added the same member and hit the unique index.
                 throw new DuplicatedException("Một số người dùng đã thuộc lớp học");
             }
         }

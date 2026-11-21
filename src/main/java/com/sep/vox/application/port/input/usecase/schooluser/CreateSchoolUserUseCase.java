@@ -6,7 +6,7 @@ import java.time.Instant;
 import java.util.List;
 
 import java.util.UUID;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.sep.vox.application.exception.DataConflictException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -108,7 +108,7 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
         User savedUser;
         try {
             savedUser = userRepository.save(user);
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataConflictException e) {
             throw new DuplicatedException("Email hoặc số điện thoại đã tồn tại");
         }
 
@@ -159,7 +159,7 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
     private void saveSchoolUser(SchoolUser schoolUser) {
         try {
             schoolUserRepository.save(schoolUser);
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataConflictException e) {
             throw new IllegalArgumentException("Không thể gán người dùng vào trường: dữ liệu không hợp lệ");
         }
     }

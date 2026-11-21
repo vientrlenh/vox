@@ -12,7 +12,7 @@ import com.sep.vox.domain.model.gradelevel.GradeLevelStatus;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.GradeLevelRepository;
 import com.sep.vox.domain.repository.UserRepository;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.sep.vox.application.exception.DataConflictException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -78,7 +78,7 @@ public class CreateGradeLevelUseCase implements IUseCase<CreateGradeLevelCommand
             .build();
         try {
             return gradeLevelRepository.save(newGradeLevel).getId();
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataConflictException e) {
             // Race-condition guard: two requests that create the same code/order both pass the exists check and only then hit the unique index.
             throw new DuplicatedException("Mã hoặc thứ tự khối học đã tồn tại.");
         }

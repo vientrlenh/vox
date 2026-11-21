@@ -5,7 +5,7 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
-import org.springframework.dao.DataIntegrityViolationException;
+import com.sep.vox.application.exception.DataConflictException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -91,8 +91,8 @@ public class CreateSchoolClassUserUseCase implements IUseCase<CreateSchoolClassU
         try {
             SchoolClassUser saved = schoolClassUserRepository.save(schoolClassUser);
             return new CreateSchoolClassUserResponse(saved.getId());
-        } catch (DataIntegrityViolationException e) {
-            // Chống race-condition: hai request cùng thêm một thành viên vượt qua check rồi đụng unique index.
+        } catch (DataConflictException e) {
+            // Race-condition guard: two requests that add the same member both pass the check and only then hit the unique index.
             throw new DuplicatedException("Người dùng đã thuộc lớp học");
         }
     }

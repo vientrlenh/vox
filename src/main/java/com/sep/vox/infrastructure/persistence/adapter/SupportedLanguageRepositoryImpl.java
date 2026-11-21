@@ -21,6 +21,7 @@ import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SupportedLanguageMapper;
 import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSupportedLanguageRepository;
+import com.sep.vox.infrastructure.persistence.DataConflictTranslation;
 
 @Repository
 public class SupportedLanguageRepositoryImpl implements SupportedLanguageRepository {
@@ -98,7 +99,7 @@ public class SupportedLanguageRepositoryImpl implements SupportedLanguageReposit
     @Override
     public SupportedLanguage save(SupportedLanguage supportedLanguage) {
         SupportedLanguageJpaEntity entity = SupportedLanguageMapper.toJpa(supportedLanguage);
-        SupportedLanguageJpaEntity saved = springDataSupportedLanguageRepository.save(entity);
+        SupportedLanguageJpaEntity saved = DataConflictTranslation.translating(() -> springDataSupportedLanguageRepository.save(entity));
         return SupportedLanguageMapper.toDomain(saved);
     }
 
@@ -106,7 +107,7 @@ public class SupportedLanguageRepositoryImpl implements SupportedLanguageReposit
     public int updateMutableFields(UUID id, String code, boolean codeProvided, String name, boolean nameProvided,
             String description, boolean descriptionProvided, Boolean isActive, boolean isActiveProvided,
             Instant updatedAt, String updatedBy) {
-        return springDataSupportedLanguageRepository.updateMutableFields(
+        return DataConflictTranslation.translating(() -> springDataSupportedLanguageRepository.updateMutableFields(
             id,
             code,
             codeProvided,
@@ -118,7 +119,7 @@ public class SupportedLanguageRepositoryImpl implements SupportedLanguageReposit
             isActiveProvided,
             updatedAt,
             updatedBy
-        );
+        ));
     }
 
     @Override

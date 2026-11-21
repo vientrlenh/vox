@@ -7,10 +7,10 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.output.CacheManagerPort;
+import com.sep.vox.application.port.output.PracticeGenerationExecutorPort;
 import com.sep.vox.domain.repository.LearnerProfileRepository;
 import com.sep.vox.domain.repository.PracticeTopicRepository;
 
@@ -81,21 +81,26 @@ public class TopicOfferBackfillService {
     private final PracticeTopicRepository practiceTopicRepository;
     private final LearnerProfileRepository learnerProfileRepository;
     private final CacheManagerPort cacheManagerPort;
+    private final PracticeGenerationExecutorPort practiceGenerationExecutorPort;
 
     public TopicOfferBackfillService(
             TopicSuggestionService topicSuggestionService,
             PracticeTopicRepository practiceTopicRepository,
             LearnerProfileRepository learnerProfileRepository,
-            CacheManagerPort cacheManagerPort) {
+            CacheManagerPort cacheManagerPort,
+            PracticeGenerationExecutorPort practiceGenerationExecutorPort) {
         this.topicSuggestionService = topicSuggestionService;
         this.practiceTopicRepository = practiceTopicRepository;
         this.learnerProfileRepository = learnerProfileRepository;
         this.cacheManagerPort = cacheManagerPort;
+        this.practiceGenerationExecutorPort = practiceGenerationExecutorPort;
     }
 
-
-    @Async("practiceGenerationExecutor")
     public void backfillAsync(UUID studentId) {
+        practiceGenerationExecutorPort.runAsync(() -> backfill(studentId));
+    }
+
+    private void backfill(UUID studentId) {
         if (studentId == null) {
             return;
         }
@@ -145,7 +150,7 @@ public class TopicOfferBackfillService {
         }
     }
 
-    /** Xem chú thích tại chỗ gọi trong {@link #backfillAsync(UUID)}. */
+    /** See the comment at the call site in {@link #backfill(UUID)}. */
     private boolean hasCompletedInterestQuiz(UUID studentId) {
         return learnerProfileRepository.findCurrent(studentId)
             .map(profile -> profile.getQuizCompletedAt() != null)

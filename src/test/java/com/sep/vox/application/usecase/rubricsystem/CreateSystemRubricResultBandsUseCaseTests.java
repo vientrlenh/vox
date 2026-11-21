@@ -16,6 +16,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.sep.vox.application.exception.DataConflictException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.command.CreateSystemRubricResultBandsCommand;
 import com.sep.vox.application.port.input.command.CreateSystemRubricResultBandsCommand.ResultBandItemCommand;
@@ -191,5 +192,15 @@ public class CreateSystemRubricResultBandsUseCaseTests {
         CreateSystemRubricResultBandsCommand command = new CreateSystemRubricResultBandsCommand(versionId, duplicated);
 
         assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
+    }
+
+    @Test
+    void should_throw_illegal_state_when_repository_reports_a_data_conflict() {
+        org.mockito.Mockito.doThrow(new DataConflictException("unique violation", null)).when(rubricResultBandRepository).saveAll(any());
+        CreateSystemRubricResultBandsCommand command = new CreateSystemRubricResultBandsCommand(versionId, fourLevels());
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> useCase.execute(command))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessage("Lỗi lưu dữ liệu: Mã thang điểm (Code) hoặc Thứ tự (order) đã tồn tại trong phiên bản Rubric hệ thống này từ trước.");
     }
 }

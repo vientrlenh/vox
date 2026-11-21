@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 
 import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -17,6 +18,9 @@ public class JacksonJsonSerializationService implements JsonSerializationPort {
 
     private final JsonMapper jsonMapper;
     private final JsonMapper strictJsonMapper = new JsonMapper();
+    private final JsonMapper unknownPropertyRejectingJsonMapper = JsonMapper.builder()
+        .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+        .build();
 
     public JacksonJsonSerializationService(JsonMapper jsonMapper) {
         this.jsonMapper = jsonMapper;
@@ -89,6 +93,33 @@ public class JacksonJsonSerializationService implements JsonSerializationPort {
             }
         }
         return result;
+    }
+
+    @Override
+    public <T> T fromJson(String json, Class<T> targetType) {
+        try {
+            return jsonMapper.readValue(json, targetType);
+        } catch (Exception exception) {
+            throw new IllegalStateException("Could not deserialize JSON to " + targetType.getSimpleName(), exception);
+        }
+    }
+
+    @Override
+    public <T> List<T> fromJsonList(String json, Class<T> elementType) {
+        try {
+            return unknownPropertyRejectingJsonMapper.readValue(json,
+                unknownPropertyRejectingJsonMapper.getTypeFactory().constructCollectionType(List.class, elementType));
+        } catch (Exception exception) {
+            throw new IllegalStateException("Could not deserialize JSON to list", exception);
+        }
+    }
+
+    @Override
+    public String toStringField(String json, String field) {
+        if (json == null || json.isBlank()) {
+            return null;
+        }
+        return jsonMapper.readTree(json).path(field).asString(null);
     }
 
     @Override

@@ -8,6 +8,7 @@ import com.sep.vox.infrastructure.persistence.entity.gradelevel.GradeLevelJpaEnt
 import com.sep.vox.infrastructure.persistence.mapper.GradeLevelMapper;
 import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataGradeLevelRepository;
+import com.sep.vox.infrastructure.persistence.DataConflictTranslation;
 import java.util.Set;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -101,14 +102,14 @@ public class GradeLevelRepositoryImpl implements GradeLevelRepository {
     @Override
     public GradeLevel save(GradeLevel gradeLevel) {
         GradeLevelJpaEntity entity = GradeLevelMapper.toJpa(gradeLevel);
-        GradeLevelJpaEntity savedEntity = gradeLevelRepository.save(entity);
+        GradeLevelJpaEntity savedEntity = DataConflictTranslation.translating(() -> gradeLevelRepository.save(entity));
         return GradeLevelMapper.toDomain(savedEntity);
     }
 
     @Override
     public int updateGradeLevelAtomic(UUID id, String name, String description, Integer order,
             Instant updatedAt, String updatedBy) {
-        return gradeLevelRepository.updateGradeLevelAtomic(id, name, description, order, updatedAt, updatedBy);
+        return DataConflictTranslation.translating(() -> gradeLevelRepository.updateGradeLevelAtomic(id, name, description, order, updatedAt, updatedBy));
     }
 
     @Override

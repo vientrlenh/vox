@@ -16,7 +16,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.sep.vox.application.exception.DataConflictException;
 
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -260,7 +260,7 @@ class UpdateSupportedLanguageUseCaseTests {
             eq(false),
             any(Instant.class),
             eq(userId.toString())
-        )).thenThrow(new DataIntegrityViolationException("duplicate"));
+        )).thenThrow(new DataConflictException("duplicate", null));
 
         DuplicatedException exception = assertThrows(DuplicatedException.class, () -> useCase.execute(command));
 

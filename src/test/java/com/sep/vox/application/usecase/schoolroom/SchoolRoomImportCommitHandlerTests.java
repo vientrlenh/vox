@@ -2,6 +2,7 @@ package com.sep.vox.application.usecase.schoolroom;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -16,10 +17,9 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionStatus;
+import com.sep.vox.application.exception.DataConflictException;
 
+import com.sep.vox.application.port.output.RequiresNewTransactionPort;
 import com.sep.vox.application.port.input.service.ImportCommitResult;
 import com.sep.vox.application.port.input.service.SchoolRoomImportCommitHandler;
 import com.sep.vox.application.support.FakeJsonSerializationPort;
@@ -35,19 +35,22 @@ class SchoolRoomImportCommitHandlerTests {
 
     private SchoolRoomRepository schoolRoomRepository;
     private FakeJsonSerializationPort jsonSerializationPort;
-    private PlatformTransactionManager txManager;
+    private RequiresNewTransactionPort requiresNewTransactionPort;
     private SchoolRoomImportCommitHandler handler;
 
     @BeforeEach
     void setUp() {
         schoolRoomRepository = mock(SchoolRoomRepository.class);
         jsonSerializationPort = new FakeJsonSerializationPort();
-        txManager = mock(PlatformTransactionManager.class);
-        when(txManager.getTransaction(any())).thenReturn(mock(TransactionStatus.class));
+        requiresNewTransactionPort = mock(RequiresNewTransactionPort.class);
+        doAnswer(invocation -> {
+            invocation.<Runnable>getArgument(0).run();
+            return null;
+        }).when(requiresNewTransactionPort).runInNewTransaction(any());
         handler = new SchoolRoomImportCommitHandler(
             schoolRoomRepository,
             jsonSerializationPort,
-            txManager
+            requiresNewTransactionPort
         );
     }
 
@@ -191,7 +194,7 @@ class SchoolRoomImportCommitHandlerTests {
 
         when(schoolRoomRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("P101"))).thenReturn(List.of());
         when(schoolRoomRepository.save(any(SchoolRoom.class)))
-            .thenThrow(new DataIntegrityViolationException("duplicate code"));
+            .thenThrow(new DataConflictException("duplicate code", null));
 
         ImportCommitResult result = handler.commit(session(sessionId, schoolId, createdBy), rows);
 

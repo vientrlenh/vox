@@ -24,7 +24,7 @@ import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.valueobject.rubric.RubricCriterionExample;
 import com.sep.vox.domain.valueobject.rubric.RubricCriterionExamples;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.sep.vox.application.exception.DataConflictException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -174,11 +174,11 @@ public class CreateSystemRubricCriteriaUseCase implements IUseCase<CreateSystemR
                     .build();
         }).collect(Collectors.toList());
 
-        // 5. Lưu toàn bộ xuống SQL Server
+        // 5. Save everything to the database
         try {
             rubricCriterionRepository.saveAll(criteriaToSave);
-        } catch (DataIntegrityViolationException e) {
-            // Nhờ bước Validate DB phía trên, lúc này ta chắc chắn 100% DataIntegrityViolationException ở đây là lỗi Unique Constraint (Trùng lặp Code/Framework với dữ liệu CŨ đã lưu từ đợt trước)
+        } catch (DataConflictException e) {
+            // Thanks to the database validation above, a data conflict here is certainly a unique constraint violation (a code/framework that duplicates OLD data saved by an earlier request)
             throw new IllegalStateException("Lỗi lưu dữ liệu: Mã tiêu chí, Khung tiêu chuẩn (Framework) hoặc Thứ tự (order) đã tồn tại trong phiên bản Rubric hệ thống này từ trước.");
         }
 

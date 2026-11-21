@@ -10,14 +10,13 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
-import org.springframework.dao.DataIntegrityViolationException;
+import com.sep.vox.application.exception.DataConflictException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.output.JsonSerializationPort;
+import com.sep.vox.application.port.output.RequiresNewTransactionPort;
 import com.sep.vox.domain.model.importfile.ImportRow;
 import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
@@ -84,7 +83,7 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
     private final QuestionAssetRepository questionAssetRepository;
     private final SchoolRepository schoolRepository;
     private final JsonSerializationPort jsonSerializationPort;
-    private final TransactionTemplate transactionTemplate;
+    private final RequiresNewTransactionPort requiresNewTransactionPort;
 
     public QuestionImportCommitHandler(
             QuestionRepository questionRepository,
@@ -94,7 +93,7 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
             QuestionAssetRepository questionAssetRepository,
             SchoolRepository schoolRepository,
             JsonSerializationPort jsonSerializationPort,
-            PlatformTransactionManager transactionManager) {
+            RequiresNewTransactionPort requiresNewTransactionPort) {
         this.schoolRepository = schoolRepository;
         this.questionRepository = questionRepository;
         this.questionBankRepository = questionBankRepository;
@@ -102,8 +101,7 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
         this.questionEvaluationGuideRepository = questionEvaluationGuideRepository;
         this.questionAssetRepository = questionAssetRepository;
         this.jsonSerializationPort = jsonSerializationPort;
-        this.transactionTemplate = new TransactionTemplate(transactionManager);
-        this.transactionTemplate.setPropagationBehavior(TransactionTemplate.PROPAGATION_REQUIRES_NEW);
+        this.requiresNewTransactionPort = requiresNewTransactionPort;
     }
 
     @Override
@@ -185,13 +183,13 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
             }
 
             try {
-                transactionTemplate.executeWithoutResult(status ->
+                requiresNewTransactionPort.runInNewTransaction(() ->
                     createQuestion(normalized, importContext, session.createdByUserId().orElseThrow())
                 );
                 row.setErrorsJson(null);
                 row.setStatus(ImportRowStatus.IMPORTED);
                 createdRows++;
-            } catch (DataIntegrityViolationException | IllegalArgumentException exception) {
+            } catch (DataConflictException | IllegalArgumentException exception) {
                 row.setErrorsJson(jsonSerializationPort.toJson(List.of(
                     error("questionText", "Không thể tạo câu hỏi từ dữ liệu import")
                 )));

@@ -5,7 +5,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import org.springframework.dao.DataIntegrityViolationException;
+import com.sep.vox.application.exception.DataConflictException;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.DuplicatedException;
@@ -40,7 +40,7 @@ public class CreateFrameworkUseCase implements IUseCase<CreateFrameworkCommand, 
         
         try {
             return frameworkRepository.save(framework).getId();
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataConflictException e) {
             throw new DuplicatedException("Mã framework đã tồn tại");
         }
     }

@@ -23,6 +23,7 @@ import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.infrastructure.persistence.mapper.RubricVersionMapper;
 import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataRubricVersionRepository;
+import com.sep.vox.infrastructure.persistence.DataConflictTranslation;
 
 @Repository
 public class RubricVersionRepositoryImpl implements RubricVersionRepository {
@@ -125,8 +126,8 @@ public class RubricVersionRepositoryImpl implements RubricVersionRepository {
             String totalScoreMethod,
             Instant updatedAt,
             String updatedBy) {
-        // SpringDataRubricVersionRepository.updateRubricVersionAtomic khai báo tham số theo thứ tự (id, name, code, ...)
-        springDataRubricVersionRepository.updateRubricVersionAtomic(
+        // SpringDataRubricVersionRepository.updateRubricVersionAtomic declares its parameters in the order (id, name, code, ...)
+        DataConflictTranslation.translating(() -> springDataRubricVersionRepository.updateRubricVersionAtomic(
             id,
             name,
             code,
@@ -138,7 +139,7 @@ public class RubricVersionRepositoryImpl implements RubricVersionRepository {
             totalScoreMethod,
             updatedAt,
             updatedBy
-        );
+        ));
     }
 
     @Override

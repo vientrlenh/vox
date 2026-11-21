@@ -6,10 +6,10 @@ import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.output.InterestQuizGenerationPort;
+import com.sep.vox.application.port.output.PracticeGenerationExecutorPort;
 import com.sep.vox.domain.model.personalization.InterestQuizSeedItem;
 import com.sep.vox.domain.repository.InterestQuizItemRepository;
 
@@ -21,7 +21,8 @@ import com.sep.vox.domain.repository.InterestQuizItemRepository;
  * không bao giờ được hỏi, tức điểm của nó luôn rỗng: đúng kiểu "thêm vào nhưng im lặng vô
  * hiệu" mà việc đưa danh mục ra thành dữ liệu nhằm tránh.
  *
- * Chạy nền (@Async) vì gọi LLM chậm; admin không phải ngồi chờ lúc bấm tạo chiều mới.
+ * Runs in the background (through PracticeGenerationExecutorPort) because the LLM call is slow; the admin does not
+ * have to wait after clicking to create a new dimension.
  */
 @Service
 public class InterestQuizBankTopUpService {
@@ -36,18 +37,24 @@ public class InterestQuizBankTopUpService {
     private final InterestQuizItemRepository quizItemRepository;
     private final InterestQuizGenerationPort quizGenerationPort;
     private final InterestQuizScorer interestQuizScorer;
+    private final PracticeGenerationExecutorPort practiceGenerationExecutorPort;
 
     public InterestQuizBankTopUpService(
             InterestQuizItemRepository quizItemRepository,
             InterestQuizGenerationPort quizGenerationPort,
-            InterestQuizScorer interestQuizScorer) {
+            InterestQuizScorer interestQuizScorer,
+            PracticeGenerationExecutorPort practiceGenerationExecutorPort) {
         this.quizItemRepository = quizItemRepository;
         this.quizGenerationPort = quizGenerationPort;
         this.interestQuizScorer = interestQuizScorer;
+        this.practiceGenerationExecutorPort = practiceGenerationExecutorPort;
     }
 
-    @Async("practiceGenerationExecutor")
     public void topUpAsync() {
+        practiceGenerationExecutorPort.runAsync(this::topUpSwallowingFailure);
+    }
+
+    private void topUpSwallowingFailure() {
         try {
             topUp();
         } catch (RuntimeException exception) {

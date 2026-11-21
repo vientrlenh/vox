@@ -19,7 +19,6 @@ import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import java.util.UUID;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,14 +60,14 @@ public class ViewSchoolRubricDetailsUseCase implements IUseCase<ViewSchoolRubric
         Rubric rubric = rubricRepository.findById(query.rubricId())
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric này."));
 
-        // 3. Chốt chặn an ninh bằng SchoolUser
+        // 3. Security gate based on SchoolUser
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL ||
                 !rubric.getSchoolId().equals(query.schoolId()) ||
                 !schoolUser.getSchoolId().equals(rubric.getSchoolId())) {
-            throw new AccessDeniedException("BẢO MẬT: Bạn không có quyền xem Rubric của trường khác.");
+            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền xem Rubric của trường khác.");
         }
 
         // 4. Kiểm tra trạng thái trường học

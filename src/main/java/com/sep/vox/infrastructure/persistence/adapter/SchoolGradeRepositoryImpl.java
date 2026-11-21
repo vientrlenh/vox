@@ -21,6 +21,7 @@ import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolGradeMapper;
 import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolGradeRepository;
+import com.sep.vox.infrastructure.persistence.DataConflictTranslation;
 
 @Repository
 public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
@@ -53,7 +54,7 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
     @Override
     public SchoolGrade save(SchoolGrade grade) {
         SchoolGradeJpaEntity entity = SchoolGradeMapper.toJpa(grade);
-        SchoolGradeJpaEntity saved = springDataSchoolGradeRepository.save(entity);
+        SchoolGradeJpaEntity saved = DataConflictTranslation.translating(() -> springDataSchoolGradeRepository.save(entity));
         return SchoolGradeMapper.toDomain(saved);
     }
 

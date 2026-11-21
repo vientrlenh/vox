@@ -603,61 +603,61 @@ already covered by the in-progress <code>graphql-typed-scalars-plan</code> and a
 </div>
 
 <!-- ===================== PHASE 10 ===================== -->
-<div class="phase" id="phase-10" data-status="todo">
+<div class="phase" id="phase-10" data-status="done">
   <h3><span class="title">Phase 10 &ndash; Login platform and stream tokens (authentication)</span>
     <span class="tag">small &middot; needs D6</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> device platform and stream/usage type inputs are typed with no change to token issuing. <strong>Depends on:</strong> phase 2, D6 = A. Skipped entirely if D6 = B.</p>
   <ul class="jobs">
-    <li class="job" id="job-10-1" data-status="todo">
-      <span class="title">10.1 Device <code>platform</code> in login and OAuth</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-10-1" data-status="done">
+      <span class="title">10.1 Device <code>platform</code> in login and OAuth</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>ClientDeviceRequest.platform</code> and the three <code>AuthController</code> parameters at lines 220&ndash;222 use <code>SessionPlatform</code> for <code>platform</code>
          (<code>deviceId</code> and <code>deviceName</code> stay String with <code>@NotBlank</code>); <code>LoginUseCase</code> and <code>OAuth2LoginUseCase</code> lose their
          <code>SessionPlatform.valueOf</code> helper; an unknown platform returns 400, valid platforms still log in. No change to credentials, claims, filters or <code>SecurityConfig</code>.
          <strong>Files:</strong> <code>ClientDeviceRequest</code>, the login/OAuth commands and mappers, <code>AuthController</code>, <code>LoginUseCase</code>, <code>OAuth2LoginUseCase</code>, <code>AuthControllerTests</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; Done &middot; applies A1, D6 (types only), D2 (case-insensitive). <code>ClientDeviceRequest.platform</code> and <code>ClientDeviceCommand.platform</code> are <code>SessionPlatform</code> (<code>@NotNull</code>); the <code>AuthController</code> <code>/oauth2/google/start</code> <code>platform</code> parameter is <code>SessionPlatform</code> and the session now stores the enum, read back in <code>OAuth2AuthenticationSuccessHandler</code>; the <code>sessionPlatformFromRequest</code> helpers in <code>LoginUseCase</code> and <code>OAuth2LoginUseCase</code> are gone. No credentials, claims, filters or security config changed. Tests: 4 new cases in <code>AuthControllerTests</code> (lowercase accepted, unknown 400, missing 400, start endpoint 400); <code>./gradlew test --tests '*AuthControllerTests' --tests '*LoginUseCase*' --tests '*OAuth2*' --tests '*LayeredArchitectureTests'</code> passes.</li></ul>
     </li>
-    <li class="job" id="job-10-2" data-status="todo">
-      <span class="title">10.2 Stream token <code>streamType</code> and AI usage <code>type</code></span> <span class="status todo">Not started</span>
+    <li class="job" id="job-10-2" data-status="done">
+      <span class="title">10.2 Stream token <code>streamType</code> and AI usage <code>type</code></span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>IssueStudentStreamTokenRequest.streamType</code> and <code>ReportAiUsageRequest.type</code> are typed if exact enums exist (otherwise listed under D5), with the
          <code>@NotNull</code> kept; an unknown value returns 400. The token itself is not touched. <strong>Files:</strong> the two requests, commands, mappers, use cases, a stream/internal controller test.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; Done &middot; applies A1, D5, D6 (types only), D2. <code>IssueStudentStreamTokenRequest.streamType</code> and the command are <code>AssessmentRequiredStreamType</code> (nullable, same constants); <code>ReportAiUsageRequest.AiUsageEventItemRequest.type</code> is <code>AiUsageType</code> with <code>@NotNull</code>. <code>normalizeCommand</code> in <code>IssueStudentStreamTokenUseCase</code> and <code>parseUsageType</code> in <code>ReportAiUsageCommandMapper</code> are gone; the stream switch is on the enum; token issuing is untouched. Tests: new <code>StreamControllerTests</code> (401, 403, lowercase accepted, missing = null, unknown 400), 3 new ai-usage cases in <code>AssessmentSessionControllerTests</code>; the use-case lowercase test moved to the controller layer. <code>./gradlew test --tests '*Stream*' --tests '*AssessmentSessionControllerTests' --tests '*ReportAiUsage*'</code> passes.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*AuthControllerTests' --tests '*LoginUseCase*' --tests '*Stream*'</code>,
      <code>./gradlew test --tests '*LayeredArchitectureTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-21 &middot; Done &middot; both jobs done; <code>./gradlew compileJava compileTestJava</code> and <code>./gradlew test --tests '*AuthControllerTests' --tests '*LoginUseCase*' --tests '*Stream*' --tests '*AssessmentSessionControllerTests' --tests '*ReportAiUsage*' --tests '*LayeredArchitectureTests'</code> pass.</li></ul>
 </div>
 
 <!-- ===================== PHASE 11 ===================== -->
-<div class="phase" id="phase-11" data-status="todo">
+<div class="phase" id="phase-11" data-status="done">
   <h3><span class="title">Phase 11 &ndash; Guard, frontend change list, full check</span>
     <span class="tag">small &middot; needs D8, D9</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> nothing slips back, and the frontend knows exactly what changed. <strong>Depends on:</strong> phases 1&ndash;10 (skipped phases excluded).</p>
   <ul class="jobs">
-    <li class="job" id="job-11-1" data-status="todo">
-      <span class="title">11.1 Guard test against String inputs (D9 = A only)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-11-1" data-status="done">
+      <span class="title">11.1 Guard test against String inputs (D9 = A only)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> a test fails when a REST request record component or controller parameter is a <code>String</code> named like an enum or date field and is not on the allow-list; adding
          <code>String openAt</code> to a request record makes it fail; the allow-list holds only the D5 leftovers. If D9 = B, this job is skipped. <strong>Files:</strong> new
          <code>src/test/java/com/sep/vox/architecture/RestRequestTypesTests.java</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; Done &middot; applies D9 = A, D5. New <code>RestRequestTypesTests</code> (4 tests): flags a <code>String</code> record component in <code>interfaces.rest.dto.request</code> or a <code>@RequestParam</code>/<code>@PathVariable</code> in a controller when the last word of its name is at/date/from/to/status/type/platform/mode/role/method/kind/provider/scope/permission/sharing/deadline/action/level/format/category. Allow-list: 18 entries (10 <code>action</code> fields, 2 <code>paymentMethod</code>, <code>targetBandLevel</code>, <code>AssessmentController.status</code>, <code>QuestionController.scope</code>; plus <code>ImportFieldMappingRequest.dateFormat</code> (file import, out of scope), <code>AiUsageEventItemRequest.provider</code> (free-form vendor name) and <code>QuestionController.contentType</code> (MIME type)). A second test fails when an allow-list entry no longer exists. Evidence: temporarily adding <code>String openAt</code> to <code>BuyTokensRequest</code> made <code>*RestRequestTypesTests</code> fail; reverted, it passes.</li></ul>
     </li>
-    <li class="job" id="job-11-2" data-status="todo">
-      <span class="title">11.2 Frontend change list</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-11-2" data-status="done">
+      <span class="title">11.2 Frontend change list</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> the implementation notes list, per endpoint, each field whose accepted input changed (enum case, date format, unknown value now 400 with the D4 body), the new error shapes, and
          every field left as String under D5. <strong>Files:</strong> this plan only.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; Done &middot; Per-phase frontend lists were written in Implementation notes as each phase finished; the consolidated list is the note &ldquo;Frontend change list (job 11.2)&rdquo; below.</li></ul>
     </li>
-    <li class="job" id="job-11-3" data-status="todo">
-      <span class="title">11.3 Full check</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-11-3" data-status="done">
+      <span class="title">11.3 Full check</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>./gradlew check</code> is green (or the notes say plainly that <code>integrationTest</code> was not run because Docker was unavailable), and
          <code>PagingConventionTests</code> and <code>LayeredArchitectureTests</code> pass. <strong>Files:</strong> none.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-21 &middot; Done &middot; <code>./gradlew test</code> BUILD SUCCESSFUL (3m47s; includes <code>PagingConventionTests</code>, <code>LayeredArchitectureTests</code>, <code>RestRequestTypesTests</code>). <code>./gradlew integrationTest</code> was NOT run: Docker is unavailable on this machine (<code>docker info</code> fails).</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test</code>, <code>./gradlew integrationTest</code> (Docker), <code>./gradlew test --tests '*RestRequestTypesTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-21 &middot; Done &middot; jobs 11.1&ndash;11.3 done; <code>./gradlew test</code> green; integrationTest not run (no Docker).</li></ul>
 </div>
 
 <h2 id="risks">4. Risks</h2>
@@ -706,6 +706,8 @@ Run the <code>verify-plan</code> skill after the last phase.</p>
     <tr><td>2026-11-20</td><td>Risks: removed stale "exact enum names (D2 = A)" wording</td><td>D2 was answered case-insensitive; the risk text still described the recommended option</td></tr>
     <tr><td>2026-11-20</td><td>Approved</td><td>The user asked to approve the plan with all nine decisions answered. Phase 1 may start now; phases 2&ndash;11 wait for <code>graphql-typed-scalars-plan</code> (D7)</td></tr>
       <tr><td>2026-11-20</td><td>Phase 1 implemented</td><td>Jobs 1.1&ndash;1.4 done; see Implementation notes</td></tr>
+    <tr><td>2026-11-21</td><td>Phase 11 implemented</td><td>Guard test, frontend change list and full check done; verify-plan pending</td></tr>
+    <tr><td>2026-11-21</td><td>verify-plan run</td><td>FAIL with open findings (no failing test); see the last implementation note</td></tr>
   </tbody>
 </table></div>
 
@@ -731,6 +733,16 @@ problems noticed but not fixed.</p>
   <li><strong>Phase 7 leftovers and frontend list (jobs 7.1&ndash;7.2).</strong> Frontend: rubric version <code>totalScoreMethod</code> is an enum constant (SUM / WEIGHTED_AVERAGE, any letter case) and is now required by <code>@NotNull</code>; rubric version, clone-policy, assessment-policy and framework-version <code>effectiveFrom/effectiveTo</code> need an ISO-8601 instant with offset (date-only and dd/MM/yyyy answer 400). The Add-version use cases no longer answer their own Vietnamese &ldquo;invalid method&rdquo; message. Problem noticed, not fixed: validation errors on the assessment-policy list bodies (<code>List&lt;@Valid ...&gt;</code>) are keyed by the parameter name <code>requests</code>, not by the field, so a missing <code>effectiveFrom</code> there is reported as <code>errors.requests</code> (the message text is still correct).</li>
   <li><strong>Phase 8 leftovers and frontend list (jobs 8.1&ndash;8.2).</strong> Frontend: school grade startDate/endDate, school user dateOfBirth/startDate/endDate, school creation adminDateOfBirth and both registration dateOfBirth values must be yyyy-MM-dd; dd/MM/yyyy and impossible dates such as 31/02/2026 answer 400 keyed by field, and a missing required date answers 400. The old trimming and DateMapper format tolerance is gone. Registration tests live in AuthControllerTests. Not in this phase: the CSV import handlers still parse date text with DateMapper because those values come from files.</li>
   <li><strong>Phase 9 leftovers and frontend list (jobs 9.1&ndash;9.2).</strong> D5 leftovers kept as <code>String</code>: <code>BuyTokensRequest.paymentMethod</code> (MANUAL/PAYOS/SEPAY, no matching enum) and <code>PaymentMethodRequest.paymentMethod</code> (no controller uses it). Frontend: plan <code>periodType</code> (DAY/MONTH/YEAR), plan quota <code>quotaType</code> and the <code>{quotaType}</code> path segment of quota-funding and quota-policies (ASSESSMENT/PRACTICE), allocate <code>mode</code> (AUTO/MANUAL) and checkout <code>provider</code> (PAYOS/SEPAY) are enum constants in any letter case; unknown or missing values answer 400 keyed by field (for plan quotas the key is <code>quotas[0].quotaType</code>). The use cases no longer answer their own Vietnamese &ldquo;invalid quota type / period / mode / provider&rdquo; messages. Problem noticed, not fixed: the <code>PaymentMethodRequest</code> comment mentions <code>PaymentMethod.resolveOnlineGateway()</code>, which does not exist.</li>
+  <li><strong>Phase 10 frontend list and leftovers (jobs 10.1&ndash;10.2).</strong> Frontend: device <code>platform</code> (WEB/IOS/ANDROID/DESKTOP) in login and Google-token login bodies and the <code>platform</code> query parameter of <code>/oauth2/google/start</code>, stream-token <code>streamType</code> (CAMERA/SCREEN/CAMERA_AND_SCREEN, may be omitted) and ai-usage <code>type</code> (LLM_TOKEN/DURATION) are enum constants in any letter case; unknown or missing values answer 400 keyed by field. The <code>/oauth2/google/start</code> session now stores the <code>SessionPlatform</code> enum instead of a String, and <code>OAuth2AuthenticationSuccessHandler</code> reads it back. An empty-string <code>streamType</code> was treated as &ldquo;not sent&rdquo; before; it is now bound by Jackson as an enum value; that case is not covered by a test, so confirm the clients omit the field or send null instead of an empty string. Not covered: the &ldquo;unsupported platform&rdquo; redirect error in the handler can no longer be reached from a bad platform. No D5 leftovers in this phase.</li>
+  <li><strong>Frontend change list (job 11.2), one cutover (D8).</strong>
+    <br><em>Everywhere:</em> malformed JSON, wrong type, non-UUID path, missing parameter and wrong Content-Type now answer 400/415 (was 500). Validation errors are keyed by field name. Unknown enum values answer 400 listing the accepted constants (<code>$.errors.&lt;field&gt;</code>). Enum values are accepted in any letter case; responses still use the constant name. Date-only and dd/MM/yyyy values for instants answer 400; instants need ISO-8601 with offset, calendar dates need yyyy-MM-dd.
+    <br><em>Enums (any case, 400 if unknown/missing):</em> notification device <code>platform</code> (WEB/ANDROID/IOS); blueprint slot <code>slotType</code> (FIXED/SELECTION), selection spec <code>questionType</code>/<code>difficulty</code>; assessment <code>streamTypePermission</code>, <code>deliveryMode</code>, member <code>role</code> (now required), candidate/session <code>status</code>, turn <code>turnType</code>; grading <code>roundType</code>, <code>selectionMode</code>, export filters <code>resultStatus</code>/<code>roundType</code>/<code>assignmentStatus</code>/<code>kind</code> (blank = no filter); question <code>type</code> (now required), <code>sharing</code>, asset <code>type</code>, collaborator <code>permission</code>, import-template <code>type</code> query (unknown = 400); rubric version <code>totalScoreMethod</code> (now required); plan <code>periodType</code>, <code>quotaType</code> (body and path segment), allocate <code>mode</code>, checkout <code>provider</code>; login/Google-token <code>platform</code>, <code>/oauth2/google/start?platform=</code>, stream-token <code>streamType</code> (may be omitted; an empty string is no longer &ldquo;not sent&rdquo;), ai-usage <code>type</code>.
+    <br><em>Instants (ISO-8601 with offset):</em> assessment, class-test and update <code>openAt</code>/<code>closeAt</code>; schedule <code>startDate</code>/<code>endDate</code>; appeal approve <code>deadline</code>; blueprint, rubric, clone-policy, assessment-policy and framework-version <code>effectiveFrom</code>/<code>effectiveTo</code>.
+    <br><em>Calendar dates (yyyy-MM-dd):</em> school grade <code>startDate</code>/<code>endDate</code>, school user <code>dateOfBirth</code>/<code>startDate</code>/<code>endDate</code>, school creation <code>adminDateOfBirth</code>, both registration <code>dateOfBirth</code>. CSV imports still accept the old formats.
+    <br><em>REST vs GraphQL:</em> REST is case-insensitive on enums, GraphQL stays exact.
+    <br><em>Left as String (D5, behaviour and <code>@Pattern</code> unchanged):</em> the ten <code>action</code> fields of the status-update and bulk-status requests, <code>paymentMethod</code> (buy tokens, payment method), <code>targetBandLevel</code>, <code>requiredStreamTypes</code>, the assessment list <code>status</code> and <code>sort</code> filters, the question list/export <code>scope</code> filter, <code>ImportFieldMappingRequest.dateFormat</code>, ai-usage <code>provider</code>, the asset upload-url <code>contentType</code>. <code>RestRequestTypesTests</code> allow-lists these (except <code>requiredStreamTypes</code> and <code>sort</code>, which its name rule does not match).</li>
+  <li><strong>verify-plan result (2026-11-21): FAIL with open findings, no failing test.</strong> Fresh <code>./gradlew test --rerun</code>: 2401 tests, 0 failures. <code>./gradlew integrationTest</code> (Docker was available this time): 374 tests, 0 failures, so the Phase 11 note "Docker unavailable" no longer holds. Mutation proofs: the old <code>getObjectName()</code> code makes <code>twoInvalidFieldsAreBothReportedByFieldName</code> fail; a <code>String openAt</code> record makes <code>RestRequestTypesTests</code> fail. Fixed during verification: the guard now also flags <code>*Birth</code> names (<code>dateOfBirth</code>) with a sample in its own test, and the comment edited in <code>CreateSubscriptionPlanUseCase</code> is in English. <strong>Open:</strong> (1) numeric enum ordinals are accepted in JSON bodies (<code>"streamType": 1</code> and <code>"platform": 1</code> bind; measured), the risk listed in section 4 and assigned to jobs 1.1/1.2 but never measured or handled; (2) an empty-string <code>streamType</code> now answers 400 (measured, no test); other enum fields that tolerated a blank string, such as <code>selectionMode</code>, behave the same way by the same mechanism; (3) job 1.1 did not probe an unparsable <code>Instant</code>, a missing <code>@RequestParam</code> or a constraint on one, and did not read the reference pages (AGENTS.md "Read the docs for the version in use"); (4) <code>GlobalExceptionHandler.handleDisabled</code> was changed from <code>private</code> to <code>public</code>, which contradicts the note above that says it was not fixed; (5) commit <code>cc24aa7d</code> deletes <code>.github/workflows/cd.yml</code> and <code>cd-test.yml</code>, which no plan item covers; (6) <code>handleMethodValidation</code> has no test; (7) <code>AutoAssignGradingUseCase.execute</code> grew from 85 to 87 lines; (8) 152 Vietnamese comment lines remain inside methods the diff changed (26 files, most in <code>CreatePaymentCheckoutUrlUseCase</code>); (9) the unknown-platform test in <code>AuthControllerTests</code> asserts only that <code>$.errors</code> exists, although the key is <code>device.platform</code>; (10) the allow-list in <code>RestRequestTypesTests</code> holds 3 entries that are not D5 leftovers (<code>dateFormat</code>, <code>AiUsageEventItemRequest.provider</code>, <code>contentType</code>).</li>
+  <li><strong>Phase 11 result.</strong> <code>./gradlew test</code> green. <code>./gradlew integrationTest</code> not run (Docker unavailable). Problem noticed, not fixed: the nested <code>TurnRequest</code>/<code>TurnCorrectionRequest</code> records in <code>PracticeSessionInternalController</code> (internal AI endpoint) still carry <code>String turnType</code> and <code>category</code>; the guard scans only <code>dto.request</code> records and controller parameters, so it does not see them.</li>
 </ul>
 
 </div>

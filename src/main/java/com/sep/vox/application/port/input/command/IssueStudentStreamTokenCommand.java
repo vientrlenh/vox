@@ -2,9 +2,11 @@ package com.sep.vox.application.port.input.command;
 
 import java.util.UUID;
 
+import com.sep.vox.domain.model.assessment.AssessmentRequiredStreamType;
+
 public record IssueStudentStreamTokenCommand( 
     UUID assessmentSessionId,
-    String streamType
+    AssessmentRequiredStreamType streamType
 ) {
 
 

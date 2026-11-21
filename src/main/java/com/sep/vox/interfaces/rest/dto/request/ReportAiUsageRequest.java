@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import com.sep.vox.domain.model.metering.AiUsageType;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -22,7 +24,7 @@ public record ReportAiUsageRequest(
 ) {
     public record AiUsageEventItemRequest(
         @NotNull UUID usageEventId,
-        @NotNull String type,
+        @NotNull AiUsageType type,
         @NotNull String provider,
         String model,
         Integer inputTokens,

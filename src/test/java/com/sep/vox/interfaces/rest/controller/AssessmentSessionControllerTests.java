@@ -2,6 +2,9 @@ package com.sep.vox.interfaces.rest.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.Map;
@@ -27,6 +30,7 @@ import com.sep.vox.application.port.input.usecase.assessmentsession.RetryGrading
 import com.sep.vox.application.port.input.usecase.assessmentsession.UpdateAssessmentSessionRemainingTimeUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentsession.UpdateAssessmentSessionStatusUseCase;
 import com.sep.vox.domain.model.assessment.AssessmentSessionStatus;
+import com.sep.vox.domain.model.metering.AiUsageType;
 import java.time.Instant;
 import com.sep.vox.application.response.input.assessmentsession.AssessmentSessionResponse;
 import com.sep.vox.support.RestControllerTest;
@@ -108,5 +112,42 @@ class AssessmentSessionControllerTests {
             .exchange();
 
         assertThat(result).hasStatus(400).bodyJson().extractingPath("$.errors.status").isNotNull();
+    }
+
+    private static final String AI_USAGE_URI = "/api/v1/assessment-sessions/{id}/ai-usage";
+
+    @Test
+    @WithMockUser(roles = "STUDENT")
+    void reportAiUsage_should_accept_a_usage_type_in_any_letter_case() {
+        MvcTestResult result = postAiUsage("\"llm_token\"");
+
+        assertThat(result).hasStatusOk();
+        verify(reportAiUsageUseCase).execute(argThat(command ->
+            command.usageEvents().get(0).usageType() == AiUsageType.LLM_TOKEN));
+    }
+
+    @Test
+    @WithMockUser(roles = "STUDENT")
+    void reportAiUsage_should_answer_400_listing_types_for_unknown_value() {
+        MvcTestResult result = postAiUsage("\"NOPE\"");
+
+        assertThat(result).hasStatus(400).bodyJson().extractingPath("$.errors").asMap().isNotEmpty();
+        verifyNoInteractions(reportAiUsageUseCase);
+    }
+
+    @Test
+    @WithMockUser(roles = "STUDENT")
+    void reportAiUsage_should_answer_400_when_type_is_missing() {
+        MvcTestResult result = postAiUsage("null");
+
+        assertThat(result).hasStatus(400).bodyJson().extractingPath("$.errors").asMap().isNotEmpty();
+        verifyNoInteractions(reportAiUsageUseCase);
+    }
+
+    private MvcTestResult postAiUsage(String typeJson) {
+        String body = "{\"turnId\": \"" + UUID.randomUUID() + "\", \"usageEvents\": [{\"usageEventId\": \""
+            + UUID.randomUUID() + "\", \"type\": " + typeJson + ", \"provider\": \"openai\", \"costUsd\": 0.01}]}";
+        return mvc.post().uri(AI_USAGE_URI, UUID.randomUUID())
+            .contentType(MediaType.APPLICATION_JSON).content(body).exchange();
     }
 }

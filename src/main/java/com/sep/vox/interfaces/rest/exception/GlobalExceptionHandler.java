@@ -175,7 +175,7 @@ public class GlobalExceptionHandler {
     }
 
     private static String acceptedConstants(Class<?> enumType) {
-        return Arrays.stream(enumType.getEnumConstants()).map(Object::toString).collect(Collectors.joining(", "));
+        return Arrays.stream(enumType.getEnumConstants()).map(o -> o.toString()).collect(Collectors.joining(", "));
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
@@ -207,7 +207,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleUnsupportedMediaType(HttpMediaTypeNotSupportedException e) {
         List<MediaType> supported = e.getSupportedMediaTypes();
         String message = "Content-Type không được hỗ trợ. Các loại chấp nhận: "
-            + supported.stream().map(MediaType::toString).collect(Collectors.joining(", "));
+            + supported.stream().map(mt -> mt.toString()).collect(Collectors.joining(", "));
         ErrorResponse error = new ErrorResponse(UNSUPPORTED_MEDIA_TYPE_ERROR, message);
         return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body(error);
     }

@@ -147,7 +147,7 @@ class RenameExamToAssessmentMigrationTests {
     }
 
     static Stream<StoredValue> checkedValues() {
-        return storedValues().filter(StoredValue::hasCheckConstraint);
+        return storedValues().filter(value -> value.hasCheckConstraint);
     }
 
     @BeforeAll

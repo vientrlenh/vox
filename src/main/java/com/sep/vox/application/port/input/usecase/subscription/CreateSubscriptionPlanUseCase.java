@@ -50,8 +50,9 @@ public class CreateSubscriptionPlanUseCase implements IUseCase<CreateSubscriptio
 
         CreateSubscriptionPlanCommand command = normalize(input);
 
-        // Gom định mức đã kiểm vào map thay vì chỉ kiểm rồi bỏ: chính cái map là bộ phát hiện trùng
-        // nên không cần Set riêng. LinkedHashMap để dòng hạn mức lưu xuống đúng thứ tự admin nhập.
+        // Collect the checked quotas into a map instead of only checking and discarding them: the map
+        // itself is the duplicate detector, so no separate Set is needed. LinkedHashMap keeps the
+        // quota rows saved in the order the admin entered them.
         Map<QuotaType, BigDecimal> includedAmountByQuotaType = new LinkedHashMap<QuotaType, BigDecimal>();
         for (CreateSubscriptionPlanQuotaCommand quota : command.quotas()) {
             QuotaType quotaType = quota.quotaType();

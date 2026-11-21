@@ -102,7 +102,7 @@ class IssueStudentStreamTokenUseCaseTests {
             .thenReturn("jwt");
     }
 
-    private IssueStudentStreamTokenCommand command(String streamType) {
+    private IssueStudentStreamTokenCommand command(AssessmentRequiredStreamType streamType) {
         return new IssueStudentStreamTokenCommand(sessionId, streamType);
     }
 
@@ -118,7 +118,7 @@ class IssueStudentStreamTokenUseCaseTests {
     void should_let_student_pick_a_single_stream_when_permission_is_any() {
         assessment.setStreamTypePermission(AssessmentStreamTypePermission.ANY);
 
-        IssueStudentStreamTokenResponse response = useCase.execute(command("SCREEN"));
+        IssueStudentStreamTokenResponse response = useCase.execute(command(AssessmentRequiredStreamType.SCREEN));
 
         assertThat(response.streamTypes()).containsExactly("screen");
         verify(assessmentSessionRepository).lockChosenStreamType(sessionId, AssessmentRequiredStreamType.SCREEN);
@@ -128,23 +128,9 @@ class IssueStudentStreamTokenUseCaseTests {
     void should_reject_a_single_stream_when_permission_is_all() {
         assessment.setStreamTypePermission(AssessmentStreamTypePermission.ALL);
 
-        assertThatThrownBy(() -> useCase.execute(command("CAMERA")))
+        assertThatThrownBy(() -> useCase.execute(command(AssessmentRequiredStreamType.CAMERA)))
             .isInstanceOf(IllegalArgumentException.class);
         verify(assessmentSessionRepository, never()).lockChosenStreamType(any(), any());
-    }
-
-    /**
-     * vox-streaming and WPF both use lowercase "camera"/"screen" for these same values, so
-     * reissuing the token from the client side must not fail just because of letter case.
-     */
-    @Test
-    void should_accept_a_lowercase_stream_type() {
-        assessment.setStreamTypePermission(AssessmentStreamTypePermission.ANY);
-
-        IssueStudentStreamTokenResponse response = useCase.execute(command("camera"));
-
-        assertThat(response.streamTypes()).containsExactly("camera");
-        verify(assessmentSessionRepository).lockChosenStreamType(sessionId, AssessmentRequiredStreamType.CAMERA);
     }
 
     @Test
@@ -167,7 +153,7 @@ class IssueStudentStreamTokenUseCaseTests {
         assessment.setStreamTypePermission(AssessmentStreamTypePermission.ANY);
         session.setChosenStreamType(AssessmentRequiredStreamType.CAMERA_AND_SCREEN);
 
-        assertThatThrownBy(() -> useCase.execute(command("CAMERA")))
+        assertThatThrownBy(() -> useCase.execute(command(AssessmentRequiredStreamType.CAMERA)))
             .isInstanceOf(ForbiddenException.class);
     }
 
@@ -193,7 +179,7 @@ class IssueStudentStreamTokenUseCaseTests {
     void should_not_lock_a_stream_type_for_a_session_the_caller_does_not_own() {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(UUID.randomUUID());
 
-        assertThatThrownBy(() -> useCase.execute(command("CAMERA")))
+        assertThatThrownBy(() -> useCase.execute(command(AssessmentRequiredStreamType.CAMERA)))
             .isInstanceOf(ForbiddenException.class);
         verify(assessmentSessionRepository, never()).lockChosenStreamType(any(), any());
     }

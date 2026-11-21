@@ -25,6 +25,7 @@ import com.sep.vox.application.port.input.command.OAuth2LoginCommand;
 import com.sep.vox.application.port.input.usecase.auth.OAuth2LoginUseCase;
 import com.sep.vox.application.port.output.CookieManagerPort;
 import com.sep.vox.application.response.input.auth.LoginResponse;
+import com.sep.vox.domain.model.devicesession.SessionPlatform;
 
 class OAuth2AuthenticationSuccessHandlerTests {
 
@@ -48,7 +49,7 @@ class OAuth2AuthenticationSuccessHandlerTests {
         HttpSession session = request.getSession();
         session.setAttribute("oauth2_device_id", "device-1");
         session.setAttribute("oauth2_device_name", "Chrome on Windows");
-        session.setAttribute("oauth2_platform", "WEB");
+        session.setAttribute("oauth2_platform", SessionPlatform.WEB);
 
         MockHttpServletResponse response = new MockHttpServletResponse();
         OAuth2AuthenticationToken authentication = googleAuthentication();
@@ -70,7 +71,7 @@ class OAuth2AuthenticationSuccessHandlerTests {
         assertThat(command.userAgent()).isEqualTo("JUnit User Agent");
         assertThat(command.device().deviceId()).isEqualTo("device-1");
         assertThat(command.device().deviceName()).isEqualTo("Chrome on Windows");
-        assertThat(command.device().platform()).isEqualTo("WEB");
+        assertThat(command.device().platform()).isEqualTo(SessionPlatform.WEB);
 
         verify(cookieManagerPort).setCookie(response, "refresh_token", "refresh-token", 259200L);
         assertThat(response.getRedirectedUrl())
@@ -86,7 +87,7 @@ class OAuth2AuthenticationSuccessHandlerTests {
         HttpSession session = request.getSession();
         session.setAttribute("oauth2_device_id", "device-1");
         session.setAttribute("oauth2_device_name", "Chrome on Windows");
-        session.setAttribute("oauth2_platform", "WEB");
+        session.setAttribute("oauth2_platform", SessionPlatform.WEB);
 
         MockHttpServletResponse response = new MockHttpServletResponse();
         when(oAuth2LoginUseCase.execute(any(OAuth2LoginCommand.class)))

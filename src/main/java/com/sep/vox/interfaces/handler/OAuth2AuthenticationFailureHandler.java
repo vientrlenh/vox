@@ -1,4 +1,4 @@
-package com.sep.vox.infrastructure.security;
+package com.sep.vox.interfaces.handler;
 
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;

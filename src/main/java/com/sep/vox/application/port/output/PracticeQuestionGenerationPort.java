@@ -6,22 +6,20 @@ import java.util.UUID;
 
 import com.sep.vox.domain.model.framework.FrameworkResultBand;
 
-import tools.jackson.databind.JsonNode;
-
 /**
- * Sinh câu luyện mới bằng AI và đánh chỉ mục câu vừa sinh. Implement bởi
+ * Generates new practice questions with AI and indexes the questions just generated. Implemented by
  * PracticeQuestionGenerationClient.
  *
- * <p>KHÁC các port AI còn lại: port này KHÔNG suy giảm êm -- lỗi gọi dịch vụ ném
- * IllegalStateException, vì không sinh được câu thì không có gì để lưu và phía gọi cần biết.
+ * <p>UNLIKE the other AI ports, this port does NOT degrade gracefully -- a failed service call throws
+ * IllegalStateException, because if no question can be generated there is nothing to store and the caller needs to know.
  */
 public interface PracticeQuestionGenerationPort {
 
     /**
-     * @param bandCount  số bậc của thang đang áp -- Python dùng để ánh xạ difficulty_rank ra đúng
-     *                   thang, thay vì mặc định 6 bậc kiểu VSTEP.
-     * @param bandLadder mô tả từng bậc, để prompt chấm nói đúng thang của trường. Rỗng thì Python
-     *                   tự lùi về ladder mặc định của nó.
+     * @param bandCount  the number of bands of the scale in use -- Python uses it to map difficulty_rank onto the
+     *                   right scale, instead of defaulting to 6 VSTEP-style bands.
+     * @param bandLadder a description of each band, so the grading prompt speaks the school's own scale. When
+     *                   empty Python falls back to its own default ladder.
      */
     List<GeneratedQuestion> generate(
         TopicDetails topic,
@@ -46,8 +44,8 @@ public interface PracticeQuestionGenerationPort {
     }
 
     /**
-     * sourceJson giữ nguyên cây JSON thô Python trả về -- {@link #index} gửi lại đúng cây đó cho
-     * Chroma, nên không đổi được sang String (sẽ thành chuỗi lồng chuỗi).
+     * sourceJson holds the raw JSON object Python returned, as JSON text -- {@link #index} sends that same object
+     * back to Chroma as a JSON object, not as a string inside a string.
      */
     record GeneratedQuestion(
         UUID id,
@@ -64,7 +62,7 @@ public interface PracticeQuestionGenerationPort {
         int maxResponseSeconds,
         int minResponseSeconds,
         int vstepPart,
-        JsonNode sourceJson
+        String sourceJson
     ) {
     }
 }

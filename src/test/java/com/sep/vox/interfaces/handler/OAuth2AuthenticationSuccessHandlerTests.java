@@ -1,4 +1,4 @@
-package com.sep.vox.infrastructure.security;
+package com.sep.vox.interfaces.handler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -23,7 +23,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import com.sep.vox.application.port.input.command.OAuth2LoginCommand;
 import com.sep.vox.application.port.input.usecase.auth.OAuth2LoginUseCase;
-import com.sep.vox.application.port.output.CookieManagerPort;
+import com.sep.vox.interfaces.shared.HttpCookieProvider;
 import com.sep.vox.application.response.input.auth.LoginResponse;
 import com.sep.vox.domain.model.devicesession.SessionPlatform;
 
@@ -31,13 +31,13 @@ class OAuth2AuthenticationSuccessHandlerTests {
 
     private OAuth2LoginUseCase oAuth2LoginUseCase;
     private OAuth2AuthenticationSuccessHandler handler;
-    private CookieManagerPort cookieManagerPort;
+    private HttpCookieProvider httpCookieProvider;
 
     @BeforeEach
     void setUp() {
         oAuth2LoginUseCase = mock(OAuth2LoginUseCase.class);
-        cookieManagerPort = mock(CookieManagerPort.class);
-        handler = new OAuth2AuthenticationSuccessHandler(oAuth2LoginUseCase, cookieManagerPort);
+        httpCookieProvider = mock(HttpCookieProvider.class);
+        handler = new OAuth2AuthenticationSuccessHandler(oAuth2LoginUseCase, httpCookieProvider);
         ReflectionTestUtils.setField(handler, "returnUrl", "http://localhost:5173/oauth2-callback");
     }
 
@@ -73,7 +73,7 @@ class OAuth2AuthenticationSuccessHandlerTests {
         assertThat(command.device().deviceName()).isEqualTo("Chrome on Windows");
         assertThat(command.device().platform()).isEqualTo(SessionPlatform.WEB);
 
-        verify(cookieManagerPort).setCookie(response, "refresh_token", "refresh-token", 259200L);
+        verify(httpCookieProvider).setCookie(response, "refresh_token", "refresh-token", 259200L);
         assertThat(response.getRedirectedUrl())
             .isEqualTo("http://localhost:5173/oauth2-callback?token=access-token");
         assertThrows(IllegalStateException.class, () -> session.getAttribute("oauth2_device_id"));
@@ -108,6 +108,24 @@ class OAuth2AuthenticationSuccessHandlerTests {
         handler.onAuthenticationSuccess(request, response, googleAuthentication());
 
         verifyNoInteractions(oAuth2LoginUseCase);
+    }
+
+    @Test
+    void onAuthenticationSuccess_should_not_set_cookie_when_login_use_case_throws() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        HttpSession session = request.getSession();
+        session.setAttribute("oauth2_device_id", "device-1");
+        session.setAttribute("oauth2_device_name", "Chrome on Windows");
+        session.setAttribute("oauth2_platform", SessionPlatform.WEB);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        when(oAuth2LoginUseCase.execute(any(OAuth2LoginCommand.class)))
+            .thenThrow(new IllegalStateException("login failed"));
+
+        handler.onAuthenticationSuccess(request, response, googleAuthentication());
+
+        verifyNoInteractions(httpCookieProvider);
+        assertThat(response.getRedirectedUrl())
+            .isEqualTo("http://localhost:5173/oauth2-callback?error=login_failed");
     }
 
     private static OAuth2AuthenticationToken googleAuthentication() {

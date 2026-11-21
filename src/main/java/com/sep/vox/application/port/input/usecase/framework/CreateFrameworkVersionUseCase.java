@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
 
-import org.springframework.dao.DataIntegrityViolationException;
+import com.sep.vox.application.exception.DataConflictException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,7 +55,7 @@ public class CreateFrameworkVersionUseCase implements IUseCase<CreateFrameworkVe
         try {
             FrameworkVersion saved = frameworkVersionRepository.save(version);
             return CreateFrameworkVersionResponseMapper.toResponse(saved.getId());
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataConflictException e) {
             throw new DuplicatedException("Phiên bản hoặc mã phiên bản này đã tồn tại trong framework");
         }
     }

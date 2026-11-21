@@ -19,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import com.sep.vox.application.exception.DataConflictException;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateSchoolClassUserCommand;
@@ -166,7 +167,7 @@ class CreateSchoolClassUserUseCaseTests {
         mockValidContext(currentUserId, schoolId, classId, targetUserId);
         when(schoolClassUserRepository.findByUserIdAndSchoolClassId(targetUserId, classId)).thenReturn(Optional.empty());
         when(schoolClassUserRepository.save(any(SchoolClassUser.class)))
-            .thenThrow(new org.springframework.dao.DataIntegrityViolationException("unique violation"));
+            .thenThrow(new DataConflictException("unique violation", null));
 
         assertThrows(DuplicatedException.class, () -> useCase.execute(command));
     }

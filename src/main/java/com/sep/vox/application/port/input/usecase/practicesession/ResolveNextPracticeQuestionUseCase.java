@@ -15,6 +15,7 @@ import com.sep.vox.application.port.input.service.PracticeQuestionSelectionServi
 import com.sep.vox.application.port.input.service.ResolveNextPracticeQuestionClaimService;
 import com.sep.vox.application.port.input.service.ResolveNextPracticeQuestionPersistenceService;
 import com.sep.vox.application.port.output.CacheManagerPort;
+import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.PracticeGenerationConfigPort;
 import com.sep.vox.domain.model.personalization.PracticeQuestion;
 
@@ -105,18 +106,21 @@ public class ResolveNextPracticeQuestionUseCase {
     private final ResolveNextPracticeQuestionPersistenceService persistenceService;
     private final CacheManagerPort cacheManagerPort;
     private final PracticeGenerationConfigPort generationConfig;
+    private final JsonSerializationPort jsonSerializationPort;
 
     public ResolveNextPracticeQuestionUseCase(
             ResolveNextPracticeQuestionClaimService claimService,
             PracticeQuestionSelectionService selectionService,
             ResolveNextPracticeQuestionPersistenceService persistenceService,
             CacheManagerPort cacheManagerPort,
-            PracticeGenerationConfigPort generationConfig) {
+            PracticeGenerationConfigPort generationConfig,
+            JsonSerializationPort jsonSerializationPort) {
         this.claimService = claimService;
         this.selectionService = selectionService;
         this.persistenceService = persistenceService;
         this.cacheManagerPort = cacheManagerPort;
         this.generationConfig = generationConfig;
+        this.jsonSerializationPort = jsonSerializationPort;
     }
 
     public Result execute(UUID sessionId) {
@@ -277,10 +281,8 @@ public class ResolveNextPracticeQuestionUseCase {
             return List.of();
         }
         try {
-            return new tools.jackson.databind.json.JsonMapper()
-                .readValue(value, new tools.jackson.core.type.TypeReference<List<String>>() {
-                });
-        } catch (Exception exception) {
+            return jsonSerializationPort.toStringList(value);
+        } catch (RuntimeException exception) {
             return List.of();
         }
     }

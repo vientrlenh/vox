@@ -2,7 +2,7 @@ package com.sep.vox.application.port.input.usecase.supportedlanguage;
 
 import java.time.Instant;
 
-import org.springframework.dao.DataIntegrityViolationException;
+import com.sep.vox.application.exception.DataConflictException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,7 +61,7 @@ public class UpdateSupportedLanguageUseCase implements IUseCase<UpdateSupportedL
                 throw new NotFoundException("Không tìm thấy ngôn ngữ");
             }
             return new UpdateSupportedLanguageResponse(command.id());
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataConflictException e) {
             throw new DuplicatedException("Ngôn ngữ đã tồn tại với mã: " + command.code());
         }
     }

@@ -17,19 +17,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.SimpleTransactionStatus;
 
 import com.sep.vox.application.port.input.command.CreatePaymentCheckoutUrlCommand;
 import com.sep.vox.application.port.input.service.PaymentProcessResolver;
 import com.sep.vox.application.port.input.usecase.payment.CreatePaymentCheckoutUrlUseCase;
 import com.sep.vox.application.port.output.PaymentProcessPort;
+import com.sep.vox.application.port.output.RequiresNewTransactionPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.payment.PaymentCheckoutResponse;
+import com.sep.vox.application.support.FakeJsonSerializationPort;
 import com.sep.vox.application.response.output.BankTransferDetails;
 import com.sep.vox.application.response.output.PaymentCheckoutResult;
 import com.sep.vox.application.response.output.PaymentLinkRemoteStatus;
@@ -43,7 +44,6 @@ import com.sep.vox.domain.model.payment.PaymentStatus;
 import com.sep.vox.domain.repository.OrderRepository;
 import com.sep.vox.domain.repository.PaymentRecordRepository;
 
-import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Bất biến DUY NHẤT mà lớp test này tồn tại vì nó: dòng payment_records phải được COMMIT trước khi
@@ -68,7 +68,8 @@ class CreatePaymentCheckoutUrlUseCaseTests {
     private OrderRepository orderRepository;
     private PaymentRecordRepository paymentRecordRepository;
     private PaymentProcessPort paymentProcessPort;
-    private PlatformTransactionManager transactionManager;
+    private RequiresNewTransactionPort requiresNewTransactionPort;
+    private Runnable transactionCommitted;
     private final Map<UUID, PaymentRecord> savedById = new HashMap<>();
     private CreatePaymentCheckoutUrlUseCase useCase;
 
@@ -78,7 +79,8 @@ class CreatePaymentCheckoutUrlUseCaseTests {
         orderRepository = mock(OrderRepository.class);
         paymentRecordRepository = mock(PaymentRecordRepository.class);
         paymentProcessPort = mock(PaymentProcessPort.class);
-        transactionManager = mock(PlatformTransactionManager.class);
+        requiresNewTransactionPort = mock(RequiresNewTransactionPort.class);
+        transactionCommitted = mock(Runnable.class);
         UserContextPort userContextPort = mock(UserContextPort.class);
 
         when(paymentProcessPort.provider()).thenReturn(PaymentProvider.PAYOS);
@@ -87,7 +89,12 @@ class CreatePaymentCheckoutUrlUseCaseTests {
         // means to check.
         when(paymentProcessPort.isConfigured()).thenReturn(true);
         when(paymentProcessPort.newOrderRef()).thenReturn("123456");
-        when(transactionManager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
+        // The port runs the work and then marks the commit, like a REQUIRES_NEW transaction that closes before returning.
+        when(requiresNewTransactionPort.callInNewTransaction(any())).thenAnswer(call -> {
+            Object result = call.<Supplier<?>>getArgument(0).get();
+            transactionCommitted.run();
+            return result;
+        });
         when(userContextPort.getCurrentSchoolId()).thenReturn(SCHOOL_ID);
         when(orderRepository.findByIdForUpdate(ORDER_ID)).thenReturn(Optional.of(payableOrder()));
         // Simulates the real adapter's behavior: the id column has DEFAULT uuidv7() and the entity
@@ -108,7 +115,7 @@ class CreatePaymentCheckoutUrlUseCaseTests {
         useCase = new CreatePaymentCheckoutUrlUseCase(
             orderRepository, paymentRecordRepository,
             new PaymentProcessResolver(List.of(paymentProcessPort)),
-            userContextPort, JsonMapper.builder().build(), transactionManager);
+            userContextPort, new FakeJsonSerializationPort(), requiresNewTransactionPort);
     }
 
     @Test
@@ -119,9 +126,9 @@ class CreatePaymentCheckoutUrlUseCaseTests {
 
         useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, PaymentProvider.PAYOS));
 
-        InOrder order = inOrder(paymentRecordRepository, transactionManager, paymentProcessPort);
+        InOrder order = inOrder(paymentRecordRepository, transactionCommitted, paymentProcessPort);
         order.verify(paymentRecordRepository).save(any());
-        order.verify(transactionManager).commit(any());
+        order.verify(transactionCommitted).run();
         order.verify(paymentProcessPort).createPaymentLink(any());
     }
 
@@ -169,7 +176,27 @@ class CreatePaymentCheckoutUrlUseCaseTests {
 
         PaymentRecord stored = savedById.get(response.paymentId());
         assertThat(stored.getCheckoutUrl()).isEqualTo("https://payos.test/checkout");
-        assertThat(stored.getProviderPayloadJson()).contains("VIETQR").contains("VOX 8f3c1a04");
+        assertThat(stored.getProviderPayloadJson()).isEqualTo(
+            "{\"qrCode\":\"00020101021138...VIETQR\",\"transfer\":{\"bankBin\":\"970422\","
+                + "\"accountNumber\":\"0912888866\",\"accountName\":\"CONG TY VOX\","
+                + "\"amountVnd\":500000,\"transferContent\":\"VOX 8f3c1a04\"}}");
+    }
+
+    /** A stored payload that cannot be read falls back to the checkout URL path instead of failing. */
+    @Test
+    void should_fall_back_to_the_checkout_url_when_the_stored_qr_payload_is_malformed() {
+        PaymentRecord live = existingAttempt();
+        live.setCheckoutUrl("https://payos.test/checkout");
+        live.setProviderPayloadJson("{not json");
+        when(paymentRecordRepository.findPendingByOrderId(ORDER_ID)).thenReturn(Optional.of(live));
+        when(paymentProcessPort.getPaymentLinkStatus("orphan-ref"))
+            .thenReturn(new PaymentLinkStatusResult(PaymentLinkRemoteStatus.PENDING));
+
+        PaymentCheckoutResponse response = useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, PaymentProvider.PAYOS));
+
+        assertThat(response.action()).isEqualTo("REDIRECT");
+        assertThat(response.qrCode()).isNull();
+        verify(paymentProcessPort, never()).createPaymentLink(any());
     }
 
     /** And it can be rebuilt from that very payload when the school returns to a pending order. */

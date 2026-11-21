@@ -20,7 +20,7 @@ import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
 import com.sep.vox.domain.valueobject.rubric.RubricCriterionExample;
 import com.sep.vox.domain.valueobject.rubric.RubricCriterionExamples;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.sep.vox.application.exception.DataConflictException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -165,10 +165,10 @@ public class CreateSchoolRubricCriterionUseCase implements IUseCase<CreateSchool
                     .build();
         }).collect(Collectors.toList());
 
-        // 5. Lưu xuống DB
+        // 5. Save to the database
         try {
             rubricCriterionRepository.saveAll(criteriaToSave);
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataConflictException e) {
             throw new IllegalStateException("Lỗi lưu dữ liệu: Mã tiêu chí, Khung tiêu chuẩn hoặc Thứ tự (order) đã tồn tại trong phiên bản này từ trước.");
         }
 

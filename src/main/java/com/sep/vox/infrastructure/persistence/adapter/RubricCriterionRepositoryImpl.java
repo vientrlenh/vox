@@ -20,6 +20,7 @@ import com.sep.vox.domain.repository.RubricCriterionRepository;
 import com.sep.vox.infrastructure.persistence.mapper.RubricCriterionMapper;
 import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataRubricCriterionRepository;
+import com.sep.vox.infrastructure.persistence.DataConflictTranslation;
 
 @Repository
 public class RubricCriterionRepositoryImpl implements RubricCriterionRepository {
@@ -57,12 +58,12 @@ public class RubricCriterionRepositoryImpl implements RubricCriterionRepository 
         List<RubricCriterionJpaEntity> entities = criteria.stream()
                 .map(RubricCriterionMapper::toJpa)
                 .toList();
-        springDataRubricCriterionRepository.saveAll(entities);
+        DataConflictTranslation.translating(() -> springDataRubricCriterionRepository.saveAll(entities));
     }
 
     @Override
     public void updateCriterionAtomic(UUID id, String code, String name, String description, String examplesJson, BigDecimal weight, BigDecimal minScore, BigDecimal maxScore, Integer order, Boolean isRequired, Instant updatedAt, String updatedBy) {
-        springDataRubricCriterionRepository.updateCriterionAtomic(id, code, name, description, examplesJson, weight, minScore, maxScore, order, isRequired, updatedAt, updatedBy);
+        DataConflictTranslation.translating(() -> springDataRubricCriterionRepository.updateCriterionAtomic(id, code, name, description, examplesJson, weight, minScore, maxScore, order, isRequired, updatedAt, updatedBy));
     }
 
     @Override

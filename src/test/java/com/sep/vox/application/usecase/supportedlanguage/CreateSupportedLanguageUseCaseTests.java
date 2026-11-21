@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import com.sep.vox.application.exception.DataConflictException;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.port.input.command.CreateSupportedLanguageCommand;
 import com.sep.vox.application.port.input.usecase.supportedlanguage.CreateSupportedLanguageUseCase;
@@ -84,5 +85,16 @@ class CreateSupportedLanguageUseCaseTests {
         language.setId(UUID.randomUUID());
         language.setCode(new LanguageCode("EN"));
         return language;
+    }
+
+    @Test
+    void create_should_throw_duplicated_when_repository_reports_a_data_conflict() {
+        CreateSupportedLanguageCommand command = new CreateSupportedLanguageCommand("en", "English", null);
+        when(supportedLanguageRepository.findByCode("EN")).thenReturn(Optional.empty());
+        when(supportedLanguageRepository.save(any())).thenThrow(new DataConflictException("unique violation", null));
+
+        DuplicatedException exception = org.junit.jupiter.api.Assertions.assertThrows(DuplicatedException.class, () -> useCase.execute(command));
+
+        assertThat(exception).hasMessage("Ngôn ngữ đã tồn tại với mã: EN");
     }
 }

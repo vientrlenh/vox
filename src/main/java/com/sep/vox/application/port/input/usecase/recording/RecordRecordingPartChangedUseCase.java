@@ -5,12 +5,12 @@ import java.time.Instant;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.RecordRecordingPartChangedCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.output.RecordingStorageConfigPort;
 import com.sep.vox.domain.model.assessment.AssessmentRecording;
 import com.sep.vox.domain.repository.AssessmentRecordingRepository;
 import com.sep.vox.domain.repository.AssessmentSessionRepository;
@@ -23,16 +23,16 @@ public class RecordRecordingPartChangedUseCase implements IUseCase<RecordRecordi
 
     private final AssessmentSessionRepository assessmentSessionRepository;
     private final AssessmentRecordingRepository assessmentRecordingRepository;
-    private final String recordingBucket;
+    private final RecordingStorageConfigPort recordingStorageConfigPort;
 
     public RecordRecordingPartChangedUseCase(
         AssessmentSessionRepository assessmentSessionRepository,
         AssessmentRecordingRepository assessmentRecordingRepository,
-        @Value("${app.recording.bucket:}") String recordingBucket
+        RecordingStorageConfigPort recordingStorageConfigPort
     ) {
         this.assessmentSessionRepository = assessmentSessionRepository;
         this.assessmentRecordingRepository = assessmentRecordingRepository;
-        this.recordingBucket = recordingBucket;
+        this.recordingStorageConfigPort = recordingStorageConfigPort;
     }
 
     @Override
@@ -77,7 +77,7 @@ public class RecordRecordingPartChangedUseCase implements IUseCase<RecordRecordi
         recording.setStatus(input.status());
 
         if (input.objectKey() != null && !input.objectKey().isBlank()) {
-            recording.setBucket(recordingBucket);
+            recording.setBucket(recordingStorageConfigPort.bucket());
             recording.setS3Key(input.objectKey());
         }
 

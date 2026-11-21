@@ -20,7 +20,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.sep.vox.application.exception.DataConflictException;
 
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -263,7 +263,7 @@ class BulkCreateSchoolClassUsersUseCaseTests {
         mockValidContext(userId);
         mockNoExistingMemberships();
         when(schoolClassUserRepository.saveAll(anyCollection()))
-            .thenThrow(new DataIntegrityViolationException("unique violation"));
+            .thenThrow(new DataConflictException("unique violation", null));
 
         assertThrows(DuplicatedException.class, () -> useCase.execute(
             new BulkCreateSchoolClassUsersCommand(schoolId, classId, List.of(userId))));

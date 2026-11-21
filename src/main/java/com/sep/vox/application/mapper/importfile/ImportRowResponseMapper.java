@@ -3,7 +3,7 @@ package com.sep.vox.application.mapper.importfile;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.response.input.importfile.ImportDataEntryResponse;
@@ -12,7 +12,7 @@ import com.sep.vox.application.response.input.importfile.ImportRowResponse;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.importfile.ImportRow;
 
-@Component
+@Service
 public class ImportRowResponseMapper {
 
     private final JsonSerializationPort jsonSerializationPort;

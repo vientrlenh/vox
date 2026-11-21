@@ -3,9 +3,9 @@ package com.sep.vox.application.port.input.service;
 import java.util.List;
 import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.sep.vox.application.port.output.PracticeFrameworkConfigPort;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
 import com.sep.vox.domain.repository.LearnerProfileRepository;
@@ -45,11 +45,12 @@ public class PracticeTopicOfferEnrichmentService {
             SchoolSubscriptionRepository schoolSubscriptionRepository,
             FrameworkResultBandRepository frameworkResultBandRepository,
             FrameworkVersionRepository frameworkVersionRepository,
-            @Value("${app.practice.framework-version-code:}") String practiceFrameworkVersionCode) {
+            PracticeFrameworkConfigPort practiceFrameworkConfigPort) {
         this.learnerProfileRepository = learnerProfileRepository;
         this.schoolSubscriptionRepository = schoolSubscriptionRepository;
         this.frameworkResultBandRepository = frameworkResultBandRepository;
         this.frameworkVersionRepository = frameworkVersionRepository;
+        String practiceFrameworkVersionCode = practiceFrameworkConfigPort.frameworkVersionCode();
         this.practiceFrameworkVersionCode =
             practiceFrameworkVersionCode == null || practiceFrameworkVersionCode.isBlank()
                 ? null

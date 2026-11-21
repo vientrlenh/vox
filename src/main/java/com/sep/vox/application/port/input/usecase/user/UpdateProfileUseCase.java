@@ -4,8 +4,7 @@ import com.sep.vox.domain.model.user.User;
 
 import java.util.Optional;
 import java.util.UUID;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.sep.vox.application.exception.DataConflictException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +15,7 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.UpdateProfileCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
+import com.sep.vox.application.port.output.AvatarConfigPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.mapper.UserDtoMapper;
@@ -39,15 +39,15 @@ public class UpdateProfileUseCase implements IUseCase<UpdateProfileCommand, User
 
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
-    private final String allowedAvatarHosts;
+    private final AvatarConfigPort avatarConfigPort;
 
     public UpdateProfileUseCase(
             UserContextPort userContextPort,
             UserRepository userRepository,
-            @Value("${app.avatar.allowed-hosts:}") String allowedAvatarHosts) {
+            AvatarConfigPort avatarConfigPort) {
         this.userContextPort = userContextPort;
         this.userRepository = userRepository;
-        this.allowedAvatarHosts = allowedAvatarHosts;
+        this.avatarConfigPort = avatarConfigPort;
     }
 
     @Override
@@ -103,7 +103,7 @@ public class UpdateProfileUseCase implements IUseCase<UpdateProfileCommand, User
 
         try {
             userRepository.saveAndFlush(target);
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataConflictException e) {
             throw new DuplicatedException("Số điện thoại đã tồn tại");
         }
 
@@ -132,6 +132,6 @@ public class UpdateProfileUseCase implements IUseCase<UpdateProfileCommand, User
         }
 
         // null/rỗng = yêu cầu GỠ ảnh; phân biệt được với "không gửi trường" nhờ cờ avatarUrlProvided.
-        return AvatarUrlPolicy.normalizeOrThrow(allowedAvatarHosts, rawUrl);
+        return AvatarUrlPolicy.normalizeOrThrow(avatarConfigPort.allowedHosts(), rawUrl);
     }
 }

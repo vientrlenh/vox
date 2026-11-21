@@ -26,6 +26,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -39,6 +40,7 @@ import com.sep.vox.application.port.input.usecase.assessmentgrading.ExportAssess
 import com.sep.vox.application.query.dto.AssessmentScoreRowInfo;
 import com.sep.vox.application.query.dto.GradingAssignmentFilter;
 import com.sep.vox.application.query.repository.AssessmentGradingQueryRepository;
+import com.sep.vox.infrastructure.service.PoiSpreadsheetWriterService;
 
 /**
  * Bản .xlsx bỏ được BOM và quote của CSV, nhưng KHÔNG bỏ được guard công thức: rủi ro nằm
@@ -64,7 +66,8 @@ class ExportAssessmentScoresExcelUseCaseTests {
         assessmentGradingQueryRepository = mock(AssessmentGradingQueryRepository.class);
         assessmentGradingAccessService = mock(AssessmentGradingAccessService.class);
         useCase = new ExportAssessmentScoresExcelUseCase(
-            new AssessmentScoreExportSupport(assessmentGradingQueryRepository, assessmentGradingAccessService));
+            new AssessmentScoreExportSupport(assessmentGradingQueryRepository, assessmentGradingAccessService),
+            new PoiSpreadsheetWriterService());
 
         when(assessmentGradingAccessService.requireActiveUserId()).thenReturn(adminId);
         when(assessmentGradingAccessService.requireCurrentSchoolId(adminId)).thenReturn(schoolId);
@@ -173,6 +176,59 @@ class ExportAssessmentScoresExcelUseCaseTests {
             assertThat(export().getRow(1).getCell(1).getStringCellValue())
                 .isEqualTo("'" + trigger + "cmd");
         }
+    }
+
+    @Test
+    void should_neutralize_a_tab_and_a_carriage_return_trigger_too() {
+        for (String trigger : List.of("\t", "\r")) {
+            givenRow(trigger + "cmd", null, null);
+
+            assertThat(export().getRow(1).getCell(1).getStringCellValue()).isEqualTo("'" + trigger + "cmd");
+        }
+    }
+
+    @Test
+    void should_format_date_cells_as_hour_minute_day_month_year() {
+        givenRow("Nguyễn Văn A", new BigDecimal("7.50"), null);
+
+        assertThat(export().getRow(1).getCell(5).getCellStyle().getDataFormatString())
+            .isEqualTo("HH:mm dd/MM/yyyy");
+    }
+
+    @Test
+    void should_leave_a_missing_release_time_blank() {
+        givenRow("Nguyễn Văn A", null, null);
+
+        assertThat(export().getRow(1).getCell(12).getCellType()).isEqualTo(CellType.BLANK);
+    }
+
+    @Test
+    void should_freeze_the_header_row() {
+        assertThat(export().getPaneInformation().getHorizontalSplitPosition()).isEqualTo((short) 1);
+        assertThat(export().getPaneInformation().getVerticalSplitPosition()).isZero();
+    }
+
+    @Test
+    void should_put_an_auto_filter_over_the_header_and_the_data_rows() {
+        givenRow("Nguyễn Văn A", null, null);
+
+        assertThat(autoFilterRange(export())).isEqualTo("A1:M2");
+    }
+
+    @Test
+    void should_keep_the_auto_filter_on_a_header_only_sheet() {
+        assertThat(autoFilterRange(export())).isEqualTo("A1:M2");
+    }
+
+    private String autoFilterRange(Sheet sheet) {
+        return ((XSSFSheet) sheet).getCTWorksheet().getAutoFilter().getRef();
+    }
+
+    @Test
+    void should_cap_a_column_at_sixty_characters() {
+        givenRow("N".repeat(300), null, null);
+
+        assertThat(export().getColumnWidth(1)).isEqualTo(60 * 256);
     }
 
     @Test

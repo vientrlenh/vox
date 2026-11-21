@@ -11,14 +11,13 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
-import org.springframework.dao.DataIntegrityViolationException;
+import com.sep.vox.application.exception.DataConflictException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.output.JsonSerializationPort;
+import com.sep.vox.application.port.output.RequiresNewTransactionPort;
 import com.sep.vox.domain.model.importfile.ImportRow;
 import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
@@ -43,7 +42,7 @@ public class SchoolClassUserImportCommitHandler implements ImportCommitHandler {
     private final SchoolClassUserRepository schoolClassUserRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final JsonSerializationPort jsonSerializationPort;
-    private final TransactionTemplate transactionTemplate;
+    private final RequiresNewTransactionPort requiresNewTransactionPort;
 
     public SchoolClassUserImportCommitHandler(
             UserRepository userRepository,
@@ -51,14 +50,13 @@ public class SchoolClassUserImportCommitHandler implements ImportCommitHandler {
             SchoolClassUserRepository schoolClassUserRepository,
             SchoolUserRepository schoolUserRepository,
             JsonSerializationPort jsonSerializationPort,
-            PlatformTransactionManager transactionManager) {
+            RequiresNewTransactionPort requiresNewTransactionPort) {
         this.userRepository = userRepository;
         this.schoolClassRepository = schoolClassRepository;
         this.schoolClassUserRepository = schoolClassUserRepository;
         this.schoolUserRepository = schoolUserRepository;
         this.jsonSerializationPort = jsonSerializationPort;
-        this.transactionTemplate = new TransactionTemplate(transactionManager);
-        this.transactionTemplate.setPropagationBehavior(TransactionTemplate.PROPAGATION_REQUIRES_NEW);
+        this.requiresNewTransactionPort = requiresNewTransactionPort;
     }
 
     @Override
@@ -141,14 +139,14 @@ public class SchoolClassUserImportCommitHandler implements ImportCommitHandler {
 
             try {
                 if (existing != null) {
-                    transactionTemplate.executeWithoutResult(status -> {
+                    requiresNewTransactionPort.runInNewTransaction(() -> {
                         existing.activate();
                         existing.setAssignedBy(currentUserId);
                         schoolClassUserRepository.save(existing);
                     });
                     updatedRows++;
                 } else {
-                    transactionTemplate.executeWithoutResult(status ->
+                    requiresNewTransactionPort.runInNewTransaction(() ->
                         schoolClassUserRepository.save(SchoolClassUser.builder()
                             .userId(user.getId())
                             .schoolClassId(schoolClass.getId())
@@ -159,7 +157,7 @@ public class SchoolClassUserImportCommitHandler implements ImportCommitHandler {
                             .build()));
                     createdRows++;
                 }
-            } catch (DataIntegrityViolationException | IllegalArgumentException exception) {
+            } catch (DataConflictException | IllegalArgumentException exception) {
                 row.setErrorsJson(jsonSerializationPort.toJson(List.of(error("email", "Thành viên lớp học đã tồn tại hoặc không hợp lệ"))));
                 row.setStatus(ImportRowStatus.FAILED);
                 invalidRows++;

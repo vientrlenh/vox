@@ -38,10 +38,9 @@ class LombokUsageConventionTests {
         Set.of("lombok.RequiredArgsConstructor", "lombok.extern.slf4j.Slf4j");
 
     /**
-     * Known debt, not a permission: the list may only shrink. UpdateSchoolRoomCommand uses {@code @Builder}, which
-     * AGENTS.md does not allow on a command anyway.
+     * Known debt, not a permission: the list may only shrink. It is empty now, so it must stay empty.
      */
-    private static final Set<String> APPLICATION_EXEMPTIONS = Set.of("UpdateSchoolRoomCommand.java");
+    private static final Set<String> APPLICATION_EXEMPTIONS = Set.of();
 
     @Test
     @DisplayName("domain uses no Lombok")

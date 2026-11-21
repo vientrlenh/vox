@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import com.sep.vox.application.exception.DataConflictException;
 import com.sep.vox.application.port.input.command.CreateSchoolGradeCommand;
 import com.sep.vox.application.port.input.usecase.schoolgrade.CreateSchoolGradeUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -84,5 +85,26 @@ class CreateSchoolGradeUseCaseTests {
         ArgumentCaptor<SchoolGrade> captor = ArgumentCaptor.forClass(SchoolGrade.class);
         org.mockito.Mockito.verify(schoolGradeRepository).save(captor.capture());
         assertThat(captor.getValue().getStatus()).isEqualTo(SchoolGradeStatus.ACTIVE);
+    }
+
+    @Test
+    void should_throw_duplicated_when_repository_reports_a_data_conflict() {
+        GradeLevel gradeLevel = GradeLevel.builder()
+            .id(gradeLevelId)
+            .code("K1")
+            .name("Khối 1")
+            .order(1)
+            .status(GradeLevelStatus.ACTIVE)
+            .build();
+        when(gradeLevelRepository.findById(gradeLevelId)).thenReturn(Optional.of(gradeLevel));
+        when(schoolGradeRepository.existsBySchoolIdAndGradeLevelIdAndCode(any(), any(), any())).thenReturn(false);
+        when(schoolGradeRepository.save(any(SchoolGrade.class))).thenThrow(new DataConflictException("unique violation", null));
+        CreateSchoolGradeCommand command = new CreateSchoolGradeCommand(
+            schoolId, gradeLevelId, "nh2024", "Năm học 2024", "desc",
+            LocalDate.of(2024, 9, 1), LocalDate.of(2025, 6, 30));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> useCase.execute(command))
+            .isInstanceOf(com.sep.vox.application.exception.DuplicatedException.class)
+            .hasMessage("Mã năm học đã tồn tại trong Khối lớp này.");
     }
 }

@@ -143,7 +143,7 @@ public class PracticeQuestionGenerationClient implements PracticeQuestionGenerat
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(
                     jsonMapper.writeValueAsString(Map.of(
-                        "question", question.sourceJson()
+                        "question", jsonMapper.readTree(question.sourceJson())
                     ))
                 ))
                 .build();
@@ -184,7 +184,7 @@ public class PracticeQuestionGenerationClient implements PracticeQuestionGenerat
             item.path("max_response_seconds").asInt(),
             item.path("min_response_seconds").asInt(),
             item.path("vstep_part").asInt(),
-            item
+            item.toString()
         );
     }
 

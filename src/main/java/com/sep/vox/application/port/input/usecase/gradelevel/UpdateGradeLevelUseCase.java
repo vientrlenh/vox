@@ -3,7 +3,7 @@ package com.sep.vox.application.port.input.usecase.gradelevel;
 import java.time.Instant;
 import java.util.UUID;
 
-import org.springframework.dao.DataIntegrityViolationException;
+import com.sep.vox.application.exception.DataConflictException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,7 +61,7 @@ public class UpdateGradeLevelUseCase implements IUseCase<UpdateGradeLevelCommand
         validateDescription(description);
         validateOrder(command.order());
 
-        // Atomic update (null = giữ nguyên)
+        // Atomic update (null = keep the current value)
         int updatedRows;
         try {
             updatedRows = gradeLevelRepository.updateGradeLevelAtomic(
@@ -72,7 +72,7 @@ public class UpdateGradeLevelUseCase implements IUseCase<UpdateGradeLevelCommand
                     Instant.now(),
                     currentUserId.toString()
             );
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataConflictException e) {
             throw new DuplicatedException("Thứ tự khối học đã được sử dụng.");
         }
 

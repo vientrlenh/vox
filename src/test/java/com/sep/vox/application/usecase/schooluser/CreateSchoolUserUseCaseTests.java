@@ -1,5 +1,6 @@
 package com.sep.vox.application.usecase.schooluser;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -17,6 +18,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.sep.vox.application.exception.DataConflictException;
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreateSchoolUserCommand;
@@ -386,4 +388,42 @@ public class CreateSchoolUserUseCaseTests {
         return school;
     }
 
+    @Test
+    void create_should_throw_duplicated_when_repository_reports_a_data_conflict_on_the_user() {
+        CreateSchoolUserCommand command = stubStudentCreationUpToTheUserSave();
+        when(userRepository.save(any(User.class))).thenThrow(new DataConflictException("unique violation", null));
+
+        assertThatThrownBy(() -> createSchoolUserUseCase.execute(command))
+            .isInstanceOf(DuplicatedException.class)
+            .hasMessage("Email hoặc số điện thoại đã tồn tại");
+    }
+
+    @Test
+    void create_should_throw_illegal_argument_when_repository_reports_a_data_conflict_on_the_school_link() {
+        CreateSchoolUserCommand command = stubStudentCreationUpToTheUserSave();
+        User savedUser = savedUser(schoolId);
+        when(userRepository.save(any(User.class))).thenReturn(savedUser);
+        when(userRoleRepository.save(any(UserRole.class))).thenReturn(UserRole.builder().userId(savedUser.getId()).build());
+        when(schoolUserRepository.save(any(SchoolUser.class))).thenThrow(new DataConflictException("unique violation", null));
+
+        assertThatThrownBy(() -> createSchoolUserUseCase.execute(command))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Không thể gán người dùng vào trường: dữ liệu không hợp lệ");
+    }
+
+    private CreateSchoolUserCommand stubStudentCreationUpToTheUserSave() {
+        CreateSchoolUserCommand command = new CreateSchoolUserCommand(
+            schoolId, "student@school.edu.vn", "0987654321",
+            "Nguyen Van A", LocalDate.of(2005, 1, 15), "123 Street", "STUDENT",
+            LocalDate.of(2023, 1, 1), LocalDate.of(2029, 1, 1)
+        );
+        User caller = callerUser(callerId, schoolId);
+        Role studentRole = role("STUDENT");
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
+        when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(caller));
+        when(roleRepository.findByCode("STUDENT")).thenReturn(Optional.of(studentRole));
+        when(userRepository.findByEmail("student@school.edu.vn")).thenReturn(Optional.empty());
+        when(userRepository.findByPhone("0987654321")).thenReturn(Optional.empty());
+        return command;
+    }
 }

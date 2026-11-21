@@ -3,7 +3,6 @@ package com.sep.vox.application.port.input.usecase.subscription;
 import com.sep.vox.domain.model.subscription.SubscriptionPlan;
 import java.util.List;
 import java.util.UUID;
-import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,22 +35,18 @@ public class ViewSubscriptionPlansUseCase implements IUseCase<ViewSubscriptionPl
     @Override
     @Transactional(readOnly = true)
     public PageResult<ViewSubscriptionPlansResponse> execute(ViewSubscriptionPlansQuery input) {
-        // System admin quản lý gói nên cần thấy cả ARCHIVED (để biết gói nào đã ngừng bán, xem
-        // replacedByPlanId...). Trường chỉ dùng danh sách này để đăng ký/gia hạn nên chỉ thấy
-        // ACTIVE — gói archived không mua được thì không cần hiện ra.
+        // A system admin manages the plans, so they also need to see ARCHIVED ones (to know which plans
+        // were discontinued, see replacedByPlanId...). A school only uses this list to register or renew,
+        // so it sees ACTIVE plans only: an archived plan cannot be bought and need not be shown.
         //
-        // Query này còn phục vụ khách vãng lai chưa đăng nhập (mục "Gói AI dành cho nhà trường"
-        // ở landing page công khai -- /graphql permitAll ở tầng HTTP đúng để cho phép việc này).
-        // isSystemAdmin() throw AuthenticationCredentialsNotFoundException khi không có JWT, nên
-        // phải bắt riêng và coi "chưa đăng nhập" như "không phải system admin" thay vì để lỗi văng
-        // ra ngoài -- nếu không thì mọi khách vãng lai đều nhận lỗi và trang không hiện được gói
-        // nào dù đã có gói ACTIVE.
-        boolean isSystemAdmin;
-        try {
-            isSystemAdmin = userContextPort.isSystemAdmin();
-        } catch (AuthenticationCredentialsNotFoundException notAuthenticated) {
-            isSystemAdmin = false;
-        }
+        // This query also serves anonymous visitors (the "AI plans for schools" section of the public
+        // landing page; /graphql is permitAll at the HTTP layer precisely to allow this).
+        // isSystemAdmin() throws when there is no authenticated user, so "not signed in" is checked first
+        // and treated as "not a system admin" instead of letting an error escape -- otherwise every
+        // anonymous visitor would get an error and the page could not show any plan even though ACTIVE
+        // plans exist.
+        boolean isSystemAdmin = userContextPort.findCurrentAuthenticatedUserId().isPresent()
+            && userContextPort.isSystemAdmin();
 
         PageResult<SubscriptionPlan> page = isSystemAdmin
             ? subscriptionPlanRepository.findAll(input.page(), input.size())

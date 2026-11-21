@@ -7,12 +7,17 @@ import java.util.Map;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 
 import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 public class FakeJsonSerializationPort implements JsonSerializationPort {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper unknownPropertyRejectingMapper = JsonMapper.builder()
+        .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+        .build();
 
     @Override
     public String toJson(Object value) {
@@ -85,6 +90,33 @@ public class FakeJsonSerializationPort implements JsonSerializationPort {
         } catch (Exception exception) {
             throw new IllegalStateException("Could not deserialize JSON field to string list", exception);
         }
+    }
+
+    @Override
+    public <T> T fromJson(String json, Class<T> targetType) {
+        try {
+            return objectMapper.readValue(json, targetType);
+        } catch (Exception exception) {
+            throw new IllegalStateException("Could not deserialize JSON to " + targetType.getSimpleName(), exception);
+        }
+    }
+
+    @Override
+    public <T> List<T> fromJsonList(String json, Class<T> elementType) {
+        try {
+            return unknownPropertyRejectingMapper.readValue(json,
+                unknownPropertyRejectingMapper.getTypeFactory().constructCollectionType(List.class, elementType));
+        } catch (Exception exception) {
+            throw new IllegalStateException("Could not deserialize JSON to list", exception);
+        }
+    }
+
+    @Override
+    public String toStringField(String json, String field) {
+        if (json == null || json.isBlank()) {
+            return null;
+        }
+        return objectMapper.readTree(json).path(field).asString(null);
     }
 
     @Override

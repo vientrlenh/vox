@@ -20,6 +20,7 @@ import com.sep.vox.domain.repository.FrameworkVersionRepository;
 import com.sep.vox.infrastructure.persistence.mapper.FrameworkVersionMapper;
 import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataFrameworkVersionRepository;
+import com.sep.vox.infrastructure.persistence.DataConflictTranslation;
 
 @Repository
 public class FrameworkVersionRepositoryImpl implements FrameworkVersionRepository {
@@ -111,7 +112,7 @@ public class FrameworkVersionRepositoryImpl implements FrameworkVersionRepositor
     @Override
     public FrameworkVersion save(FrameworkVersion version) {
         FrameworkVersionJpaEntity entity = FrameworkVersionMapper.toJpa(version);
-        FrameworkVersionJpaEntity saved = springDataFrameworkVersionRepository.save(entity);
+        FrameworkVersionJpaEntity saved = DataConflictTranslation.translating(() -> springDataFrameworkVersionRepository.save(entity));
         return FrameworkVersionMapper.toDomain(saved);
     }
 

@@ -18,7 +18,7 @@ import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.RubricResultBandRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.domain.repository.UserRepository;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.sep.vox.application.exception.DataConflictException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -159,7 +159,7 @@ public class UpdateSystemRubricVersionUseCase
                     Instant.now(),
                     currentUserId.toString()
             );
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataConflictException e) {
             throw new IllegalArgumentException(
                     "Không thể cập nhật Rubric Version do dữ liệu bị trùng hoặc không hợp lệ."
             );

@@ -14,11 +14,10 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.SimpleTransactionStatus;
 
 import com.sep.vox.application.port.input.service.ConsumeQuotaService;
 import com.sep.vox.application.port.input.service.PracticeEvaluationRequestFactory;
@@ -26,6 +25,7 @@ import com.sep.vox.application.port.input.service.PracticeTopicOfferEnrichmentSe
 import com.sep.vox.application.port.input.usecase.practicesession.SubmitPracticeTurnUseCase;
 import com.sep.vox.application.port.output.ExternalEventPublisherPort;
 import com.sep.vox.application.port.output.QuotaPricingPort;
+import com.sep.vox.application.port.output.RequiresNewTransactionPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses;
 import com.sep.vox.application.response.input.subscription.ConsumeQuotaResponse;
@@ -67,6 +67,7 @@ class SubmitPracticeTurnUseCaseReplayTests {
     private PracticeResponseTurnRepository practiceResponseTurnRepository;
     private TurnCorrectionRepository turnCorrectionRepository;
     private ConsumeQuotaService consumeQuotaService;
+    private RequiresNewTransactionPort requiresNewTransactionPort;
     private ExternalEventPublisherPort eventPublisher;
     private SubmitPracticeTurnUseCase useCase;
 
@@ -84,11 +85,11 @@ class SubmitPracticeTurnUseCaseReplayTests {
         PracticeTopicOfferEnrichmentService enrichmentService = mock(PracticeTopicOfferEnrichmentService.class);
         UserContextPort userContextPort = mock(UserContextPort.class);
         QuotaPricingPort quotaPricingPort = mock(QuotaPricingPort.class);
-        PlatformTransactionManager transactionManager = mock(PlatformTransactionManager.class);
+        requiresNewTransactionPort = mock(RequiresNewTransactionPort.class);
 
-        // A real TransactionTemplate running on a fake manager: getTransaction -> run the callback
-        // -> commit.
-        when(transactionManager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
+        // The port runs the supplied work straight away, as a committed REQUIRES_NEW transaction would.
+        when(requiresNewTransactionPort.callInNewTransaction(any())).thenAnswer(
+            invocation -> invocation.<Supplier<?>>getArgument(0).get());
 
         when(practiceSessionRepository.existsByIdAndStudentIdAndStatus(SESSION_ID, STUDENT_ID, "IN_PROGRESS"))
             .thenReturn(true);
@@ -114,7 +115,7 @@ class SubmitPracticeTurnUseCaseReplayTests {
             eventPublisher,
             userContextPort,
             quotaPricingPort,
-            transactionManager
+            requiresNewTransactionPort
         );
     }
 
@@ -124,6 +125,7 @@ class SubmitPracticeTurnUseCaseReplayTests {
 
         useCase.execute(STUDENT_ID, turn());
 
+        verify(requiresNewTransactionPort, times(1)).callInNewTransaction(any());
         verify(consumeQuotaService, times(1))
             .consumePracticeAllowingDebt(any(), any(), any(), any(), any(), any());
         verify(turnCorrectionRepository, times(1)).save(any(), any(), any(), any(), any(), any());

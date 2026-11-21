@@ -7,7 +7,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.springframework.dao.DataIntegrityViolationException;
+import com.sep.vox.application.exception.DataConflictException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,7 +59,7 @@ public class CreateFrameworkCriteriaUseCase
                     .stream()
                     .map(fc -> fc.getId())
                     .collect(Collectors.toList());
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataConflictException e) {
             throw new IllegalStateException("Mã tiêu chí đã tồn tại trong cơ sở dữ liệu", e);
         }
     }

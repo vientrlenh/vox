@@ -2,6 +2,7 @@ package com.sep.vox.application.usecase.schoolclass;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -16,9 +17,9 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionStatus;
 
+import com.sep.vox.application.exception.DataConflictException;
+import com.sep.vox.application.port.output.RequiresNewTransactionPort;
 import com.sep.vox.application.port.input.service.ImportCommitResult;
 import com.sep.vox.application.port.input.service.SchoolClassImportCommitHandler;
 import com.sep.vox.application.support.FakeJsonSerializationPort;
@@ -44,7 +45,7 @@ class SchoolClassImportCommitHandlerTests {
     private SupportedLanguageRepository supportedLanguageRepository;
     private SchoolGradeRepository schoolGradeRepository;
     private FakeJsonSerializationPort jsonSerializationPort;
-    private PlatformTransactionManager txManager;
+    private RequiresNewTransactionPort requiresNewTransactionPort;
     private SchoolClassImportCommitHandler handler;
 
     @BeforeEach
@@ -53,14 +54,17 @@ class SchoolClassImportCommitHandlerTests {
         supportedLanguageRepository = mock(SupportedLanguageRepository.class);
         schoolGradeRepository = mock(SchoolGradeRepository.class);
         jsonSerializationPort = new FakeJsonSerializationPort();
-        txManager = mock(PlatformTransactionManager.class);
-        when(txManager.getTransaction(any())).thenReturn(mock(TransactionStatus.class));
+        requiresNewTransactionPort = mock(RequiresNewTransactionPort.class);
+        doAnswer(invocation -> {
+            invocation.<Runnable>getArgument(0).run();
+            return null;
+        }).when(requiresNewTransactionPort).runInNewTransaction(any());
         handler = new SchoolClassImportCommitHandler(
             schoolClassRepository,
             supportedLanguageRepository,
             schoolGradeRepository,
             jsonSerializationPort,
-            txManager
+            requiresNewTransactionPort
         );
     }
 
@@ -296,5 +300,24 @@ class SchoolClassImportCommitHandlerTests {
         grade.setCode(code);
         grade.setStatus(SchoolGradeStatus.ACTIVE);
         return grade;
+    }
+
+    @Test
+    void should_mark_failed_when_repository_reports_a_data_conflict() {
+        UUID schoolId = UUID.randomUUID();
+        UUID createdBy = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
+        List<ImportRow> rows = List.of(row(sessionId, 1L, classData("ENG-01", "English 01", "EN", "G10")));
+        when(supportedLanguageRepository.findByCodeIn(Set.of("EN"))).thenReturn(List.of(activeLanguage(UUID.randomUUID(), "EN")));
+        when(schoolGradeRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("G10"))).thenReturn(List.of(activeGrade(UUID.randomUUID(), "G10")));
+        when(schoolClassRepository.findBySchoolIdAndCodeIn(schoolId, Set.of("ENG-01"))).thenReturn(List.of());
+        when(schoolClassRepository.save(any(SchoolClass.class))).thenThrow(new DataConflictException("unique violation", null));
+
+        ImportCommitResult result = handler.commit(session(sessionId, schoolId, createdBy), rows);
+
+        assertThat(result.created()).isZero();
+        assertThat(result.invalid()).isEqualTo(1L);
+        assertThat(rows.get(0).getStatus()).isEqualTo(ImportRowStatus.FAILED);
+        assertThat(rows.get(0).getErrorsJson()).contains("Mã lớp đã tồn tại hoặc không hợp lệ");
     }
 }

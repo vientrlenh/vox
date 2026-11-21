@@ -4,12 +4,12 @@ import com.sep.vox.application.query.dto.SessionRowInfo;
 import java.util.List;
 import java.util.UUID;
 
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.event.PracticeSessionEndedEvent;
+import com.sep.vox.application.port.output.EventPublisherPort;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.query.repository.PracticeSessionQueryRepository;
 
@@ -38,7 +38,7 @@ public class PracticeSessionClosedHandler {
     private final InterestVectorService interestVectorService;
     private final TopicOfferBackfillService topicOfferBackfillService;
     private final UndeliveredQuestionCleanupService undeliveredQuestionCleanupService;
-    private final ApplicationEventPublisher applicationEventPublisher;
+    private final EventPublisherPort eventPublisherPort;
     private final JsonSerializationPort jsonSerializationPort;
 
     public PracticeSessionClosedHandler(
@@ -46,13 +46,13 @@ public class PracticeSessionClosedHandler {
             InterestVectorService interestVectorService,
             TopicOfferBackfillService topicOfferBackfillService,
             UndeliveredQuestionCleanupService undeliveredQuestionCleanupService,
-            ApplicationEventPublisher applicationEventPublisher,
+            EventPublisherPort eventPublisherPort,
             JsonSerializationPort jsonSerializationPort) {
         this.practiceSessionQueryRepository = practiceSessionQueryRepository;
         this.interestVectorService = interestVectorService;
         this.topicOfferBackfillService = topicOfferBackfillService;
         this.undeliveredQuestionCleanupService = undeliveredQuestionCleanupService;
-        this.applicationEventPublisher = applicationEventPublisher;
+        this.eventPublisherPort = eventPublisherPort;
         this.jsonSerializationPort = jsonSerializationPort;
     }
 
@@ -129,11 +129,12 @@ public class PracticeSessionClosedHandler {
         // Chạy SAU recordSessionOutcome là cố ý: điểm quan tâm vừa cập nhật xong, nên lượt
         // đề xuất này nhìn thấy bức tranh mới nhất thay vì bức tranh trước buổi học.
         topicOfferBackfillService.backfillAsync(studentId);
-        // ⚠️ Từ 2026-08-06 sự kiện này KHÔNG CÒN NGƯỜI NGHE: hai listener cũ là
-        // WeaknessSnapshotRefreshJob (gỡ cùng hồ sơ điểm yếu) và TopicSuggestionSessionListener
-        // (gỡ cùng đường đọc transcript). Giữ lại làm điểm nối cho việc sau; nếu đến lúc dọn mà
-        // vẫn không ai nghe thì xoá cả PracticeSessionEndedEvent.
-        applicationEventPublisher.publishEvent(new PracticeSessionEndedEvent(studentId, sessionId));
+        // WARNING: since 2026-08-06 nobody listens to this event any more. The two old listeners,
+        // WeaknessSnapshotRefreshJob (removed together with the weakness profile) and
+        // TopicSuggestionSessionListener (removed together with the transcript read path), are gone.
+        // It is kept as a hook for later work; if nobody listens by the time of the next cleanup,
+        // delete PracticeSessionEndedEvent as well.
+        eventPublisherPort.publish(new PracticeSessionEndedEvent(studentId, sessionId));
     }
 
     // KHÔNG thêm một method "afterClosedQuietly" bọc try/catch ở đây: gọi afterClosed từ chính

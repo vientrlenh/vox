@@ -1,16 +1,14 @@
-package com.sep.vox.infrastructure.security;
+package com.sep.vox.interfaces.shared;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 
-import com.sep.vox.application.port.output.CookieManagerPort;
-
 import jakarta.servlet.http.HttpServletResponse;
 
 @Component
-public class HttpCookieProvider implements CookieManagerPort {
+public class HttpCookieProvider {
     
     private final boolean secure;
     private final String sameSite;
@@ -20,7 +18,6 @@ public class HttpCookieProvider implements CookieManagerPort {
         this.sameSite = sameSite;
     }
 
-    @Override
     public void setCookie(HttpServletResponse response, String key, String value, long ttl) {
         ResponseCookie cookie = ResponseCookie.from(key, value)
             .httpOnly(true)
@@ -33,16 +30,15 @@ public class HttpCookieProvider implements CookieManagerPort {
     }
 
     /**
-     * Xoá cookie bằng cách đặt lại chính nó với maxAge = 0.
+     * Clears the cookie by writing it again with maxAge = 0.
      *
-     * <p>Cố ý gọi lại {@link #setCookie} thay vì tự dựng một {@link ResponseCookie} riêng: trình
-     * duyệt chỉ ghi đè cookie khi bộ thuộc tính định danh khớp NGUYÊN VẸN với lúc đặt (path,
-     * domain, secure, sameSite). Lệch một cái là nó coi đây là cookie khác, cookie cũ vẫn nằm
-     * nguyên và refresh token vẫn dùng được -- kiểu hỏng không để lại dấu vết nào ở phía server,
-     * vì response vẫn 200 kèm Set-Cookie trông rất hợp lệ. Đi qua đúng một hàm thì hai bộ thuộc
-     * tính không thể lệch nhau.
+     * <p>It deliberately calls {@link #setCookie} instead of building a separate {@link ResponseCookie}: the
+     * browser only overwrites a cookie when the identifying attributes (path, domain, secure, sameSite) match
+     * the ones used when it was set EXACTLY. If one differs, the browser treats it as another cookie, the old one
+     * stays in place and the refresh token keeps working -- a failure that leaves no trace on the server, because
+     * the response is still 200 with a perfectly valid-looking Set-Cookie. Going through a single method means
+     * the two attribute sets cannot drift apart.
      */
-    @Override
     public void clearCookie(HttpServletResponse response, String key) {
         setCookie(response, key, "", 0);
     }

@@ -21,7 +21,13 @@ Rules for the whole skill:
    If there is none, say so and ask the user for it. Do not invent one.
 2. Break it into atomic, checkable items. Each item gets an id (P1, P2, ...) and one observable done-condition, e.g.
    "`GET /x` returns 403 for a TEACHER of another school", not "authorization works".
-3. Add the implicit items the plan assumes: tests for new behavior, a Flyway migration for a schema change, a
+3. Re-check every phase item by item. Never trust the status recorded on a phase, a job or the plan itself (for
+   example "Done" or "Completed" in the plan's HTML file). Those statuses were written by `implement-plan` and may be
+   stale or wrong. Walk each phase, list every job and every item inside it as its own checklist entry, and verify each
+   one against the real diff and the checks in Step 5, even when its phase is marked done. A phase is DONE only when
+   all of its items are DONE by your own evidence. If a recorded status disagrees with what you find, report it as a
+   finding.
+4. Add the implicit items the plan assumes: tests for new behavior, a Flyway migration for a schema change, a
    regression test for a bug fix (AGENTS.md: it must fail without the fix).
 
 ## Step 2: Read the real change
@@ -37,7 +43,8 @@ file in full around the edit, not just the hunk, so you see what the change inte
 
 ## Step 3: Plan coverage (plan -> diff)
 
-For each checklist item, find the code that satisfies it and record one of:
+For each checklist item, one by one and phase by phase, find the code that satisfies it and record one of. Do not
+mark a whole phase with one status or copy the status from the plan file:
 
 | Status | Meaning |
 |---|---|

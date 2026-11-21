@@ -17,7 +17,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.sep.vox.application.exception.DataConflictException;
 
 import com.sep.vox.application.exception.DuplicatedException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -56,7 +56,7 @@ public class UpdateSchoolUserUseCaseTests {
         userRepository = mock(UserRepository.class);
         schoolUserRepository = mock(SchoolUserRepository.class);
         updateSchoolUserUseCase = new UpdateSchoolUserUseCase(
-            userContextPort, userRepository, schoolUserRepository, ALLOWED_AVATAR_HOSTS);
+            userContextPort, userRepository, schoolUserRepository, () -> ALLOWED_AVATAR_HOSTS);
     }
 
     @Test
@@ -153,7 +153,7 @@ public class UpdateSchoolUserUseCaseTests {
         wireCallerAndTarget(schoolId);
         when(userRepository.findByPhone("0912345678")).thenReturn(Optional.empty());
         when(userRepository.saveAndFlush(any(User.class)))
-            .thenThrow(new DataIntegrityViolationException("unique constraint idx_user_phone violated"));
+            .thenThrow(new DataConflictException("unique constraint idx_user_phone violated", null));
         UpdateSchoolUserCommand command = command(null, false, "0912345678", true, null, false, null, false);
 
         assertThrows(DuplicatedException.class, () -> updateSchoolUserUseCase.execute(command));

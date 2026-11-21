@@ -1,4 +1,4 @@
-package com.sep.vox.infrastructure.security;
+package com.sep.vox.interfaces.handler;
 
 import com.sep.vox.application.response.input.auth.LoginResponse;
 import java.io.IOException;
@@ -19,7 +19,7 @@ import com.sep.vox.application.port.input.command.ClientDeviceCommand;
 import com.sep.vox.domain.model.devicesession.SessionPlatform;
 import com.sep.vox.application.port.input.command.OAuth2LoginCommand;
 import com.sep.vox.application.port.input.usecase.auth.OAuth2LoginUseCase;
-import com.sep.vox.application.port.output.CookieManagerPort;
+import com.sep.vox.interfaces.shared.HttpCookieProvider;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,11 +30,11 @@ import jakarta.servlet.http.HttpSession;
 public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
     private final OAuth2LoginUseCase oAuth2LoginUseCase;
-    private final CookieManagerPort cookieManagerPort;
+    private final HttpCookieProvider httpCookieProvider;
 
-    public OAuth2AuthenticationSuccessHandler(OAuth2LoginUseCase oAuth2LoginUseCase, CookieManagerPort cookieManagerPort) {
+    public OAuth2AuthenticationSuccessHandler(OAuth2LoginUseCase oAuth2LoginUseCase, HttpCookieProvider httpCookieProvider) {
         this.oAuth2LoginUseCase = oAuth2LoginUseCase;
-        this.cookieManagerPort = cookieManagerPort;
+        this.httpCookieProvider = httpCookieProvider;
     }
 
     private static final long REFRESH_TOKEN_COOKIE_TTL_SECONDS = 259200L;
@@ -78,7 +78,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
             );
 
             LoginResponse data = oAuth2LoginUseCase.execute(command);
-            cookieManagerPort.setCookie(response, REFRESH_TOKEN_KEY_NAME, data.refreshToken(), REFRESH_TOKEN_COOKIE_TTL_SECONDS);
+            httpCookieProvider.setCookie(response, REFRESH_TOKEN_KEY_NAME, data.refreshToken(), REFRESH_TOKEN_COOKIE_TTL_SECONDS);
             clearSession(session);
             redirect(response, returnUrl, "token", data.accessToken());
         } catch (IllegalArgumentException e) {

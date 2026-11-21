@@ -49,7 +49,7 @@ class CreateSchoolUseCaseTests {
         useCase = new CreateSchoolUseCase(
             schoolDirectoryRepository,
             provisionSchoolService,
-            ALLOWED_AVATAR_HOSTS
+            () -> ALLOWED_AVATAR_HOSTS
         );
         when(provisionSchoolService.provision(any())).thenReturn(createdSchoolId);
     }

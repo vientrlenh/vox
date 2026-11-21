@@ -3,6 +3,7 @@ package com.sep.vox.application.usecase.schoolgrade;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -20,10 +21,9 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionStatus;
+import com.sep.vox.application.exception.DataConflictException;
 
+import com.sep.vox.application.port.output.RequiresNewTransactionPort;
 import com.sep.vox.application.port.input.service.ImportCommitResult;
 import com.sep.vox.application.port.input.service.SchoolGradeImportCommitHandler;
 import com.sep.vox.application.support.FakeJsonSerializationPort;
@@ -44,7 +44,7 @@ class SchoolGradeImportCommitHandlerTests {
     private SchoolGradeRepository schoolGradeRepository;
     private GradeLevelRepository gradeLevelRepository;
     private FakeJsonSerializationPort jsonSerializationPort;
-    private PlatformTransactionManager txManager;
+    private RequiresNewTransactionPort requiresNewTransactionPort;
     private SchoolGradeImportCommitHandler handler;
 
     private final UUID schoolId = UUID.randomUUID();
@@ -56,13 +56,16 @@ class SchoolGradeImportCommitHandlerTests {
         schoolGradeRepository = mock(SchoolGradeRepository.class);
         gradeLevelRepository = mock(GradeLevelRepository.class);
         jsonSerializationPort = new FakeJsonSerializationPort();
-        txManager = mock(PlatformTransactionManager.class);
-        when(txManager.getTransaction(any())).thenReturn(mock(TransactionStatus.class));
+        requiresNewTransactionPort = mock(RequiresNewTransactionPort.class);
+        doAnswer(invocation -> {
+            invocation.<Runnable>getArgument(0).run();
+            return null;
+        }).when(requiresNewTransactionPort).runInNewTransaction(any());
         handler = new SchoolGradeImportCommitHandler(
             schoolGradeRepository,
             gradeLevelRepository,
             jsonSerializationPort,
-            txManager
+            requiresNewTransactionPort
         );
     }
 
@@ -206,7 +209,7 @@ class SchoolGradeImportCommitHandlerTests {
         when(gradeLevelRepository.findByCodeIn(Set.of("K10"))).thenReturn(List.of(gradeLevel("K10")));
         when(schoolGradeRepository.findBySchoolIdAndGradeLevelIdAndCode(eq(schoolId), eq(levelId), any())).thenReturn(Optional.empty());
         when(schoolGradeRepository.save(any(SchoolGrade.class)))
-            .thenThrow(new DataIntegrityViolationException("duplicate code"));
+            .thenThrow(new DataConflictException("duplicate code", null));
 
         ImportCommitResult result = handler.commit(session(sessionId), rows);
 

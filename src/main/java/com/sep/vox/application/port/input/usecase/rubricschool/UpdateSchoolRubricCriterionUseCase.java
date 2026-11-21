@@ -1,7 +1,5 @@
 package com.sep.vox.application.port.input.usecase.rubricschool;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
 import com.sep.vox.domain.model.rubric.RubricVersion;
@@ -14,22 +12,20 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.UpdateSchoolRubricCriterionCommand;
+import com.sep.vox.application.port.input.service.RubricCriterionExamplesNormalizer;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
-import com.sep.vox.domain.valueobject.rubric.RubricCriterionExample;
-import com.sep.vox.domain.valueobject.rubric.RubricCriterionExamples;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.sep.vox.application.exception.DataConflictException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -44,9 +40,7 @@ public class UpdateSchoolRubricCriterionUseCase implements IUseCase<UpdateSchool
     private final UserContextPort userContextPort;
     private final SchoolRepository schoolRepository;
     private final SchoolUserRepository schoolUserRepository;
-
-    // SỬA LỖI 1: Tự khởi tạo ObjectMapper ở đây để dùng cho việc dịch JSON
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final RubricCriterionExamplesNormalizer examplesNormalizer;
 
     public UpdateSchoolRubricCriterionUseCase(
             RubricCriterionRepository rubricCriterionRepository,
@@ -55,7 +49,8 @@ public class UpdateSchoolRubricCriterionUseCase implements IUseCase<UpdateSchool
             UserRepository userRepository,
             UserContextPort userContextPort,
             SchoolRepository schoolRepository,
-            SchoolUserRepository schoolUserRepository) {
+            SchoolUserRepository schoolUserRepository,
+            RubricCriterionExamplesNormalizer examplesNormalizer) {
         this.rubricCriterionRepository = rubricCriterionRepository;
         this.rubricVersionRepository = rubricVersionRepository;
         this.rubricRepository = rubricRepository;
@@ -63,6 +58,7 @@ public class UpdateSchoolRubricCriterionUseCase implements IUseCase<UpdateSchool
         this.userContextPort = userContextPort;
         this.schoolRepository = schoolRepository;
         this.schoolUserRepository = schoolUserRepository;
+        this.examplesNormalizer = examplesNormalizer;
     }
 
     @Override
@@ -144,28 +140,10 @@ public class UpdateSchoolRubricCriterionUseCase implements IUseCase<UpdateSchool
             RubricOrderValidator.assertNoDuplicateOrder(siblingOrders, command.order(), nameForError);
         }
 
-        // 7. Validate chuỗi JSON (Bẫy bằng Value Object RubricCriterionExamples) & chuẩn hóa lại đúng định dạng {"values": [...]} trước khi lưu DB
-        String examplesJsonToPersist = command.examplesJson();
-        if (command.examplesJson() != null && !command.examplesJson().isBlank()) {
-            try {
-                // SỬA LỖI 2: Dùng objectMapper để parse JSON thành List object
-                List<RubricCriterionExample> parsedExamples = objectMapper.readValue(
-                        command.examplesJson(),
-                        new TypeReference<List<RubricCriterionExample>>() {}
-                );
+        // 7. Validate the examples JSON (guarded by the RubricCriterionExamples value object) and rewrite it in the {"values": [...]} shape before saving to the DB
+        String examplesJsonToPersist = examplesNormalizer.normalize(command.examplesJson());
 
-                RubricCriterionExamples examplesVO = new RubricCriterionExamples(parsedExamples); // Kích hoạt ném lỗi nếu List rỗng hoặc chứa null
-
-                // Serialize lại đúng shape record ({"values": [...]}) để khớp với định dạng khi đọc (view)
-                examplesJsonToPersist = objectMapper.writeValueAsString(examplesVO);
-            } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException(e.getMessage());
-            } catch (Exception e) {
-                throw new IllegalArgumentException("Định dạng JSON của phần Examples không hợp lệ.");
-            }
-        }
-
-        // 8. Bắn SQL Atomic Update
+        // 8. Fire the atomic SQL update
         try {
             rubricCriterionRepository.updateCriterionAtomic(
                     command.criterionId(),
@@ -181,7 +159,7 @@ public class UpdateSchoolRubricCriterionUseCase implements IUseCase<UpdateSchool
                     Instant.now(),
                     currentUserId.toString()
             );
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataConflictException e) {
             throw new IllegalArgumentException("Không thể cập nhật Tiêu chí do dữ liệu bị trùng hoặc không hợp lệ.");
         }
 

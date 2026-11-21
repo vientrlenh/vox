@@ -12,6 +12,7 @@ import com.sep.vox.domain.model.framework.FrameworkCriterion;
 import com.sep.vox.domain.repository.FrameworkCriterionRepository;
 import com.sep.vox.infrastructure.persistence.mapper.FrameworkCriterionMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataFrameworkCriterionRepository;
+import com.sep.vox.infrastructure.persistence.DataConflictTranslation;
 import java.util.stream.Collectors;
 
 @Repository
@@ -77,14 +78,14 @@ public class FrameworkCriterionRepositoryImpl implements FrameworkCriterionRepos
     @Override
     public FrameworkCriterion save(FrameworkCriterion criterion) {
         FrameworkCriterionJpaEntity entity = FrameworkCriterionMapper.toJpa(criterion);
-        FrameworkCriterionJpaEntity saved = springDataFrameworkCriterionRepository.save(entity);
+        FrameworkCriterionJpaEntity saved = DataConflictTranslation.translating(() -> springDataFrameworkCriterionRepository.save(entity));
         return FrameworkCriterionMapper.toDomain(saved);
     }
 
     @Override
     public List<FrameworkCriterion> saveAll(List<FrameworkCriterion> criteria) {
         List<FrameworkCriterionJpaEntity> entities = criteria.stream().map(FrameworkCriterionMapper::toJpa).toList();
-        return springDataFrameworkCriterionRepository.saveAll(entities)
+        return DataConflictTranslation.translating(() -> springDataFrameworkCriterionRepository.saveAll(entities))
                 .stream().map(FrameworkCriterionMapper::toDomain).toList();
     }
 

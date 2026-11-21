@@ -17,6 +17,7 @@ import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.infrastructure.persistence.mapper.UserMapper;
 import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataUserRepository;
+import com.sep.vox.infrastructure.persistence.DataConflictTranslation;
 
 @Repository
 public class UserRepositoryImpl implements UserRepository {
@@ -75,14 +76,14 @@ public class UserRepositoryImpl implements UserRepository {
     @Override
     public User save(User user) {
         UserJpaEntity entity = UserMapper.toJpa(user);
-        UserJpaEntity saved = springDataUserRepository.save(entity);
+        UserJpaEntity saved = DataConflictTranslation.translating(() -> springDataUserRepository.save(entity));
         return UserMapper.toDomain(saved);
     }
 
     @Override
     public User saveAndFlush(User user) {
         UserJpaEntity entity = UserMapper.toJpa(user);
-        UserJpaEntity saved = springDataUserRepository.saveAndFlush(entity);
+        UserJpaEntity saved = DataConflictTranslation.translating(() -> springDataUserRepository.saveAndFlush(entity));
         return UserMapper.toDomain(saved);
     }
 

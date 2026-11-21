@@ -3,7 +3,7 @@ package com.sep.vox.application.port.input.usecase.schoolclass;
 import com.sep.vox.domain.model.school.SchoolClassUser;
 import java.util.UUID;
 
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -18,7 +18,7 @@ import com.sep.vox.domain.repository.UserRepository;
  * Kiểm tra quyền truy cập dùng chung cho các use case "lớp của tôi" của giáo viên.
  * Gom về một chỗ vì cả ba use case cần đúng một luật, tách ra thì dễ lệch.
  */
-@Component
+@Service
 public class MyClassAccessGuard {
 
     private final UserContextPort userContextPort;

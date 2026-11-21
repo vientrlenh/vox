@@ -111,4 +111,53 @@ class JacksonJsonSerializationServiceTests {
     void toObjectMap_should_throw_when_the_json_is_not_an_object() {
         assertThrows(RuntimeException.class, () -> service.toObjectMap("[1, 2]"));
     }
+
+    @Test
+    void toStringField_should_read_the_text_of_a_field() {
+        assertThat(service.toStringField("{\"reasoning_type\":\"opinion\"}", "reasoning_type")).isEqualTo("opinion");
+    }
+
+    @Test
+    void toStringField_should_return_null_when_the_field_is_absent_or_null_or_the_json_is_blank() {
+        assertThat(service.toStringField("{\"other\":1}", "reasoning_type")).isNull();
+        assertThat(service.toStringField("{\"reasoning_type\":null}", "reasoning_type")).isNull();
+        assertThat(service.toStringField("  ", "reasoning_type")).isNull();
+        assertThat(service.toStringField(null, "reasoning_type")).isNull();
+    }
+
+    @Test
+    void toStringField_should_throw_an_unchecked_exception_when_the_json_is_malformed() {
+        assertThrows(RuntimeException.class, () -> service.toStringField("{not json", "reasoning_type"));
+    }
+
+    @Test
+    void fromJsonList_should_parse_a_json_array_into_a_list_of_the_element_type() {
+        List<SecondsParams> result = service.fromJsonList("[{\"seconds\":1},{\"seconds\":2}]", SecondsParams.class);
+
+        assertThat(result).containsExactly(new SecondsParams(1), new SecondsParams(2));
+    }
+
+    @Test
+    void fromJsonList_should_reject_unknown_properties() {
+        assertThrows(IllegalStateException.class,
+            () -> service.fromJsonList("[{\"seconds\":1,\"extra\":true}]", SecondsParams.class));
+    }
+
+    @Test
+    void fromJsonList_should_throw_when_the_json_is_malformed_or_not_an_array() {
+        assertThrows(IllegalStateException.class, () -> service.fromJsonList("not json", SecondsParams.class));
+        assertThrows(IllegalStateException.class, () -> service.fromJsonList("{\"seconds\":1}", SecondsParams.class));
+    }
+
+    @Test
+    void fromJson_should_bind_a_json_object_and_ignore_unknown_properties() {
+        SecondsParams result = service.fromJson("{\"seconds\":4,\"extra\":true}", SecondsParams.class);
+
+        assertThat(result).isEqualTo(new SecondsParams(4));
+    }
+
+    @Test
+    void fromJson_should_throw_when_the_json_is_malformed() {
+        assertThrows(IllegalStateException.class, () -> service.fromJson("{not json", SecondsParams.class));
+    }
 }

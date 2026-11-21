@@ -11,6 +11,7 @@ import com.sep.vox.domain.model.framework.FrameworkResultBand;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.infrastructure.persistence.mapper.FrameworkResultBandMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataFrameworkResultBandRepository;
+import com.sep.vox.infrastructure.persistence.DataConflictTranslation;
 
 import java.util.Optional;
 
@@ -99,14 +100,14 @@ public class FrameworkResultBandRepositoryImpl implements FrameworkResultBandRep
     @Override
     public FrameworkResultBand save(FrameworkResultBand band) {
         FrameworkResultBandJpaEntity entity = FrameworkResultBandMapper.toJpa(band);
-        FrameworkResultBandJpaEntity saved = springDataFrameworkResultBandRepository.save(entity);
+        FrameworkResultBandJpaEntity saved = DataConflictTranslation.translating(() -> springDataFrameworkResultBandRepository.save(entity));
         return FrameworkResultBandMapper.toDomain(saved);
     }
 
     @Override
     public List<FrameworkResultBand> saveAll(List<FrameworkResultBand> bands) {
         List<FrameworkResultBandJpaEntity> entities = bands.stream().map(FrameworkResultBandMapper::toJpa).toList();
-        return springDataFrameworkResultBandRepository.saveAll(entities)
+        return DataConflictTranslation.translating(() -> springDataFrameworkResultBandRepository.saveAll(entities))
                 .stream().map(FrameworkResultBandMapper::toDomain).toList();
     }
 

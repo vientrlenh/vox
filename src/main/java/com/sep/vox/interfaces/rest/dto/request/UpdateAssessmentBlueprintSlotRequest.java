@@ -3,10 +3,11 @@ package com.sep.vox.interfaces.rest.dto.request;
 import java.math.BigDecimal;
 import java.util.UUID;
 
+import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlotType;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 
 public record UpdateAssessmentBlueprintSlotRequest(
     @NotNull(message = "Thứ tự slot là bắt buộc")
@@ -17,8 +18,7 @@ public record UpdateAssessmentBlueprintSlotRequest(
     Integer responseTimeSecondsOverride,
 
     @NotNull(message = "Loại slot là bắt buộc")
-    @Pattern(regexp = "FIXED|SELECTION", message = "Loại slot không hợp lệ")
-    String slotType,
+    AssessmentBlueprintSlotType slotType,
 
     UUID fixedQuestionId,
 
@@ -31,7 +31,7 @@ public record UpdateAssessmentBlueprintSlotRequest(
         if (slotType == null) {
             return true;
         }
-        if ("FIXED".equals(slotType)) {
+        if (slotType == AssessmentBlueprintSlotType.FIXED) {
             return fixedQuestionId != null && selectionSpec == null;
         }
         return fixedQuestionId == null && selectionSpec != null;

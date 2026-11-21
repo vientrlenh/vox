@@ -16,6 +16,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.ClientDeviceCommand;
+import com.sep.vox.domain.model.devicesession.SessionPlatform;
 import com.sep.vox.application.port.input.command.OAuth2LoginCommand;
 import com.sep.vox.application.port.input.usecase.auth.OAuth2LoginUseCase;
 import com.sep.vox.application.port.output.CookieManagerPort;
@@ -57,7 +58,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
             }
             String deviceId = (String) session.getAttribute("oauth2_device_id");
             String deviceName = (String) session.getAttribute("oauth2_device_name");
-            String platform = (String) session.getAttribute("oauth2_platform");
+            SessionPlatform platform = (SessionPlatform) session.getAttribute("oauth2_platform");
             ClientDeviceCommand device = new ClientDeviceCommand(
                 deviceId, 
                 deviceName, 

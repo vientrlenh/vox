@@ -1,6 +1,5 @@
 package com.sep.vox.interfaces.rest.mapper;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.command.CreateAssessmentPolicyCommand;
 import com.sep.vox.interfaces.rest.dto.request.CreateSchoolAssessmentPolicyRequest;
 import com.sep.vox.interfaces.rest.dto.request.CreateSystemAssessmentPolicyRequest;
@@ -23,8 +22,8 @@ public class CreateAssessmentPolicyCommandMapper {
                 request.targetFrameworkBandId(),
                 request.passingScore(),
                 request.strictness(),
-                DateMapper.toInstant(request.effectiveFrom()),
-                DateMapper.toInstant(request.effectiveTo())
+                request.effectiveFrom(),
+                request.effectiveTo()
         );
     }
 
@@ -46,8 +45,8 @@ public class CreateAssessmentPolicyCommandMapper {
                 request.targetFrameworkBandId(),
                 request.passingScore(),
                 request.strictness(),
-                DateMapper.toInstant(request.effectiveFrom()),
-                DateMapper.toInstant(request.effectiveTo())
+                request.effectiveFrom(),
+                request.effectiveTo()
         );
     }
 

@@ -3,7 +3,6 @@ package com.sep.vox.application.port.input.usecase.auth;
 import com.sep.vox.domain.model.user.User;
 import java.time.Instant;
 import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -19,7 +18,6 @@ import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.auth.LoginResponse;
 import com.sep.vox.application.response.output.GeneratedSessionToken;
 import com.sep.vox.domain.model.devicesession.DeviceSession;
-import com.sep.vox.domain.model.devicesession.SessionPlatform;
 import com.sep.vox.domain.model.refreshtoken.RefreshToken;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.DeviceSessionRepository;
@@ -76,21 +74,12 @@ public class OAuth2LoginUseCase implements IUseCase<OAuth2LoginCommand, LoginRes
             .toList();
     }
     
-    private SessionPlatform sessionPlatformFromRequest(String platform) {
-        try {
-            platform = platform.toUpperCase(Locale.ROOT);
-            return SessionPlatform.valueOf(platform);
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Nền tảng " + platform + " hiện không được hỗ trợ");
-        }
-    }
-
     private DeviceSession createDeviceSession(UUID userId, OAuth2LoginCommand command) {
         DeviceSession deviceSession = DeviceSession.create(
             userId, 
             command.device().deviceId(), 
             command.device().deviceName(), 
-            sessionPlatformFromRequest(command.device().platform()), 
+            command.device().platform(), 
             command.ipAddress(), 
             command.userAgent()
         );

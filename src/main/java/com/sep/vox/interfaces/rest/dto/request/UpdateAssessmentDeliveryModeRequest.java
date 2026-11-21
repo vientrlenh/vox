@@ -1,14 +1,11 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
+import com.sep.vox.domain.model.assessment.AssessmentDeliveryMode;
+
+import jakarta.validation.constraints.NotNull;
 
 public record UpdateAssessmentDeliveryModeRequest(
-    @NotBlank(message = "Hình thức làm bài là bắt buộc")
-    @Pattern(
-        regexp = "STUDENT_DEVICE|LAB",
-        message = "Hình thức làm bài không hợp lệ"
-    )
-    String deliveryMode
+    @NotNull(message = "Hình thức làm bài là bắt buộc")
+    AssessmentDeliveryMode deliveryMode
 ) {
 }

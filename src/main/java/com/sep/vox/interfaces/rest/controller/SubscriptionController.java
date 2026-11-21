@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.application.port.input.command.ArchiveSubscriptionPlanCommand;
 import com.sep.vox.application.port.input.command.CreateSubscriptionPlanReplacementCommand;
 import com.sep.vox.application.port.input.command.UpdateSubscriptionPlanReplacementCommand;
@@ -250,7 +251,7 @@ public class SubscriptionController {
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<QuotaFundingResponse>> fundQuotaFromBalance(
             @PathVariable(name = "schoolId") UUID schoolId,
-            @PathVariable(name = "quotaType") String quotaType,
+            @PathVariable(name = "quotaType") QuotaType quotaType,
             @Valid @RequestBody FundQuotaFromBalanceRequest request) {
         QuotaFundingResponse data = fundQuotaFromBalanceUseCase.execute(
             new FundQuotaFromBalanceCommand(schoolId, quotaType, request.amountVnd(), request.reason()));
@@ -261,7 +262,7 @@ public class SubscriptionController {
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<BigDecimal>> setQuotaDistributionPolicy(
             @PathVariable(name = "schoolId") UUID schoolId,
-            @PathVariable(name = "quotaType") String quotaType,
+            @PathVariable(name = "quotaType") QuotaType quotaType,
             @Valid @RequestBody SetQuotaDistributionPolicyRequest request) {
         BigDecimal data = setQuotaDistributionPolicyUseCase.execute(
             new SetQuotaDistributionPolicyCommand(schoolId, quotaType, request.distributableRatio()));

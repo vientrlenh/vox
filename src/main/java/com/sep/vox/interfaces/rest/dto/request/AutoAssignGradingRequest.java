@@ -6,8 +6,11 @@ import java.util.UUID;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+
+import com.sep.vox.domain.model.assessment.GradingRoundType;
+import com.sep.vox.domain.model.assessment.GradingSampleSelectionMode;
 
 /**
  * Either {@code assessmentId} or {@code scheduleId} must be present -- the "at least one" constraint lives in the
@@ -22,10 +25,10 @@ public record AutoAssignGradingRequest(
 
     UUID scheduleId,
 
-    @NotBlank(message = "Phải chọn vòng chấm")
-    String roundType,
+    @NotNull(message = "Phải chọn vòng chấm")
+    GradingRoundType roundType,
 
-    String selectionMode,
+    GradingSampleSelectionMode selectionMode,
 
     @Min(value = 1, message = "Tỉ lệ chọn mẫu phải từ 1%")
     @Max(value = 100, message = "Tỉ lệ chọn mẫu tối đa 100%")

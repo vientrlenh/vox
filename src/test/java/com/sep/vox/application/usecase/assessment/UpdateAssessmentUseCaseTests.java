@@ -129,7 +129,7 @@ class UpdateAssessmentUseCaseTests {
         when(assessmentRepository.findById(assessmentId)).thenReturn(Optional.of(assessment));
 
         // Shrinks the window to 1 hour while the assessment duration is 3 hours.
-        assertThatThrownBy(() -> useCase.execute(command(open.toString(), open.plus(1, ChronoUnit.HOURS).toString())))
+        assertThatThrownBy(() -> useCase.execute(command(open, open.plus(1, ChronoUnit.HOURS))))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("thời gian đóng bài");
         verify(assessmentScheduleRepository, never()).save(any());
@@ -160,7 +160,7 @@ class UpdateAssessmentUseCaseTests {
         AssessmentSchedule schedule = schedule(AssessmentScheduleStatus.PUBLISHED, open, close);
         when(assessmentScheduleRepository.findByAssessmentId(assessmentId)).thenReturn(List.of(schedule));
 
-        useCase.execute(command(open.toString(), close.plus(1, ChronoUnit.HOURS).toString()));
+        useCase.execute(command(open, close.plus(1, ChronoUnit.HOURS)));
 
         assertThat(schedule.getStartDate()).isEqualTo(open);
         assertThat(schedule.getEndDate()).isEqualTo(close.plus(1, ChronoUnit.HOURS));
@@ -180,7 +180,7 @@ class UpdateAssessmentUseCaseTests {
         when(assessmentCandidateRepository.findConflictsForStudents(anyCollection(), any(), any(), any()))
             .thenReturn(List.of(new StudentScheduleConflict(studentId, UUID.randomUUID(), open, close)));
 
-        assertThatThrownBy(() -> useCase.execute(command(open.toString(), close.plus(1, ChronoUnit.HOURS).toString())))
+        assertThatThrownBy(() -> useCase.execute(command(open, close.plus(1, ChronoUnit.HOURS))))
             .isInstanceOf(DuplicatedException.class)
             .hasMessageContaining("đã có ca thi khác");
         verify(assessmentScheduleRepository, never()).save(any());
@@ -198,7 +198,7 @@ class UpdateAssessmentUseCaseTests {
         when(assessmentScheduleProctorRepository.existsOverlappingAssignment(
             eq(teacherId), any(Instant.class), any(Instant.class), eq(schedule.getId()))).thenReturn(true);
 
-        assertThatThrownBy(() -> useCase.execute(command(open.toString(), close.plus(1, ChronoUnit.HOURS).toString())))
+        assertThatThrownBy(() -> useCase.execute(command(open, close.plus(1, ChronoUnit.HOURS))))
             .isInstanceOf(DuplicatedException.class)
             .hasMessageContaining("Giám thị");
         verify(assessmentScheduleRepository, never()).save(any());
@@ -215,7 +215,7 @@ class UpdateAssessmentUseCaseTests {
         when(assessmentScheduleRepository.existsOverlapping(
             eq(roomId), any(Instant.class), any(Instant.class), eq(schedule.getId()))).thenReturn(true);
 
-        assertThatThrownBy(() -> useCase.execute(command(open.toString(), close.plus(1, ChronoUnit.HOURS).toString())))
+        assertThatThrownBy(() -> useCase.execute(command(open, close.plus(1, ChronoUnit.HOURS))))
             .isInstanceOf(DuplicatedException.class)
             .hasMessageContaining("Phòng học");
         verify(assessmentScheduleRepository, never()).save(any());
@@ -243,7 +243,7 @@ class UpdateAssessmentUseCaseTests {
         Assessment assessment = classTest(3600);
         when(assessmentRepository.findById(assessmentId)).thenReturn(Optional.of(assessment));
 
-        useCase.execute(command(open.toString(), close.toString()));
+        useCase.execute(command(open, close));
 
         verify(subscriptionPeriodGuardService).requireWithinSubscriptionPeriod(schoolId, open, close);
     }
@@ -255,7 +255,7 @@ class UpdateAssessmentUseCaseTests {
         doThrow(new IllegalStateException("Thời gian đóng bài phải nằm trong hạn gói dịch vụ của trường"))
             .when(subscriptionPeriodGuardService).requireWithinSubscriptionPeriod(any(), any(), any());
 
-        assertThatThrownBy(() -> useCase.execute(command(open.toString(), close.toString())))
+        assertThatThrownBy(() -> useCase.execute(command(open, close)))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("hạn gói dịch vụ");
         // Block BEFORE writing: the sessions of a class test are synchronized to this window, so
@@ -343,7 +343,7 @@ class UpdateAssessmentUseCaseTests {
 
         // Moves the assessment window to the next day, so the old session falls outside.
         assertThatThrownBy(() -> useCase.execute(
-                command(open.plus(1, ChronoUnit.DAYS).toString(), close.plus(1, ChronoUnit.DAYS).toString())))
+                command(open.plus(1, ChronoUnit.DAYS), close.plus(1, ChronoUnit.DAYS))))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("nằm ngoài");
         verify(assessmentRepository, never()).save(any());
@@ -375,7 +375,7 @@ class UpdateAssessmentUseCaseTests {
             schedule(AssessmentScheduleStatus.CANCELLED, open, close),
             schedule(AssessmentScheduleStatus.MOVED, open, close)));
 
-        AssessmentDto result = useCase.execute(command(open.plus(1, ChronoUnit.DAYS).toString(), close.plus(1, ChronoUnit.DAYS).toString()));
+        AssessmentDto result = useCase.execute(command(open.plus(1, ChronoUnit.DAYS), close.plus(1, ChronoUnit.DAYS)));
 
         assertThat(result).isNotNull();
         verify(assessmentRepository).save(any(Assessment.class));
@@ -440,7 +440,7 @@ class UpdateAssessmentUseCaseTests {
         Assessment assessment = centralized(null);
         when(assessmentRepository.findById(assessmentId)).thenReturn(Optional.of(assessment));
 
-        useCase.execute(streamCommand(List.of("CAMERA", "SCREEN"), "ANY"));
+        useCase.execute(streamCommand(List.of("CAMERA", "SCREEN"), AssessmentStreamTypePermission.ANY));
 
         assertThat(assessment.getRequiredStreamType()).isEqualTo(AssessmentRequiredStreamType.CAMERA_AND_SCREEN);
         assertThat(assessment.getStreamTypePermission()).isEqualTo(AssessmentStreamTypePermission.ANY);
@@ -479,7 +479,7 @@ class UpdateAssessmentUseCaseTests {
         Assessment assessment = centralized(null);
         when(assessmentRepository.findById(assessmentId)).thenReturn(Optional.of(assessment));
 
-        assertThatThrownBy(() -> useCase.execute(streamCommand(List.of("CAMERA"), "ALL")))
+        assertThatThrownBy(() -> useCase.execute(streamCommand(List.of("CAMERA"), AssessmentStreamTypePermission.ALL)))
             .isInstanceOf(IllegalArgumentException.class);
         verify(assessmentRepository, never()).save(any());
     }
@@ -534,13 +534,14 @@ class UpdateAssessmentUseCaseTests {
         ));
     }
 
-    private UpdateAssessmentCommand streamCommand(List<String> requiredStreamTypes, String streamTypePermission) {
+    private UpdateAssessmentCommand streamCommand(
+            List<String> requiredStreamTypes, AssessmentStreamTypePermission streamTypePermission) {
         return new UpdateAssessmentCommand(
             assessmentId, null, null, null, null, null, null, null, null, null,
             requiredStreamTypes, streamTypePermission, null);
     }
 
-    private UpdateAssessmentCommand command(String openAt, String closeAt) {
+    private UpdateAssessmentCommand command(Instant openAt, Instant closeAt) {
         return new UpdateAssessmentCommand(assessmentId, null, null, openAt, closeAt, null, null, null, null, null, null, null, null);
     }
 

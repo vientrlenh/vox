@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.time.Instant;
+
 public record CreateFrameworkVersionRequest(
     @NotBlank(message = "Mã phiên bản không được để trống")
     @Size(max = 100, message = "Mã phiên bản không được vượt quá 100 ký tự")
@@ -21,8 +23,8 @@ public record CreateFrameworkVersionRequest(
     int version,
 
     @NotNull(message = "Ngày hiệu lực không được để trống")
-    String effectiveFrom,
+    Instant effectiveFrom,
 
-    String effectiveTo
+    Instant effectiveTo
 ) {
 }

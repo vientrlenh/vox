@@ -3,10 +3,14 @@ package com.sep.vox.interfaces.rest.controller;
 import com.sep.vox.domain.model.assessment.AssessmentDeliveryMode;
 import com.sep.vox.domain.model.assessment.AssessmentKind;
 import com.sep.vox.domain.model.assessment.AssessmentStatus;
+import com.sep.vox.domain.model.assessment.GradingRoundType;
 import com.sep.vox.domain.model.assessment.ResultDecisionMethod;
 import java.time.Instant;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.sep.vox.application.port.input.usecase.assessment.ChangeClassTestBlueprintUseCase;
@@ -86,5 +90,68 @@ class ClassTestControllerTests {
                 "createdAt", CREATED_AT,
                 "updatedAt", UPDATED_AT
             ));
+    }
+
+    @Test
+    @WithMockUser(roles = "TEACHER")
+    void create_should_answer_400_naming_open_at_for_unparsable_date() {
+        MvcTestResult result = mvc.post().uri("/api/v1/class-tests")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"schoolClassId\": \"00000000-0000-0000-0000-000000000001\", \"name\": \"Quiz\","
+                + " \"openAt\": \"2026-13-45\", \"closeAt\": \"2026-08-01T03:00:00Z\","
+                + " \"assessmentPolicyId\": \"00000000-0000-0000-0000-000000000002\"}")
+            .exchange();
+
+        assertThat(result).hasStatus(400).bodyJson().extractingPath("$.errors.openAt").isNotNull();
+    }
+
+    @Test
+    @WithMockUser(roles = "TEACHER")
+    void create_should_answer_400_listing_modes_for_unknown_delivery_mode() {
+        MvcTestResult result = mvc.post().uri("/api/v1/class-tests")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"schoolClassId\": \"00000000-0000-0000-0000-000000000001\", \"name\": \"Quiz\","
+                + " \"openAt\": \"2026-08-01T01:00:00Z\", \"closeAt\": \"2026-08-01T03:00:00Z\","
+                + " \"assessmentPolicyId\": \"00000000-0000-0000-0000-000000000002\", \"deliveryMode\": \"NOPE\"}")
+            .exchange();
+
+        assertThat(result).hasStatus(400).bodyJson().extractingPath("$.errors.deliveryMode").asString()
+            .contains("STUDENT_DEVICE", "LAB");
+    }
+
+    @Test
+    @WithMockUser(roles = "TEACHER")
+    void claimGrading_should_bind_round_type_in_any_letter_case() {
+        MvcTestResult result = postClaim("\"spot_check\"");
+
+        assertThat(result).hasStatus2xxSuccessful();
+        verify(claimClassTestGradingUseCase).execute(
+            argThat(command -> command.roundType() == GradingRoundType.SPOT_CHECK));
+    }
+
+    @Test
+    @WithMockUser(roles = "TEACHER")
+    void claimGrading_should_answer_400_listing_rounds_for_unknown_round_type() {
+        MvcTestResult result = postClaim("\"NOPE\"");
+
+        assertThat(result).hasStatus(400).bodyJson().extractingPath("$.errors.roundType").asString()
+            .contains("INITIAL", "SPOT_CHECK", "REMEDIATION", "APPEAL");
+        verify(claimClassTestGradingUseCase, never()).execute(any());
+    }
+
+    @Test
+    @WithMockUser(roles = "TEACHER")
+    void claimGrading_should_answer_400_when_round_type_is_missing() {
+        MvcTestResult result = postClaim("null");
+
+        assertThat(result).hasStatus(400).bodyJson().extractingPath("$.errors.roundType").isNotNull();
+    }
+
+    private MvcTestResult postClaim(String roundTypeJson) {
+        return mvc.post().uri("/api/v1/class-tests/{assessmentId}/grading/claim", UUID.randomUUID())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"roundType\": " + roundTypeJson
+                + ", \"candidateResultIds\": [\"00000000-0000-0000-0000-000000000002\"]}")
+            .exchange();
     }
 }

@@ -1,10 +1,11 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
+import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -32,8 +33,7 @@ public record CloneSystemRubricRequest(
          * bằng -- đó là ý nghĩa của cách tính đó, không phải mất mát ngoài ý muốn. Chiều ngược lại
          * không suy ra được, nên bản mẫu nên soạn ở dạng SUM.
          */
-        @Pattern(regexp = "SUM|WEIGHTED_AVERAGE", message = "Cách tính điểm chỉ nhận SUM hoặc WEIGHTED_AVERAGE")
-        String totalScoreMethod,
+        RubricTotalScoreMethod totalScoreMethod,
 
         /**
          * Các chính sách chấm mẫu (gắn với chính phiên bản đang sao) mà trường muốn dựng luôn cho
@@ -60,8 +60,8 @@ public record CloneSystemRubricRequest(
             UUID schoolClassId,
 
             @NotNull(message = "Ngày bắt đầu hiệu lực không được để trống")
-            String effectiveFrom,
+            Instant effectiveFrom,
 
-            String effectiveTo
+            Instant effectiveTo
     ) {}
 }

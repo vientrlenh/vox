@@ -1,9 +1,11 @@
 package com.sep.vox.application.port.input.command;
 
+import com.sep.vox.domain.model.devicesession.SessionPlatform;
+
 public record ClientDeviceCommand(
     String deviceId,
     String deviceName,
-    String platform
+    SessionPlatform platform
 ) {
     
 }

@@ -25,6 +25,7 @@ import com.sep.vox.application.port.input.usecase.auth.OAuth2LoginUseCase;
 import com.sep.vox.application.port.output.GoogleIdTokenVerifierPort;
 import com.sep.vox.application.response.input.auth.LoginResponse;
 import com.sep.vox.application.response.output.VerifiedGoogleIdentity;
+import com.sep.vox.domain.model.devicesession.SessionPlatform;
 
 /**
  * The Google login path of the native app.
@@ -38,7 +39,7 @@ import com.sep.vox.application.response.output.VerifiedGoogleIdentity;
 class GoogleTokenLoginUseCaseTests {
 
     private static final ClientDeviceCommand DEVICE =
-        new ClientDeviceCommand("device-1", "May tinh cua Nhat", "DESKTOP");
+        new ClientDeviceCommand("device-1", "May tinh cua Nhat", SessionPlatform.DESKTOP);
 
     @Mock
     private GoogleIdTokenVerifierPort googleIdTokenVerifierPort;

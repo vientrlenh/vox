@@ -9,7 +9,6 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.rubric.RubricStatus;
-import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
 import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
@@ -83,13 +82,6 @@ public class AddSystemRubricVersionsUseCase implements IUseCase<AddSystemRubricV
                 throw new IllegalArgumentException("Version " + vCmd.version() + ": Điểm sàn không được lớn hơn điểm trần.");
             }
 
-            // Check enum Method
-            RubricTotalScoreMethod method;
-            try {
-                method = RubricTotalScoreMethod.valueOf(vCmd.totalScoreMethod().trim().toUpperCase());
-            } catch (Exception e) {
-                throw new IllegalArgumentException("Version " + vCmd.version() + ": Phương pháp tính điểm không hợp lệ (Chỉ nhận SUM hoặc WEIGHTED_AVERAGE).");
-            }
 
             // Check ngày tháng
             Instant validFrom = vCmd.effectiveFrom() != null ? vCmd.effectiveFrom() : now;
@@ -105,7 +97,7 @@ public class AddSystemRubricVersionsUseCase implements IUseCase<AddSystemRubricV
             return new RubricVersion(
                     command.rubricId(), vCmd.version(), safeCode, safeName, rubric.getDescription(),
                     RubricStatus.DRAFT, validFrom, vCmd.effectiveTo(), vCmd.scoringScaleMin(), vCmd.scoringScaleMax(),
-                    method, now, now, currentUserId, currentUserId
+                    vCmd.totalScoreMethod(), now, now, currentUserId, currentUserId
             );
         }).toList();
 

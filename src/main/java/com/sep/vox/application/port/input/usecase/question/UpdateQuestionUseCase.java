@@ -18,9 +18,7 @@ import com.sep.vox.application.response.input.question.UpdateQuestionResponse;
 import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
-import com.sep.vox.domain.model.question.QuestionSharing;
 import com.sep.vox.domain.model.question.QuestionStatus;
-import com.sep.vox.domain.model.question.QuestionType;
 import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
@@ -68,7 +66,7 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Up
 
         // sharing là cài đặt riêng tư, không phải nội dung — được chỉnh bất kỳ lúc nào
         if (command.sharing() != null) {
-            question.setSharing(QuestionSharing.valueOf(command.sharing()));
+            question.setSharing(command.sharing());
         }
 
         boolean hasContentUpdate = command.instructionText() != null || command.questionText() != null
@@ -107,7 +105,7 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Up
         if (command.questionText() != null) question.setQuestionText(command.questionText());
         if (command.promptText() != null) question.setPromptText(command.promptText());
         if (command.preparationText() != null) question.setPreparationText(command.preparationText());
-        if (command.questionType() != null) question.setType(QuestionType.valueOf(command.questionType()));
+        if (command.questionType() != null) question.setType(command.questionType());
         if (command.preparationTimeSeconds() != null) question.setPreparationTimeSeconds(command.preparationTimeSeconds());
         if (command.minResponseSeconds() != null) question.setMinResponseSeconds(command.minResponseSeconds());
         if (command.maxResponseSeconds() != null) question.setMaxResponseSeconds(command.maxResponseSeconds());
@@ -125,11 +123,11 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Up
             StringNormalization.trimAndCollapseSpaces(input.questionText()),
             StringNormalization.trimAndCollapseSpaces(input.promptText()),
             StringNormalization.trimAndCollapseSpaces(input.preparationText()),
-            input.questionType() == null ? null : StringNormalization.normalizeCode(input.questionType()),
+            input.questionType(),
             input.preparationTimeSeconds(),
             input.minResponseSeconds(),
             input.maxResponseSeconds(),
-            input.sharing() == null ? null : StringNormalization.normalizeCode(input.sharing())
+            input.sharing()
         );
     }
 }

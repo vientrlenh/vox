@@ -61,7 +61,7 @@ public class ClaimClassTestGradingUseCase
         UUID currentUserId = assessmentGradingAccessService.requireActiveUserId();
         assessmentGradingAccessService.authorizeClassTestChair(command.assessmentId(), currentUserId);
 
-        GradingRoundType roundType = parseRoundType(command.roundType());
+        GradingRoundType roundType = requireNotAppealRound(command.roundType());
         List<UUID> candidateResultIds = command.candidateResultIds() == null
             ? List.<UUID>of() : command.candidateResultIds();
         if (candidateResultIds.isEmpty()) {
@@ -118,16 +118,7 @@ public class ClaimClassTestGradingUseCase
             .toList();
     }
 
-    private GradingRoundType parseRoundType(String value) {
-        if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException("Phải chọn vòng chấm.");
-        }
-        GradingRoundType roundType;
-        try {
-            roundType = GradingRoundType.valueOf(value);
-        } catch (IllegalArgumentException ignored) {
-            throw new IllegalArgumentException("Vòng chấm không hợp lệ.");
-        }
+    private GradingRoundType requireNotAppealRound(GradingRoundType roundType) {
         if (roundType == GradingRoundType.APPEAL) {
             throw new IllegalArgumentException(
                 "Vòng phúc khảo được nhận từ màn đơn phúc khảo, không nhận ở đây.");

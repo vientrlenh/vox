@@ -26,7 +26,6 @@ import com.sep.vox.domain.repository.AssessmentMemberRepository;
 import com.sep.vox.domain.repository.AssessmentPaperRepository;
 import com.sep.vox.domain.repository.AssessmentRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
-import com.sep.vox.domain.service.assessment.AssessmentDeliveryModeSupport;
 
 @Service
 public class UpdateAssessmentDeliveryModeUseCase implements IUseCase<UpdateAssessmentDeliveryModeCommand, AssessmentDto> {
@@ -59,7 +58,7 @@ public class UpdateAssessmentDeliveryModeUseCase implements IUseCase<UpdateAsses
     @Override
     @Transactional
     public AssessmentDto execute(UpdateAssessmentDeliveryModeCommand input) {
-        AssessmentDeliveryMode deliveryMode = AssessmentDeliveryModeSupport.parse(input.deliveryMode());
+        AssessmentDeliveryMode deliveryMode = input.deliveryMode();
 
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)

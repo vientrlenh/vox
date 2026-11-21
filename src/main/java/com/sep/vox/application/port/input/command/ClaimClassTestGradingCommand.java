@@ -3,6 +3,8 @@ package com.sep.vox.application.port.input.command;
 import java.util.List;
 import java.util.UUID;
 
+import com.sep.vox.domain.model.assessment.GradingRoundType;
+
 /**
  * Giáo viên tạo bài kiểm tra trên lớp tự nhận chấm một loạt bài.
  *
@@ -12,7 +14,7 @@ import java.util.UUID;
  */
 public record ClaimClassTestGradingCommand(
     UUID assessmentId,
-    String roundType,
+    GradingRoundType roundType,
     List<UUID> candidateResultIds
 ) {
 }

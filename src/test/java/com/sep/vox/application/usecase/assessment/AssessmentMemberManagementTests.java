@@ -88,7 +88,7 @@ class AssessmentMemberManagementTests {
 
     @Test
     void should_let_the_chair_add_an_author() {
-        AssessmentMemberDto result = createUseCase.execute(new CreateAssessmentMemberCommand(ASSESSMENT_ID, TARGET_USER_ID, "AUTHOR"));
+        AssessmentMemberDto result = createUseCase.execute(new CreateAssessmentMemberCommand(ASSESSMENT_ID, TARGET_USER_ID, AssessmentMemberRole.AUTHOR));
 
         assertThat(result.role()).isEqualTo(AssessmentMemberRole.AUTHOR);
         verify(assessmentMemberRepository).save(any(AssessmentMember.class));
@@ -96,14 +96,14 @@ class AssessmentMemberManagementTests {
 
     @Test
     void should_let_the_chair_add_a_reviewer() {
-        AssessmentMemberDto result = createUseCase.execute(new CreateAssessmentMemberCommand(ASSESSMENT_ID, TARGET_USER_ID, "REVIEWER"));
+        AssessmentMemberDto result = createUseCase.execute(new CreateAssessmentMemberCommand(ASSESSMENT_ID, TARGET_USER_ID, AssessmentMemberRole.REVIEWER));
 
         assertThat(result.role()).isEqualTo(AssessmentMemberRole.REVIEWER);
     }
 
     @Test
     void should_reject_the_chair_appointing_another_chair() {
-        assertThatThrownBy(() -> createUseCase.execute(new CreateAssessmentMemberCommand(ASSESSMENT_ID, TARGET_USER_ID, "CHAIR")))
+        assertThatThrownBy(() -> createUseCase.execute(new CreateAssessmentMemberCommand(ASSESSMENT_ID, TARGET_USER_ID, AssessmentMemberRole.CHAIR)))
             .isInstanceOf(ForbiddenException.class)
             .hasMessageContaining("Chỉ quản trị trường mới bổ nhiệm");
         verify(assessmentMemberRepository, never()).save(any());
@@ -113,7 +113,7 @@ class AssessmentMemberManagementTests {
     void should_let_the_chair_swap_an_author_to_reviewer() {
         givenExistingMember(AssessmentMemberRole.AUTHOR);
 
-        AssessmentMemberDto result = updateUseCase.execute(new UpdateAssessmentMemberCommand(ASSESSMENT_ID, MEMBER_ID, "REVIEWER"));
+        AssessmentMemberDto result = updateUseCase.execute(new UpdateAssessmentMemberCommand(ASSESSMENT_ID, MEMBER_ID, AssessmentMemberRole.REVIEWER));
 
         assertThat(result.role()).isEqualTo(AssessmentMemberRole.REVIEWER);
     }
@@ -123,7 +123,7 @@ class AssessmentMemberManagementTests {
     void should_reject_the_chair_demoting_another_chair() {
         givenExistingMember(AssessmentMemberRole.CHAIR);
 
-        assertThatThrownBy(() -> updateUseCase.execute(new UpdateAssessmentMemberCommand(ASSESSMENT_ID, MEMBER_ID, "AUTHOR")))
+        assertThatThrownBy(() -> updateUseCase.execute(new UpdateAssessmentMemberCommand(ASSESSMENT_ID, MEMBER_ID, AssessmentMemberRole.AUTHOR)))
             .isInstanceOf(ForbiddenException.class)
             .hasMessageContaining("Chỉ quản trị trường mới bổ nhiệm");
         verify(assessmentMemberRepository, never()).save(any());
@@ -153,7 +153,7 @@ class AssessmentMemberManagementTests {
     void should_let_the_school_admin_appoint_a_chair() {
         givenCallerIsSchoolAdmin();
 
-        AssessmentMemberDto result = createUseCase.execute(new CreateAssessmentMemberCommand(ASSESSMENT_ID, TARGET_USER_ID, "CHAIR"));
+        AssessmentMemberDto result = createUseCase.execute(new CreateAssessmentMemberCommand(ASSESSMENT_ID, TARGET_USER_ID, AssessmentMemberRole.CHAIR));
 
         assertThat(result.role()).isEqualTo(AssessmentMemberRole.CHAIR);
     }
@@ -175,7 +175,7 @@ class AssessmentMemberManagementTests {
         when(assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(ASSESSMENT_ID, CALLER_ID, AssessmentMemberRole.CHAIR))
             .thenReturn(false);
 
-        assertThatThrownBy(() -> createUseCase.execute(new CreateAssessmentMemberCommand(ASSESSMENT_ID, TARGET_USER_ID, "AUTHOR")))
+        assertThatThrownBy(() -> createUseCase.execute(new CreateAssessmentMemberCommand(ASSESSMENT_ID, TARGET_USER_ID, AssessmentMemberRole.AUTHOR)))
             .isInstanceOf(ForbiddenException.class)
             .hasMessageContaining("Quyền truy cập bị từ chối");
     }
@@ -190,7 +190,7 @@ class AssessmentMemberManagementTests {
         when(assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(ASSESSMENT_ID, CALLER_ID, AssessmentMemberRole.CHAIR))
             .thenReturn(false);
 
-        assertThatThrownBy(() -> createUseCase.execute(new CreateAssessmentMemberCommand(ASSESSMENT_ID, TARGET_USER_ID, "AUTHOR")))
+        assertThatThrownBy(() -> createUseCase.execute(new CreateAssessmentMemberCommand(ASSESSMENT_ID, TARGET_USER_ID, AssessmentMemberRole.AUTHOR)))
             .isInstanceOf(ForbiddenException.class);
     }
 
@@ -204,7 +204,7 @@ class AssessmentMemberManagementTests {
         classTest.setKind(AssessmentKind.CLASS_TEST);
         when(assessmentRepository.findById(ASSESSMENT_ID)).thenReturn(Optional.of(classTest));
 
-        assertThatThrownBy(() -> createUseCase.execute(new CreateAssessmentMemberCommand(ASSESSMENT_ID, TARGET_USER_ID, "AUTHOR")))
+        assertThatThrownBy(() -> createUseCase.execute(new CreateAssessmentMemberCommand(ASSESSMENT_ID, TARGET_USER_ID, AssessmentMemberRole.AUTHOR)))
             .isInstanceOf(ForbiddenException.class);
     }
 

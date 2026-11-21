@@ -2,9 +2,12 @@ package com.sep.vox.interfaces.rest.dto.request;
 
 import java.util.UUID;
 
+import com.sep.vox.domain.model.question.QuestionDifficulty;
+import com.sep.vox.domain.model.question.QuestionType;
+
 public record QuestionSelectionSpecRequest(
-    String questionType,
-    String difficulty,
+    QuestionType questionType,
+    QuestionDifficulty difficulty,
     String targetBandLevel,
     String skillCode,
     UUID topicId

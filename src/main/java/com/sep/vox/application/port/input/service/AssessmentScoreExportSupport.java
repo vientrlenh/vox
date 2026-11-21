@@ -61,20 +61,24 @@ public class AssessmentScoreExportSupport {
             input.assessmentId(),
             input.scheduleId(),
             input.teacherId(),
-            blankToNull(input.resultStatus()),
-            blankToNull(input.roundType()),
-            blankToNull(input.assignmentStatus()),
+            nameOrNull(input.resultStatus()),
+            nameOrNull(input.roundType()),
+            nameOrNull(input.assignmentStatus()),
             input.unassignedOnly(),
             input.overdueOnly(),
             input.hasOpenAppeal(),
             blankToNull(input.keyword()),
-            GradingScopeKind.orCentralized(input.assessmentKind()));
+            GradingScopeKind.orCentralized(nameOrNull(input.assessmentKind())));
     }
 
     /**
      * Chuỗi rỗng từ query string là "không lọc", không phải "lọc theo giá trị rỗng".
      * Không quy về null thì {@code cr.status = ''} khớp đúng 0 dòng và file xuất ra trống.
      */
+    private String nameOrNull(Enum<?> value) {
+        return value == null ? null : value.name();
+    }
+
     private String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
     }

@@ -1,10 +1,16 @@
 package com.sep.vox.interfaces.rest.controller;
 
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlotType;
+import com.sep.vox.application.port.input.command.CreateAssessmentBlueprintSlotItemCommand;
+import com.sep.vox.application.port.input.command.CreateAssessmentBlueprintVersionCommand;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersionStatus;
+import com.sep.vox.domain.model.question.QuestionDifficulty;
+import com.sep.vox.domain.model.question.QuestionType;
 import java.time.Instant;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.sep.vox.application.port.input.usecase.assessmentblueprint.CreateAssessmentBlueprintSectionUseCase;
@@ -31,6 +37,7 @@ import java.math.BigDecimal;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -157,5 +164,115 @@ class AssessmentBlueprintControllerTests {
                 "createdAt", CREATED_AT,
                 "updatedAt", UPDATED_AT
             ));
+    }
+
+    private static final String SECTION_SLOTS_URI = "/api/v1/assessment-blueprint-sections/{sectionId}/slots";
+    private static final String VERSIONS_URI = "/api/v1/assessment-blueprints/{id}/versions";
+
+    @Test
+    @WithMockUser(roles = "TEACHER")
+    void createSlot_should_bind_lower_case_slot_type_and_selection_spec_enums() {
+        MvcTestResult result = postSlot("{\"order\": 1, \"slotType\": \"selection\", \"selectionSpec\": {\"questionType\": \"read_aloud\", \"difficulty\": \"Easy\"}}");
+
+        assertThat(result).hasStatus(201);
+        ArgumentCaptor<CreateAssessmentBlueprintSlotItemCommand> command = ArgumentCaptor.forClass(CreateAssessmentBlueprintSlotItemCommand.class);
+        verify(createAssessmentBlueprintSlotUseCase).execute(command.capture());
+        assertThat(command.getValue().slotType()).isEqualTo(AssessmentBlueprintSlotType.SELECTION);
+        assertThat(command.getValue().selectionSpec().questionType()).isEqualTo(QuestionType.READ_ALOUD);
+        assertThat(command.getValue().selectionSpec().difficulty()).isEqualTo(QuestionDifficulty.EASY);
+    }
+
+    @Test
+    @WithMockUser(roles = "TEACHER")
+    void createSlot_should_answer_400_naming_slot_type_and_accepted_values_when_slot_type_is_unknown() {
+        MvcTestResult result = postSlot("{\"order\": 1, \"slotType\": \"X\"}");
+
+        assertThat(result).hasStatus(400).bodyJson().extractingPath("$.errors.slotType").asString()
+            .contains("FIXED", "SELECTION").doesNotContain("com.sep");
+        verifyNoInteractions(createAssessmentBlueprintSlotUseCase);
+    }
+
+    @Test
+    @WithMockUser(roles = "TEACHER")
+    void createSlot_should_answer_400_naming_slot_type_when_slot_type_is_missing() {
+        MvcTestResult result = postSlot("{\"order\": 1}");
+
+        assertThat(result).hasStatus(400).bodyJson().extractingPath("$.errors.slotType").isNotNull();
+        verifyNoInteractions(createAssessmentBlueprintSlotUseCase);
+    }
+
+    @Test
+    @WithMockUser(roles = "TEACHER")
+    void createSlot_should_answer_400_naming_question_type_when_question_type_is_unknown() {
+        MvcTestResult result = postSlot("{\"order\": 1, \"slotType\": \"SELECTION\", \"selectionSpec\": {\"questionType\": \"ESSAY\"}}");
+
+        assertThat(result).hasStatus(400).bodyJson().extractingPath("$.errors").asMap().containsKey("selectionSpec.questionType");
+        verifyNoInteractions(createAssessmentBlueprintSlotUseCase);
+    }
+
+    @Test
+    @WithMockUser(roles = "TEACHER")
+    void updateSlot_should_answer_400_naming_slot_type_when_slot_type_is_unknown() {
+        MvcTestResult result = mvc.put().uri("/api/v1/assessment-blueprint-slots/{slotId}", UUID.randomUUID())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"order\": 1, \"slotType\": \"X\"}")
+            .exchange();
+
+        assertThat(result).hasStatus(400).bodyJson().extractingPath("$.errors.slotType").isNotNull();
+        verifyNoInteractions(updateAssessmentBlueprintSlotUseCase);
+    }
+
+    @Test
+    @WithMockUser(roles = "TEACHER")
+    void createVersion_should_bind_instant_effective_dates_and_slot_type() {
+        MvcTestResult result = postVersion(versionBody("\"2026-08-01T08:00:00+07:00\"", "\"2026-08-01T03:00:00Z\""));
+
+        assertThat(result).hasStatus(201);
+        ArgumentCaptor<CreateAssessmentBlueprintVersionCommand> command = ArgumentCaptor.forClass(CreateAssessmentBlueprintVersionCommand.class);
+        verify(createAssessmentBlueprintVersionUseCase).execute(command.capture());
+        assertThat(command.getValue().effectiveFrom()).isEqualTo(Instant.parse("2026-08-01T01:00:00Z"));
+        assertThat(command.getValue().effectiveTo()).isEqualTo(Instant.parse("2026-08-01T03:00:00Z"));
+        assertThat(command.getValue().sections().get(0).slots().get(0).slotType()).isEqualTo(AssessmentBlueprintSlotType.FIXED);
+    }
+
+    @Test
+    @WithMockUser(roles = "TEACHER")
+    void createVersion_should_answer_400_naming_effective_from_for_date_only_value() {
+        MvcTestResult result = postVersion(versionBody("\"2026-08-01\"", "null"));
+
+        assertThat(result).hasStatus(400).bodyJson().extractingPath("$.errors.effectiveFrom").isNotNull();
+        verifyNoInteractions(createAssessmentBlueprintVersionUseCase);
+    }
+
+    @Test
+    @WithMockUser(roles = "TEACHER")
+    void updateVersion_should_answer_400_naming_effective_to_for_unparsable_value() {
+        MvcTestResult result = mvc.put().uri("/api/v1/assessment-blueprint-versions/{id}", UUID.randomUUID())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(versionBody("null", "\"2026-13-45\""))
+            .exchange();
+
+        assertThat(result).hasStatus(400).bodyJson().extractingPath("$.errors.effectiveTo").isNotNull();
+        verifyNoInteractions(updateAssessmentBlueprintVersionUseCase);
+    }
+
+    private MvcTestResult postSlot(String body) {
+        return mvc.post().uri(SECTION_SLOTS_URI, UUID.randomUUID())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(body)
+            .exchange();
+    }
+
+    private MvcTestResult postVersion(String body) {
+        return mvc.post().uri(VERSIONS_URI, UUID.randomUUID())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(body)
+            .exchange();
+    }
+
+    private static String versionBody(String effectiveFrom, String effectiveTo) {
+        return "{\"effectiveFrom\": " + effectiveFrom + ", \"effectiveTo\": " + effectiveTo
+            + ", \"sections\": [{\"order\": 1, \"title\": \"Intro\", \"slots\": [{\"order\": 1, \"slotType\": \"FIXED\","
+            + " \"fixedQuestionId\": \"00000000-0000-0000-0000-000000000002\"}]}]}";
     }
 }

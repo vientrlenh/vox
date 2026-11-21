@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import jakarta.validation.constraints.Email;
@@ -46,8 +47,8 @@ public record RegisterBySelfDeclaredRequest(
     @Email(message = "Email không hợp lệ")
     String contactEmail, 
 
-    @NotBlank(message = "Ngày sinh không được để trống")
-    String dateOfBirth, 
+    @NotNull(message = "Ngày sinh không được để trống")
+    LocalDate dateOfBirth, 
 
     @NotBlank(message = "Địa chỉ liên hệ không được để trống")
     @Size(max = 512, message = "Địa chỉ liên hệ không được vượt quá 512 ký tự")

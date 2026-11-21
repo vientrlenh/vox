@@ -1,5 +1,7 @@
 package com.sep.vox.application.port.input.command;
 
+import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -15,7 +17,7 @@ public record AddSchoolRubricVersionsCommand(
             String name,
             BigDecimal scoringScaleMin,
             BigDecimal scoringScaleMax,
-            String totalScoreMethod,
+            RubricTotalScoreMethod totalScoreMethod,
             Instant effectiveFrom,
             Instant effectiveTo
     ) {}

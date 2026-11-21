@@ -30,7 +30,6 @@ import com.sep.vox.application.port.input.usecase.assessmentsession.HandOffGradi
 import com.sep.vox.application.port.input.usecase.assessmentsession.RetryGradingAssessmentSessionUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentsession.UpdateAssessmentSessionRemainingTimeUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentsession.UpdateAssessmentSessionStatusUseCase;
-import com.sep.vox.domain.model.assessment.AssessmentSessionStatus;
 import com.sep.vox.interfaces.rest.dto.request.CreateAssessmentSessionRequest;
 import com.sep.vox.interfaces.rest.dto.request.ReportAiUsageRequest;
 import com.sep.vox.interfaces.rest.dto.request.SessionReasonRequest;
@@ -102,7 +101,7 @@ public class AssessmentSessionController {
             @Valid @RequestBody UpdateAssessmentSessionRequest request) {
         AssessmentSessionResponse data = updateAssessmentSessionStatusUseCase.execute(new UpdateAssessmentSessionStatusCommand(
                 id,
-                AssessmentSessionStatus.valueOf(request.status().trim().toUpperCase())
+                request.status()
         ));
         return ResponseEntity.ok(ApiResponse.success("Cap nhat trang thai phien thi thanh cong", data));
     }

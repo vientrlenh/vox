@@ -2,7 +2,6 @@ package com.sep.vox.interfaces.rest.mapper;
 
 import java.util.UUID;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.command.CreateFrameworkVersionCommand;
 import com.sep.vox.interfaces.rest.dto.request.CreateFrameworkVersionRequest;
 
@@ -15,8 +14,8 @@ public final class CreateFrameworkVersionCommandMapper {
             request.name(),
             request.description(),
             request.version(),
-            DateMapper.toInstant(request.effectiveFrom()),
-            DateMapper.toInstant(request.effectiveTo())
+            request.effectiveFrom(),
+            request.effectiveTo()
         );
     }
 }

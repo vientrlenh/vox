@@ -1,14 +1,11 @@
 package com.sep.vox.interfaces.rest.dto.request;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
+import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
+
+import jakarta.validation.constraints.NotNull;
 
 public record UpdateAssessmentMemberRequest(
-    @NotBlank(message = "Role là bắt buộc")
-    @Pattern(
-        regexp = "CHAIR|AUTHOR|REVIEWER",
-        message = "Role không hợp lệ"
-    )
-    String role
+    @NotNull(message = "Role là bắt buộc")
+    AssessmentMemberRole role
 ) {
 }

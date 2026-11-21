@@ -69,7 +69,7 @@ class JpaAssessmentAppealQueryRepositoryTests {
         PageResult<AppealSummaryInfo> page = assessmentAppealQueryRepository.searchAppeals(
             schoolId, null, null, null, 1, 20);
 
-        assertThat(page.content()).extracting(AppealSummaryInfo::status)
+        assertThat(page.content()).extracting(info -> info.status())
             .containsExactlyInAnyOrder(AssessmentAppealStatus.PENDING, AssessmentAppealStatus.GRADING);
         assertThat(page.content()).filteredOn(appeal -> appeal.status() == AssessmentAppealStatus.GRADING)
             .singleElement()
@@ -84,7 +84,7 @@ class JpaAssessmentAppealQueryRepositoryTests {
         PageResult<AppealSummaryInfo> page = assessmentAppealQueryRepository.searchAppeals(
             schoolId, null, AssessmentAppealStatus.GRADING, null, 1, 20);
 
-        assertThat(page.content()).extracting(AppealSummaryInfo::status).containsExactly(AssessmentAppealStatus.GRADING);
+        assertThat(page.content()).extracting(info -> info.status()).containsExactly(AssessmentAppealStatus.GRADING);
         assertThat(page.totalElements()).isEqualTo(1);
     }
 
@@ -93,8 +93,8 @@ class JpaAssessmentAppealQueryRepositoryTests {
         PageResult<AppealSummaryInfo> page = assessmentAppealQueryRepository.searchAppeals(
             schoolId, null, null, null, 1, 20);
 
-        assertThat(page.content()).filteredOn(AppealSummaryInfo::overdue)
-            .extracting(AppealSummaryInfo::status).containsExactly(AssessmentAppealStatus.GRADING);
+        assertThat(page.content()).filteredOn(info -> info.overdue())
+            .extracting(info -> info.status()).containsExactly(AssessmentAppealStatus.GRADING);
     }
 
     @Test
@@ -102,7 +102,7 @@ class JpaAssessmentAppealQueryRepositoryTests {
         PageResult<AppealSummaryInfo> page = assessmentAppealQueryRepository.searchAppealsByStudentId(
             studentId, AssessmentAppealStatus.PENDING, 1, 20);
 
-        assertThat(page.content()).extracting(AppealSummaryInfo::status).containsExactly(AssessmentAppealStatus.PENDING);
+        assertThat(page.content()).extracting(info -> info.status()).containsExactly(AssessmentAppealStatus.PENDING);
     }
 
     private void seedAppeal(String appealStatus, String reviewerStatus, String outcome, Instant deadline) {

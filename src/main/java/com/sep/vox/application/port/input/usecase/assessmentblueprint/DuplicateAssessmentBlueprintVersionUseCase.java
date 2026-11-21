@@ -73,7 +73,7 @@ public class DuplicateAssessmentBlueprintVersionUseCase
             slot.getWeight(),
             slot.getPrepTimeSecondsOverride(),
             slot.getResponseTimeSecondsOverride(),
-            slot.getSlotType().name(),
+            slot.getSlotType(),
             slot.getFixedQuestionId(),
             toSelectionSpecCommand(slot.getSelectionSpec())
         );
@@ -84,8 +84,8 @@ public class DuplicateAssessmentBlueprintVersionUseCase
             return null;
         }
         return new CreateQuestionSelectionSpecCommand(
-            selectionSpec.questionType() == null ? null : selectionSpec.questionType().name(),
-            selectionSpec.difficulty() == null ? null : selectionSpec.difficulty().name(),
+            selectionSpec.questionType(),
+            selectionSpec.difficulty(),
             selectionSpec.targetBandLevel(),
             selectionSpec.skillCode(),
             selectionSpec.topicId()

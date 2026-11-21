@@ -9,6 +9,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.sep.vox.domain.model.assessment.AssessmentKind;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -217,7 +218,7 @@ class ExportAssessmentScoresExcelUseCaseTests {
 
     @Test
     void should_pass_the_class_test_kind_through() {
-        useCase.execute(ExportAssessmentScoresQuery.scopedTo(assessmentId, null, "CLASS_TEST"));
+        useCase.execute(ExportAssessmentScoresQuery.scopedTo(assessmentId, null, AssessmentKind.CLASS_TEST));
 
         assertThat(capturedFilter().assessmentKind()).isEqualTo("CLASS_TEST");
     }
@@ -231,9 +232,9 @@ class ExportAssessmentScoresExcelUseCaseTests {
 
     @Test
     void should_name_the_file_after_the_assessment_kind() {
-        assertThat(useCase.exportFileName("CLASS_TEST"))
+        assertThat(useCase.exportFileName(AssessmentKind.CLASS_TEST))
             .startsWith("bang-diem-lop-").endsWith(".xlsx");
-        assertThat(useCase.exportFileName("CENTRALIZED"))
+        assertThat(useCase.exportFileName(AssessmentKind.CENTRALIZED))
             .startsWith("bang-diem-tap-trung-").endsWith(".xlsx");
         // Tên file đi vào header HTTP: phải là ASCII thuần, không dấu.
         assertThat(useCase.exportFileName(null)).matches("[\\x20-\\x7E]+");

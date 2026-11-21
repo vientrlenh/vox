@@ -84,4 +84,27 @@ class AssessmentCandidateControllerTests {
                 "blockedAt", "2026-08-01T03:00:00Z"
             ));
     }
+
+    @Test
+    @WithMockUser(roles = "TEACHER")
+    void updateStatus_should_answer_400_listing_statuses_for_unknown_value() {
+        MvcTestResult result = mvc.put().uri("/api/v1/assessments/{assessmentId}/candidates/{candidateId}/status", UUID.randomUUID(), UUID.randomUUID())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"status\": \"NOPE\"}")
+            .exchange();
+
+        assertThat(result).hasStatus(400).bodyJson().extractingPath("$.errors.status").asString()
+            .contains("ASSIGNED", "ATTENDED");
+    }
+
+    @Test
+    @WithMockUser(roles = "TEACHER")
+    void updateStatus_should_answer_400_when_status_is_missing() {
+        MvcTestResult result = mvc.put().uri("/api/v1/assessments/{assessmentId}/candidates/{candidateId}/status", UUID.randomUUID(), UUID.randomUUID())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{}")
+            .exchange();
+
+        assertThat(result).hasStatus(400).bodyJson().extractingPath("$.errors.status").isNotNull();
+    }
 }

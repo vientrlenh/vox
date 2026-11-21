@@ -4,6 +4,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import com.sep.vox.domain.model.assessment.GradingRoundType;
+import com.sep.vox.domain.model.assessment.GradingSampleSelectionMode;
+
 /**
  * Giao tự động trong phạm vi một kỳ thi hoặc một ca thi, cho một vòng chấm.
  *
@@ -17,8 +20,8 @@ import java.util.UUID;
 public record AutoAssignGradingCommand(
     UUID assessmentId,
     UUID scheduleId,
-    String roundType,
-    String selectionMode,
+    GradingRoundType roundType,
+    GradingSampleSelectionMode selectionMode,
     Integer percent,
     List<UUID> candidateResultIds,
     Instant deadlineAt,

@@ -142,35 +142,9 @@ class CreateAssessmentPolicyTests {
         assertThat(result.assessmentPolicyId()).isNull();
     }
 
-    /**
-     * Các bộ parse của JDK ném DateTimeParseException — không phải IllegalArgumentException — nên nếu
-     * không đổi loại thì lọt xuống handler chung và ra 500 thay vì 400. {@code DateMapper.toInstant}
-     * chịu trách nhiệm đổi loại đó.
-     */
     @Test
-    void should_reject_malformed_open_at_with_bad_request() {
-        assertThatThrownBy(() -> useCase.execute(command(null, "2026-08-10 08:00", null)))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Thời gian phải kèm múi giờ");
-        verify(assessmentRepository, never()).save(any());
-    }
-
-    @Test
-    void should_reject_malformed_close_at_with_bad_request() {
-        assertThatThrownBy(() -> useCase.execute(command(null, "2026-08-10T08:00:00Z", "hôm qua")))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Thời gian phải kèm múi giờ");
-        verify(assessmentRepository, never()).save(any());
-    }
-
-    /**
-     * Ô datetime để trống gửi lên chuỗi rỗng chứ không bỏ hẳn field, nên chặn theo null là chưa đủ —
-     * phải chặn cả chuỗi rỗng, nếu không kỳ thi vẫn lọt vào DB với khung mở/đóng trống và mọi ca thi
-     * của nó thoát khỏi ràng buộc hạn gói.
-     */
-    @Test
-    void should_reject_blank_open_at_and_close_at() {
-        assertThatThrownBy(() -> useCase.execute(command(null, "", "")))
+    void should_reject_missing_open_at_and_close_at() {
+        assertThatThrownBy(() -> useCase.execute(command(null, null, null)))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("Kỳ thi phải có thời gian mở bài và đóng bài");
         verify(assessmentRepository, never()).save(any());
@@ -199,17 +173,18 @@ class CreateAssessmentPolicyTests {
 
     @Test
     void should_reject_when_only_open_at_is_provided() {
-        assertThatThrownBy(() -> useCase.execute(command(null, "2026-08-10T08:00:00Z", null)))
+        assertThatThrownBy(() -> useCase.execute(command(null, Instant.parse("2026-08-10T08:00:00Z"), null)))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("Kỳ thi phải có thời gian mở bài và đóng bài");
         verify(assessmentRepository, never()).save(any());
     }
 
     private CreateAssessmentCommand command(UUID assessmentPolicyId) {
-        return command(assessmentPolicyId, "2026-08-10T08:00:00Z", "2026-08-10T10:00:00Z");
+        return command(
+            assessmentPolicyId, Instant.parse("2026-08-10T08:00:00Z"), Instant.parse("2026-08-10T10:00:00Z"));
     }
 
-    private CreateAssessmentCommand command(UUID assessmentPolicyId, String openAt, String closeAt) {
+    private CreateAssessmentCommand command(UUID assessmentPolicyId, Instant openAt, Instant closeAt) {
         return new CreateAssessmentCommand(
             "EX-001",
             "Kỳ thi cuối kỳ",

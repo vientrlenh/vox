@@ -117,7 +117,7 @@ class CreatePaymentCheckoutUrlUseCaseTests {
         when(paymentProcessPort.createPaymentLink(any()))
             .thenReturn(PaymentCheckoutResult.redirect("https://payos.test/checkout", "link-1"));
 
-        useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, "PAYOS"));
+        useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, PaymentProvider.PAYOS));
 
         InOrder order = inOrder(paymentRecordRepository, transactionManager, paymentProcessPort);
         order.verify(paymentRecordRepository).save(any());
@@ -138,7 +138,7 @@ class CreatePaymentCheckoutUrlUseCaseTests {
     void should_refuse_before_writing_anything_when_the_gateway_is_not_configured() {
         when(paymentProcessPort.isConfigured()).thenReturn(false);
 
-        assertThatThrownBy(() -> useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, "PAYOS")))
+        assertThatThrownBy(() -> useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, PaymentProvider.PAYOS)))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("chưa được cấu hình");
 
@@ -161,7 +161,7 @@ class CreatePaymentCheckoutUrlUseCaseTests {
             "https://payos.test/checkout",
             "link-1"));
 
-        PaymentCheckoutResponse response = useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, "PAYOS"));
+        PaymentCheckoutResponse response = useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, PaymentProvider.PAYOS));
 
         assertThat(response.action()).isEqualTo("QR");
         assertThat(response.qrCode()).isEqualTo("00020101021138...VIETQR");
@@ -185,7 +185,7 @@ class CreatePaymentCheckoutUrlUseCaseTests {
         when(paymentProcessPort.getPaymentLinkStatus("orphan-ref"))
             .thenReturn(new PaymentLinkStatusResult(PaymentLinkRemoteStatus.PENDING));
 
-        PaymentCheckoutResponse response = useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, "PAYOS"));
+        PaymentCheckoutResponse response = useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, PaymentProvider.PAYOS));
 
         assertThat(response.action()).isEqualTo("QR");
         assertThat(response.qrCode()).isEqualTo("00020101021138...VIETQR");
@@ -208,7 +208,7 @@ class CreatePaymentCheckoutUrlUseCaseTests {
         when(paymentProcessPort.createPaymentLink(any()))
             .thenReturn(PaymentCheckoutResult.redirect("https://payos.test/checkout", "link-2"));
 
-        PaymentCheckoutResponse response = useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, "PAYOS"));
+        PaymentCheckoutResponse response = useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, PaymentProvider.PAYOS));
 
         assertThat(orphan.getStatus()).isEqualTo(PaymentStatus.FAILED);
         assertThat(response.providerOrderRef()).isEqualTo("123456");
@@ -232,7 +232,7 @@ class CreatePaymentCheckoutUrlUseCaseTests {
         when(paymentProcessPort.getPaymentLinkStatus("orphan-ref"))
             .thenReturn(new PaymentLinkStatusResult(PaymentLinkRemoteStatus.NOT_FOUND));
 
-        assertThatThrownBy(() -> useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, "PAYOS")))
+        assertThatThrownBy(() -> useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, PaymentProvider.PAYOS)))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("thử lại sau vài phút");
 
@@ -250,7 +250,7 @@ class CreatePaymentCheckoutUrlUseCaseTests {
         when(paymentProcessPort.getPaymentLinkStatus("orphan-ref"))
             .thenReturn(new PaymentLinkStatusResult(PaymentLinkRemoteStatus.PAID));
 
-        assertThatThrownBy(() -> useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, "PAYOS")))
+        assertThatThrownBy(() -> useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, PaymentProvider.PAYOS)))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("đã được thanh toán");
 
@@ -268,7 +268,7 @@ class CreatePaymentCheckoutUrlUseCaseTests {
         when(paymentProcessPort.getPaymentLinkStatus("orphan-ref"))
             .thenReturn(new PaymentLinkStatusResult(PaymentLinkRemoteStatus.PENDING));
 
-        PaymentCheckoutResponse response = useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, "PAYOS"));
+        PaymentCheckoutResponse response = useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, PaymentProvider.PAYOS));
 
         assertThat(response.checkoutUrl()).isEqualTo("https://payos.test/still-alive");
         verify(paymentProcessPort, never()).createPaymentLink(any());
@@ -287,7 +287,7 @@ class CreatePaymentCheckoutUrlUseCaseTests {
         when(paymentProcessPort.createPaymentLink(any()))
             .thenReturn(PaymentCheckoutResult.redirect("https://payos.test/checkout", "link-1"));
 
-        PaymentCheckoutResponse response = useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, "PAYOS"));
+        PaymentCheckoutResponse response = useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, PaymentProvider.PAYOS));
 
         assertThat(savedById.get(response.paymentId()).getCheckoutUrl())
             .isEqualTo("https://payos.test/checkout");
@@ -309,7 +309,7 @@ class CreatePaymentCheckoutUrlUseCaseTests {
             .thenReturn(PaymentCheckoutResult.formPost(
                 "https://sepay.test/v1/checkout/init", Map.of("merchant", "vox", "signature", "abc")));
 
-        PaymentCheckoutResponse response = useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, "PAYOS"));
+        PaymentCheckoutResponse response = useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, PaymentProvider.PAYOS));
 
         assertThat(savedById.get(response.paymentId()).getCheckoutUrl()).isNull();
     }

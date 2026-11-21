@@ -12,7 +12,6 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.command.CreatePaymentCheckoutUrlCommand;
@@ -100,7 +99,7 @@ public class CreatePaymentCheckoutUrlUseCase
      */
     @Override
     public PaymentCheckoutResponse execute(CreatePaymentCheckoutUrlCommand input) {
-        PaymentProvider provider = providerOf(input.provider());
+        PaymentProvider provider = input.provider();
 
         // Chặn TRƯỚC mọi transaction, và đây là chỗ duy nhất chặn được.
         //
@@ -368,16 +367,4 @@ public class CreatePaymentCheckoutUrlUseCase
     /** Dữ liệu cần mang qua ranh giới transaction để gọi cổng -- đều là POJO đã tách khỏi persistence context. */
     private record PreparedAttempt(
         UUID paymentId, String providerOrderRef, BigDecimal amountVnd, Instant expiresAt) {}
-
-    private static PaymentProvider providerOf(String provider) {
-        String normalized = StringNormalization.normalizeCode(provider);
-        if (normalized == null || normalized.isEmpty()) {
-            throw new IllegalArgumentException("Cổng thanh toán không được để trống");
-        }
-        try {
-            return PaymentProvider.valueOf(normalized);
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Cổng thanh toán không hợp lệ: " + provider);
-        }
-    }
 }

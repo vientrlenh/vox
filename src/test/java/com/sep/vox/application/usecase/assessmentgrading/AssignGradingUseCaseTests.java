@@ -112,7 +112,7 @@ public class AssignGradingUseCaseTests {
     }
 
     private AssignGradingCommand command(GradingRoundType roundType, UUID... candidateResultIds) {
-        return new AssignGradingCommand(roundType.name(), null, List.of(candidateResultIds).stream()
+        return new AssignGradingCommand(roundType, null, List.of(candidateResultIds).stream()
             .map(id -> new AssignGradingCommand.AssignmentItem(id, teacherId))
             .toList());
     }
@@ -240,7 +240,7 @@ public class AssignGradingUseCaseTests {
             .thenReturn(List.of(result(firstResultId, AssessmentCandidateResultStatus.PENDING_REVIEW)));
 
         assertThatThrownBy(() -> useCase.execute(new AssignGradingCommand(
-            GradingRoundType.INITIAL.name(), null, List.of(
+            GradingRoundType.INITIAL, null, List.of(
                 new AssignGradingCommand.AssignmentItem(firstResultId, outsider)))))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("cùng trường");
@@ -284,7 +284,7 @@ public class AssignGradingUseCaseTests {
     @Test
     void should_reject_an_empty_batch() {
         assertThatThrownBy(() -> useCase.execute(
-            new AssignGradingCommand(GradingRoundType.INITIAL.name(), null, List.of())))
+            new AssignGradingCommand(GradingRoundType.INITIAL, null, List.of())))
             .isInstanceOf(IllegalArgumentException.class);
 
         verify(assessmentGradingAssignmentRepository, never()).saveAll(any());

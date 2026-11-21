@@ -3,6 +3,9 @@ package com.sep.vox.application.port.input.command;
 import java.util.List;
 import java.util.UUID;
 
+import com.sep.vox.domain.model.question.QuestionSharing;
+import com.sep.vox.domain.model.question.QuestionType;
+
 public record CreateSystemQuestionBankQuestionCommand(
     UUID questionBankId,
     UUID questionTopicId,
@@ -11,11 +14,11 @@ public record CreateSystemQuestionBankQuestionCommand(
     String questionText,
     String promptText, 
     String preparationText,
-    String type,
+    QuestionType type,
     int preparationTimeSeconds,
     int minResponseSeconds, 
     int maxResponseSeconds,
-    String sharing,
+    QuestionSharing sharing,
     List<CreateQuestionAssetCommand> assets,
     CreateQuestionEvaluationGuideCommand evaluationGuide
 ) {

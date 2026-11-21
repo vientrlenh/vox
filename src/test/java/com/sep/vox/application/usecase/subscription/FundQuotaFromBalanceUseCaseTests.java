@@ -201,18 +201,10 @@ class FundQuotaFromBalanceUseCaseTests {
     @Test
     void funding_is_refused_for_a_school_the_admin_does_not_belong_to() {
         assertThatThrownBy(() -> useCase.execute(new FundQuotaFromBalanceCommand(
-                UUID.randomUUID(), "PRACTICE", BigDecimal.valueOf(500_000), null)))
+                UUID.randomUUID(), QuotaType.PRACTICE, BigDecimal.valueOf(500_000), null)))
             .isInstanceOf(ForbiddenException.class);
 
         verify(schoolBalanceRepository, never()).save(any());
-    }
-
-    @Test
-    void funding_is_refused_for_an_unknown_quota_type() {
-        assertThatThrownBy(() -> useCase.execute(new FundQuotaFromBalanceCommand(
-                schoolId, "SPEAKING", BigDecimal.valueOf(500_000), null)))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Loại hạn mức không hợp lệ");
     }
 
     // ---------------------------------------------------------------------
@@ -221,7 +213,7 @@ class FundQuotaFromBalanceUseCaseTests {
 
     private FundQuotaFromBalanceCommand fund(long amountVnd) {
         return new FundQuotaFromBalanceCommand(
-            schoolId, "PRACTICE", BigDecimal.valueOf(amountVnd), null);
+            schoolId, QuotaType.PRACTICE, BigDecimal.valueOf(amountVnd), null);
     }
 
     private SchoolBalanceEntry captureEntry() {

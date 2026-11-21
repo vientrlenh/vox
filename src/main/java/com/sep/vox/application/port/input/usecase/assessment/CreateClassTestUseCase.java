@@ -4,13 +4,13 @@ import com.sep.vox.domain.model.school.SchoolClassUser;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -45,7 +45,6 @@ import com.sep.vox.domain.repository.AssessmentScheduleRepository;
 import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
-import com.sep.vox.domain.service.assessment.AssessmentDeliveryModeSupport;
 
 /**
  * Creates the "shell" of a class test: DRAFT assessment + draft session + CHAIR + the list of students of the class.
@@ -179,8 +178,8 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             input.requiredStreamTypes() == null ? null : input.requiredStreamTypes().stream()
                 .map(StringNormalization::normalizeCode)
                 .toList(),
-            input.streamTypePermission() == null ? null : StringNormalization.normalizeCode(input.streamTypePermission()),
-            input.deliveryMode() == null ? null : StringNormalization.normalizeCode(input.deliveryMode()),
+            input.streamTypePermission(),
+            input.deliveryMode(),
             input.requiresOtp(),
             input.schoolRoomId()
 ,
@@ -194,8 +193,6 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             UUID currentUserId,
             Instant now) {
         String code = "CT-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
-        Instant openAt = DateMapper.toInstant(command.openAt());
-        Instant closeAt = DateMapper.toInstant(command.closeAt());
         Integer requestedMaxAttempt = command.maxAttempt();
         int maxAttempt = requestedMaxAttempt == null ? 1 : requestedMaxAttempt;
         AssessmentStreamConfigResolver.StreamConfig streamConfig = assessmentStreamConfigResolver.resolve(
@@ -213,13 +210,13 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             AssessmentKind.CLASS_TEST,
             // Bài trên lớp thi ngay trong phòng, chỉ khác nhau ở máy dùng để làm bài: máy của nhà
             // trường (LAB) hay máy học sinh mang theo (STUDENT_DEVICE — mặc định).
-            AssessmentDeliveryModeSupport.parseOrDefault(command.deliveryMode(), AssessmentDeliveryMode.STUDENT_DEVICE),
+            Objects.requireNonNullElse(command.deliveryMode(), AssessmentDeliveryMode.STUDENT_DEVICE),
             AssessmentStatus.DRAFT,
             maxAttempt,
             command.assessmentTimeDurationSecond(),
             command.resultDecisionMethod() == null ? ResultDecisionMethod.HIGHEST : command.resultDecisionMethod(),
-            openAt,
-            closeAt,
+            command.openAt(),
+            command.closeAt(),
             command.assessmentPolicyId(),
             // Bài trên lớp mặc định vào thẳng, giáo viên bật OTP nếu muốn siết như kỳ thi tập trung.
             command.requiresOtp() != null && command.requiresOtp(),
@@ -296,9 +293,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         return assessmentCandidateRepository.saveAll(candidates).size();
     }
 
-    private void validateOpenClose(String openAt, String closeAt, UUID schoolId) {
-        Instant open = DateMapper.toInstant(openAt);
-        Instant close = DateMapper.toInstant(closeAt);
+    private void validateOpenClose(Instant open, Instant close, UUID schoolId) {
         if (open == null || close == null) {
             throw new IllegalStateException("Bài kiểm tra trên lớp phải có thời gian mở bài và đóng bài");
         }

@@ -25,6 +25,10 @@ spring:
       max-file-size: 5MB
       max-request-size: 5MB
 
+  jackson:
+    mapper:
+      accept-case-insensitive-enums: true
+
   threads:
     virtual:
       enabled: true

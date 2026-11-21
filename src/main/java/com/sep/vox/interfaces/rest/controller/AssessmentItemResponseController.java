@@ -42,7 +42,7 @@ public class AssessmentItemResponseController {
             request.transcript(),
             request.durationSeconds(),
             request.wordCount(),
-            UpdateAssessmentItemResponseTurnUseCase.parseAnsweredAt(request.answeredAt())
+            request.answeredAt()
         ));
         return ResponseEntity.ok(ApiResponse.success("Cap nhat turn thanh cong", data));
     }

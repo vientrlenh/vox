@@ -2,8 +2,10 @@ package com.sep.vox.application.port.input.command;
 
 import java.math.BigDecimal;
 
+import com.sep.vox.domain.model.metering.QuotaType;
+
 public record UpdateSubscriptionPlanQuotaCommand (
-    String quotaType,
+    QuotaType quotaType,
     BigDecimal includedAmountVnd
 ) {
 }

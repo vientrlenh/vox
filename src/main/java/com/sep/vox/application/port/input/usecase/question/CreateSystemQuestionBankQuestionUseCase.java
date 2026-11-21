@@ -26,14 +26,12 @@ import com.sep.vox.domain.mapper.QuestionAssetDtoMapper;
 import com.sep.vox.domain.mapper.QuestionEvaluationGuideDtoMapper;
 import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionAsset;
-import com.sep.vox.domain.model.question.QuestionAssetType;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.model.question.QuestionConfidentiality;
 import com.sep.vox.domain.model.question.QuestionEvaluationGuide;
 import com.sep.vox.domain.model.question.QuestionSharing;
 import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.model.question.QuestionTopicStatus;
-import com.sep.vox.domain.model.question.QuestionType;
 import com.sep.vox.domain.repository.QuestionAssetRepository;
 import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.QuestionEvaluationGuideRepository;
@@ -108,7 +106,7 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
         validateAssetOrders(command.assets());
 
         Instant now = Instant.now();
-        QuestionSharing sharing = command.sharing() == null ? QuestionSharing.PRIVATE : QuestionSharing.valueOf(command.sharing());
+        QuestionSharing sharing = command.sharing() == null ? QuestionSharing.PRIVATE : command.sharing();
         Question question = new Question(
             command.questionBankId(),
             command.questionTopicId(),
@@ -117,7 +115,7 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
             command.questionText(),
             command.promptText(),
             command.preparationText(),
-            QuestionType.valueOf(command.type()),
+            command.type(),
             command.preparationTimeSeconds(),
             command.minResponseSeconds(),
             command.maxResponseSeconds(),
@@ -153,11 +151,11 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
             StringNormalization.trimAndCollapseSpaces(input.questionText()),
             StringNormalization.trimAndCollapseSpaces(input.promptText()),
             StringNormalization.trimAndCollapseSpaces(input.preparationText()),
-            StringNormalization.trimAndCollapseSpaces(input.type()),
+            input.type(),
             input.preparationTimeSeconds(),
             input.minResponseSeconds(),
             input.maxResponseSeconds(),
-            input.sharing() == null ? null : StringNormalization.normalizeCode(input.sharing()),
+            input.sharing(),
             assetsOf(input).stream()
                 .map(this::normalizeAsset)
                 .toList(),
@@ -174,7 +172,7 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
             StringNormalization.trimAndCollapseSpaces(input.title()),
             input.durationSeconds(),
             StringNormalization.trimAndCollapseSpaces(input.altText()),
-            StringNormalization.trimAndCollapseSpaces(input.type()),
+            input.type(),
             StringNormalization.trimAndCollapseSpaces(input.url()),
             StringNormalization.trimAndCollapseSpaces(input.transcript()),
             StringNormalization.trimAndCollapseSpaces(input.description()),
@@ -250,7 +248,7 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
                 asset.title(),
                 asset.durationSeconds(),
                 asset.altText(),
-                QuestionAssetType.valueOf(asset.type()),
+                asset.type(),
                 asset.url(),
                 asset.transcript(),
                 asset.description(),

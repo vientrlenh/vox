@@ -1,6 +1,5 @@
 package com.sep.vox.interfaces.rest.mapper;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.port.input.command.AddSchoolRubricVersionsCommand;
 import com.sep.vox.application.port.input.command.AddSystemRubricVersionsCommand;
 import com.sep.vox.interfaces.rest.dto.request.AddRubricVersionsRequest; // Có thể đổi tên DTO này thành AddRubricVersionsRequest
@@ -15,7 +14,7 @@ public class AddRubricVersionsCommandMapper {
         List<AddSystemRubricVersionsCommand.RubricVersionItemCommand> items = request.versions().stream()
                 .map(v -> new AddSystemRubricVersionsCommand.RubricVersionItemCommand(
                         v.version(), v.name(), v.scoringScaleMin(), v.scoringScaleMax(), v.totalScoreMethod(),
-                        DateMapper.toInstant(v.effectiveFrom()), DateMapper.toInstant(v.effectiveTo())
+                        v.effectiveFrom(), v.effectiveTo()
                 )).toList();
         return new AddSystemRubricVersionsCommand(rubricId, items);
     }
@@ -25,7 +24,7 @@ public class AddRubricVersionsCommandMapper {
         List<AddSchoolRubricVersionsCommand.RubricVersionItemCommand> items = request.versions().stream()
                 .map(v -> new AddSchoolRubricVersionsCommand.RubricVersionItemCommand(
                         v.version(), v.name(), v.scoringScaleMin(), v.scoringScaleMax(), v.totalScoreMethod(),
-                        DateMapper.toInstant(v.effectiveFrom()), DateMapper.toInstant(v.effectiveTo())
+                        v.effectiveFrom(), v.effectiveTo()
                 )).toList();
         return new AddSchoolRubricVersionsCommand(schoolId, rubricId, items);
     }

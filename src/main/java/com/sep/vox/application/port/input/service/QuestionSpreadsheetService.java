@@ -26,7 +26,6 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.common.DateMapper;
-import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
@@ -187,16 +186,16 @@ public class QuestionSpreadsheetService {
         }
     }
 
-    public byte[] downloadTemplate(String type) {
+    public byte[] downloadTemplate(QuestionType type) {
         XSSFWorkbook workbook = new XSSFWorkbook();
         try (workbook) {
             XSSFSheet sheet = workbook.createSheet("Questions");
             writeHeaders(sheet, IMPORT_HEADERS);
-            String normalizedType = normalizeQuestionType(type);
+            String sampleQuestionType = (type == null ? QuestionType.READ_ALOUD : type).name();
 
             writeRow(sheet.createRow(1), rowValues(
                 "Q-SAMPLE-001",
-                normalizedType,
+                sampleQuestionType,
                 "Read the passage aloud clearly.",
                 "Speak naturally and clearly.",
                 "You can take a short breath before starting.",
@@ -345,19 +344,6 @@ public class QuestionSpreadsheetService {
             createdBy,
             id -> userRepository.findById(id).map(user -> user.getFullName().value()).orElse("")
         );
-    }
-
-    private String normalizeQuestionType(String type) {
-        String normalized = StringNormalization.normalizeCode(type);
-        if (normalized == null || normalized.isBlank()) {
-            return "READ_ALOUD";
-        }
-        try {
-            QuestionType.valueOf(normalized);
-            return normalized;
-        } catch (IllegalArgumentException exception) {
-            return "READ_ALOUD";
-        }
     }
 
     private record AccessContext(UUID currentUserId, UUID currentSchoolId, boolean systemAdmin, boolean schoolAdmin) {

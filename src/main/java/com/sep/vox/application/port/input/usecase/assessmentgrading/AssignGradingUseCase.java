@@ -74,7 +74,7 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
     @Transactional
     public List<UUID> execute(AssignGradingCommand command) {
         UUID currentUserId = assessmentGradingAccessService.requireActiveUserId();
-        GradingRoundType roundType = parseRoundType(command.roundType());
+        GradingRoundType roundType = requireNotAppealRound(command.roundType());
         Instant deadlineAt = validateDeadline(command.deadlineAt());
 
         List<AssignGradingCommand.AssignmentItem> items = command.assignments() == null
@@ -180,16 +180,7 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
             .toList();
     }
 
-    private GradingRoundType parseRoundType(String value) {
-        if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException("Phải chọn vòng chấm.");
-        }
-        GradingRoundType roundType;
-        try {
-            roundType = GradingRoundType.valueOf(value);
-        } catch (IllegalArgumentException ignored) {
-            throw new IllegalArgumentException("Vòng chấm không hợp lệ.");
-        }
+    private GradingRoundType requireNotAppealRound(GradingRoundType roundType) {
         if (roundType == GradingRoundType.APPEAL) {
             throw new IllegalArgumentException(
                 "Vòng phúc khảo được phân công từ màn đơn phúc khảo, không phân công ở đây.");

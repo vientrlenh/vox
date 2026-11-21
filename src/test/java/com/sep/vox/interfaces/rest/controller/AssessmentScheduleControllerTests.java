@@ -2,6 +2,9 @@ package com.sep.vox.interfaces.rest.controller;
 
 import com.sep.vox.domain.model.assessment.AssessmentScheduleStatus;
 import java.time.Instant;
+import com.sep.vox.application.port.input.command.CreateAssessmentScheduleCommand;
+import org.mockito.ArgumentCaptor;
+import static org.mockito.Mockito.verify;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -62,5 +65,42 @@ class AssessmentScheduleControllerTests {
                 "endDate", "2026-08-01T03:00:00Z",
                 "status", "PUBLISHED"
             ));
+    }
+
+    @Test
+    @WithMockUser(roles = "TEACHER")
+    void create_should_bind_instant_start_and_end_dates() {
+        MvcTestResult result = mvc.post().uri("/api/v1/assessments/{assessmentId}/schedules", UUID.randomUUID())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"schoolRoomId\": \"00000000-0000-0000-0000-000000000001\", \"startDate\": \"2026-08-01T08:00:00+07:00\", \"endDate\": \"2026-08-01T03:00:00Z\"}")
+            .exchange();
+
+        assertThat(result).hasStatus(201);
+        ArgumentCaptor<CreateAssessmentScheduleCommand> command = ArgumentCaptor.forClass(CreateAssessmentScheduleCommand.class);
+        verify(createAssessmentScheduleUseCase).execute(command.capture());
+        assertThat(command.getValue().startDate()).isEqualTo(Instant.parse("2026-08-01T01:00:00Z"));
+        assertThat(command.getValue().endDate()).isEqualTo(Instant.parse("2026-08-01T03:00:00Z"));
+    }
+
+    @Test
+    @WithMockUser(roles = "TEACHER")
+    void create_should_answer_400_naming_start_date_for_unparsable_date() {
+        MvcTestResult result = mvc.post().uri("/api/v1/assessments/{assessmentId}/schedules", UUID.randomUUID())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"schoolRoomId\": \"00000000-0000-0000-0000-000000000001\", \"startDate\": \"2026-13-45\", \"endDate\": \"2026-08-01T03:00:00Z\"}")
+            .exchange();
+
+        assertThat(result).hasStatus(400).bodyJson().extractingPath("$.errors.startDate").isNotNull();
+    }
+
+    @Test
+    @WithMockUser(roles = "TEACHER")
+    void create_should_answer_400_when_end_date_is_missing() {
+        MvcTestResult result = mvc.post().uri("/api/v1/assessments/{assessmentId}/schedules", UUID.randomUUID())
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"schoolRoomId\": \"00000000-0000-0000-0000-000000000001\", \"startDate\": \"2026-08-01T01:00:00Z\"}")
+            .exchange();
+
+        assertThat(result).hasStatus(400).bodyJson().extractingPath("$.errors.endDate").isNotNull();
     }
 }

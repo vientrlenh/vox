@@ -2,6 +2,8 @@ package com.sep.vox.interfaces.rest.dto.request;
 
 import java.util.UUID;
 
+import com.sep.vox.domain.model.assessment.AssessmentRequiredStreamType;
+
 import jakarta.validation.constraints.NotNull;
 
 
@@ -21,7 +23,7 @@ public record IssueStudentStreamTokenRequest(
      * <p>The choice is fixed on the first token issued for the assessment session; later requests may only send
      * that same value again or leave it empty.
      */
-    String streamType
+    AssessmentRequiredStreamType streamType
 ) {
 
 }

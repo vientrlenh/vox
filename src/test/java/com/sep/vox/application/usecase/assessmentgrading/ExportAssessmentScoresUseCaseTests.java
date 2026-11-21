@@ -8,6 +8,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.sep.vox.domain.model.assessment.AssessmentKind;
+import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
+import com.sep.vox.domain.model.assessment.GradingRoundType;
+import com.sep.vox.domain.model.assessment.GradingAssignmentStatus;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -120,7 +124,7 @@ class ExportAssessmentScoresUseCaseTests {
 
     @Test
     void should_pass_the_class_test_kind_through() {
-        useCase.execute(ExportAssessmentScoresQuery.scopedTo(assessmentId, null, "CLASS_TEST"));
+        useCase.execute(ExportAssessmentScoresQuery.scopedTo(assessmentId, null, AssessmentKind.CLASS_TEST));
 
         assertThat(capturedFilter().assessmentKind()).isEqualTo("CLASS_TEST");
     }
@@ -129,8 +133,9 @@ class ExportAssessmentScoresUseCaseTests {
     void should_pass_the_screen_filters_through() {
         UUID teacherId = UUID.randomUUID();
 
-        useCase.execute(new ExportAssessmentScoresQuery(assessmentId, null, teacherId, "RELEASED", "APPEAL",
-            "COMPLETED", true, true, Boolean.TRUE, "  nguyen  ", "CLASS_TEST"));
+        useCase.execute(new ExportAssessmentScoresQuery(assessmentId, null, teacherId,
+            AssessmentCandidateResultStatus.RELEASED, GradingRoundType.APPEAL, GradingAssignmentStatus.COMPLETED,
+            true, true, Boolean.TRUE, "  nguyen  ", AssessmentKind.CLASS_TEST));
 
         GradingAssignmentFilter filter = capturedFilter();
         assertThat(filter.teacherId()).isEqualTo(teacherId);
@@ -149,7 +154,7 @@ class ExportAssessmentScoresUseCaseTests {
      */
     @Test
     void should_treat_a_blank_filter_as_no_filter() {
-        useCase.execute(new ExportAssessmentScoresQuery(assessmentId, null, null, "", "  ", "",
+        useCase.execute(new ExportAssessmentScoresQuery(assessmentId, null, null, null, null, null,
             false, false, null, "   ", null));
 
         GradingAssignmentFilter filter = capturedFilter();

@@ -21,9 +21,8 @@ import com.sep.vox.domain.model.assessment.AssessmentStreamTypePermission;
 public class AssessmentStreamConfigResolver {
 
     private static final List<String> PERMITTED_STREAM_TYPES = List.of("CAMERA", "SCREEN");
-    private static final List<String> PERMITTED_STREAM_PERMISSION = List.of("ALL", "ANY");
 
-    public StreamConfig resolve(List<String> rawTypes, String rawPermission) {
+    public StreamConfig resolve(List<String> rawTypes, AssessmentStreamTypePermission rawPermission) {
         if (rawTypes == null || rawTypes.isEmpty()) {
             if (rawPermission != null) {
                 throw new IllegalArgumentException("Không thể đặt quyền stream khi không yêu cầu stream nào");
@@ -46,12 +45,9 @@ public class AssessmentStreamConfigResolver {
         if (rawPermission == null) {
             throw new IllegalArgumentException("Quyền cho các stream là bắt buộc cho 2 loại đồng thời");
         }
-        if (!PERMITTED_STREAM_PERMISSION.contains(rawPermission)) {
-            throw new IllegalArgumentException("Quyền cho các stream không hợp lệ");
-        }
         return new StreamConfig(
             AssessmentRequiredStreamType.CAMERA_AND_SCREEN,
-            AssessmentStreamTypePermission.valueOf(rawPermission)
+            rawPermission
         );
     }
 

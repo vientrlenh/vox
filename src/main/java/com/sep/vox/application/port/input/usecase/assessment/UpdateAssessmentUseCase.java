@@ -9,7 +9,6 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.NotFoundException;
@@ -114,10 +113,10 @@ public class UpdateAssessmentUseCase implements IUseCase<UpdateAssessmentCommand
             assessment.setDescription(command.description());
         }
         if (command.openAt() != null) {
-            assessment.setOpenAt(DateMapper.toInstant(command.openAt()));
+            assessment.setOpenAt(command.openAt());
         }
         if (command.closeAt() != null) {
-            assessment.setCloseAt(DateMapper.toInstant(command.closeAt()));
+            assessment.setCloseAt(command.closeAt());
         }
         if (command.assessmentPolicyId() != null) {
             // Kiểm theo trường của chính bài kiểm tra, không phải trường người gọi: bài đã tồn tại nên
@@ -226,8 +225,7 @@ public class UpdateAssessmentUseCase implements IUseCase<UpdateAssessmentCommand
             input.requiredStreamTypes() == null ? null : input.requiredStreamTypes().stream()
                 .map(StringNormalization::normalizeCode)
                 .toList(),
-            input.streamTypePermission() == null ? null : StringNormalization.normalizeCode(input.streamTypePermission())
-,
+            input.streamTypePermission(),
             input.aiConfidenceThresholdPercent()
         );
     }

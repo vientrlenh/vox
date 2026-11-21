@@ -36,6 +36,7 @@ import com.sep.vox.application.port.input.usecase.registration.RegisterBySelfDec
 import com.sep.vox.application.port.input.usecase.registration.RegisterFromSchoolDirectoryUseCase;
 import com.sep.vox.application.port.input.usecase.registration.VerifyRegisterFormOtpUseCase;
 import com.sep.vox.application.port.output.CookieManagerPort;
+import com.sep.vox.domain.model.devicesession.SessionPlatform;
 import com.sep.vox.application.response.input.auth.LoginResponse;
 import com.sep.vox.application.response.input.auth.RefreshResponse;
 import com.sep.vox.application.response.input.registration.RegisterFromSchoolDirectoryResponse;
@@ -219,7 +220,7 @@ public class AuthController {
     public void startGoogleLogin(
         @RequestParam(name = "deviceId", required = true) String deviceId,
         @RequestParam(name = "deviceName", required = true) String deviceName,
-        @RequestParam(name = "platform", required = true) String platform,
+        @RequestParam(name = "platform", required = true) SessionPlatform platform,
         HttpServletRequest request,
         HttpServletResponse response
     ) throws IOException {

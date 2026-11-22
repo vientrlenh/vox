@@ -42,7 +42,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-grpc-client'
 	implementation 'org.springframework.boot:spring-boot-starter-grpc-server'
 	implementation 'vn.payos:payos-java:2.0.0'
-	implementation 'org.springframework.boot:spring-boot-starter-flyway:4.1.0'
+	implementation 'org.springframework.boot:spring-boot-starter-flyway'
 	implementation 'org.flywaydb:flyway-database-postgresql:12.10.0'
 	implementation 'com.google.firebase:firebase-admin:9.10.0'
 	implementation 'de.codecentric:spring-boot-admin-starter-client:4.1.2'

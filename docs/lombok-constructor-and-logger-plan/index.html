@@ -1,0 +1,1042 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lombok constructor and logger migration plan</title>
+<style>
+  :root {
+    --bg: #fafaf8; --surface: #ffffff; --text: #1d1d1b; --muted: #5f5f5a; --border: #e2e1dc;
+    --accent: #1f5fbf; --accent-soft: #e8f0fc; --warn: #8a5a00; --warn-soft: #fdf3dc;
+    --ok: #17673a; --ok-soft: #e3f4ea; --bad: #9b1c1c; --bad-soft: #fbe6e6; --code-bg: #f3f2ee;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #151514; --surface: #1d1d1b; --text: #ecebe6; --muted: #a2a19a; --border: #33332f;
+      --accent: #7fb0f5; --accent-soft: #1b2a40; --warn: #f0c36a; --warn-soft: #3a2f14;
+      --ok: #7fd3a0; --ok-soft: #14301f; --bad: #f19a9a; --bad-soft: #3d1b1b; --code-bg: #262623;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #151514; --surface: #1d1d1b; --text: #ecebe6; --muted: #a2a19a; --border: #33332f;
+    --accent: #7fb0f5; --accent-soft: #1b2a40; --warn: #f0c36a; --warn-soft: #3a2f14;
+    --ok: #7fd3a0; --ok-soft: #14301f; --bad: #f19a9a; --bad-soft: #3d1b1b; --code-bg: #262623;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 32px 16px 96px; }
+  h1 { font-size: 1.9rem; line-height: 1.2; margin: 0 0 8px; }
+  h2 { font-size: 1.35rem; margin: 48px 0 12px; padding-top: 16px; border-top: 1px solid var(--border); }
+  h3 { font-size: 1.05rem; margin: 28px 0 8px; }
+  p, li { max-width: 72ch; }
+  .meta { color: var(--muted); font-size: .92rem; margin-bottom: 20px; }
+  .status { display: inline-block; border-radius: 999px; padding: 2px 12px; font-size: .8rem;
+    font-weight: 600; white-space: nowrap; background: var(--code-bg); color: var(--muted); }
+  .status.draft, .status.open { background: var(--warn-soft); color: var(--warn); }
+  .status.approved, .status.progress { background: var(--accent-soft); color: var(--accent); }
+  .status.done, .status.answered { background: var(--ok-soft); color: var(--ok); }
+  .status.blocked { background: var(--bad-soft); color: var(--bad); }
+  nav { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 18px; margin: 20px 0; }
+  nav ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 32px; }
+  nav a, td a { color: var(--accent); text-decoration: none; }
+  code { background: var(--code-bg); padding: 1px 6px; border-radius: 4px;
+    font: .88em ui-monospace, "SF Mono", Menlo, monospace; }
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; font: .85rem/1.5 ui-monospace, "SF Mono", Menlo, monospace; }
+  pre code { background: none; padding: 0; }
+  .table-scroll { overflow-x: auto; margin: 12px 0; }
+  table { border-collapse: collapse; width: 100%; background: var(--surface);
+    border: 1px solid var(--border); font-size: .92rem; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--code-bg); font-weight: 600; white-space: nowrap; }
+  td.indent { padding-left: 32px; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .callout { border-left: 4px solid var(--accent); background: var(--accent-soft);
+    padding: 10px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+  .callout.warn { border-color: var(--warn); background: var(--warn-soft); }
+  .callout.ok { border-color: var(--ok); background: var(--ok-soft); }
+  .callout p { margin: 4px 0; }
+  .decision, .phase { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 4px 18px 14px; margin: 14px 0; }
+  .decision h3, .phase h3 { margin-top: 14px; }
+  .rec { color: var(--ok); font-weight: 600; }
+  .answer { background: var(--code-bg); border-radius: 8px; padding: 8px 12px; margin: 10px 0 0; color: var(--muted); }
+  .decision[data-decision-state="answered"] .answer { background: var(--ok-soft); color: var(--text); }
+  .tag { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .jobs { list-style: none; padding: 0; margin: 10px 0; }
+  .job { border-top: 1px solid var(--border); padding: 10px 0; }
+  .job > .title { font-weight: 600; }
+  .status-log { font-size: .85rem; color: var(--muted); margin: 8px 0 0; padding-left: 20px; }
+  .status-log:empty { display: none; }
+  details { margin: 10px 0; }
+  summary { cursor: pointer; font-weight: 600; }
+  @media (max-width: 600px) { nav ol { columns: 1; } h1 { font-size: 1.5rem; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Migrate hand-written constructors and loggers to <code>@RequiredArgsConstructor</code> and <code>@Slf4j</code></h1>
+<div class="meta">
+  Repository: <code>vox</code> &middot; Branch: <code>default</code> &middot; Written 2026-11-22 &middot;
+  Plan status: <span class="status approved" id="plan-status" data-plan-status="approved">Approved</span>
+</div>
+
+<p>Replace the constructors that only assign their parameters to fields, and the hand-written
+<code>LoggerFactory.getLogger(...)</code> fields, with <code>@RequiredArgsConstructor</code> and <code>@Slf4j</code>.
+Measured today: 840 classes with an assignment-only constructor and 111 classes with a hand-written logger, which is
+864 files because 87 have both. Neither annotation is used anywhere in <code>src/main</code> yet. The change must not alter
+behaviour: every constructor signature stays identical (proved by a before/after snapshot of all constructors in the
+compiled classes) and every logger keeps the name of its class.</p>
+
+<nav aria-label="Contents">
+  <ol>
+    <li><a href="#progress">Progress</a></li>
+    <li><a href="#current">Current state</a></li>
+    <li><a href="#decisions">Decisions</a></li>
+    <li><a href="#phases">Phases</a></li>
+    <li><a href="#risks">Risks</a></li>
+    <li><a href="#scope">Out of scope</a></li>
+    <li><a href="#verify">Verification</a></li>
+    <li><a href="#changelog">Change log</a></li>
+    <li><a href="#notes">Implementation notes</a></li>
+  </ol>
+</nav>
+
+<h2 id="progress">Progress</h2>
+<p id="overview-summary" class="meta"></p>
+<div class="table-scroll"><table>
+  <thead><tr><th>Phase / job</th><th>Status</th></tr></thead>
+  <tbody id="overview-body"></tbody>
+</table></div>
+
+<h2 id="current">1. Current state (measured 2026-11-22)</h2>
+
+<h3>1.1 Baseline</h3>
+<ul>
+  <li><code>./gradlew compileJava test --tests '*LombokUsageConventionTests' --tests '*LayeredArchitectureTests'</code>:
+      BUILD SUCCESSFUL (16 s). No compile failure exists today.</li>
+  <li><code>./gradlew test --rerun-tasks</code> (whole unit suite): BUILD SUCCESSFUL in 2 min 14 s, <strong>2551 tests, 0 failures,
+      0 errors, 0 skipped</strong>. This is the baseline every phase must reproduce. <code>integrationTest</code> was not run
+      (needs Docker).</li>
+  <li>The working tree has an uncommitted change in <code>build.gradle</code> (the pinned
+      <code>spring-boot-starter-flyway:4.1.0</code> became unversioned). It predates this plan, belongs to someone else's work, and
+      this plan does not touch it. Keep it out of any commit made for this plan unless the user says otherwise.</li>
+</ul>
+
+<h3>1.2 What the rules say today</h3>
+<ul>
+  <li><code>AGENTS.md</code>, Conventions: &ldquo;constructor injection with explicit constructors (in <code>application</code>,
+      <code>@RequiredArgsConstructor</code> is also allowed)&rdquo;. So explicit constructors are the rule in infrastructure and
+      interfaces, and Lombok constructors are allowed (not required) in application. This is why D1 exists.</li>
+  <li><code>LombokUsageConventionTests</code>: domain uses no Lombok; application may use only <code>lombok.RequiredArgsConstructor</code>
+      and <code>lombok.extern.slf4j.Slf4j</code>; infrastructure and interfaces are unrestricted. Its exemption set is empty.</li>
+  <li><code>LayeredArchitectureTests</code> reads bytecode. <code>@RequiredArgsConstructor</code> leaves no trace in bytecode;
+      <code>@Slf4j</code> generates references to <code>org.slf4j</code>, which application is already allowed to use. So neither test needs
+      loosening.</li>
+  <li>No earlier decision is being reversed: <code>git log -S'@RequiredArgsConstructor' -- src/main/java</code> and
+      <code>git log -S'@Slf4j' -- src/main/java</code> both print nothing, and 0 files in <code>src/main</code> use either annotation.</li>
+  <li>Lombok <code>1.18.46</code> (found in the Gradle cache, version managed by the Spring Boot BOM; <code>compileOnly</code> and
+      <code>annotationProcessor</code> are already declared; 109 main files, mostly entities, already import Lombok). There is no
+      <code>lombok.config</code>. There are 0 uses of <code>@Autowired</code> (no field injection to migrate).</li>
+</ul>
+
+<h3>1.3 Lombok behaviour this plan relies on</h3>
+<p>Read on 2026-11-22: <code>projectlombok.org/features/constructor</code>, <code>/features/log</code>,
+<code>/features/configuration</code>. Lombok is not a Spring API, so Spring Boot 4.1 / Spring Framework 7 docs were not needed:
+each class keeps exactly one public constructor with the same signature, so wiring is unchanged (the snapshot in 1.8 proves it).</p>
+<ul>
+  <li><code>@RequiredArgsConstructor</code>: &ldquo;All non-initialized <code>final</code> fields get a parameter&rdquo;, and &ldquo;The order of the
+      parameters match the order in which the fields appear in your class.&rdquo; Static fields are skipped. An explicit constructor does
+      not stop generation, and a clash is a compile error, so each explicit constructor must be deleted in the same edit.</li>
+  <li><code>@Slf4j</code> creates <code>private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(Foo.class);</code>.
+      The default field name is <code>log</code> and the logger name is the annotated class.</li>
+  <li><code>lombok.copyableAnnotations</code> exists and defaults to an empty list, so field annotations such as <code>@Value</code> and
+      <code>@Qualifier</code> are not copied onto generated constructor parameters unless a <code>lombok.config</code> says so.</li>
+  <li><strong>Not stated by the docs:</strong> the default access level of the generated constructor. Job 1.2 checks it with
+      <code>javap</code> before any wide edit.</li>
+</ul>
+
+<h3>1.4 Source files per layer</h3>
+<div class="table-scroll"><table>
+  <thead><tr><th>Layer</th><th class="num">Java files in <code>src/main</code></th></tr></thead>
+  <tbody>
+    <tr><td>domain</td><td class="num">488</td></tr>
+    <tr><td>application</td><td class="num">1444</td></tr>
+    <tr><td>infrastructure</td><td class="num">562</td></tr>
+    <tr><td>interfaces</td><td class="num">459</td></tr>
+  </tbody>
+</table></div>
+
+<h3>1.5 Constructors</h3>
+<p>1327 classes declare a constructor. 395 are empty no-argument constructors and 36 are domain no-argument constructors with
+logic; none of those inject anything and none are touched. The rest were classified by a script (regex and brace matching, not a Java
+parser; sampled by hand, see 1.9).</p>
+<div class="table-scroll"><table>
+  <thead><tr><th>Kind of constructor</th><th class="num">application</th><th class="num">infrastructure</th><th class="num">interfaces</th><th>Plan</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Migratable:</strong> one public constructor that only assigns every parameter to a <code>private final</code> field
+        without initializer, no annotated parameters</td>
+        <td class="num">604</td><td class="num">165</td><td class="num">71</td><td>Migrate (infrastructure and interfaces need D1)</td></tr>
+    <tr><td class="indent">of those: parameter order differs from field order</td>
+        <td class="num">4</td><td class="num">0</td><td class="num">1</td><td>Reorder the field declarations, see rule R3</td></tr>
+    <tr><td>Parameters annotated <code>@Value</code> or <code>@Qualifier</code></td>
+        <td class="num">0</td><td class="num">16</td><td class="num">5</td><td>Stay explicit (out of scope)</td></tr>
+    <tr><td>Constructor does more than assign (builds a lookup map, validates, trims a config value, or ignores a parameter)</td>
+        <td class="num">3</td><td class="num">5</td><td class="num">13</td><td>Stay explicit (out of scope)</td></tr>
+    <tr><td>Two constructors</td>
+        <td class="num">2</td><td class="num">0</td><td class="num">0</td><td>Stay explicit</td></tr>
+    <tr><td>Calls <code>super(...)</code> (exception classes)</td>
+        <td class="num">8</td><td class="num">1</td><td class="num">0</td><td>Stay explicit</td></tr>
+  </tbody>
+</table></div>
+<ul>
+  <li>The scanner called <code>RubricController</code> (33 parameters) &ldquo;has logic&rdquo; only because one parameter is named
+      <code>previewSchoolRubricCriterionImportFromFileUseCase1</code> and is assigned to the field without the <code>1</code>. It is
+      otherwise assignment-only, so it is counted as migratable (interfaces 71 = 69 + 1 order-differs + <code>RubricController</code>).</li>
+  <li>Excluded false positives: <code>BaseModel.Builder</code> (domain, protected, nested) and <code>TeacherAccumulator</code> (private
+      nested class in <code>JpaAssessmentResultAuditQueryRepository</code>).</li>
+  <li>Classes that keep an explicit constructor and are named in this plan: <code>ImportCommitService</code>,
+      <code>PaymentProcessResolver</code>, <code>PracticeTopicOfferEnrichmentService</code>, <code>GradingSampleSelector</code> and
+      <code>QuotaExceededException</code> (application); <code>ExchangeRateApiClient</code>, <code>GoogleIdTokenProvider</code>,
+      <code>RefreshTokenSessionProvider</code>, <code>SePayPaymentProcessService</code>,
+      <code>SpringRequiresNewTransactionService</code> (infrastructure); the 13 <code>*GraphQlDataLoaderConfig</code> classes
+      (interfaces).</li>
+  <li><strong>Noticed, not fixed:</strong> <code>RefreshTokenSessionProvider</code> (JWT/session code) takes a
+      <code>DeviceSessionRepository</code> parameter that it never assigns. Removing the parameter would change a public constructor, so
+      it is reported, not migrated.</li>
+</ul>
+
+<h3>1.6 Loggers</h3>
+<ul>
+  <li>111 files declare a logger with <code>LoggerFactory.getLogger</code>: application 37, infrastructure 60, interfaces 14, domain 0.
+      <code>grep -rl 'LoggerFactory.getLogger' src/main/java | wc -l</code> prints 111.</li>
+  <li>104 name the field <code>LOGGER</code> (341 call sites <code>LOGGER.xxx(</code>) and 7 name it <code>log</code> (14 references). Of the
+      111, 6 write the fully qualified <code>org.slf4j.LoggerFactory.getLogger</code> and 15 split the declaration over two or three lines.</li>
+  <li>All 111 pass their own class (<code>Name.class</code>, 0 mismatches against the file name), so <code>@Slf4j</code> keeps every logger
+      name. <code>application.yaml</code> configures levels only for <code>org.springframework</code> and <code>org.apache</code>, none per
+      project class. No test references <code>LOGGER</code>, and no test captures log output.</li>
+  <li>24 of the 111 have no migratable constructor (application 1, infrastructure 19, interfaces 4). They only get <code>@Slf4j</code>.
+      The other 87 get both annotations in one edit.</li>
+</ul>
+
+<h3>1.7 Tests and comments</h3>
+<ul>
+  <li>247 of the 839 migratable classes measured (all but <code>RubricController</code>, which no test builds) are built with
+      <code>new X(...)</code> in test code and 38 sit under <code>@InjectMocks</code>.
+      With an identical signature no test file needs an edit, so <code>git diff --stat -- src/test</code> must stay empty until
+      Phase 14.</li>
+  <li>The 5 classes whose parameter order differs from field order: <code>PracticePaperDraftService</code>,
+      <code>RecordAssessmentAttemptEvaluationUseCase</code> (built in a test), <code>RefreshUseCase</code>,
+      <code>ViewInterestQuizItemsUseCase</code> (application) and <code>AssessmentSessionController</code> (interfaces).</li>
+  <li><code>AGENTS.md</code> Language rule: Vietnamese comments in code being changed must be translated. Of the 864 files the plan edits,
+      430 contain a Vietnamese comment somewhere and 79 contain one between the class declaration and the end of the constructor
+      (application 54, infrastructure 23, interfaces 2). 6 constructors have a comment directly above them and 1
+      (<code>DeleteSchoolRubricResultBandUseCase</code>) has <code>// BỔ SUNG</code> comments on a field and on a parameter. Deleting a
+      constructor must not silently delete such a comment. This is why D3 exists.</li>
+</ul>
+
+<h3>1.8 Money and security classes (AGENTS.md &ldquo;Ask first&rdquo;)</h3>
+<p>Ask first covers &ldquo;anything that moves money (orders, payments, quota, school balance)&rdquo; and &ldquo;security config or JWT/OAuth
+code&rdquo;. A constructor-and-logger edit does not change their logic, but the classes are on that list, so they are isolated
+into their own phases (8, 11, 13) and gated by D2. Selection rule: path under the <code>order</code>, <code>payment</code>,
+<code>balance</code>, <code>subscription</code> or <code>metering</code> use case packages, or a class name containing
+<code>Quota</code>, <code>Order</code>, <code>Payment</code>, <code>Subscription</code>, <code>Balance</code>, <code>Debt</code>,
+<code>Invoice</code>, <code>Pricing</code>, <code>Metering</code>, <code>PayOS</code> or <code>SePay</code> (case-sensitive, so
+<code>Recorder</code> does not match; <code>InterestQuizBankTopUpService</code> was removed by hand as a false positive); or a path under
+<code>security/</code> or <code>usecase/auth/</code>, or a name containing <code>Jwt</code>, <code>OAuth2</code>, <code>Oidc</code> or
+<code>SecurityConfig</code>. Result: <strong>107 files</strong> (money 85, security 22; application 63, infrastructure 34, interfaces 10).</p>
+<details><summary>Money list (85 files)</summary>
+<ul>
+  <li><code>application/port/input/service/AssessmentTimeQuotaGuardService.java</code></li>
+  <li><code>application/port/input/service/CarryQuotaFundingAtPeriodStartService.java</code></li>
+  <li><code>application/port/input/service/ClassTestTokenQuotaGuardService.java</code></li>
+  <li><code>application/port/input/service/ConsumeQuotaService.java</code></li>
+  <li><code>application/port/input/service/DistributeQuotaToUsersService.java</code></li>
+  <li><code>application/port/input/service/OrderSettlementService.java</code></li>
+  <li><code>application/port/input/service/QuotaPricingCalibrationService.java</code></li>
+  <li><code>application/port/input/service/SchoolDebtNotificationService.java</code></li>
+  <li><code>application/port/input/service/SchoolQuotaUsageNotificationService.java</code></li>
+  <li><code>application/port/input/service/SchoolSubscriptionActiveGuardService.java</code></li>
+  <li><code>application/port/input/service/SchoolSubscriptionDebtGuardService.java</code></li>
+  <li><code>application/port/input/service/SchoolSubscriptionSuspensionNotificationService.java</code></li>
+  <li><code>application/port/input/service/SubscriptionPeriodGuardService.java</code></li>
+  <li><code>application/port/input/service/SubscriptionPlanReplacementValidator.java</code></li>
+  <li><code>application/port/input/service/SubscriptionPlanResolver.java</code></li>
+  <li><code>application/port/input/usecase/assessment/EstimateAssessmentTokenQuotaUseCase.java</code></li>
+  <li><code>application/port/input/usecase/balance/ViewSchoolBalanceEntriesUseCase.java</code></li>
+  <li><code>application/port/input/usecase/balance/ViewSchoolBalanceSummaryUseCase.java</code></li>
+  <li><code>application/port/input/usecase/balance/ViewSchoolBalanceUseCase.java</code></li>
+  <li><code>application/port/input/usecase/balance/ViewSchoolDebtEventsUseCase.java</code></li>
+  <li><code>application/port/input/usecase/metering/RecordAiUsageUseCase.java</code></li>
+  <li><code>application/port/input/usecase/order/CancelOrderUseCase.java</code></li>
+  <li><code>application/port/input/usecase/order/CreateSubscriptionOrderUseCase.java</code></li>
+  <li><code>application/port/input/usecase/order/CreateTopUpOrderUseCase.java</code></li>
+  <li><code>application/port/input/usecase/order/ViewMySchoolOrdersUseCase.java</code></li>
+  <li><code>application/port/input/usecase/order/ViewOrderDetailsUseCase.java</code></li>
+  <li><code>application/port/input/usecase/order/ViewOrdersUseCase.java</code></li>
+  <li><code>application/port/input/usecase/payment/CreatePaymentCheckoutUrlUseCase.java</code></li>
+  <li><code>application/port/input/usecase/payment/ProcessPaymentCallbackUseCase.java</code></li>
+  <li><code>application/port/input/usecase/subscription/AllocateAssessmentQuotaToTeachersUseCase.java</code></li>
+  <li><code>application/port/input/usecase/subscription/AllocatePracticeQuotaToStudentsUseCase.java</code></li>
+  <li><code>application/port/input/usecase/subscription/ArchiveSubscriptionPlanUseCase.java</code></li>
+  <li><code>application/port/input/usecase/subscription/CancelSchoolSubscriptionUseCase.java</code></li>
+  <li><code>application/port/input/usecase/subscription/CreateSubscriptionPlanReplacementUseCase.java</code></li>
+  <li><code>application/port/input/usecase/subscription/CreateSubscriptionPlanUseCase.java</code></li>
+  <li><code>application/port/input/usecase/subscription/DeleteDraftSubscriptionPlanUseCase.java</code></li>
+  <li><code>application/port/input/usecase/subscription/ForceSuspendSubscriptionUseCase.java</code></li>
+  <li><code>application/port/input/usecase/subscription/FundQuotaFromBalanceUseCase.java</code></li>
+  <li><code>application/port/input/usecase/subscription/PreviewSchoolSubscriptionRenewalUseCase.java</code></li>
+  <li><code>application/port/input/usecase/subscription/PublishSubscriptionPlanUseCase.java</code></li>
+  <li><code>application/port/input/usecase/subscription/RenewSchoolSubscriptionUseCase.java</code></li>
+  <li><code>application/port/input/usecase/subscription/SetQuotaDistributionPolicyUseCase.java</code></li>
+  <li><code>application/port/input/usecase/subscription/UnsuspendSubscriptionUseCase.java</code></li>
+  <li><code>application/port/input/usecase/subscription/UpdateSubscriptionPlanReplacementUseCase.java</code></li>
+  <li><code>application/port/input/usecase/subscription/UpdateSubscriptionPlanUseCase.java</code></li>
+  <li><code>application/port/input/usecase/subscription/ViewAssessmentQuotaUserAllocationsUseCase.java</code></li>
+  <li><code>application/port/input/usecase/subscription/ViewMyAssessmentQuotaAllocationUseCase.java</code></li>
+  <li><code>application/port/input/usecase/subscription/ViewMyPracticeQuotaAllocationUseCase.java</code></li>
+  <li><code>application/port/input/usecase/subscription/ViewPracticeQuotaUserAllocationsUseCase.java</code></li>
+  <li><code>application/port/input/usecase/subscription/ViewSchoolSubscriptionHistoryUseCase.java</code></li>
+  <li><code>application/port/input/usecase/subscription/ViewSchoolSubscriptionQuotaRecordsUseCase.java</code></li>
+  <li><code>application/port/input/usecase/subscription/ViewSchoolSubscriptionUseCase.java</code></li>
+  <li><code>application/port/input/usecase/subscription/ViewSchoolSubscriptionsUseCase.java</code></li>
+  <li><code>application/port/input/usecase/subscription/ViewSubscriptionPlanDetailUseCase.java</code></li>
+  <li><code>application/port/input/usecase/subscription/ViewSubscriptionPlansUseCase.java</code></li>
+  <li><code>infrastructure/event/internal/consumer/InvoiceEmailConsumer.java</code></li>
+  <li><code>infrastructure/event/internal/consumer/SchoolDebtEmailConsumer.java</code></li>
+  <li><code>infrastructure/initializer/SubscriptionPlanInitializer.java</code></li>
+  <li><code>infrastructure/persistence/adapter/InvoiceRepositoryImpl.java</code></li>
+  <li><code>infrastructure/persistence/adapter/OrderItemRepositoryImpl.java</code></li>
+  <li><code>infrastructure/persistence/adapter/OrderRepositoryImpl.java</code></li>
+  <li><code>infrastructure/persistence/adapter/PaymentRecordRepositoryImpl.java</code></li>
+  <li><code>infrastructure/persistence/adapter/QuotaPricingCalibrationRepositoryImpl.java</code></li>
+  <li><code>infrastructure/persistence/adapter/SchoolBalanceEntryRepositoryImpl.java</code></li>
+  <li><code>infrastructure/persistence/adapter/SchoolBalanceRepositoryImpl.java</code></li>
+  <li><code>infrastructure/persistence/adapter/SchoolDebtEventRepositoryImpl.java</code></li>
+  <li><code>infrastructure/persistence/adapter/SchoolQuotaPolicyRepositoryImpl.java</code></li>
+  <li><code>infrastructure/persistence/adapter/SchoolSubscriptionEventRepositoryImpl.java</code></li>
+  <li><code>infrastructure/persistence/adapter/SchoolSubscriptionQuotaRecordRepositoryImpl.java</code></li>
+  <li><code>infrastructure/persistence/adapter/SchoolSubscriptionQuotaUserAllocationRepositoryImpl.java</code></li>
+  <li><code>infrastructure/persistence/adapter/SchoolSubscriptionRepositoryImpl.java</code></li>
+  <li><code>infrastructure/persistence/adapter/SubscriptionPlanQuotaRepositoryImpl.java</code></li>
+  <li><code>infrastructure/persistence/adapter/SubscriptionPlanRepositoryImpl.java</code></li>
+  <li><code>infrastructure/service/PayOSService.java</code></li>
+  <li><code>infrastructure/service/QuotaPricingService.java</code></li>
+  <li><code>infrastructure/service/SePayPaymentProcessService.java</code></li>
+  <li><code>infrastructure/worker/PendingOrderReconciler.java</code></li>
+  <li><code>infrastructure/worker/QuotaPricingCalibrationJob.java</code></li>
+  <li><code>infrastructure/worker/SubscriptionExpiryJob.java</code></li>
+  <li><code>interfaces/graphql/controller/OrderController.java</code></li>
+  <li><code>interfaces/graphql/controller/SchoolBalanceController.java</code></li>
+  <li><code>interfaces/graphql/controller/SubscriptionController.java</code></li>
+  <li><code>interfaces/rest/controller/OrderController.java</code></li>
+  <li><code>interfaces/rest/controller/PaymentController.java</code></li>
+  <li><code>interfaces/rest/controller/SubscriptionController.java</code></li>
+</ul>
+</details>
+<details><summary>Security / JWT / OAuth list (22 files)</summary>
+<ul>
+  <li><code>application/port/input/usecase/auth/GoogleTokenLoginUseCase.java</code></li>
+  <li><code>application/port/input/usecase/auth/LoginUseCase.java</code></li>
+  <li><code>application/port/input/usecase/auth/LogoutUseCase.java</code></li>
+  <li><code>application/port/input/usecase/auth/OAuth2LoginUseCase.java</code></li>
+  <li><code>application/port/input/usecase/auth/RefreshUseCase.java</code></li>
+  <li><code>application/port/input/usecase/auth/ResetPasswordUseCase.java</code></li>
+  <li><code>application/port/input/usecase/auth/SendResetPasswordOtpUseCase.java</code></li>
+  <li><code>application/port/input/usecase/auth/SetUpPasswordUseCase.java</code></li>
+  <li><code>infrastructure/filter/JwtAuthenticationFilter.java</code></li>
+  <li><code>infrastructure/security/Argon2PasswordEncodeProvider.java</code></li>
+  <li><code>infrastructure/security/AuthenticationManagerProvider.java</code></li>
+  <li><code>infrastructure/security/CustomOidcUserService.java</code></li>
+  <li><code>infrastructure/security/CustomUserDetailsService.java</code></li>
+  <li><code>infrastructure/security/DeviceSessionProvider.java</code></li>
+  <li><code>infrastructure/security/GoogleIdTokenProvider.java</code></li>
+  <li><code>infrastructure/security/JwtAuthTokenProvider.java</code></li>
+  <li><code>infrastructure/security/OneTimePasswordProvider.java</code></li>
+  <li><code>infrastructure/security/SecurePasswordTokenProvider.java</code></li>
+  <li><code>interfaces/grpc/security/JwtGrpcServerInterceptor.java</code></li>
+  <li><code>interfaces/grpc/security/StreamingServiceTokenInterceptor.java</code></li>
+  <li><code>interfaces/handler/OAuth2AuthenticationFailureHandler.java</code></li>
+  <li><code>interfaces/handler/OAuth2AuthenticationSuccessHandler.java</code></li>
+</ul>
+</details>
+
+<h3>1.9 Per-phase scope and expected cumulative counts</h3>
+<p>&ldquo;Files&rdquo; counts every file a phase edits. The two cumulative columns are what
+<code>grep -rl '@RequiredArgsConstructor' src/main/java | wc -l</code> and <code>grep -rl '@Slf4j' src/main/java | wc -l</code> must print
+after the phase when D1 = A and D2 = A. If D1 = B the constructor column stops at 604 and no infrastructure or interfaces
+constructor is touched. If D2 = B subtract the sensitive classes of Phases 8, 11 and 13 (constructors 63, 30 and 9; loggers 8, 10 and
+3). Numbers are re-measured at the start of every phase because a merge from another branch can change them.</p>
+<div class="table-scroll"><table>
+  <thead><tr><th>Phase</th><th class="num">Files</th><th class="num">Constructor only</th><th class="num">Both</th><th class="num">Logger only</th><th class="num">Cumulative <code>@RequiredArgsConstructor</code></th><th class="num">Cumulative <code>@Slf4j</code></th></tr></thead>
+  <tbody>
+    <tr><td>2 application services, mappers</td><td class="num">78</td><td class="num">62</td><td class="num">15</td><td class="num">1</td><td class="num">77</td><td class="num">16</td></tr>
+    <tr><td>3 use cases: assessment setup</td><td class="num">89</td><td class="num">88</td><td class="num">1</td><td class="num">0</td><td class="num">166</td><td class="num">17</td></tr>
+    <tr><td>4 use cases: assessment run</td><td class="num">80</td><td class="num">76</td><td class="num">4</td><td class="num">0</td><td class="num">246</td><td class="num">21</td></tr>
+    <tr><td>5 use cases: rubric, framework, scoring</td><td class="num">108</td><td class="num">108</td><td class="num">0</td><td class="num">0</td><td class="num">354</td><td class="num">21</td></tr>
+    <tr><td>6 use cases: question, practice, learner</td><td class="num">78</td><td class="num">72</td><td class="num">6</td><td class="num">0</td><td class="num">432</td><td class="num">27</td></tr>
+    <tr><td>7 use cases: school, user, rest</td><td class="num">109</td><td class="num">107</td><td class="num">2</td><td class="num">0</td><td class="num">541</td><td class="num">29</td></tr>
+    <tr><td>8 application money and auth</td><td class="num">63</td><td class="num">55</td><td class="num">8</td><td class="num">0</td><td class="num">604</td><td class="num">37</td></tr>
+    <tr><td>9 infrastructure persistence</td><td class="num">97</td><td class="num">92</td><td class="num">5</td><td class="num">0</td><td class="num">701</td><td class="num">42</td></tr>
+    <tr><td>10 infrastructure other</td><td class="num">53</td><td class="num">8</td><td class="num">30</td><td class="num">15</td><td class="num">739</td><td class="num">87</td></tr>
+    <tr><td>11 infrastructure money and security</td><td class="num">34</td><td class="num">24</td><td class="num">6</td><td class="num">4</td><td class="num">769</td><td class="num">97</td></tr>
+    <tr><td>12 interfaces other</td><td class="num">65</td><td class="num">54</td><td class="num">8</td><td class="num">3</td><td class="num">831</td><td class="num">108</td></tr>
+    <tr><td>13 interfaces money and security</td><td class="num">10</td><td class="num">7</td><td class="num">2</td><td class="num">1</td><td class="num">840</td><td class="num">111</td></tr>
+    <tr><td><strong>Total</strong></td><td class="num"><strong>864</strong></td><td class="num"><strong>753</strong></td><td class="num"><strong>87</strong></td><td class="num"><strong>24</strong></td><td class="num"><strong>840</strong></td><td class="num"><strong>111</strong></td></tr>
+  </tbody>
+</table></div>
+<p>Phases 2 to 8 are the application layer (604 constructors, 37 loggers). They are needed whatever D1 says. Phase 1 pilots two classes
+from Phases 2 and 6; later phases skip files already migrated.</p>
+
+<h3>1.10 Tools and commands</h3>
+<p>Nothing below is added to the repository (a script file fits none of the <code>AGENTS.md</code> file patterns). The migration script and the
+baseline snapshot live in the executor's scratchpad and are rebuilt from this page if lost.</p>
+<pre><code># Constructors still written by hand: assignment-only, public, no annotated parameters. Prints file names.
+G1='public\s+\w+\s*\([^)]*\)\s*\{\s*(?:this\.\w+\s*=\s*\w+;\s*)+\}'
+R=src/main/java/com/sep/vox
+check_ctor()   { grep -rlPz "$G1" "$@"; }
+check_logger() { grep -rl 'LoggerFactory' "$@"; }
+
+# Constructor snapshot (run from the repo root after ./gradlew compileJava). Takes about 2 s, 3356 lines today.
+snapshot() ( cd build/classes/java/main &amp;&amp; find com/sep/vox -name '*.class' | sort | sed 's/\.class$//' | tr '/' '.' \
+  | xargs javap -p -cp . 2&gt;/dev/null | grep -E '^ +[a-z ]*com\.sep\.vox\.[A-Za-z0-9_.$]+\(' | sed 's/^ *//' | sort &gt; "$1" )
+# usage: snapshot /abs/path/constructors-before.txt   ... after each phase: snapshot /abs/path/constructors-after.txt; diff before after</code></pre>
+<p>Before migration <code>check_ctor $R</code> prints 604 application, 166 infrastructure and 71 interfaces files. After migration the
+only names it may still print are <code>GradingSampleSelector</code> (two constructors) and <code>RefreshTokenSessionProvider</code>
+(unused parameter), plus any class of the sensitive lists when D2 = B. <code>DeleteSchoolRubricResultBandUseCase</code> is invisible to this
+grep (comments inside its constructor), so its job checks it by name.</p>
+
+<h2 id="decisions">2. Decisions</h2>
+
+<div class="decision" id="d1" data-decision-state="answered">
+  <h3>D1. Which layers get <code>@RequiredArgsConstructor</code>? <span class="status answered">Answered</span></h3>
+  <p><code>AGENTS.md</code> says explicit constructors outside application, so option A goes against the file as written and needs your
+  confirmation. Loggers are not affected: <code>@Slf4j</code> in infrastructure and interfaces is allowed today (&ldquo;no restriction on
+  libraries&rdquo;) and is migrated in every case.</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Application, infrastructure and interfaces: 840 classes. One convention
+  across the code base, which is what you asked for. The 21 <code>@Value</code>/<code>@Qualifier</code> constructors still stay explicit,
+  so infrastructure and interfaces keep a few. The &ldquo;Dependency injection&rdquo; bullet of <code>AGENTS.md</code> is rewritten in Phase 14
+  (so this answer also confirms that edit).</p>
+  <p><strong>B.</strong> Application only: 604 classes, no <code>AGENTS.md</code> conflict. 236 hand-written constructors stay in
+  infrastructure and interfaces, 108 of them persistence adapters, so the problem you described stays mostly visible in those layers.</p>
+  <div class="answer"><strong>Answer (2026-11-22):</strong> A &ndash; All three layers (application, infrastructure, interfaces): 840 classes. Also confirms the rewrite of the AGENTS.md &ldquo;Dependency injection&rdquo; bullet in Phase 14.</div>
+</div>
+
+<div class="decision" id="d2" data-decision-state="answered">
+  <h3>D2. Include the 107 money and security/JWT/OAuth files? <span class="status answered">Answered</span></h3>
+  <p>These are on the &ldquo;Ask first&rdquo; list (1.8). The edit only swaps a constructor and a logger field for annotations and changes no
+  logic, but the rule names these areas, so this needs an explicit yes.</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Include them, in their own phases 8, 11 and 13 so each can be reviewed
+  or reverted separately. Safety net: identical constructor snapshot, compile, the whole unit suite, and no logic line in the diff.</p>
+  <p><strong>B.</strong> Exclude them. The code base then keeps 107 files with explicit constructors and manual loggers, the
+  guardrail tests of D4 need a named exemption set for them, and Phases 8, 11 and 13 are marked Deferred.</p>
+  <div class="answer"><strong>Answer (2026-11-22):</strong> A &ndash; Include the 107 money and security/JWT/OAuth files, in the separate Phases 8, 11 and 13. No logic line may appear in those diffs.</div>
+</div>
+
+<div class="decision" id="d3" data-decision-state="answered">
+  <h3>D3. How many Vietnamese comments are translated in the files this plan edits? <span class="status answered">Answered</span></h3>
+  <p><code>AGENTS.md</code> says to translate Vietnamese comments &ldquo;in code you are already changing&rdquo; and not to touch files you are not
+  otherwise editing. It does not say whether a whole edited file counts as &ldquo;code you are changing&rdquo;.</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Only comments in the lines this plan edits: from the class declaration to the end
+  of the removed constructor (field comments, the logger comment, the constructor and parameter comments). 79 files, small diff. A comment
+  on a deleted constructor is translated and moved to the class or field, never dropped. Method bodies and class-level Javadoc are left.</p>
+  <p><strong>B.</strong> Every Vietnamese comment in every edited file: 430 files with a large share of unrelated lines. It is the broader
+  reading of the rule, but it turns a mechanical diff into a translation review of hundreds of comments and risks changed meaning.</p>
+  <div class="answer"><strong>Answer (2026-11-22):</strong> A &ndash; Translate only the Vietnamese comments on the lines being edited (class declaration to the end of the removed constructor): 79 files.</div>
+</div>
+
+<div class="decision" id="d4" data-decision-state="answered">
+  <h3>D4. Record the new convention and guard it with tests? <span class="status answered">Answered</span></h3>
+  <p>Without a rule the next feature brings hand-written constructors and loggers back. Changing <code>AGENTS.md</code> needs your
+  confirmation. All options update the &ldquo;Dependency injection&rdquo; bullet and add a logging bullet in <code>AGENTS.md</code>, so the file does
+  not contradict the code (with D1 = A the old sentence would be wrong).</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) <code>AGENTS.md</code> plus two source-scanning tests in the existing
+  <code>LombokUsageConventionTests</code>: no <code>LoggerFactory.getLogger</code> under <code>src/main</code>, and no assignment-only
+  constructor (the <code>G1</code> pattern) in the layers D1 allows. The second needs a two-name exemption set (<code>GradingSampleSelector</code>,
+  <code>RefreshTokenSessionProvider</code>) with a &ldquo;still applies&rdquo; test, the same pattern as the existing exemption sets, so it can only
+  shrink.</p>
+  <p><strong>B.</strong> <code>AGENTS.md</code> plus the logger test only. No exemption set, but constructors are a convention without a guard.</p>
+  <p><strong>C.</strong> <code>AGENTS.md</code> only. Smallest change; nothing stops a regression.</p>
+  <div class="answer"><strong>Answer (2026-11-22):</strong> A &ndash; Update AGENTS.md and add two guard tests to LombokUsageConventionTests (logger test, constructor test with the two-name exemption set). Also confirms the AGENTS.md edit in Phase 14.</div>
+</div>
+
+<h2 id="phases">3. Phases</h2>
+<p>Each phase is independently reviewable and leaves the build green. Phases 2 to 13 are each a mechanical script run followed by a
+review of <code>git diff --stat</code> and a sample of diffs; they never change a line of logic.</p>
+
+<div class="callout">
+  <p><strong>Migration rules every job follows</strong></p>
+  <p><strong>R1 Constructor.</strong> A class qualifies when it has exactly one constructor, it is <code>public</code>, its parameters carry no
+  annotation, its body is only <code>this.x = x;</code> for every parameter, and those fields are exactly its <code>private final</code>
+  fields without initializer. Delete the constructor, add <code>@RequiredArgsConstructor</code> and
+  <code>import lombok.RequiredArgsConstructor;</code>. Anything else keeps its constructor.</p>
+  <p><strong>R2 Annotation placement.</strong> Spring stereotypes first (<code>@Service</code>, <code>@Repository</code>, ...), then
+  <code>@RequiredArgsConstructor</code>, then <code>@Slf4j</code>. Put the Lombok imports in alphabetical order inside the existing
+  non-<code>java</code>, non-<code>com.sep</code> import group, as the entities do. Leave no stray blank lines where the constructor was.</p>
+  <p><strong>R3 Parameter order.</strong> Lombok orders parameters by field declaration order. Where the hand-written parameter order differs
+  (the 5 classes in 1.7), move the field declarations into the constructor's parameter order. Never change the parameter order, because tests
+  and <code>@InjectMocks</code> depend on it. A renamed parameter (<code>RubricController</code>) disappears with the constructor.</p>
+  <p><strong>R4 Logger.</strong> Delete the <code>Logger</code> field, add <code>@Slf4j</code> and <code>import lombok.extern.slf4j.Slf4j;</code>,
+  rename <code>LOGGER.</code> to <code>log.</code> in the class, and delete <code>org.slf4j.Logger</code> and
+  <code>org.slf4j.LoggerFactory</code> imports that are no longer used. The logger name stays the class (1.6). Do not add a
+  <code>lombok.config</code> (that would be a file outside the <code>AGENTS.md</code> patterns).</p>
+  <p><strong>R5 Comments (D3).</strong> Translate every Vietnamese comment on a line this change edits or deletes into English and keep its
+  meaning and its &ldquo;why&rdquo;. A comment on a deleted constructor or parameter moves to the class or the matching field. With D3 = B also translate
+  every other Vietnamese comment in the file. Leave user-facing string literals as they are.</p>
+  <p><strong>R6 Nothing else.</strong> No reformatting, renames, import reordering beyond R2, or logic edits. Test files are not edited.</p>
+  <p><strong>Standard checks (V) after every phase:</strong> V1 <code>./gradlew compileJava compileTestJava</code> passes and
+  <code>git diff --stat -- src/test</code> is empty; V2 <code>snapshot</code> (1.10) taken after the phase has an empty <code>diff</code> against the
+  baseline; V3 <code>./gradlew test</code> passes with 2551 tests and 0 failures (it includes <code>LayeredArchitectureTests</code> and
+  <code>LombokUsageConventionTests</code>); V4 the cumulative counts of 1.9 match.</p>
+</div>
+
+<!-- ============================================================ PHASE 1 -->
+<div class="phase" id="phase-1" data-status="todo">
+  <h3><span class="title">Phase 1 &ndash; Baseline, script and pilot</span>
+    <span class="tag">small &middot; mechanical</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> prove the approach on two classes and fix the checks before any wide edit. <strong>Depends on:</strong> nothing.</p>
+  <ul class="jobs">
+    <li class="job" id="job-1-1" data-status="todo">
+      <span class="title">1.1 Record the baseline and write the migration script</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>snapshot constructors-before.txt</code> (1.10) holds 3356 lines, and a dry run of the script
+         (R1 to R4, nothing written) reports 864 files, 840 constructors and 111 loggers with the per-phase split of 1.9;
+         <code>git status --short</code> is unchanged (only the existing <code>build.gradle</code> change and the plan folder).
+         <strong>Files:</strong> none in the repository.<br>
+         <strong>Verify:</strong> <code>wc -l constructors-before.txt</code>; the dry-run summary; <code>git status --short</code>.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-1-2" data-status="todo">
+      <span class="title">1.2 Pilot on two classes</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>EndPracticeSessionUseCase</code> (constructor and logger) and <code>PracticePaperDraftService</code>
+         (parameter order differs from field order; Vietnamese comments near its fields) use the annotations and have no explicit constructor
+         or logger field; the snapshot diff is empty; <code>javap -p</code> on the compiled <code>EndPracticeSessionUseCase</code> shows a
+         <code>public</code> constructor and <code>private static final org.slf4j.Logger log</code> (this settles the default access level the
+         Lombok page does not state). If anything differs from 1.3, stop and revise the plan.
+         <strong>Files:</strong> <code>application/port/input/usecase/practicesession/EndPracticeSessionUseCase.java</code>,
+         <code>application/port/input/service/PracticePaperDraftService.java</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>;
+         <code>./gradlew test --tests '*LayeredArchitectureTests' --tests '*LombokUsageConventionTests'</code>; snapshot diff.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify (phase):</strong> V1, V2, V3; <code>grep -rl '@RequiredArgsConstructor' src/main/java | wc -l</code> prints 2 and
+     <code>grep -rl '@Slf4j' src/main/java | wc -l</code> prints 2 (both pilot classes have a logger).</p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ============================================================ PHASE 2 -->
+<div class="phase" id="phase-2" data-status="todo">
+  <h3><span class="title">Phase 2 &ndash; Application: services and mappers</span>
+    <span class="tag">medium &middot; mechanical</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> migrate the 78 non-sensitive classes of <code>application/mapper</code> and <code>application/port/input/service</code>.
+     <strong>Depends on:</strong> Phase 1, D3.</p>
+  <ul class="jobs">
+    <li class="job" id="job-2-1" data-status="todo">
+      <span class="title">2.1 Mappers (6 files)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>check_ctor $R/application/mapper</code> prints nothing and the 6 classes carry
+         <code>@RequiredArgsConstructor</code>. <strong>Files:</strong> <code>application/mapper/**</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; <code>check_ctor $R/application/mapper</code>.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-2-2" data-status="todo">
+      <span class="title">2.2 Services (72 files, without the 15 money services)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>check_ctor</code> and <code>check_logger</code> on <code>$R/application/port/input/service</code> print only the
+         15 money services of 1.8 (they are Phase 8) and <code>GradingSampleSelector</code>; <code>ImportCommitService</code> has
+         <code>@Slf4j</code> and keeps its constructor; <code>PaymentProcessResolver</code> and <code>PracticeTopicOfferEnrichmentService</code>
+         keep theirs. <strong>Files:</strong> <code>application/port/input/service/**</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; the two greps above.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify (phase):</strong> V1 to V4 (cumulative 77 and 16).</p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ============================================================ PHASE 3 -->
+<div class="phase" id="phase-3" data-status="todo">
+  <h3><span class="title">Phase 3 &ndash; Application use cases: assessment setup</span>
+    <span class="tag">medium &middot; mechanical</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> migrate 89 use cases under <code>application/port/input/usecase</code>. <strong>Depends on:</strong> Phase 1, D3.</p>
+  <ul class="jobs">
+    <li class="job" id="job-3-1" data-status="todo">
+      <span class="title">3.1 <code>assessment</code>, <code>assessmentblueprint</code>, <code>assessmentcandidate</code>, <code>assessmentdirectory</code>, <code>assessmentpaper</code> (68 files)</span>
+      <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>check_ctor</code> and <code>check_logger</code> on those five directories print only
+         <code>assessment/EstimateAssessmentTokenQuotaUseCase.java</code> (Phase 8). <strong>Files:</strong> the five directories under
+         <code>usecase/</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; the two greps.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-3-2" data-status="todo">
+      <span class="title">3.2 <code>assessmentpolicyschool</code>, <code>assessmentpolicysystem</code>, <code>assessmentpolicyteacher</code> (21 files)</span>
+      <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> both greps print nothing for those three directories. <strong>Files:</strong> the three directories under
+         <code>usecase/</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; the two greps.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify (phase):</strong> V1 to V4 (cumulative 166 and 17).</p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ============================================================ PHASE 4 -->
+<div class="phase" id="phase-4" data-status="todo">
+  <h3><span class="title">Phase 4 &ndash; Application use cases: assessment run</span>
+    <span class="tag">medium &middot; mechanical</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> migrate 80 use cases about appeals, evaluation, grading, schedules and sessions. <strong>Depends on:</strong> Phase 1, D3.</p>
+  <ul class="jobs">
+    <li class="job" id="job-4-1" data-status="todo">
+      <span class="title">4.1 <code>assessmentappeal</code>, <code>assessmentevaluation</code>, <code>assessmentgrading</code>, <code>assessmentitemresponse</code> (53 files)</span>
+      <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> both greps print nothing for those four directories; <code>RecordAssessmentAttemptEvaluationUseCase</code>
+         (order differs, built in a test) has its fields in constructor order and the snapshot diff is empty. <strong>Files:</strong> the four
+         directories under <code>usecase/</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; the two greps; snapshot diff.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-4-2" data-status="todo">
+      <span class="title">4.2 <code>assessmentschedule</code>, <code>assessmentsession</code>, <code>assessmentturn</code> (27 files)</span>
+      <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> both greps print nothing for those three directories. <strong>Files:</strong> the three directories under
+         <code>usecase/</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; the two greps.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify (phase):</strong> V1 to V4 (cumulative 246 and 21).</p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ============================================================ PHASE 5 -->
+<div class="phase" id="phase-5" data-status="todo">
+  <h3><span class="title">Phase 5 &ndash; Application use cases: rubric, framework, scoring rule</span>
+    <span class="tag">medium &middot; mechanical</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> migrate 108 use cases, none of which has a logger. <strong>Depends on:</strong> Phase 1, D3.</p>
+  <ul class="jobs">
+    <li class="job" id="job-5-1" data-status="todo">
+      <span class="title">5.1 <code>framework</code>, <code>scoringrule</code> (41 files)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>check_ctor</code> prints nothing for those two directories. <strong>Files:</strong> the two directories
+         under <code>usecase/</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; <code>check_ctor</code> on both directories.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-5-2" data-status="todo">
+      <span class="title">5.2 <code>rubricschool</code>, <code>rubricsystem</code>, <code>rubricteacher</code> (67 files)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>check_ctor</code> prints nothing for those three directories, and
+         <code>DeleteSchoolRubricResultBandUseCase</code> has <code>@RequiredArgsConstructor</code> and no explicit constructor, with its two
+         <code>// BỔ SUNG</code> comments translated and kept (D3). The other 5 use cases with a comment above the constructor keep that
+         comment in English on the class. <strong>Files:</strong> the three directories under <code>usecase/</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; <code>check_ctor</code> on the three directories;
+         <code>grep -c 'public DeleteSchoolRubricResultBandUseCase(' $R/application/port/input/usecase/rubricschool/DeleteSchoolRubricResultBandUseCase.java</code> prints 0.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify (phase):</strong> V1 to V4 (cumulative 354 and 21).</p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ============================================================ PHASE 6 -->
+<div class="phase" id="phase-6" data-status="todo">
+  <h3><span class="title">Phase 6 &ndash; Application use cases: question, practice, learner profile</span>
+    <span class="tag">medium &middot; mechanical</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> migrate 78 use cases. <strong>Depends on:</strong> Phase 1, D3.</p>
+  <ul class="jobs">
+    <li class="job" id="job-6-1" data-status="todo">
+      <span class="title">6.1 <code>question</code>, <code>questionbank</code>, <code>questiontopic</code>, <code>topicsuggestion</code> (47 files)</span>
+      <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> both greps print nothing for those four directories. <strong>Files:</strong> the four directories under
+         <code>usecase/</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; the two greps.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-6-2" data-status="todo">
+      <span class="title">6.2 <code>interestdimension</code>, <code>learnerprofile</code>, <code>practiceevaluation</code>, <code>practiceplanning</code>, <code>practicesession</code>, <code>supportedlanguage</code> (31 files)</span>
+      <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> both greps print nothing for those six directories; <code>ViewInterestQuizItemsUseCase</code> (order
+         differs) has its fields in constructor order and the snapshot diff is empty. <strong>Files:</strong> the six directories under
+         <code>usecase/</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; the two greps; snapshot diff.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify (phase):</strong> V1 to V4 (cumulative 432 and 27).</p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ============================================================ PHASE 7 -->
+<div class="phase" id="phase-7" data-status="todo">
+  <h3><span class="title">Phase 7 &ndash; Application use cases: school, user and the rest</span>
+    <span class="tag">medium &middot; mechanical</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> migrate the last 109 non-sensitive use cases. <strong>Depends on:</strong> Phase 1, D3.</p>
+  <ul class="jobs">
+    <li class="job" id="job-7-1" data-status="todo">
+      <span class="title">7.1 <code>school</code>, <code>schoolclass</code>, <code>schoolclassuser</code>, <code>schooldirectory</code>, <code>schoolgrade</code>, <code>schoolroom</code>, <code>schooluser</code> (57 files)</span>
+      <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> both greps print nothing for those seven directories. School-scoped checks in these use cases are untouched.
+         <strong>Files:</strong> the seven directories under <code>usecase/</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; the two greps.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-7-2" data-status="todo">
+      <span class="title">7.2 <code>registration</code>, <code>role</code>, <code>user</code>, <code>gradelevel</code>, <code>dashboard</code>, <code>importfile</code>, <code>notification</code>, <code>proctoring</code>, <code>recording</code>, <code>stream</code> (52 files)</span>
+      <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> both greps print nothing for those ten directories. <strong>Files:</strong> the ten directories under
+         <code>usecase/</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; the two greps.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify (phase):</strong> V1 to V4 (cumulative 541 and 29). After this phase
+     <code>check_ctor $R/application</code> and <code>check_logger $R/application</code> print only the sensitive classes of Phase 8,
+     <code>GradingSampleSelector</code> and nothing else.</p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ============================================================ PHASE 8 -->
+<div class="phase" id="phase-8" data-status="todo">
+  <h3><span class="title">Phase 8 &ndash; Application: money and auth classes</span>
+    <span class="tag">medium &middot; needs D2</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> migrate the 63 application classes on the money and security lists (1.8). Constructors and loggers only; no
+     quota, order, payment, balance, login or token logic is edited. <strong>Depends on:</strong> Phase 7, D2, D3.</p>
+  <ul class="jobs">
+    <li class="job" id="job-8-1" data-status="todo">
+      <span class="title">8.1 Money services and the quota estimate use case (16 files)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the 15 money services under <code>application/port/input/service</code> and
+         <code>EstimateAssessmentTokenQuotaUseCase</code> carry the annotations; <code>git diff</code> of these files shows only
+         annotation, import, constructor and logger lines. <strong>Files:</strong> the money list entries under <code>application/port/input/service</code>
+         and <code>usecase/assessment</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; <code>check_ctor</code> and <code>check_logger</code> on
+         <code>$R/application/port/input/service</code> print only <code>GradingSampleSelector</code>.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-8-2" data-status="todo">
+      <span class="title">8.2 Money use cases: <code>order</code>, <code>payment</code>, <code>balance</code>, <code>metering</code>, <code>subscription</code> (39 files)</span>
+      <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> both greps print nothing for those five directories. <strong>Files:</strong> the five directories under
+         <code>usecase/</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; the two greps.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-8-3" data-status="todo">
+      <span class="title">8.3 Auth use cases: <code>auth</code> (8 files)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> both greps print nothing for <code>usecase/auth</code>; <code>RefreshUseCase</code> (order differs) has its
+         fields in constructor order and the snapshot diff is empty; no token, claim or password line appears in the diff.
+         <strong>Files:</strong> <code>application/port/input/usecase/auth/**</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; the two greps; snapshot diff;
+         <code>./gradlew test --tests '*auth*'</code> only if that filter matches tests (Gradle fails on no match), otherwise V3.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify (phase):</strong> V1 to V4 (cumulative 604 and 37). <code>check_ctor $R/application</code> prints only
+     <code>GradingSampleSelector</code>; <code>check_logger $R/application</code> prints nothing. The application layer is finished.</p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ============================================================ PHASE 9 -->
+<div class="phase" id="phase-9" data-status="todo">
+  <h3><span class="title">Phase 9 &ndash; Infrastructure: persistence</span>
+    <span class="tag">large &middot; needs D1 for constructors</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> migrate 97 files under <code>infrastructure/persistence</code> (repository adapters, audit, query). With D1 = A both
+     annotations are applied; with D1 = B only the 5 adapters that have a logger change. <strong>Depends on:</strong> Phase 8, D1, D3.</p>
+  <ul class="jobs">
+    <li class="job" id="job-9-1" data-status="todo">
+      <span class="title">9.1 Adapters: <code>persistence/adapter</code> without the 15 money adapters (93 files)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>check_logger</code> on <code>$R/infrastructure/persistence/adapter</code> prints only money adapters; with D1 = A
+         <code>check_ctor</code> there prints only the same 15 money adapters. Paging code (<code>OneBasedPaging</code>) is untouched, so
+         <code>PagingConventionTests</code> still passes. <strong>Files:</strong> <code>infrastructure/persistence/adapter/**</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; the two greps;
+         <code>./gradlew test --tests '*PagingConventionTests'</code>.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-9-2" data-status="todo">
+      <span class="title">9.2 <code>persistence/audit</code> and <code>persistence/query</code> (4 files)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> with D1 = A <code>check_ctor</code> prints nothing for those two directories (with D1 = B this job is
+         only the logger check and has nothing to edit). <strong>Files:</strong> <code>infrastructure/persistence/audit/**</code>,
+         <code>infrastructure/persistence/query/**</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; <code>check_ctor</code> and <code>check_logger</code> on both
+         directories.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify (phase):</strong> V1 to V4 (D1 = A: cumulative 701 and 42; D1 = B: 604 and 42).</p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ============================================================ PHASE 10 -->
+<div class="phase" id="phase-10" data-status="todo">
+  <h3><span class="title">Phase 10 &ndash; Infrastructure: events, initializers, services, workers, config</span>
+    <span class="tag">medium &middot; needs D1 for constructors</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> migrate 53 non-sensitive files; 45 of them have a logger (15 of those get <code>@Slf4j</code> only). Classes with
+     <code>@Value</code> or <code>@Qualifier</code> constructor parameters keep their constructor and only get <code>@Slf4j</code>.
+     <strong>Depends on:</strong> Phase 8, D1, D3.</p>
+  <ul class="jobs">
+    <li class="job" id="job-10-1" data-status="todo">
+      <span class="title">10.1 <code>event</code>, <code>initializer</code>, <code>repository</code> (26 files)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>check_logger</code> on those three directories prints only
+         <code>initializer/SubscriptionPlanInitializer.java</code>, <code>event/internal/consumer/InvoiceEmailConsumer.java</code> and
+         <code>event/internal/consumer/SchoolDebtEmailConsumer.java</code> (all three are money classes, Phase 11); with D1 = A
+         <code>check_ctor</code> prints only those same three. Event payload and topic classes are untouched. <strong>Files:</strong>
+         <code>infrastructure/event/**</code>, <code>infrastructure/initializer/**</code>, <code>infrastructure/repository/**</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; the two greps.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-10-2" data-status="todo">
+      <span class="title">10.2 <code>service</code>, <code>worker</code>, <code>config</code>, <code>client</code>, <code>filter</code> (27 files)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>check_logger</code> on those five directories prints only the sensitive classes of Phase 11
+         (<code>PayOSService</code>, <code>SePayPaymentProcessService</code>, <code>QuotaPricingService</code>, the three money jobs,
+         <code>JwtAuthenticationFilter</code>); with D1 = A <code>check_ctor</code> prints only those and
+         <code>RefreshTokenSessionProvider</code> is not in these directories. Scheduler and outbox classes keep their
+         <code>@Scheduled</code> and <code>@ConditionalOnProperty</code> annotations. <strong>Files:</strong>
+         <code>infrastructure/{service,worker,config,client,filter}/**</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; the two greps.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify (phase):</strong> V1 to V4 (D1 = A: cumulative 739 and 87; D1 = B: 604 and 87).</p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ============================================================ PHASE 11 -->
+<div class="phase" id="phase-11" data-status="todo">
+  <h3><span class="title">Phase 11 &ndash; Infrastructure: money and security classes</span>
+    <span class="tag">medium &middot; needs D1 and D2</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> migrate the 34 infrastructure classes on the money and security lists. No payment, pricing, token or authentication
+     line is edited. <strong>Depends on:</strong> Phase 10, D1, D2, D3.</p>
+  <ul class="jobs">
+    <li class="job" id="job-11-1" data-status="todo">
+      <span class="title">11.1 Money: adapters, consumers, workers, <code>PayOSService</code>, <code>SePayPaymentProcessService</code>, <code>QuotaPricingService</code> (24 files)</span>
+      <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the 24 money-list files under <code>infrastructure</code> carry <code>@Slf4j</code> where they had a logger and (D1 = A)
+         <code>@RequiredArgsConstructor</code> where R1 applies; <code>PayOSService</code> and <code>SePayPaymentProcessService</code> keep their
+         constructors and get only <code>@Slf4j</code>; the diff shows no change to a payment URL, key or amount line.
+         <strong>Files:</strong> the infrastructure money list entries (1.8).<br>
+         <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; <code>check_ctor $R/infrastructure</code> and
+         <code>check_logger $R/infrastructure</code> print only security-list files and <code>RefreshTokenSessionProvider</code> (with D1 = B,
+         <code>check_ctor</code> still lists every infrastructure constructor, so compare against the 165 of 1.5 instead).</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-11-2" data-status="todo">
+      <span class="title">11.2 Security: <code>infrastructure/security</code> and <code>JwtAuthenticationFilter</code> (10 files)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the 10 security-list files under <code>infrastructure</code> carry the annotations R1 and R4 allow;
+         <code>RefreshTokenSessionProvider</code> and <code>GoogleIdTokenProvider</code> keep their constructors (<code>GoogleIdTokenProvider</code>
+         gets <code>@Slf4j</code> only); <code>JwtAuthenticationFilter</code> still extends <code>OncePerRequestFilter</code>; the diff
+         contains no claim, secret or token-handling line. <strong>Files:</strong> the infrastructure security list entries (1.8).<br>
+         <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; with D1 = A <code>check_ctor $R/infrastructure</code> prints only
+         <code>RefreshTokenSessionProvider</code>, and <code>check_logger $R/infrastructure</code> prints nothing; snapshot diff.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify (phase):</strong> V1 to V4 (D1 = A: cumulative 769 and 97; D1 = B: 604 and 97). <code>check_logger $R/infrastructure</code> prints nothing.</p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ============================================================ PHASE 12 -->
+<div class="phase" id="phase-12" data-status="todo">
+  <h3><span class="title">Phase 12 &ndash; Interfaces: controllers, consumers, exception handlers</span>
+    <span class="tag">medium &middot; needs D1 for constructors</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> migrate 65 non-sensitive files in <code>interfaces/graphql</code>, <code>interfaces/rest</code> and
+     <code>interfaces/kafka</code>. <code>@PreAuthorize</code> and route annotations stay exactly where they are. <strong>Depends on:</strong>
+     Phase 8, D1, D3.</p>
+  <ul class="jobs">
+    <li class="job" id="job-12-1" data-status="todo">
+      <span class="title">12.1 GraphQL: controllers, config, exception resolver (29 files)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>check_logger $R/interfaces/graphql</code> prints only money controllers (Phase 13); with D1 = A
+         <code>check_ctor $R/interfaces/graphql</code> prints only those. The 13 <code>*GraphQlDataLoaderConfig</code> classes keep their
+         constructors. <strong>Files:</strong> <code>interfaces/graphql/**</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; the two greps;
+         <code>./gradlew test --tests '*GraphQl*'</code> only if it matches tests, otherwise V3.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-12-2" data-status="todo">
+      <span class="title">12.2 REST controllers, Kafka consumers, REST exception handler (36 files)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>check_logger</code> on <code>$R/interfaces/rest</code> and <code>$R/interfaces/kafka</code> prints nothing; with
+         D1 = A <code>check_ctor</code> prints only money controllers; <code>RubricController</code> (33 parameters) and
+         <code>AssessmentSessionController</code> (order differs) are migrated with an empty snapshot diff.
+         <strong>Files:</strong> <code>interfaces/rest/**</code>, <code>interfaces/kafka/**</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; the two greps; snapshot diff. The
+         <code>@RestControllerTest</code> slices in V3 exercise controller construction.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify (phase):</strong> V1 to V4 (D1 = A: cumulative 831 and 108; D1 = B: 604 and 108).</p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ============================================================ PHASE 13 -->
+<div class="phase" id="phase-13" data-status="todo">
+  <h3><span class="title">Phase 13 &ndash; Interfaces: money and security classes</span>
+    <span class="tag">small &middot; needs D1 and D2</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> migrate the last 10 files: money controllers and the gRPC and OAuth2 security classes. <strong>Depends on:</strong>
+     Phase 12, D1, D2, D3.</p>
+  <ul class="jobs">
+    <li class="job" id="job-13-1" data-status="todo">
+      <span class="title">13.1 Money controllers: GraphQL and REST <code>Order</code>, <code>Subscription</code>, <code>SchoolBalance</code>, <code>Payment</code> (6 files)</span>
+      <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the 6 controllers carry the annotations R1 and R4 allow, and their <code>@PreAuthorize</code> lines are unchanged
+         (compare with <code>git diff</code>); the controller authorization tests in V3 pass. <strong>Files:</strong> the interfaces money list
+         entries (1.8).<br>
+         <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; <code>check_ctor</code> and <code>check_logger</code> on
+         <code>$R/interfaces/rest/controller</code> and <code>$R/interfaces/graphql/controller</code> print nothing.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-13-2" data-status="todo">
+      <span class="title">13.2 Security: <code>JwtGrpcServerInterceptor</code>, <code>StreamingServiceTokenInterceptor</code>, <code>OAuth2AuthenticationSuccessHandler</code>, <code>OAuth2AuthenticationFailureHandler</code> (4 files)</span>
+      <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the 4 classes carry the annotations R1 and R4 allow (<code>OAuth2AuthenticationFailureHandler</code> has no
+         explicit constructor and only gets <code>@Slf4j</code>); <code>@GlobalServerInterceptor</code> and <code>@Order</code> annotations on the
+         gRPC classes are unchanged. <strong>Files:</strong> <code>interfaces/grpc/security/**</code>, <code>interfaces/handler/**</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; <code>check_logger $R/interfaces</code> prints nothing, and with
+         D1 = A <code>check_ctor $R/interfaces</code> prints nothing (the 13 data-loader configs and the <code>@Qualifier</code> controllers do
+         not match the pattern).</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify (phase):</strong> V1 to V4 (D1 = A: cumulative 840 and 111; D1 = B: 604 and 111). <code>check_logger $R</code> prints nothing
+     (D2 = A). If Docker is available also run <code>./gradlew integrationTest --tests '*VoxApplicationTests'</code> to prove the Spring context
+     still wires.</p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ============================================================ PHASE 14 -->
+<div class="phase" id="phase-14" data-status="todo">
+  <h3><span class="title">Phase 14 &ndash; Record the convention and guard it</span>
+    <span class="tag">small &middot; needs D4</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> write the new rule into the file agents read and, per D4, make the build fail on a regression.
+     <strong>Depends on:</strong> Phases 1 to 13 (the guards must pass on the migrated code), D1, D2, D4.</p>
+  <ul class="jobs">
+    <li class="job" id="job-14-1" data-status="todo">
+      <span class="title">14.1 Update <code>AGENTS.md</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the &ldquo;Dependency injection&rdquo; bullet says: constructor injection with <code>private final</code> fields; a
+         constructor that only assigns its parameters is written as <code>@RequiredArgsConstructor</code> in the layers D1 allows (never in
+         domain); an explicit constructor stays only when it does more than assign, when parameters carry <code>@Value</code> or
+         <code>@Qualifier</code>, or when there are several constructors; parameter order is field order. A new bullet says loggers use
+         <code>@Slf4j</code> and are named <code>log</code>, and never <code>LoggerFactory.getLogger</code> (domain has none). The Testing paragraph about
+         <code>LombokUsageConventionTests</code> names the new tests when D4 = A or B. <strong>Files:</strong> <code>AGENTS.md</code>.<br>
+         <strong>Verify:</strong> read the two edited bullets back; <code>git diff --stat</code> shows only <code>AGENTS.md</code> for this job.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-14-2" data-status="todo">
+      <span class="title">14.2 Add the guardrail tests (D4 = A or B)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>LombokUsageConventionTests</code> has a logger test (no <code>LoggerFactory.getLogger</code> anywhere under
+         <code>src/main/java</code>; with D2 = B a named exemption set for the 107 files that may only shrink) and, for D4 = A, a constructor test
+         (the <code>G1</code> pattern, scoped to the layers D1 allows) with an exemption set of exactly <code>GradingSampleSelector.java</code> and
+         <code>RefreshTokenSessionProvider.java</code> plus a test that each exempted file still matches. All pass on the migrated code, and a
+         temporary violation (a manual logger in one class, then an assignment-only constructor in another, both reverted) makes the matching test
+         fail. <strong>Files:</strong> <code>src/test/java/com/sep/vox/architecture/LombokUsageConventionTests.java</code>.<br>
+         <strong>Verify:</strong> <code>./gradlew test --tests '*LombokUsageConventionTests' --tests '*LayeredArchitectureTests'</code>.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify (phase):</strong> V1 and V3; <code>git diff --stat</code> for the phase lists only <code>AGENTS.md</code> and
+     <code>LombokUsageConventionTests.java</code>.</p>
+  <ul class="status-log"></ul>
+</div>
+
+<h2 id="risks">4. Risks</h2>
+<ul>
+  <li><strong>A reordered constructor breaks callers silently.</strong> Lombok orders parameters by field order and 5 classes differ.
+      Limit: R3 reorders fields, never parameters; V2 compares every constructor's parameter types before and after, and
+      <code>compileTestJava</code> must pass with zero test edits (247 classes are built by hand in tests). The snapshot cannot see two parameters of
+      the same type swapped, so R3 is checked by eye on the 5 classes.</li>
+  <li><strong>A bug in the migration script across 864 files.</strong> Limit: dry run first, a two-class pilot (Phase 1), phases of at most 109 files,
+      <code>git diff --stat</code> and a sample of each diff reviewed per job, and the compile and snapshot checks.</li>
+  <li><strong>Sensitive code is touched.</strong> Limit: D2, separate phases, and a rule that no logic line may appear in those diffs.</li>
+  <li><strong>A field called <code>log</code> already exists</strong> in some class and clashes with the generated one. Lombok then skips the field with a
+      warning and the class would reference the wrong member. Limit: <code>compileJava</code> after each job; read compiler warnings from Lombok.</li>
+  <li><strong>Merge conflicts</strong> with other branches, because 864 files change. Limit: small phases the user can commit and merge one at a time, and
+      the counts in 1.9 are re-measured at the start of each phase.</li>
+  <li><strong>Comments lost or mistranslated</strong> when a constructor is deleted. Limit: R5 and D3; the 7 files with comments on the constructor
+      are checked by name.</li>
+  <li><strong>The unrelated <code>build.gradle</code> change</strong> gets committed with this work. Limit: it is called out in 1.1; commits happen only
+      when asked.</li>
+</ul>
+
+<h2 id="scope">5. Out of scope</h2>
+<ul>
+  <li>The 21 constructors with <code>@Value</code> or <code>@Qualifier</code> parameters (16 infrastructure, 5 interfaces). Migrating them needs a
+      <code>lombok.config</code> with <code>lombok.copyableAnnotations</code>, a file outside the <code>AGENTS.md</code> patterns, so it is an
+      &ldquo;Ask first&rdquo; item for a separate task.</li>
+  <li>Constructors that do real work (1.5): lookup-map builders, validation, trimmed configuration, the two-constructor classes, exception classes, the 13
+      GraphQL data-loader configs, and nested classes.</li>
+  <li>Fixing <code>RefreshTokenSessionProvider</code>'s unused <code>DeviceSessionRepository</code> parameter. It is reported in the final report.</li>
+  <li>Domain: Lombok is forbidden there and it has no logger and only an irrelevant false positive.</li>
+  <li>Renaming fields or parameters, reformatting, import cleanup beyond R2, any logic change, and any test edit before Phase 14.</li>
+  <li>Entity, DTO and builder Lombok usage that already exists.</li>
+  <li>Committing or pushing: only when the user asks.</li>
+</ul>
+
+<h2 id="verify">6. Verification</h2>
+<ul>
+  <li><code>check_ctor $R</code> prints only <code>GradingSampleSelector</code> and <code>RefreshTokenSessionProvider</code> (plus any sensitive or
+      infrastructure/interfaces class the D1 and D2 answers left alone), and <code>check_logger $R</code> prints nothing.</li>
+  <li><code>grep -rl '@RequiredArgsConstructor' src/main/java | wc -l</code> prints 840 and <code>grep -rl '@Slf4j' src/main/java | wc -l</code> prints 111
+      (D1 = A, D2 = A); other answers give the numbers in 1.9.</li>
+  <li>The final constructor snapshot has an empty <code>diff</code> against <code>constructors-before.txt</code>, and
+      <code>git diff --stat -- src/test</code> shows only <code>LombokUsageConventionTests.java</code>.</li>
+  <li><code>./gradlew compileJava compileTestJava</code> and <code>./gradlew test</code> pass with 2551 tests (plus the new guard tests) and 0 failures.
+      <code>./gradlew integrationTest</code> passes if Docker is available; otherwise the final report says it was not run.</li>
+  <li>Run the <code>verify-plan</code> skill after the last phase.</li>
+</ul>
+
+<h2 id="changelog">7. Change log</h2>
+<div class="table-scroll"><table>
+  <thead><tr><th>Date</th><th>Change</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>2026-11-22</td><td>Plan written (Draft)</td><td>First version</td></tr>
+    <tr><td>2026-11-22</td><td>D1 to D4 answered, all with option A (recommended)</td><td>User answered in chat; the phases were already written for these options, so no phase or job changed</td></tr>
+    <tr><td>2026-11-22</td><td>Approved</td><td>User approved the plan as written in chat</td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="notes">8. Implementation notes</h2>
+<p>Filled in by <code>implement-plan</code>: deviations from the plan, results of <code>verify-plan</code>, and
+problems noticed but not fixed.</p>
+<ul id="notes-list"></ul>
+
+</div>
+<script>
+  (function () {
+    var labels = { todo: "Not started", progress: "In progress", done: "Done", blocked: "Blocked", skipped: "Deferred" };
+    var body = document.getElementById("overview-body");
+    var summary = document.getElementById("overview-summary");
+    var phaseCounts = {};
+    document.querySelectorAll(".phase[data-status], .job[data-status]").forEach(function (element) {
+      var status = element.getAttribute("data-status");
+      if (element.classList.contains("phase")) { phaseCounts[status] = (phaseCounts[status] || 0) + 1; }
+      var row = body.insertRow();
+      var nameCell = row.insertCell();
+      if (element.classList.contains("job")) { nameCell.className = "indent"; }
+      var link = document.createElement("a");
+      link.href = "#" + element.id;
+      link.textContent = element.querySelector(".title").textContent;
+      nameCell.appendChild(link);
+      var pill = document.createElement("span");
+      pill.className = "status " + status;
+      pill.textContent = labels[status] || status;
+      row.insertCell().appendChild(pill);
+    });
+    var parts = Object.keys(labels).filter(function (key) { return phaseCounts[key]; })
+      .map(function (key) { return phaseCounts[key] + " " + labels[key].toLowerCase(); });
+    summary.textContent = parts.length ? "Phases: " + parts.join(" · ") : "";
+  })();
+</script>
+</body>
+</html>

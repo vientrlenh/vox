@@ -25,13 +25,13 @@ class AssessmentDirectoryAuthorizationBoundaryTests {
 
     @Test
     void every_assessment_directory_resolver_should_be_gated_for_assessment_organisers() {
-        List<Method> resolvers = Arrays.stream(AssessmentDirectoryController.class.getDeclaredMethods())
+        List<Method> resolvers = Arrays.stream(GraphQLAssessmentDirectoryController.class.getDeclaredMethods())
             .filter(method -> method.isAnnotationPresent(QueryMapping.class)
                 || method.isAnnotationPresent(SchemaMapping.class))
             .toList();
 
         assertThat(resolvers)
-            .as("AssessmentDirectoryController phải có đúng 4 query: lớp, niên khóa, học sinh, giám thị")
+            .as("GraphQLAssessmentDirectoryController phải có đúng 4 query: lớp, niên khóa, học sinh, giám thị")
             .hasSize(4);
 
         assertThat(resolvers)
@@ -51,7 +51,7 @@ class AssessmentDirectoryAuthorizationBoundaryTests {
 
         assertThat(adminOnly)
             .allSatisfy(method -> assertThat(preAuthorizeValue(method))
-                .as("%s không được nới quyền cho TEACHER — thêm query vào AssessmentDirectoryController thay vì nới ở đây",
+                .as("%s không được nới quyền cho TEACHER — thêm query vào GraphQLAssessmentDirectoryController thay vì nới ở đây",
                     method.getName())
                 .isEqualTo("hasRole('SCHOOL_ADMIN')"));
     }
@@ -62,11 +62,11 @@ class AssessmentDirectoryAuthorizationBoundaryTests {
      * is found, so the test does not silently skip when someone renames it.
      */
     private static Method declared(String name) {
-        List<Method> candidates = Arrays.stream(SchoolController.class.getDeclaredMethods())
+        List<Method> candidates = Arrays.stream(GraphQLSchoolController.class.getDeclaredMethods())
             .filter(method -> method.getName().equals(name))
             .toList();
         assertThat(candidates)
-            .as("SchoolController.%s phải tồn tại và không bị nạp chồng", name)
+            .as("GraphQLSchoolController.%s phải tồn tại và không bị nạp chồng", name)
             .hasSize(1);
         return candidates.getFirst();
     }

@@ -21,7 +21,7 @@ import com.sep.vox.application.exception.DataConflictException;
 
 import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.UpdateSchoolUserCommand;
+import com.sep.vox.application.port.input.command.schooluser.UpdateSchoolUserCommand;
 import com.sep.vox.application.port.input.usecase.schooluser.UpdateSchoolUserUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.schooluser.UpdateSchoolUserResponse;

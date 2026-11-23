@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.port.input.query.ViewMyAssessmentsQuery;
+import com.sep.vox.application.port.input.query.assessment.ViewMyAssessmentsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.query.dto.AssessmentAttemptSummary;
 import com.sep.vox.application.query.dto.StudentAssessmentRowInfo;

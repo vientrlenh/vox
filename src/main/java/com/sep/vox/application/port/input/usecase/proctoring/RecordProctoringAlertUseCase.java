@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.port.input.command.RecordProctoringAlertCommand;
+import com.sep.vox.application.port.input.command.proctoring.RecordProctoringAlertCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.model.assessment.AssessmentProctoringAlert;
 import com.sep.vox.domain.repository.AssessmentProctoringAlertRepository;

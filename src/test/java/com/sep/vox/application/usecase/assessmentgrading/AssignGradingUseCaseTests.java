@@ -24,7 +24,7 @@ import org.mockito.ArgumentCaptor;
 import com.sep.vox.application.port.input.service.GradingAssignmentNotificationService;
 import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.port.input.command.AssignGradingCommand;
+import com.sep.vox.application.port.input.command.assessmentgrading.AssignGradingCommand;
 import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
 import com.sep.vox.application.port.input.usecase.assessmentgrading.AssignGradingUseCase;
 import com.sep.vox.application.query.repository.AssessmentGradingQueryRepository;

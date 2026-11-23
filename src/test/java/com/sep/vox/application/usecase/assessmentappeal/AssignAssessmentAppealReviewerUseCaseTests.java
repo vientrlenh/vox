@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import com.sep.vox.application.exception.ResourceDuplicatedException;
-import com.sep.vox.application.port.input.command.AssignAssessmentAppealReviewerCommand;
+import com.sep.vox.application.port.input.command.assessmentappeal.AssignAssessmentAppealReviewerCommand;
 import com.sep.vox.application.port.input.service.AssessmentAppealAccessService;
 import com.sep.vox.application.port.input.service.AssessmentAppealAccessService.AppealContext;
 import com.sep.vox.application.port.input.service.ResultStatusHistoryRecorder;

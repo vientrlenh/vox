@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.port.input.query.ViewAssignableReviewersQuery;
+import com.sep.vox.application.port.input.query.assessmentappeal.ViewAssignableReviewersQuery;
 import com.sep.vox.application.port.input.service.AssessmentAppealAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.query.dto.AppealReviewerLiteInfo;

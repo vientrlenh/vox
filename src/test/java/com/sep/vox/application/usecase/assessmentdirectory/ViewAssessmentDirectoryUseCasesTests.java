@@ -17,7 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.port.input.query.ViewAssessmentDirectoryQuery;
+import com.sep.vox.application.port.input.query.assessmentdirectory.ViewAssessmentDirectoryQuery;
 import com.sep.vox.application.port.input.service.AssessmentDirectoryAccessService;
 import com.sep.vox.application.port.input.service.AssessmentDirectoryAccessService.AssessmentDirectoryScope;
 import com.sep.vox.application.port.input.usecase.assessmentdirectory.ViewAssessmentDirectoryClassesUseCase;

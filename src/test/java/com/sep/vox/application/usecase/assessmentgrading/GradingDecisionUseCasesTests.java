@@ -21,7 +21,7 @@ import org.mockito.ArgumentCaptor;
 import com.sep.vox.application.event.AssessmentResultInvalidClearedPayloadV1;
 import com.sep.vox.application.event.AssessmentResultInvalidatedPayloadV1;
 import com.sep.vox.application.event.GradingAssignmentDeclinedPayloadV1;
-import com.sep.vox.application.port.input.command.GradingDecisionCommand;
+import com.sep.vox.application.port.input.command.assessmentgrading.GradingDecisionCommand;
 import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
 import com.sep.vox.application.port.input.service.AssessmentGradingAccessService.GradingContext;
 import com.sep.vox.application.port.input.service.GradingActionSupport;

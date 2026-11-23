@@ -1,0 +1,38 @@
+package com.sep.vox.interfaces.rest.dto.request.schoolgrade;
+
+import com.sep.vox.application.port.input.command.schoolgrade.CreateSchoolGradeCommand;
+import java.util.UUID;
+import java.time.LocalDate;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
+public record CreateSchoolGradeRequest(
+
+        @NotBlank(message = "Mã code không được để trống")
+        String code,
+
+        @NotBlank(message = "Tên năm học không được để trống")
+        String name,
+
+        String description,
+
+        @NotNull(message = "Ngày bắt đầu không được để trống")
+        LocalDate startDate,
+
+        @NotNull(message = "Ngày kết thúc không được để trống")
+        LocalDate endDate
+) {
+
+    // Takes the grade level id as an extra parameter
+    public static CreateSchoolGradeCommand toCommand(UUID schoolId, UUID gradeLevelId, CreateSchoolGradeRequest request) {
+        return new CreateSchoolGradeCommand(
+                schoolId,
+                gradeLevelId, // Pass the grade level id through
+                request.code(),
+                request.name(),
+                request.description(),
+                request.startDate(),
+                request.endDate()
+        );
+    }
+}

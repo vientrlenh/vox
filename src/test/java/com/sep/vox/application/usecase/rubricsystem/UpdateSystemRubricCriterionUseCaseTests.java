@@ -17,7 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sep.vox.application.exception.DataConflictException;
-import com.sep.vox.application.port.input.command.UpdateSystemRubricCriterionCommand;
+import com.sep.vox.application.port.input.command.rubricsystem.UpdateSystemRubricCriterionCommand;
 import com.sep.vox.application.port.input.service.RubricCriterionExamplesNormalizer;
 import com.sep.vox.application.port.input.usecase.rubricsystem.UpdateSystemRubricCriterionUseCase;
 import com.sep.vox.application.port.output.UserContextPort;

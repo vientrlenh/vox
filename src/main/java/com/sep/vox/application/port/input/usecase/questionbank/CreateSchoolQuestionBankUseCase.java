@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.mapper.questionbank.CreateQuestionBankResponseMapper;
-import com.sep.vox.application.port.input.command.CreateSchoolQuestionBankCommand;
+import com.sep.vox.application.port.input.command.questionbank.CreateSchoolQuestionBankCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.questionbank.CreateQuestionBankResponse;

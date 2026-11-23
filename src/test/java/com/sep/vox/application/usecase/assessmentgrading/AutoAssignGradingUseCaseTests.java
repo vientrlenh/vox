@@ -22,7 +22,7 @@ import org.mockito.ArgumentCaptor;
 
 import com.sep.vox.application.port.input.service.GradingAssignmentNotificationService;
 import com.sep.vox.application.exception.ResourceDuplicatedException;
-import com.sep.vox.application.port.input.command.AutoAssignGradingCommand;
+import com.sep.vox.application.port.input.command.assessmentgrading.AutoAssignGradingCommand;
 import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
 import com.sep.vox.application.port.input.service.GradingSampleSelector;
 import com.sep.vox.application.port.input.service.RoundRobinLoadBalancer;

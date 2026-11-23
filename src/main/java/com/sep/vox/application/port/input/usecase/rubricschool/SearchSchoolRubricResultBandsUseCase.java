@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricschool;
 
 import com.sep.vox.application.exception.*;
-import com.sep.vox.application.port.input.query.SearchSchoolRubricResultBandsQuery;
+import com.sep.vox.application.port.input.query.rubricschool.SearchSchoolRubricResultBandsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.common.PageResult;

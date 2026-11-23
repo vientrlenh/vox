@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.DeleteAssessmentMemberCommand;
+import com.sep.vox.application.port.input.command.assessment.DeleteAssessmentMemberCommand;
 import com.sep.vox.application.port.input.service.AssessmentMemberManageAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.repository.AssessmentMemberRepository;

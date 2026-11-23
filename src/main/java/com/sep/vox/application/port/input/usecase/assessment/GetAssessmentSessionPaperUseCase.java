@@ -22,7 +22,7 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.query.ViewAssessmentSessionPaperQuery;
+import com.sep.vox.application.port.input.query.assessment.ViewAssessmentSessionPaperQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.assessment.StudentAssessmentPaperQuestionResponse;

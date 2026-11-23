@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
-import com.sep.vox.application.port.input.command.UpdateSubscriptionPlanQuotaCommand;
+import com.sep.vox.application.port.input.command.subscription.UpdateSubscriptionPlanQuotaCommand;
 import com.sep.vox.domain.model.subscription.SubscriptionPlan;
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.UpdateSubscriptionPlanCommand;
+import com.sep.vox.application.port.input.command.subscription.UpdateSubscriptionPlanCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.subscription.SubscriptionPlanQuota;

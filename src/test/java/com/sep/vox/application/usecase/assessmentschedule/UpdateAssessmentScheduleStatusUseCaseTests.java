@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import com.sep.vox.application.exception.ResourceDuplicatedException;
-import com.sep.vox.application.port.input.command.UpdateAssessmentScheduleStatusCommand;
+import com.sep.vox.application.port.input.command.assessmentschedule.UpdateAssessmentScheduleStatusCommand;
 import com.sep.vox.application.port.input.service.AssessmentScheduleCandidateConflictValidator;
 import com.sep.vox.application.port.input.service.AssessmentScheduleProctorConflictValidator;
 import com.sep.vox.application.port.input.usecase.assessmentschedule.UpdateAssessmentScheduleStatusUseCase;

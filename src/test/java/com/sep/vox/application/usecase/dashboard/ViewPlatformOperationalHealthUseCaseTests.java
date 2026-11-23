@@ -15,7 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.sep.vox.application.port.input.query.ViewPlatformOperationalHealthQuery;
+import com.sep.vox.application.port.input.query.dashboard.ViewPlatformOperationalHealthQuery;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewPlatformOperationalHealthUseCase;
 import com.sep.vox.application.query.dto.GradingOutcomeBucketDto;
 import com.sep.vox.application.query.dto.LiveSessionCountsDto;

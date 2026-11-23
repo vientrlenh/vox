@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.mapper.supportedlanguage.CreateSupportedLanguageResponseMapper;
-import com.sep.vox.application.port.input.command.CreateSupportedLanguageCommand;
+import com.sep.vox.application.port.input.command.supportedlanguage.CreateSupportedLanguageCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.supportedlanguage.CreateSupportedLanguageResponse;
 import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;

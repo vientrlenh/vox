@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 import com.sep.vox.application.common.CacheKey;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.query.GetAssessmentScheduleOtpQuery;
+import com.sep.vox.application.port.input.query.assessmentschedule.GetAssessmentScheduleOtpQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.CacheManagerPort;
 import com.sep.vox.application.port.output.OneTimePasswordPort;

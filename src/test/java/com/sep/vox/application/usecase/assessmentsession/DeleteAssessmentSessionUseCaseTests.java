@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.port.input.command.DeleteAssessmentSessionCommand;
+import com.sep.vox.application.port.input.command.assessmentsession.DeleteAssessmentSessionCommand;
 import com.sep.vox.application.port.input.usecase.assessmentsession.DeleteAssessmentSessionUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.UserRoleInfo;

@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.event.ResetPasswordOtpRequestedPayloadV1;
-import com.sep.vox.application.port.input.command.SendResetPasswordOtpCommand;
+import com.sep.vox.application.port.input.command.auth.SendResetPasswordOtpCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.common.AggregateTypeConstant;

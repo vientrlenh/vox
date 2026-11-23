@@ -3,7 +3,7 @@ package com.sep.vox.interfaces.graphql.mapper;
 import java.time.LocalDate;
 import java.util.Map;
 
-import com.sep.vox.application.port.input.command.UpdateProfileCommand;
+import com.sep.vox.application.port.input.command.user.UpdateProfileCommand;
 
 /**
  * Takes a raw {@code Map} instead of a record: that is the ONLY way to tell "the client did not send the

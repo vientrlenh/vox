@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.rubricsystem;
 
-import com.sep.vox.application.port.input.query.SearchSystemRubricsQuery;
+import com.sep.vox.application.port.input.query.rubricsystem.SearchSystemRubricsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.RubricDto;

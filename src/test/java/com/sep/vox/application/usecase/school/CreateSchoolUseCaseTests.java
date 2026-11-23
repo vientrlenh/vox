@@ -17,8 +17,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.CreateSchoolCommand;
-import com.sep.vox.application.port.input.command.ProvisionSchoolCommand;
+import com.sep.vox.application.port.input.command.school.CreateSchoolCommand;
+import com.sep.vox.application.port.input.command.school.ProvisionSchoolCommand;
 import com.sep.vox.application.port.input.service.ProvisionSchoolService;
 import com.sep.vox.application.port.input.usecase.school.CreateSchoolUseCase;
 import com.sep.vox.domain.model.school.SchoolDirectory;

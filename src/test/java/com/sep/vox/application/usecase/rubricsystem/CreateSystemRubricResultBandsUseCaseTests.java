@@ -18,8 +18,8 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.DataConflictException;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.port.input.command.CreateSystemRubricResultBandsCommand;
-import com.sep.vox.application.port.input.command.CreateSystemRubricResultBandsCommand.ResultBandItemCommand;
+import com.sep.vox.application.port.input.command.rubricsystem.CreateSystemRubricResultBandsCommand;
+import com.sep.vox.application.port.input.command.rubricsystem.CreateSystemRubricResultBandsCommand.ResultBandItemCommand;
 import com.sep.vox.application.port.input.usecase.rubricsystem.CreateSystemRubricResultBandsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.rubric.Rubric;

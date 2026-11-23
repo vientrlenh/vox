@@ -17,7 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sep.vox.application.event.ResetPasswordOtpRequestedPayloadV1;
-import com.sep.vox.application.port.input.command.SendResetPasswordOtpCommand;
+import com.sep.vox.application.port.input.command.auth.SendResetPasswordOtpCommand;
 import com.sep.vox.application.port.input.usecase.auth.SendResetPasswordOtpUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.common.EventTypeConstant;

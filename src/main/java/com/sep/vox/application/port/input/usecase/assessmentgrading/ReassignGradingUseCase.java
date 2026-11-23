@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.service.GradingAssignmentNotificationService;
-import com.sep.vox.application.port.input.command.ReassignGradingCommand;
+import com.sep.vox.application.port.input.command.assessmentgrading.ReassignGradingCommand;
 import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.query.repository.AssessmentGradingQueryRepository;

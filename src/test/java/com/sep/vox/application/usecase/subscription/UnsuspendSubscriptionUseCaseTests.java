@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.UnsuspendSubscriptionCommand;
+import com.sep.vox.application.port.input.command.subscription.UnsuspendSubscriptionCommand;
 import com.sep.vox.application.port.input.service.SchoolSubscriptionSuspensionNotificationService;
 import com.sep.vox.application.port.input.usecase.subscription.UnsuspendSubscriptionUseCase;
 import com.sep.vox.application.port.output.UserContextPort;

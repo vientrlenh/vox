@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.port.input.query.ViewMyAssessmentsQuery;
+import com.sep.vox.application.port.input.query.assessment.ViewMyAssessmentsQuery;
 import com.sep.vox.domain.model.assessment.AssessmentKind;
 
 /**

@@ -22,7 +22,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.SetUpPasswordCommand;
+import com.sep.vox.application.port.input.command.auth.SetUpPasswordCommand;
 import com.sep.vox.application.port.input.usecase.auth.SetUpPasswordUseCase;
 import com.sep.vox.application.port.output.PasswordEncoderPort;
 import com.sep.vox.application.port.output.PasswordSetUpTokenPort;

@@ -7,7 +7,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.port.input.query.ViewAssessmentItemResponseEvaluationQuery;
+import com.sep.vox.application.port.input.query.assessmentevaluation.ViewAssessmentItemResponseEvaluationQuery;
 import com.sep.vox.application.port.input.service.AssessmentResultAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;

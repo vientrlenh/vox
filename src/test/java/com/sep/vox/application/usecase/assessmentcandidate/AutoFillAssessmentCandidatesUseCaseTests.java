@@ -22,7 +22,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
-import com.sep.vox.application.port.input.command.AutoFillAssessmentCandidatesCommand;
+import com.sep.vox.application.port.input.command.assessmentcandidate.AutoFillAssessmentCandidatesCommand;
 import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.port.input.service.AssessmentPaperAutoAssigner;
 import com.sep.vox.application.port.input.service.AssessmentScheduleCandidateConflictValidator;

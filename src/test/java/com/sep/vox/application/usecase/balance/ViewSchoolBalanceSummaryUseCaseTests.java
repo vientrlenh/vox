@@ -14,7 +14,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.port.input.query.ViewSchoolBalanceSummaryQuery;
+import com.sep.vox.application.port.input.query.balance.ViewSchoolBalanceSummaryQuery;
 import com.sep.vox.application.port.input.service.SchoolScopedReadGuard;
 import com.sep.vox.application.port.input.usecase.balance.ViewSchoolBalanceSummaryUseCase;
 import com.sep.vox.application.response.input.balance.SchoolBalanceSummaryResponse;

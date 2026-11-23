@@ -1,0 +1,9 @@
+package com.sep.vox.application.port.input.command.assessmentsession;
+
+import java.util.UUID;
+
+public record ForceEndAssessmentSessionCommand(
+    UUID sessionId,
+    String reason
+) {
+}

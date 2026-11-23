@@ -15,7 +15,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sep.vox.application.exception.DataConflictException;
-import com.sep.vox.application.port.input.command.UpdateFrameworkCriterionCommand;
+import com.sep.vox.application.port.input.command.framework.UpdateFrameworkCriterionCommand;
 import com.sep.vox.application.port.input.usecase.framework.UpdateFrameworkCriterionUseCase;
 import com.sep.vox.domain.model.framework.FrameworkCriterion;
 import com.sep.vox.domain.model.framework.FrameworkVersion;

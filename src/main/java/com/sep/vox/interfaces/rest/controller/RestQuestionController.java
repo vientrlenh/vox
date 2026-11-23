@@ -1,0 +1,332 @@
+package com.sep.vox.interfaces.rest.controller;
+
+import com.sep.vox.application.port.input.command.question.AcceptQuestionImportCommand;
+import com.sep.vox.application.port.input.command.question.BulkUpdateQuestionStatusCommand;
+import com.sep.vox.application.port.input.command.question.CreateQuestionAssetMutationCommand;
+import com.sep.vox.application.port.input.command.question.CreateQuestionCollaboratorCommand;
+import com.sep.vox.application.port.input.command.question.CreateSystemQuestionBankQuestionCommand;
+import com.sep.vox.application.port.input.command.question.UpdateQuestionAssetCommand;
+import com.sep.vox.application.port.input.command.question.UpdateQuestionCollaboratorCommand;
+import com.sep.vox.application.port.input.command.question.UpdateQuestionCommand;
+import com.sep.vox.application.port.input.command.question.UpdateQuestionStatusCommand;
+import com.sep.vox.application.port.input.command.question.UpsertQuestionEvaluationGuideCommand;
+import com.sep.vox.application.response.input.question.QuestionAssetUploadUrlResponse;
+import java.io.IOException;
+import java.util.UUID;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.sep.vox.application.common.UploadedFile;
+import com.sep.vox.application.port.input.command.question.CloneQuestionCommand;
+import com.sep.vox.application.port.input.command.question.DeleteQuestionAssetCommand;
+import com.sep.vox.application.port.input.command.question.DeleteQuestionCollaboratorCommand;
+import com.sep.vox.application.port.input.command.question.DeleteQuestionCommand;
+import com.sep.vox.application.port.input.command.question.PreviewQuestionImportFromFileCommand;
+import com.sep.vox.application.port.input.query.question.GetQuestionAssetUploadUrlQuery;
+import com.sep.vox.application.port.input.service.QuestionSpreadsheetService;
+import com.sep.vox.application.port.input.usecase.question.AcceptQuestionImportUseCase;
+import com.sep.vox.application.port.input.usecase.question.BulkUpdateQuestionStatusUseCase;
+import com.sep.vox.application.port.input.usecase.question.CloneQuestionUseCase;
+import com.sep.vox.application.port.input.usecase.question.CreateQuestionAssetUseCase;
+import com.sep.vox.application.port.input.usecase.question.CreateQuestionCollaboratorUseCase;
+import com.sep.vox.application.port.input.usecase.question.CreateSystemQuestionBankQuestionUseCase;
+import com.sep.vox.application.port.input.usecase.question.DeleteQuestionAssetUseCase;
+import com.sep.vox.application.port.input.usecase.question.DeleteQuestionCollaboratorUseCase;
+import com.sep.vox.application.port.input.usecase.question.DeleteQuestionUseCase;
+import com.sep.vox.application.port.input.usecase.question.GetQuestionAssetUploadUrlUseCase;
+import com.sep.vox.application.port.input.usecase.question.PreviewQuestionImportFromFileUseCase;
+import com.sep.vox.application.port.input.usecase.question.RegenerateQuestionAssetAnalysisUseCase;
+import com.sep.vox.application.port.input.usecase.question.UpdateQuestionAssetUseCase;
+import com.sep.vox.application.port.input.usecase.question.UpdateQuestionCollaboratorUseCase;
+import com.sep.vox.application.port.input.usecase.question.UpdateQuestionStatusUseCase;
+import com.sep.vox.application.port.input.usecase.question.UpdateQuestionUseCase;
+import com.sep.vox.application.port.input.usecase.question.UpsertQuestionEvaluationGuideUseCase;
+import com.sep.vox.application.response.input.importfile.PreviewQuestionImportResponse;
+import com.sep.vox.application.response.input.question.BulkUpdateQuestionStatusResponse;
+import com.sep.vox.application.response.input.question.CreateQuestionResponse;
+import com.sep.vox.application.response.input.question.DeleteQuestionResponse;
+import com.sep.vox.application.response.input.question.UpdateQuestionResponse;
+import com.sep.vox.domain.dto.QuestionAssetDto;
+import com.sep.vox.domain.dto.QuestionCollaboratorDto;
+import com.sep.vox.domain.dto.QuestionDto;
+import com.sep.vox.domain.dto.QuestionEvaluationGuideDto;
+import com.sep.vox.domain.model.question.QuestionSharing;
+import com.sep.vox.domain.model.question.QuestionStatus;
+import com.sep.vox.domain.model.question.QuestionType;
+import com.sep.vox.interfaces.rest.dto.request.question.AcceptQuestionImportRequest;
+import com.sep.vox.interfaces.rest.dto.request.question.BulkUpdateQuestionStatusRequest;
+import com.sep.vox.interfaces.rest.dto.request.question.CreateQuestionAssetRequest;
+import com.sep.vox.interfaces.rest.dto.request.question.CreateQuestionCollaboratorRequest;
+import com.sep.vox.interfaces.rest.dto.request.question.CreateQuestionRequest;
+import com.sep.vox.interfaces.rest.dto.request.question.QuestionEvaluationGuideRequest;
+import com.sep.vox.interfaces.rest.dto.request.question.UpdateQuestionAssetRequest;
+import com.sep.vox.interfaces.rest.dto.request.question.UpdateQuestionCollaboratorRequest;
+import com.sep.vox.interfaces.rest.dto.request.question.UpdateQuestionRequest;
+import com.sep.vox.interfaces.rest.dto.request.question.UpdateQuestionStatusRequest;
+import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
+
+import jakarta.validation.Valid;
+
+@RestController
+@RequestMapping("/api/v1/questions")
+@RequiredArgsConstructor
+public class RestQuestionController {
+
+    private final CreateSystemQuestionBankQuestionUseCase createQuestionUseCase;
+    private final UpdateQuestionUseCase updateQuestionUseCase;
+    private final CloneQuestionUseCase cloneQuestionUseCase;
+    private final UpdateQuestionStatusUseCase updateQuestionStatusUseCase;
+    private final DeleteQuestionUseCase deleteQuestionUseCase;
+    private final CreateQuestionCollaboratorUseCase createQuestionCollaboratorUseCase;
+    private final UpdateQuestionCollaboratorUseCase updateQuestionCollaboratorUseCase;
+    private final DeleteQuestionCollaboratorUseCase deleteQuestionCollaboratorUseCase;
+    private final CreateQuestionAssetUseCase createQuestionAssetUseCase;
+    private final UpdateQuestionAssetUseCase updateQuestionAssetUseCase;
+    private final DeleteQuestionAssetUseCase deleteQuestionAssetUseCase;
+    private final RegenerateQuestionAssetAnalysisUseCase regenerateQuestionAssetAnalysisUseCase;
+    private final GetQuestionAssetUploadUrlUseCase getQuestionAssetUploadUrlUseCase;
+    private final UpsertQuestionEvaluationGuideUseCase upsertQuestionEvaluationGuideUseCase;
+    private final BulkUpdateQuestionStatusUseCase bulkUpdateQuestionStatusUseCase;
+    private final PreviewQuestionImportFromFileUseCase previewQuestionImportFromFileUseCase;
+    private final AcceptQuestionImportUseCase acceptQuestionImportUseCase;
+    private final QuestionSpreadsheetService questionSpreadsheetService;
+
+    @PostMapping
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<CreateQuestionResponse>> create(
+            @Valid @RequestBody CreateQuestionRequest request) {
+        CreateSystemQuestionBankQuestionCommand command = CreateQuestionRequest.toCommand(request);
+        CreateQuestionResponse data = createQuestionUseCase.execute(command);
+        ApiResponse<CreateQuestionResponse> response = ApiResponse.success("Tao cau hoi thanh cong", data);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping(value = "/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<PreviewQuestionImportResponse>> previewImport(
+            @RequestParam("file") MultipartFile file,
+            // Leaving BOTH empty = bulk import: each row in the file declares its own bank code + topic code.
+            // The school scope is still fixed by the server from the signed-in user.
+            @RequestParam(name = "questionBankId", required = false) UUID questionBankId,
+            @RequestParam(name = "questionTopicId", required = false) UUID questionTopicId) throws IOException {
+        UploadedFile uploadedFile = UploadedFile.upload(
+            file.getOriginalFilename(),
+            file.getContentType(),
+            file.getSize(),
+            file.getBytes()
+        );
+        PreviewQuestionImportResponse data = previewQuestionImportFromFileUseCase.execute(
+            new PreviewQuestionImportFromFileCommand(questionBankId, questionTopicId, uploadedFile)
+        );
+        return ResponseEntity.ok(ApiResponse.success("Preview import cau hoi thanh cong", data));
+    }
+
+    @PostMapping("/import/{sessionId}/accept")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<Object>> acceptImport(
+            @PathVariable(name = "sessionId") UUID sessionId,
+            @Valid @RequestBody AcceptQuestionImportRequest request) {
+        AcceptQuestionImportCommand command = AcceptQuestionImportRequest.toCommand(sessionId, request);
+        acceptQuestionImportUseCase.execute(command);
+        return ResponseEntity.ok(ApiResponse.success("Yeu cau import cau hoi da duoc tiep nhan, dang xu ly"));
+    }
+
+    @GetMapping("/export")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER')")
+    public ResponseEntity<byte[]> export(
+            @RequestParam(name = "questionBankId", required = false) UUID questionBankId,
+            @RequestParam(name = "questionTopicId", required = false) UUID questionTopicId,
+            @RequestParam(name = "topicName", required = false) String topicName,
+            @RequestParam(name = "status", required = false) QuestionStatus status,
+            @RequestParam(name = "type", required = false) QuestionType type,
+            @RequestParam(name = "sharing", required = false) QuestionSharing sharing,
+            @RequestParam(name = "scope", required = false) String scope,
+            @RequestParam(name = "keyword", required = false) String keyword) {
+        byte[] file = questionSpreadsheetService.exportQuestions(
+            questionBankId,
+            questionTopicId,
+            topicName,
+            status,
+            type,
+            sharing,
+            scope,
+            keyword
+        );
+        return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + questionSpreadsheetService.exportFileName() + "\"")
+            .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+            .body(file);
+    }
+
+    @GetMapping("/import/template")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")
+    public ResponseEntity<byte[]> downloadTemplate(
+            @RequestParam(name = "type", required = false) QuestionType type) {
+        byte[] file = questionSpreadsheetService.downloadTemplate(type);
+        return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + questionSpreadsheetService.templateFileName() + "\"")
+            .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+            .body(file);
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<UpdateQuestionResponse>> update(
+            @PathVariable(name = "id") UUID id,
+            @Valid @RequestBody UpdateQuestionRequest request) {
+        UpdateQuestionCommand command = UpdateQuestionRequest.toCommand(id, request);
+        UpdateQuestionResponse data = updateQuestionUseCase.execute(command);
+        ApiResponse<UpdateQuestionResponse> response = ApiResponse.success("Cap nhat cau hoi thanh cong", data);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{id}/clone")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<QuestionDto>> clone(@PathVariable(name = "id") UUID id) {
+        QuestionDto data = cloneQuestionUseCase.execute(new CloneQuestionCommand(id));
+        ApiResponse<QuestionDto> response = ApiResponse.success("Nhan ban cau hoi thanh cong", data);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<QuestionDto>> updateStatus(
+            @PathVariable(name = "id") UUID id,
+            @Valid @RequestBody UpdateQuestionStatusRequest request) {
+        UpdateQuestionStatusCommand command = UpdateQuestionStatusRequest.toCommand(id, request);
+        QuestionDto data = updateQuestionStatusUseCase.execute(command);
+        ApiResponse<QuestionDto> response = ApiResponse.success("Cap nhat trang thai cau hoi thanh cong", data);
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/status/bulk")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<BulkUpdateQuestionStatusResponse>> bulkUpdateStatus(
+            @Valid @RequestBody BulkUpdateQuestionStatusRequest request) {
+        BulkUpdateQuestionStatusCommand command = BulkUpdateQuestionStatusRequest.toCommand(request);
+        BulkUpdateQuestionStatusResponse data = bulkUpdateQuestionStatusUseCase.execute(command);
+        ApiResponse<BulkUpdateQuestionStatusResponse> response = ApiResponse.success("Cap nhat trang thai hang loat thanh cong", data);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<DeleteQuestionResponse>> delete(@PathVariable(name = "id") UUID id) {
+        DeleteQuestionResponse data = deleteQuestionUseCase.execute(new DeleteQuestionCommand(id));
+        ApiResponse<DeleteQuestionResponse> response = ApiResponse.success("Xoa cau hoi thanh cong", data);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{id}/collaborators")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<ApiResponse<QuestionCollaboratorDto>> createCollaborator(
+            @PathVariable(name = "id") UUID id,
+            @Valid @RequestBody CreateQuestionCollaboratorRequest request) {
+        CreateQuestionCollaboratorCommand command = CreateQuestionCollaboratorRequest.toCommand(id, request);
+        QuestionCollaboratorDto data = createQuestionCollaboratorUseCase.execute(command);
+        ApiResponse<QuestionCollaboratorDto> response = ApiResponse.success("Them collaborator thanh cong", data);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PutMapping("/{id}/collaborators/{collaboratorId}")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<ApiResponse<QuestionCollaboratorDto>> updateCollaborator(
+            @PathVariable(name = "id") UUID id,
+            @PathVariable(name = "collaboratorId") UUID collaboratorId,
+            @Valid @RequestBody UpdateQuestionCollaboratorRequest request) {
+        UpdateQuestionCollaboratorCommand command = UpdateQuestionCollaboratorRequest.toCommand(id, collaboratorId, request);
+        QuestionCollaboratorDto data = updateQuestionCollaboratorUseCase.execute(command);
+        ApiResponse<QuestionCollaboratorDto> response = ApiResponse.success("Cap nhat quyen collaborator thanh cong", data);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{id}/collaborators/{collaboratorId}")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<ApiResponse<Void>> deleteCollaborator(
+            @PathVariable(name = "id") UUID id,
+            @PathVariable(name = "collaboratorId") UUID collaboratorId) {
+        deleteQuestionCollaboratorUseCase.execute(new DeleteQuestionCollaboratorCommand(id, collaboratorId));
+        ApiResponse<Void> response = ApiResponse.success("Xoa collaborator thanh cong");
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{id}/assets")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<QuestionAssetDto>> createAsset(
+            @PathVariable(name = "id") UUID id,
+            @Valid @RequestBody CreateQuestionAssetRequest request) {
+        CreateQuestionAssetMutationCommand command = CreateQuestionAssetRequest.toCommand(id, request);
+        QuestionAssetDto data = createQuestionAssetUseCase.execute(command);
+        ApiResponse<QuestionAssetDto> response = ApiResponse.success("Them tai nguyen cau hoi thanh cong", data);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/{id}/assets/upload-url")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<?>> getAssetUploadUrl(
+            @PathVariable(name = "id") UUID id,
+            @RequestParam(name = "contentType") String contentType) {
+        QuestionAssetUploadUrlResponse data = getQuestionAssetUploadUrlUseCase.execute(new GetQuestionAssetUploadUrlQuery(id, contentType));
+        return ResponseEntity.ok(ApiResponse.success("Lấy upload URL tài nguyên câu hỏi thành công", data));
+    }
+
+    @PutMapping("/{id}/assets/{assetId}")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<QuestionAssetDto>> updateAsset(
+            @PathVariable(name = "id") UUID id,
+            @PathVariable(name = "assetId") UUID assetId,
+            @Valid @RequestBody UpdateQuestionAssetRequest request) {
+        UpdateQuestionAssetCommand command = UpdateQuestionAssetRequest.toCommand(id, assetId, request);
+        QuestionAssetDto data = updateQuestionAssetUseCase.execute(command);
+        ApiResponse<QuestionAssetDto> response = ApiResponse.success("Cap nhat tai nguyen cau hoi thanh cong", data);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{id}/assets/{assetId}")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<Void>> deleteAsset(
+            @PathVariable(name = "id") UUID id,
+            @PathVariable(name = "assetId") UUID assetId) {
+        deleteQuestionAssetUseCase.execute(new DeleteQuestionAssetCommand(id, assetId));
+        ApiResponse<Void> response = ApiResponse.success("Xoa tai nguyen cau hoi thanh cong");
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{id}/assets/{assetId}/regenerate-analysis")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<QuestionAssetDto>> regenerateAssetAnalysis(
+            @PathVariable(name = "id") UUID id,
+            @PathVariable(name = "assetId") UUID assetId) {
+        QuestionAssetDto data = regenerateQuestionAssetAnalysisUseCase.execute(
+            new RegenerateQuestionAssetAnalysisUseCase.Command(id, assetId)
+        );
+        return ResponseEntity.ok(ApiResponse.success("Yeu cau tao lai phan tich asset da duoc tiep nhan", data));
+    }
+
+    @PutMapping("/{id}/evaluation-guide")
+    @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<QuestionEvaluationGuideDto>> upsertEvaluationGuide(
+            @PathVariable(name = "id") UUID id,
+            @Valid @RequestBody QuestionEvaluationGuideRequest request) {
+        UpsertQuestionEvaluationGuideCommand command = QuestionEvaluationGuideRequest.toCommand(id, request);
+        QuestionEvaluationGuideDto data = upsertQuestionEvaluationGuideUseCase.execute(command);
+        ApiResponse<QuestionEvaluationGuideDto> response = ApiResponse.success("Cap nhat huong dan cham thanh cong", data);
+        return ResponseEntity.ok(response);
+    }
+}

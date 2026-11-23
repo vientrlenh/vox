@@ -21,7 +21,7 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import com.sep.vox.application.port.input.command.OAuth2LoginCommand;
+import com.sep.vox.application.port.input.command.auth.OAuth2LoginCommand;
 import com.sep.vox.application.port.input.usecase.auth.OAuth2LoginUseCase;
 import com.sep.vox.interfaces.shared.HttpCookieProvider;
 import com.sep.vox.application.response.input.auth.LoginResponse;

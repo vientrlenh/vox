@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.CreateAssessmentCommand;
+import com.sep.vox.application.port.input.command.assessment.CreateAssessmentCommand;
 import com.sep.vox.application.port.input.service.AssessmentPolicyValidator;
 import com.sep.vox.application.port.input.service.AssessmentStreamConfigResolver;
 import com.sep.vox.application.port.input.service.SubscriptionPeriodGuardService;

@@ -14,7 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.port.input.query.ViewPracticeTopicOffersQuery;
+import com.sep.vox.application.port.input.query.practiceplanning.ViewPracticeTopicOffersQuery;
 import com.sep.vox.application.port.input.service.PracticeTopicOfferEnrichmentService;
 import com.sep.vox.application.port.input.service.TopicSuggestionService;
 import com.sep.vox.application.port.input.usecase.IUseCase;

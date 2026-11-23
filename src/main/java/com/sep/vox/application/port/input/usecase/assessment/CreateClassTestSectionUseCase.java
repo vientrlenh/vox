@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.assessment;
 
-import com.sep.vox.application.port.input.command.ClassTestQuestionCommand;
+import com.sep.vox.application.port.input.command.assessment.ClassTestQuestionCommand;
 import com.sep.vox.domain.model.assessment.AssessmentPaper;
 import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionCollaborator;
@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.CreateClassTestSectionCommand;
+import com.sep.vox.application.port.input.command.assessment.CreateClassTestSectionCommand;
 import com.sep.vox.application.port.input.service.ClassTestPaperResolver;
 import com.sep.vox.application.port.input.service.RecalculateAssessmentTimeDurationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;

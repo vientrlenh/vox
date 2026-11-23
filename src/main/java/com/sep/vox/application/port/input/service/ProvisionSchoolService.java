@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import com.sep.vox.application.event.UserCreatedPayloadV1;
 import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.ProvisionSchoolCommand;
+import com.sep.vox.application.port.input.command.school.ProvisionSchoolCommand;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.common.AggregateTypeConstant;
 import com.sep.vox.domain.common.EventTypeConstant;

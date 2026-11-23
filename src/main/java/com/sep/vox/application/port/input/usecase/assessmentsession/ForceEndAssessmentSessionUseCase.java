@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.event.AssessmentAttemptForceEndRequestedExternalEvent;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.ForceEndAssessmentSessionCommand;
+import com.sep.vox.application.port.input.command.assessmentsession.ForceEndAssessmentSessionCommand;
 import com.sep.vox.application.port.input.service.AssessmentCandidateResultFinalizationService;
 import com.sep.vox.application.port.input.service.AssessmentSessionModerationAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;

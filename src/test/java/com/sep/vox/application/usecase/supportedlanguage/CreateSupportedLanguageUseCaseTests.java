@@ -16,7 +16,7 @@ import org.mockito.ArgumentCaptor;
 
 import com.sep.vox.application.exception.DataConflictException;
 import com.sep.vox.application.exception.ResourceDuplicatedException;
-import com.sep.vox.application.port.input.command.CreateSupportedLanguageCommand;
+import com.sep.vox.application.port.input.command.supportedlanguage.CreateSupportedLanguageCommand;
 import com.sep.vox.application.port.input.usecase.supportedlanguage.CreateSupportedLanguageUseCase;
 import com.sep.vox.application.response.input.supportedlanguage.CreateSupportedLanguageResponse;
 import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;

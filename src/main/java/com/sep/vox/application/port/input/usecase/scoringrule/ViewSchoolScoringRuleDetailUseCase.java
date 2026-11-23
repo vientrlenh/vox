@@ -13,7 +13,7 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.mapper.scoringrule.ScoringRuleDtoMapper;
-import com.sep.vox.application.port.input.query.ViewSchoolScoringRuleDetailQuery;
+import com.sep.vox.application.port.input.query.scoringrule.ViewSchoolScoringRuleDetailQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.ScoringRuleDto;

@@ -13,7 +13,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.port.input.command.UpdateAssessmentStatusCommand;
+import com.sep.vox.application.port.input.command.assessment.UpdateAssessmentStatusCommand;
 import com.sep.vox.application.port.input.usecase.assessment.AssessmentQuestionSecureLockService;
 import com.sep.vox.application.port.input.usecase.assessment.UpdateAssessmentStatusUseCase;
 import com.sep.vox.application.port.input.service.ClassTestGradingAssignmentService;

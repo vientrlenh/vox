@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.port.input.query.ViewClassTestGradingResultsQuery;
+import com.sep.vox.application.port.input.query.assessmentgrading.ViewClassTestGradingResultsQuery;
 import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
 import com.sep.vox.application.port.input.usecase.assessmentgrading.ViewClassTestGradingResultsUseCase;
 import com.sep.vox.application.query.dto.GradingAssignmentFilter;

@@ -4,7 +4,7 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.UnauthorizedException;
-import com.sep.vox.application.port.input.command.CreateGradeLevelCommand;
+import com.sep.vox.application.port.input.command.gradelevel.CreateGradeLevelCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.gradelevel.GradeLevel;

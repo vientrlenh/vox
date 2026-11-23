@@ -19,9 +19,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.CloneSystemRubricToSchoolCommand;
-import com.sep.vox.application.port.input.command.CloneSystemRubricToSchoolCommand.PolicyToClone;
-import com.sep.vox.application.port.input.command.CreateAssessmentPolicyCommand;
+import com.sep.vox.application.port.input.command.rubricschool.CloneSystemRubricToSchoolCommand;
+import com.sep.vox.application.port.input.command.rubricschool.CloneSystemRubricToSchoolCommand.PolicyToClone;
+import com.sep.vox.application.port.input.command.assessmentpolicysystem.CreateAssessmentPolicyCommand;
 import com.sep.vox.application.port.input.service.RubricCloneService;
 import com.sep.vox.application.port.input.usecase.assessmentpolicyschool.CreateSchoolAssessmentPolicyUseCase;
 import com.sep.vox.application.port.input.usecase.rubricschool.CloneSystemRubricToSchoolUseCase;

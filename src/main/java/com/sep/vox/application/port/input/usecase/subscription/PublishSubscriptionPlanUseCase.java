@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.PublishSubscriptionPlanCommand;
+import com.sep.vox.application.port.input.command.subscription.PublishSubscriptionPlanCommand;
 import com.sep.vox.application.port.input.service.SubscriptionPlanReplacementValidator;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.model.subscription.SubscriptionPlanStatus;

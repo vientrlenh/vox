@@ -13,7 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.DeleteFrameworkVersionCommand;
+import com.sep.vox.application.port.input.command.framework.DeleteFrameworkVersionCommand;
 import com.sep.vox.application.port.input.usecase.framework.DeleteFrameworkVersionUseCase;
 import com.sep.vox.domain.model.framework.Framework;
 import com.sep.vox.domain.model.framework.FrameworkCriterion;

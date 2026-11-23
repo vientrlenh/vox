@@ -13,7 +13,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.port.input.query.ViewSchoolRubricDetailsQuery;
+import com.sep.vox.application.port.input.query.rubricschool.ViewSchoolRubricDetailsQuery;
 import com.sep.vox.application.port.input.usecase.rubricschool.ViewSchoolRubricDetailsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.rubric.Rubric;

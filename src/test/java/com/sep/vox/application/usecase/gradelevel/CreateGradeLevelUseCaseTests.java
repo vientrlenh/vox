@@ -14,7 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sep.vox.application.exception.DataConflictException;
 import com.sep.vox.application.exception.ResourceDuplicatedException;
-import com.sep.vox.application.port.input.command.CreateGradeLevelCommand;
+import com.sep.vox.application.port.input.command.gradelevel.CreateGradeLevelCommand;
 import com.sep.vox.application.port.input.usecase.gradelevel.CreateGradeLevelUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.gradelevel.GradeLevel;

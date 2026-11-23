@@ -6,8 +6,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.UnauthorizedException;
-import com.sep.vox.application.port.input.command.GoogleTokenLoginCommand;
-import com.sep.vox.application.port.input.command.OAuth2LoginCommand;
+import com.sep.vox.application.port.input.command.auth.GoogleTokenLoginCommand;
+import com.sep.vox.application.port.input.command.auth.OAuth2LoginCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.GoogleIdTokenVerifierPort;
 import com.sep.vox.application.response.input.auth.LoginResponse;

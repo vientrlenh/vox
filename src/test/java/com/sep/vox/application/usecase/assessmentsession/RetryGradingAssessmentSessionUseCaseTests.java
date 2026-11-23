@@ -15,7 +15,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.port.input.command.RetryGradingAssessmentSessionCommand;
+import com.sep.vox.application.port.input.command.assessmentsession.RetryGradingAssessmentSessionCommand;
 import com.sep.vox.application.port.input.service.AssessmentSessionModerationAccessService;
 import com.sep.vox.application.port.input.usecase.assessmentsession.RetryGradingAssessmentSessionUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentsession.SubmitAssessmentSessionUseCase;

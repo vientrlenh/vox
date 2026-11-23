@@ -9,8 +9,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.SubmitAssessmentSessionCommand;
-import com.sep.vox.application.port.input.command.UpdateAssessmentSessionStatusCommand;
+import com.sep.vox.application.port.input.command.assessmentsession.SubmitAssessmentSessionCommand;
+import com.sep.vox.application.port.input.command.assessmentsession.UpdateAssessmentSessionStatusCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.assessmentsession.AssessmentSessionResponse;
 import com.sep.vox.domain.model.assessment.AssessmentSession;

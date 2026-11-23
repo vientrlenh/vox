@@ -10,7 +10,7 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.mapper.framework.CreateFrameworkVersionResponseMapper;
-import com.sep.vox.application.port.input.command.CreateFrameworkVersionCommand;
+import com.sep.vox.application.port.input.command.framework.CreateFrameworkVersionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.framework.CreateFrameworkVersionResponse;
 import com.sep.vox.domain.model.framework.FrameworkVersion;

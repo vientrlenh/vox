@@ -5,7 +5,7 @@ import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.port.input.query.GetTurnUploadUrlQuery;
+import com.sep.vox.application.port.input.query.assessmentturn.GetTurnUploadUrlQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.StoragePort;
 import com.sep.vox.application.response.input.assessmentturn.TurnUploadUrlResponse;

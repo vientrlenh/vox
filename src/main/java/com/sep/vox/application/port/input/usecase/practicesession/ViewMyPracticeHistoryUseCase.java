@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.mapper.practicesession.PracticeSessionResponseMapper;
 import com.sep.vox.application.mapper.practicesession.SessionRowMapper;
-import com.sep.vox.application.port.input.query.ViewMyPracticeHistoryQuery;
+import com.sep.vox.application.port.input.query.practicesession.ViewMyPracticeHistoryQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.PracticeSessionQueryRepository;

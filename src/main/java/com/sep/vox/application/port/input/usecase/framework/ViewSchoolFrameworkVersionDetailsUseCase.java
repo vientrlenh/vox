@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.query.ViewFrameworkVersionDetailsQuery;
+import com.sep.vox.application.port.input.query.framework.ViewFrameworkVersionDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.FrameworkVersionDto;
 import com.sep.vox.domain.mapper.FrameworkVersionDtoMapper;

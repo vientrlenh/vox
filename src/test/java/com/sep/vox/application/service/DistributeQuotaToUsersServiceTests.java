@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import com.sep.vox.application.exception.BusinessRuleViolationException;
-import com.sep.vox.application.port.input.command.AllocateUserQuotaAmountCommand;
+import com.sep.vox.application.port.input.command.subscription.AllocateUserQuotaAmountCommand;
 import com.sep.vox.application.port.input.service.DistributeQuotaToUsersService;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.subscription.QuotaUserAllocationPageResponse;

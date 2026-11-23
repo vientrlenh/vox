@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 import com.sep.vox.application.exception.BusinessRuleViolationException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.AllocateUserQuotaAmountCommand;
+import com.sep.vox.application.port.input.command.subscription.AllocateUserQuotaAmountCommand;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.subscription.QuotaUserAllocationPageResponse;
 import com.sep.vox.application.response.input.subscription.QuotaUserAllocationSummaryResponse;

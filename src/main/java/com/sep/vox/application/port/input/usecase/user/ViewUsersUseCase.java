@@ -4,7 +4,7 @@ import com.sep.vox.domain.model.user.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.port.input.query.ViewUsersQuery;
+import com.sep.vox.application.port.input.query.user.ViewUsersQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.UserDto;

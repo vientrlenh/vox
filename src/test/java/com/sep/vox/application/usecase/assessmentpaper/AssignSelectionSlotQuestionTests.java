@@ -20,7 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.sep.vox.application.port.input.command.UpdateAssessmentPaperItemCommand;
+import com.sep.vox.application.port.input.command.assessmentpaper.UpdateAssessmentPaperItemCommand;
 import com.sep.vox.application.port.input.service.AssessmentTimeQuotaGuardService;
 import com.sep.vox.application.port.input.service.RecalculateAssessmentTimeDurationService;
 import com.sep.vox.application.port.input.usecase.assessment.AssessmentQuestionSecureLockService;

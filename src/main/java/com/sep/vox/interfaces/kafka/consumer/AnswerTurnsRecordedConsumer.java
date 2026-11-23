@@ -15,7 +15,7 @@ import org.springframework.kafka.retrytopic.DltStrategy;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
-import com.sep.vox.application.port.input.command.RecordAnswerTurnCommand;
+import com.sep.vox.application.port.input.command.assessmentitemresponse.RecordAnswerTurnCommand;
 import com.sep.vox.application.port.input.usecase.assessmentitemresponse.RecordAnswerTerminationReasonUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentitemresponse.RecordAnswerTurnUseCase;
 import com.sep.vox.interfaces.kafka.dto.AnswerTurnsRecordedEventDto;

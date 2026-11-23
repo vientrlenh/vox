@@ -3,7 +3,7 @@ package com.sep.vox.application.port.input.usecase.rubricschool;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
-import com.sep.vox.application.port.input.query.ViewSchoolRubricDetailsQuery;
+import com.sep.vox.application.port.input.query.rubricschool.ViewSchoolRubricDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.RubricDto;

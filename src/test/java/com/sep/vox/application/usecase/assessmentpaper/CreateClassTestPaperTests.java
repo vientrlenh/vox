@@ -20,9 +20,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.port.input.command.ClassTestQuestionCommand;
-import com.sep.vox.application.port.input.command.ClassTestSectionCommand;
-import com.sep.vox.application.port.input.command.CreateAssessmentPaperCommand;
+import com.sep.vox.application.port.input.command.assessment.ClassTestQuestionCommand;
+import com.sep.vox.application.port.input.command.assessment.ClassTestSectionCommand;
+import com.sep.vox.application.port.input.command.assessmentpaper.CreateAssessmentPaperCommand;
 import com.sep.vox.application.port.input.service.AssessmentTimeQuotaGuardService;
 import com.sep.vox.application.port.input.service.RecalculateAssessmentTimeDurationService;
 import com.sep.vox.application.port.input.usecase.assessment.AssessmentQuestionSecureLockService;

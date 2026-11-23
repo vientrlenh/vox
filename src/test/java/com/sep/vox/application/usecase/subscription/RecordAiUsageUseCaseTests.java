@@ -14,7 +14,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.port.input.command.RecordAiUsageCommand;
+import com.sep.vox.application.port.input.command.metering.RecordAiUsageCommand;
 import com.sep.vox.application.port.input.usecase.metering.RecordAiUsageUseCase;
 import com.sep.vox.domain.model.metering.AiUsageRecord;
 import com.sep.vox.domain.model.metering.AiUsageType;

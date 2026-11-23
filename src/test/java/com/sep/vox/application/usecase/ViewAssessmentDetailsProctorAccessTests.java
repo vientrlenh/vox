@@ -13,7 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.port.input.query.ViewAssessmentDetailsQuery;
+import com.sep.vox.application.port.input.query.assessment.ViewAssessmentDetailsQuery;
 import com.sep.vox.application.port.input.usecase.assessment.ViewAssessmentDetailsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;

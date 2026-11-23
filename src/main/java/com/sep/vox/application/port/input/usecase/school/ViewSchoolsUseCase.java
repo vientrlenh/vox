@@ -4,7 +4,7 @@ import com.sep.vox.domain.model.school.School;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.port.input.query.ViewSchoolsQuery;
+import com.sep.vox.application.port.input.query.school.ViewSchoolsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolDto;

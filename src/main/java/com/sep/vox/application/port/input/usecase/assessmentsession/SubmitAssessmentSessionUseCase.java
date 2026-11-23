@@ -30,7 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.event.AssessmentAttemptEvaluationRequestedExternalEvent;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.SubmitAssessmentSessionCommand;
+import com.sep.vox.application.port.input.command.assessmentsession.SubmitAssessmentSessionCommand;
 import com.sep.vox.application.port.input.service.MissingResponseBackfillService;
 import com.sep.vox.application.port.input.service.ZeroScoreAssessmentResultService;
 import com.sep.vox.application.port.input.usecase.IUseCase;

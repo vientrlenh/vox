@@ -19,7 +19,7 @@ import com.sep.vox.infrastructure.properties.QuotaSellingPriceProperties;
  * calibrated from real data through QuotaPricingCalibrationService/Job, falling back to the static constant in
  * .env/QuotaPricingProperties when no calibration has succeeded yet) and usdToVndRate (the market
  * exchange rate, shared by every plan -- see QuotaSellingPriceProperties). Used by both
- * ClassTestTokenQuotaGuardService (the pre-check) and SubscriptionController (the quotaPricing query for the FE)
+ * ClassTestTokenQuotaGuardService (the pre-check) and GraphQLSubscriptionController (the quotaPricing query for the FE)
  * so that every place always sees the SAME value.
  *
  * <p>It sits in infrastructure because it reads @ConfigurationProperties directly; the application/interfaces side calls

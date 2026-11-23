@@ -14,25 +14,25 @@ import com.sep.vox.domain.model.personalization.InterestDimension;
 import com.sep.vox.domain.repository.InterestDimensionRepository;
 
 /**
- * Dựng sẵn danh mục chiều sở thích -- bảng nền của toàn bộ tính năng cá nhân hoá.
+ * Seeds the catalogue of interest dimensions -- the base table of the whole personalization feature.
  *
- * <p>VÌ SAO CẦN: trước đây KHÔNG có đường nào nạp bảng này. Không migration nào {@code INSERT},
- * không initializer nào, và {@code vox-client-web} cũng chưa từng dựng màn quản trị cho nó (API
- * GraphQL thì có sẵn -- xem {@code InterestDimensionController}). Nghĩa là mọi cơ sở dữ liệu mới
- * đều có bảng này RỖNG.
+ * <p>WHY IT IS NEEDED: previously there was NO path that loaded this table. No migration did an {@code INSERT},
+ * no initializer did, and {@code vox-client-web} never built an admin screen for it either (the GraphQL
+ * API exists -- see {@code GraphQLInterestDimensionController}). That means every new database
+ * had this table EMPTY.
  *
- * <p>Hậu quả đo được 2026-08-26 trên môi trường thật: học sinh vào tab luyện nói, bấm làm quiz sở
- * thích, và không có gì xảy ra. Không thông báo lỗi, không màn hình trắng -- chỉ là không vào
- * được. Log Java sạch, quyền được cấp bình thường, agents không nhận lời gọi nào. Truy ra thì
- * {@code interest_quiz_item} có 27 câu nhưng {@code interest_dimension} có 0 dòng.
+ * <p>Consequence measured on 2026-08-26 on the real environment: a student opened the speaking practice tab, tapped the
+ * interest quiz, and nothing happened. No error message, no blank screen -- they just could not get
+ * in. The Java log was clean, permissions were granted normally, the agents received no call. Tracing it
+ * showed that {@code interest_quiz_item} had 27 questions but {@code interest_dimension} had 0 rows.
  *
- * <p>Hỏng IM LẶNG là chỗ tệ nhất: {@code InterestQuizScorer.normalize} trả {@code Map.of()} khi
- * danh mục rỗng thay vì báo lỗi, nên không tầng nào phát hiện được. Mất khá nhiều công lần từ giao
- * diện xuống tận bảng dữ liệu mới thấy.
+ * <p>Failing SILENTLY is the worst part: {@code InterestQuizScorer.normalize} returns {@code Map.of()} when the
+ * catalogue is empty instead of reporting an error, so no layer could detect it. It took considerable effort to trace from the
+ * UI all the way down to the data table.
  *
- * <p>Idempotent theo TỪNG MÃ chứ không theo "bảng có rỗng không": thêm một chiều mới vào danh sách
- * dưới đây thì lần khởi động sau nó tự được bổ sung, trong khi các chiều quản trị viên đã sửa nhãn
- * qua giao diện vẫn giữ nguyên. Xét theo bảng rỗng thì cả hai điều đó đều hỏng.
+ * <p>Idempotent PER CODE rather than by "is the table empty": adding a new dimension to the list
+ * below gets it seeded on the next startup, while dimensions whose labels an admin has edited
+ * through the UI stay untouched. Checking for an empty table would break both of those.
  */
 @Component
 @Order(11)

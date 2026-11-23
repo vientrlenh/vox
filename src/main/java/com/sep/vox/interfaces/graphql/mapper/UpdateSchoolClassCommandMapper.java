@@ -3,7 +3,7 @@ package com.sep.vox.interfaces.graphql.mapper;
 import java.util.UUID;
 import java.util.Map;
 
-import com.sep.vox.application.port.input.command.UpdateSchoolClassCommand;
+import com.sep.vox.application.port.input.command.schoolclass.UpdateSchoolClassCommand;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 
 public final class UpdateSchoolClassCommandMapper {

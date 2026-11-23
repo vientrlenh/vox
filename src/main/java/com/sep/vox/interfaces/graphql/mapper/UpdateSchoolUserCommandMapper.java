@@ -4,7 +4,7 @@ import java.time.LocalDate;
 import java.util.Map;
 import java.util.UUID;
 
-import com.sep.vox.application.port.input.command.UpdateSchoolUserCommand;
+import com.sep.vox.application.port.input.command.schooluser.UpdateSchoolUserCommand;
 
 public final class UpdateSchoolUserCommandMapper {
 

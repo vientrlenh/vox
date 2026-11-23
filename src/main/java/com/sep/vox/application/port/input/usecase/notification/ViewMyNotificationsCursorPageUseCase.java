@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.mapper.notification.NotificationDtoMapper;
-import com.sep.vox.application.port.input.query.ViewMyNotificationsCursorPageQuery;
+import com.sep.vox.application.port.input.query.notification.ViewMyNotificationsCursorPageQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.NotificationDto;

@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.common.CacheKey;
 import com.sep.vox.application.exception.ServiceUnavailableException;
-import com.sep.vox.application.port.input.command.VerifyAssessmentScheduleOtpCommand;
+import com.sep.vox.application.port.input.command.assessment.VerifyAssessmentScheduleOtpCommand;
 import com.sep.vox.application.port.input.service.SchoolSubscriptionDebtGuardService;
 import com.sep.vox.application.port.input.usecase.assessment.VerifyAssessmentScheduleOtpUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentsession.CreateAssessmentSessionUseCase;

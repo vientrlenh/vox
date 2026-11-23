@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.mapper.assessmentitemresponse.AssessmentItemResponseResponseMapper;
-import com.sep.vox.application.port.input.command.UpdateAssessmentItemResponseTurnCommand;
+import com.sep.vox.application.port.input.command.assessmentitemresponse.UpdateAssessmentItemResponseTurnCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.assessmentitemresponse.AssessmentItemResponseTurnResponse;
 import com.sep.vox.domain.repository.AssessmentItemResponseRepository;

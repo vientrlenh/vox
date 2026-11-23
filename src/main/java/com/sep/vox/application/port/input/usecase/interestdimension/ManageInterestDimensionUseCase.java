@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.UpsertInterestDimensionCommand;
+import com.sep.vox.application.port.input.command.interestdimension.UpsertInterestDimensionCommand;
 import com.sep.vox.application.port.input.service.InterestQuizBankTopUpService;
 import com.sep.vox.application.response.input.interestdimension.InterestDimensionResponses.InterestDimensionResponse;
 import com.sep.vox.domain.model.personalization.InterestDimension;

@@ -6,8 +6,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.query.ViewAssessmentDetailsQuery;
-import com.sep.vox.application.port.input.query.ViewAssessmentPaperDetailsQuery;
+import com.sep.vox.application.port.input.query.assessment.ViewAssessmentDetailsQuery;
+import com.sep.vox.application.port.input.query.assessmentpaper.ViewAssessmentPaperDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.assessment.ViewAssessmentDetailsUseCase;
 import com.sep.vox.domain.dto.AssessmentPaperDto;

@@ -19,7 +19,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.port.input.command.CancelOrderCommand;
+import com.sep.vox.application.port.input.command.order.CancelOrderCommand;
 import com.sep.vox.application.port.input.service.PaymentProcessResolver;
 import com.sep.vox.application.port.input.usecase.order.CancelOrderUseCase;
 import com.sep.vox.application.port.output.PaymentProcessPort;

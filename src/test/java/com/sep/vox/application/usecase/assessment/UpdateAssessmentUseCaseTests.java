@@ -22,7 +22,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.port.input.command.UpdateAssessmentCommand;
+import com.sep.vox.application.port.input.command.assessment.UpdateAssessmentCommand;
 import com.sep.vox.application.port.input.service.SubscriptionPeriodGuardService;
 import com.sep.vox.application.port.input.usecase.assessment.UpdateAssessmentUseCase;
 import com.sep.vox.application.port.output.UserContextPort;

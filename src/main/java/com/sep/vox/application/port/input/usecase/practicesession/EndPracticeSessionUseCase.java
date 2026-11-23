@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.mapper.practicesession.PracticeSessionResponseMapper;
 import com.sep.vox.application.mapper.practicesession.SessionRowMapper;
-import com.sep.vox.application.port.input.command.EndPracticeSessionCommand;
+import com.sep.vox.application.port.input.command.practicesession.EndPracticeSessionCommand;
 import com.sep.vox.application.port.input.service.PracticeGradingFlushService;
 import com.sep.vox.application.port.input.service.PracticeSessionClosedHandler;
 import com.sep.vox.application.port.input.usecase.IUseCase;

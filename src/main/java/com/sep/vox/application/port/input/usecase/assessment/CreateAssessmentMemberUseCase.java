@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.CreateAssessmentMemberCommand;
+import com.sep.vox.application.port.input.command.assessment.CreateAssessmentMemberCommand;
 import com.sep.vox.application.port.input.service.AssessmentMemberManageAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.AssessmentMemberDto;

@@ -19,7 +19,7 @@ import org.mockito.ArgumentCaptor;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.BusinessRuleViolationException;
-import com.sep.vox.application.port.input.command.FundQuotaFromBalanceCommand;
+import com.sep.vox.application.port.input.command.subscription.FundQuotaFromBalanceCommand;
 import com.sep.vox.application.port.input.service.SchoolSubscriptionDebtGuardService;
 import com.sep.vox.application.port.input.usecase.subscription.FundQuotaFromBalanceUseCase;
 import com.sep.vox.application.port.output.UserContextPort;

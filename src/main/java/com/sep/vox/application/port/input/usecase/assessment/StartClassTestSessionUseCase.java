@@ -13,9 +13,9 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.CreateAssessmentSessionCommand;
-import com.sep.vox.application.port.input.command.StartClassTestSessionCommand;
-import com.sep.vox.application.port.input.command.UpdateAssessmentSessionStatusCommand;
+import com.sep.vox.application.port.input.command.assessmentsession.CreateAssessmentSessionCommand;
+import com.sep.vox.application.port.input.command.assessment.StartClassTestSessionCommand;
+import com.sep.vox.application.port.input.command.assessmentsession.UpdateAssessmentSessionStatusCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentsession.CreateAssessmentSessionUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentsession.UpdateAssessmentSessionStatusUseCase;

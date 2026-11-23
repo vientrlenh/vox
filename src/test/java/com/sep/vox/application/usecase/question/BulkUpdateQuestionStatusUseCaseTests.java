@@ -19,7 +19,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.port.input.command.BulkUpdateQuestionStatusCommand;
+import com.sep.vox.application.port.input.command.question.BulkUpdateQuestionStatusCommand;
 import com.sep.vox.application.port.input.service.QuestionStatusActorResolver;
 import com.sep.vox.application.port.input.usecase.question.BulkUpdateQuestionStatusUseCase;
 import com.sep.vox.application.port.output.UserContextPort;

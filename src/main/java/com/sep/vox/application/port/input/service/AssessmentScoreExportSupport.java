@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.port.input.query.ExportAssessmentScoresQuery;
+import com.sep.vox.application.port.input.query.assessmentgrading.ExportAssessmentScoresQuery;
 import com.sep.vox.application.query.dto.AssessmentScoreRowInfo;
 import com.sep.vox.application.query.dto.GradingAssignmentFilter;
 import com.sep.vox.application.query.repository.AssessmentGradingQueryRepository;

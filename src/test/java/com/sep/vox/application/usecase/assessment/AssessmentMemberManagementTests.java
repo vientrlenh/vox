@@ -17,9 +17,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.port.input.command.CreateAssessmentMemberCommand;
-import com.sep.vox.application.port.input.command.DeleteAssessmentMemberCommand;
-import com.sep.vox.application.port.input.command.UpdateAssessmentMemberCommand;
+import com.sep.vox.application.port.input.command.assessment.CreateAssessmentMemberCommand;
+import com.sep.vox.application.port.input.command.assessment.DeleteAssessmentMemberCommand;
+import com.sep.vox.application.port.input.command.assessment.UpdateAssessmentMemberCommand;
 import com.sep.vox.application.port.input.service.AssessmentMemberManageAccessService;
 import com.sep.vox.application.port.input.usecase.assessment.CreateAssessmentMemberUseCase;
 import com.sep.vox.application.port.input.usecase.assessment.DeleteAssessmentMemberUseCase;

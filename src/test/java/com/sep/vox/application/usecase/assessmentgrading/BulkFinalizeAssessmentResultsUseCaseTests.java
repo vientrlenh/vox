@@ -19,7 +19,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.sep.vox.application.port.input.command.BulkFinalizeAssessmentResultsCommand;
+import com.sep.vox.application.port.input.command.assessmentgrading.BulkFinalizeAssessmentResultsCommand;
 import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
 import com.sep.vox.application.port.input.service.ResultStatusHistoryRecorder;
 import com.sep.vox.application.port.input.usecase.assessmentgrading.BulkFinalizeAssessmentResultsUseCase;

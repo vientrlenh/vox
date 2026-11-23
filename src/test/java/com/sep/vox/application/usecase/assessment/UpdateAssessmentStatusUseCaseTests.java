@@ -19,7 +19,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.port.input.command.UpdateAssessmentStatusCommand;
+import com.sep.vox.application.port.input.command.assessment.UpdateAssessmentStatusCommand;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.BusinessRuleViolationException;
 import com.sep.vox.application.port.input.service.AssessmentCandidateResultFinalizationService;

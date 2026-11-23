@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.schoolroom;
 
-import com.sep.vox.application.port.input.query.ViewSchoolRoomsQuery;
+import com.sep.vox.application.port.input.query.schoolroom.ViewSchoolRoomsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.MyClassAccessGuard;
 import com.sep.vox.domain.common.PageResult;

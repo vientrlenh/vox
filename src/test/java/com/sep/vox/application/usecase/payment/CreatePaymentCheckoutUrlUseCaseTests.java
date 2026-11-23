@@ -23,7 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
-import com.sep.vox.application.port.input.command.CreatePaymentCheckoutUrlCommand;
+import com.sep.vox.application.port.input.command.payment.CreatePaymentCheckoutUrlCommand;
 import com.sep.vox.application.port.input.service.PaymentProcessResolver;
 import com.sep.vox.application.port.input.usecase.payment.CreatePaymentCheckoutUrlUseCase;
 import com.sep.vox.application.port.output.PaymentProcessPort;

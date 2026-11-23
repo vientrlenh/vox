@@ -13,7 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.query.ViewFrameworkDetailsQuery;
+import com.sep.vox.application.port.input.query.framework.ViewFrameworkDetailsQuery;
 import com.sep.vox.application.port.input.usecase.framework.ViewFrameworkDetailsUseCase;
 import com.sep.vox.domain.dto.FrameworkDto;
 import com.sep.vox.domain.model.framework.Framework;

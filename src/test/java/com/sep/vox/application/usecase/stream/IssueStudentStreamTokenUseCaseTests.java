@@ -18,7 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.port.input.command.IssueStudentStreamTokenCommand;
+import com.sep.vox.application.port.input.command.stream.IssueStudentStreamTokenCommand;
 import com.sep.vox.application.port.input.usecase.stream.IssueStudentStreamTokenUseCase;
 import com.sep.vox.application.port.output.StreamTokenProvider;
 import com.sep.vox.application.port.output.UserContextPort;

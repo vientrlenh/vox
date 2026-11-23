@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.port.input.command.RecordAiUsageCommand;
+import com.sep.vox.application.port.input.command.metering.RecordAiUsageCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.QuotaPricingPort;
 import com.sep.vox.domain.model.metering.AiUsageRecord;

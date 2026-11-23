@@ -14,7 +14,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.CompleteAssessmentSessionGradingCommand;
+import com.sep.vox.application.port.input.command.assessmentsession.CompleteAssessmentSessionGradingCommand;
 import com.sep.vox.application.port.input.service.ConsumeQuotaService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.QuotaPricingPort;

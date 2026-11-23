@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.port.input.command.CreateAssessmentScheduleCommand;
+import com.sep.vox.application.port.input.command.assessmentschedule.CreateAssessmentScheduleCommand;
 import com.sep.vox.application.port.input.service.AssessmentScheduleRoomValidator;
 import com.sep.vox.application.port.input.usecase.assessmentschedule.CreateAssessmentScheduleUseCase;
 import com.sep.vox.application.port.output.UserContextPort;

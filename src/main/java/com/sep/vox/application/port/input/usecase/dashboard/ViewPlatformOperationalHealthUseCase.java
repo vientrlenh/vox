@@ -16,7 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.port.input.query.ViewPlatformOperationalHealthQuery;
+import com.sep.vox.application.port.input.query.dashboard.ViewPlatformOperationalHealthQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.query.repository.PlatformOperationalHealthQueryRepository;
 import com.sep.vox.application.response.input.dashboard.GradingOutcomeBucketResponse;

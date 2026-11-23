@@ -18,7 +18,7 @@ import com.sep.vox.application.exception.DataConflictException;
 
 import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.CreateFrameworkVersionCommand;
+import com.sep.vox.application.port.input.command.framework.CreateFrameworkVersionCommand;
 import com.sep.vox.application.port.input.usecase.framework.CreateFrameworkVersionUseCase;
 import com.sep.vox.application.response.input.framework.CreateFrameworkVersionResponse;
 import com.sep.vox.domain.model.framework.Framework;

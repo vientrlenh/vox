@@ -91,21 +91,21 @@ public class TopicOfferBackfillService {
         if (studentId == null) {
             return;
         }
-        // Chưa nộp quiz sở thích thì KHÔNG sinh gì cả -- đây là nửa còn lại của cổng đặt ở
-        // ViewPracticeTopicOffersUseCase, và là nửa QUAN TRỌNG HƠN.
+        // If the interest quiz has not been submitted, generate NOTHING -- this is the other half of the gate placed in
+        // ViewPracticeTopicOffersUseCase, and it is the MORE IMPORTANT half.
         //
-        // Chỉ chặn bên use case là không đủ: nó trả rỗng, mà rỗng thì
-        // PracticePlanningController thấy `offers.size() < 3` và gọi thẳng vào đây. Kết quả
-        // còn tệ hơn trước -- lô chào bị chặn nhưng kho vẫn bị lấp.
+        // Blocking only on the use case side is not enough: it returns an empty list, and an empty list makes
+        // GraphQLPracticePlanningController see `offers.size() < 3` and call straight into here. The result is
+        // even worse than before -- the offer batch is blocked but the pool still gets filled.
         //
-        // Lượt sinh lúc đó gửi `interestScores` RỖNG sang LLM (xem
-        // TopicSuggestionService.synchronousOffers), nên chủ đề nhận về là loại chung chung
-        // không bám vào ai. Mà practice_topics là kho DÙNG CHUNG toàn hệ và những dòng đó ở
-        // lại vĩnh viễn: một lần đăng nhập của một tài khoản chưa làm quiz là đủ định hình
-        // kho cho mọi học sinh sau đó.
+        // The generation run at that point sends an EMPTY `interestScores` to the LLM (see
+        // TopicSuggestionService.synchronousOffers), so the topics that come back are generic and
+        // tied to nobody. But practice_topics is a pool SHARED by the whole system and those rows stay
+        // there permanently: one login by an account that has not done the quiz is enough to shape
+        // the pool for every student afterwards.
         //
-        // Đường gọi từ PracticeSessionClosedHandler về lý thuyết luôn có quiz rồi (phải luyện
-        // xong một phiên mới tới đó), nên với nó điều kiện này là vô hại.
+        // The call path from PracticeSessionClosedHandler in theory always has a quiz already (a session
+        // must be practised to the end before reaching it), so for it this condition is harmless.
         if (!hasCompletedInterestQuiz(studentId)) {
             log.debug("Bỏ lượt bổ sung chủ đề: học sinh {} chưa nộp quiz sở thích.", studentId);
             return;

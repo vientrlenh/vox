@@ -3,7 +3,7 @@ package com.sep.vox.interfaces.graphql.mapper;
 import java.util.Map;
 import java.util.UUID;
 
-import com.sep.vox.application.port.input.command.UpdateSupportedLanguageCommand;
+import com.sep.vox.application.port.input.command.supportedlanguage.UpdateSupportedLanguageCommand;
 
 public final class UpdateSupportedLanguageCommandMapper {
 

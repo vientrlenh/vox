@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
-import com.sep.vox.application.port.input.command.DeleteAssessmentCommand;
+import com.sep.vox.application.port.input.command.assessment.DeleteAssessmentCommand;
 import com.sep.vox.application.port.input.usecase.assessment.DeleteAssessmentUseCase;
 import com.sep.vox.application.port.input.usecase.assessment.AssessmentQuestionSecureLockService;
 import com.sep.vox.application.port.output.UserContextPort;

@@ -9,8 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.DuplicatedException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpsertInterestDimensionCommand;
 import com.sep.vox.application.port.input.service.InterestQuizBankTopUpService;
 import com.sep.vox.application.response.input.interestdimension.InterestDimensionResponses.InterestDimensionResponse;
@@ -43,7 +43,7 @@ public class ManageInterestDimensionUseCase {
     public InterestDimensionResponse create(UpsertInterestDimensionCommand input) {
         String code = normalizeCode(input.code());
         if (repository.findByCode(code).isPresent()) {
-            throw new DuplicatedException("Mã chiều sở thích đã tồn tại: " + code);
+            throw new ResourceDuplicatedException("Mã chiều sở thích đã tồn tại: " + code);
         }
         requireLabel(input.label());
         InterestDimensionResponses.InterestDimensionResponse saved = toResponse(repository.save(InterestDimension.builder()
@@ -69,7 +69,7 @@ public class ManageInterestDimensionUseCase {
     public InterestDimensionResponse update(UpsertInterestDimensionCommand input) {
         String code = normalizeCode(input.code());
         InterestDimension existing = repository.findByCode(code)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy chiều sở thích: " + code));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chiều sở thích: " + code));
         // Mã là khoá và đã được gán vào practice_topics/dimension_interest_scores -- không cho
         // đổi, chỉ sửa phần hiển thị và cờ. Muốn đổi mã thì tạo mới rồi tắt cái cũ.
         InterestDimensionResponses.InterestDimensionResponse saved = toResponse(repository.save(InterestDimension.builder()
@@ -96,7 +96,7 @@ public class ManageInterestDimensionUseCase {
     public boolean deactivate(String code) {
         String normalized = normalizeCode(code);
         repository.findByCode(normalized)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy chiều sở thích: " + normalized));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chiều sở thích: " + normalized));
         // Tắt mềm, không xoá: điểm số và chủ đề đã gán chiều này vẫn phải đọc được.
         repository.deactivate(normalized);
         return true;

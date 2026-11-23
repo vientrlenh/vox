@@ -107,7 +107,7 @@ class AcceptSchoolRoomImportUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(
                 new AcceptSchoolRoomImportCommand(schoolId, sessionId, validMapping())))
-            .isInstanceOf(IllegalStateException.class);
+            .isInstanceOf(IllegalArgumentException.class);
     }
 
     private Map<String, String> validMapping() {

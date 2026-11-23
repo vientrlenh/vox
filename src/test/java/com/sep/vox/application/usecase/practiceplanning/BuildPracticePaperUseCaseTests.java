@@ -15,7 +15,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.PlanLimitExceededException;
+import com.sep.vox.application.exception.BusinessRuleViolationException;
 import com.sep.vox.application.mapper.practiceplanning.PracticePaperDtoMapper;
 import com.sep.vox.application.port.input.command.BuildPracticePaperCommand;
 import com.sep.vox.application.port.input.service.PracticePaperPersistenceService;
@@ -67,14 +67,14 @@ class BuildPracticePaperUseCaseTests {
 
     @Test
     void should_reject_beforeSelectingAnyQuestion_when_studentSchoolHasNoActiveSubscription() {
-        doThrow(new PlanLimitExceededException(
+        doThrow(new BusinessRuleViolationException(
                 "Trường chưa có gói subscription đang hoạt động, không thể bắt đầu buổi luyện tập cá nhân hóa AI."))
             .when(schoolSubscriptionActiveGuardService).requireActiveForStudent(eq(STUDENT_ID), any());
 
         BuildPracticePaperCommand command = new BuildPracticePaperCommand(TOPIC_ID, UUID.randomUUID(), "SELECTED", null, List.of(), List.of());
 
         assertThatThrownBy(() -> useCase.execute(command))
-            .isInstanceOf(PlanLimitExceededException.class)
+            .isInstanceOf(BusinessRuleViolationException.class)
             .hasMessageContaining("chưa có gói subscription đang hoạt động");
         // Fail-fast: the guard runs even before the topic lookup step, so no extra query/AI call is
         // spent.

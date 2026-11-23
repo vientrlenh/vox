@@ -9,9 +9,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.UpdateGradeLevelCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -43,7 +43,7 @@ public class UpdateGradeLevelUseCase implements IUseCase<UpdateGradeLevelCommand
         }
 
         if (gradeLevelRepository.findById(command.gradeLevelId()).isEmpty()) {
-            throw new NotFoundException("Không tìm thấy khối học.");
+            throw new ResourceNotFoundException("Không tìm thấy khối học.");
         }
 
         String name = command.name() != null ? StringNormalization.trimAndCollapseSpaces(command.name()) : null;
@@ -66,11 +66,11 @@ public class UpdateGradeLevelUseCase implements IUseCase<UpdateGradeLevelCommand
                     currentUserId.toString()
             );
         } catch (DataConflictException e) {
-            throw new DuplicatedException("Thứ tự khối học đã được sử dụng.");
+            throw new ResourceDuplicatedException("Thứ tự khối học đã được sử dụng.");
         }
 
         if (updatedRows == 0) {
-            throw new NotFoundException("Không tìm thấy khối học.");
+            throw new ResourceNotFoundException("Không tìm thấy khối học.");
         }
 
         return command.gradeLevelId();

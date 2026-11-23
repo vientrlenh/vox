@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 
@@ -52,9 +52,9 @@ public class AssessmentPolicyValidator {
 
     private void validate(UUID assessmentPolicyId, UUID schoolId) {
         AssessmentPolicy policy = assessmentPolicyRepository.findById(assessmentPolicyId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ tiêu chí đánh giá"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ tiêu chí đánh giá"));
         if (policy.getStatus() != AssessmentPolicyStatus.PUBLISHED) {
-            throw new IllegalStateException("Chỉ được dùng bộ tiêu chí đã xuất bản");
+            throw new IllegalArgumentException("Chỉ được dùng bộ tiêu chí đã xuất bản");
         }
         if (policy.getSchoolId() != null && !policy.getSchoolId().equals(schoolId)) {
             throw new ForbiddenException("Bộ tiêu chí không thuộc trường của bạn");

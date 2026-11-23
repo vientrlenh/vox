@@ -6,8 +6,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.DuplicatedException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.AddAssessmentScheduleProctorCommand;
 import com.sep.vox.application.port.input.service.AssessmentScheduleManageAccessService;
 import com.sep.vox.application.port.input.service.AssessmentScheduleProctorConflictValidator;
@@ -39,12 +39,12 @@ public class AddAssessmentScheduleProctorUseCase implements IUseCase<AddAssessme
     @Transactional
     public AssessmentScheduleProctorDto execute(AddAssessmentScheduleProctorCommand input) {
         AssessmentSchedule schedule = assessmentScheduleRepository.findById(input.scheduleId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi"));
         if (!schedule.getAssessmentId().equals(input.assessmentId())) {
-            throw new NotFoundException("Không tìm thấy ca thi");
+            throw new ResourceNotFoundException("Không tìm thấy ca thi");
         }
         Assessment assessment = assessmentRepository.findById(schedule.getAssessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
         assessmentScheduleManageAccessService.requireCanManage(assessment);
         AssessmentEditingGuard.requireScheduleEditable(assessment);
 
@@ -59,7 +59,7 @@ public class AddAssessmentScheduleProctorUseCase implements IUseCase<AddAssessme
         }
 
         if (assessmentScheduleProctorRepository.existsByScheduleIdAndTeacherId(schedule.getId(), input.teacherId())) {
-            throw new DuplicatedException("Giám thị đã được phân công cho ca này");
+            throw new ResourceDuplicatedException("Giám thị đã được phân công cho ca này");
         }
 
         // Loại chính ca này khỏi phép kiểm tra: kiểm tra trùng ngay bên trên đã lo trường hợp đó,

@@ -128,7 +128,7 @@ class UpdateAssessmentPaperStatusUseCaseTests {
         when(assessmentPaperItemRepository.existsUnassignedItemByPaperId(PAPER_ID)).thenReturn(true);
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentPaperStatusCommand(PAPER_ID, "LOCK", null)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("còn ô câu hỏi chưa được gán");
         verify(assessmentPaperRepository, never()).save(any());
     }
@@ -196,7 +196,7 @@ class UpdateAssessmentPaperStatusUseCaseTests {
         givenPaper(AssessmentPaperStatus.DRAFT, CALLER_ID);
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentPaperStatusCommand(PAPER_ID, "REOPEN", null)))
-            .isInstanceOf(IllegalStateException.class);
+            .isInstanceOf(IllegalArgumentException.class);
         verify(assessmentCandidateRepository, never()).saveAll(any());
     }
 
@@ -207,7 +207,7 @@ class UpdateAssessmentPaperStatusUseCaseTests {
         givenPaper(AssessmentPaperStatus.DRAFT, OTHER_AUTHOR_ID);
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentPaperStatusCommand(PAPER_ID, "LOCK", null)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Trạng thái đề thi hiện tại không hợp lệ");
         verify(assessmentPaperRepository, never()).save(any());
     }

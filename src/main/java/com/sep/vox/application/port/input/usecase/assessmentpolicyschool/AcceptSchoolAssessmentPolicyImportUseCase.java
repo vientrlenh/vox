@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.assessmentpolicyschool;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.AcceptSchoolAssessmentPolicyImportCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -46,14 +46,14 @@ public class AcceptSchoolAssessmentPolicyImportUseCase implements IUseCase<Accep
             throw new ForbiddenException("BẢO MẬT: Mã bảo mật trường học không trùng khớp.");
 
         ImportSession session = importSessionRepository.findById(command.sessionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên làm việc Import."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên làm việc Import."));
 
         if (session.getType() != ImportType.ASSESSMENT_POLICY || session.getSchoolId() == null
                 || !session.getSchoolId().equals(command.schoolId())) {
             throw new IllegalArgumentException("Dữ liệu phiên làm việc không thuộc trường học của bạn hoặc sai cấu trúc định dạng.");
         }
         if (session.getStatus() != ImportSessionStatus.PREVIEWED) {
-            throw new IllegalStateException("Trạng thái phiên làm việc không hợp lệ để phê duyệt.");
+            throw new IllegalArgumentException("Trạng thái phiên làm việc không hợp lệ để phê duyệt.");
         }
 
         if (command.confirmedMapping() != null) {

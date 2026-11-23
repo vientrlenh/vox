@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateSchoolClassCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -62,7 +62,7 @@ public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassComma
             currentUserId.toString()
         );
         if (updatedRows == 0) {
-            throw new NotFoundException("Không tìm thấy lớp học");
+            throw new ResourceNotFoundException("Không tìm thấy lớp học");
         }
 
         return new UpdateSchoolClassResponse(command.id());
@@ -120,28 +120,28 @@ public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassComma
 
     private User findCurrentUser(UUID currentUserId) {
         User user = userRepository.findById(currentUserId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng hiện tại"));
         validateCurrentUserIsActive(user);
         return user;
     }
 
     private void validateCurrentUserIsActive(User currentUser) {
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new IllegalStateException("Người dùng hiện tại không hoạt động");
+            throw new IllegalArgumentException("Người dùng hiện tại không hoạt động");
         }
     }
 
     private UUID getSchoolId(User currentUser) {
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUser.getId())
-            .orElseThrow(() -> new IllegalStateException("Người dùng hiện tại không thuộc trường nào"));
+            .orElseThrow(() -> new IllegalArgumentException("Người dùng hiện tại không thuộc trường nào"));
         return schoolUser.getSchoolId();
     }
 
     private void validateSchool(UUID schoolId) {
         School school = schoolRepository.findById(schoolId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
-            throw new IllegalStateException("Trường học không hoạt động");
+            throw new IllegalArgumentException("Trường học không hoạt động");
         }
     }
 }

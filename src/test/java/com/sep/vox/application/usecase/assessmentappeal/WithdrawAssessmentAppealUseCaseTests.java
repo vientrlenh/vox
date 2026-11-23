@@ -117,7 +117,7 @@ class WithdrawAssessmentAppealUseCaseTests {
         // Từ APPROVED trở đi đã có người bị điều động và có thể đã đọc bài; muốn dừng
         // thì đi đường admin từ chối, có ghi lý do.
         assertThatThrownBy(() -> useCase.execute(appealId))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("chờ duyệt");
 
         verify(assessmentResultAppealRepository, never()).save(any());

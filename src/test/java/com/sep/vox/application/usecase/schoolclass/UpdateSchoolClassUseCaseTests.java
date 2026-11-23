@@ -17,7 +17,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateSchoolClassCommand;
 import com.sep.vox.application.port.input.usecase.schoolclass.UpdateSchoolClassUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -172,7 +172,7 @@ class UpdateSchoolClassUseCaseTests {
         )).thenReturn(0);
 
         assertThrows(
-            NotFoundException.class,
+            ResourceNotFoundException.class,
             () -> useCase.execute(new UpdateSchoolClassCommand(classId, "English 02", true, null, false, null, false))
         );
     }
@@ -226,7 +226,7 @@ class UpdateSchoolClassUseCaseTests {
         when(userRepository.findById(userId)).thenReturn(Optional.of(_u2));
 
         assertThrows(
-            IllegalStateException.class,
+            IllegalArgumentException.class,
             () -> useCase.execute(new UpdateSchoolClassCommand(UUID.randomUUID(), "English 02", true, null, false, null, false))
         );
 
@@ -242,7 +242,7 @@ class UpdateSchoolClassUseCaseTests {
         when(userRepository.findById(userId)).thenReturn(Optional.of(_user));
 
         assertThrows(
-            IllegalStateException.class,
+            IllegalArgumentException.class,
             () -> useCase.execute(new UpdateSchoolClassCommand(UUID.randomUUID(), "English 02", true, null, false, null, false))
         );
 
@@ -262,7 +262,7 @@ class UpdateSchoolClassUseCaseTests {
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(school));
 
         assertThrows(
-            IllegalStateException.class,
+            IllegalArgumentException.class,
             () -> useCase.execute(new UpdateSchoolClassCommand(UUID.randomUUID(), "English 02", true, null, false, null, false))
         );
 

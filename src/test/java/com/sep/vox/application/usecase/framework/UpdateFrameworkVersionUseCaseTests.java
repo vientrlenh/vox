@@ -14,7 +14,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateFrameworkVersionCommand;
 import com.sep.vox.application.port.input.usecase.framework.UpdateFrameworkVersionUseCase;
 import com.sep.vox.domain.model.framework.Framework;
@@ -77,7 +77,7 @@ public class UpdateFrameworkVersionUseCaseTests {
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> useCase.execute(command));
+        assertThrows(ResourceNotFoundException.class, () -> useCase.execute(command));
     }
 
     @Test
@@ -98,7 +98,7 @@ public class UpdateFrameworkVersionUseCaseTests {
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
         when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> useCase.execute(command));
+        assertThrows(ResourceNotFoundException.class, () -> useCase.execute(command));
     }
 
     @Test
@@ -148,6 +148,6 @@ public class UpdateFrameworkVersionUseCaseTests {
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
         when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
 
-        assertThrows(IllegalStateException.class, () -> useCase.execute(command));
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
     }
 }

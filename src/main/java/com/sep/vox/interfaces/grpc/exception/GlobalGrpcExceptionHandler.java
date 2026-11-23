@@ -6,11 +6,10 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Component;
 
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.BusinessRuleViolationException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.exception.PlanLimitExceededException;
-import com.sep.vox.application.exception.QuotaExceededException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 
 import io.grpc.Status;
@@ -26,12 +25,12 @@ public class GlobalGrpcExceptionHandler implements GrpcExceptionHandler{
                 .withDescription(exception.getMessage())
                 .asException();
         }
-        if (exception instanceof NotFoundException) {
+        if (exception instanceof ResourceNotFoundException) {
             return Status.NOT_FOUND
                 .withDescription(exception.getMessage())
                 .asException();
         }
-        if (exception instanceof DuplicatedException) {
+        if (exception instanceof ResourceDuplicatedException) {
             return Status.ALREADY_EXISTS
                 .withDescription(exception.getMessage())
                 .asException();
@@ -46,12 +45,7 @@ public class GlobalGrpcExceptionHandler implements GrpcExceptionHandler{
                 .withDescription(exception.getMessage())
                 .asException();
         }
-        if (exception instanceof QuotaExceededException) {
-            return Status.RESOURCE_EXHAUSTED
-                .withDescription(exception.getMessage())
-                .asException();
-        }
-        if (exception instanceof PlanLimitExceededException) {
+        if (exception instanceof BusinessRuleViolationException) {
             return Status.FAILED_PRECONDITION
                 .withDescription(exception.getMessage())
                 .asException();

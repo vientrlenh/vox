@@ -18,9 +18,9 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.PlanLimitExceededException;
+import com.sep.vox.application.exception.BusinessRuleViolationException;
 import com.sep.vox.application.port.input.command.AddAssessmentCandidateCommand;
 import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
 import com.sep.vox.application.port.input.service.AssessmentDirectoryAccessService;
@@ -111,11 +111,11 @@ class AddAssessmentCandidateUseCaseTests {
             c.setId(UUID.randomUUID());
             return c;
         });
-        doThrow(new PlanLimitExceededException("Đã vượt quá hạn mức"))
+        doThrow(new BusinessRuleViolationException("Đã vượt quá hạn mức"))
             .when(classTestTokenQuotaGuardService).requireWithinTokenQuota(assessment);
 
         assertThatThrownBy(() -> useCase.execute(new AddAssessmentCandidateCommand(assessmentId, studentId)))
-            .isInstanceOf(PlanLimitExceededException.class)
+            .isInstanceOf(BusinessRuleViolationException.class)
             .hasMessageContaining("vượt quá hạn mức");
     }
 
@@ -168,7 +168,7 @@ class AddAssessmentCandidateUseCaseTests {
         when(assessmentCandidateRepository.existsByAssessmentIdAndStudentId(assessmentId, studentId)).thenReturn(true);
 
         assertThatThrownBy(() -> useCase.execute(new AddAssessmentCandidateCommand(assessmentId, studentId)))
-            .isInstanceOf(DuplicatedException.class);
+            .isInstanceOf(ResourceDuplicatedException.class);
         verify(assessmentCandidateRepository, never()).save(any());
     }
 

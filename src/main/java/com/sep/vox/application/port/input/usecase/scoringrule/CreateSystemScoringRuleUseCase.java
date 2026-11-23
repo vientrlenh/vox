@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.mapper.scoringrule.ScoringRuleParamsMapper;
 import com.sep.vox.application.port.input.command.CreateScoringRuleCommand;
@@ -58,7 +58,7 @@ public class CreateSystemScoringRuleUseCase implements IUseCase<CreateScoringRul
 
         // 2. Kiểm tra Assessment Policy tồn tại và thuộc phạm vi toàn hệ thống
         AssessmentPolicy policy = assessmentPolicyRepository.findById(command.policyId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Assessment Policy."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
         if (policy.getSchoolId() != null) {
             throw new ForbiddenException("Không thể can thiệp vào Assessment Policy của trường học.");
         }
@@ -68,13 +68,13 @@ public class CreateSystemScoringRuleUseCase implements IUseCase<CreateScoringRul
         // ngầm giữa chừng thì các bài thi cùng Policy sẽ bị chấm không nhất quán (bài trước/sau
         // khi thêm rule chịu luật khác nhau) mà không ai kiểm soát được.
         if (policy.getStatus() != AssessmentPolicyStatus.DRAFT) {
-            throw new IllegalStateException("Chỉ được thêm Scoring Rule khi Assessment Policy đang ở trạng thái DRAFT.");
+            throw new IllegalArgumentException("Chỉ được thêm Scoring Rule khi Assessment Policy đang ở trạng thái DRAFT.");
         }
 
         // 4. Kiểm tra trùng mã Code trong phạm vi Policy này
         String safeCode = command.code().strip();
         if (scoringRuleRepository.existsByPolicyIdAndCode(command.policyId(), safeCode)) {
-            throw new IllegalStateException("Mã Scoring Rule (code) '" + safeCode + "' đã tồn tại trong Assessment Policy này.");
+            throw new IllegalArgumentException("Mã Scoring Rule (code) '" + safeCode + "' đã tồn tại trong Assessment Policy này.");
         }
 
         // 5. Validate priority (khớp với check constraint DB: priority > 0), fail sớm thay vì đợi DB báo lỗi
@@ -132,16 +132,16 @@ public class CreateSystemScoringRuleUseCase implements IUseCase<CreateScoringRul
 
     private RubricCriterion requireCriterion(UUID rubricVersionId, String criterionCode) {
         return rubricCriterionRepository.findByRubricVersionIdAndCode(rubricVersionId, criterionCode)
-                .orElseThrow(() -> new NotFoundException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Mã tiêu chí (criterionCode) '" + criterionCode + "' không tồn tại trong Rubric Version của Assessment Policy này."));
     }
 
     private void requireFrameworkResultBand(UUID frameworkVersionId, UUID frameworkResultBandId) {
         FrameworkResultBand band = frameworkResultBandRepository.findById(frameworkResultBandId)
-                .orElseThrow(() -> new NotFoundException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Không tìm thấy Framework Result Band với ID '" + frameworkResultBandId + "'."));
         if (!band.getFrameworkVersionId().equals(frameworkVersionId)) {
-            throw new NotFoundException(
+            throw new ResourceNotFoundException(
                     "Framework Result Band '" + frameworkResultBandId + "' không thuộc Framework Version của Assessment Policy này.");
         }
     }

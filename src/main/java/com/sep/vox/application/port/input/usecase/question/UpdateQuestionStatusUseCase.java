@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateQuestionStatusCommand;
 import com.sep.vox.application.port.input.service.QuestionStatusActorResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -45,9 +45,9 @@ public class UpdateQuestionStatusUseCase implements IUseCase<UpdateQuestionStatu
 
         QuestionStatusTransition.Actor actor = questionStatusActorResolver.resolve();
         Question question = questionRepository.findById(input.questionId())
-            .orElseThrow(() -> new NotFoundException(QuestionStatusTransition.QUESTION_NOT_FOUND));
+            .orElseThrow(() -> new ResourceNotFoundException(QuestionStatusTransition.QUESTION_NOT_FOUND));
         QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
-            .orElseThrow(() -> new NotFoundException(QuestionStatusTransition.QUESTION_BANK_NOT_FOUND));
+            .orElseThrow(() -> new ResourceNotFoundException(QuestionStatusTransition.QUESTION_BANK_NOT_FOUND));
         boolean editorCollaborator = questionCollaboratorRepository
             .findByQuestionIdAndUserId(question.getId(), actor.userId())
             .filter(collaborator -> collaborator.getPermission() == QuestionCollaboratorPermission.CAN_EDIT)
@@ -59,7 +59,7 @@ public class UpdateQuestionStatusUseCase implements IUseCase<UpdateQuestionStatu
             // để giữ HTTP status, còn endpoint hàng loạt gom vào `failed[]`.
             switch (rejection.kind()) {
                 case FORBIDDEN -> throw new ForbiddenException(rejection.reason());
-                case INVALID_STATE -> throw new IllegalStateException(rejection.reason());
+                case INVALID_STATE -> throw new IllegalArgumentException(rejection.reason());
             }
         }
 

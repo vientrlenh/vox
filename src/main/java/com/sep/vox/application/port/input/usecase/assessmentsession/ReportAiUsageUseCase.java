@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.ReportAiUsageCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.metering.RecordAiUsageUseCase;
@@ -53,10 +53,10 @@ public class ReportAiUsageUseCase implements IUseCase<ReportAiUsageCommand, Void
         UUID userId = userContextPort.getCurrentAuthenticatedUserId();
 
         AssessmentSession session = assessmentSessionRepository.findByIdAndResumable(input.assessmentSessionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi hoặc phiên thi đã kết thúc"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi hoặc phiên thi đã kết thúc"));
 
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(session.getCandidateId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy học viên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy học viên thi"));
 
         if (!candidate.getStudentId().equals(userId)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");

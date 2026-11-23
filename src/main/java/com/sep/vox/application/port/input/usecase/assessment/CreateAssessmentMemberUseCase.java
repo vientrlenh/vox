@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateAssessmentMemberCommand;
 import com.sep.vox.application.port.input.service.AssessmentMemberManageAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -32,17 +32,17 @@ public class CreateAssessmentMemberUseCase implements IUseCase<CreateAssessmentM
     @Transactional
     public AssessmentMemberDto execute(CreateAssessmentMemberCommand input) {
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
 
         AssessmentMemberManageAccessService.AssessmentMemberActor actor = assessmentMemberManageAccessService.requireCanManage(assessment);
         AssessmentMemberRole role = input.role();
         assessmentMemberManageAccessService.requireCanTouchRole(actor, role);
 
         if (!schoolUserRepository.existsBySchoolIdAndUserId(assessment.getSchoolId(), input.userId())) {
-            throw new IllegalStateException("Người dùng không thuộc trường của bài kiểm tra");
+            throw new IllegalArgumentException("Người dùng không thuộc trường của bài kiểm tra");
         }
         if (assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessment.getId(), input.userId(), role)) {
-            throw new IllegalStateException("Người dùng đã có vai trò này trong bài kiểm tra");
+            throw new IllegalArgumentException("Người dùng đã có vai trò này trong bài kiểm tra");
         }
 
         AssessmentMember member = AssessmentMember.builder()

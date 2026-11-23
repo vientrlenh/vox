@@ -122,7 +122,7 @@ class PreviewSchoolRoomImportFromFileUseCaseTests {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(inactive));
 
-        assertThrows(IllegalStateException.class,
+        assertThrows(IllegalArgumentException.class,
             () -> useCase.execute(new PreviewSchoolRoomImportFromFileCommand(UUID.randomUUID(), file)));
         verifyNoInteractions(fileProcessingPort, importSessionRepository, importRowRepository);
     }

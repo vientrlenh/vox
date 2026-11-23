@@ -13,7 +13,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.ViewFrameworkVersionsQuery;
 import com.sep.vox.application.port.input.usecase.framework.ViewFrameworkVersionsUseCase;
 import com.sep.vox.domain.common.PageResult;
@@ -90,7 +90,7 @@ public class ViewFrameworkVersionsUseCaseTests {
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> useCase.execute(query));
+        assertThrows(ResourceNotFoundException.class, () -> useCase.execute(query));
     }
 
     @Test

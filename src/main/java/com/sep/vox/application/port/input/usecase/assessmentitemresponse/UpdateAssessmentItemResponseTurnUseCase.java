@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.mapper.assessmentitemresponse.AssessmentItemResponseResponseMapper;
 import com.sep.vox.application.port.input.command.UpdateAssessmentItemResponseTurnCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -26,11 +26,11 @@ public class UpdateAssessmentItemResponseTurnUseCase
     @Transactional
     public AssessmentItemResponseTurnResponse execute(UpdateAssessmentItemResponseTurnCommand input) {
         if (!assessmentItemResponseRepository.existsById(input.answerId())) {
-            throw new NotFoundException("Không tìm thấy câu trả lời của thí sinh");
+            throw new ResourceNotFoundException("Không tìm thấy câu trả lời của thí sinh");
         }
 
         AssessmentItemResponseTurn turn = assessmentItemResponseTurnRepository.findByAssessmentItemResponseIdAndTurnOrder(input.answerId(), input.turnOrder())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy turn cần cập nhật"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy turn cần cập nhật"));
 
         if (input.turnType() != null) {
             turn.setTurnType(input.turnType());

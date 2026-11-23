@@ -54,7 +54,7 @@ public class CreateTopUpOrderUseCase implements IUseCase<CreateTopUpOrderCommand
         // EARLY, it does not attach the money to a plan.
         boolean hasActiveSubscription = schoolSubscriptionRepository.findActiveBySchoolId(schoolId).isPresent();
         if (!hasActiveSubscription) {
-            throw new IllegalStateException("Trường chưa có gói đăng ký nào đang hoạt động để nạp thêm.");
+            throw new IllegalArgumentException("Trường chưa có gói đăng ký nào đang hoạt động để nạp thêm.");
         }
 
         // The service fee is ADDED to the amount to pay, not carved out of the balance: if the school asks for 1,000,000 it

@@ -43,7 +43,7 @@ type PracticePaperDraft {
     reason: String
     "Chỉ có khi status=READY."
     paper: PracticePaper
-    "Chỉ có khi status=FAILED. Mã lỗi máy đọc được (vd QUOTA_EXCEEDED) để client phân biệt lỗi tạm thời với lỗi nghiệp vụ không đáng cho thử lại."
+    "Chỉ có khi status=FAILED. Mã lỗi máy đọc được (vd BUSINESS_RULE_VIOLATION) để client phân biệt lỗi tạm thời với lỗi nghiệp vụ không đáng cho thử lại."
     errorCode: String
 }
 

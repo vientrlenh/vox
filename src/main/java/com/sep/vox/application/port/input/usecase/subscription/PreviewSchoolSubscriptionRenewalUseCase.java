@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.service.SubscriptionPlanResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -50,11 +50,11 @@ public class PreviewSchoolSubscriptionRenewalUseCase
         // Kỳ GẦN NHẤT, không lọc trạng thái: gia hạn muộn (gói hết hạn tuần trước) là đường phổ biến
         // nhất, mà ở đó không còn kỳ nào ACTIVE để hỏi.
         SchoolSubscription subscription = schoolSubscriptionRepository.findMostRecentBySchoolId(schoolId)
-            .orElseThrow(() -> new NotFoundException(
+            .orElseThrow(() -> new ResourceNotFoundException(
                 "Trường chưa từng đăng ký gói nào, hãy chọn gói từ danh sách thay vì gia hạn."));
 
         SubscriptionPlan currentPlan = subscriptionPlanRepository.findById(subscription.getSubscriptionPlanId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói"));
         // Ném lỗi nếu gói đã lưu trữ mà chưa có gói thay thế -- đúng ý: trường cần biết ngay là chưa
         // gia hạn được, thay vì thấy một màn xem trước đẹp đẽ rồi mới hỏng ở bước đặt đơn.
         SubscriptionPlan renewalPlan = subscriptionPlanResolver.resolveActivePlan(currentPlan);

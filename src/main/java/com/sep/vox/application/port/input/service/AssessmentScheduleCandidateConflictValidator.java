@@ -13,7 +13,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.domain.model.assessment.AssessmentCandidate;
 import com.sep.vox.domain.model.assessment.AssessmentCandidateStatus;
 import com.sep.vox.domain.repository.AssessmentCandidateRepository;
@@ -88,7 +88,7 @@ public class AssessmentScheduleCandidateConflictValidator {
         if (conflictingStudentIds.isEmpty()) {
             return;
         }
-        throw new DuplicatedException(buildMessage(conflictingStudentIds));
+        throw new ResourceDuplicatedException(buildMessage(conflictingStudentIds));
     }
 
     /**

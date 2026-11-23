@@ -172,7 +172,7 @@ class GradingRoundPolicyTests {
     void should_refuse_to_compute_a_status_for_an_illegal_combination() {
         assertThatThrownBy(() -> GradingRoundPolicy.resultStatusAfter(
             GradingRoundType.APPEAL, GradingOutcome.INVALIDATED))
-            .isInstanceOf(IllegalStateException.class);
+            .isInstanceOf(IllegalArgumentException.class);
     }
 
     // ---- dữ liệu bắt buộc kèm hành động ------------------------------------

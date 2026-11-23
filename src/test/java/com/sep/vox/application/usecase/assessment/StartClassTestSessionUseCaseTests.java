@@ -17,7 +17,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.ServiceUnavailableException;
 import com.sep.vox.application.port.input.command.StartClassTestSessionCommand;
 import com.sep.vox.application.port.input.usecase.assessment.StartClassTestSessionUseCase;
@@ -181,7 +181,7 @@ class StartClassTestSessionUseCaseTests {
             .thenReturn(Optional.of(candidate(AssessmentCandidateStatus.ASSIGNED)));
 
         assertThatThrownBy(() -> useCase.execute(new StartClassTestSessionCommand(ASSESSMENT_ID)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Bạn chưa được điểm danh có mặt");
     }
 
@@ -193,7 +193,7 @@ class StartClassTestSessionUseCaseTests {
             .thenReturn(Optional.of(candidate));
 
         assertThatThrownBy(() -> useCase.execute(new StartClassTestSessionCommand(ASSESSMENT_ID)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Bạn chưa được xếp ca thi");
     }
 
@@ -203,7 +203,7 @@ class StartClassTestSessionUseCaseTests {
             .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> useCase.execute(new StartClassTestSessionCommand(ASSESSMENT_ID)))
-            .isInstanceOf(NotFoundException.class)
+            .isInstanceOf(ResourceNotFoundException.class)
             .hasMessageContaining("Ca thi không hợp lệ hoặc đã hết hạn");
     }
 
@@ -213,7 +213,7 @@ class StartClassTestSessionUseCaseTests {
         when(assessmentRepository.findById(ASSESSMENT_ID)).thenReturn(Optional.of(assessment(true)));
 
         assertThatThrownBy(() -> useCase.execute(new StartClassTestSessionCommand(ASSESSMENT_ID)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("yêu cầu xác thực OTP");
     }
 
@@ -225,7 +225,7 @@ class StartClassTestSessionUseCaseTests {
             .thenReturn(Optional.of(candidate));
 
         assertThatThrownBy(() -> useCase.execute(new StartClassTestSessionCommand(ASSESSMENT_ID)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Bạn đã bị buộc kết thúc bài thi này");
     }
 

@@ -15,7 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.domain.model.assessment.AssessmentCandidate;
 import com.sep.vox.domain.repository.AssessmentCandidateRepository;
 import com.sep.vox.infrastructure.persistence.mapper.AssessmentCandidateMapper;
@@ -33,7 +33,7 @@ public class AssessmentCandidateRepositoryImpl implements AssessmentCandidateRep
             AssessmentCandidateJpaEntity saved = springDataAssessmentCandidateRepository.save(AssessmentCandidateMapper.toJpa(candidate));
             return AssessmentCandidateMapper.toDomain(saved);
         } catch (DataIntegrityViolationException e) {
-            throw new DuplicatedException("Thí sinh đã tồn tại trong kỳ thi này");
+            throw new ResourceDuplicatedException("Thí sinh đã tồn tại trong kỳ thi này");
         }
     }
 
@@ -45,7 +45,7 @@ public class AssessmentCandidateRepositoryImpl implements AssessmentCandidateRep
                 .map(AssessmentCandidateMapper::toDomain)
                 .toList();
         } catch (DataIntegrityViolationException e) {
-            throw new DuplicatedException("Thí sinh đã tồn tại trong kỳ thi này");
+            throw new ResourceDuplicatedException("Thí sinh đã tồn tại trong kỳ thi này");
         }
     }
 

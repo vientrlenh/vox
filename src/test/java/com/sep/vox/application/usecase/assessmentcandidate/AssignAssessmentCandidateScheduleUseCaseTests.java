@@ -18,7 +18,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.port.input.command.AssignAssessmentCandidateScheduleCommand;
 import com.sep.vox.application.port.input.service.AssessmentPaperAutoAssigner;
 import com.sep.vox.application.port.input.service.AssessmentScheduleCandidateConflictValidator;
@@ -110,7 +110,7 @@ class AssignAssessmentCandidateScheduleUseCaseTests {
         when(assessmentScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(AssessmentScheduleStatus.COMPLETED)));
 
         assertThatThrownBy(() -> useCase.execute(new AssignAssessmentCandidateScheduleCommand(assessmentId, candidateId, scheduleId)))
-            .isInstanceOf(IllegalStateException.class);
+            .isInstanceOf(IllegalArgumentException.class);
         verify(assessmentCandidateRepository, never()).save(any());
     }
 
@@ -149,7 +149,7 @@ class AssignAssessmentCandidateScheduleUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(
                 new AssignAssessmentCandidateScheduleCommand(assessmentId, candidateId, scheduleId)))
-            .isInstanceOf(DuplicatedException.class)
+            .isInstanceOf(ResourceDuplicatedException.class)
             .hasMessageContaining("khoảng thời gian này");
         verify(assessmentCandidateRepository, never()).save(any());
     }

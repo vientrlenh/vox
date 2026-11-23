@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.ViewAssessmentSchedulesQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -40,7 +40,7 @@ public class ViewAssessmentSchedulesUseCase implements IUseCase<ViewAssessmentSc
         List<AssessmentSchedule> schedules;
         if (input.assessmentId() != null) {
             Assessment assessment = assessmentRepository.findById(input.assessmentId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
             schedules = resolveAssessmentSchedules(assessment, currentUserId, currentSchoolId);
         } else {
             schedules = assessmentScheduleRepository.findBySchoolId(authorizeSchoolWide());

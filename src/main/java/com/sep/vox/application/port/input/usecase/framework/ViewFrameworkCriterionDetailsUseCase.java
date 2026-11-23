@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.ViewFrameworkCriterionDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.FrameworkCriterionDto;
@@ -23,7 +23,7 @@ public class ViewFrameworkCriterionDetailsUseCase implements IUseCase<ViewFramew
     @Transactional(readOnly = true)
     public FrameworkCriterionDto execute(ViewFrameworkCriterionDetailsQuery query) {
         FrameworkCriterion criterion = frameworkCriterionRepository.findById(query.criterionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Tiêu chí (Criterion) này."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Tiêu chí (Criterion) này."));
 
         return FrameworkCriterionDtoMapper.toDto(criterion);
     }

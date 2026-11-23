@@ -18,7 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.DeleteSchoolClassCommand;
 import com.sep.vox.application.port.input.usecase.schoolclass.DeleteSchoolClassUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -121,7 +121,7 @@ class DeleteSchoolClassUseCaseTests {
         stubActiveContext(userId, schoolId);
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(archived));
 
-        assertThrows(NotFoundException.class, () -> useCase.execute(new DeleteSchoolClassCommand(schoolId, classId)));
+        assertThrows(ResourceNotFoundException.class, () -> useCase.execute(new DeleteSchoolClassCommand(schoolId, classId)));
 
         verifyNoInteractions(schoolClassDependencyRepository);
         verify(schoolClassRepository, org.mockito.Mockito.never()).deleteById(any());
@@ -136,7 +136,7 @@ class DeleteSchoolClassUseCaseTests {
         stubActiveContext(userId, schoolId);
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> useCase.execute(new DeleteSchoolClassCommand(schoolId, classId)));
+        assertThrows(ResourceNotFoundException.class, () -> useCase.execute(new DeleteSchoolClassCommand(schoolId, classId)));
 
         verifyNoInteractions(schoolClassDependencyRepository);
     }
@@ -149,7 +149,7 @@ class DeleteSchoolClassUseCaseTests {
         stubActiveContext(userId, schoolId);
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(schoolClass(classId, UUID.randomUUID())));
 
-        assertThrows(NotFoundException.class, () -> useCase.execute(new DeleteSchoolClassCommand(schoolId, classId)));
+        assertThrows(ResourceNotFoundException.class, () -> useCase.execute(new DeleteSchoolClassCommand(schoolId, classId)));
 
         verifyNoInteractions(schoolClassDependencyRepository);
     }
@@ -174,7 +174,7 @@ class DeleteSchoolClassUseCaseTests {
         User _u1 = user(userId, UUID.randomUUID(), UserStatus.INACTIVE);
         when(userRepository.findById(userId)).thenReturn(Optional.of(_u1));
 
-        assertThrows(IllegalStateException.class, () -> useCase.execute(new DeleteSchoolClassCommand(UUID.randomUUID(), UUID.randomUUID())));
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(new DeleteSchoolClassCommand(UUID.randomUUID(), UUID.randomUUID())));
 
         verifyNoInteractions(schoolRepository, schoolClassRepository, schoolClassDependencyRepository);
     }
@@ -187,7 +187,7 @@ class DeleteSchoolClassUseCaseTests {
         User _user = user(userId, null, UserStatus.ACTIVE);
         when(userRepository.findById(userId)).thenReturn(Optional.of(_user));
 
-        assertThrows(IllegalStateException.class, () -> useCase.execute(new DeleteSchoolClassCommand(UUID.randomUUID(), UUID.randomUUID())));
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(new DeleteSchoolClassCommand(UUID.randomUUID(), UUID.randomUUID())));
 
         verifyNoInteractions(schoolRepository, schoolClassRepository, schoolClassDependencyRepository);
     }
@@ -204,7 +204,7 @@ class DeleteSchoolClassUseCaseTests {
         when(userRepository.findById(userId)).thenReturn(Optional.of(_user1));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(school));
 
-        assertThrows(IllegalStateException.class, () -> useCase.execute(new DeleteSchoolClassCommand(schoolId, UUID.randomUUID())));
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(new DeleteSchoolClassCommand(schoolId, UUID.randomUUID())));
 
         verifyNoInteractions(schoolClassRepository, schoolClassDependencyRepository);
     }

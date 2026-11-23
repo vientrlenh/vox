@@ -78,11 +78,11 @@ public final class GradingRoundPolicy {
     }
 
     /**
-     * Trạng thái bài sau hành động. {@code null} nghĩa là <em>giữ nguyên</em> — dùng
-     * cho hậu kiểm (bài không nhấp nháy) và cho REMEDIATION/UPHELD (xác nhận vi phạm).
+     * Result status after the action. {@code null} means <em>keep as is</em> -- used for
+     * post-review (the result does not flicker) and for REMEDIATION/UPHELD (violation confirmed).
      *
-     * @throws IllegalStateException khi hành động không hợp lệ với vòng; gọi
-     *         {@link #isAllowed} trước để báo lỗi tiếng Việt đúng ngữ cảnh.
+     * @throws IllegalArgumentException when the action is not valid for the round; call
+     *         {@link #isAllowed} first to report the error in Vietnamese with the right context.
      */
     public static AssessmentCandidateResultStatus resultStatusAfter(
             GradingRoundType roundType, GradingOutcome outcome) {
@@ -90,7 +90,7 @@ public final class GradingRoundPolicy {
             return null;
         }
         if (!isAllowed(roundType, outcome)) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 "Hành động " + outcome + " không hợp lệ với vòng chấm " + roundType + ".");
         }
         return switch (roundType) {

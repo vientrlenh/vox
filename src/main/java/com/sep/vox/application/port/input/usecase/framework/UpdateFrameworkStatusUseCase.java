@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateFrameworkActiveStatusCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.model.framework.Framework;
@@ -32,13 +32,13 @@ public class UpdateFrameworkStatusUseCase implements IUseCase<UpdateFrameworkAct
 
     private Framework getFramework(UpdateFrameworkActiveStatusCommand input) {
         return frameworkRepository.findById(input.frameworkId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy framework"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy framework"));
     }
 
     private void validateRequest(UpdateFrameworkActiveStatusCommand input) {
         if (input.isActive()
                 && frameworkVersionRepository.findByFrameworkIdAndStatus(input.frameworkId(), FrameworkVersionStatus.PUBLISHED).isEmpty()) {
-            throw new IllegalStateException("Framework phải có ít nhất một phiên bản đã xuất bản trước khi kích hoạt");
+            throw new IllegalArgumentException("Framework phải có ít nhất một phiên bản đã xuất bản trước khi kích hoạt");
         }
     }
 

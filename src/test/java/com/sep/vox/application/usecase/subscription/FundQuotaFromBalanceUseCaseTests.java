@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.PlanLimitExceededException;
+import com.sep.vox.application.exception.BusinessRuleViolationException;
 import com.sep.vox.application.port.input.command.FundQuotaFromBalanceCommand;
 import com.sep.vox.application.port.input.service.SchoolSubscriptionDebtGuardService;
 import com.sep.vox.application.port.input.usecase.subscription.FundQuotaFromBalanceUseCase;
@@ -178,7 +178,7 @@ class FundQuotaFromBalanceUseCaseTests {
         givenWallet(-1_000_000);
 
         assertThatThrownBy(() -> useCase.execute(fund(500_000)))
-            .isInstanceOf(PlanLimitExceededException.class)
+            .isInstanceOf(BusinessRuleViolationException.class)
             .hasMessageContaining("bị khóa");
 
         verify(schoolBalanceRepository, never()).save(any());

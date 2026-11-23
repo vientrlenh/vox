@@ -30,7 +30,7 @@ public class ApproveAssessmentAppealUseCase implements IUseCase<ApproveAssessmen
 
         AssessmentResultAppeal appeal = context.appeal();
         if (appeal.getStatus() != AssessmentAppealStatus.PENDING) {
-            throw new IllegalStateException("Chỉ có thể duyệt đơn phúc khảo đang ở trạng thái Chờ duyệt.");
+            throw new IllegalArgumentException("Chỉ có thể duyệt đơn phúc khảo đang ở trạng thái Chờ duyệt.");
         }
 
         Instant now = Instant.now();

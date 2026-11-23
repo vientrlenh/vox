@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.DeleteAssessmentBlueprintSlotCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.service.RecalculateBlueprintVersionTimeLimitService;
@@ -40,17 +40,17 @@ public class DeleteAssessmentBlueprintSlotUseCase implements IUseCase<DeleteAsse
             .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
 
         AssessmentBlueprintSlot slot = assessmentBlueprintSlotRepository.findById(input.slotId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy slot"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy slot"));
         AssessmentBlueprintVersion version = assessmentBlueprintVersionRepository.findById(slot.getBlueprintVersionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy version blueprint"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy version blueprint"));
         AssessmentBlueprint blueprint = assessmentBlueprintRepository.findById(version.getBlueprintId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint đề thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy blueprint đề thi"));
         if (!assessmentBlueprintRepository.canEditBlueprint(blueprint.getId(), currentUserId, currentSchoolId)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
         if (version.getStatus() != AssessmentBlueprintVersionStatus.DRAFT) {
-            throw new IllegalStateException("Chỉ được xoá slot khi version đang DRAFT");
+            throw new IllegalArgumentException("Chỉ được xoá slot khi version đang DRAFT");
         }
 
         assessmentBlueprintSlotRepository.deleteById(slot.getId());

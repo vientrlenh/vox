@@ -19,7 +19,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.DataConflictException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateFrameworkCriterionBandsCommand;
 import com.sep.vox.application.port.input.command.CreateFrameworkCriterionBandsCommand.CriterionBandItemCommand;
 import com.sep.vox.application.port.input.usecase.framework.CreateFrameworkCriterionBandsUseCase;
@@ -121,7 +121,7 @@ public class CreateFrameworkCriterionBandsUseCaseTests {
         CreateFrameworkCriterionBandsCommand command = new CreateFrameworkCriterionBandsCommand(frameworkId, versionId, criterionId, List.of(bandItem("rb1")));
 
         assertThatThrownBy(() -> useCase.execute(command))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessage("Mã kết quả đã được gán mức đánh giá cho tiêu chí này");
     }
 
@@ -130,7 +130,7 @@ public class CreateFrameworkCriterionBandsUseCaseTests {
         when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.empty());
         CreateFrameworkCriterionBandsCommand command = new CreateFrameworkCriterionBandsCommand(frameworkId, versionId, criterionId, List.of(bandItem("rb1")));
 
-        assertThrows(NotFoundException.class, () -> useCase.execute(command));
+        assertThrows(ResourceNotFoundException.class, () -> useCase.execute(command));
     }
 
     @Test
@@ -149,7 +149,7 @@ public class CreateFrameworkCriterionBandsUseCaseTests {
         when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(activeVersion));
         CreateFrameworkCriterionBandsCommand command = new CreateFrameworkCriterionBandsCommand(frameworkId, versionId, criterionId, List.of(bandItem("rb1")));
 
-        assertThrows(IllegalStateException.class, () -> useCase.execute(command));
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
     }
 
     @Test

@@ -64,7 +64,7 @@ public class AssessmentStatusAutoTransitionJob {
             // makes it heal itself on the next tick instead of cutting into an assessment that is running.
             try {
                 assessmentScheduleClosureService.requireNoActiveSessionInOngoingSchedule(assessment.getId(), now);
-            } catch (IllegalStateException ex) {
+            } catch (IllegalArgumentException ex) {
                 log.info("Hoãn tự đóng bài kiểm tra {}: {}", assessment.getId(), ex.getMessage());
                 continue;
             }

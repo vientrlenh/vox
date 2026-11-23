@@ -108,21 +108,23 @@ public class UpholdResultUseCase implements IUseCase<GradingDecisionCommand, Gra
     }
 
     /**
-     * Lấp nốt các câu chưa có bản chấm trước khi bài được công bố, hoặc từ chối nếu không lấp
-     * được. CHỈ gọi ở vòng mà giữ nguyên = công bố.
+     * Fills in the questions that have no grade yet before the assessment is released, or refuses if they
+     * cannot be filled in. ONLY call it in the round where keeping the score = releasing.
      *
-     * <p>"Giữ nguyên điểm" trên một câu CHƯA có bản chấm nào nghĩa là giữ nguyên con số rỗng.
-     * Câu thí sinh không nói gì thì ghi thẳng 0 rồi mới chốt; câu có nói thì chặn.
+     * <p>"Keep the score" on a question that has NO grade at all means keeping an empty number.
+     * A question the candidate said nothing on gets a plain 0 and is then finalised; a question the
+     * candidate did answer is blocked.
      *
-     * <p>Đo được 2026-08-17 trên phiên 01a00e64: bài 2 câu, 0 evaluation, bấm Uphold ở vòng
-     * INITIAL đẩy kết quả sang RELEASED với {@code total_score = NULL} -- bài đã CÔNG BỐ mà
-     * không có điểm. Trang Xem kết quả thì vỡ luôn vì calculator gặp câu thiếu evaluation.
+     * <p>Measured on 2026-08-17 on session 01a00e64: a 2-question assessment, 0 evaluations, pressing
+     * Uphold in the INITIAL round pushed the result to RELEASED with {@code total_score = NULL} -- an
+     * assessment that is RELEASED but has no score. The result page then breaks outright because the
+     * calculator meets a question without an evaluation.
      *
-     * <p>Dùng lại {@code recordSilentAnswer} (0 điểm, không gọi LLM) thay vì thêm luật mới: đó
-     * đã là cách hệ xử lý "không có nội dung để chấm" ở đường nộp bài.
+     * <p>Reuses {@code recordSilentAnswer} (0 points, no LLM call) instead of adding a new rule: that is
+     * already how the system handles "no content to grade" on the submit path.
      *
-     * @return true nếu vừa ghi thêm bản chấm 0 -- tức tổng điểm cần được tính lại
-     * @throws IllegalStateException khi còn câu thí sinh CÓ trả lời mà chưa ai chấm
+     * @return true if a grade of 0 was just written -- meaning the total score must be recalculated
+     * @throws IllegalArgumentException when a question the candidate DID answer still has no grade from anyone
      */
     private boolean fillSilentAnswersOrRefuse(UUID sessionId, AssessmentSession session) {
         // A question the candidate NEVER attempted has no response row, so the loop below does not see
@@ -170,7 +172,7 @@ public class UpholdResultUseCase implements IUseCase<GradingDecisionCommand, Gra
             .filter(response -> !missingResponseBackfillService.isSilentAnswer(response))
             .count();
         if (answeredButUngraded > 0) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 "Còn " + answeredButUngraded + " câu thí sinh có trả lời nhưng chưa được chấm. "
                     + "Hãy chấm những câu đó trước khi giữ nguyên điểm."
             );

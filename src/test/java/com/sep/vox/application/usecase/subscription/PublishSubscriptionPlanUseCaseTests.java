@@ -15,7 +15,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.PublishSubscriptionPlanCommand;
 import com.sep.vox.application.port.input.service.SubscriptionPlanReplacementValidator;
 import com.sep.vox.application.port.input.usecase.subscription.PublishSubscriptionPlanUseCase;
@@ -111,7 +111,7 @@ class PublishSubscriptionPlanUseCaseTests {
         when(subscriptionPlanRepository.findById(PLAN_ID)).thenReturn(Optional.of(plan));
 
         assertThatThrownBy(() -> useCase.execute(new PublishSubscriptionPlanCommand(PLAN_ID)))
-            .isInstanceOf(IllegalStateException.class);
+            .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -119,7 +119,7 @@ class PublishSubscriptionPlanUseCaseTests {
         when(subscriptionPlanRepository.findById(PLAN_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> useCase.execute(new PublishSubscriptionPlanCommand(PLAN_ID)))
-            .isInstanceOf(NotFoundException.class);
+            .isInstanceOf(ResourceNotFoundException.class);
     }
 
     private void givenDraftPlan(BigDecimal priceVnd) {

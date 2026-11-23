@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.DeleteSchoolClassUserCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -73,20 +73,20 @@ public class DeleteSchoolClassUserUseCase implements IUseCase<DeleteSchoolClassU
 
     private User findCurrentUser(UUID currentUserId) {
         User user = userRepository.findById(currentUserId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng hiện tại"));
         validateCurrentUserIsActive(user);
         return user;
     }
 
     private void validateCurrentUserIsActive(User currentUser) {
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new IllegalStateException("Người dùng hiện tại không hoạt động");
+            throw new IllegalArgumentException("Người dùng hiện tại không hoạt động");
         }
     }
 
     private UUID getSchoolId(User currentUser) {
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUser.getId())
-            .orElseThrow(() -> new IllegalStateException("Người dùng hiện tại không thuộc trường nào"));
+            .orElseThrow(() -> new IllegalArgumentException("Người dùng hiện tại không thuộc trường nào"));
         return schoolUser.getSchoolId();
     }
 
@@ -98,29 +98,29 @@ public class DeleteSchoolClassUserUseCase implements IUseCase<DeleteSchoolClassU
 
     private void validateSchool(UUID schoolId) {
         School school = schoolRepository.findById(schoolId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
-            throw new IllegalStateException("Trường học không hoạt động");
+            throw new IllegalArgumentException("Trường học không hoạt động");
         }
     }
 
     private SchoolClass validateSchoolClass(UUID classId, UUID schoolId) {
         SchoolClass schoolClass = schoolClassRepository.findById(classId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy lớp học"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp học"));
         if (!Objects.equals(schoolClass.getSchoolId(), schoolId)) {
-            throw new NotFoundException("Không tìm thấy lớp học");
+            throw new ResourceNotFoundException("Không tìm thấy lớp học");
         }
         if (schoolClass.getStatus() != SchoolClassStatus.ACTIVE) {
-            throw new IllegalStateException("Lớp học không hoạt động");
+            throw new IllegalArgumentException("Lớp học không hoạt động");
         }
         return schoolClass;
     }
 
     private void validateTargetUser(UUID userId, UUID schoolId) {
         User targetUser = userRepository.findById(userId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
         if (targetUser.getStatus() != UserStatus.ACTIVE) {
-            throw new IllegalStateException("Người dùng không hoạt động");
+            throw new IllegalArgumentException("Người dùng không hoạt động");
         }
         SchoolUser targetSchoolUser = schoolUserRepository.findByUserId(targetUser.getId()).orElse(null);
         if (!Objects.equals(targetSchoolUser != null ? targetSchoolUser.getSchoolId() : null, schoolId)) {
@@ -130,6 +130,6 @@ public class DeleteSchoolClassUserUseCase implements IUseCase<DeleteSchoolClassU
 
     private SchoolClassUser findMembership(UUID userId, UUID classId) {
         return schoolClassUserRepository.findByUserIdAndSchoolClassId(userId, classId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng trong lớp học"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng trong lớp học"));
     }
 }

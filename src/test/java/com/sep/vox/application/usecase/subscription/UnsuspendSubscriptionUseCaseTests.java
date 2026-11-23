@@ -20,7 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UnsuspendSubscriptionCommand;
 import com.sep.vox.application.port.input.service.SchoolSubscriptionSuspensionNotificationService;
 import com.sep.vox.application.port.input.usecase.subscription.UnsuspendSubscriptionUseCase;
@@ -111,7 +111,7 @@ class UnsuspendSubscriptionUseCaseTests {
         givenSubscription(SchoolSubscriptionStatus.ACTIVE);
 
         assertThatThrownBy(() -> useCase.execute(new UnsuspendSubscriptionCommand(SUBSCRIPTION_ID, null)))
-            .isInstanceOf(IllegalStateException.class);
+            .isInstanceOf(IllegalArgumentException.class);
         verify(schoolSubscriptionRepository, never()).save(any());
         verify(schoolSubscriptionEventRepository, never()).save(any());
     }
@@ -121,7 +121,7 @@ class UnsuspendSubscriptionUseCaseTests {
         when(schoolSubscriptionRepository.findById(SUBSCRIPTION_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> useCase.execute(new UnsuspendSubscriptionCommand(SUBSCRIPTION_ID, null)))
-            .isInstanceOf(NotFoundException.class);
+            .isInstanceOf(ResourceNotFoundException.class);
     }
 
     private void givenSubscription(SchoolSubscriptionStatus status) {

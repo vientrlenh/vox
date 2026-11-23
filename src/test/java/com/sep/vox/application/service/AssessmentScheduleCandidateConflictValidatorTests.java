@@ -18,7 +18,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.port.input.service.AssessmentScheduleCandidateConflictValidator;
 import com.sep.vox.domain.model.assessment.AssessmentCandidate;
 import com.sep.vox.domain.model.assessment.AssessmentCandidateStatus;
@@ -81,7 +81,7 @@ class AssessmentScheduleCandidateConflictValidatorTests {
         givenNames(candidate.getStudentId(), "Nguyễn Văn An");
 
         assertThatThrownBy(() -> validator.requireCandidatesFree(List.of(candidate), start, end))
-            .isInstanceOf(DuplicatedException.class)
+            .isInstanceOf(ResourceDuplicatedException.class)
             .hasMessageContaining("Nguyễn Văn An")
             .hasMessageContaining("khoảng thời gian này");
     }
@@ -127,7 +127,7 @@ class AssessmentScheduleCandidateConflictValidatorTests {
         givenConflicts(new StudentScheduleConflict(blocked.getStudentId(), busyScheduleId, start, end));
 
         assertThatThrownBy(() -> validator.requireCandidatesFree(List.of(blocked), start, end))
-            .isInstanceOf(DuplicatedException.class);
+            .isInstanceOf(ResourceDuplicatedException.class);
     }
 
     @Test
@@ -147,7 +147,7 @@ class AssessmentScheduleCandidateConflictValidatorTests {
         givenNames(first.getStudentId(), "Trần Thị Bình", second.getStudentId(), "Lê Văn Cường");
 
         assertThatThrownBy(() -> validator.requireCandidatesFree(List.of(first, second), start, end))
-            .isInstanceOf(DuplicatedException.class)
+            .isInstanceOf(ResourceDuplicatedException.class)
             .hasMessageContaining("2 học sinh")
             .hasMessageContaining("Trần Thị Bình")
             .hasMessageContaining("Lê Văn Cường");
@@ -165,7 +165,7 @@ class AssessmentScheduleCandidateConflictValidatorTests {
         givenConflicts(conflicts.toArray(StudentScheduleConflict[]::new));
 
         assertThatThrownBy(() -> validator.requireCandidatesFree(candidates, start, end))
-            .isInstanceOf(DuplicatedException.class)
+            .isInstanceOf(ResourceDuplicatedException.class)
             .hasMessageContaining("8 học sinh")
             .hasMessageContaining("và 3 học sinh khác");
     }
@@ -178,7 +178,7 @@ class AssessmentScheduleCandidateConflictValidatorTests {
         givenNames(candidate.getStudentId(), "Phạm Thị Dung");
 
         assertThatThrownBy(() -> validator.requireCandidatesFreeForNewWindow(scheduleId, start, end))
-            .isInstanceOf(DuplicatedException.class)
+            .isInstanceOf(ResourceDuplicatedException.class)
             .hasMessageContaining("Phạm Thị Dung");
     }
 

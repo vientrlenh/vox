@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.ViewFrameworkVersionDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.FrameworkVersionDto;
@@ -23,9 +23,9 @@ public class ViewSchoolFrameworkVersionDetailsUseCase implements IUseCase<ViewFr
     @Transactional(readOnly = true)
     public FrameworkVersionDto execute(ViewFrameworkVersionDetailsQuery input) {
         FrameworkVersion version = frameworkVersionRepository.findById(input.versionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản framework"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản framework"));
         if (version.getStatus() != FrameworkVersionStatus.PUBLISHED) {
-            throw new NotFoundException("Không tìm thấy phiên bản framework");
+            throw new ResourceNotFoundException("Không tìm thấy phiên bản framework");
         }
 
         return FrameworkVersionDtoMapper.toDto(version);

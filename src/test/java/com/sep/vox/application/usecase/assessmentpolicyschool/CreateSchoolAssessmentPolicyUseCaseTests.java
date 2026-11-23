@@ -14,7 +14,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.port.input.command.CreateAssessmentPolicyCommand;
 import com.sep.vox.application.port.input.service.GradeLevelBandScopeGuardService;
 import com.sep.vox.application.port.input.usecase.assessmentpolicyschool.CreateSchoolAssessmentPolicyUseCase;
@@ -172,7 +172,7 @@ class CreateSchoolAssessmentPolicyUseCaseTests {
         stubSchoolClass(classId);
 
         assertThatThrownBy(() -> useCase.execute(List.of(command(classId), command(classId))))
-                .isInstanceOf(DuplicatedException.class)
+                .isInstanceOf(ResourceDuplicatedException.class)
                 .hasMessageContaining("trùng phạm vi áp dụng");
     }
 
@@ -198,7 +198,7 @@ class CreateSchoolAssessmentPolicyUseCaseTests {
         stubSchoolClass(classId);
 
         assertThatThrownBy(() -> useCase.execute(List.of(command(classId))))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("ARCHIVED");
     }
 }

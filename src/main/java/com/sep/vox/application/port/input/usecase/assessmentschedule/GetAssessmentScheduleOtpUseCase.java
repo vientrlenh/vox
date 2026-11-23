@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.common.CacheKey;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.GetAssessmentScheduleOtpQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.CacheManagerPort;
@@ -45,14 +45,14 @@ public class GetAssessmentScheduleOtpUseCase implements IUseCase<GetAssessmentSc
         Instant now = Instant.now();
         UUID userId = userContextPort.getCurrentAuthenticatedUserId();
         AssessmentSchedule schedule = assessmentScheduleRepository.findByIdAndInSchedule(input.scheduleId(), now)
-            .orElseThrow(() -> new NotFoundException("Lịch thi yêu cầu không tìm thấy hoặc đã hết hạn"));
+            .orElseThrow(() -> new ResourceNotFoundException("Lịch thi yêu cầu không tìm thấy hoặc đã hết hạn"));
 
         if (!schedule.getAssessmentId().equals(input.assessmentId())) {
             throw new IllegalArgumentException("Lịch thi yêu cầu không thuộc về kỳ thi này");
         }
 
         Assessment assessment = assessmentRepository.findById(schedule.getAssessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy kỳ thi của lịch thi này"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kỳ thi của lịch thi này"));
         if (!hasAccess(input.scheduleId(), assessment.getSchoolId(), userId)) {
             throw new ForbiddenException("Lịch thi này không được bạn giám sát");
         }

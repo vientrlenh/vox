@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.assessmentpolicysystem;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.UpdateAssessmentPolicyCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -43,7 +43,7 @@ public class UpdateSystemAssessmentPolicyUseCase implements IUseCase<UpdateAsses
 
         // 2. Lấy Assessment Policy
         AssessmentPolicy policy = assessmentPolicyRepository.findById(command.policyId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Assessment Policy."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
 
         // 3. Check quyền SYSTEM
         if (policy.getSchoolId() != null) {
@@ -52,14 +52,14 @@ public class UpdateSystemAssessmentPolicyUseCase implements IUseCase<UpdateAsses
 
         // 4. Chỉ được sửa khi đang DRAFT
         if (policy.getStatus() != AssessmentPolicyStatus.DRAFT) {
-            throw new IllegalStateException("Chỉ có thể cập nhật Assessment Policy khi đang ở trạng thái DRAFT.");
+            throw new IllegalArgumentException("Chỉ có thể cập nhật Assessment Policy khi đang ở trạng thái DRAFT.");
         }
 
         // 5. Kiểm tra Band mục tiêu (frameworkVersionId giữ nguyên, không cho đổi)
         FrameworkResultBand targetBand = frameworkResultBandRepository.findById(command.targetFrameworkBandId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Band mục tiêu (targetFrameworkBandId)."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Band mục tiêu (targetFrameworkBandId)."));
         if (!targetBand.getFrameworkVersionId().equals(policy.getFrameworkVersionId())) {
-            throw new IllegalStateException("Band mục tiêu phải thuộc đúng Phiên bản Khung tiêu chuẩn của Policy này.");
+            throw new IllegalArgumentException("Band mục tiêu phải thuộc đúng Phiên bản Khung tiêu chuẩn của Policy này.");
         }
 
         // 6. Kiểm tra khoảng thời gian hiệu lực

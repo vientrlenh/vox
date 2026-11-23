@@ -19,7 +19,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.port.input.command.UpdateAssessmentScheduleStatusCommand;
 import com.sep.vox.application.port.input.service.AssessmentScheduleCandidateConflictValidator;
 import com.sep.vox.application.port.input.service.AssessmentScheduleProctorConflictValidator;
@@ -101,7 +101,7 @@ class UpdateAssessmentScheduleStatusUseCaseTests {
         when(assessmentScheduleProctorRepository.countByScheduleId(scheduleId)).thenReturn(0L);
 
         assertThatThrownBy(() -> useCase.execute(command("PUBLISH", null)))
-            .isInstanceOf(IllegalStateException.class);
+            .isInstanceOf(IllegalArgumentException.class);
         verify(assessmentScheduleRepository, never()).save(any());
     }
 
@@ -130,7 +130,7 @@ class UpdateAssessmentScheduleStatusUseCaseTests {
             .thenReturn(List.of(candidateWithPaper(), candidate()));
 
         assertThatThrownBy(() -> useCase.execute(command("PUBLISH", null)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Còn 1 học sinh chưa được gán đề");
         verify(assessmentScheduleRepository, never()).save(any());
     }
@@ -142,7 +142,7 @@ class UpdateAssessmentScheduleStatusUseCaseTests {
         when(assessmentCandidateRepository.findByScheduleId(scheduleId)).thenReturn(List.of());
 
         assertThatThrownBy(() -> useCase.execute(command("PUBLISH", null)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Ca thi chưa có thí sinh nào");
         verify(assessmentScheduleRepository, never()).save(any());
     }
@@ -171,7 +171,7 @@ class UpdateAssessmentScheduleStatusUseCaseTests {
         when(assessmentScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule(AssessmentScheduleStatus.DRAFT)));
 
         assertThatThrownBy(() -> useCase.execute(command("COMPLETE", null)))
-            .isInstanceOf(IllegalStateException.class);
+            .isInstanceOf(IllegalArgumentException.class);
         verify(assessmentScheduleRepository, never()).save(any());
     }
 
@@ -274,7 +274,7 @@ class UpdateAssessmentScheduleStatusUseCaseTests {
             eq(teacherId), any(Instant.class), any(Instant.class), eq(scheduleId))).thenReturn(true);
 
         assertThatThrownBy(() -> useCase.execute(command("MOVE", targetId)))
-            .isInstanceOf(DuplicatedException.class);
+            .isInstanceOf(ResourceDuplicatedException.class);
         verify(assessmentScheduleProctorRepository, never()).save(any());
     }
 
@@ -293,7 +293,7 @@ class UpdateAssessmentScheduleStatusUseCaseTests {
                 moving.getStudentId(), UUID.randomUUID(), Instant.now(), Instant.now().plusSeconds(3600))));
 
         assertThatThrownBy(() -> useCase.execute(command("MOVE", targetId)))
-            .isInstanceOf(DuplicatedException.class);
+            .isInstanceOf(ResourceDuplicatedException.class);
         // Nobody is moved, not even those with no conflict.
         verify(assessmentCandidateRepository, never()).saveAll(anyCollection());
     }
@@ -321,7 +321,7 @@ class UpdateAssessmentScheduleStatusUseCaseTests {
         givenSource(AssessmentScheduleStatus.PUBLISHED);
 
         assertThatThrownBy(() -> useCase.execute(command("MOVE", scheduleId)))
-            .isInstanceOf(IllegalStateException.class);
+            .isInstanceOf(IllegalArgumentException.class);
         verify(assessmentScheduleRepository, never()).save(any());
     }
 
@@ -332,7 +332,7 @@ class UpdateAssessmentScheduleStatusUseCaseTests {
         givenSource(AssessmentScheduleStatus.PUBLISHED);
 
         assertThatThrownBy(() -> useCase.execute(command("MOVE", targetId)))
-            .isInstanceOf(IllegalStateException.class);
+            .isInstanceOf(IllegalArgumentException.class);
         verify(assessmentScheduleRepository, never()).save(any());
     }
 

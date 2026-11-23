@@ -8,8 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.DuplicatedException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateSupportedLanguageCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -53,11 +53,11 @@ public class UpdateSupportedLanguageUseCase implements IUseCase<UpdateSupportedL
                 currentUserId
             );
             if (updatedRows == 0) {
-                throw new NotFoundException("Không tìm thấy ngôn ngữ");
+                throw new ResourceNotFoundException("Không tìm thấy ngôn ngữ");
             }
             return new UpdateSupportedLanguageResponse(command.id());
         } catch (DataConflictException e) {
-            throw new DuplicatedException("Ngôn ngữ đã tồn tại với mã: " + command.code());
+            throw new ResourceDuplicatedException("Ngôn ngữ đã tồn tại với mã: " + command.code());
         }
     }
 
@@ -127,7 +127,7 @@ public class UpdateSupportedLanguageUseCase implements IUseCase<UpdateSupportedL
         supportedLanguageRepository.findByCode(command.code())
             .filter(existing -> !existing.getId().equals(command.id()))
             .ifPresent(existing -> {
-                throw new DuplicatedException("Ngôn ngữ đã tồn tại với mã: " + command.code());
+                throw new ResourceDuplicatedException("Ngôn ngữ đã tồn tại với mã: " + command.code());
             });
     }
 }

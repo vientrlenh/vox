@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.query.dto.BulkFinalizePreviewInfo;
@@ -42,7 +42,7 @@ public class PreviewBulkFinalizeUseCase implements IUseCase<UUID, BulkFinalizePr
     public BulkFinalizePreviewInfo execute(UUID assessmentId) {
         UUID currentUserId = assessmentGradingAccessService.requireActiveUserId();
         Assessment assessment = assessmentRepository.findById(assessmentId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra."));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra."));
         assessmentGradingAccessService.authorizeSchoolAdminOrAssessmentChair(
             assessment.getSchoolId(), assessment.getId(), currentUserId);
         return assessmentGradingQueryRepository.previewBulkFinalize(assessment.getSchoolId(), assessmentId);

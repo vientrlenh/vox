@@ -41,9 +41,9 @@ import com.sep.vox.domain.model.assessment.AssessmentScheduleStatus;
 import com.sep.vox.domain.model.assessment.AssessmentStatus;
 import com.sep.vox.domain.model.assessment.AssessmentStreamTypePermission;
 import com.sep.vox.domain.model.school.SchoolUser;
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.PlanLimitExceededException;
+import com.sep.vox.application.exception.BusinessRuleViolationException;
 import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
 import com.sep.vox.application.port.input.service.AssessmentPolicyValidator;
 import com.sep.vox.application.port.input.service.AssessmentScheduleCandidateConflictValidator;
@@ -130,7 +130,7 @@ class UpdateAssessmentUseCaseTests {
 
         // Shrinks the window to 1 hour while the assessment duration is 3 hours.
         assertThatThrownBy(() -> useCase.execute(command(open, open.plus(1, ChronoUnit.HOURS))))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("thời gian đóng bài");
         verify(assessmentScheduleRepository, never()).save(any());
         verify(assessmentRepository, never()).save(any());
@@ -181,7 +181,7 @@ class UpdateAssessmentUseCaseTests {
             .thenReturn(List.of(new StudentScheduleConflict(studentId, UUID.randomUUID(), open, close)));
 
         assertThatThrownBy(() -> useCase.execute(command(open, close.plus(1, ChronoUnit.HOURS))))
-            .isInstanceOf(DuplicatedException.class)
+            .isInstanceOf(ResourceDuplicatedException.class)
             .hasMessageContaining("đã có ca thi khác");
         verify(assessmentScheduleRepository, never()).save(any());
     }
@@ -202,7 +202,7 @@ class UpdateAssessmentUseCaseTests {
             eq(teacherId), any(Instant.class), any(Instant.class), eq(schedule.getId()))).thenReturn(true);
 
         assertThatThrownBy(() -> useCase.execute(command(open, close.plus(1, ChronoUnit.HOURS))))
-            .isInstanceOf(DuplicatedException.class)
+            .isInstanceOf(ResourceDuplicatedException.class)
             .hasMessageContaining("Giám thị");
         verify(assessmentScheduleRepository, never()).save(any());
     }
@@ -219,7 +219,7 @@ class UpdateAssessmentUseCaseTests {
             eq(roomId), any(Instant.class), any(Instant.class), eq(schedule.getId()))).thenReturn(true);
 
         assertThatThrownBy(() -> useCase.execute(command(open, close.plus(1, ChronoUnit.HOURS))))
-            .isInstanceOf(DuplicatedException.class)
+            .isInstanceOf(ResourceDuplicatedException.class)
             .hasMessageContaining("Phòng học");
         verify(assessmentScheduleRepository, never()).save(any());
     }
@@ -255,11 +255,11 @@ class UpdateAssessmentUseCaseTests {
     void should_reject_when_new_window_falls_outside_subscription_period() {
         Assessment assessment = classTest(3600);
         when(assessmentRepository.findById(assessmentId)).thenReturn(Optional.of(assessment));
-        doThrow(new IllegalStateException("Thời gian đóng bài phải nằm trong hạn gói dịch vụ của trường"))
+        doThrow(new IllegalArgumentException("Thời gian đóng bài phải nằm trong hạn gói dịch vụ của trường"))
             .when(subscriptionPeriodGuardService).requireWithinSubscriptionPeriod(any(), any(), any());
 
         assertThatThrownBy(() -> useCase.execute(command(open, close)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("hạn gói dịch vụ");
         // Block BEFORE writing: the sessions of a class test are synchronized to this window, so
         // letting it through would push the sessions beyond the plan limit as well.
@@ -280,7 +280,7 @@ class UpdateAssessmentUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentCommand(
                 assessmentId, "Tên mới", null, null, null, null, null, null, null, null, null, null, null)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Kỳ thi phải có thời gian mở bài và đóng bài");
         verify(assessmentRepository, never()).save(any());
     }
@@ -294,12 +294,12 @@ class UpdateAssessmentUseCaseTests {
         assessment.setOpenAt(open);
         assessment.setCloseAt(close);
         when(assessmentRepository.findById(assessmentId)).thenReturn(Optional.of(assessment));
-        doThrow(new PlanLimitExceededException("Đã vượt quá hạn mức"))
+        doThrow(new BusinessRuleViolationException("Đã vượt quá hạn mức"))
             .when(classTestTokenQuotaGuardService).requireWithinTokenQuota(assessment);
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentCommand(
                 assessmentId, null, null, null, null, null, null, 2 * 3600, null, null, null, null, null)))
-            .isInstanceOf(PlanLimitExceededException.class)
+            .isInstanceOf(BusinessRuleViolationException.class)
             .hasMessageContaining("vượt quá hạn mức");
         verify(assessmentRepository, never()).save(any());
     }
@@ -347,7 +347,7 @@ class UpdateAssessmentUseCaseTests {
         // Moves the assessment window to the next day, so the old session falls outside.
         assertThatThrownBy(() -> useCase.execute(
                 command(open.plus(1, ChronoUnit.DAYS), close.plus(1, ChronoUnit.DAYS))))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("nằm ngoài");
         verify(assessmentRepository, never()).save(any());
     }
@@ -364,7 +364,7 @@ class UpdateAssessmentUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentCommand(
                 assessmentId, null, null, null, null, null, null, 2 * 3600, null, null, null, null, null)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("vượt quá thời lượng");
         verify(assessmentRepository, never()).save(any());
     }
@@ -407,7 +407,7 @@ class UpdateAssessmentUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentCommand(
                 assessmentId, "Tên mới", null, null, null, null, null, null, null, null, null, null, null)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("đã bắt đầu");
         verify(assessmentRepository, never()).save(any());
     }
@@ -420,7 +420,7 @@ class UpdateAssessmentUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentCommand(
                 assessmentId, "Tên mới", null, null, null, null, null, null, null, null, null, null, null)))
-            .isInstanceOf(IllegalStateException.class);
+            .isInstanceOf(IllegalArgumentException.class);
         verify(assessmentRepository, never()).save(any());
     }
 
@@ -494,7 +494,7 @@ class UpdateAssessmentUseCaseTests {
         when(assessmentRepository.findById(assessmentId)).thenReturn(Optional.of(assessment));
 
         assertThatThrownBy(() -> useCase.execute(streamCommand(List.of("CAMERA"), null)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("đã bắt đầu");
         verify(assessmentRepository, never()).save(any());
     }

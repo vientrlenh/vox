@@ -43,15 +43,15 @@ public final class ClassTestSectionWeightPolicy {
         BigDecimal sum = BigDecimal.ZERO;
         for (BigDecimal weight : weights) {
             if (weight == null) {
-                throw new IllegalStateException(message);
+                throw new IllegalArgumentException(message);
             }
             if (weight.compareTo(BigDecimal.ZERO) < 0) {
-                throw new IllegalStateException("Trọng số section không được âm");
+                throw new IllegalArgumentException("Trọng số section không được âm");
             }
             sum = sum.add(weight);
         }
         if (sum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
-            throw new IllegalStateException(message + " (hiện tại " + sum + ")");
+            throw new IllegalArgumentException(message + " (hiện tại " + sum + ")");
         }
     }
 

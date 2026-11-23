@@ -18,7 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.RecordAiUsageCommand;
 import com.sep.vox.application.port.input.command.ReportAiUsageCommand;
 import com.sep.vox.application.port.input.usecase.assessmentsession.ReportAiUsageUseCase;
@@ -103,7 +103,7 @@ class ReportAiUsageUseCaseTests {
         when(assessmentSessionRepository.findByIdAndResumable(sessionId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> useCase.execute(new ReportAiUsageCommand(sessionId, List.of(usageItem()))))
-            .isInstanceOf(NotFoundException.class);
+            .isInstanceOf(ResourceNotFoundException.class);
         verify(recordAiUsageUseCase, never()).execute(any());
     }
 }

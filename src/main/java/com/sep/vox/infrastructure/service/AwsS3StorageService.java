@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import com.sep.vox.application.common.StoredFile;
 import com.sep.vox.application.common.UploadedFile;
 import com.sep.vox.application.port.output.StoragePort;
-import com.sep.vox.infrastructure.exception.InfrastructureException;
 import com.sep.vox.infrastructure.properties.AwsS3StorageProperties;
 
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -60,7 +59,7 @@ public class AwsS3StorageService implements StoragePort {
                 response.eTag()
             );
         } catch (S3Exception e) {
-            throw new InfrastructureException("Khong the tai tep len S3: " + errorMessageOf(e));
+            throw new IllegalStateException("Khong the tai tep len S3: " + errorMessageOf(e));
         }
     }
 
@@ -74,7 +73,7 @@ public class AwsS3StorageService implements StoragePort {
                 .key(buildObjectKey(key))
                 .build());
         } catch (S3Exception e) {
-            throw new InfrastructureException("Khong the xoa tep tren S3: " + errorMessageOf(e));
+            throw new IllegalStateException("Khong the xoa tep tren S3: " + errorMessageOf(e));
         }
     }
 
@@ -119,7 +118,7 @@ public class AwsS3StorageService implements StoragePort {
             PresignedPutObjectRequest presigned = s3Presigner.presignPutObject(presignRequest);
             return new PresignedUpload(presigned.url().toString(), resolveUrl(objectKey));
         } catch (S3Exception e) {
-            throw new InfrastructureException("Khong the tao presigned upload URL: " + errorMessageOf(e));
+            throw new IllegalStateException("Khong the tao presigned upload URL: " + errorMessageOf(e));
         }
     }
 
@@ -146,7 +145,7 @@ public class AwsS3StorageService implements StoragePort {
                 .build();
             return s3Presigner.presignGetObject(presignRequest).url().toString();
         } catch (S3Exception e) {
-            throw new InfrastructureException("Khong the tao presigned read URL: " + errorMessageOf(e));
+            throw new IllegalStateException("Khong the tao presigned read URL: " + errorMessageOf(e));
         }
     }
 
@@ -168,7 +167,7 @@ public class AwsS3StorageService implements StoragePort {
 
     private String requiredBucket() {
         if (!hasText(properties.getBucket())) {
-            throw new InfrastructureException("Cau hinh bucket S3 chua duoc thiet lap");
+            throw new IllegalStateException("Cau hinh bucket S3 chua duoc thiet lap");
         }
         return properties.getBucket();
     }

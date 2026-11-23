@@ -113,7 +113,7 @@ class ViewSchoolClassesUseCaseTests {
         when(userRepository.findById(userId)).thenReturn(Optional.of(_u3));
 
         assertThrows(
-            IllegalStateException.class,
+            IllegalArgumentException.class,
             () -> useCase.execute(new ViewSchoolClassesQuery(1, 20, null, null, null, null))
         );
 

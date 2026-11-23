@@ -83,7 +83,7 @@ class CreateSchoolRubricResultBandsUseCaseTests {
         CreateSchoolRubricResultBandsCommand command = new CreateSchoolRubricResultBandsCommand(schoolId, versionId, List.of(new CreateSchoolRubricResultBandsCommand.ResultBandItemCommand("BAND", "Band", null, BigDecimal.ZERO, BigDecimal.TEN, 1)));
 
         assertThatThrownBy(() -> useCase.execute(command))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessage("Lỗi lưu dữ liệu: Mã thang điểm (Code) hoặc Thứ tự (order) đã tồn tại trong phiên bản Rubric này từ trước. Vui lòng kiểm tra lại.");
     }
 }

@@ -18,7 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
 import com.sep.vox.application.port.input.usecase.assessmentgrading.ViewResultStatusHistoryUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -224,6 +224,6 @@ class ViewResultStatusHistoryUseCaseTests {
         UUID unknownId = UUID.randomUUID();
         when(assessmentCandidateResultRepository.findById(unknownId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> useCase.execute(unknownId)).isInstanceOf(NotFoundException.class);
+        assertThatThrownBy(() -> useCase.execute(unknownId)).isInstanceOf(ResourceNotFoundException.class);
     }
 }

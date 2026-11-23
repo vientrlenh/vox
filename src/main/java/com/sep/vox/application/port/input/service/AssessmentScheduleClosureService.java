@@ -49,7 +49,7 @@ public class AssessmentScheduleClosureService {
         }
         long activeCount = assessmentSessionRepository.countActiveByAssessmentId(assessmentId);
         if (activeCount > 0) {
-            throw new IllegalStateException("Còn " + activeCount
+            throw new IllegalArgumentException("Còn " + activeCount
                 + " học sinh đang làm bài ở ca thi đang diễn ra, không thể đóng bài kiểm tra");
         }
     }

@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateFrameworkCriterionBandsCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.model.framework.FrameworkCriterion;
@@ -76,18 +76,18 @@ public class CreateFrameworkCriterionBandsUseCase
                     .map(fcb -> fcb.getId())
                     .collect(Collectors.toList());
         } catch (DataConflictException e) {
-            throw new IllegalStateException("Mã kết quả đã được gán mức đánh giá cho tiêu chí này", e);
+            throw new IllegalArgumentException("Mã kết quả đã được gán mức đánh giá cho tiêu chí này", e);
         }
     }
 
     private FrameworkVersion getVersion(CreateFrameworkCriterionBandsCommand command) {
         return frameworkVersionRepository.findById(command.versionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản khung năng lực"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản khung năng lực"));
     }
 
     private FrameworkCriterion getCriterion(CreateFrameworkCriterionBandsCommand command) {
         return frameworkCriterionRepository.findById(command.criterionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy tiêu chí"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tiêu chí"));
     }
 
     private void checkValidRequest(CreateFrameworkCriterionBandsCommand command, FrameworkVersion version, FrameworkCriterion criterion, Map<String, UUID> resultBandCodeToId) {
@@ -95,7 +95,7 @@ public class CreateFrameworkCriterionBandsUseCase
             throw new IllegalArgumentException("Phiên bản không thuộc khung năng lực này");
 
         if (version.getStatus() != FrameworkVersionStatus.DRAFT)
-            throw new IllegalStateException("Chỉ có thể thêm mức đánh giá khi phiên bản đang ở trạng thái DRAFT");
+            throw new IllegalArgumentException("Chỉ có thể thêm mức đánh giá khi phiên bản đang ở trạng thái DRAFT");
         
         if (!criterion.getFrameworkVersionId().equals(command.versionId()))
             throw new IllegalArgumentException("Tiêu chí không thuộc phiên bản này");

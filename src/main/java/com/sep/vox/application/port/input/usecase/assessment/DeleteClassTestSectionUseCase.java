@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.DeleteClassTestSectionCommand;
 import com.sep.vox.application.port.input.service.RecalculateAssessmentTimeDurationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -48,7 +48,7 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
     public AssessmentDto execute(DeleteClassTestSectionCommand input) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
 
         if (assessment.getKind() != AssessmentKind.CLASS_TEST) {
             throw new ForbiddenException("Chỉ áp dụng cho bài kiểm tra trên lớp");
@@ -57,27 +57,27 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
         if (assessment.getStatus() != AssessmentStatus.DRAFT && assessment.getStatus() != AssessmentStatus.SCHEDULED) {
-            throw new IllegalStateException("Chỉ được sửa khi bài kiểm tra chưa bắt đầu");
+            throw new IllegalArgumentException("Chỉ được sửa khi bài kiểm tra chưa bắt đầu");
         }
         if (assessmentRepository.existsSubmittedSessionByAssessmentId(assessment.getId())) {
-            throw new IllegalStateException("Không thể sửa câu hỏi khi đã có học sinh nộp bài");
+            throw new IllegalArgumentException("Không thể sửa câu hỏi khi đã có học sinh nộp bài");
         }
         requireNoAttachedBlueprint(assessment);
 
         // Suy mã đề từ chính section được xoá: bài trên lớp giờ có thể có nhiều mã đề, đoán "đề đầu
         // tiên" là xoá nhầm section của mã đề khác.
         AssessmentPaperSection paperSection = assessmentPaperSectionRepository.findById(input.sectionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy section"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy section"));
         AssessmentPaper paper = assessmentPaperRepository.findById(paperSection.getPaperId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy đề thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đề thi"));
         if (!paper.getAssessmentId().equals(assessment.getId())) {
-            throw new NotFoundException("Không tìm thấy section");
+            throw new ResourceNotFoundException("Không tìm thấy section");
         }
         List<AssessmentPaperSection> allPaperSections = assessmentPaperSectionRepository.findByPaperId(paper.getId()).stream()
             .sorted((a, b) -> Integer.compare(a.getOrder(), b.getOrder()))
             .toList();
         if (allPaperSections.size() <= 1) {
-            throw new IllegalStateException("Mã đề phải có ít nhất 1 section");
+            throw new IllegalArgumentException("Mã đề phải có ít nhất 1 section");
         }
 
         boolean shouldRebalanceAfterDelete = ClassTestSectionWeightPolicy.looksAutoWeighted(allPaperSections);
@@ -109,7 +109,7 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
 
     private void requireNoAttachedBlueprint(Assessment assessment) {
         if (assessment.getBlueprintId() != null) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 "Bài đang dùng blueprint dùng chung, không thể sửa câu hỏi trực tiếp — dùng \"Đổi blueprint khác\" ở tab Blueprint để thay đổi cấu trúc");
         }
     }

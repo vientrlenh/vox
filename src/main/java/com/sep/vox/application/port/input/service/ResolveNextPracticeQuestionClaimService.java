@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.query.dto.PracticeFocusInfo;
 import com.sep.vox.domain.model.personalization.PracticeQuestion;
 import com.sep.vox.domain.model.personalization.PracticeTopic;
@@ -86,9 +86,9 @@ public class ResolveNextPracticeQuestionClaimService {
         // FOR UPDATE: chỉ còn cần bảo vệ đúng đoạn đọc/kiểm tra ngắn này -- khoá JVM ở
         // ResolveNextPracticeQuestionUseCase mới là thứ serialize xuyên suốt cuộc gọi ngoài chậm.
         PracticeSession session = practiceSessionRepository.findByIdForUpdate(sessionId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên luyện."));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên luyện."));
         if (!"IN_PROGRESS".equals(session.getStatus())) {
-            throw new IllegalStateException("Phiên luyện không còn hoạt động.");
+            throw new IllegalArgumentException("Phiên luyện không còn hoạt động.");
         }
 
         // Tính SỚM, trước cả nhánh idempotent: mọi nhánh trả về đều phải mang được cặp số cho
@@ -107,7 +107,7 @@ public class ResolveNextPracticeQuestionClaimService {
             UUID latestQuestionId = alreadyChosenIds.getLast();
             if (!practiceItemResponseRepository.existsResponse(sessionId, latestQuestionId)) {
                 PracticeQuestion latestQuestion = questionRepository.findById(latestQuestionId)
-                    .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi luyện."));
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi luyện."));
                 return new Claim(
                     session.getStudentId(), session.getPracticePaperId(), null, null, null,
                     latestQuestion, alreadyChosenIds.size(), null,
@@ -140,7 +140,7 @@ public class ResolveNextPracticeQuestionClaimService {
         }
 
         PracticeTopic topic = topicRepository.findTopicById(session.getChosenPracticeTopicId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề luyện tập."));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chủ đề luyện tập."));
         PracticeFocusInfo focus = selectionService.resolveFocus(session.getStudentId(), null);
         List<PracticeQuestion> alreadyChosen = questionRepository.findByIds(alreadyChosenIds);
 

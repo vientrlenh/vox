@@ -10,12 +10,12 @@ public record SubmitTurnResultDto(
     boolean evaluationQueued,
     List<TurnCorrectionDto> corrections,
     /**
-     * Lượt này đã tiêu nốt phần hạn mức còn lại -- phiên phải đóng sau khi trả kết quả.
+     * This turn used up the rest of the quota -- the session must be closed after the result is returned.
      *
-     * Báo bằng CỜ chứ không bằng lỗi: trước đây hết quota thì ConsumeQuotaService ném
-     * QuotaExceededException, mà method này có @Transactional nên cả lượt nói vừa lưu ở trên
-     * bị rollback theo. Học sinh đã nói thì lượt đó phải được ghi và chấm; hết hạn mức là
-     * chuyện của phiên tiếp theo, không phải lý do xoá công sức vừa bỏ ra.
+     * Reported with a FLAG rather than an error: it used to be that when the quota ran out, ConsumeQuotaService threw
+     * a quota exception, and since this method is @Transactional the turn just saved above was rolled back too. A
+     * student who has already spoken must have that turn recorded and graded; running out of quota is a matter for
+     * the next session, not a reason to discard the work just done.
      */
     boolean quotaExhausted,
     /** Đã nói bao nhiêu giây trong phiên (kể cả lượt này) -- xem SubmitTurnResult. */

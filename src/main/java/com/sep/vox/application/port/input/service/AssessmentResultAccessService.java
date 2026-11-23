@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
@@ -52,7 +52,7 @@ public class AssessmentResultAccessService {
     @Transactional(readOnly = true)
     public SessionAccess authorizeSession(UUID sessionId) {
         AssessmentSession session = assessmentSessionRepository.findById(sessionId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi"));
         boolean candidateOwner = authorize(session.getAssessmentId(), session.getCandidateId());
         return new SessionAccess(session, candidateOwner);
     }
@@ -60,7 +60,7 @@ public class AssessmentResultAccessService {
     @Transactional(readOnly = true)
     public ResponseAccess authorizeResponse(UUID answerId) {
         AssessmentItemResponse response = assessmentItemResponseRepository.findById(answerId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy câu trả lời của thí sinh"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu trả lời của thí sinh"));
         return new ResponseAccess(response, authorizeSession(response.getSessionId()));
     }
 
@@ -115,13 +115,13 @@ public class AssessmentResultAccessService {
         }
 
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(candidateId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy thí sinh của phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thí sinh của phiên thi"));
         if (candidate.getStudentId().equals(currentUserId)) {
             return true;
         }
 
         Assessment assessment = assessmentRepository.findById(assessmentId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
         UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);

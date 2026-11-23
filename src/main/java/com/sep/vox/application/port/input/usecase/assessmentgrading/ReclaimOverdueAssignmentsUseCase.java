@@ -12,7 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.port.input.command.ReclaimOverdueAssignmentsCommand;
 import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
 import com.sep.vox.application.port.input.service.RoundRobinLoadBalancer;
@@ -73,7 +73,7 @@ public class ReclaimOverdueAssignmentsUseCase
             ? List.<UUID>of() : command.reassignToTeacherIds();
         if (!teacherIds.isEmpty()) {
             if (new HashSet<>(teacherIds).size() != teacherIds.size()) {
-                throw new DuplicatedException("Không được chọn trùng giáo viên.");
+                throw new ResourceDuplicatedException("Không được chọn trùng giáo viên.");
             }
             Set<UUID> validTeachers = assessmentGradingQueryRepository.findTeacherIdsInSchool(schoolId, teacherIds);
             if (!validTeachers.containsAll(teacherIds)) {
@@ -232,7 +232,7 @@ public class ReclaimOverdueAssignmentsUseCase
             AssessmentGradingAccessService.GradingContext context = assessmentGradingAccessService.load(assignmentId);
             assessmentGradingAccessService.authorizeSchoolAdmin(context.schoolId(), currentUserId);
             if (!context.assignment().isOverdue(now)) {
-                throw new IllegalStateException("Chỉ thu hồi được phân công đang mở và đã quá hạn.");
+                throw new IllegalArgumentException("Chỉ thu hồi được phân công đang mở và đã quá hạn.");
             }
             selected.add(context.assignment());
         }

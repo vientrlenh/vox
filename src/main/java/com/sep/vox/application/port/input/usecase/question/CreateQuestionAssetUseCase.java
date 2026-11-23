@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateQuestionAssetMutationCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -43,9 +43,9 @@ public class CreateQuestionAssetUseCase implements IUseCase<CreateQuestionAssetM
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         Question question = questionRepository.findById(command.questionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi"));
         QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
         boolean owner = question.isCreatedBy(currentUserId);
         boolean editorCollaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId)
@@ -73,7 +73,7 @@ public class CreateQuestionAssetUseCase implements IUseCase<CreateQuestionAssetM
             : question;
 
         if (questionAssetRepository.existsByQuestionId(targetQuestion.getId())) {
-            throw new IllegalStateException("Câu hỏi Ä‘ã có asset, hãy sửa hoặc xoá asset hiện có trước");
+            throw new IllegalArgumentException("Câu hỏi Ä‘ã có asset, hãy sửa hoặc xoá asset hiện có trước");
         }
 
         validateAssetOrder(targetQuestion.getId(), command.order(), null);
@@ -111,7 +111,7 @@ public class CreateQuestionAssetUseCase implements IUseCase<CreateQuestionAssetM
         boolean duplicated = questionAssetRepository.findByQuestionId(questionId).stream()
             .anyMatch(asset -> asset.getOrder() == order && !asset.getId().equals(currentAssetId));
         if (duplicated) {
-            throw new IllegalStateException("Thứ tự tài nguyên câu hỏi không được trùng lặp");
+            throw new IllegalArgumentException("Thứ tự tài nguyên câu hỏi không được trùng lặp");
         }
     }
 

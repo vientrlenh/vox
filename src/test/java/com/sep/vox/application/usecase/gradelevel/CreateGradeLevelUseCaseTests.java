@@ -13,7 +13,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sep.vox.application.exception.DataConflictException;
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.port.input.command.CreateGradeLevelCommand;
 import com.sep.vox.application.port.input.usecase.gradelevel.CreateGradeLevelUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -47,7 +47,7 @@ class CreateGradeLevelUseCaseTests {
         CreateGradeLevelCommand command = new CreateGradeLevelCommand("grade10", "Grade 10", "Tenth grade", 10);
 
         assertThatThrownBy(() -> useCase.execute(command))
-            .isInstanceOf(DuplicatedException.class)
+            .isInstanceOf(ResourceDuplicatedException.class)
             .hasMessage("Mã hoặc thứ tự khối học đã tồn tại.");
     }
 }

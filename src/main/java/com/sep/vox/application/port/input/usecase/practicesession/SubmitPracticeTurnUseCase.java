@@ -14,7 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.mapper.practicesession.PracticeSessionResponseMapper;
 import com.sep.vox.application.port.input.command.SubmitPracticeTurnCommand;
 import com.sep.vox.application.port.input.service.ConsumeQuotaService;
@@ -104,7 +104,7 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
         // Nạp phiên KỂ CẢ khi lượt này im lặng: client vẫn phải thấy đúng tổng "đã nói" trên
         // thanh tiến độ, chứ không phải một ô trống mỗi lần học sinh bấm mic rồi không nói gì.
         PracticeSession session = practiceSessionRepository.findById(turn.getSessionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên luyện."));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên luyện."));
         int spokenSeconds = session.getGradedSeconds();
         boolean quotaExhausted = false;
         // turnWrite.created() gác CẢ khối: bảng lượt nói tự chống trùng được (uq_practice_response_turn_order),
@@ -136,7 +136,7 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
             // ConsumeQuotaService is also @Transactional (REQUIRED by default) -- called directly, it
             // would join the SAME transaction as the response/turn/corrections saved above. If it
             // throws (now only real failures such as quota/plan not found, no longer
-            // QuotaExceededException), the transaction interceptor of that call marks the SHARED
+            // BusinessRuleViolationException for an exhausted quota), the transaction interceptor of that call marks the SHARED
             // transaction rollback-only immediately, BEFORE the exception reaches the place that
             // catches it -- by the time this method commits, Spring still throws
             // UnexpectedRollbackException (500), dragging along the response/turn/corrections
@@ -205,13 +205,13 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
 
     private void requireOwnedInProgress(UUID sessionId, UUID studentId) {
         if (!practiceSessionRepository.existsByIdAndStudentIdAndStatus(sessionId, studentId, "IN_PROGRESS")) {
-            throw new NotFoundException("Phiên luyện không còn hoạt động.");
+            throw new ResourceNotFoundException("Phiên luyện không còn hoạt động.");
         }
     }
 
     private UUID activeSubscriptionId(UUID studentId) {
         return schoolSubscriptionRepository.findActiveSubscriptionIdForUser(studentId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy gói đang hoạt động."));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói đang hoạt động."));
     }
 
     /**

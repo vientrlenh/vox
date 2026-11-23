@@ -144,7 +144,7 @@ public class CreateSystemRubricResultBandsUseCaseTests {
 
         CreateSystemRubricResultBandsCommand command = new CreateSystemRubricResultBandsCommand(versionId, fourLevels());
 
-        assertThrows(IllegalStateException.class, () -> useCase.execute(command));
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
     }
 
     @Test
@@ -200,7 +200,7 @@ public class CreateSystemRubricResultBandsUseCaseTests {
         CreateSystemRubricResultBandsCommand command = new CreateSystemRubricResultBandsCommand(versionId, fourLevels());
 
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> useCase.execute(command))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessage("Lỗi lưu dữ liệu: Mã thang điểm (Code) hoặc Thứ tự (order) đã tồn tại trong phiên bản Rubric hệ thống này từ trước.");
     }
 }

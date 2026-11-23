@@ -13,9 +13,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import com.sep.vox.application.exception.BusinessRuleViolationException;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.exception.QuotaExceededException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.output.CacheManagerPort;
 import com.sep.vox.application.port.output.PracticeGenerationExecutorPort;
 import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticePaper;
@@ -106,7 +106,7 @@ public class PracticePaperDraftService {
     public PracticePaperDraft get(UUID studentId, UUID draftId) {
         Entry entry = cacheManagerPort.get(DRAFT_KEY_PREFIX + draftId, Entry.class);
         if (entry == null) {
-            throw new NotFoundException("Không tìm thấy phiên dựng đề, vui lòng chọn lại chủ đề.");
+            throw new ResourceNotFoundException("Không tìm thấy phiên dựng đề, vui lòng chọn lại chủ đề.");
         }
         if (!entry.studentId().equals(studentId)) {
             throw new ForbiddenException("Bạn không có quyền xem phiên dựng đề này.");
@@ -131,20 +131,18 @@ public class PracticePaperDraftService {
     private record FailureReason(String message, String errorCode) {
     }
 
-    /** Giữ nguyên thông báo của lỗi nghiệp vụ (hết hạn mức, chủ đề chưa có câu...) vì chúng
-     * được viết để hiện thẳng cho học sinh; lỗi lạ thì trả câu chung, không lộ chi tiết kỹ thuật.
-     * errorCode chỉ gắn cho QuotaExceededException -- đây là lỗi KHÔNG đáng cho học sinh thử lại
-     * (hạn mức không tự đầy lại), khác các lỗi nghiệp vụ khác vẫn có thể hết khi bấm lại. */
+    /** Keeps the message of a business error (quota exhausted, topic without questions...) because those messages are
+     * written to be shown to the student as they are; an unknown error gets a generic sentence that leaks no technical
+     * detail. The errorCode is set only for BusinessRuleViolationException -- these are errors the student should NOT
+     * retry (the quota does not refill by itself), unlike the other business errors, which may disappear on a retry. */
     private static FailureReason readableReason(Throwable error) {
         Throwable cause = error instanceof ExecutionException && error.getCause() != null
             ? error.getCause()
             : error;
-        if (cause instanceof QuotaExceededException) {
-            return new FailureReason(cause.getMessage(), "QUOTA_EXCEEDED");
+        if (cause instanceof BusinessRuleViolationException) {
+            return new FailureReason(cause.getMessage(), "BUSINESS_RULE_VIOLATION");
         }
-        if (cause instanceof NotFoundException
-                || cause instanceof IllegalStateException
-                || cause instanceof IllegalArgumentException) {
+        if (cause instanceof ResourceNotFoundException || cause instanceof IllegalArgumentException) {
             return new FailureReason(cause.getMessage(), null);
         }
         return new FailureReason("Không dựng được đề luyện lúc này, vui lòng thử lại.", null);

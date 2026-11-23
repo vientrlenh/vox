@@ -49,11 +49,11 @@ class RubricResultBandImportCommitHandlerTests {
     }
 
     @Test
-    void should_throw_illegal_state_when_repository_reports_a_data_conflict() {
+    void should_throw_illegal_argument_when_repository_reports_a_data_conflict() {
         doThrow(new DataConflictException("unique violation", null)).when(rubricResultBandRepository).saveAll(any());
 
         assertThatThrownBy(() -> handler.commit(session(), List.of(row())))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessage("Lỗi lưu dữ liệu: Mã xếp loại (Result Band) bị trùng lặp trong Phiên bản Rubric này.")
             .hasCauseInstanceOf(DataConflictException.class);
     }

@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateSubscriptionPlanReplacementCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.model.subscription.SubscriptionPlanStatus;
@@ -35,12 +35,12 @@ public class CreateSubscriptionPlanReplacementUseCase
     @Transactional
     public UUID execute(CreateSubscriptionPlanReplacementCommand input) {
         SubscriptionPlan replacedPlan = subscriptionPlanRepository.findById(input.replacedPlanId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói"));
 
         // Only for plans ON SALE: an ARCHIVED plan that needs its replacement fixed goes through
         // UpdateSubscriptionPlanReplacementUseCase, and a DRAFT plan has no users yet so it needs no replacement.
         if (replacedPlan.getStatus() != SubscriptionPlanStatus.ACTIVE) {
-            throw new IllegalStateException("Chỉ tạo được gói thay thế cho gói đang bán.");
+            throw new IllegalArgumentException("Chỉ tạo được gói thay thế cho gói đang bán.");
         }
 
         UUID newPlanId = createSubscriptionPlanUseCase.execute(input.newPlan());

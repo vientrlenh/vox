@@ -2,7 +2,7 @@ package com.sep.vox.application.port.input.usecase.rubricsystem;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.UpdateSystemRubricCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -41,7 +41,7 @@ public class UpdateSystemRubricUseCase implements IUseCase<UpdateSystemRubricCom
 
         // 2. Lấy bộ Rubric gốc ra (Để kiểm tra sự tồn tại và Quyền)
         Rubric rubric = rubricRepository.findById(command.rubricId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric này."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric này."));
 
         // 3. Chốt chặn an ninh
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {

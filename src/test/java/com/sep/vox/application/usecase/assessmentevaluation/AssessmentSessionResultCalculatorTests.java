@@ -15,7 +15,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.usecase.assessmentevaluation.AssessmentSessionResultCalculator;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import com.sep.vox.domain.model.assessment.Assessment;
@@ -302,7 +302,7 @@ public class AssessmentSessionResultCalculatorTests {
             evaluation(speakingResponseId, "6.00", false)));
 
         assertThatThrownBy(() -> calculator.calculate(sessionId))
-            .isInstanceOf(NotFoundException.class)
+            .isInstanceOf(ResourceNotFoundException.class)
             .hasMessageContaining("evaluation");
     }
 

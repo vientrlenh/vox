@@ -16,8 +16,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.DuplicatedException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.BulkCreateSchoolClassUsersCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -114,7 +114,7 @@ public class BulkCreateSchoolClassUsersUseCase
                 schoolClassUserRepository.saveAll(toSave);
             } catch (DataConflictException e) {
                 // Race-condition guard: another request just added the same member and hit the unique index.
-                throw new DuplicatedException("Một số người dùng đã thuộc lớp học");
+                throw new ResourceDuplicatedException("Một số người dùng đã thuộc lớp học");
             }
         }
 
@@ -166,16 +166,16 @@ public class BulkCreateSchoolClassUsersUseCase
 
     private User findCurrentUser(UUID currentUserId) {
         User user = userRepository.findById(currentUserId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng hiện tại"));
         if (user.getStatus() != UserStatus.ACTIVE) {
-            throw new IllegalStateException("Người dùng hiện tại không hoạt động");
+            throw new IllegalArgumentException("Người dùng hiện tại không hoạt động");
         }
         return user;
     }
 
     private UUID getSchoolId(User currentUser) {
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUser.getId())
-            .orElseThrow(() -> new IllegalStateException("Người dùng hiện tại không thuộc trường nào"));
+            .orElseThrow(() -> new IllegalArgumentException("Người dùng hiện tại không thuộc trường nào"));
         return schoolUser.getSchoolId();
     }
 
@@ -187,20 +187,20 @@ public class BulkCreateSchoolClassUsersUseCase
 
     private void validateSchool(UUID schoolId) {
         School school = schoolRepository.findById(schoolId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
-            throw new IllegalStateException("Trường học không hoạt động");
+            throw new IllegalArgumentException("Trường học không hoạt động");
         }
     }
 
     private SchoolClass validateSchoolClass(UUID classId, UUID schoolId) {
         SchoolClass schoolClass = schoolClassRepository.findById(classId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy lớp học"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp học"));
         if (!Objects.equals(schoolClass.getSchoolId(), schoolId)) {
-            throw new NotFoundException("Không tìm thấy lớp học");
+            throw new ResourceNotFoundException("Không tìm thấy lớp học");
         }
         if (schoolClass.getStatus() != SchoolClassStatus.ACTIVE) {
-            throw new IllegalStateException("Lớp học không hoạt động");
+            throw new IllegalArgumentException("Lớp học không hoạt động");
         }
         return schoolClass;
     }

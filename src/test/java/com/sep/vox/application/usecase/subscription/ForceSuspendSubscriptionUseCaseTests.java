@@ -19,7 +19,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.ForceSuspendSubscriptionCommand;
 import com.sep.vox.application.port.input.service.SchoolSubscriptionSuspensionNotificationService;
 import com.sep.vox.application.port.input.usecase.subscription.ForceSuspendSubscriptionUseCase;
@@ -102,7 +102,7 @@ class ForceSuspendSubscriptionUseCaseTests {
         givenSubscription(SchoolSubscriptionStatus.EXPIRED);
 
         assertThatThrownBy(() -> useCase.execute(new ForceSuspendSubscriptionCommand(SUBSCRIPTION_ID, REASON)))
-            .isInstanceOf(IllegalStateException.class);
+            .isInstanceOf(IllegalArgumentException.class);
         verify(schoolSubscriptionRepository, never()).save(any());
     }
 
@@ -111,7 +111,7 @@ class ForceSuspendSubscriptionUseCaseTests {
         when(schoolSubscriptionRepository.findById(SUBSCRIPTION_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> useCase.execute(new ForceSuspendSubscriptionCommand(SUBSCRIPTION_ID, REASON)))
-            .isInstanceOf(NotFoundException.class);
+            .isInstanceOf(ResourceNotFoundException.class);
     }
 
     /**
@@ -126,7 +126,7 @@ class ForceSuspendSubscriptionUseCaseTests {
         when(assessmentScheduleRepository.findBySchoolId(SCHOOL_ID)).thenReturn(List.of(ongoing));
 
         assertThatThrownBy(() -> useCase.execute(new ForceSuspendSubscriptionCommand(SUBSCRIPTION_ID, REASON)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("ca thi");
         verify(schoolSubscriptionRepository, never()).save(any());
         verify(schoolSubscriptionEventRepository, never()).save(any());

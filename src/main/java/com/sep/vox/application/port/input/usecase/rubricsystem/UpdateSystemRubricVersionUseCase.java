@@ -5,7 +5,7 @@ import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.service.rubric.ScoreRangeValidator;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.UpdateSystemRubricVersionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -52,11 +52,11 @@ public class UpdateSystemRubricVersionUseCase
         // 2. Load the Rubric Version and check its status
         RubricVersion version = rubricVersionRepository.findById(command.versionId())
                 .orElseThrow(() ->
-                        new NotFoundException("Không tìm thấy Rubric Version.")
+                        new ResourceNotFoundException("Không tìm thấy Rubric Version.")
                 );
 
         if (version.getStatus() != RubricStatus.DRAFT) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                     "Chỉ có thể cập nhật thông tin khi phiên bản đang ở trạng thái DRAFT."
             );
         }
@@ -64,7 +64,7 @@ public class UpdateSystemRubricVersionUseCase
         // 3. Check that the Rubric belongs to SYSTEM
         Rubric rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() ->
-                        new NotFoundException("Không tìm thấy bộ Rubric gốc.")
+                        new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc.")
                 );
 
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {

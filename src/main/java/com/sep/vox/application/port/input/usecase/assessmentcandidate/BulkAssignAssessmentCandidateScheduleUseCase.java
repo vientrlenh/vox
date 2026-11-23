@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.BulkAssignAssessmentCandidateScheduleCommand;
 import com.sep.vox.application.port.input.service.AssessmentPaperAutoAssigner;
 import com.sep.vox.application.port.input.service.AssessmentScheduleCandidateConflictValidator;
@@ -53,7 +53,7 @@ public class BulkAssignAssessmentCandidateScheduleUseCase
     @Transactional
     public List<AssessmentCandidateDto> execute(BulkAssignAssessmentCandidateScheduleCommand input) {
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
         UUID currentUserId = assessmentScheduleManageAccessService.requireCanManage(assessment);
         AssessmentEditingGuard.requireScheduleEditable(assessment);
 
@@ -68,12 +68,12 @@ public class BulkAssignAssessmentCandidateScheduleUseCase
         AssessmentSchedule schedule = null;
         if (scheduleId != null) {
             schedule = assessmentScheduleRepository.findByIdForUpdate(scheduleId)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi"));
             if (!schedule.getAssessmentId().equals(assessment.getId())) {
-                throw new NotFoundException("Không tìm thấy ca thi");
+                throw new ResourceNotFoundException("Không tìm thấy ca thi");
             }
             if (!ASSIGNABLE_STATUSES.contains(schedule.getStatus())) {
-                throw new IllegalStateException("Chỉ có thể xếp thí sinh vào ca ở trạng thái nháp hoặc đã công bố");
+                throw new IllegalArgumentException("Chỉ có thể xếp thí sinh vào ca ở trạng thái nháp hoặc đã công bố");
             }
         }
 
@@ -81,7 +81,7 @@ public class BulkAssignAssessmentCandidateScheduleUseCase
         // Looked up by (id, assessmentId) so a missing row means an id that does not exist or belongs to another assessment --
         // the whole batch fails instead of silently placing only part of it.
         if (candidates.size() != candidateIds.stream().distinct().count()) {
-            throw new NotFoundException("Không tìm thấy thí sinh");
+            throw new ResourceNotFoundException("Không tìm thấy thí sinh");
         }
 
         // Soát cả lô bằng MỘT query trước khi đụng vào ai: hỏng ở người thứ 25 mà 24 người trước đã

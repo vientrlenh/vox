@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.ViewProctorBusySlotsQuery;
 import com.sep.vox.application.port.input.service.AssessmentDirectoryAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -38,7 +38,7 @@ public class ViewProctorBusySlotsUseCase
             return List.of();
         }
         AssessmentSchedule schedule = assessmentScheduleRepository.findById(input.scheduleId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi"));
         // Same permission rule as the proctor directory: whoever can see the teacher list may also
         // know which of them are busy.
         assessmentDirectoryAccessService.resolveByAssessmentId(schedule.getAssessmentId());

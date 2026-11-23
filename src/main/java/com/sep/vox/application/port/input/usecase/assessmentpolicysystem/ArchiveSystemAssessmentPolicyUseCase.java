@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.assessmentpolicysystem;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.ArchiveSystemAssessmentPolicyCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -43,14 +43,14 @@ public class ArchiveSystemAssessmentPolicyUseCase implements IUseCase<ArchiveSys
 
         // 2. Kiểm tra Assessment Policy tồn tại và thuộc phạm vi toàn hệ thống
         AssessmentPolicy policy = assessmentPolicyRepository.findById(command.policyId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Assessment Policy."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
         if (policy.getSchoolId() != null) {
             throw new ForbiddenException("Hành động bị từ chối: Không thể can thiệp vào Assessment Policy của trường học.");
         }
 
         // 3. Chỉ được lưu trữ (ARCHIVE) khi đang PUBLISHED
         if (policy.getStatus() != AssessmentPolicyStatus.PUBLISHED) {
-            throw new IllegalStateException("Chỉ có thể lưu trữ (ARCHIVE) Assessment Policy đang ở trạng thái PUBLISHED.");
+            throw new IllegalArgumentException("Chỉ có thể lưu trữ (ARCHIVE) Assessment Policy đang ở trạng thái PUBLISHED.");
         }
 
         // 4. Lưu trạng thái mới

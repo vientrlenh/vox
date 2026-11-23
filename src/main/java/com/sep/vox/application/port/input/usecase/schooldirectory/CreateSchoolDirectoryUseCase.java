@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.port.input.command.CreateSchoolDirectoryCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.schooldirectory.CreateSchoolDirectoryResponse;
@@ -25,7 +25,7 @@ public class CreateSchoolDirectoryUseCase implements IUseCase<CreateSchoolDirect
         CreateSchoolDirectoryCommand command = normalize(input);
 
         if (schoolDirectoryRepository.existsByCode(command.code())) {
-            throw new DuplicatedException("Mã trường này đã tồn tại trong danh mục hệ thống");
+            throw new ResourceDuplicatedException("Mã trường này đã tồn tại trong danh mục hệ thống");
         }
 
         SchoolDirectory directory = SchoolDirectory.createByAdmin(

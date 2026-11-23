@@ -128,7 +128,7 @@ public class RecalculateAssessmentTimeDurationService {
                 schedule.getStartDate(), schedule.getEndDate()))
             .count();
         if (tooShortCount > 0) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 AssessmentScheduleWindowMessages.schedulesNoLongerFit((int) tooShortCount, assessment));
         }
     }

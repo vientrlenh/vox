@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.mapper.auth.LoginResponseMapper;
 import com.sep.vox.application.port.input.command.ClientDeviceCommand;
 import com.sep.vox.application.port.input.command.LoginCommand;
@@ -49,7 +49,7 @@ public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
 
         UUID userId = authenticationManagerPort.setAuthenticationAndGetUserId(command.login(), command.password());
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
 
         List<String> userRoles = getUserRoles(user.getId());
         

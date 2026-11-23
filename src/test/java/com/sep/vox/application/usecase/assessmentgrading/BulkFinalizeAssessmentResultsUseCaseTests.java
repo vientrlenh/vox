@@ -122,7 +122,7 @@ class BulkFinalizeAssessmentResultsUseCaseTests {
         givenResults(result(AssessmentCandidateResultStatus.PENDING_REVIEW));
 
         assertThatThrownBy(() -> useCase.execute(new BulkFinalizeAssessmentResultsCommand(assessmentId, false)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("chưa ai chấm");
 
         verify(assessmentCandidateResultRepository, never()).save(any());
@@ -136,7 +136,7 @@ class BulkFinalizeAssessmentResultsUseCaseTests {
         givenResults(result(AssessmentCandidateResultStatus.RELEASED));
 
         assertThatThrownBy(() -> useCase.execute(confirmed()))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("phúc khảo");
 
         verify(assessmentCandidateResultRepository, never()).save(any());
@@ -149,7 +149,7 @@ class BulkFinalizeAssessmentResultsUseCaseTests {
             result(AssessmentCandidateResultStatus.PENDING_REVIEW));
 
         assertThatThrownBy(() -> useCase.execute(confirmed()))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("đơn phúc khảo");
 
         verify(assessmentCandidateResultRepository, never()).save(any());
@@ -161,7 +161,7 @@ class BulkFinalizeAssessmentResultsUseCaseTests {
         givenResults(result(AssessmentCandidateResultStatus.RE_GRADING));
 
         assertThatThrownBy(() -> useCase.execute(confirmed()))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("chấm phúc khảo");
 
         verify(assessmentCandidateResultRepository, never()).save(any());
@@ -175,7 +175,7 @@ class BulkFinalizeAssessmentResultsUseCaseTests {
             result(AssessmentCandidateResultStatus.RE_GRADING));
 
         assertThatThrownBy(() -> useCase.execute(confirmed()))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContainingAll("đơn phúc khảo", "chấm phúc khảo");
     }
 

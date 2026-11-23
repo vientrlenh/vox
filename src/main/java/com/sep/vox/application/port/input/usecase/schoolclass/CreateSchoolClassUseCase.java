@@ -11,8 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.DuplicatedException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.mapper.schoolclass.CreateSchoolClassResponseMapper;
 import com.sep.vox.application.port.input.command.CreateSchoolClassCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -82,36 +82,36 @@ public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassComma
 
     private User findCurrentUser(UUID currentUserId) {
         User user = userRepository.findById(currentUserId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng hiện tại"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng hiện tại"));
         validateCurrentUserIsActive(user);
         return user;
     }
 
     private void validateCurrentUserIsActive(User currentUser) {
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new IllegalStateException("Người dùng hiện tại không hoạt động");
+            throw new IllegalArgumentException("Người dùng hiện tại không hoạt động");
         }
     }
 
     private UUID getSchoolId(User currentUser) {
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUser.getId())
-            .orElseThrow(() -> new IllegalStateException("Người dùng hiện tại không thuộc trường nào"));
+            .orElseThrow(() -> new IllegalArgumentException("Người dùng hiện tại không thuộc trường nào"));
         return schoolUser.getSchoolId();
     }
 
     private void validateSchool(UUID schoolId) {
         School school = schoolRepository.findById(schoolId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
-            throw new IllegalStateException("Trường học không hoạt động");
+            throw new IllegalArgumentException("Trường học không hoạt động");
         }
     }
 
     private void validateLanguage(UUID languageId) {
         SupportedLanguage language = supportedLanguageRepository.findById(languageId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ngôn ngữ"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngôn ngữ"));
         if (!language.isActive()) {
-            throw new IllegalStateException("Ngôn ngữ không hoạt động");
+            throw new IllegalArgumentException("Ngôn ngữ không hoạt động");
         }
     }
 
@@ -126,20 +126,20 @@ public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassComma
 
     private void validateSchoolGrade(UUID schoolGradeId, UUID schoolId) {
         SchoolGrade grade = schoolGradeRepository.findById(schoolGradeId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy khối học"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy khối học"));
         // Năm học đã lưu schoolId trực tiếp -- không còn phải bắc cầu qua Khối để xác định trường sở hữu.
         if (!Objects.equals(grade.getSchoolId(), schoolId)) {
             throw new IllegalArgumentException("Khối học không thuộc trường hiện tại");
         }
         if (grade.getStatus() != SchoolGradeStatus.ACTIVE) {
-            throw new IllegalStateException("Khối học không hoạt động");
+            throw new IllegalArgumentException("Khối học không hoạt động");
         }
     }
 
 
     private void validateClassCodeIsUnique(UUID schoolId, String code) {
         if (schoolClassRepository.findBySchoolIdAndCode(schoolId, code).isPresent()) {
-            throw new DuplicatedException("Mã lớp học đã tồn tại trong trường");
+            throw new ResourceDuplicatedException("Mã lớp học đã tồn tại trong trường");
         }
     }
 }

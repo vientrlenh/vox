@@ -58,7 +58,7 @@ class AssessmentScheduleClosureServiceTests {
         when(assessmentSessionRepository.countActiveByAssessmentId(assessmentId)).thenReturn(3L);
 
         assertThatThrownBy(() -> service.requireNoActiveSessionInOngoingSchedule(assessmentId, start))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("3 học sinh đang làm bài");
     }
 

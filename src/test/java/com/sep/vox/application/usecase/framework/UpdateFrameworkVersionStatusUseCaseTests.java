@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateFrameworkVersionStatusCommand;
 import com.sep.vox.application.port.input.usecase.framework.UpdateFrameworkVersionStatusUseCase;
 import com.sep.vox.domain.model.framework.Framework;
@@ -164,7 +164,7 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         when(frameworkCriterionRepository.findByFrameworkVersionId(versionId)).thenReturn(criteria);
         when(frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(criterionIds)).thenReturn(bands);
 
-        assertThrows(IllegalStateException.class, () -> useCase.execute(command));
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
     }
 
     @Test
@@ -210,7 +210,7 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         when(frameworkCriterionRepository.findByFrameworkVersionId(versionId)).thenReturn(criteria);
         when(frameworkCriterionBandRepository.findByFrameworkCriterionIdIn(criterionIds)).thenReturn(bands);
 
-        assertThrows(IllegalStateException.class, () -> useCase.execute(command));
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
     }
 
     @Test
@@ -237,7 +237,7 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
         when(frameworkCriterionRepository.existsByFrameworkVersionId(versionId)).thenReturn(false);
 
-        assertThrows(IllegalStateException.class, () -> useCase.execute(command));
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
     }
 
     @Test
@@ -265,7 +265,7 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         when(frameworkCriterionRepository.existsByFrameworkVersionId(versionId)).thenReturn(true);
         when(frameworkResultBandRepository.existsByFrameworkVersionId(versionId)).thenReturn(false);
 
-        assertThrows(IllegalStateException.class, () -> useCase.execute(command));
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
     }
 
     @Test
@@ -303,7 +303,7 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
 
         when(frameworkRepository.findFrameworkByIdForUpdate(frameworkId)).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> useCase.execute(command));
+        assertThrows(ResourceNotFoundException.class, () -> useCase.execute(command));
     }
 
     @Test
@@ -323,7 +323,7 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         when(frameworkRepository.findFrameworkByIdForUpdate(frameworkId)).thenReturn(Optional.of(framework));
         when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> useCase.execute(command));
+        assertThrows(ResourceNotFoundException.class, () -> useCase.execute(command));
     }
 
     @Test
@@ -384,7 +384,7 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         when(frameworkVersionRepository.findByFrameworkIdAndStatus(frameworkId, FrameworkVersionStatus.PUBLISHED))
             .thenReturn(List.of(publishedVersion));
 
-        assertThrows(IllegalStateException.class, () -> useCase.execute(command));
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
     }
 
     @Test
@@ -408,7 +408,7 @@ public class UpdateFrameworkVersionStatusUseCaseTests {
         when(frameworkRepository.findFrameworkByIdForUpdate(frameworkId)).thenReturn(Optional.of(framework));
         when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.of(version));
 
-        assertThrows(IllegalStateException.class, () -> useCase.execute(command));
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
     }
 
     @Test

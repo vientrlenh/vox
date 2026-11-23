@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.domain.model.assessment.AssessmentScheduleProctor;
 import com.sep.vox.domain.repository.AssessmentScheduleProctorRepository;
 import com.sep.vox.infrastructure.persistence.mapper.AssessmentScheduleProctorMapper;
@@ -29,7 +29,7 @@ public class AssessmentScheduleProctorRepositoryImpl implements AssessmentSchedu
             AssessmentScheduleProctorJpaEntity saved = springDataAssessmentScheduleProctorRepository.save(AssessmentScheduleProctorMapper.toJpa(proctor));
             return AssessmentScheduleProctorMapper.toDomain(saved);
         } catch (DataIntegrityViolationException e) {
-            throw new DuplicatedException("Giám thị đã được phân công cho ca này");
+            throw new ResourceDuplicatedException("Giám thị đã được phân công cho ca này");
         }
     }
 

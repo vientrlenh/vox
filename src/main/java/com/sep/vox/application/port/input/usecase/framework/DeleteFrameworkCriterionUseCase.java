@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.DeleteFrameworkCriterionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.model.framework.FrameworkCriterion;
@@ -41,12 +41,12 @@ public class DeleteFrameworkCriterionUseCase
 
     private FrameworkVersion getVersion(DeleteFrameworkCriterionCommand command) {
         return frameworkVersionRepository.findById(command.versionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản khung năng lực"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản khung năng lực"));
     }
 
     private FrameworkCriterion getCriterion(DeleteFrameworkCriterionCommand command) {
         return frameworkCriterionRepository.findById(command.criterionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy tiêu chí"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tiêu chí"));
     }
 
     private void checkValidRequest(DeleteFrameworkCriterionCommand command, FrameworkVersion version,
@@ -55,7 +55,7 @@ public class DeleteFrameworkCriterionUseCase
             throw new IllegalArgumentException("Phiên bản không thuộc khung năng lực này");
         }
         if (version.getStatus() != FrameworkVersionStatus.DRAFT) {
-            throw new IllegalStateException("Chỉ có thể xóa tiêu chí khi phiên bản đang ở trạng thái DRAFT");
+            throw new IllegalArgumentException("Chỉ có thể xóa tiêu chí khi phiên bản đang ở trạng thái DRAFT");
         }
         if (!criterion.getFrameworkVersionId().equals(command.versionId())) {
             throw new IllegalArgumentException("Tiêu chí không thuộc phiên bản này");

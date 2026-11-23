@@ -18,7 +18,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.command.CreateAssessmentScheduleCommand;
 import com.sep.vox.application.port.input.service.AssessmentScheduleRoomValidator;
@@ -118,7 +118,7 @@ class CreateAssessmentScheduleUseCaseTests {
         when(assessmentScheduleRepository.existsOverlapping(eq(roomId), eq(start), eq(end), eq(null))).thenReturn(true);
 
         assertThatThrownBy(() -> useCase.execute(new CreateAssessmentScheduleCommand(assessmentId, roomId, start, end)))
-            .isInstanceOf(DuplicatedException.class);
+            .isInstanceOf(ResourceDuplicatedException.class);
         verify(assessmentScheduleRepository, never()).save(any());
     }
 

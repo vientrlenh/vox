@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateAssessmentScheduleCommand;
 import com.sep.vox.application.port.input.service.AssessmentScheduleRoomValidator;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -41,7 +41,7 @@ public class CreateAssessmentScheduleUseCase implements IUseCase<CreateAssessmen
     @Transactional
     public AssessmentScheduleDto execute(CreateAssessmentScheduleCommand input) {
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
         authorize(assessment);
         AssessmentEditingGuard.requireScheduleEditable(assessment);
 

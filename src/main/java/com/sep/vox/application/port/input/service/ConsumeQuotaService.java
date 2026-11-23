@@ -9,7 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.output.QuotaDebtConfigPort;
 import com.sep.vox.application.port.output.QuotaUsageWarningConfigPort;
 import com.sep.vox.application.response.input.subscription.ConsumeQuotaResponse;
@@ -336,7 +336,7 @@ public class ConsumeQuotaService {
      */
     private ConsumeQuotaResponse buildResponse(UUID subscriptionId, UUID quotaId, ChargeSplit split) {
         SchoolSubscriptionQuotaRecord quota = schoolSubscriptionQuotaRecordRepository.findById(quotaId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy hạn mức của gói đăng ký"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hạn mức của gói đăng ký"));
 
         BigDecimal quotaRemainingVnd = quota.getTotalAllocatedAmountVnd().subtract(quota.getUsedAmountVnd());
         boolean fundsExhausted = quotaRemainingVnd.signum() <= 0 && split.balanceAfterVnd().signum() <= 0;
@@ -354,13 +354,13 @@ public class ConsumeQuotaService {
     private SchoolSubscriptionQuotaRecord requireQuota(UUID subscriptionId, QuotaType quotaType) {
         return schoolSubscriptionQuotaRecordRepository
             .findBySchoolSubscriptionIdAndQuotaType(subscriptionId, quotaType)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy hạn mức của gói đăng ký"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hạn mức của gói đăng ký"));
     }
 
     private UUID requireSchoolId(UUID subscriptionId) {
         return schoolSubscriptionRepository.findById(subscriptionId)
             .map(s -> s.getSchoolId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy gói đăng ký"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói đăng ký"));
     }
 
     /** Bản CHỈ ĐỌC -- chỉ dùng cho đường KHÔNG ghi số dư (xem javadoc SchoolBalanceRepository). */

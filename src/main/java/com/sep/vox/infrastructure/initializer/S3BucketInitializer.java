@@ -7,7 +7,6 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
 
 
-import com.sep.vox.infrastructure.exception.InfrastructureException;
 import com.sep.vox.infrastructure.properties.AwsS3StorageProperties;
 
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
@@ -84,12 +83,12 @@ public class S3BucketInitializer implements ApplicationRunner {
                 return true;
             }
             if (e.statusCode() == 301) {
-                // S3 tra 301 khi client goi nham regional endpoint. Region that nam o header phan hoi.
-                throw new InfrastructureException(
+                // S3 answers 301 when the client calls the wrong regional endpoint. The real region is in the response header.
+                throw new IllegalStateException(
                     "Bucket S3 '%s' nam o region '%s' nhung storage.s3.region dang duoc cau hinh la '%s'"
                         .formatted(bucket, bucketRegionOf(e), properties.getRegion()));
             }
-            throw new InfrastructureException(
+            throw new IllegalStateException(
                 "Khong the kiem tra bucket S3 '" + bucket + "': " + messageOf(e));
         }
     }
@@ -110,10 +109,10 @@ public class S3BucketInitializer implements ApplicationRunner {
             log.info("Bucket S3 '{}' vua duoc tao boi mot tien trinh khac", bucket);
             return;
         } catch (BucketAlreadyExistsException e) {
-            throw new InfrastructureException(
+            throw new IllegalStateException(
                 "Ten bucket S3 '" + bucket + "' da thuoc ve mot AWS account khac. Can doi ten bucket");
         } catch (AwsServiceException e) {
-            throw new InfrastructureException(
+            throw new IllegalStateException(
                 "Khong the tao bucket S3 '" + bucket + "': " + messageOf(e));
         }
 
@@ -202,7 +201,7 @@ public class S3BucketInitializer implements ApplicationRunner {
         } catch (RuntimeException e) {
             String message = "Khong the ap dung %s cho bucket S3 '%s': %s".formatted(step, bucket, messageOf(e));
             if (properties.isFailOnError()) {
-                throw new InfrastructureException(message);
+                throw new IllegalStateException(message);
             }
             log.warn("{}. Ung dung van tiep tuc khoi dong", message, e);
         }

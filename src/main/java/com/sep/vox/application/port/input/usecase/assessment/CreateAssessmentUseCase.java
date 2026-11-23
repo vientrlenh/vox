@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateAssessmentCommand;
 import com.sep.vox.application.port.input.service.AssessmentPolicyValidator;
 import com.sep.vox.application.port.input.service.AssessmentStreamConfigResolver;
@@ -60,7 +60,7 @@ public class CreateAssessmentUseCase implements IUseCase<CreateAssessmentCommand
 
         if (command.blueprintId() != null) {
             AssessmentBlueprint blueprint = assessmentBlueprintRepository.findById(command.blueprintId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint đề thi"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy blueprint đề thi"));
             if (!currentSchoolId.equals(blueprint.getSchoolId())) {
                 throw new ForbiddenException("Blueprint không thuộc trường hiện tại");
             }
@@ -132,10 +132,10 @@ public class CreateAssessmentUseCase implements IUseCase<CreateAssessmentCommand
      */
     private void validateOpenClose(Instant open, Instant close, UUID schoolId) {
         if (open == null || close == null) {
-            throw new IllegalStateException("Kỳ thi phải có thời gian mở bài và đóng bài");
+            throw new IllegalArgumentException("Kỳ thi phải có thời gian mở bài và đóng bài");
         }
         if (!open.isBefore(close)) {
-            throw new IllegalStateException("Thời gian mở bài phải nhỏ hơn thời gian đóng bài");
+            throw new IllegalArgumentException("Thời gian mở bài phải nhỏ hơn thời gian đóng bài");
         }
         subscriptionPeriodGuardService.requireWithinSubscriptionPeriod(schoolId, open, close);
     }

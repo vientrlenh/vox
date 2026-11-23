@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.mapper.scoringrule.ScoringRuleParamsMapper;
 import com.sep.vox.application.port.input.command.UpdateScoringRuleCommand;
@@ -58,7 +58,7 @@ public class UpdateSystemScoringRuleUseCase implements IUseCase<UpdateScoringRul
 
         // 2. Kiểm tra Scoring Rule tồn tại
         ScoringRule rule = scoringRuleRepository.findById(command.ruleId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Scoring Rule."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Scoring Rule."));
 
         // 3. BẢO MẬT: policyId trên path phải khớp với policyId thật sự của rule
         // (tránh trường hợp Client cố tình gửi nhầm/gửi giả policyId khác trên URL để sửa rule của Policy khác)
@@ -68,7 +68,7 @@ public class UpdateSystemScoringRuleUseCase implements IUseCase<UpdateScoringRul
 
         // 4. Kiểm tra Assessment Policy tồn tại và thuộc phạm vi toàn hệ thống
         AssessmentPolicy policy = assessmentPolicyRepository.findById(rule.getPolicyId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Assessment Policy."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
         if (policy.getSchoolId() != null) {
             throw new ForbiddenException("Không thể can thiệp vào Assessment Policy của trường học.");
         }
@@ -76,7 +76,7 @@ public class UpdateSystemScoringRuleUseCase implements IUseCase<UpdateScoringRul
         // 5. Chỉ được sửa Scoring Rule khi Policy còn DRAFT (lý do giống hệt khi tạo mới:
         // tránh thay đổi luật chấm điểm ngầm dưới 1 Policy đã PUBLISHED đang chấm bài thi thật)
         if (policy.getStatus() != AssessmentPolicyStatus.DRAFT) {
-            throw new IllegalStateException("Chỉ được sửa Scoring Rule khi Assessment Policy đang ở trạng thái DRAFT.");
+            throw new IllegalArgumentException("Chỉ được sửa Scoring Rule khi Assessment Policy đang ở trạng thái DRAFT.");
         }
 
         // 6. Validate priority
@@ -129,16 +129,16 @@ public class UpdateSystemScoringRuleUseCase implements IUseCase<UpdateScoringRul
 
     private RubricCriterion requireCriterion(UUID rubricVersionId, String criterionCode) {
         return rubricCriterionRepository.findByRubricVersionIdAndCode(rubricVersionId, criterionCode)
-                .orElseThrow(() -> new NotFoundException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Mã tiêu chí (criterionCode) '" + criterionCode + "' không tồn tại trong Rubric Version của Assessment Policy này."));
     }
 
     private void requireFrameworkResultBand(UUID frameworkVersionId, UUID frameworkResultBandId) {
         FrameworkResultBand band = frameworkResultBandRepository.findById(frameworkResultBandId)
-                .orElseThrow(() -> new NotFoundException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Không tìm thấy Framework Result Band với ID '" + frameworkResultBandId + "'."));
         if (!band.getFrameworkVersionId().equals(frameworkVersionId)) {
-            throw new NotFoundException(
+            throw new ResourceNotFoundException(
                     "Framework Result Band '" + frameworkResultBandId + "' không thuộc Framework Version của Assessment Policy này.");
         }
     }

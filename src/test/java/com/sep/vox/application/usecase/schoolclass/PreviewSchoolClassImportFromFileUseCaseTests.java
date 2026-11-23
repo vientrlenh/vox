@@ -134,7 +134,7 @@ class PreviewSchoolClassImportFromFileUseCaseTests {
         User _u5 = user(userId, UUID.randomUUID(), UserStatus.INACTIVE);
         when(userRepository.findById(userId)).thenReturn(Optional.of(_u5));
 
-        assertThrows(IllegalStateException.class, () -> useCase.execute(new PreviewSchoolClassImportFromFileCommand(UUID.randomUUID(), file)));
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(new PreviewSchoolClassImportFromFileCommand(UUID.randomUUID(), file)));
 
         verifyNoInteractions(schoolRepository, fileProcessingPort, importSessionRepository, importRowRepository);
     }

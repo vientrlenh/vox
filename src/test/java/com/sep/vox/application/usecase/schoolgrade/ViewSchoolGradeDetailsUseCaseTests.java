@@ -15,7 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewSchoolGradeDetailsQuery;
 import com.sep.vox.application.port.input.usecase.schoolgrade.ViewSchoolGradeDetailsUseCase;
@@ -108,7 +108,7 @@ class ViewSchoolGradeDetailsUseCaseTests {
         when(schoolGradeRepository.findById(gradeId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> useCase.execute(new ViewSchoolGradeDetailsQuery(schoolId, gradeId)))
-            .isInstanceOf(NotFoundException.class);
+            .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
@@ -119,7 +119,7 @@ class ViewSchoolGradeDetailsUseCaseTests {
             .thenReturn(Optional.of(grade(UUID.randomUUID())));
 
         assertThatThrownBy(() -> useCase.execute(new ViewSchoolGradeDetailsQuery(schoolId, gradeId)))
-            .isInstanceOf(NotFoundException.class);
+            .isInstanceOf(ResourceNotFoundException.class);
     }
 
     private void grantAccess() {

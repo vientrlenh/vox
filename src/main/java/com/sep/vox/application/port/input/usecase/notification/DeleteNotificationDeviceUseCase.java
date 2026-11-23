@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.repository.NotificationDeviceRepository;
@@ -29,7 +29,7 @@ public class DeleteNotificationDeviceUseCase implements IUseCase<String, Void> {
         UUID userId = userContextPort.getCurrentAuthenticatedUserId();
         int removed = notificationDeviceRepository.deleteByUserIdAndInstallationId(userId, installationId);
         if (removed == 0) {
-            throw new NotFoundException("Không tìm thấy thiết bị nhận thông báo");
+            throw new ResourceNotFoundException("Không tìm thấy thiết bị nhận thông báo");
         }
         return null;
     }

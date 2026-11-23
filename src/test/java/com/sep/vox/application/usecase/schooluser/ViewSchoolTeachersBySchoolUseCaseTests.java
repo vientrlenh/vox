@@ -14,7 +14,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.ViewSchoolTeachersBySchoolQuery;
 import com.sep.vox.application.port.input.query.ViewSchoolUsersBySchoolQuery;
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolTeachersBySchoolUseCase;
@@ -69,7 +69,7 @@ class ViewSchoolTeachersBySchoolUseCaseTests {
         when(roleRepository.findByCode(SchoolRoleCodes.TEACHER)).thenReturn(Optional.empty());
 
         assertThrows(
-            NotFoundException.class,
+            ResourceNotFoundException.class,
             () -> useCase.execute(new ViewSchoolTeachersBySchoolQuery(schoolId, 1, 20, null, null))
         );
     }

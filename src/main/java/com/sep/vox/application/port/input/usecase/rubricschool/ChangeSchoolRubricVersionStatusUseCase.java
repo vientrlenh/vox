@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricschool;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.ChangeSchoolRubricVersionStatusCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -42,15 +42,15 @@ public class ChangeSchoolRubricVersionStatusUseCase implements IUseCase<ChangeSc
 
         // 2. Lấy Version ra kiểm tra
         RubricVersion version = rubricVersionRepository.findById(command.versionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản Rubric."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản Rubric."));
 
         if (version.getStatus() == command.status()) {
-            throw new IllegalStateException("Phiên bản đã đang ở trạng thái " + command.status() + ".");
+            throw new IllegalArgumentException("Phiên bản đã đang ở trạng thái " + command.status() + ".");
         }
 
         // 3. KIỂM TRA BẢO MẬT SCHOOL OWNERSHIP (Sử dụng bảng SchoolUser mới)
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Rubric gốc."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric gốc."));
 
         // Lấy thông tin mapping trường học của User hiện tại
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
@@ -67,24 +67,24 @@ public class ChangeSchoolRubricVersionStatusUseCase implements IUseCase<ChangeSc
         if (command.status() == RubricStatus.PUBLISHED) {
 
             if (version.getStatus() != RubricStatus.DRAFT) {
-                throw new IllegalStateException("Chỉ có thể ban hành (PUBLISH) phiên bản đang ở trạng thái Nháp (DRAFT).");
+                throw new IllegalArgumentException("Chỉ có thể ban hành (PUBLISH) phiên bản đang ở trạng thái Nháp (DRAFT).");
             }
 
             // KIỂM TRA VERSION KHÔNG ĐƯỢC RỖNG -- version không có tiêu chí/thang điểm thì không dùng
             // để chấm bài được, publish xong sẽ vô dụng và không thể sửa nữa (ngoại trừ archive)
             if (rubricCriterionRepository.findByRubricVersionId(version.getId()).isEmpty()) {
-                throw new IllegalStateException("Không thể ban hành phiên bản này vì chưa có tiêu chí (Criterion) nào.");
+                throw new IllegalArgumentException("Không thể ban hành phiên bản này vì chưa có tiêu chí (Criterion) nào.");
             }
 
             Framework framework = frameworkRepository.findById(rubric.getFrameworkId())
-                    .orElseThrow(() -> new NotFoundException("Không tìm thấy Khung tiêu chuẩn (Framework) liên kết."));
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Khung tiêu chuẩn (Framework) liên kết."));
             if (!framework.isActive()) {
-                throw new IllegalStateException("Không thể ban hành Rubric này vì Khung tiêu chuẩn (Framework) gốc đang bị vô hiệu hóa.");
+                throw new IllegalArgumentException("Không thể ban hành Rubric này vì Khung tiêu chuẩn (Framework) gốc đang bị vô hiệu hóa.");
             }
 
             // KIỂM TRA ASSESSMENT POLICY LIÊN KẾT ĐÃ ĐƯỢC PUBLISHED HAY CHƯA
             if (!assessmentPolicyRepository.existsPublishedByRubricVersionId(version.getId())) {
-                throw new IllegalStateException("Không thể ban hành Rubric này vì chưa có Assessment Policy nào liên kết đang ở trạng thái PUBLISHED.");
+                throw new IllegalArgumentException("Không thể ban hành Rubric này vì chưa có Assessment Policy nào liên kết đang ở trạng thái PUBLISHED.");
             }
 
             RubricScoringConsistencyValidator.assertPublishable(
@@ -94,9 +94,9 @@ public class ChangeSchoolRubricVersionStatusUseCase implements IUseCase<ChangeSc
                     rubricCriterionRepository.findByRubricVersionId(version.getId()));
 
         } else if (command.status() == RubricStatus.ARCHIVED) {
-            throw new IllegalStateException("Hành động bị từ chối: Vui lòng dùng chức năng Lưu trữ (Archive) riêng để chuyển phiên bản sang ARCHIVED.");
+            throw new IllegalArgumentException("Hành động bị từ chối: Vui lòng dùng chức năng Lưu trữ (Archive) riêng để chuyển phiên bản sang ARCHIVED.");
         } else if (command.status() == RubricStatus.DRAFT) {
-            throw new IllegalStateException("Hành động bị từ chối: Không thể chuyển một phiên bản đã Ban hành/Lưu trữ quay ngược lại trạng thái Nháp (DRAFT). Vui lòng tạo phiên bản mới.");
+            throw new IllegalArgumentException("Hành động bị từ chối: Không thể chuyển một phiên bản đã Ban hành/Lưu trữ quay ngược lại trạng thái Nháp (DRAFT). Vui lòng tạo phiên bản mới.");
         }
 
         // 5. Lưu xuống DB

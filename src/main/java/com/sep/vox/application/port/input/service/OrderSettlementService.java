@@ -21,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.RoleConstant;
 import com.sep.vox.application.event.InvoicePaidPayloadV1;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.common.AggregateTypeConstant;
 import com.sep.vox.domain.common.EventTypeConstant;
@@ -114,7 +114,7 @@ public class OrderSettlementService {
         // credit the money is exactly the scenario that uq_payment_records_one_paid_per_order cannot block, because each thread
         // works on a different payment_records row of the same order.
         Order order = orderRepository.findByIdForUpdate(payment.getOrderId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn hàng của lần thanh toán"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng của lần thanh toán"));
 
         if (order.getStatus() == OrderStatus.SUCCESS) {
             log.info("Đơn {} đã SUCCESS -- bỏ qua lần chốt lặp cho payment {}",
@@ -185,7 +185,7 @@ public class OrderSettlementService {
     @Transactional
     public boolean expireIfOverdue(UUID orderId, Instant now) {
         Order order = orderRepository.findByIdForUpdate(orderId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn hàng cần hết hạn"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng cần hết hạn"));
 
         if (order.getStatus() != OrderStatus.PENDING || now.isBefore(order.getExpiresAt())) {
             return false;
@@ -308,7 +308,7 @@ public class OrderSettlementService {
                 "Đơn đăng ký " + order.getId() + " không có dòng SUBSCRIPTION nào để kích hoạt"));
 
         SubscriptionPlan plan = subscriptionPlanRepository.findById(planId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy gói dịch vụ của đơn đăng ký"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói dịch vụ của đơn đăng ký"));
 
         Instant startsAt = order.getType() == OrderType.SUBSCRIPTION_UPGRADE
             ? cutOverToUpgrade(order.getSchoolId(), now)

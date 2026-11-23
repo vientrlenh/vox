@@ -146,7 +146,7 @@ class CreatePaymentCheckoutUrlUseCaseTests {
         when(paymentProcessPort.isConfigured()).thenReturn(false);
 
         assertThatThrownBy(() -> useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, PaymentProvider.PAYOS)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("chưa được cấu hình");
 
         verify(paymentRecordRepository, never()).save(any());
@@ -260,7 +260,7 @@ class CreatePaymentCheckoutUrlUseCaseTests {
             .thenReturn(new PaymentLinkStatusResult(PaymentLinkRemoteStatus.NOT_FOUND));
 
         assertThatThrownBy(() -> useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, PaymentProvider.PAYOS)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("thử lại sau vài phút");
 
         assertThat(justOpened.getStatus()).isEqualTo(PaymentStatus.PENDING);
@@ -278,7 +278,7 @@ class CreatePaymentCheckoutUrlUseCaseTests {
             .thenReturn(new PaymentLinkStatusResult(PaymentLinkRemoteStatus.PAID));
 
         assertThatThrownBy(() -> useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, PaymentProvider.PAYOS)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("đã được thanh toán");
 
         verify(paymentProcessPort, never()).createPaymentLink(any());

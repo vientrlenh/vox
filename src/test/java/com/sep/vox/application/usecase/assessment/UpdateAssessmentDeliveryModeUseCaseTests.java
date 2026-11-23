@@ -120,7 +120,7 @@ class UpdateAssessmentDeliveryModeUseCaseTests {
         when(assessmentCandidateRepository.existsByAssessmentIdAndScheduleIdIsNotNull(assessmentId)).thenReturn(true);
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentDeliveryModeCommand(assessmentId, AssessmentDeliveryMode.LAB)))
-            .isInstanceOf(IllegalStateException.class);
+            .isInstanceOf(IllegalArgumentException.class);
         verify(assessmentRepository, never()).save(assessment);
     }
 
@@ -132,7 +132,7 @@ class UpdateAssessmentDeliveryModeUseCaseTests {
             .thenReturn(true);
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentDeliveryModeCommand(assessmentId, AssessmentDeliveryMode.STUDENT_DEVICE)))
-            .isInstanceOf(IllegalStateException.class);
+            .isInstanceOf(IllegalArgumentException.class);
         verify(assessmentRepository, never()).save(assessment);
     }
 

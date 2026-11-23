@@ -20,7 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.ClientDeviceCommand;
 import com.sep.vox.application.port.input.command.LoginCommand;
 import com.sep.vox.application.port.input.usecase.auth.LoginUseCase;
@@ -198,7 +198,7 @@ public class LoginUseCaseTests {
             .thenReturn(Optional.empty());
         
         assertThrows(
-            NotFoundException.class,
+            ResourceNotFoundException.class,
             () -> loginUseCase.execute(validLoginCommand("missing@example.com", "123456"))
         );
         

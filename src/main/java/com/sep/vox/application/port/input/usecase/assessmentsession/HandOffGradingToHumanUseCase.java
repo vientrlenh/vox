@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.HandOffGradingToHumanCommand;
 import com.sep.vox.application.port.input.service.AssessmentSessionModerationAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -67,25 +67,25 @@ public class HandOffGradingToHumanUseCase implements IUseCase<HandOffGradingToHu
     @Transactional
     public UUID execute(HandOffGradingToHumanCommand input) {
         AssessmentSession session = assessmentSessionRepository.findById(input.sessionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi"));
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(session.getCandidateId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy thí sinh của phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thí sinh của phiên thi"));
         Assessment assessment = assessmentRepository.findById(session.getAssessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy kỳ thi của phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kỳ thi của phiên thi"));
 
         moderationAccessService.authorize(assessment, candidate);
         if (assessment.getStatus() == AssessmentStatus.RESULTS_PUBLISHED) {
-            throw new IllegalStateException("Kỳ thi đã công bố điểm, không thể chuyển sang chấm tay");
+            throw new IllegalArgumentException("Kỳ thi đã công bố điểm, không thể chuyển sang chấm tay");
         }
         if (session.getStatus() != AssessmentSessionStatus.GRADING_FAILED) {
-            throw new IllegalStateException("Chỉ chuyển sang chấm tay được khi AI chấm lỗi");
+            throw new IllegalArgumentException("Chỉ chuyển sang chấm tay được khi AI chấm lỗi");
         }
 
         // Không có câu trả lời thì không có gì để người chấm xem. Giao một bài trắng chỉ tạo ra
         // một việc không làm được: giáo viên mở ra, không thấy gì, và cũng không đóng được phân
         // công vì không chấm nổi.
         if (assessmentItemResponseRepository.findBySessionId(session.getId()).isEmpty()) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 "Phiên thi này không có câu trả lời nào, không có gì để người chấm xem");
         }
 

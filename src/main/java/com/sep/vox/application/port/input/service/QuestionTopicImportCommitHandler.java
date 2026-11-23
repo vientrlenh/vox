@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.model.importfile.ImportRow;
 import com.sep.vox.domain.model.importfile.ImportRowStatus;
@@ -53,10 +53,10 @@ public class QuestionTopicImportCommitHandler implements ImportCommitHandler {
     public ImportCommitResult commit(ImportSession session, List<ImportRow> rows) {
         UUID questionBankId = session.getImportedEntityId();
         if (questionBankId == null) {
-            throw new NotFoundException("Phiên import không ghim ngân hàng câu hỏi đích");
+            throw new ResourceNotFoundException("Phiên import không ghim ngân hàng câu hỏi đích");
         }
         questionBankRepository.findById(questionBankId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi khi xử lý ngầm"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi khi xử lý ngầm"));
 
         Map<String, String> mapping = resolveMapping(session);
 

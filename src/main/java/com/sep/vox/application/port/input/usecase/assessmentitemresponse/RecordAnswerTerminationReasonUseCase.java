@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.repository.AssessmentItemResponseRepository;
 
@@ -21,7 +21,7 @@ public class RecordAnswerTerminationReasonUseCase implements IUseCase<RecordAnsw
     @Transactional
     public Void execute(Command input) {
         AssessmentItemResponse response = assessmentItemResponseRepository.findById(input.answerId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy câu trả lời để lưu lý do kết thúc"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu trả lời để lưu lý do kết thúc"));
         response.setTerminationReason(input.reason());
         assessmentItemResponseRepository.save(response);
         return null;

@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricschool;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.AcceptRubricCriterionImportCommand; // Sử dụng Command dùng chung của bác
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -67,7 +67,7 @@ public class AcceptSchoolRubricCriterionImportUseCase implements IUseCase<Accept
 
         // Bước 3: Kiểm tra thông tin phiên làm việc (ImportSession)
         ImportSession session = importSessionRepository.findById(command.sessionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên làm việc Import tương ứng."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên làm việc Import tương ứng."));
 
         if (session.getType() != ImportType.RUBRIC_CRITERION || session.getImportedEntityId() == null) {
             throw new IllegalArgumentException("Phiên làm việc import này không hợp lệ.");
@@ -75,7 +75,7 @@ public class AcceptSchoolRubricCriterionImportUseCase implements IUseCase<Accept
 
         // Chốt chặn trạng thái: Chỉ cho phép xác nhận khi đã qua màn hình xem Preview thành công
         if (session.getStatus() != ImportSessionStatus.PREVIEWED) {
-            throw new IllegalStateException("Trạng thái phiên làm việc không hợp lệ để thực hiện Xác nhận.");
+            throw new IllegalArgumentException("Trạng thái phiên làm việc không hợp lệ để thực hiện Xác nhận.");
         }
 
         // Chống hack: Cố tình truyền ngẫu nhiên một sessionId của trường khác vào URL trường mình nhằm phá hoại
@@ -86,9 +86,9 @@ public class AcceptSchoolRubricCriterionImportUseCase implements IUseCase<Accept
         // Bước 4: Kiểm tra tính hợp lệ và quyền sở hữu đích đến (Bộ Rubric gốc)
         UUID versionId = session.getImportedEntityId();
         RubricVersion version = rubricVersionRepository.findById(versionId)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản Rubric đích."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Rubric đích."));
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc cần bổ sung tiêu chí."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc cần bổ sung tiêu chí."));
 
         // Chống hack: Chặn tuyệt đối School Admin can thiệp dữ liệu vào bộ Rubric hệ thống hoặc trường bạn
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !rubric.getSchoolId().equals(command.schoolId())) {

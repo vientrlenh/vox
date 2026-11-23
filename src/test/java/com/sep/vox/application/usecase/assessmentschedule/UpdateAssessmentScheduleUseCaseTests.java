@@ -20,7 +20,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.port.input.command.UpdateAssessmentScheduleCommand;
 import com.sep.vox.application.port.input.service.AssessmentScheduleCandidateConflictValidator;
 import com.sep.vox.application.port.input.service.AssessmentScheduleProctorConflictValidator;
@@ -124,7 +124,7 @@ class UpdateAssessmentScheduleUseCaseTests {
         when(assessmentScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(AssessmentScheduleStatus.PUBLISHED)));
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentScheduleCommand(scheduleId, null, newStart, newEnd)))
-            .isInstanceOf(IllegalStateException.class);
+            .isInstanceOf(IllegalArgumentException.class);
         verify(assessmentScheduleRepository, never()).updateAtomic(any(), any(), any(), any(), any(), any());
     }
 
@@ -134,7 +134,7 @@ class UpdateAssessmentScheduleUseCaseTests {
         when(assessmentScheduleRepository.existsOverlapping(roomId, newStart, newEnd, scheduleId)).thenReturn(true);
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentScheduleCommand(scheduleId, null, newStart, newEnd)))
-            .isInstanceOf(DuplicatedException.class);
+            .isInstanceOf(ResourceDuplicatedException.class);
         verify(assessmentScheduleRepository, never()).updateAtomic(any(), any(), any(), any(), any(), any());
     }
 
@@ -156,7 +156,7 @@ class UpdateAssessmentScheduleUseCaseTests {
             .thenReturn(true);
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentScheduleCommand(scheduleId, null, newStart, newEnd)))
-            .isInstanceOf(DuplicatedException.class)
+            .isInstanceOf(ResourceDuplicatedException.class)
             .hasMessageContaining("Giám thị");
         verify(assessmentScheduleRepository, never()).updateAtomic(any(), any(), any(), any(), any(), any());
     }
@@ -176,7 +176,7 @@ class UpdateAssessmentScheduleUseCaseTests {
                 candidate.getStudentId(), UUID.randomUUID(), newStart, newEnd)));
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentScheduleCommand(scheduleId, null, newStart, newEnd)))
-            .isInstanceOf(DuplicatedException.class)
+            .isInstanceOf(ResourceDuplicatedException.class)
             .hasMessageContaining("đã có ca thi khác");
         verify(assessmentScheduleRepository, never()).updateAtomic(any(), any(), any(), any(), any(), any());
     }
@@ -218,7 +218,7 @@ class UpdateAssessmentScheduleUseCaseTests {
             .thenReturn(0);
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentScheduleCommand(scheduleId, null, newStart, newEnd)))
-            .isInstanceOf(IllegalStateException.class);
+            .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -283,11 +283,11 @@ class UpdateAssessmentScheduleUseCaseTests {
         when(assessmentRepository.findById(assessmentId)).thenReturn(Optional.of(assessment));
         when(assessmentScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(AssessmentScheduleStatus.DRAFT)));
         when(assessmentScheduleRepository.existsOverlapping(roomId, newStart, newEnd, scheduleId)).thenReturn(false);
-        doThrow(new IllegalStateException("Thời gian đóng bài phải nằm trong hạn gói dịch vụ của trường"))
+        doThrow(new IllegalArgumentException("Thời gian đóng bài phải nằm trong hạn gói dịch vụ của trường"))
             .when(subscriptionPeriodGuardService).requireWithinSubscriptionPeriod(any(), any(), any());
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentScheduleCommand(scheduleId, null, newStart, newEnd)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("hạn gói dịch vụ");
         verify(assessmentScheduleRepository, never()).save(any());
         verify(assessmentRepository, never()).save(any());

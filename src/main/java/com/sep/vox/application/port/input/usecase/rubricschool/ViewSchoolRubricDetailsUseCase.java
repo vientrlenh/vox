@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricschool;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewSchoolRubricDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -47,7 +47,7 @@ public class ViewSchoolRubricDetailsUseCase implements IUseCase<ViewSchoolRubric
 
         // 2. Lấy bộ Rubric
         Rubric rubric = rubricRepository.findById(query.rubricId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric này."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric này."));
 
         // 3. Security gate based on SchoolUser
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
@@ -61,7 +61,7 @@ public class ViewSchoolRubricDetailsUseCase implements IUseCase<ViewSchoolRubric
 
         // 4. Kiểm tra trạng thái trường học
         School school = schoolRepository.findById(query.schoolId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
 
         if (!school.isActive()) {
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa.");

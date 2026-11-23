@@ -65,7 +65,7 @@ public class SubscriptionUpgradePolicyService {
         }
 
         Instant eligibleAt = inForce.getStartDate().plusSeconds(minElapsed);
-        throw new IllegalStateException(
+        throw new IllegalArgumentException(
             "Gói hiện tại mới bắt đầu, chưa thể nâng cấp. Có thể nâng cấp từ ngày "
                 + DISPLAY_DATE.format(eligibleAt) + ".");
     }

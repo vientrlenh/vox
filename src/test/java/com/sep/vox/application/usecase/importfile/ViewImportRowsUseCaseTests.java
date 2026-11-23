@@ -17,7 +17,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.mapper.importfile.ImportRowResponseMapper;
 import com.sep.vox.application.port.input.query.ViewImportRowsQuery;
 import com.sep.vox.application.port.input.usecase.importfile.ViewImportRowsUseCase;
@@ -150,7 +150,7 @@ class ViewImportRowsUseCaseTests {
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> useCase.execute(new ViewImportRowsQuery(sessionId, 1, 20, null)));
+        assertThrows(ResourceNotFoundException.class, () -> useCase.execute(new ViewImportRowsQuery(sessionId, 1, 20, null)));
     }
 
     @Test
@@ -167,7 +167,7 @@ class ViewImportRowsUseCaseTests {
         User _user4 = inactiveUser(userId, schoolId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(_user4));
 
-        assertThrows(IllegalStateException.class, () -> useCase.execute(new ViewImportRowsQuery(UUID.randomUUID(), 1, 20, null)));
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(new ViewImportRowsQuery(UUID.randomUUID(), 1, 20, null)));
     }
 
     @Test
@@ -180,7 +180,7 @@ class ViewImportRowsUseCaseTests {
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of(schoolAdminRoleInfo(userId)));
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session(sessionId, UUID.randomUUID())));
 
-        assertThrows(IllegalStateException.class, () -> useCase.execute(new ViewImportRowsQuery(sessionId, 1, 20, null)));
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(new ViewImportRowsQuery(sessionId, 1, 20, null)));
     }
 
     @Test
@@ -195,7 +195,7 @@ class ViewImportRowsUseCaseTests {
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(inactiveSchool(schoolId)));
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session(sessionId, schoolId)));
 
-        assertThrows(IllegalStateException.class, () -> useCase.execute(new ViewImportRowsQuery(sessionId, 1, 20, null)));
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(new ViewImportRowsQuery(sessionId, 1, 20, null)));
     }
 
     private static ImportRow row(UUID sessionId, ImportRowStatus status, FakeJsonSerializationPort jsonSerializationPort) {

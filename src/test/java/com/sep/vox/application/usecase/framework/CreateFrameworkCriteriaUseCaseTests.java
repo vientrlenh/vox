@@ -52,7 +52,7 @@ class CreateFrameworkCriteriaUseCaseTests {
             List.of(new CriterionItemCommand("FLUENCY", "Fluency", "Speaks smoothly", 1)));
 
         assertThatThrownBy(() -> useCase.execute(command))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessage("Mã tiêu chí đã tồn tại trong cơ sở dữ liệu");
     }
 }

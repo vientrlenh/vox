@@ -13,8 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.common.AvatarUrlPolicy;
 import com.sep.vox.application.common.StringNormalization;
 
-import com.sep.vox.application.exception.DuplicatedException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateSchoolUserCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.AvatarConfigPort;
@@ -47,7 +47,7 @@ public class UpdateSchoolUserUseCase implements IUseCase<UpdateSchoolUserCommand
         UUID callerId = userContextPort.getCurrentAuthenticatedUserId();
 
         User caller = userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
 
         SchoolUser callerSchoolUser = schoolUserRepository.findByUserId(caller.getId())
             .orElseThrow(() -> new IllegalArgumentException("Không có quyền thực hiện thao tác này"));
@@ -56,12 +56,12 @@ public class UpdateSchoolUserUseCase implements IUseCase<UpdateSchoolUserCommand
         }
 
         User target = userRepository.findByIdForUpdate(input.userId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
 
         SchoolUser targetSchoolUser = schoolUserRepository.findByUserId(input.userId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
         if (!input.schoolId().equals(targetSchoolUser.getSchoolId())) {
-            throw new NotFoundException("Không tìm thấy người dùng");
+            throw new ResourceNotFoundException("Không tìm thấy người dùng");
         }
 
         if (input.fullNameProvided()) {
@@ -79,7 +79,7 @@ public class UpdateSchoolUserUseCase implements IUseCase<UpdateSchoolUserCommand
             }
             Optional<User> existing = userRepository.findByPhone(normalized);
             if (existing.isPresent() && !existing.get().getId().equals(target.getId())) {
-                throw new DuplicatedException("Số điện thoại đã tồn tại");
+                throw new ResourceDuplicatedException("Số điện thoại đã tồn tại");
             }
             target.setPhone(new Phone(normalized));
         }
@@ -104,7 +104,7 @@ public class UpdateSchoolUserUseCase implements IUseCase<UpdateSchoolUserCommand
         try {
             userRepository.saveAndFlush(target);
         } catch (DataConflictException e) {
-            throw new DuplicatedException("Số điện thoại đã tồn tại");
+            throw new ResourceDuplicatedException("Số điện thoại đã tồn tại");
         }
 
         return new UpdateSchoolUserResponse(target.getId());

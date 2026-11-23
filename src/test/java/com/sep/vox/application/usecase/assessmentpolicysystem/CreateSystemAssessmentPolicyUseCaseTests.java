@@ -13,7 +13,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.port.input.command.CreateAssessmentPolicyCommand;
 import com.sep.vox.application.port.input.usecase.assessmentpolicysystem.CreateSystemAssessmentPolicyUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -134,7 +134,7 @@ class CreateSystemAssessmentPolicyUseCaseTests {
         UUID languageId = UUID.randomUUID();
 
         assertThatThrownBy(() -> useCase.execute(List.of(command(languageId), command(languageId))))
-                .isInstanceOf(DuplicatedException.class)
+                .isInstanceOf(ResourceDuplicatedException.class)
                 .hasMessageContaining("trùng ngôn ngữ và Khung");
     }
 }

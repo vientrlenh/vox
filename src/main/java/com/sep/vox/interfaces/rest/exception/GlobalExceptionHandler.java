@@ -28,14 +28,12 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.exc.MismatchedInputException;
 
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.BusinessRuleViolationException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.exception.PlanLimitExceededException;
-import com.sep.vox.application.exception.QuotaExceededException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.ServiceUnavailableException;
 import com.sep.vox.application.exception.UnauthorizedException;
-import com.sep.vox.application.exception.WalletDrawConfirmationRequiredException;
 import com.sep.vox.interfaces.rest.dto.response.ErrorResponse;
 import com.sep.vox.interfaces.rest.dto.response.ValidationErrorResponse;
 
@@ -57,15 +55,12 @@ public class GlobalExceptionHandler {
     private static final String DUPLICATED_ERROR = "DUPLICATED";
     private static final String NOT_FOUND_ERROR = "NOT_FOUND";
     private static final String ILLEGAL_ARGUMENT_ERROR = "ILLEGAL_ARGUMENT";
-    private static final String INVALID_STATE_ERROR = "INVALID_STATE";
     private static final String VALIDATION_ERROR = "BAD_REQUEST";
     private static final String UNAUTHORIZED_ERROR = "UNAUTHORIZED";
     private static final String FORBIDDEN_ERROR = "FORBIDDEN";
     private static final String INTERNAL_ERROR = "INTERNAL_SERVER_ERROR";
-    private static final String QUOTA_EXCEEDED_ERROR = "QUOTA_EXCEEDED";
-    private static final String PLAN_LIMIT_EXCEEDED_ERROR = "PLAN_LIMIT_EXCEEDED";
+    private static final String BUSINESS_RULE_VIOLATION_ERROR = "BUSINESS_RULE_VIOLATION";
     private static final String SERVICE_UNAVAILABLE_ERROR = "SERVICE_UNAVAILABLE";
-    private static final String WALLET_DRAW_CONFIRMATION_REQUIRED_ERROR = "WALLET_DRAW_CONFIRMATION_REQUIRED";
 
     private static final String UNSUPPORTED_MEDIA_TYPE_ERROR = "UNSUPPORTED_MEDIA_TYPE";
     private static final String REQUEST_BODY_KEY = "body";
@@ -75,14 +70,14 @@ public class GlobalExceptionHandler {
     private static final String AUTHORIZATION_ERROR = "ACCESS_DENIED";
     private static final String USER_DISABLED_ERROR = "USER_DISABLED";
 
-    @ExceptionHandler(DuplicatedException.class)
-    public ResponseEntity<ErrorResponse> handleDuplicate(DuplicatedException e) {
+    @ExceptionHandler(ResourceDuplicatedException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicate(ResourceDuplicatedException e) {
         ErrorResponse error = new ErrorResponse(DUPLICATED_ERROR, e.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
-    @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleNotFound(NotFoundException e) {
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNotFound(ResourceNotFoundException e) {
         ErrorResponse error = new ErrorResponse(NOT_FOUND_ERROR, e.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
@@ -104,12 +99,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DateTimeParseException.class)
     public ResponseEntity<ErrorResponse> handleDateTimeParse(DateTimeParseException e) {
         ErrorResponse error = new ErrorResponse(ILLEGAL_ARGUMENT_ERROR, "Giá trị thời gian không đúng định dạng ISO-8601");
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
-    }
-
-    @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<ErrorResponse> handleIllegalState(IllegalStateException e) {
-        ErrorResponse error = new ErrorResponse(INVALID_STATE_ERROR, e.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
@@ -218,22 +207,9 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
 
-    @ExceptionHandler(QuotaExceededException.class)
-    public ResponseEntity<ErrorResponse> handleQuotaExceeded(QuotaExceededException e) {
-        ErrorResponse error = new ErrorResponse(QUOTA_EXCEEDED_ERROR, e.getMessage());
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
-    }
-
-    @ExceptionHandler(PlanLimitExceededException.class)
-    public ResponseEntity<ErrorResponse> handlePlanLimitExceeded(PlanLimitExceededException e) {
-        ErrorResponse error = new ErrorResponse(PLAN_LIMIT_EXCEEDED_ERROR, e.getMessage());
-        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT).body(error);
-    }
-
-    @ExceptionHandler(WalletDrawConfirmationRequiredException.class)
-    public ResponseEntity<ErrorResponse> handleWalletDrawConfirmationRequired(
-            WalletDrawConfirmationRequiredException e) {
-        ErrorResponse error = new ErrorResponse(WALLET_DRAW_CONFIRMATION_REQUIRED_ERROR, e.getMessage());
+    @ExceptionHandler(BusinessRuleViolationException.class)
+    public ResponseEntity<ErrorResponse> handleBusinessRuleViolation(BusinessRuleViolationException e) {
+        ErrorResponse error = new ErrorResponse(BUSINESS_RULE_VIOLATION_ERROR, e.getMessage());
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT).body(error);
     }
 

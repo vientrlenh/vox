@@ -18,7 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.DeleteSchoolGradeCommand;
 import com.sep.vox.application.port.input.usecase.schoolgrade.DeleteSchoolGradeUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -97,7 +97,7 @@ class DeleteSchoolGradeUseCaseTests {
         when(schoolGradeRepository.findById(gradeId)).thenReturn(Optional.of(grade(SchoolGradeStatus.ARCHIVED)));
 
         assertThatThrownBy(() -> useCase.execute(new DeleteSchoolGradeCommand(schoolId, gradeId)))
-            .isInstanceOf(NotFoundException.class);
+            .isInstanceOf(ResourceNotFoundException.class);
 
         verify(schoolClassUserRepository, never()).deactivateByGradeId(any(), any());
         verify(schoolClassRepository, never()).archiveByGradeId(any(), any(), any());

@@ -46,7 +46,7 @@ public class WithdrawAssessmentAppealUseCase implements IUseCase<UUID, UUID> {
 
         AssessmentResultAppeal appeal = context.appeal();
         if (appeal.getStatus() != AssessmentAppealStatus.PENDING) {
-            throw new IllegalStateException("Chỉ có thể rút đơn khi đơn còn đang chờ duyệt.");
+            throw new IllegalArgumentException("Chỉ có thể rút đơn khi đơn còn đang chờ duyệt.");
         }
 
         Instant now = Instant.now();

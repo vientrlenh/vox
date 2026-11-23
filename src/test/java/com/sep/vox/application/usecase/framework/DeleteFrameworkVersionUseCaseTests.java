@@ -12,7 +12,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.DeleteFrameworkVersionCommand;
 import com.sep.vox.application.port.input.usecase.framework.DeleteFrameworkVersionUseCase;
 import com.sep.vox.domain.model.framework.Framework;
@@ -146,7 +146,7 @@ public class DeleteFrameworkVersionUseCaseTests {
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> useCase.execute(command));
+        assertThrows(ResourceNotFoundException.class, () -> useCase.execute(command));
     }
 
     @Test
@@ -164,7 +164,7 @@ public class DeleteFrameworkVersionUseCaseTests {
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.of(framework));
         when(frameworkVersionRepository.findByIdForUpdate(versionId)).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> useCase.execute(command));
+        assertThrows(ResourceNotFoundException.class, () -> useCase.execute(command));
     }
 
     @Test

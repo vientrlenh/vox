@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateQuestionBankCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -38,12 +38,12 @@ public class UpdateQuestionBankUseCase implements IUseCase<UpdateQuestionBankCom
             .orElse(null);
 
         QuestionBank questionBank = questionBankRepository.findById(command.id())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
         validateAccess(questionBank.getOwnerType(), questionBank.getSchoolId(), currentSchoolId);
 
         if (questionBank.getStatus() != QuestionBankStatus.DRAFT) {
-            throw new IllegalStateException("Chỉ được cập nhật ngân hàng câu hỏi đang ở trạng thái DRAFT");
+            throw new IllegalArgumentException("Chỉ được cập nhật ngân hàng câu hỏi đang ở trạng thái DRAFT");
         }
 
         if (command.name() != null) {

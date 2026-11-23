@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateAssessmentSecurePoolStatusCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -40,16 +40,16 @@ public class UpdateAssessmentSecurePoolStatusUseCase implements IUseCase<UpdateA
         String action = StringNormalization.normalizeCode(input.action());
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         AssessmentSecurePool pool = assessmentSecurePoolRepository.findByAssessmentId(input.assessmentId())
-            .orElseThrow(() -> new NotFoundException("Bài kiểm tra chưa có câu hỏi nào cần giữ kín"));
+            .orElseThrow(() -> new ResourceNotFoundException("Bài kiểm tra chưa có câu hỏi nào cần giữ kín"));
 
         if (!assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(input.assessmentId(), currentUserId, AssessmentMemberRole.CHAIR)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
         if (!"RELEASE".equals(action)) {
-            throw new IllegalStateException("Action không hợp lệ");
+            throw new IllegalArgumentException("Action không hợp lệ");
         }
         if (pool.getReleaseMode() != AssessmentSecurePoolReleaseMode.MANUAL || pool.getStatus() != AssessmentSecurePoolStatus.SEALED) {
-            throw new IllegalStateException("Secure pool không ở trạng thái có thể release thủ công");
+            throw new IllegalArgumentException("Secure pool không ở trạng thái có thể release thủ công");
         }
 
         Instant now = Instant.now();

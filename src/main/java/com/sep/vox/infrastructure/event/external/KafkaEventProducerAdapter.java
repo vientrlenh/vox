@@ -11,7 +11,6 @@ import org.springframework.stereotype.Component;
 import com.sep.vox.application.event.ExternalEventTopic;
 import com.sep.vox.application.event.HasPartitionKey;
 import com.sep.vox.application.port.output.ExternalEventPublisherPort;
-import com.sep.vox.infrastructure.exception.InfrastructureException;
 
 @Component
 @RequiredArgsConstructor
@@ -35,11 +34,11 @@ public class KafkaEventProducerAdapter implements ExternalEventPublisherPort {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             log.error("Interrupted when sending event: {}", e);
-            throw new InfrastructureException("Bị gián đoạn khi gửi event");
+            throw new IllegalStateException("Bị gián đoạn khi gửi event");
         }
         catch (ExecutionException e) {
             log.error("Event published failed to kafka: {}", e);
-            throw new InfrastructureException("Có lỗi xảy ra, không thể gửi event lên kafka");
+            throw new IllegalStateException("Có lỗi xảy ra, không thể gửi event lên kafka");
         }
     }
 

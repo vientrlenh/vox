@@ -11,8 +11,8 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.exception.DuplicatedException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateAssessmentSessionCommand;
 import com.sep.vox.application.port.input.command.StartClassTestSessionCommand;
 import com.sep.vox.application.port.input.command.UpdateAssessmentSessionStatusCommand;
@@ -58,10 +58,10 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
     public AssessmentEntryTicketResponse execute(StartClassTestSessionCommand input) {
         UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
         AssessmentCandidate candidate = assessmentCandidateRepository.findByAssessmentIdAndStudentId(input.assessmentId(), studentId)
-            .orElseThrow(() -> new NotFoundException("Bạn không phải thí sinh của bài kiểm tra này"));
+            .orElseThrow(() -> new ResourceNotFoundException("Bạn không phải thí sinh của bài kiểm tra này"));
 
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
 
         // Blocked right at the entrance: being able to enter the attempt but not being able to record proctoring data makes the attempt
         // worthless. The same rule as the OTP flow in VerifyAssessmentScheduleOtpUseCase.
@@ -70,34 +70,34 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
         }
 
         if (assessment.isRequiresOtp()) {
-            throw new IllegalStateException("Bài kiểm tra này yêu cầu xác thực OTP, vui lòng dùng luồng xác thực OTP");
+            throw new IllegalArgumentException("Bài kiểm tra này yêu cầu xác thực OTP, vui lòng dùng luồng xác thực OTP");
         }
 
         Instant now = Instant.now();
         if (candidate.getBlockedAt() != null) {
-            throw new IllegalStateException("Bạn đã bị buộc kết thúc bài thi này, không thể vào lại");
+            throw new IllegalArgumentException("Bạn đã bị buộc kết thúc bài thi này, không thể vào lại");
         }
         if (AssessmentCandidateStatus.isBlockedForEntry(candidate.getStatus())) {
-            throw new IllegalStateException("Bạn không đủ điều kiện tham gia kỳ thi này");
+            throw new IllegalArgumentException("Bạn không đủ điều kiện tham gia kỳ thi này");
         }
         // Bài trên lớp cũng thi trong phòng có giám khảo, nên phải được điểm danh có mặt mới vào được.
         if (!AssessmentCandidateStatus.isAttended(candidate.getStatus())) {
-            throw new IllegalStateException("Bạn chưa được điểm danh có mặt, vui lòng liên hệ giám thị");
+            throw new IllegalArgumentException("Bạn chưa được điểm danh có mặt, vui lòng liên hệ giám thị");
         }
         if (isAssessmentClosedForEntry(assessment, now)) {
-            throw new IllegalStateException("Bài kiểm tra hiện không mở để làm bài (trạng thái: " + assessment.getStatus() + ")");
+            throw new IllegalArgumentException("Bài kiểm tra hiện không mở để làm bài (trạng thái: " + assessment.getStatus() + ")");
         }
         if (candidate.getScheduleId() == null) {
-            throw new IllegalStateException("Bạn chưa được xếp ca thi");
+            throw new IllegalArgumentException("Bạn chưa được xếp ca thi");
         }
         if (candidate.getAssignedPaperId() == null) {
-            throw new IllegalStateException("Bạn chưa được gán đề bài kiểm tra");
+            throw new IllegalArgumentException("Bạn chưa được gán đề bài kiểm tra");
         }
 
         // Lấy ca thi đang trong khung giờ, không fallback về closeAt của bài: đây đúng là điều kiện
         // mà IssueStudentStreamTokenUseCase kiểm tra ngay sau đó khi phát token stream.
         AssessmentSchedule schedule = assessmentScheduleRepository.findByIdAndInSchedule(candidate.getScheduleId(), now)
-            .orElseThrow(() -> new NotFoundException("Ca thi không hợp lệ hoặc đã hết hạn"));
+            .orElseThrow(() -> new ResourceNotFoundException("Ca thi không hợp lệ hoặc đã hết hạn"));
         Instant scheduleEndAt = schedule.getEndDate();
 
         AssessmentSession resumableSession = findResumableSession(candidate.getId());
@@ -118,7 +118,7 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
         if (assessment.getMaxAttempt() != null) {
             long usedAttempts = countUsedAttempts(candidate.getId());
             if (usedAttempts >= assessment.getMaxAttempt()) {
-                throw new DuplicatedException("Đã hết số lượt làm bài cho phép (" + assessment.getMaxAttempt() + " lượt)");
+                throw new ResourceDuplicatedException("Đã hết số lượt làm bài cho phép (" + assessment.getMaxAttempt() + " lượt)");
             }
         }
 

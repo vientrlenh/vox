@@ -8,7 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.SubmitAssessmentSessionCommand;
 import com.sep.vox.application.port.input.command.UpdateAssessmentSessionStatusCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -33,7 +33,7 @@ public class UpdateAssessmentSessionStatusUseCase implements IUseCase<UpdateAsse
     @Transactional
     public AssessmentSessionResponse execute(UpdateAssessmentSessionStatusCommand input) {
         AssessmentSession session = assessmentSessionRepository.findById(input.sessionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi"));
 
         // B.4: race - job hết-ca-thi vừa set EXPIRED ngay trước khi client kịp gửi SUBMITTED.
         // Coi là no-op thành công, giữ nguyên EXPIRED (việc chấm đã/sẽ diễn ra qua đường EXPIRED),
@@ -117,7 +117,7 @@ public class UpdateAssessmentSessionStatusUseCase implements IUseCase<UpdateAsse
 
     private void validateTransition(AssessmentSessionStatus from, AssessmentSessionStatus to) {
         if (from == null || to == null) {
-            throw new IllegalStateException("Trạng thái phiên thi không hợp lệ");
+            throw new IllegalArgumentException("Trạng thái phiên thi không hợp lệ");
         }
         if (from == to) {
             return;
@@ -125,7 +125,7 @@ public class UpdateAssessmentSessionStatusUseCase implements IUseCase<UpdateAsse
         if (isAllowedTransition(from, to)) {
             return;
         }
-        throw new IllegalStateException("Không thể chuyển trạng thái phiên thi từ " + from + " sang " + to);
+        throw new IllegalArgumentException("Không thể chuyển trạng thái phiên thi từ " + from + " sang " + to);
     }
 
     private boolean isAllowedTransition(AssessmentSessionStatus from, AssessmentSessionStatus to) {

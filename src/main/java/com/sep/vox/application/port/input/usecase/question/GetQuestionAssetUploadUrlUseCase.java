@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.GetQuestionAssetUploadUrlQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.StoragePort;
@@ -37,9 +37,9 @@ public class GetQuestionAssetUploadUrlUseCase implements IUseCase<GetQuestionAss
     @Override
     public QuestionAssetUploadUrlResponse execute(GetQuestionAssetUploadUrlQuery input) {
         Question question = questionRepository.findById(input.questionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi"));
         QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         boolean owner = question.isCreatedBy(currentUserId);

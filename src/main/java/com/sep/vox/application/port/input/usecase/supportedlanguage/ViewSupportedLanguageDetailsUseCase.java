@@ -4,7 +4,7 @@ import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.ViewSupportedLanguageDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -22,9 +22,9 @@ public class ViewSupportedLanguageDetailsUseCase implements IUseCase<ViewSupport
     @Override
     public SupportedLanguageDto execute(ViewSupportedLanguageDetailsQuery input) {
         SupportedLanguage language = supportedLanguageRepository.findById(input.id())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ngôn ngữ"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngôn ngữ"));
         if (!userContextPort.isSystemAdmin() && !language.isActive()) {
-            throw new NotFoundException("Không tìm thấy ngôn ngữ");
+            throw new ResourceNotFoundException("Không tìm thấy ngôn ngữ");
         }
         return SupportedLanguageDtoMapper.toDto(language);
     }

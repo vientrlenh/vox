@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.port.input.command.RegisterBySelfDeclaredCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.model.registerform.RegisterForm;
@@ -39,13 +39,13 @@ public class RegisterBySelfDeclaredUseCase implements IUseCase<RegisterBySelfDec
         boolean formAlreadyPendingByContactInfo = registerFormRepository.existsByContactEmailAndStatus(command.contactEmail(), RegisterFormStatus.PENDING) || registerFormRepository.existsByContactPhoneAndStatus(command.contactPhone(), RegisterFormStatus.PENDING);
 
         if (formAlreadyPendingByContactInfo) {
-            throw new DuplicatedException("Thông tin yêu cầu đang tồn tại đơn đăng ký cần được phê duyệt");
+            throw new ResourceDuplicatedException("Thông tin yêu cầu đang tồn tại đơn đăng ký cần được phê duyệt");
         }
 
         boolean alreadyUser = userRepository.existsByEmail(command.contactEmail()) || userRepository.existsByPhone(command.contactPhone());
 
         if (alreadyUser) {
-            throw new DuplicatedException("Email hoặc số điện thoại yêu cầu đã được đăng ký");
+            throw new ResourceDuplicatedException("Email hoặc số điện thoại yêu cầu đã được đăng ký");
         }
 
         if (command.documentUrls() == null || command.documentUrls().isEmpty()) {

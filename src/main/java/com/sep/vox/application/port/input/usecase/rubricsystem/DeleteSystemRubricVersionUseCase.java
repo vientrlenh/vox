@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricsystem;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.DeleteSystemRubricVersionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -39,10 +39,10 @@ public class DeleteSystemRubricVersionUseCase implements IUseCase<DeleteSystemRu
         if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
 
         RubricVersion version = rubricVersionRepository.findById(command.versionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản."));
 
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Rubric."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric."));
 
         // CHECK QUYỀN SYSTEM
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
@@ -51,7 +51,7 @@ public class DeleteSystemRubricVersionUseCase implements IUseCase<DeleteSystemRu
 
         // Chỉ được xóa cứng khi đang DRAFT, các trạng thái khác dùng chức năng Lưu trữ (Archive) riêng
         if (version.getStatus() != RubricStatus.DRAFT) {
-            throw new IllegalStateException("Chỉ có thể xóa phiên bản đang ở trạng thái DRAFT. Vui lòng dùng chức năng Lưu trữ (Archive) nếu phiên bản đã PUBLISHED.");
+            throw new IllegalArgumentException("Chỉ có thể xóa phiên bản đang ở trạng thái DRAFT. Vui lòng dùng chức năng Lưu trữ (Archive) nếu phiên bản đã PUBLISHED.");
         }
 
         rubricCriterionRepository.deleteByRubricVersionId(version.getId());
@@ -63,7 +63,7 @@ public class DeleteSystemRubricVersionUseCase implements IUseCase<DeleteSystemRu
         // (không có khóa ngoại nào canh), chỉ là hậu quả nay lớn hơn nên phải chặn hẳn.
         if (assessmentPolicyRepository.existsPublishedByRubricVersionId(version.getId())
                 || assessmentPolicyRepository.existsNotPublishedByRubricVersionId(version.getId())) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                     "Không thể xóa phiên bản này vì đang có Assessment Policy sử dụng. Hãy xóa hoặc lưu trữ các chính sách đó trước.");
         }
 

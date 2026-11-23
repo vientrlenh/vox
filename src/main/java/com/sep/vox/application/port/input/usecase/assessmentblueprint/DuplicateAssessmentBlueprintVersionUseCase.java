@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateAssessmentBlueprintSectionCommand;
 import com.sep.vox.application.port.input.command.CreateAssessmentBlueprintSlotCommand;
 import com.sep.vox.application.port.input.command.CreateAssessmentBlueprintVersionCommand;
@@ -34,7 +34,7 @@ public class DuplicateAssessmentBlueprintVersionUseCase
     @Transactional
     public AssessmentBlueprintVersionDto execute(DuplicateAssessmentBlueprintVersionCommand input) {
         AssessmentBlueprintVersion sourceVersion = assessmentBlueprintVersionRepository.findById(input.versionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy version blueprint"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy version blueprint"));
         List<CreateAssessmentBlueprintSectionCommand> sections = assessmentBlueprintSectionRepository.findByBlueprintVersionId(sourceVersion.getId()).stream()
             .map(section -> new CreateAssessmentBlueprintSectionCommand(
                 null,

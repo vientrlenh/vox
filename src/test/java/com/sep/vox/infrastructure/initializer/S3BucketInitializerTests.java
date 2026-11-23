@@ -15,7 +15,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.sep.vox.infrastructure.exception.InfrastructureException;
 import com.sep.vox.infrastructure.properties.AwsS3StorageProperties;
 
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
@@ -138,7 +137,7 @@ class S3BucketInitializerTests {
         when(s3Client.headBucket(any(HeadBucketRequest.class))).thenThrow(redirect);
 
         assertThatThrownBy(() -> initializer().run(null))
-            .isInstanceOf(InfrastructureException.class)
+            .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("ap-southeast-1")
             .hasMessageContaining("ap-southeast-2");
 
@@ -258,7 +257,7 @@ class S3BucketInitializerTests {
             .thenThrow(S3Exception.builder().statusCode(403).message("AccessDenied").build());
 
         assertThatThrownBy(() -> initializer().run(null))
-            .isInstanceOf(InfrastructureException.class)
+            .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("bucket policy");
     }
 
@@ -270,7 +269,7 @@ class S3BucketInitializerTests {
             .thenThrow(S3Exception.builder().statusCode(403).message("AccessDenied").build());
 
         assertThatThrownBy(() -> initializer().run(null))
-            .isInstanceOf(InfrastructureException.class)
+            .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("Khong the tao bucket S3");
     }
 }

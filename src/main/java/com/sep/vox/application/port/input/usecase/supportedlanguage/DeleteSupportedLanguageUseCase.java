@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.DeleteSupportedLanguageCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
@@ -20,7 +20,7 @@ public class DeleteSupportedLanguageUseCase implements IUseCase<DeleteSupportedL
     @Transactional
     public Void execute(DeleteSupportedLanguageCommand input) {
         SupportedLanguage language = supportedLanguageRepository.findById(input.id())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ngôn ngữ"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngôn ngữ"));
 
         language.setActive(false);
         supportedLanguageRepository.save(language);

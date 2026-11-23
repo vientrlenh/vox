@@ -79,7 +79,7 @@ class CreateSystemRubricCriteriaUseCaseTests {
                 null, BigDecimal.ZERO, BigDecimal.TEN, 1, true)));
 
         assertThatThrownBy(() -> useCase.execute(command))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessage("Lỗi lưu dữ liệu: Mã tiêu chí, Khung tiêu chuẩn (Framework) hoặc Thứ tự (order) đã tồn tại trong phiên bản Rubric hệ thống này từ trước.");
     }
 }

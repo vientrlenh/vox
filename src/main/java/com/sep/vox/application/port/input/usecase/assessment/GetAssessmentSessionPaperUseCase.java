@@ -21,7 +21,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.ViewAssessmentSessionPaperQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -60,17 +60,17 @@ public class GetAssessmentSessionPaperUseCase implements IUseCase<ViewAssessment
     @Override
     public StudentAssessmentPaperResponse execute(ViewAssessmentSessionPaperQuery input) {
         AssessmentSession session = assessmentSessionRepository.findById(input.sessionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi"));
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(session.getCandidateId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy thí sinh của phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thí sinh của phiên thi"));
         if (!candidate.getStudentId().equals(userContextPort.getCurrentAuthenticatedUserId())) {
             throw new ForbiddenException("Bạn không được phép xem đề thi của phiên này");
         }
 
         Assessment assessment = assessmentRepository.findById(session.getAssessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
         AssessmentPaper paper = assessmentPaperRepository.findById(session.getPaperId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy đề thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đề thi"));
 
         List<AssessmentPaperSection> sections = assessmentPaperSectionRepository.findByPaperId(session.getPaperId());
         Map<UUID, AssessmentPaperSection> sectionById = new HashMap<>(sections.stream()
@@ -81,7 +81,7 @@ public class GetAssessmentSessionPaperUseCase implements IUseCase<ViewAssessment
                 .sorted(Comparator.comparingInt(item -> item.getOrder())))
             .map(item -> {
                 Question question = questionRepository.findById(item.getQuestionId())
-                    .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi trong đề thi"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi trong đề thi"));
                 AssessmentPaperSection section = sectionById.get(item.getSectionId());
                 QuestionAssetDto asset = questionAssetRepository.findByQuestionId(question.getId()).stream()
                     .findFirst()

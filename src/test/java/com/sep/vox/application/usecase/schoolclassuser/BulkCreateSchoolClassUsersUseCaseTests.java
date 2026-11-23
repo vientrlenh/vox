@@ -22,8 +22,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import com.sep.vox.application.exception.DataConflictException;
 
-import com.sep.vox.application.exception.DuplicatedException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.BulkCreateSchoolClassUsersCommand;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.BulkCreateSchoolClassUsersUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -265,7 +265,7 @@ class BulkCreateSchoolClassUsersUseCaseTests {
         when(schoolClassUserRepository.saveAll(anyCollection()))
             .thenThrow(new DataConflictException("unique violation", null));
 
-        assertThrows(DuplicatedException.class, () -> useCase.execute(
+        assertThrows(ResourceDuplicatedException.class, () -> useCase.execute(
             new BulkCreateSchoolClassUsersCommand(schoolId, classId, List.of(userId))));
     }
 
@@ -285,7 +285,7 @@ class BulkCreateSchoolClassUsersUseCaseTests {
         archivedClass.setStatus(SchoolClassStatus.ARCHIVED);
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(archivedClass));
 
-        assertThrows(IllegalStateException.class, () -> useCase.execute(
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(
             new BulkCreateSchoolClassUsersCommand(schoolId, classId, List.of(userId))));
 
         verifyNoInteractions(schoolClassUserRepository);
@@ -298,7 +298,7 @@ class BulkCreateSchoolClassUsersUseCaseTests {
         when(schoolClassRepository.findById(classId))
             .thenReturn(Optional.of(activeSchoolClass(classId, UUID.randomUUID())));
 
-        assertThrows(NotFoundException.class, () -> useCase.execute(
+        assertThrows(ResourceNotFoundException.class, () -> useCase.execute(
             new BulkCreateSchoolClassUsersCommand(schoolId, classId, List.of(userId))));
 
         verifyNoInteractions(schoolClassUserRepository);

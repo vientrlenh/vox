@@ -89,9 +89,13 @@ Look at an existing feature end to end before writing a new one (e.g. `CreateAss
 - **Authorization** is `@PreAuthorize("hasRole(...)")` on controller methods. Roles in use: `SYSTEM_ADMIN`, `SCHOOL_ADMIN`,
   `TEACHER`, `STUDENT`. A new endpoint without it is a security bug. School-scoped data must also be checked against
   the caller's school in the use case, not only by role.
-- **Errors**: throw the exceptions in `application/exception` (`NotFoundException`, `ForbiddenException`,
-  `DuplicatedException`, `QuotaExceededException`, ...). REST maps them in `interfaces/rest/exception/GlobalExceptionHandler`.
-  Do not return error payloads by hand.
+- **Errors**: throw the exceptions in `application/exception` (`ResourceNotFoundException`, `ForbiddenException`,
+  `ResourceDuplicatedException`, `BusinessRuleViolationException`, ...). REST maps them in
+  `interfaces/rest/exception/GlobalExceptionHandler`. Do not return error payloads by hand. Pick the type by meaning:
+  `IllegalArgumentException` is a bad request (400); `IllegalStateException` is an internal fault the caller cannot
+  cause or fix (500); `BusinessRuleViolationException` is a valid request that a business rule forbids (422, for
+  example quota or plan limits). In `application` and `domain`, use `IllegalStateException` only for such an internal
+  fault (corrupt stored data, wiring), and give the reason in the PR or plan notes.
 - **REST responses** are `ResponseEntity<ApiResponse<T>>`. Use cases are `@Service` + `@Transactional` and take one
   command/query object.
 - **Events**: payload classes in `application/event` are versioned (`...PayloadV1`); change a payload by adding a `V2`,

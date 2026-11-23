@@ -5,7 +5,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.exception.PlanLimitExceededException;
+import com.sep.vox.application.exception.BusinessRuleViolationException;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
 /**
@@ -22,13 +22,13 @@ public class SchoolSubscriptionActiveGuardService {
 
     public void requireActiveForSchool(UUID schoolId, String actionLabel) {
         schoolSubscriptionRepository.findActiveBySchoolId(schoolId)
-            .orElseThrow(() -> new PlanLimitExceededException(
+            .orElseThrow(() -> new BusinessRuleViolationException(
                 "Trường chưa có gói subscription đang hoạt động, không thể " + actionLabel + "."));
     }
 
     public void requireActiveForStudent(UUID studentId, String actionLabel) {
         schoolSubscriptionRepository.findActiveSubscriptionIdForUser(studentId)
-            .orElseThrow(() -> new PlanLimitExceededException(
+            .orElseThrow(() -> new BusinessRuleViolationException(
                 "Trường chưa có gói subscription đang hoạt động, không thể " + actionLabel + "."));
     }
 }

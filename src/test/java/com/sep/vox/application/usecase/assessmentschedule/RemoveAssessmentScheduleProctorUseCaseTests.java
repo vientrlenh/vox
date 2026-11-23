@@ -15,7 +15,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.DeleteAssessmentScheduleProctorCommand;
 import com.sep.vox.application.port.input.usecase.assessmentschedule.RemoveAssessmentScheduleProctorUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -95,7 +95,7 @@ class RemoveAssessmentScheduleProctorUseCaseTests {
         when(assessmentScheduleProctorRepository.findById(proctorId)).thenReturn(Optional.of(proctor));
 
         assertThatThrownBy(() -> useCase.execute(new DeleteAssessmentScheduleProctorCommand(assessmentId, scheduleId, proctorId)))
-            .isInstanceOf(NotFoundException.class);
+            .isInstanceOf(ResourceNotFoundException.class);
         verify(assessmentScheduleProctorRepository, never()).deleteById(any());
     }
 

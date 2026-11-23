@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.common.ZoneConstant;
@@ -52,10 +52,10 @@ public class CancelSchoolSubscriptionUseCase implements IUseCase<Void, UUID> {
         UUID schoolId = userContextPort.getCurrentSchoolId();
 
         SchoolSubscription subscription = schoolSubscriptionRepository.findActiveBySchoolId(schoolId)
-            .orElseThrow(() -> new NotFoundException("Trường không có gói nào đang hoạt động để hủy."));
+            .orElseThrow(() -> new ResourceNotFoundException("Trường không có gói nào đang hoạt động để hủy."));
 
         if (subscription.getCancelledAt() != null) {
-            throw new IllegalStateException("Gói đăng ký đã được hủy trước đó.");
+            throw new IllegalArgumentException("Gói đăng ký đã được hủy trước đó.");
         }
 
         Instant now = Instant.now();
@@ -66,7 +66,7 @@ public class CancelSchoolSubscriptionUseCase implements IUseCase<Void, UUID> {
         // thể tự hủy kỳ đó thay trường.
         SchoolSubscription queued = queuedPeriod(schoolId, now, subscription.getId());
         if (queued != null) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 "Trường đã thanh toán cho một kỳ tiếp theo (chạy tới " + DISPLAY_DATE.format(queued.getEndDate())
                     + "), không thể đánh dấu hủy. Vui lòng liên hệ hỗ trợ nếu muốn dừng sớm.");
         }

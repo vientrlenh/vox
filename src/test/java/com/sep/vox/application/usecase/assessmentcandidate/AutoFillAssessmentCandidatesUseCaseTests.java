@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import com.sep.vox.application.port.input.command.AutoFillAssessmentCandidatesCommand;
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.port.input.service.AssessmentPaperAutoAssigner;
 import com.sep.vox.application.port.input.service.AssessmentScheduleCandidateConflictValidator;
 import com.sep.vox.application.port.input.service.AssessmentScheduleManageAccessService;
@@ -207,7 +207,7 @@ class AutoFillAssessmentCandidatesUseCaseTests {
                 Instant.parse("2026-01-01T09:00:00Z"), Instant.parse("2026-01-01T11:00:00Z"))));
 
         assertThatThrownBy(() -> useCase.execute(new AutoFillAssessmentCandidatesCommand(assessmentId, null)))
-            .isInstanceOf(DuplicatedException.class);
+            .isInstanceOf(ResourceDuplicatedException.class);
         // The whole batch fails: nobody is assigned.
         verify(assessmentCandidateRepository, never()).saveAll(anyCollection());
         assertThat(c1.getScheduleId()).isNull();

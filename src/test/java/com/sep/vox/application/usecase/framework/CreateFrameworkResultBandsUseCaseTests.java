@@ -52,7 +52,7 @@ class CreateFrameworkResultBandsUseCaseTests {
             List.of(new ResultBandItemCommand("B1", "Basic", "Basic level", 1)));
 
         assertThatThrownBy(() -> useCase.execute(command))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessage("Mã hoặc nhãn kết quả đã tồn tại cho phiên bản này");
     }
 }

@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.PreviewQuestionImportFromFileCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.FileProcessingPort;
@@ -91,15 +91,15 @@ public class PreviewQuestionImportFromFileUseCase
             }
         } else {
             QuestionBank questionBank = questionBankRepository.findById(input.questionBankId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
             QuestionTopic questionTopic = questionTopicRepository.findById(input.questionTopicId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề câu hỏi"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chủ đề câu hỏi"));
 
             if (!questionTopic.getQuestionBankId().equals(questionBank.getId())) {
-                throw new IllegalStateException("Chủ đề không thuộc ngân hàng câu hỏi đã chọn");
+                throw new IllegalArgumentException("Chủ đề không thuộc ngân hàng câu hỏi đã chọn");
             }
             if (questionTopic.getStatus() != QuestionTopicStatus.PUBLISHED) {
-                throw new IllegalStateException("Chỉ có thể import câu hỏi vào chủ đề đang ở trạng thái PUBLISHED");
+                throw new IllegalArgumentException("Chỉ có thể import câu hỏi vào chủ đề đang ở trạng thái PUBLISHED");
             }
             if (questionBank.getOwnerType() == QuestionBankOwnerType.SYSTEM) {
                 if (!userContextPort.isSystemAdmin()) {

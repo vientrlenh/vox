@@ -15,7 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.RequiresNewTransactionPort;
 import com.sep.vox.domain.model.importfile.ImportRow;
@@ -189,14 +189,14 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
         UUID questionBankId = parseUuid(rawData.get("questionBankId"), "Không tìm thấy question bank của phiên import");
         UUID questionTopicId = parseUuid(rawData.get("questionTopicId"), "Không tìm thấy question topic của phiên import");
         QuestionBank questionBank = questionBankRepository.findById(questionBankId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
         QuestionTopic questionTopic = questionTopicRepository.findById(questionTopicId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chủ đề câu hỏi"));
         if (!questionTopic.getQuestionBankId().equals(questionBank.getId())) {
-            throw new IllegalStateException("Chủ đề không thuộc ngân hàng câu hỏi đã chọn");
+            throw new IllegalArgumentException("Chủ đề không thuộc ngân hàng câu hỏi đã chọn");
         }
         if (questionTopic.getStatus() != QuestionTopicStatus.PUBLISHED) {
-            throw new IllegalStateException("Chỉ được import câu hỏi vào chủ đề đã PUBLISHED");
+            throw new IllegalArgumentException("Chỉ được import câu hỏi vào chủ đề đã PUBLISHED");
         }
         return new ImportContext(questionBank, questionTopic);
     }
@@ -591,12 +591,12 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
 
     private UUID parseUuid(String value, String message) {
         if (!isPresent(value)) {
-            throw new IllegalStateException(message);
+            throw new IllegalArgumentException(message);
         }
         try {
             return UUID.fromString(value);
         } catch (IllegalArgumentException exception) {
-            throw new IllegalStateException(message);
+            throw new IllegalArgumentException(message);
         }
     }
 

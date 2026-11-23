@@ -5,7 +5,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.exception.PlanLimitExceededException;
+import com.sep.vox.application.exception.BusinessRuleViolationException;
 import com.sep.vox.domain.model.school.SchoolBalance;
 import com.sep.vox.domain.repository.SchoolBalanceRepository;
 
@@ -45,7 +45,7 @@ public class SchoolSubscriptionDebtGuardService {
 
     public void requireSchoolNotLocked(UUID schoolId) {
         if (isSchoolLocked(schoolId)) {
-            throw new PlanLimitExceededException(
+            throw new BusinessRuleViolationException(
                 "Trường đang bị khóa do chi phí AI thực tế vượt hạn mức, vui lòng thanh toán hoặc gia hạn/nâng cấp gói để tiếp tục sử dụng"
             );
         }

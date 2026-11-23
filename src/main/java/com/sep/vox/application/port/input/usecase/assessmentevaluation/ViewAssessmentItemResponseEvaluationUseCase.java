@@ -43,7 +43,7 @@ public class ViewAssessmentItemResponseEvaluationUseCase
             .orElse(null);
         // Nobody has graded this question yet -- the speech recording must still be returned.
         //
-        // This used to be orElseThrow(NotFoundException). An attempt that was forcibly ended and then cleared of the violation
+        // This used to be orElseThrow(ResourceNotFoundException). An attempt that was forcibly ended and then cleared of the violation
         // never had any evaluation, so the Result page could get neither the audio nor the transcript
         // even though assessment_item_response_turns was intact -- while the grading screen shows everything, because it LEFT JOINs
         // to the evaluation instead of demanding one. Two pages read the same data with two opposite

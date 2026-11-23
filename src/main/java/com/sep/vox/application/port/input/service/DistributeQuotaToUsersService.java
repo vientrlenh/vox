@@ -16,9 +16,9 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import com.sep.vox.application.exception.BusinessRuleViolationException;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.exception.WalletDrawConfirmationRequiredException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.AllocateUserQuotaAmountCommand;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.subscription.QuotaUserAllocationPageResponse;
@@ -295,11 +295,23 @@ public class DistributeQuotaToUsersService {
                     "Tổng hạn mức phân bổ vượt quá phần được phép chia của trường lẫn số dư ví tự nạp");
             }
             if (!confirmWalletDraw) {
-                throw new WalletDrawConfirmationRequiredException(overDistributableVnd, walletHeadroomVnd);
+                throw new BusinessRuleViolationException(
+                    walletDrawConfirmationMessage(overDistributableVnd, walletHeadroomVnd));
             }
         }
 
         return result;
+    }
+
+    private static String walletDrawConfirmationMessage(BigDecimal walletDrawVnd, BigDecimal walletBalanceVnd) {
+        return String.format(
+            "Phân bổ này vượt phần chia từ gói, sẽ trích thêm %s từ ví tự nạp của trường (đang còn %s). "
+                + "Xác nhận để tiếp tục.",
+            formatVnd(walletDrawVnd), formatVnd(walletBalanceVnd));
+    }
+
+    private static String formatVnd(BigDecimal amountVnd) {
+        return amountVnd.toPlainString() + "đ";
     }
 
     private static BigDecimal usedQuantityOrZero(SchoolSubscriptionQuotaUserAllocation allocation) {
@@ -353,16 +365,16 @@ public class DistributeQuotaToUsersService {
 
     private SchoolSubscription findActiveSubscription(UUID schoolId) {
         return schoolSubscriptionRepository.findActiveBySchoolId(schoolId)
-            .orElseThrow(() -> new NotFoundException("Trường chưa có gói subscription đang hoạt động"));
+            .orElseThrow(() -> new ResourceNotFoundException("Trường chưa có gói subscription đang hoạt động"));
     }
 
     private SchoolSubscriptionQuotaRecord findPool(UUID subscriptionId, QuotaType quotaType) {
         return subscriptionQuotaRepository.findBySchoolSubscriptionIdAndQuotaType(subscriptionId, quotaType)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy hạn mức của gói đăng ký"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hạn mức của gói đăng ký"));
     }
 
     private Role findRole(String roleCode) {
         return roleRepository.findByCode(roleCode)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy vai trò: " + roleCode));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vai trò: " + roleCode));
     }
 }

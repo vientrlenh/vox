@@ -232,7 +232,7 @@ class GradingDecisionUseCasesTests {
         // that still has ungraded items means publishing an incomplete score, exactly the bug
         // measured on session 01a00e64.
         assertThatThrownBy(() -> uphold.execute(command("AI chấm đúng")))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("chưa được chấm");
 
         assertThat(result.getStatus()).isEqualTo(AssessmentCandidateResultStatus.PENDING_REVIEW);

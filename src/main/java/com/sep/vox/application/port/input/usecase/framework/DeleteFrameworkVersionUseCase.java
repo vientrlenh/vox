@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.DeleteFrameworkVersionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
@@ -31,7 +31,7 @@ public class DeleteFrameworkVersionUseCase implements IUseCase<DeleteFrameworkVe
     @Transactional
     public Void execute(DeleteFrameworkVersionCommand input) {
         FrameworkVersion version = frameworkVersionRepository.findByIdForUpdate(input.versionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản framework"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản framework"));
 
         if (!version.getFrameworkId().equals(input.frameworkId())) {
             throw new IllegalArgumentException("Phiên bản không thuộc framework này");
@@ -41,7 +41,7 @@ public class DeleteFrameworkVersionUseCase implements IUseCase<DeleteFrameworkVe
             deleteVersionAndChildren(input.versionId());
         } else {
             if (assessmentPolicyRepository.existsByFrameworkVersionId(input.versionId())) {
-                throw new IllegalStateException("Không thể lưu trữ phiên bản framework đang được sử dụng trong policy");
+                throw new IllegalArgumentException("Không thể lưu trữ phiên bản framework đang được sử dụng trong policy");
             }
             frameworkVersionRepository.updateStatus(input.versionId(), FrameworkVersionStatus.ARCHIVED);
         }

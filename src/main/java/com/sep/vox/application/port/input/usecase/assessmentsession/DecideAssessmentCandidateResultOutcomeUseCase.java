@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.event.AssessmentResultOutcomeDecidedPayloadV1;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.DecideAssessmentCandidateResultOutcomeCommand;
 import com.sep.vox.application.port.input.service.AssessmentSessionModerationAccessService;
 import com.sep.vox.application.port.input.service.ResultStatusHistoryRecorder;
@@ -55,20 +55,20 @@ public class DecideAssessmentCandidateResultOutcomeUseCase
     @Transactional
     public UUID execute(DecideAssessmentCandidateResultOutcomeCommand input) {
         AssessmentCandidateResult result = assessmentCandidateResultRepository.findById(input.candidateResultId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy kết quả bài thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kết quả bài thi"));
         AssessmentSession session = assessmentSessionRepository.findById(result.getSessionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi của kết quả này"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi của kết quả này"));
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(session.getCandidateId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy thí sinh của kết quả này"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thí sinh của kết quả này"));
         Assessment assessment = assessmentRepository.findById(session.getAssessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy kỳ thi của kết quả này"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kỳ thi của kết quả này"));
 
         moderationAccessService.authorize(assessment, candidate);
         if (assessment.getStatus() != AssessmentStatus.RESULTS_PUBLISHED) {
-            throw new IllegalStateException("Chỉ có thể chốt đậu/rớt sau khi kỳ thi đã công bố kết quả");
+            throw new IllegalArgumentException("Chỉ có thể chốt đậu/rớt sau khi kỳ thi đã công bố kết quả");
         }
         if (result.getStatus() != AssessmentCandidateResultStatus.FINAL) {
-            throw new IllegalStateException("Chỉ có thể chốt đậu/rớt cho kết quả đang ở trạng thái FINAL");
+            throw new IllegalArgumentException("Chỉ có thể chốt đậu/rớt cho kết quả đang ở trạng thái FINAL");
         }
         if (input.decision() != AssessmentCandidateResultStatus.PASSED
                 && input.decision() != AssessmentCandidateResultStatus.FAILED) {

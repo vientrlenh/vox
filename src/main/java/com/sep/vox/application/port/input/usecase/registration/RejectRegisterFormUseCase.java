@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.event.RegisterFormRejectedPayloadV1;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.RejectRegisterFormCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
@@ -38,11 +38,11 @@ public class RejectRegisterFormUseCase implements IUseCase<RejectRegisterFormCom
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         RegisterForm registerForm = registerFormRepository.findById(command.registerFormId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn đăng ký"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn đăng ký"));
 
         int updatedRows = registerFormRepository.updateRejectedRegisterForm(command.registerFormId(), currentUserId, command.reason(), now);
         if (updatedRows == 0) {
-            throw new IllegalStateException("Đơn đăng ký không ở trạng thái chờ hoặc không tồn tại");
+            throw new IllegalArgumentException("Đơn đăng ký không ở trạng thái chờ hoặc không tồn tại");
         }
         
         RegisterFormRejectedPayloadV1 event = new RegisterFormRejectedPayloadV1(

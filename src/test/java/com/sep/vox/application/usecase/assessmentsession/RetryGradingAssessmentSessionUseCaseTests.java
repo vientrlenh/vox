@@ -101,7 +101,7 @@ class RetryGradingAssessmentSessionUseCaseTests {
         session.setSchoolRegradeCount(1);
 
         assertThatThrownBy(() -> useCase.execute(new RetryGradingAssessmentSessionCommand(SESSION_ID)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("chuyển sang chấm tay");
 
         verify(submitAssessmentSessionUseCase, never()).execute(any());

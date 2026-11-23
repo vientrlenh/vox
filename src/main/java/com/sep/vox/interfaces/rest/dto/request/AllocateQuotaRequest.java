@@ -17,9 +17,9 @@ public record AllocateQuotaRequest(
     @Valid
     List<AllocateUserQuotaAmountRequest> allocations,
 
-    // Nullable: client cũ chưa gửi field này phải coi như false ở mapper, không phải lỗi validation.
-    // true = quản trị viên đã xác nhận phần vượt pool sẽ ăn vào ví tự nạp của trường (xem
-    // DistributeQuotaToUsersService.computeManualAmounts / WalletDrawConfirmationRequiredException).
+    // Nullable: an old client that does not send this field must be treated as false in the mapper, not as a validation error.
+    // true = the administrator has confirmed that the part beyond the pool will eat into the school's self-topped-up wallet (see
+    // DistributeQuotaToUsersService.computeManualAmounts / the BusinessRuleViolationException thrown without confirmation).
     Boolean confirmWalletDraw
 ) {
 }

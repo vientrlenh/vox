@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricschool;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.DeleteSchoolRubricCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -47,7 +47,7 @@ public class DeleteSchoolRubricUseCase implements IUseCase<DeleteSchoolRubricCom
 
         // 2. Lấy Rubric gốc
         Rubric rubric = rubricRepository.findById(command.rubricId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric này."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric này."));
 
         // 3. Chốt chặn an ninh: bằng SchoolUser, cùng pattern UpdateSchoolRubricUseCase
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
@@ -60,7 +60,7 @@ public class DeleteSchoolRubricUseCase implements IUseCase<DeleteSchoolRubricCom
         }
 
         School school = schoolRepository.findById(command.schoolId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
         if (!school.isActive()) {
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
         }
@@ -69,7 +69,7 @@ public class DeleteSchoolRubricUseCase implements IUseCase<DeleteSchoolRubricCom
         // là con của RubricVersion (không gắn thẳng vào Rubric), nên rỗng version đã đủ suy ra rỗng
         // cả criterion/result-band, không cần query thêm 2 bảng đó.
         if (!rubricVersionRepository.findByRubricId(rubric.getId()).isEmpty()) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 "Không thể xóa Rubric này vì đang có phiên bản (version) bên trong. "
                     + "Vui lòng xóa hết các phiên bản DRAFT hoặc Lưu trữ (Archive) các phiên bản đã PUBLISHED trước.");
         }

@@ -12,7 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewSchoolClassesByUserQuery;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassesByUserUseCase;
@@ -100,7 +100,7 @@ class ViewSchoolClassesByUserUseCaseTests {
         when(schoolUserRepository.existsBySchoolIdAndUserId(schoolId, targetUserId)).thenReturn(false);
 
         assertThrows(
-            NotFoundException.class,
+            ResourceNotFoundException.class,
             () -> useCase.execute(new ViewSchoolClassesByUserQuery(schoolId, targetUserId, null, 1, 20))
         );
     }

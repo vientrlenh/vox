@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.DataConflictException;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.port.input.command.CreateFrameworkCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.model.framework.Framework;
@@ -39,7 +39,7 @@ public class CreateFrameworkUseCase implements IUseCase<CreateFrameworkCommand, 
         try {
             return frameworkRepository.save(framework).getId();
         } catch (DataConflictException e) {
-            throw new DuplicatedException("Mã framework đã tồn tại");
+            throw new ResourceDuplicatedException("Mã framework đã tồn tại");
         }
     }
 }

@@ -16,8 +16,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.DuplicatedException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.AssignGradingCommand;
 import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
 import com.sep.vox.application.port.input.service.GradingAssignmentNotificationService;
@@ -77,7 +77,7 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
         List<UUID> candidateResultIds = items.stream()
             .map(item -> item.candidateResultId()).toList();
         if (new HashSet<>(candidateResultIds).size() != candidateResultIds.size()) {
-            throw new DuplicatedException("Không được phân công trùng bài thi.");
+            throw new ResourceDuplicatedException("Không được phân công trùng bài thi.");
         }
 
         // ---- nạp theo lô: kết quả -> kỳ thi -> trường ----
@@ -85,7 +85,7 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
             .collect(Collectors.toMap(result -> result.getId(), Function.identity(), (left, right) -> left));
         for (UUID candidateResultId : candidateResultIds) {
             if (!resultsById.containsKey(candidateResultId)) {
-                throw new NotFoundException("Không tìm thấy kết quả bài thi.");
+                throw new ResourceNotFoundException("Không tìm thấy kết quả bài thi.");
             }
         }
         Map<UUID, UUID> schoolIdByAssessmentId = assessmentRepository.findByIdIn(
@@ -97,7 +97,7 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
         for (AssessmentCandidateResult result : resultsById.values()) {
             UUID schoolId = schoolIdByAssessmentId.get(result.getAssessmentId());
             if (schoolId == null) {
-                throw new NotFoundException("Không tìm thấy bài kiểm tra của kết quả này.");
+                throw new ResourceNotFoundException("Không tìm thấy bài kiểm tra của kết quả này.");
             }
             schoolIdByResultId.put(result.getId(), schoolId);
         }
@@ -130,13 +130,13 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
         for (AssignGradingCommand.AssignmentItem item : items) {
             AssessmentCandidateResult result = resultsById.get(item.candidateResultId());
             if (!GradingRoundPolicy.isAssignable(roundType, result.getStatus())) {
-                throw new IllegalStateException(
+                throw new IllegalArgumentException(
                     "Bài thi không ở trạng thái phù hợp với vòng chấm " + roundType.name() + ".");
             }
             // Pre-check để báo lỗi tiếng Việt thay vì để unique index ném
             // DataIntegrityViolation; index vẫn là chốt cuối khi có race.
             if (alreadyAssigned.contains(item.candidateResultId())) {
-                throw new DuplicatedException("Bài thi này đang được một giáo viên chấm.");
+                throw new ResourceDuplicatedException("Bài thi này đang được một giáo viên chấm.");
             }
             UUID schoolId = schoolIdByResultId.get(item.candidateResultId());
             if (!validTeachersBySchool.getOrDefault(schoolId, Set.of()).contains(item.teacherId())) {

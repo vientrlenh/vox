@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.event.AssessmentAttemptForceEndRequestedExternalEvent;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.ForceEndAssessmentSessionCommand;
 import com.sep.vox.application.port.input.service.AssessmentCandidateResultFinalizationService;
 import com.sep.vox.application.port.input.service.AssessmentSessionModerationAccessService;
@@ -41,23 +41,23 @@ public class ForceEndAssessmentSessionUseCase implements IUseCase<ForceEndAssess
     @Transactional
     public java.util.UUID execute(ForceEndAssessmentSessionCommand input) {
         AssessmentSession session = assessmentSessionRepository.findById(input.sessionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi"));
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(session.getCandidateId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy thí sinh của phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thí sinh của phiên thi"));
         Assessment assessment = assessmentRepository.findById(session.getAssessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy kỳ thi của phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kỳ thi của phiên thi"));
 
         moderationAccessService.authorize(assessment, candidate);
         // G.4: mốc chặn cứng duy nhất là RESULTS_PUBLISHED - trước đó (kể cả sau khi kỳ thi
         // đã đóng) vẫn cho phát hiện vi phạm muộn qua soát lại log/video.
         if (assessment.getStatus() == AssessmentStatus.RESULTS_PUBLISHED) {
-            throw new IllegalStateException("Kỳ thi đã công bố kết quả, không thể thay đổi nữa");
+            throw new IllegalArgumentException("Kỳ thi đã công bố kết quả, không thể thay đổi nữa");
         }
         boolean isLiveSession = session.getStatus() == AssessmentSessionStatus.IN_PROGRESS
             || session.getStatus() == AssessmentSessionStatus.INTERRUPTED;
         boolean isAlreadyGraded = session.getStatus() == AssessmentSessionStatus.GRADED;
         if (!isLiveSession && !isAlreadyGraded) {
-            throw new IllegalStateException("Chỉ có thể buộc kết thúc phiên thi đang diễn ra hoặc đã chấm xong");
+            throw new IllegalArgumentException("Chỉ có thể buộc kết thúc phiên thi đang diễn ra hoặc đã chấm xong");
         }
 
         Instant now = Instant.now();

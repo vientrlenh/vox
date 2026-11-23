@@ -18,7 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateSchoolClassUserStatusCommand;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.UpdateSchoolClassUserStatusUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -131,7 +131,7 @@ class UpdateSchoolClassUserStatusUseCaseTests {
         when(schoolClassUserRepository.findByUserIdAndSchoolClassId(targetUserId, classId)).thenReturn(Optional.empty());
 
         assertThrows(
-            NotFoundException.class,
+            ResourceNotFoundException.class,
             () -> useCase.execute(new UpdateSchoolClassUserStatusCommand(schoolId, classId, targetUserId, true))
         );
     }

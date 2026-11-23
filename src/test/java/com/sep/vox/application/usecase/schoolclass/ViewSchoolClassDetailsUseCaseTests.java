@@ -14,7 +14,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.ViewSchoolClassDetailsQuery;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewSchoolClassDetailsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -93,7 +93,7 @@ class ViewSchoolClassDetailsUseCaseTests {
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> useCase.execute(new ViewSchoolClassDetailsQuery(classId)));
+        assertThrows(ResourceNotFoundException.class, () -> useCase.execute(new ViewSchoolClassDetailsQuery(classId)));
     }
 
     @Test
@@ -116,7 +116,7 @@ class ViewSchoolClassDetailsUseCaseTests {
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(activeSchool(schoolId)));
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(schoolClass));
 
-        assertThrows(NotFoundException.class, () -> useCase.execute(new ViewSchoolClassDetailsQuery(classId)));
+        assertThrows(ResourceNotFoundException.class, () -> useCase.execute(new ViewSchoolClassDetailsQuery(classId)));
     }
 
     @Test
@@ -126,7 +126,7 @@ class ViewSchoolClassDetailsUseCaseTests {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(userRepository.findByIdAndStatus(userId, UserStatus.ACTIVE)).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> useCase.execute(new ViewSchoolClassDetailsQuery(UUID.randomUUID())));
+        assertThrows(ResourceNotFoundException.class, () -> useCase.execute(new ViewSchoolClassDetailsQuery(UUID.randomUUID())));
 
         verifyNoInteractions(schoolRepository, schoolClassRepository);
     }
@@ -139,7 +139,7 @@ class ViewSchoolClassDetailsUseCaseTests {
         User _user3 = user(userId, null, UserStatus.ACTIVE);
         when(userRepository.findByIdAndStatus(userId, UserStatus.ACTIVE)).thenReturn(Optional.of(_user3));
 
-        assertThrows(IllegalStateException.class, () -> useCase.execute(new ViewSchoolClassDetailsQuery(UUID.randomUUID())));
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(new ViewSchoolClassDetailsQuery(UUID.randomUUID())));
 
         verifyNoInteractions(schoolRepository, schoolClassRepository);
     }
@@ -156,7 +156,7 @@ class ViewSchoolClassDetailsUseCaseTests {
         when(userRepository.findByIdAndStatus(userId, UserStatus.ACTIVE)).thenReturn(Optional.of(_user4));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(school));
 
-        assertThrows(IllegalStateException.class, () -> useCase.execute(new ViewSchoolClassDetailsQuery(UUID.randomUUID())));
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(new ViewSchoolClassDetailsQuery(UUID.randomUUID())));
 
         verifyNoInteractions(schoolClassRepository);
     }

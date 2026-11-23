@@ -189,7 +189,7 @@ class ImportAssessmentCandidatesFromGradeUseCaseTests {
         when(schoolGradeRepository.findById(gradeId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> useCase.execute(new ImportAssessmentCandidatesFromGradeCommand(assessmentId, gradeId)))
-            .isInstanceOf(com.sep.vox.application.exception.NotFoundException.class);
+            .isInstanceOf(com.sep.vox.application.exception.ResourceNotFoundException.class);
     }
 
     @Test

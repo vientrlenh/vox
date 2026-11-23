@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.port.input.service.GradingAssignmentNotificationService;
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.command.AutoAssignGradingCommand;
 import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
@@ -81,7 +81,7 @@ public class AutoAssignGradingUseCase implements IUseCase<AutoAssignGradingComma
             throw new IllegalArgumentException("Phải chọn ít nhất một giáo viên để phân công.");
         }
         if (new HashSet<>(teacherIds).size() != teacherIds.size()) {
-            throw new DuplicatedException("Không được chọn trùng giáo viên.");
+            throw new ResourceDuplicatedException("Không được chọn trùng giáo viên.");
         }
         // Một query cho cả nhóm thay vì isTeacherOfSchool lặp từng người (N+1).
         Set<UUID> validTeachers = assessmentGradingQueryRepository.findTeacherIdsInSchool(schoolId, teacherIds);

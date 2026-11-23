@@ -19,8 +19,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.DataConflictException;
-import com.sep.vox.application.exception.DuplicatedException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateSchoolUserCommand;
 import com.sep.vox.application.port.input.usecase.schooluser.CreateSchoolUserUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -184,7 +184,7 @@ public class CreateSchoolUserUseCaseTests {
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(inactiveSchool));
         when(roleRepository.findByCode("STUDENT")).thenReturn(Optional.of(studentRole));
 
-        assertThrows(IllegalStateException.class, () -> createSchoolUserUseCase.execute(command));
+        assertThrows(IllegalArgumentException.class, () -> createSchoolUserUseCase.execute(command));
         verify(userRepository, never()).save(any(User.class));
     }
 
@@ -261,7 +261,7 @@ public class CreateSchoolUserUseCaseTests {
         when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(caller));
         when(roleRepository.findByCode("STUDENT")).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> createSchoolUserUseCase.execute(command));
+        assertThrows(ResourceNotFoundException.class, () -> createSchoolUserUseCase.execute(command));
         verify(userRepository, never()).save(any(User.class));
     }
 
@@ -275,7 +275,7 @@ public class CreateSchoolUserUseCaseTests {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> createSchoolUserUseCase.execute(command));
+        assertThrows(ResourceNotFoundException.class, () -> createSchoolUserUseCase.execute(command));
         verify(userRepository, never()).save(any(User.class));
     }
 
@@ -293,7 +293,7 @@ public class CreateSchoolUserUseCaseTests {
         when(roleRepository.findByCode("STUDENT")).thenReturn(Optional.of(studentRole));
         when(userRepository.findByEmail("student@school.edu.vn")).thenReturn(Optional.of(savedUser(schoolId)));
 
-        assertThrows(DuplicatedException.class, () -> createSchoolUserUseCase.execute(command));
+        assertThrows(ResourceDuplicatedException.class, () -> createSchoolUserUseCase.execute(command));
         verify(userRepository, never()).save(any(User.class));
     }
 
@@ -312,7 +312,7 @@ public class CreateSchoolUserUseCaseTests {
         when(userRepository.findByEmail("student@school.edu.vn")).thenReturn(Optional.empty());
         when(userRepository.findByPhone("0987654321")).thenReturn(Optional.of(savedUser(schoolId)));
 
-        assertThrows(DuplicatedException.class, () -> createSchoolUserUseCase.execute(command));
+        assertThrows(ResourceDuplicatedException.class, () -> createSchoolUserUseCase.execute(command));
         verify(userRepository, never()).save(any(User.class));
     }
 
@@ -394,7 +394,7 @@ public class CreateSchoolUserUseCaseTests {
         when(userRepository.save(any(User.class))).thenThrow(new DataConflictException("unique violation", null));
 
         assertThatThrownBy(() -> createSchoolUserUseCase.execute(command))
-            .isInstanceOf(DuplicatedException.class)
+            .isInstanceOf(ResourceDuplicatedException.class)
             .hasMessage("Email hoặc số điện thoại đã tồn tại");
     }
 

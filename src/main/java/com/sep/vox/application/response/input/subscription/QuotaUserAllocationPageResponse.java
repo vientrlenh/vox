@@ -43,7 +43,7 @@ import com.sep.vox.domain.dto.SchoolSubscriptionQuotaRecordDto;
  * @param walletBalanceVnd       the part of the school's SELF-TOPPED-UP wallet (school_balances) that CAN be eaten into beyond
  *                               distributableAmountVnd when loosening the personal ceiling of ONE person -- not
  *                               a reserved pocket of money, and SHARED by both ASSESSMENT and PRACTICE
- *                               (see WalletDrawConfirmationRequiredException). Clamped to 0, negative is debt.
+ *                               (see the BusinessRuleViolationException thrown when a wallet draw is not confirmed). Clamped to 0, negative is debt.
  * @param content                the eligible people on the page being viewed, including those who have been allocated nothing
  */
 public record QuotaUserAllocationPageResponse(

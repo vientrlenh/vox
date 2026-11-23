@@ -5,7 +5,7 @@ import com.sep.vox.domain.model.framework.FrameworkVersion;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.ViewFrameworkVersionsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.common.PageResult;
@@ -25,9 +25,9 @@ public class ViewPublishedFrameworkVersionsUseCase implements IUseCase<ViewFrame
     @Override
     public PageResult<FrameworkVersionDto> execute(ViewFrameworkVersionsQuery input) {
         Framework framework = frameworkRepository.findById(input.frameworkId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy framework"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy framework"));
         if (!framework.isActive()) {
-            throw new NotFoundException("Không tìm thấy framework");
+            throw new ResourceNotFoundException("Không tìm thấy framework");
         }
 
         PageResult<FrameworkVersion> result = frameworkVersionRepository.findByFrameworkIdAndStatus(

@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
@@ -86,7 +86,7 @@ public class AssessmentGradingAccessService {
     @Transactional(readOnly = true)
     public GradingContext load(UUID assignmentId) {
         AssessmentGradingAssignment assignment = assessmentGradingAssignmentRepository.findById(assignmentId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phân công chấm bài."));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phân công chấm bài."));
         return loadFromCandidateResult(assignment, assignment.getCandidateResultId());
     }
 
@@ -105,7 +105,7 @@ public class AssessmentGradingAccessService {
     @Transactional(propagation = Propagation.MANDATORY)
     public GradingContext loadForUpdate(UUID assignmentId) {
         AssessmentGradingAssignment assignment = assessmentGradingAssignmentRepository.findByIdForUpdate(assignmentId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phân công chấm bài."));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phân công chấm bài."));
         return loadFromCandidateResult(assignment, assignment.getCandidateResultId());
     }
 
@@ -118,11 +118,11 @@ public class AssessmentGradingAccessService {
 
     private GradingContext loadFromCandidateResult(AssessmentGradingAssignment assignment, UUID candidateResultId) {
         AssessmentCandidateResult candidateResult = assessmentCandidateResultRepository.findById(candidateResultId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy kết quả bài thi."));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kết quả bài thi."));
         AssessmentSession session = assessmentSessionRepository.findById(candidateResult.getSessionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi."));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi."));
         Assessment assessment = assessmentRepository.findById(candidateResult.getAssessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra."));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra."));
         return new GradingContext(
             assignment, candidateResult, session, assessment.getSchoolId(), assessment.getName(), assessment.getKind());
     }

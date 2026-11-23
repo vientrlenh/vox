@@ -9,7 +9,6 @@ import org.springframework.context.annotation.Configuration;
 import com.sep.vox.domain.common.EventTypeConstant;
 import com.sep.vox.domain.model.notification.NotificationCategory;
 import com.sep.vox.domain.model.notification.NotificationTarget;
-import com.sep.vox.infrastructure.exception.InfrastructureException;
 
 /**
  * Chặn từ lúc khởi động những kiểu lệch giữa {@link EventTypeConstant},
@@ -42,7 +41,7 @@ public class NotificationCategoryMappingValidator {
                 .toList();
 
             if (!unknown.isEmpty()) {
-                throw new InfrastructureException(
+                throw new IllegalStateException(
                     "NotificationCategory ánh xạ eventType không tồn tại trong EventTypeConstant: " + unknown);
             }
 
@@ -55,7 +54,7 @@ public class NotificationCategoryMappingValidator {
                 .toList();
 
             if (!missingTarget.isEmpty()) {
-                throw new InfrastructureException(
+                throw new IllegalStateException(
                     "eventType có NotificationCategory nhưng thiếu NotificationTarget: " + missingTarget);
             }
 
@@ -68,7 +67,7 @@ public class NotificationCategoryMappingValidator {
                 .toList();
 
             if (!targetWithoutCategory.isEmpty()) {
-                throw new InfrastructureException(
+                throw new IllegalStateException(
                     "eventType có NotificationTarget nhưng thiếu NotificationCategory, sẽ không bao giờ sinh "
                         + "notification: " + targetWithoutCategory);
             }

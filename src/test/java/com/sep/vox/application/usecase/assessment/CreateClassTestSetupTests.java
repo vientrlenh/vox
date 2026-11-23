@@ -22,7 +22,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.port.input.command.CreateClassTestCommand;
 import com.sep.vox.application.port.input.service.AssessmentPolicyValidator;
 import com.sep.vox.application.port.input.service.AssessmentScheduleProctorConflictValidator;
@@ -186,11 +186,11 @@ class CreateClassTestSetupTests {
 
     @Test
     void should_reject_when_window_falls_outside_subscription_period() {
-        doThrow(new IllegalStateException("Thời gian đóng bài phải nằm trong hạn gói dịch vụ của trường"))
+        doThrow(new IllegalArgumentException("Thời gian đóng bài phải nằm trong hạn gói dịch vụ của trường"))
             .when(subscriptionPeriodGuardService).requireWithinSubscriptionPeriod(any(), any(), any());
 
         assertThatThrownBy(() -> useCase.execute(command(null, null, null, null)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("hạn gói dịch vụ");
         // Chặn trước khi dựng bất cứ thứ gì: tạo bài trên lớp còn kéo theo ca thi, CHAIR và cả danh
         // sách thí sinh, để lọt là phải dọn tay.
@@ -242,7 +242,7 @@ class CreateClassTestSetupTests {
             eq(TEACHER_ID), any(Instant.class), any(Instant.class), any())).thenReturn(true);
 
         assertThatThrownBy(() -> useCase.execute(command(null, null, null, null)))
-            .isInstanceOf(DuplicatedException.class);
+            .isInstanceOf(ResourceDuplicatedException.class);
         verify(assessmentScheduleProctorRepository, never()).save(any(AssessmentScheduleProctor.class));
     }
 

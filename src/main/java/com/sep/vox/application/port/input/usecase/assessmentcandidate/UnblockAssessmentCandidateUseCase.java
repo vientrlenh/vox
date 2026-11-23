@@ -13,7 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UnblockAssessmentCandidateCommand;
 import com.sep.vox.application.port.input.service.ClassTestGradingAssignmentService;
 import com.sep.vox.application.port.input.service.AssessmentSessionModerationAccessService;
@@ -50,15 +50,15 @@ public class UnblockAssessmentCandidateUseCase implements IUseCase<UnblockAssess
     @Transactional
     public AssessmentCandidateDto execute(UnblockAssessmentCandidateCommand input) {
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(input.candidateId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy thí sinh"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thí sinh"));
         Assessment assessment = assessmentRepository.findById(candidate.getAssessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy kỳ thi của thí sinh"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kỳ thi của thí sinh"));
 
         moderationAccessService.authorize(assessment, candidate);
         // G.4: mốc chặn cứng duy nhất là RESULTS_PUBLISHED - trước đó vẫn dỡ cấm được,
         // kể cả sau khi kỳ thi đã đóng (đang trong giai đoạn rà soát trước công bố).
         if (assessment.getStatus() == AssessmentStatus.RESULTS_PUBLISHED) {
-            throw new IllegalStateException("Kỳ thi đã công bố kết quả, không thể thay đổi nữa");
+            throw new IllegalArgumentException("Kỳ thi đã công bố kết quả, không thể thay đổi nữa");
         }
 
         Instant now = Instant.now();
@@ -113,7 +113,7 @@ public class UnblockAssessmentCandidateUseCase implements IUseCase<UnblockAssess
      * (JpaAssessmentGradingQueryRepository#turnsForItem).
      *
      * <p><strong>Why NOT go through {@code UpsertAssessmentCandidateResultUseCase}:</strong> it calls
-     * {@code AssessmentSessionResultCalculator.calculate}, which throws {@code NotFoundException}
+     * {@code AssessmentSessionResultCalculator.calculate}, which throws {@code ResourceNotFoundException}
      * as soon as an answer has no evaluation (lines 82-85). With no evaluation there is nothing
      * to compute -- setting the status directly is the right way, rather than loosening a function shared by every
      * scoring path just to serve this case.

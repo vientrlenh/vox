@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
 import com.sep.vox.domain.model.assessment.AssessmentSession;
@@ -61,10 +61,10 @@ public class AssessmentRecordingAccessService {
         UUID schoolId = userContextPort.getCurrentSchoolId();
 
         AssessmentSession session = assessmentSessionRepository.findById(assessmentSessionId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi"));
 
         Assessment assessment = assessmentRepository.findById(session.getAssessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy kỳ thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kỳ thi"));
 
         if (schoolId == null || !assessment.getSchoolId().equals(schoolId)) {
             throw new ForbiddenException("Bạn không có quyền xem bản ghi");
@@ -100,7 +100,7 @@ public class AssessmentRecordingAccessService {
         }
 
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(session.getCandidateId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy thi sinh"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thi sinh"));
         UUID scheduleId = candidate.getScheduleId();
         boolean isProctor = scheduleId != null
             && assessmentScheduleProctorRepository.existsByScheduleIdAndTeacherId(scheduleId, userId);

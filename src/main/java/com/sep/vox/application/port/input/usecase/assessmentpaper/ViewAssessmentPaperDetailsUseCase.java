@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.ViewAssessmentDetailsQuery;
 import com.sep.vox.application.port.input.query.ViewAssessmentPaperDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -25,9 +25,9 @@ public class ViewAssessmentPaperDetailsUseCase implements IUseCase<ViewAssessmen
     @Transactional(readOnly = true)
     public AssessmentPaperDto execute(ViewAssessmentPaperDetailsQuery input) {
         AssessmentPaper paper = assessmentPaperRepository.findById(input.id())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy đề thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đề thi"));
 
-        // Reuses exactly the existing permission rule for viewing an assessment -- throws ForbiddenException/NotFoundException
+        // Reuses exactly the existing permission rule for viewing an assessment -- throws ForbiddenException/ResourceNotFoundException
         // if the user has no right to view the parent assessment, without rewriting separate permission logic.
         viewAssessmentDetailsUseCase.execute(new ViewAssessmentDetailsQuery(paper.getAssessmentId()));
 

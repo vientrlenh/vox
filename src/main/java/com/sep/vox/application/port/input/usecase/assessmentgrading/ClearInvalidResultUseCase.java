@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.event.AssessmentResultInvalidClearedPayloadV1;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.GradingDecisionCommand;
 import com.sep.vox.application.port.input.service.GradingActionSupport;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -63,7 +63,7 @@ public class ClearInvalidResultUseCase implements IUseCase<GradingDecisionComman
         Instant now = Instant.now();
 
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(result.getCandidateId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy thí sinh của bài thi."));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thí sinh của bài thi."));
         if (candidate.getBlockedAt() != null) {
             candidate.setBlockedAt(null);
             candidate.setUpdatedAt(now);

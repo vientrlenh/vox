@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.ViewSupportedLanguageDetailsQuery;
 import com.sep.vox.application.port.input.usecase.supportedlanguage.ViewSupportedLanguageDetailsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -50,8 +50,8 @@ class ViewSupportedLanguageDetailsUseCaseTests {
         UUID id = UUID.randomUUID();
         when(supportedLanguageRepository.findById(id)).thenReturn(Optional.empty());
 
-        NotFoundException exception = Assertions.assertThrows(
-            NotFoundException.class,
+        ResourceNotFoundException exception = Assertions.assertThrows(
+            ResourceNotFoundException.class,
             () -> useCase.execute(new ViewSupportedLanguageDetailsQuery(id))
         );
 
@@ -63,8 +63,8 @@ class ViewSupportedLanguageDetailsUseCaseTests {
         UUID id = UUID.randomUUID();
         when(supportedLanguageRepository.findById(id)).thenReturn(Optional.of(language(id, false)));
 
-        NotFoundException exception = org.junit.jupiter.api.Assertions.assertThrows(
-            NotFoundException.class,
+        ResourceNotFoundException exception = org.junit.jupiter.api.Assertions.assertThrows(
+            ResourceNotFoundException.class,
             () -> useCase.execute(new ViewSupportedLanguageDetailsQuery(id))
         );
 

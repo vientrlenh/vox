@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.ViewStudentBusySlotsQuery;
 import com.sep.vox.application.port.input.service.AssessmentDirectoryAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -44,7 +44,7 @@ public class ViewStudentBusySlotsUseCase
         List<StudentBusySlotResponse> slots = new ArrayList<StudentBusySlotResponse>();
         for (UUID scheduleId : input.scheduleIds()) {
             AssessmentSchedule schedule = assessmentScheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi"));
             // Cùng luật quyền với danh bạ học sinh: người xem được danh sách thì cũng được biết ai
             // trong số đó đang bận.
             assessmentDirectoryAccessService.resolveByAssessmentId(schedule.getAssessmentId());

@@ -7,7 +7,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.domain.repository.AssessmentScheduleProctorRepository;
 
 /**
@@ -33,7 +33,7 @@ public class AssessmentScheduleProctorConflictValidator {
      */
     public void requireTeacherFree(UUID teacherId, Instant start, Instant end, UUID excludeScheduleId) {
         if (assessmentScheduleProctorRepository.existsOverlappingAssignment(teacherId, start, end, excludeScheduleId)) {
-            throw new DuplicatedException("Giám thị đã có ca thi khác trong khoảng thời gian này");
+            throw new ResourceDuplicatedException("Giám thị đã có ca thi khác trong khoảng thời gian này");
         }
     }
 

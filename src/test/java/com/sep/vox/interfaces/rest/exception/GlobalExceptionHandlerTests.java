@@ -1,6 +1,8 @@
 package com.sep.vox.interfaces.rest.exception;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 
 import java.util.List;
 import java.util.UUID;
@@ -17,6 +19,9 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 
+import com.sep.vox.application.exception.BusinessRuleViolationException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.usecase.scoringrule.CreateSchoolScoringRuleUseCase;
 import com.sep.vox.application.port.input.usecase.scoringrule.CreateSystemScoringRuleUseCase;
 import com.sep.vox.application.port.input.usecase.scoringrule.DeleteSchoolScoringRuleUseCase;
@@ -140,5 +145,64 @@ class GlobalExceptionHandlerTests {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNSUPPORTED_MEDIA_TYPE);
         assertThat(response.getBody().message()).contains("application/json");
+    }
+
+    @Test
+    void resourceNotFoundAnswers404WithNotFoundCode() {
+        doThrow(new ResourceNotFoundException("missing")).when(deleteSystemScoringRuleUseCase).execute(any());
+
+        MvcTestResult result = deleteSystemRule();
+
+        assertThat(result).hasStatus(HttpStatus.NOT_FOUND);
+        assertThat(result).bodyJson().extractingPath("$.error").isEqualTo("NOT_FOUND");
+        assertThat(result).bodyJson().extractingPath("$.message").isEqualTo("missing");
+    }
+
+    @Test
+    void resourceDuplicatedAnswers409WithDuplicatedCode() {
+        doThrow(new ResourceDuplicatedException("exists")).when(deleteSystemScoringRuleUseCase).execute(any());
+
+        MvcTestResult result = deleteSystemRule();
+
+        assertThat(result).hasStatus(HttpStatus.CONFLICT);
+        assertThat(result).bodyJson().extractingPath("$.error").isEqualTo("DUPLICATED");
+        assertThat(result).bodyJson().extractingPath("$.message").isEqualTo("exists");
+    }
+
+    @Test
+    void businessRuleViolationAnswers422WithBusinessRuleViolationCode() {
+        doThrow(new BusinessRuleViolationException("no quota")).when(deleteSystemScoringRuleUseCase).execute(any());
+
+        MvcTestResult result = deleteSystemRule();
+
+        assertThat(result).hasStatus(HttpStatus.UNPROCESSABLE_CONTENT);
+        assertThat(result).bodyJson().extractingPath("$.error").isEqualTo("BUSINESS_RULE_VIOLATION");
+        assertThat(result).bodyJson().extractingPath("$.message").isEqualTo("no quota");
+    }
+
+    @Test
+    void illegalStateExceptionAnswers500InternalServerErrorWithoutItsMessage() {
+        doThrow(new IllegalStateException("secret internal detail")).when(deleteSystemScoringRuleUseCase).execute(any());
+
+        MvcTestResult result = deleteSystemRule();
+
+        assertThat(result).hasStatus(HttpStatus.INTERNAL_SERVER_ERROR);
+        assertThat(result).bodyJson().extractingPath("$.error").isEqualTo("INTERNAL_SERVER_ERROR");
+        assertThat(result).bodyText().doesNotContain("secret internal detail");
+    }
+
+    @Test
+    void illegalArgumentExceptionAnswers400WithIllegalArgumentCode() {
+        doThrow(new IllegalArgumentException("bad request detail")).when(deleteSystemScoringRuleUseCase).execute(any());
+
+        MvcTestResult result = deleteSystemRule();
+
+        assertThat(result).hasStatus(HttpStatus.BAD_REQUEST);
+        assertThat(result).bodyJson().extractingPath("$.error").isEqualTo("ILLEGAL_ARGUMENT");
+        assertThat(result).bodyJson().extractingPath("$.message").isEqualTo("bad request detail");
+    }
+
+    private MvcTestResult deleteSystemRule() {
+        return mvc.delete().uri(RULE_URI.formatted(UUID.randomUUID()) + "/" + UUID.randomUUID()).exchange();
     }
 }

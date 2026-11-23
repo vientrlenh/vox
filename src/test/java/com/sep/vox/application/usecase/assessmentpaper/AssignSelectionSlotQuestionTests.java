@@ -152,7 +152,7 @@ class AssignSelectionSlotQuestionTests {
             .thenReturn(Optional.of(slot(AssessmentBlueprintSlotType.FIXED, null)));
 
         assertThatThrownBy(() -> useCase.execute(command()))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("cố định theo blueprint");
     }
 
@@ -197,7 +197,7 @@ class AssignSelectionSlotQuestionTests {
             .thenReturn(Optional.of(question(QuestionStatus.DRAFT, QuestionType.READ_ALOUD, TOPIC_ID)));
 
         assertThatThrownBy(() -> useCase.execute(command()))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Chỉ được gán câu hỏi đã PUBLISHED");
     }
 
@@ -209,7 +209,7 @@ class AssignSelectionSlotQuestionTests {
             .thenReturn(Optional.of(question(QuestionStatus.PUBLISHED, QuestionType.OPINION, TOPIC_ID)));
 
         assertThatThrownBy(() -> useCase.execute(command()))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("không khớp tiêu chí");
     }
 
@@ -221,7 +221,7 @@ class AssignSelectionSlotQuestionTests {
             .thenReturn(Optional.of(question(QuestionStatus.PUBLISHED, QuestionType.READ_ALOUD, UUID.randomUUID())));
 
         assertThatThrownBy(() -> useCase.execute(command()))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("không thuộc chủ đề");
     }
 

@@ -20,8 +20,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import com.sep.vox.application.exception.DataConflictException;
-import com.sep.vox.application.exception.DuplicatedException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateSchoolClassUserCommand;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.CreateSchoolClassUserUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -117,7 +117,7 @@ class CreateSchoolClassUserUseCaseTests {
                 .assignedBy(currentUserId)
                 .build()));
 
-        assertThrows(DuplicatedException.class, () -> useCase.execute(command));
+        assertThrows(ResourceDuplicatedException.class, () -> useCase.execute(command));
 
         verify(schoolClassUserRepository, never()).save(any());
     }
@@ -169,7 +169,7 @@ class CreateSchoolClassUserUseCaseTests {
         when(schoolClassUserRepository.save(any(SchoolClassUser.class)))
             .thenThrow(new DataConflictException("unique violation", null));
 
-        assertThrows(DuplicatedException.class, () -> useCase.execute(command));
+        assertThrows(ResourceDuplicatedException.class, () -> useCase.execute(command));
     }
 
     @Test
@@ -186,7 +186,7 @@ class CreateSchoolClassUserUseCaseTests {
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.empty());
         mockUserSchool(currentUserId, schoolId);
 
-        assertThrows(NotFoundException.class, () -> useCase.execute(command));
+        assertThrows(ResourceNotFoundException.class, () -> useCase.execute(command));
 
         verifyNoInteractions(schoolClassUserRepository);
     }
@@ -205,7 +205,7 @@ class CreateSchoolClassUserUseCaseTests {
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(activeSchoolClass(classId, UUID.randomUUID())));
         mockUserSchool(currentUserId, schoolId);
 
-        assertThrows(NotFoundException.class, () -> useCase.execute(command));
+        assertThrows(ResourceNotFoundException.class, () -> useCase.execute(command));
 
         verifyNoInteractions(schoolClassUserRepository);
     }
@@ -225,7 +225,7 @@ class CreateSchoolClassUserUseCaseTests {
         when(userRepository.findById(targetUserId)).thenReturn(Optional.empty());
         mockUserSchool(currentUserId, schoolId);
 
-        assertThrows(NotFoundException.class, () -> useCase.execute(command));
+        assertThrows(ResourceNotFoundException.class, () -> useCase.execute(command));
 
         verifyNoInteractions(schoolClassUserRepository);
     }
@@ -268,7 +268,7 @@ class CreateSchoolClassUserUseCaseTests {
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(activeSchoolClass(classId, schoolId)));
         when(userRepository.findById(targetUserId)).thenReturn(Optional.of(user(targetUserId, schoolId, UserStatus.LOCKED)));
 
-        assertThrows(IllegalStateException.class, () -> useCase.execute(command));
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
 
         verifyNoInteractions(schoolClassUserRepository);
     }
@@ -287,7 +287,7 @@ class CreateSchoolClassUserUseCaseTests {
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(activeSchoolClass(classId, schoolId)));
         when(userRepository.findById(targetUserId)).thenReturn(Optional.of(user(targetUserId, schoolId, UserStatus.DISABLED)));
 
-        assertThrows(IllegalStateException.class, () -> useCase.execute(command));
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
 
         verifyNoInteractions(schoolClassUserRepository);
     }
@@ -320,7 +320,7 @@ class CreateSchoolClassUserUseCaseTests {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.findById(currentUserId)).thenReturn(Optional.of(user(currentUserId, UUID.randomUUID(), UserStatus.INACTIVE)));
 
-        assertThrows(IllegalStateException.class, () -> useCase.execute(command));
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
 
         verifyNoInteractions(schoolRepository, schoolClassRepository, schoolClassUserRepository);
     }
@@ -333,7 +333,7 @@ class CreateSchoolClassUserUseCaseTests {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.findById(currentUserId)).thenReturn(Optional.of(activeUser(currentUserId, null)));
 
-        assertThrows(IllegalStateException.class, () -> useCase.execute(command));
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
 
         verifyNoInteractions(schoolRepository, schoolClassRepository, schoolClassUserRepository);
     }

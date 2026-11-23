@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateAssessmentBlueprintSectionCommand;
 import com.sep.vox.application.port.input.command.CreateAssessmentBlueprintSlotCommand;
 import com.sep.vox.application.port.input.command.CreateAssessmentBlueprintVersionCommand;
@@ -63,7 +63,7 @@ public class CreateAssessmentBlueprintVersionUseCase implements IUseCase<CreateA
             .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
 
         AssessmentBlueprint blueprint = assessmentBlueprintRepository.findById(command.blueprintId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint đề thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy blueprint đề thi"));
         if (!assessmentBlueprintRepository.canEditBlueprint(blueprint.getId(), currentUserId, currentSchoolId)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
@@ -171,34 +171,34 @@ public class CreateAssessmentBlueprintVersionUseCase implements IUseCase<CreateA
 
     private void validateSections(CreateAssessmentBlueprintVersionCommand command) {
         if (command.sections().isEmpty()) {
-            throw new IllegalStateException("Blueprint version phải có ít nhất một section");
+            throw new IllegalArgumentException("Blueprint version phải có ít nhất một section");
         }
         Set<Integer> sectionOrders = new HashSet<Integer>();
         BigDecimal sectionWeightSum = BigDecimal.ZERO;
         for (CreateAssessmentBlueprintSectionCommand section : command.sections()) {
             if (!sectionOrders.add(section.order())) {
-                throw new IllegalStateException("Thứ tự section không được trùng lặp");
+                throw new IllegalArgumentException("Thứ tự section không được trùng lặp");
             }
             if (slotsOf(section).isEmpty()) {
-                throw new IllegalStateException("Mỗi section phải có ít nhất một slot");
+                throw new IllegalArgumentException("Mỗi section phải có ít nhất một slot");
             }
             Set<Integer> slotOrders = new HashSet<Integer>();
             BigDecimal slotWeightSum = BigDecimal.ZERO;
             for (CreateAssessmentBlueprintSlotCommand slot : slotsOf(section)) {
                 if (!slotOrders.add(slot.order())) {
-                    throw new IllegalStateException("Thứ tự slot trong section không được trùng lặp");
+                    throw new IllegalArgumentException("Thứ tự slot trong section không được trùng lặp");
                 }
                 validateSlot(slot);
                 slotWeightSum = slotWeightSum.add(defaultWeight(slot.weight()));
             }
             if (slotWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
-                throw new IllegalStateException(
+                throw new IllegalArgumentException(
                     "Tổng trọng số ô câu hỏi trong phần \"" + section.title() + "\" phải bằng 1.00");
             }
             sectionWeightSum = sectionWeightSum.add(defaultWeight(section.sectionWeight()));
         }
         if (sectionWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
-            throw new IllegalStateException("Tổng trọng số section phải bằng 1.00");
+            throw new IllegalArgumentException("Tổng trọng số section phải bằng 1.00");
         }
     }
 
@@ -206,23 +206,23 @@ public class CreateAssessmentBlueprintVersionUseCase implements IUseCase<CreateA
         AssessmentBlueprintSlotType slotType = slot.slotType();
         if (slotType == AssessmentBlueprintSlotType.FIXED) {
             if (slot.fixedQuestionId() == null) {
-                throw new IllegalStateException("Slot FIXED bắt buộc phải có fixedQuestionId");
+                throw new IllegalArgumentException("Slot FIXED bắt buộc phải có fixedQuestionId");
             }
             if (slot.selectionSpec() != null) {
-                throw new IllegalStateException("Slot FIXED không được có selectionSpec");
+                throw new IllegalArgumentException("Slot FIXED không được có selectionSpec");
             }
             Question question = questionRepository.findById(slot.fixedQuestionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi fixed cho slot"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi fixed cho slot"));
             if (question.getStatus() != QuestionStatus.PUBLISHED) {
-                throw new IllegalStateException("Câu hỏi fixed cho slot phải ở trạng thái PUBLISHED");
+                throw new IllegalArgumentException("Câu hỏi fixed cho slot phải ở trạng thái PUBLISHED");
             }
             return;
         }
         if (slot.fixedQuestionId() != null) {
-            throw new IllegalStateException("Slot SELECTION không được có fixedQuestionId");
+            throw new IllegalArgumentException("Slot SELECTION không được có fixedQuestionId");
         }
         if (slot.selectionSpec() == null) {
-            throw new IllegalStateException("Slot SELECTION bắt buộc phải có selectionSpec");
+            throw new IllegalArgumentException("Slot SELECTION bắt buộc phải có selectionSpec");
         }
     }
 

@@ -14,8 +14,8 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.exception.QuotaExceededException;
+import com.sep.vox.application.exception.BusinessRuleViolationException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.mapper.practiceplanning.PracticePlanningResponseMapper;
 import com.sep.vox.application.port.input.command.BuildPracticePaperCommand;
 import com.sep.vox.application.port.input.service.PracticePaperPersistenceService;
@@ -78,7 +78,7 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
         PracticeQuestionSelectionService.NextQuestionSelection selection = selectionService
             .resolveNextQuestion(topic, studentId, focus, chosenBandOrder, chosen.bandCount(),
                 chosen.frameworkVersionId(), List.of())
-            .orElseThrow(() -> new NotFoundException("Chủ đề chưa có câu luyện phù hợp."));
+            .orElseThrow(() -> new ResourceNotFoundException("Chủ đề chưa có câu luyện phù hợp."));
         PracticeQuestion question = selection.question();
         // Worst-case estimate (seconds x calibrated price/second) -- not the real cost, in the same
         // spirit as Formula 1 of ClassTestTokenQuotaGuardService (see AI_USAGE_QUOTA_USD_MIGRATION.md
@@ -96,7 +96,7 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
             .multiply(quotaPricingPort.usdToVndRate())
             .setScale(COST_VND_SCALE, RoundingMode.HALF_UP);
         if (spendableFundsVnd.compareTo(estimatedCostVnd) < 0) {
-            throw new QuotaExceededException("Không còn đủ hạn mức hoặc số dư cho một câu luyện trọn vẹn.");
+            throw new BusinessRuleViolationException("Không còn đủ hạn mức hoặc số dư cho một câu luyện trọn vẹn.");
         }
         com.sep.vox.domain.model.personalization.PracticePaper paper = persistenceService.persist(
             studentId,
@@ -183,7 +183,7 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
      */
     private ChosenBand chosenBand(UUID bandId) {
         if (bandId == null) {
-            throw new NotFoundException("Chưa chọn bậc muốn luyện.");
+            throw new ResourceNotFoundException("Chưa chọn bậc muốn luyện.");
         }
         for (FrameworkVersionRepository.ActiveFramework framework : enrichmentService.activeFrameworks()) {
             Optional<FrameworkResultBand> match = enrichmentService.frameworkBandLadder(framework.versionId()).stream()
@@ -197,7 +197,7 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
                 );
             }
         }
-        throw new NotFoundException("Bậc luyện tập không thuộc khung đánh giá nào đang ban hành.");
+        throw new ResourceNotFoundException("Bậc luyện tập không thuộc khung đánh giá nào đang ban hành.");
     }
 
     private record ChosenBand(int order, int bandCount, UUID frameworkVersionId) {
@@ -206,6 +206,6 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
     private PracticeTopic requireTopic(UUID topicId) {
         return topicRepository.findTopicById(topicId)
             .filter(candidate -> candidate.isActive())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề luyện tập."));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chủ đề luyện tập."));
     }
 }

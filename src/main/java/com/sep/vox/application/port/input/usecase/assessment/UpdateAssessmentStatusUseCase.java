@@ -18,8 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.exception.PlanLimitExceededException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.BusinessRuleViolationException;
 import com.sep.vox.application.event.AssessmentResultsPublishedEvent;
 import com.sep.vox.application.port.input.command.UpdateAssessmentStatusCommand;
 import com.sep.vox.application.port.input.service.AssessmentCandidateResultFinalizationService;
@@ -108,7 +108,7 @@ public class UpdateAssessmentStatusUseCase implements IUseCase<UpdateAssessmentS
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
 
         Assessment assessment = assessmentRepository.findById(command.assessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
 
         authorizeMutation(assessment.getId(), assessment.getSchoolId(), assessment.getKind(), currentUserId, currentSchoolId, schoolAdmin);
 
@@ -160,7 +160,7 @@ public class UpdateAssessmentStatusUseCase implements IUseCase<UpdateAssessmentS
                 requireTransition(assessment, CANCELLABLE_FROM, AssessmentStatus.CANCELLED);
                 assessmentScheduleClosureService.cancelSchedulesForAssessment(assessment.getId());
             }
-            default -> throw new IllegalStateException("Action không hợp lệ");
+            default -> throw new IllegalArgumentException("Action không hợp lệ");
         }
 
         return AssessmentDtoMapper.toDto(assessmentRepository.save(assessment));
@@ -200,21 +200,21 @@ public class UpdateAssessmentStatusUseCase implements IUseCase<UpdateAssessmentS
      */
     private void requireTransition(Assessment assessment, Set<AssessmentStatus> allowedFrom, AssessmentStatus to) {
         if (!allowedFrom.contains(assessment.getStatus())) {
-            throw new IllegalStateException("Trạng thái bài kiểm tra hiện tại không hợp lệ cho action này");
+            throw new IllegalArgumentException("Trạng thái bài kiểm tra hiện tại không hợp lệ cho action này");
         }
         assessment.setStatus(to);
     }
 
     private void validatePlanLimits(Assessment assessment) {
         SchoolSubscription activeSubscription = schoolSubscriptionRepository.findActiveBySchoolId(assessment.getSchoolId())
-            .orElseThrow(() -> new PlanLimitExceededException(
+            .orElseThrow(() -> new BusinessRuleViolationException(
                 "Trường chưa có gói subscription đang hoạt động, không thể lên lịch kỳ thi"));
         SubscriptionPlan plan = subscriptionPlanRepository.findById(activeSubscription.getSubscriptionPlanId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy gói subscription"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói subscription"));
 
         if (assessment.getAssessmentTimeDurationSecond() != null && plan.getMaxTimePerAttemptMin() != null
                 && assessment.getAssessmentTimeDurationSecond() > plan.getMaxTimePerAttemptMin() * 60) {
-            throw new PlanLimitExceededException(
+            throw new BusinessRuleViolationException(
                 "Thời lượng bài thi (" + assessment.getAssessmentTimeDurationSecond() + " giây) vượt quá giới hạn của gói \""
                     + plan.getName() + "\" (tối đa " + plan.getMaxTimePerAttemptMin() + " phút/lượt thi)"
             );
@@ -243,14 +243,14 @@ public class UpdateAssessmentStatusUseCase implements IUseCase<UpdateAssessmentS
             .filter(candidate -> candidate.getScheduleId() == null)
             .count();
         if (withoutSchedule > 0) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 "Còn " + withoutSchedule + " học sinh chưa được xếp vào ca thi");
         }
         long withoutPaper = candidates.stream()
             .filter(candidate -> candidate.getAssignedPaperId() == null)
             .count();
         if (withoutPaper > 0) {
-            throw new IllegalStateException("Còn " + withoutPaper + " học sinh chưa được gán đề");
+            throw new IllegalArgumentException("Còn " + withoutPaper + " học sinh chưa được gán đề");
         }
     }
 
@@ -271,10 +271,10 @@ public class UpdateAssessmentStatusUseCase implements IUseCase<UpdateAssessmentS
             List<AssessmentSchedule> schedules) {
         for (AssessmentSchedule schedule : schedules) {
             if (schedule.getSchoolRoomId() == null) {
-                throw new IllegalStateException("Ca thi chưa được chọn phòng");
+                throw new IllegalArgumentException("Ca thi chưa được chọn phòng");
             }
             if (assessmentScheduleProctorRepository.countByScheduleId(schedule.getId()) == 0) {
-                throw new IllegalStateException("Ca thi chưa có giám khảo");
+                throw new IllegalArgumentException("Ca thi chưa có giám khảo");
             }
         }
     }
@@ -296,14 +296,14 @@ public class UpdateAssessmentStatusUseCase implements IUseCase<UpdateAssessmentS
     private void requireCentralizedScheduleReadiness(Assessment assessment) {
         List<AssessmentSchedule> schedules = effectiveSchedules(assessment.getId());
         if (schedules.isEmpty()) {
-            throw new IllegalStateException("Kỳ thi chưa có ca thi nào, không thể lên lịch");
+            throw new IllegalArgumentException("Kỳ thi chưa có ca thi nào, không thể lên lịch");
         }
         requireSchedulesHaveRoomAndProctor(schedules);
         if (assessmentCandidateRepository.countByAssessmentId(assessment.getId()) == 0) {
-            throw new IllegalStateException("Kỳ thi chưa có thí sinh nào, không thể lên lịch");
+            throw new IllegalArgumentException("Kỳ thi chưa có thí sinh nào, không thể lên lịch");
         }
         if (assessmentPaperRepository.findByAssessmentId(assessment.getId()).isEmpty()) {
-            throw new IllegalStateException("Kỳ thi chưa có mã đề nào, không thể lên lịch");
+            throw new IllegalArgumentException("Kỳ thi chưa có mã đề nào, không thể lên lịch");
         }
         // Publishing each session is a separate operation (UpdateAssessmentScheduleStatusUseCase) and does not require the status of the
         // assessment, so blocking here does not lock the flow: publish all the sessions first, then the assessment can be scheduled.
@@ -311,7 +311,7 @@ public class UpdateAssessmentStatusUseCase implements IUseCase<UpdateAssessmentS
             .filter(schedule -> schedule.getStatus() == AssessmentScheduleStatus.DRAFT)
             .count();
         if (draftScheduleCount > 0) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 "Còn " + draftScheduleCount + " ca thi chưa được công bố, không thể lên lịch kỳ thi");
         }
     }
@@ -327,37 +327,37 @@ public class UpdateAssessmentStatusUseCase implements IUseCase<UpdateAssessmentS
         requireClassTestScheduleWindow(assessment);
         List<AssessmentSchedule> schedules = effectiveSchedules(assessment.getId());
         if (schedules.isEmpty()) {
-            throw new IllegalStateException("Bài kiểm tra trên lớp chưa có lịch");
+            throw new IllegalArgumentException("Bài kiểm tra trên lớp chưa có lịch");
         }
         requireClassTestScheduleReadiness(assessment, schedules);
         long draftScheduleCount = schedules.stream()
             .filter(schedule -> schedule.getStatus() == AssessmentScheduleStatus.DRAFT)
             .count();
         if (draftScheduleCount > 0) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 "Còn " + draftScheduleCount + " ca thi chưa được công bố, không thể lên lịch bài kiểm tra");
         }
     }
 
     private void requireClassTestScheduleWindow(Assessment assessment) {
         if (assessment.getOpenAt() == null || assessment.getCloseAt() == null) {
-            throw new IllegalStateException("Bài kiểm tra trên lớp phải có thời gian mở bài và đóng bài trước khi lên lịch");
+            throw new IllegalArgumentException("Bài kiểm tra trên lớp phải có thời gian mở bài và đóng bài trước khi lên lịch");
         }
         if (!assessment.getOpenAt().isBefore(assessment.getCloseAt())) {
-            throw new IllegalStateException("Thời gian mở bài phải nhỏ hơn thời gian đóng bài");
+            throw new IllegalArgumentException("Thời gian mở bài phải nhỏ hơn thời gian đóng bài");
         }
         // The session of a class test follows exactly the open/close window, so the window has to be enough for the attempt time.
         // Placed here (not in CreateClassTestUseCase.createDraftSchedule) because when the session is created
         // assessmentTimeDurationSecond is still the raw value the user typed, not yet passed through recalculate.
         if (assessment.isScheduleWindowShorterThanAssessmentTime(assessment.getOpenAt(), assessment.getCloseAt())) {
-            throw new IllegalStateException(AssessmentScheduleWindowMessages.schedulesNoLongerFit(1, assessment));
+            throw new IllegalArgumentException(AssessmentScheduleWindowMessages.schedulesNoLongerFit(1, assessment));
         }
     }
 
     private void requireClassTestCanStart(Assessment assessment) {
         Instant now = Instant.now();
         if (assessment.getCloseAt() != null && !now.isBefore(assessment.getCloseAt())) {
-            throw new IllegalStateException("Bài kiểm tra trên lớp đã quá thời gian đóng bài");
+            throw new IllegalArgumentException("Bài kiểm tra trên lớp đã quá thời gian đóng bài");
         }
     }
 
@@ -391,7 +391,7 @@ public class UpdateAssessmentStatusUseCase implements IUseCase<UpdateAssessmentS
             .filter(session -> assessmentCandidateResultRepository.findBySessionId(session.getId()).isEmpty())
             .count();
         if (missingResultCount > 0) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 "Còn " + missingResultCount + " phiên thi chưa có kết quả, không thể công bố kết quả");
         }
 
@@ -401,7 +401,7 @@ public class UpdateAssessmentStatusUseCase implements IUseCase<UpdateAssessmentS
                 && result.getStatus() != AssessmentCandidateResultStatus.DELETED)
             .count();
         if (notReadyCount > 0) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 "Còn " + notReadyCount + " kết quả chưa ở trạng thái RELEASED hoặc INVALID, không thể công bố kết quả");
         }
     }

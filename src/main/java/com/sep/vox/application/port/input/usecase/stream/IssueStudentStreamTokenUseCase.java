@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.IssueStudentStreamTokenCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.StreamTokenProvider;
@@ -45,20 +45,20 @@ public class IssueStudentStreamTokenUseCase implements IUseCase<IssueStudentStre
         UUID userId = userContextPort.getCurrentAuthenticatedUserId();
 
         AssessmentSession assessmentSession = assessmentSessionRepository.findByIdAndResumable(command.assessmentSessionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi hoặc phiên thi đã hết hạn"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi hoặc phiên thi đã hết hạn"));
 
         Assessment assessment = assessmentRepository.findById(assessmentSession.getAssessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
 
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(assessmentSession.getCandidateId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy học viên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy học viên thi"));
 
         if (!candidate.getStudentId().equals(userId)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
         AssessmentSchedule schedule = assessmentScheduleRepository.findByIdAndInSchedule(candidate.getScheduleId(), now)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy lịch thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lịch thi"));
 
         // Sau toàn bộ khâu xác thực, không phải trước: bước này GHI vào phiên thi (chốt loại
         // stream), nên nếu chạy sớm hơn thì một người không sở hữu phiên thi vẫn kịp chốt hộ

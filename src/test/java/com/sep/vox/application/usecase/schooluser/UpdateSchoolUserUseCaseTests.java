@@ -19,8 +19,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import com.sep.vox.application.exception.DataConflictException;
 
-import com.sep.vox.application.exception.DuplicatedException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateSchoolUserCommand;
 import com.sep.vox.application.port.input.usecase.schooluser.UpdateSchoolUserUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -130,7 +130,7 @@ public class UpdateSchoolUserUseCaseTests {
             .thenReturn(Optional.of(user(UUID.randomUUID(), "0912345678")));
         UpdateSchoolUserCommand command = command(null, false, "0912345678", true, null, false, null, false);
 
-        assertThrows(DuplicatedException.class, () -> updateSchoolUserUseCase.execute(command));
+        assertThrows(ResourceDuplicatedException.class, () -> updateSchoolUserUseCase.execute(command));
         verify(userRepository, never()).saveAndFlush(any(User.class));
     }
 
@@ -156,7 +156,7 @@ public class UpdateSchoolUserUseCaseTests {
             .thenThrow(new DataConflictException("unique constraint idx_user_phone violated", null));
         UpdateSchoolUserCommand command = command(null, false, "0912345678", true, null, false, null, false);
 
-        assertThrows(DuplicatedException.class, () -> updateSchoolUserUseCase.execute(command));
+        assertThrows(ResourceDuplicatedException.class, () -> updateSchoolUserUseCase.execute(command));
     }
 
     @Test
@@ -177,7 +177,7 @@ public class UpdateSchoolUserUseCaseTests {
         wireCallerAndTarget(otherSchoolId);
         UpdateSchoolUserCommand command = command("Nguyen Van Updated", true, null, false, null, false, null, false);
 
-        assertThrows(NotFoundException.class, () -> updateSchoolUserUseCase.execute(command));
+        assertThrows(ResourceNotFoundException.class, () -> updateSchoolUserUseCase.execute(command));
         verify(userRepository, never()).saveAndFlush(any(User.class));
     }
 
@@ -187,7 +187,7 @@ public class UpdateSchoolUserUseCaseTests {
         when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.empty());
         UpdateSchoolUserCommand command = command("Nguyen Van Updated", true, null, false, null, false, null, false);
 
-        assertThrows(NotFoundException.class, () -> updateSchoolUserUseCase.execute(command));
+        assertThrows(ResourceNotFoundException.class, () -> updateSchoolUserUseCase.execute(command));
         verify(userRepository, never()).saveAndFlush(any(User.class));
     }
 
@@ -199,7 +199,7 @@ public class UpdateSchoolUserUseCaseTests {
         when(userRepository.findByIdForUpdate(targetId)).thenReturn(Optional.empty());
         UpdateSchoolUserCommand command = command("Nguyen Van Updated", true, null, false, null, false, null, false);
 
-        assertThrows(NotFoundException.class, () -> updateSchoolUserUseCase.execute(command));
+        assertThrows(ResourceNotFoundException.class, () -> updateSchoolUserUseCase.execute(command));
         verify(userRepository, never()).saveAndFlush(any(User.class));
     }
 

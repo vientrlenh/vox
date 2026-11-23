@@ -21,7 +21,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.SetUpPasswordCommand;
 import com.sep.vox.application.port.input.usecase.auth.SetUpPasswordUseCase;
 import com.sep.vox.application.port.output.PasswordEncoderPort;
@@ -117,7 +117,7 @@ public class SetUpPasswordUseCaseTests {
         when(passwordEncoderPort.hash("new-password")).thenReturn("hashed-password");
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> setUpPasswordUseCase.execute(command));
+        assertThrows(ResourceNotFoundException.class, () -> setUpPasswordUseCase.execute(command));
 
         verify(passwordSetUpTokenPort).hash("raw-token");
         verify(passwordSetUpTokenRepository).updateUsedToken(

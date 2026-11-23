@@ -5,7 +5,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.UserDto;
@@ -24,7 +24,7 @@ public class ViewProfileUseCase implements IUseCase<Void, UserDto>{
     public UserDto execute(Void input) {
         UUID userId = userContextPort.getCurrentAuthenticatedUserId();
         User user = userRepository.findByIdAndStatus(userId, UserStatus.ACTIVE)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng yêu cầu"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng yêu cầu"));
         
         return UserDtoMapper.toUserDto(user);
     }

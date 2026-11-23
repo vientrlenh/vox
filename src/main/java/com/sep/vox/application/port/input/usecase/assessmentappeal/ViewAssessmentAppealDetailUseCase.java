@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.service.AssessmentAppealAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.query.dto.AppealDetailInfo;
@@ -37,6 +37,6 @@ public class ViewAssessmentAppealDetailUseCase implements IUseCase<UUID, AppealD
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(context.schoolId());
         return assessmentAppealQueryRepository.findDetailById(appealId, schoolId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn phúc khảo."));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn phúc khảo."));
     }
 }

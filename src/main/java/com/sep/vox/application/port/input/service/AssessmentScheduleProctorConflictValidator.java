@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.assessment.AssessmentScheduleProctor;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.DuplicatedException;
@@ -21,13 +22,10 @@ import com.sep.vox.domain.repository.AssessmentScheduleProctorRepository;
  * session with a different time window), and creating a class test (the creator is automatically assigned as proctor).
  */
 @Service
+@RequiredArgsConstructor
 public class AssessmentScheduleProctorConflictValidator {
 
     private final AssessmentScheduleProctorRepository assessmentScheduleProctorRepository;
-
-    public AssessmentScheduleProctorConflictValidator(AssessmentScheduleProctorRepository assessmentScheduleProctorRepository) {
-        this.assessmentScheduleProctorRepository = assessmentScheduleProctorRepository;
-    }
 
     /**
      * Giáo viên phải rảnh trong khoảng [start, end); {@code excludeScheduleId} để bỏ qua chính ca

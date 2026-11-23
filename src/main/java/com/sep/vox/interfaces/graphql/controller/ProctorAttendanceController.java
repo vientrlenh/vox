@@ -3,6 +3,7 @@ package com.sep.vox.interfaces.graphql.controller;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,6 +20,7 @@ import com.sep.vox.application.query.dto.ProctorScheduleSummary;
 import com.sep.vox.domain.dto.AssessmentProctoringAlertDto;
 
 @Controller("graphqlProctorAttendanceController")
+@RequiredArgsConstructor
 public class ProctorAttendanceController {
 
     private final ViewMyProctorSchedulesUseCase viewMyProctorSchedulesUseCase;
@@ -26,19 +28,6 @@ public class ProctorAttendanceController {
     private final ViewScheduleProctoringAlertsUseCase viewScheduleProctoringAlertsUseCase;
     private final ViewMonitorableAssessmentsUseCase viewMonitorableAssessmentsUseCase;
     private final ViewMonitorableAssessmentUseCase viewMonitorableAssessmentUseCase;
-
-    public ProctorAttendanceController(
-            ViewMyProctorSchedulesUseCase viewMyProctorSchedulesUseCase,
-            ViewMyProctorScheduleCandidatesUseCase viewMyProctorScheduleCandidatesUseCase,
-            ViewScheduleProctoringAlertsUseCase viewScheduleProctoringAlertsUseCase,
-            ViewMonitorableAssessmentsUseCase viewMonitorableAssessmentsUseCase,
-            ViewMonitorableAssessmentUseCase viewMonitorableAssessmentUseCase) {
-        this.viewMyProctorSchedulesUseCase = viewMyProctorSchedulesUseCase;
-        this.viewMyProctorScheduleCandidatesUseCase = viewMyProctorScheduleCandidatesUseCase;
-        this.viewScheduleProctoringAlertsUseCase = viewScheduleProctoringAlertsUseCase;
-        this.viewMonitorableAssessmentsUseCase = viewMonitorableAssessmentsUseCase;
-        this.viewMonitorableAssessmentUseCase = viewMonitorableAssessmentUseCase;
-    }
 
     @QueryMapping
     @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")

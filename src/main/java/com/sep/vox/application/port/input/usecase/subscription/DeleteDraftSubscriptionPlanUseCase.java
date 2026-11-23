@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
 import com.sep.vox.domain.model.subscription.SubscriptionPlan;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,17 +13,11 @@ import com.sep.vox.domain.repository.SubscriptionPlanQuotaRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 
 @Service
+@RequiredArgsConstructor
 public class DeleteDraftSubscriptionPlanUseCase implements IUseCase<DeleteDraftSubscriptionPlanCommand, Void> {
 
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final SubscriptionPlanQuotaRepository subscriptionPlanQuotaRepository;
-
-    public DeleteDraftSubscriptionPlanUseCase(
-            SubscriptionPlanRepository subscriptionPlanRepository,
-            SubscriptionPlanQuotaRepository subscriptionPlanQuotaRepository) {
-        this.subscriptionPlanRepository = subscriptionPlanRepository;
-        this.subscriptionPlanQuotaRepository = subscriptionPlanQuotaRepository;
-    }
 
     @Override
     @Transactional

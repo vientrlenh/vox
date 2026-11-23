@@ -19,10 +19,12 @@ import com.sep.vox.domain.repository.RubricResultBandRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class ViewSystemRubricResultBandsUseCase implements IUseCase<ViewSystemRubricResultBandsQuery, PageResult<RubricResultBandDto>> {
 
     private final RubricResultBandRepository rubricResultBandRepository;
@@ -30,19 +32,6 @@ public class ViewSystemRubricResultBandsUseCase implements IUseCase<ViewSystemRu
     private final RubricRepository rubricRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
-
-    public ViewSystemRubricResultBandsUseCase(
-            RubricResultBandRepository rubricResultBandRepository,
-            RubricVersionRepository rubricVersionRepository,
-            RubricRepository rubricRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort) {
-        this.rubricResultBandRepository = rubricResultBandRepository;
-        this.rubricVersionRepository = rubricVersionRepository;
-        this.rubricRepository = rubricRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional(readOnly = true)

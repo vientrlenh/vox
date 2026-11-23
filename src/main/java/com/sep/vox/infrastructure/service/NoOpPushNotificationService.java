@@ -2,8 +2,7 @@ package com.sep.vox.infrastructure.service;
 
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
@@ -22,9 +21,8 @@ import com.sep.vox.application.response.output.PushMessage;
  */
 @Service
 @ConditionalOnProperty(prefix = "firebase", name = "enabled", havingValue = "false", matchIfMissing = true)
+@Slf4j
 public class NoOpPushNotificationService implements PushNotificationPort {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(NoOpPushNotificationService.class);
 
     @Override
     public boolean isEnabled() {
@@ -33,7 +31,7 @@ public class NoOpPushNotificationService implements PushNotificationPort {
 
     @Override
     public PushDispatchResult send(PushMessage message, List<String> installationIds) {
-        LOGGER.debug("Push notification disabled (firebase.enabled=false), skipping '{}' for {} device(s)",
+        log.debug("Push notification disabled (firebase.enabled=false), skipping '{}' for {} device(s)",
             message == null ? null : message.title(),
             installationIds == null ? 0 : installationIds.size());
         return PushDispatchResult.empty();

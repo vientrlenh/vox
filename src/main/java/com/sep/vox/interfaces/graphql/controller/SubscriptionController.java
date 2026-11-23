@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+import lombok.RequiredArgsConstructor;
 import org.dataloader.DataLoader;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
@@ -52,6 +53,7 @@ import com.sep.vox.interfaces.graphql.mapper.UpdateSubscriptionPlanCommandMapper
 import com.sep.vox.interfaces.shared.PageArguments;
 
 @Controller("graphqlSubscriptionController")
+@RequiredArgsConstructor
 public class SubscriptionController {
 
     private final ViewSubscriptionPlansUseCase viewSubscriptionPlansUseCase;
@@ -67,35 +69,6 @@ public class SubscriptionController {
     private final ViewAssessmentQuotaUserAllocationsUseCase viewAssessmentQuotaUserAllocationsUseCase;
     private final ViewPracticeQuotaUserAllocationsUseCase viewPracticeQuotaUserAllocationsUseCase;
     private final QuotaPricingPort quotaPricingPort;
-
-    public SubscriptionController(
-            ViewSubscriptionPlansUseCase viewSubscriptionPlansUseCase,
-            ViewSubscriptionPlanDetailUseCase viewSubscriptionPlanDetailUseCase,
-            UpdateSubscriptionPlanUseCase updateSubscriptionPlanUseCase,
-            ViewSchoolSubscriptionsUseCase viewSchoolSubscriptionsUseCase,
-            ViewSchoolSubscriptionQuotaRecordsUseCase viewSchoolSubscriptionQuotaRecordsUseCase,
-            ViewMyAssessmentQuotaAllocationUseCase viewMyAssessmentQuotaAllocationUseCase,
-            PreviewSchoolSubscriptionRenewalUseCase previewSchoolSubscriptionRenewalUseCase,
-            ViewMyPracticeQuotaAllocationUseCase viewMyPracticeQuotaAllocationUseCase,
-            ViewSchoolSubscriptionUseCase viewSchoolSubscriptionUseCase,
-            ViewSchoolSubscriptionHistoryUseCase viewSchoolSubscriptionHistoryUseCase,
-            ViewAssessmentQuotaUserAllocationsUseCase viewAssessmentQuotaUserAllocationsUseCase,
-            ViewPracticeQuotaUserAllocationsUseCase viewPracticeQuotaUserAllocationsUseCase,
-            QuotaPricingPort quotaPricingPort) {
-        this.viewSubscriptionPlansUseCase = viewSubscriptionPlansUseCase;
-        this.viewSubscriptionPlanDetailUseCase = viewSubscriptionPlanDetailUseCase;
-        this.updateSubscriptionPlanUseCase = updateSubscriptionPlanUseCase;
-        this.viewSchoolSubscriptionsUseCase = viewSchoolSubscriptionsUseCase;
-        this.viewSchoolSubscriptionQuotaRecordsUseCase = viewSchoolSubscriptionQuotaRecordsUseCase;
-        this.viewMyAssessmentQuotaAllocationUseCase = viewMyAssessmentQuotaAllocationUseCase;
-        this.previewSchoolSubscriptionRenewalUseCase = previewSchoolSubscriptionRenewalUseCase;
-        this.viewMyPracticeQuotaAllocationUseCase = viewMyPracticeQuotaAllocationUseCase;
-        this.viewSchoolSubscriptionUseCase = viewSchoolSubscriptionUseCase;
-        this.viewSchoolSubscriptionHistoryUseCase = viewSchoolSubscriptionHistoryUseCase;
-        this.viewAssessmentQuotaUserAllocationsUseCase = viewAssessmentQuotaUserAllocationsUseCase;
-        this.viewPracticeQuotaUserAllocationsUseCase = viewPracticeQuotaUserAllocationsUseCase;
-        this.quotaPricingPort = quotaPricingPort;
-    }
 
     @QueryMapping(name = "subscriptionPlans")
     public PageResult<ViewSubscriptionPlansResponse> subscriptionPlans(

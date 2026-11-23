@@ -5,6 +5,7 @@ import com.sep.vox.domain.model.assessment.AssessmentPaper;
 import com.sep.vox.domain.model.assessment.AssessmentPaperSection;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,7 @@ import com.sep.vox.domain.repository.AssessmentPaperSectionRepository;
 import com.sep.vox.domain.repository.AssessmentRepository;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateAssessmentPaperSectionUseCase implements IUseCase<UpdateAssessmentPaperSectionCommand, AssessmentPaperSectionDto> {
 
     private final AssessmentRepository assessmentRepository;
@@ -30,19 +32,6 @@ public class UpdateAssessmentPaperSectionUseCase implements IUseCase<UpdateAsses
     private final AssessmentPaperSectionRepository assessmentPaperSectionRepository;
     private final AssessmentPaperAuthoringAccessService assessmentPaperAuthoringAccessService;
     private final UserContextPort userContextPort;
-
-    public UpdateAssessmentPaperSectionUseCase(
-            AssessmentRepository assessmentRepository,
-            AssessmentPaperRepository assessmentPaperRepository,
-            AssessmentPaperSectionRepository assessmentPaperSectionRepository,
-            AssessmentPaperAuthoringAccessService assessmentPaperAuthoringAccessService,
-            UserContextPort userContextPort) {
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentPaperRepository = assessmentPaperRepository;
-        this.assessmentPaperSectionRepository = assessmentPaperSectionRepository;
-        this.assessmentPaperAuthoringAccessService = assessmentPaperAuthoringAccessService;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

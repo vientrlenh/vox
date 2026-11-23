@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
@@ -22,13 +23,10 @@ import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataQuestionBankRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class QuestionBankRepositoryImpl implements QuestionBankRepository {
 
     private final SpringDataQuestionBankRepository springDataQuestionBankRepository;
-
-    public QuestionBankRepositoryImpl(SpringDataQuestionBankRepository springDataQuestionBankRepository) {
-        this.springDataQuestionBankRepository = springDataQuestionBankRepository;
-    }
 
     @Override
     public QuestionBank save(QuestionBank questionBank) {

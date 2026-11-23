@@ -2,6 +2,7 @@ package com.sep.vox.interfaces.graphql.controller;
 
 import java.util.List;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
@@ -14,14 +15,10 @@ import com.sep.vox.application.response.input.interestdimension.InterestDimensio
 import com.sep.vox.interfaces.graphql.dto.request.UpsertInterestDimensionInput;
 
 @Controller
+@RequiredArgsConstructor
 public class InterestDimensionController {
 
     private final ManageInterestDimensionUseCase manageInterestDimensionUseCase;
-
-    public InterestDimensionController(
-            ManageInterestDimensionUseCase manageInterestDimensionUseCase) {
-        this.manageInterestDimensionUseCase = manageInterestDimensionUseCase;
-    }
 
     @QueryMapping
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")

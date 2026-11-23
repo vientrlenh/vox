@@ -11,6 +11,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,11 +34,12 @@ import com.sep.vox.domain.repository.AssessmentResultAppealItemRepository;
 import com.sep.vox.domain.repository.AssessmentResultAppealRepository;
 
 @Service
+@RequiredArgsConstructor
 public class CreateAssessmentAppealUseCase implements IUseCase<CreateAssessmentAppealCommand, UUID> {
 
     /**
-     * Số vòng phúc khảo tối đa cho một kết quả. Công bố phúc khảo trả kết quả về
-     * RELEASED nên trạng thái không còn tự chặn vòng sau — hạn mức này thay vai trò đó.
+     * Maximum number of appeal rounds for one result. Publishing an appeal returns the result to
+     * RELEASED, so the status no longer blocks a later round by itself; this limit takes over that role.
      */
     static final int MAX_APPEAL_ROUNDS = 2;
 
@@ -48,23 +50,6 @@ public class CreateAssessmentAppealUseCase implements IUseCase<CreateAssessmentA
     private final AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository;
     private final AssessmentAppealAccessService assessmentAppealAccessService;
     private final ResultStatusHistoryRecorder resultStatusHistoryRecorder;
-
-    public CreateAssessmentAppealUseCase(
-            AssessmentResultAppealRepository assessmentResultAppealRepository,
-            AssessmentResultAppealItemRepository assessmentResultAppealItemRepository,
-            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
-            AssessmentItemResponseRepository assessmentItemResponseRepository,
-            AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository,
-            AssessmentAppealAccessService assessmentAppealAccessService,
-            ResultStatusHistoryRecorder resultStatusHistoryRecorder) {
-        this.assessmentResultAppealRepository = assessmentResultAppealRepository;
-        this.assessmentResultAppealItemRepository = assessmentResultAppealItemRepository;
-        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
-        this.assessmentItemResponseRepository = assessmentItemResponseRepository;
-        this.assessmentGradingAssignmentRepository = assessmentGradingAssignmentRepository;
-        this.assessmentAppealAccessService = assessmentAppealAccessService;
-        this.resultStatusHistoryRecorder = resultStatusHistoryRecorder;
-    }
 
     @Override
     @Transactional

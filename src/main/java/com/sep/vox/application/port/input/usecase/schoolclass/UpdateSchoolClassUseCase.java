@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.school.School;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,7 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassCommand, UpdateSchoolClassResponse> {
 
     private static final int MAX_NAME_LENGTH = 255;
@@ -33,19 +35,6 @@ public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassComma
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository;
-
-    public UpdateSchoolClassUseCase(
-            SchoolClassRepository schoolClassRepository,
-            SchoolRepository schoolRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort,
-            SchoolUserRepository schoolUserRepository) {
-        this.schoolClassRepository = schoolClassRepository;
-        this.schoolRepository = schoolRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-        this.schoolUserRepository = schoolUserRepository;
-    }
 
     @Override
     @Transactional

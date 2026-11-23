@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.learnerprofile;
 
 import java.util.List;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,13 +22,10 @@ import com.sep.vox.application.response.input.learnerprofile.LearnerProfileRespo
  * controller, không phải bằng cách nhận studentId rồi bỏ đi.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewPracticeFrameworkOptionsUseCase implements IUseCase<Void, List<PracticeFrameworkOption>> {
 
     private final PracticeTopicOfferEnrichmentService enrichmentService;
-
-    public ViewPracticeFrameworkOptionsUseCase(PracticeTopicOfferEnrichmentService enrichmentService) {
-        this.enrichmentService = enrichmentService;
-    }
 
     @Override
     @Transactional(readOnly = true)

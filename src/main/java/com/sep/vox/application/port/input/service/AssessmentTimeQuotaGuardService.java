@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.model.subscription.SubscriptionPlan;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.NotFoundException;
@@ -12,17 +13,11 @@ import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 
 @Service
+@RequiredArgsConstructor
 public class AssessmentTimeQuotaGuardService {
 
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
-
-    public AssessmentTimeQuotaGuardService(
-            SchoolSubscriptionRepository schoolSubscriptionRepository,
-            SubscriptionPlanRepository subscriptionPlanRepository) {
-        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
-        this.subscriptionPlanRepository = subscriptionPlanRepository;
-    }
 
     public void requireWithinPlan(UUID schoolId, Integer durationSeconds, String targetLabel) {
         if (schoolId == null || durationSeconds == null || durationSeconds <= 0) {

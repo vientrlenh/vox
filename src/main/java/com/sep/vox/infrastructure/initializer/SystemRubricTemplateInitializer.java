@@ -11,8 +11,8 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
@@ -80,26 +80,26 @@ import com.sep.vox.domain.service.rubric.RubricScoringConsistencyValidator;
  */
 @Component
 @Order(6)
+@RequiredArgsConstructor
+@Slf4j
 public class SystemRubricTemplateInitializer implements ApplicationRunner {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SystemRubricTemplateInitializer.class);
-
-    /** Bản mẫu bám vào ngôn ngữ và khung do hai initializer chạy trước dựng ra. */
+    /** The templates depend on the language and framework built by the two initializers that run before this one. */
     private static final String LANGUAGE_CODE = "ENG";
     private static final String FRAMEWORK_CODE = "KNLNNVN";
 
     /**
-     * Thang điểm 10 của phổ thông Việt Nam.
+     * The 10-point scale of Vietnamese general education.
      *
-     * <p>Mọi tiêu chí phải phủ ĐÚNG thang này -- chênh lệch tầm quan trọng giữa các tiêu chí thể hiện
-     * bằng trọng số, không phải bằng khoảng điểm hẹp hơn. Xem {@link RubricScoringConsistencyValidator}.
+     * <p>Every criterion must cover EXACTLY this scale -- differences in importance between criteria are expressed
+     * through weights, not through a narrower score range. See {@link RubricScoringConsistencyValidator}.
      */
     private static final BigDecimal SCORING_SCALE_MIN = new BigDecimal("0.00");
     private static final BigDecimal SCORING_SCALE_MAX = new BigDecimal("10.00");
 
-    // Mã tiêu chí của khung KNLNNVN. Dùng lại nguyên mã đó làm mã tiêu chí rubric: hai bên là ánh xạ
-    // một-một (bảng rubric_criterions có unique (rubric_version_id, framework_criterion_id)), nên đặt
-    // mã khác chỉ tạo thêm một từ điển phải tra.
+    // Criterion codes of the KNLNNVN framework. The same codes are reused as rubric criterion codes: the two sides map
+    // one-to-one (table rubric_criterions has unique (rubric_version_id, framework_criterion_id)), so using
+    // a different code only creates one more dictionary to look up.
     private static final String CRITERION_PRONUNCIATION = "PRONUNCIATION";
     private static final String CRITERION_FLUENCY = "FLUENCY";
     private static final String CRITERION_GRAMMAR = "GRAMMAR";
@@ -107,10 +107,10 @@ public class SystemRubricTemplateInitializer implements ApplicationRunner {
     private static final String CRITERION_COHERENCE = "COHERENCE";
 
     /**
-     * Năm tiêu chí dùng chung cho cả ba khối: cùng một năng lực nói, chỉ khác mức nhấn.
+     * Five criteria shared by all three grades: the same speaking competence, only the emphasis differs.
      *
-     * <p>Khác biệt giữa các khối nằm hoàn toàn ở TRỌNG SỐ, không ở mô tả tiêu chí. Viết ba bộ mô tả
-     * gần giống nhau sẽ tạo ra ba bản dễ trôi lệch mà không mang thêm thông tin nào.
+     * <p>The difference between grades lies entirely in the WEIGHTS, not in the criterion descriptions. Writing three nearly
+     * identical sets of descriptions would create three copies that drift apart easily without carrying any extra information.
      */
     private static final List<CriterionSeed> CRITERIA = List.of(
         new CriterionSeed(CRITERION_PRONUNCIATION, "Phát âm",
@@ -126,11 +126,11 @@ public class SystemRubricTemplateInitializer implements ApplicationRunner {
     );
 
     /**
-     * Xếp loại theo Thông tư 22/2021/TT-BGDĐT quy đổi sang thang 10.
+     * Classification under Circular 22/2021/TT-BGDĐT converted to the 10-point scale.
      *
-     * <p>Ranh giới lấy tới hai chữ số thập phân (4.99 / 6.49 / 7.99) để các dải không chồng lấn mà
-     * cũng không hở: điểm tổng lưu ở {@code numeric(5,2)} nên không tồn tại giá trị nào rơi vào khe
-     * giữa hai dải.
+     * <p>Boundaries are taken to two decimal places (4.99 / 6.49 / 7.99) so the ranges neither overlap
+     * nor leave gaps: the total score is stored as {@code numeric(5,2)}, so no value can fall into the gap
+     * between two ranges.
      */
     private static final List<ResultBandSeed> RESULT_BANDS = List.of(
         new ResultBandSeed("CHUA_DAT", "Chưa đạt",
@@ -148,11 +148,11 @@ public class SystemRubricTemplateInitializer implements ApplicationRunner {
     );
 
     /**
-     * Ba bản mẫu, khác nhau ở cách phân bổ trọng số theo trọng tâm dạy học của từng khối.
+     * Three templates, differing in how weights are distributed according to the teaching focus of each grade.
      *
-     * <p>Mỗi bộ trọng số cộng lại đúng 1.00 -- điều kiện của cách tính Phân bổ. Con số ở đây là một
-     * đề xuất sư phạm chứ không phải quy định: trường sao về rồi chỉnh lại tuỳ ý, vì bản sao là tài
-     * sản riêng của trường.
+     * <p>Each set of weights adds up to exactly 1.00 -- a condition of the Distribution scoring method. The numbers here are a
+     * pedagogical suggestion, not a regulation: a school may adjust them freely after copying, because the copy is
+     * the school's own property.
      */
     private static final List<TemplateSeed> TEMPLATES = List.of(
         new TemplateSeed("SYS-ENG-K10", "Bộ tiêu chí nói Tiếng Anh - Khối 10",
@@ -193,25 +193,6 @@ public class SystemRubricTemplateInitializer implements ApplicationRunner {
     private final FrameworkVersionRepository frameworkVersionRepository;
     private final FrameworkCriterionRepository frameworkCriterionRepository;
 
-    public SystemRubricTemplateInitializer(
-            RubricRepository rubricRepository,
-            RubricVersionRepository rubricVersionRepository,
-            RubricCriterionRepository rubricCriterionRepository,
-            RubricResultBandRepository rubricResultBandRepository,
-            SupportedLanguageRepository supportedLanguageRepository,
-            FrameworkRepository frameworkRepository,
-            FrameworkVersionRepository frameworkVersionRepository,
-            FrameworkCriterionRepository frameworkCriterionRepository) {
-        this.rubricRepository = rubricRepository;
-        this.rubricVersionRepository = rubricVersionRepository;
-        this.rubricCriterionRepository = rubricCriterionRepository;
-        this.rubricResultBandRepository = rubricResultBandRepository;
-        this.supportedLanguageRepository = supportedLanguageRepository;
-        this.frameworkRepository = frameworkRepository;
-        this.frameworkVersionRepository = frameworkVersionRepository;
-        this.frameworkCriterionRepository = frameworkCriterionRepository;
-    }
-
     /**
      * {@code @Transactional} because this is a graph with foreign keys (rubric -> version -> criteria + result
      * bands). Dying midway without rolling back means the "is there a template yet" check on the next startup
@@ -222,7 +203,7 @@ public class SystemRubricTemplateInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) throws Exception {
         SupportedLanguage language = supportedLanguageRepository.findByCode(LANGUAGE_CODE).orElse(null);
         if (language == null) {
-            LOGGER.warn("Chưa có ngôn ngữ {}. Bỏ qua khởi tạo bộ tiêu chí mẫu của hệ thống", LANGUAGE_CODE);
+            log.warn("Chưa có ngôn ngữ {}. Bỏ qua khởi tạo bộ tiêu chí mẫu của hệ thống", LANGUAGE_CODE);
             return;
         }
 
@@ -231,21 +212,21 @@ public class SystemRubricTemplateInitializer implements ApplicationRunner {
         // for English by hand, this seed will no longer run -- to get the templates, create them by hand, like
         // FrameworkInitializer.
         if (rubricRepository.existsByOwnerTypeAndLanguageId(RubricOwnerType.SYSTEM.name(), language.getId())) {
-            LOGGER.info("Hệ thống đã có bộ tiêu chí cho ngôn ngữ {}. Bỏ qua khởi tạo bộ tiêu chí mẫu",
+            log.info("Hệ thống đã có bộ tiêu chí cho ngôn ngữ {}. Bỏ qua khởi tạo bộ tiêu chí mẫu",
                 LANGUAGE_CODE);
             return;
         }
 
         Framework framework = frameworkRepository.findByCode(FRAMEWORK_CODE).orElse(null);
         if (framework == null || !framework.isActive()) {
-            LOGGER.warn("Chưa có khung {} đang hoạt động. Bỏ qua khởi tạo bộ tiêu chí mẫu của hệ thống",
+            log.warn("Chưa có khung {} đang hoạt động. Bỏ qua khởi tạo bộ tiêu chí mẫu của hệ thống",
                 FRAMEWORK_CODE);
             return;
         }
 
         FrameworkVersion frameworkVersion = latestPublishedVersion(framework.getId());
         if (frameworkVersion == null) {
-            LOGGER.warn("Khung {} chưa có phiên bản nào được ban hành. Bỏ qua khởi tạo bộ tiêu chí mẫu",
+            log.warn("Khung {} chưa có phiên bản nào được ban hành. Bỏ qua khởi tạo bộ tiêu chí mẫu",
                 FRAMEWORK_CODE);
             return;
         }
@@ -262,7 +243,7 @@ public class SystemRubricTemplateInitializer implements ApplicationRunner {
             .filter(code -> !criterionByCode.containsKey(code))
             .toList();
         if (!missingCodes.isEmpty()) {
-            LOGGER.warn("Khung {} thiếu các tiêu chí {}. Bỏ qua khởi tạo bộ tiêu chí mẫu của hệ thống",
+            log.warn("Khung {} thiếu các tiêu chí {}. Bỏ qua khởi tạo bộ tiêu chí mẫu của hệ thống",
                 FRAMEWORK_CODE, missingCodes);
             return;
         }
@@ -272,7 +253,7 @@ public class SystemRubricTemplateInitializer implements ApplicationRunner {
             createTemplate(template, language.getId(), framework.getId(), criterionByCode, now);
         }
 
-        LOGGER.info("Đã khởi tạo {} bộ tiêu chí mẫu của hệ thống cho ngôn ngữ {}", TEMPLATES.size(), LANGUAGE_CODE);
+        log.info("Đã khởi tạo {} bộ tiêu chí mẫu của hệ thống cho ngôn ngữ {}", TEMPLATES.size(), LANGUAGE_CODE);
     }
 
     private FrameworkVersion latestPublishedVersion(UUID frameworkId) {

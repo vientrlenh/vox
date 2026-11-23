@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.metering.AiUsageRecord;
@@ -15,13 +16,10 @@ import com.sep.vox.infrastructure.persistence.mapper.AiUsageRecordMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataAiUsageRecordRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class AiUsageRecordRepositoryImpl implements AiUsageRecordRepository {
 
     private final SpringDataAiUsageRecordRepository springDataAiUsageRecordRepository;
-
-    public AiUsageRecordRepositoryImpl(SpringDataAiUsageRecordRepository springDataAiUsageRecordRepository) {
-        this.springDataAiUsageRecordRepository = springDataAiUsageRecordRepository;
-    }
 
     @Override
     public Optional<AiUsageRecord> findById(UUID id) {

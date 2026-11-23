@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentCandidate;
 import com.sep.vox.domain.model.assessment.AssessmentCandidateResult;
 import com.sep.vox.domain.model.assessment.AssessmentSession;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +23,7 @@ import com.sep.vox.domain.repository.AssessmentRepository;
 import com.sep.vox.domain.repository.AssessmentSessionRepository;
 
 @Service
+@RequiredArgsConstructor
 public class RetryGradingAssessmentSessionUseCase implements IUseCase<RetryGradingAssessmentSessionCommand, java.util.UUID> {
 
     private final AssessmentSessionRepository assessmentSessionRepository;
@@ -31,23 +33,6 @@ public class RetryGradingAssessmentSessionUseCase implements IUseCase<RetryGradi
     private final AssessmentSessionModerationAccessService moderationAccessService;
     private final UserContextPort userContextPort;
     private final SubmitAssessmentSessionUseCase submitAssessmentSessionUseCase;
-
-    public RetryGradingAssessmentSessionUseCase(
-            AssessmentSessionRepository assessmentSessionRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
-            AssessmentRepository assessmentRepository,
-            AssessmentSessionModerationAccessService moderationAccessService,
-            UserContextPort userContextPort,
-            SubmitAssessmentSessionUseCase submitAssessmentSessionUseCase) {
-        this.assessmentSessionRepository = assessmentSessionRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
-        this.assessmentRepository = assessmentRepository;
-        this.moderationAccessService = moderationAccessService;
-        this.userContextPort = userContextPort;
-        this.submitAssessmentSessionUseCase = submitAssessmentSessionUseCase;
-    }
 
     @Override
     @Transactional

@@ -12,6 +12,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,6 +47,7 @@ import com.sep.vox.domain.repository.AssessmentRepository;
  * conflict-of-interest rule.
  */
 @Service
+@RequiredArgsConstructor
 public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List<UUID>> {
 
     private final AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository;
@@ -54,21 +56,6 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
     private final AssessmentGradingQueryRepository assessmentGradingQueryRepository;
     private final AssessmentGradingAccessService assessmentGradingAccessService;
     private final GradingAssignmentNotificationService gradingAssignmentNotificationService;
-
-    public AssignGradingUseCase(
-            AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository,
-            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
-            AssessmentRepository assessmentRepository,
-            AssessmentGradingQueryRepository assessmentGradingQueryRepository,
-            AssessmentGradingAccessService assessmentGradingAccessService,
-            GradingAssignmentNotificationService gradingAssignmentNotificationService) {
-        this.assessmentGradingAssignmentRepository = assessmentGradingAssignmentRepository;
-        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentGradingQueryRepository = assessmentGradingQueryRepository;
-        this.assessmentGradingAccessService = assessmentGradingAccessService;
-        this.gradingAssignmentNotificationService = gradingAssignmentNotificationService;
-    }
 
     @Override
     @Transactional

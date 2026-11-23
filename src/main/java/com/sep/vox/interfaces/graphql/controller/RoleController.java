@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+import lombok.RequiredArgsConstructor;
 import org.dataloader.DataLoader;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
@@ -24,15 +25,11 @@ import com.sep.vox.interfaces.shared.PageArguments;
 import graphql.schema.DataFetchingEnvironment;
 
 @Controller("graphqlRoleController")
+@RequiredArgsConstructor
 public class RoleController {
     
     private final ViewRolesUseCase viewRolesUseCase;
     private final ViewRoleDetailsUseCase viewRoleDetailsUseCase;
-
-    public RoleController(ViewRolesUseCase viewRolesUseCase, ViewRoleDetailsUseCase viewRoleDetailsUseCase) {
-        this.viewRolesUseCase = viewRolesUseCase;
-        this.viewRoleDetailsUseCase = viewRoleDetailsUseCase;
-    }
 
     @QueryMapping(name = "roles")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")

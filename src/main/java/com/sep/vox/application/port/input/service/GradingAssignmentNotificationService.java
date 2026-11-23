@@ -10,8 +10,8 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,9 +43,9 @@ import com.sep.vox.domain.repository.UserRepository;
  * công là N+1 ngay giữa một transaction đang giữ khoá.
  */
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class GradingAssignmentNotificationService {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(GradingAssignmentNotificationService.class);
 
     private final AssessmentCandidateResultRepository assessmentCandidateResultRepository;
     private final AssessmentCandidateRepository assessmentCandidateRepository;
@@ -53,21 +53,6 @@ public class GradingAssignmentNotificationService {
     private final UserRepository userRepository;
     private final OutboxRepository outboxRepository;
     private final JsonSerializationPort jsonSerializationPort;
-
-    public GradingAssignmentNotificationService(
-            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            AssessmentRepository assessmentRepository,
-            UserRepository userRepository,
-            OutboxRepository outboxRepository,
-            JsonSerializationPort jsonSerializationPort) {
-        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.assessmentRepository = assessmentRepository;
-        this.userRepository = userRepository;
-        this.outboxRepository = outboxRepository;
-        this.jsonSerializationPort = jsonSerializationPort;
-    }
 
     /**
      * {@code REQUIRED}: cả ba nơi gọi đều đã ở trong transaction của use case, nên outbox và
@@ -102,7 +87,7 @@ public class GradingAssignmentNotificationService {
             AssessmentCandidateResult result = resultsById.get(assignment.getCandidateResultId());
             Assessment assessment = result == null ? null : assessmentsById.get(result.getAssessmentId());
             if (result == null || assessment == null || assignment.getTeacherId() == null) {
-                LOGGER.warn("Bỏ qua thông báo giao chấm, thiếu dữ liệu: assignmentId={}", assignment.getId());
+                log.warn("Bỏ qua thông báo giao chấm, thiếu dữ liệu: assignmentId={}", assignment.getId());
                 continue;
             }
 
@@ -123,7 +108,7 @@ public class GradingAssignmentNotificationService {
             ));
         }
 
-        LOGGER.info("Đã báo giao chấm cho {} phân công", assignments.size());
+        log.info("Đã báo giao chấm cho {} phân công", assignments.size());
     }
 
     /**

@@ -5,6 +5,7 @@ import com.sep.vox.application.port.input.command.CreateSchoolQuestionBankComman
 import com.sep.vox.application.port.input.command.CreateSystemQuestionBankCommand;
 import com.sep.vox.application.port.input.command.UpdateQuestionBankCommand;
 import com.sep.vox.application.port.input.command.UpdateQuestionBankStatusCommand;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -62,6 +63,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/question-banks")
+@RequiredArgsConstructor
 public class QuestionBankController {
 
     private final CreateSystemQuestionBankUseCase createSystemQuestionBankUseCase;
@@ -74,29 +76,6 @@ public class QuestionBankController {
     private final DeleteQuestionBankGradeUseCase deleteQuestionBankGradeUseCase;
     private final PreviewQuestionBankImportFromFileUseCase previewQuestionBankImportFromFileUseCase;
     private final AcceptQuestionBankImportUseCase acceptQuestionBankImportUseCase;
-
-    public QuestionBankController(
-            CreateSystemQuestionBankUseCase createSystemQuestionBankUseCase,
-            CreateSchoolQuestionBankUseCase createSchoolQuestionBankUseCase,
-            UpdateQuestionBankUseCase updateQuestionBankUseCase,
-            UpdateQuestionBankStatusUseCase updateQuestionBankStatusUseCase,
-            BulkUpdateQuestionBankStatusUseCase bulkUpdateQuestionBankStatusUseCase,
-            DeleteQuestionBankUseCase deleteQuestionBankUseCase,
-            CreateQuestionBankGradeUseCase createQuestionBankGradeUseCase,
-            DeleteQuestionBankGradeUseCase deleteQuestionBankGradeUseCase,
-            PreviewQuestionBankImportFromFileUseCase previewQuestionBankImportFromFileUseCase,
-            AcceptQuestionBankImportUseCase acceptQuestionBankImportUseCase) {
-        this.previewQuestionBankImportFromFileUseCase = previewQuestionBankImportFromFileUseCase;
-        this.acceptQuestionBankImportUseCase = acceptQuestionBankImportUseCase;
-        this.createSystemQuestionBankUseCase = createSystemQuestionBankUseCase;
-        this.createSchoolQuestionBankUseCase = createSchoolQuestionBankUseCase;
-        this.updateQuestionBankUseCase = updateQuestionBankUseCase;
-        this.updateQuestionBankStatusUseCase = updateQuestionBankStatusUseCase;
-        this.bulkUpdateQuestionBankStatusUseCase = bulkUpdateQuestionBankStatusUseCase;
-        this.deleteQuestionBankUseCase = deleteQuestionBankUseCase;
-        this.createQuestionBankGradeUseCase = createQuestionBankGradeUseCase;
-        this.deleteQuestionBankGradeUseCase = deleteQuestionBankGradeUseCase;
-    }
 
     /**
      * Phạm vi (hệ thống hay trường nào) KHÔNG nhận từ client mà suy từ vai trò người đăng nhập —

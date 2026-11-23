@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.registration;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,24 +22,13 @@ import com.sep.vox.domain.repository.SchoolDirectoryRepository;
 import com.sep.vox.domain.valueobject.SchoolDomain;
 
 @Service
+@RequiredArgsConstructor
 public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormCommand, Void> {
 
     private final RegisterFormRepository registerFormRepository;
     private final UserContextPort userContextPort;
     private final ProvisionSchoolService provisionSchoolService;
     private final SchoolDirectoryRepository schoolDirectoryRepository;
-
-    public ApproveRegisterFormUseCase(
-            RegisterFormRepository registerFormRepository,
-            UserContextPort userContextPort, 
-            ProvisionSchoolService provisionSchoolService, 
-            SchoolDirectoryRepository schoolDirectoryRepository
-    ) {
-        this.registerFormRepository = registerFormRepository;
-        this.userContextPort = userContextPort;
-        this.provisionSchoolService = provisionSchoolService;
-        this.schoolDirectoryRepository = schoolDirectoryRepository;
-    }
 
     @Override
     @Transactional

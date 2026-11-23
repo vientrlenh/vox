@@ -15,29 +15,20 @@ import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateSystemAssessmentPolicyUseCase implements IUseCase<UpdateAssessmentPolicyCommand, UUID> {
 
     private final AssessmentPolicyRepository assessmentPolicyRepository;
     private final FrameworkResultBandRepository frameworkResultBandRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
-
-    public UpdateSystemAssessmentPolicyUseCase(
-            AssessmentPolicyRepository assessmentPolicyRepository,
-            FrameworkResultBandRepository frameworkResultBandRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort) {
-        this.assessmentPolicyRepository = assessmentPolicyRepository;
-        this.frameworkResultBandRepository = frameworkResultBandRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

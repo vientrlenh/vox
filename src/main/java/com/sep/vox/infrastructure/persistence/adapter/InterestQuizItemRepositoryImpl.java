@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,18 +16,12 @@ import com.sep.vox.infrastructure.persistence.entity.personalization.InterestQui
 import com.sep.vox.infrastructure.persistence.repository.SpringDataInterestQuizItemRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class InterestQuizItemRepositoryImpl
         implements InterestQuizItemRepository {
 
     private final SpringDataInterestQuizItemRepository repository;
     private final JsonSerializationPort jsonSerialization;
-
-    public InterestQuizItemRepositoryImpl(
-            SpringDataInterestQuizItemRepository repository,
-            JsonSerializationPort jsonSerialization) {
-        this.repository = repository;
-        this.jsonSerialization = jsonSerialization;
-    }
 
     @Override
     public List<InterestQuizSeedItem> findAllActiveQuizItems() {

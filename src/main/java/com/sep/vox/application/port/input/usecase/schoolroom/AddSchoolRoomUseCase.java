@@ -14,11 +14,13 @@ import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolRoomRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 @Service
+@RequiredArgsConstructor
 public class AddSchoolRoomUseCase implements IUseCase<AddSchoolRoomCommand, UUID> {
 
     private final SchoolRoomRepository schoolRoomRepository;
@@ -26,16 +28,6 @@ public class AddSchoolRoomUseCase implements IUseCase<AddSchoolRoomCommand, UUID
     private final SchoolUserRepository schoolUserRepository;
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
-
-    public AddSchoolRoomUseCase(SchoolRoomRepository schoolRoomRepository, SchoolRepository schoolRepository,
-                                SchoolUserRepository schoolUserRepository, UserContextPort userContextPort,
-                                UserRepository userRepository) {
-        this.schoolRoomRepository = schoolRoomRepository;
-        this.schoolRepository = schoolRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userContextPort = userContextPort;
-        this.userRepository = userRepository;
-    }
 
     @Override
     @Transactional

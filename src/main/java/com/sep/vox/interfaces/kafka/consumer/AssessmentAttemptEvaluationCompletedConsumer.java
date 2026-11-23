@@ -2,9 +2,9 @@ package com.sep.vox.interfaces.kafka.consumer;
 
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.BackOff;
 import org.springframework.kafka.annotation.DltHandler;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -25,25 +25,14 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class AssessmentAttemptEvaluationCompletedConsumer {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(AssessmentAttemptEvaluationCompletedConsumer.class);
 
     private final RecordAssessmentAttemptEvaluationUseCase recordAssessmentAttemptEvaluationUseCase;
     private final UpdateAssessmentSessionStatusUseCase updateAssessmentSessionStatusUseCase;
     private final ResolveAssessmentSessionIdByResponseIdUseCase resolveAssessmentSessionIdByResponseIdUseCase;
     private final JsonMapper jsonMapper;
-
-    public AssessmentAttemptEvaluationCompletedConsumer(
-            RecordAssessmentAttemptEvaluationUseCase recordAssessmentAttemptEvaluationUseCase,
-            UpdateAssessmentSessionStatusUseCase updateAssessmentSessionStatusUseCase,
-            ResolveAssessmentSessionIdByResponseIdUseCase resolveAssessmentSessionIdByResponseIdUseCase,
-            JsonMapper jsonMapper) {
-        this.recordAssessmentAttemptEvaluationUseCase = recordAssessmentAttemptEvaluationUseCase;
-        this.updateAssessmentSessionStatusUseCase = updateAssessmentSessionStatusUseCase;
-        this.resolveAssessmentSessionIdByResponseIdUseCase = resolveAssessmentSessionIdByResponseIdUseCase;
-        this.jsonMapper = jsonMapper;
-    }
 
     @RetryableTopic(
         attempts = "4",
@@ -61,7 +50,7 @@ public class AssessmentAttemptEvaluationCompletedConsumer {
         // Kafka's own partition-assignment/poll logs -- without a line here, a message that's
         // never delivered to this listener looks IDENTICAL in the logs to one that's delivered
         // and processed successfully (the success path below had no log statement of its own).
-        LOGGER.info(
+        log.info(
             "Received assessment evaluation event partition={} offset={} key={}",
             record.partition(), record.offset(), record.key()
         );
@@ -74,7 +63,7 @@ public class AssessmentAttemptEvaluationCompletedConsumer {
                 recordAssessmentAttemptEvaluationUseCase.execute(
                     RecordAssessmentAttemptEvaluationCommandMapper.toCommand(dto)
                 );
-                LOGGER.info("Recorded assessment evaluation for answerId={}", dto.answerId());
+                log.info("Recorded assessment evaluation for answerId={}", dto.answerId());
             } else if ("AssessmentAttemptEvaluationFailed".equals(eventType)) {
                 AssessmentAttemptEvaluationFailedEventDto failedEvent = jsonMapper.treeToValue(payload, AssessmentAttemptEvaluationFailedEventDto.class);
                 // payload is optional in the DTO: an older producer may send a bare failure event. A missing
@@ -85,19 +74,19 @@ public class AssessmentAttemptEvaluationCompletedConsumer {
                     failurePayload == null ? null : failurePayload.error(),
                     failurePayload == null ? null : failurePayload.retryCount()
                 ));
-                LOGGER.warn(
+                log.warn(
                     "Assessment session {} marked GRADING_FAILED: retryCount={} error={}",
                     failedEvent.assessmentAttemptId(),
                     failurePayload == null ? null : failurePayload.retryCount(),
                     failurePayload == null ? null : failurePayload.error()
                 );
             } else {
-                LOGGER.info("Skip unknown assessment evaluation event type={}", eventType);
+                log.info("Skip unknown assessment evaluation event type={}", eventType);
             }
 
             ack.acknowledge();
         } catch (Exception ex) {
-            LOGGER.error("Assessment evaluation event processed failed, no ack: {}", ex.getMessage(), ex);
+            log.error("Assessment evaluation event processed failed, no ack: {}", ex.getMessage(), ex);
             throw ex instanceof RuntimeException runtimeException
                 ? runtimeException
                 : new IllegalStateException("Failed to process assessment evaluation event", ex);
@@ -106,11 +95,11 @@ public class AssessmentAttemptEvaluationCompletedConsumer {
 
     @DltHandler
     public void dltHandler(ConsumerRecord<String, Object> record) {
-        LOGGER.error("Assessment evaluation DLT message at topic {}: {}", record.topic(), record.value());
+        log.error("Assessment evaluation DLT message at topic {}: {}", record.topic(), record.value());
         try {
             UUID sessionId = resolveSessionId(record.value());
             if (sessionId == null) {
-                LOGGER.error("Assessment evaluation DLT message could not resolve sessionId: {}", record.value());
+                log.error("Assessment evaluation DLT message could not resolve sessionId: {}", record.value());
                 return;
             }
 
@@ -120,7 +109,7 @@ public class AssessmentAttemptEvaluationCompletedConsumer {
             updateAssessmentSessionStatusUseCase.execute(
                 UpdateAssessmentSessionStatusCommand.gradingFailedWithoutReason(sessionId));
         } catch (Exception ex) {
-            LOGGER.error("Failed to mark assessment session as GRADING_FAILED from DLT: {}", ex.getMessage(), ex);
+            log.error("Failed to mark assessment session as GRADING_FAILED from DLT: {}", ex.getMessage(), ex);
         }
     }
 

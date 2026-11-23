@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.question.QuestionBankGrade;
@@ -14,13 +15,10 @@ import com.sep.vox.infrastructure.persistence.mapper.QuestionBankGradeMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataQuestionBankGradeRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class QuestionBankGradeRepositoryImpl implements QuestionBankGradeRepository {
 
     private final SpringDataQuestionBankGradeRepository springDataQuestionBankGradeRepository;
-
-    public QuestionBankGradeRepositoryImpl(SpringDataQuestionBankGradeRepository springDataQuestionBankGradeRepository) {
-        this.springDataQuestionBankGradeRepository = springDataQuestionBankGradeRepository;
-    }
 
     @Override
     public QuestionBankGrade save(QuestionBankGrade grade) {

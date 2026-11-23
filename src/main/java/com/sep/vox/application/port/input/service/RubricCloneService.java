@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,23 +29,13 @@ import com.sep.vox.domain.repository.RubricVersionRepository;
  * editing it never touches the template, and later changes to the template do not flow into it.
  */
 @Service
+@RequiredArgsConstructor
 public class RubricCloneService {
 
     private final RubricRepository rubricRepository;
     private final RubricVersionRepository rubricVersionRepository;
     private final RubricCriterionRepository rubricCriterionRepository;
     private final RubricResultBandRepository rubricResultBandRepository;
-
-    public RubricCloneService(
-            RubricRepository rubricRepository,
-            RubricVersionRepository rubricVersionRepository,
-            RubricCriterionRepository rubricCriterionRepository,
-            RubricResultBandRepository rubricResultBandRepository) {
-        this.rubricRepository = rubricRepository;
-        this.rubricVersionRepository = rubricVersionRepository;
-        this.rubricCriterionRepository = rubricCriterionRepository;
-        this.rubricResultBandRepository = rubricResultBandRepository;
-    }
 
     /**
      * @param targetMethod the scoring method the school chose for the copy, which may differ from the template's

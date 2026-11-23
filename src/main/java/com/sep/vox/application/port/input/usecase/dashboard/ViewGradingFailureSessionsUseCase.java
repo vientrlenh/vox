@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.dashboard;
 
 import java.util.List;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,14 +15,11 @@ import com.sep.vox.domain.common.PageResult;
 
 /** Danh sách phiên trong MỘT nhóm nguyên nhân trên trang phân loại phiên chấm lỗi. */
 @Service
+@RequiredArgsConstructor
 public class ViewGradingFailureSessionsUseCase
         implements IUseCase<ViewGradingFailureSessionsQuery, PageResult<GradingFailureSessionDto>> {
 
     private final GradingFailureQueryRepository gradingFailureQueryRepository;
-
-    public ViewGradingFailureSessionsUseCase(GradingFailureQueryRepository gradingFailureQueryRepository) {
-        this.gradingFailureQueryRepository = gradingFailureQueryRepository;
-    }
 
     /**
      * KHÔNG kẹp lại page/size ở đây: biên đã gọi {@code PageArguments.validate}, và kẹp lần nữa là

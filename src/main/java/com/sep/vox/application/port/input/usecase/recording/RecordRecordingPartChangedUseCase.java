@@ -3,8 +3,8 @@ package com.sep.vox.application.port.input.usecase.recording;
 import java.time.Instant;
 
 import java.util.Optional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.NotFoundException;
@@ -17,23 +17,13 @@ import com.sep.vox.domain.repository.AssessmentSessionRepository;
 import com.sep.vox.domain.service.recording.RecordingPrecedence;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class RecordRecordingPartChangedUseCase implements IUseCase<RecordRecordingPartChangedCommand, Void> {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(RecordRecordingPartChangedUseCase.class);
 
     private final AssessmentSessionRepository assessmentSessionRepository;
     private final AssessmentRecordingRepository assessmentRecordingRepository;
     private final RecordingStorageConfigPort recordingStorageConfigPort;
-
-    public RecordRecordingPartChangedUseCase(
-        AssessmentSessionRepository assessmentSessionRepository,
-        AssessmentRecordingRepository assessmentRecordingRepository,
-        RecordingStorageConfigPort recordingStorageConfigPort
-    ) {
-        this.assessmentSessionRepository = assessmentSessionRepository;
-        this.assessmentRecordingRepository = assessmentRecordingRepository;
-        this.recordingStorageConfigPort = recordingStorageConfigPort;
-    }
 
     @Override
     public Void execute(RecordRecordingPartChangedCommand input) {
@@ -49,7 +39,7 @@ public class RecordRecordingPartChangedUseCase implements IUseCase<RecordRecordi
 
         if (existing.isPresent()
             && RecordingPrecedence.shouldKeepExisting(existing.get().getStatus(), input.status())) {
-            LOGGER.info(
+            log.info(
                 "Giữ bản ghi hiện có assessmentSessionId={} streamType={} source={} status={}; bỏ qua event status={} objectKey={}",
                 input.assessmentSessionId(), input.streamType(),
                 existing.get().getSource(), existing.get().getStatus(),

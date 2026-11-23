@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+import lombok.RequiredArgsConstructor;
 import org.dataloader.DataLoader;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
@@ -38,20 +39,12 @@ import graphql.schema.DataFetchingEnvironment;
  * batch by id, and authorization lives in the @PreAuthorize of each resolver below.
  */
 @Controller
+@RequiredArgsConstructor
 public class MyClassController {
 
     private final ViewMyClassesUseCase viewMyClassesUseCase;
     private final ViewMyClassDetailsUseCase viewMyClassDetailsUseCase;
     private final ViewMyClassMembersUseCase viewMyClassMembersUseCase;
-
-    public MyClassController(
-            ViewMyClassesUseCase viewMyClassesUseCase,
-            ViewMyClassDetailsUseCase viewMyClassDetailsUseCase,
-            ViewMyClassMembersUseCase viewMyClassMembersUseCase) {
-        this.viewMyClassesUseCase = viewMyClassesUseCase;
-        this.viewMyClassDetailsUseCase = viewMyClassDetailsUseCase;
-        this.viewMyClassMembersUseCase = viewMyClassMembersUseCase;
-    }
 
     @QueryMapping(name = "myClasses")
     @PreAuthorize("hasRole('TEACHER')")

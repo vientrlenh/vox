@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.assessmentgrading;
 
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,17 +21,11 @@ import com.sep.vox.application.query.repository.AssessmentGradingQueryRepository
  * Here the permission comes from the assignment row, and the query returns empty when nothing matches.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewGradingTaskDetailUseCase implements IUseCase<UUID, GradingTaskDetailInfo> {
 
     private final AssessmentGradingQueryRepository assessmentGradingQueryRepository;
     private final AssessmentGradingAccessService assessmentGradingAccessService;
-
-    public ViewGradingTaskDetailUseCase(
-            AssessmentGradingQueryRepository assessmentGradingQueryRepository,
-            AssessmentGradingAccessService assessmentGradingAccessService) {
-        this.assessmentGradingQueryRepository = assessmentGradingQueryRepository;
-        this.assessmentGradingAccessService = assessmentGradingAccessService;
-    }
 
     @Override
     @Transactional(readOnly = true)

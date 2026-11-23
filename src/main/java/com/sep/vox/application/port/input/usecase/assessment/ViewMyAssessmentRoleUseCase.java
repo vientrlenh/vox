@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.assessment;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -10,15 +11,11 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.repository.AssessmentMemberRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewMyAssessmentRoleUseCase implements IUseCase<ViewMyAssessmentRoleQuery, String> {
 
     private final AssessmentMemberRepository assessmentMemberRepository;
     private final UserContextPort userContextPort;
-
-    public ViewMyAssessmentRoleUseCase(AssessmentMemberRepository assessmentMemberRepository, UserContextPort userContextPort) {
-        this.assessmentMemberRepository = assessmentMemberRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional(readOnly = true)

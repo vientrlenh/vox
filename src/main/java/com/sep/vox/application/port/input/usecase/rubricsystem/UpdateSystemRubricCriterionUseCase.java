@@ -21,6 +21,7 @@ import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.application.exception.DataConflictException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +33,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateSystemRubricCriterionUseCase implements IUseCase<UpdateSystemRubricCriterionCommand, UUID> {
 
     private final RubricCriterionRepository rubricCriterionRepository;
@@ -40,21 +42,6 @@ public class UpdateSystemRubricCriterionUseCase implements IUseCase<UpdateSystem
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
     private final RubricCriterionExamplesNormalizer examplesNormalizer;
-
-    public UpdateSystemRubricCriterionUseCase(
-            RubricCriterionRepository rubricCriterionRepository,
-            RubricVersionRepository rubricVersionRepository,
-            RubricRepository rubricRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort,
-            RubricCriterionExamplesNormalizer examplesNormalizer) {
-        this.rubricCriterionRepository = rubricCriterionRepository;
-        this.rubricVersionRepository = rubricVersionRepository;
-        this.rubricRepository = rubricRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-        this.examplesNormalizer = examplesNormalizer;
-    }
 
     @Override
     @Transactional

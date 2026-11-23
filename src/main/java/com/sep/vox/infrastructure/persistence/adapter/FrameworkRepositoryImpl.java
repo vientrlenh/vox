@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
@@ -20,13 +21,10 @@ import com.sep.vox.infrastructure.persistence.repository.SpringDataFrameworkRepo
 import com.sep.vox.infrastructure.persistence.DataConflictTranslation;
 
 @Repository
+@RequiredArgsConstructor
 public class FrameworkRepositoryImpl implements FrameworkRepository {
 
     private final SpringDataFrameworkRepository springDataFrameworkRepository;
-
-    public FrameworkRepositoryImpl(SpringDataFrameworkRepository springDataFrameworkRepository) {
-        this.springDataFrameworkRepository = springDataFrameworkRepository;
-    }
 
     @Override
     public Optional<Framework> findById(UUID id) {

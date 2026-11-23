@@ -3,8 +3,8 @@ package com.sep.vox.infrastructure.initializer;
 import com.sep.vox.domain.model.user.Role;
 import java.time.Instant;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -28,20 +28,14 @@ import com.sep.vox.domain.valueobject.Phone;
 
 @Component
 @Order(value = 2)
+@RequiredArgsConstructor
+@Slf4j
 public class SystemAdminUserInitializer implements ApplicationRunner {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
     private final PasswordEncoderPort passwordEncoderPort;
-
-    public SystemAdminUserInitializer(UserRepository userRepository, RoleRepository roleRepository, UserRoleRepository userRoleRepository, PasswordEncoderPort passwordEncoderPort
-    ) {
-        this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
-        this.userRoleRepository = userRoleRepository;
-        this.passwordEncoderPort = passwordEncoderPort;
-    }
 
     @Value("${system-admin.email}")
     private String email;
@@ -61,18 +55,16 @@ public class SystemAdminUserInitializer implements ApplicationRunner {
     @Value("${system-admin.address}")
     private String address;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SystemAdminUserInitializer.class);
-
     @Override
     @Transactional
     public void run(ApplicationArguments args) throws Exception {
         Role systemAdminRole = roleRepository.findByCode("SYSTEM_ADMIN").orElse(null);
         if (systemAdminRole == null) {
-            LOGGER.info("System admin role is not in database. Skip initialize system admin user");
+            log.info("System admin role is not in database. Skip initialize system admin user");
             return;
         }
         if (userRoleRepository.existsByRoleId(systemAdminRole.getId())) {
-            LOGGER.info("System admin user is already in database. Skip initialize admin user");
+            log.info("System admin user is already in database. Skip initialize admin user");
             return;
         }
         User systemAdminUser = systemAdminUser();
@@ -84,7 +76,7 @@ public class SystemAdminUserInitializer implements ApplicationRunner {
             .createdAt(Instant.now())
             .build();
         userRoleRepository.save(userRole);
-        LOGGER.info("System admin initialized successfully");
+        log.info("System admin initialized successfully");
     }
 
     private User systemAdminUser() {

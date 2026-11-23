@@ -8,21 +8,16 @@ import com.sep.vox.domain.dto.SchoolRoomFromDto;
 import com.sep.vox.domain.mapper.SchoolRoomDtoMapper;
 import com.sep.vox.domain.model.school.SchoolRoom;
 import com.sep.vox.domain.repository.SchoolRoomRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class ViewSchoolRoomsUseCase implements IUseCase<ViewSchoolRoomsQuery, PageResult<SchoolRoomFromDto>> {
 
     private final SchoolRoomRepository schoolRoomRepository;
     private final MyClassAccessGuard myClassAccessGuard;
-
-    public ViewSchoolRoomsUseCase(
-            SchoolRoomRepository schoolRoomRepository,
-            MyClassAccessGuard myClassAccessGuard) {
-        this.schoolRoomRepository = schoolRoomRepository;
-        this.myClassAccessGuard = myClassAccessGuard;
-    }
 
     @Override
     @Transactional(readOnly = true)

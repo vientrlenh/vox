@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
@@ -18,13 +19,10 @@ import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataRoleRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class RoleRepositoryImpl implements RoleRepository {
 
     private final SpringDataRoleRepository springDataRoleRepository;
-
-    public RoleRepositoryImpl(SpringDataRoleRepository springDataRoleRepository) {
-        this.springDataRoleRepository = springDataRoleRepository;
-    }
 
     @Override
     public Optional<Role> findByCode(String code) {

@@ -10,6 +10,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,21 +40,13 @@ import com.sep.vox.domain.repository.AssessmentGradingAssignmentRepository;
  * the rows before it.
  */
 @Service
+@RequiredArgsConstructor
 public class ClaimClassTestGradingUseCase
         implements IUseCase<ClaimClassTestGradingCommand, List<UUID>> {
 
     private final AssessmentCandidateResultRepository assessmentCandidateResultRepository;
     private final AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository;
     private final AssessmentGradingAccessService assessmentGradingAccessService;
-
-    public ClaimClassTestGradingUseCase(
-            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
-            AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository,
-            AssessmentGradingAccessService assessmentGradingAccessService) {
-        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
-        this.assessmentGradingAssignmentRepository = assessmentGradingAssignmentRepository;
-        this.assessmentGradingAccessService = assessmentGradingAccessService;
-    }
 
     @Override
     @Transactional

@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.payment.PaymentProvider;
@@ -16,13 +17,10 @@ import com.sep.vox.infrastructure.persistence.mapper.PaymentRecordMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataPaymentRecordRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class PaymentRecordRepositoryImpl implements PaymentRecordRepository {
 
     private final SpringDataPaymentRecordRepository springDataPaymentRecordRepository;
-
-    public PaymentRecordRepositoryImpl(SpringDataPaymentRecordRepository springDataPaymentRecordRepository) {
-        this.springDataPaymentRecordRepository = springDataPaymentRecordRepository;
-    }
 
     @Override
     public Optional<PaymentRecord> findById(UUID id) {

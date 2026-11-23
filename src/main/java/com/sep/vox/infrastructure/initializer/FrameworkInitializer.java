@@ -6,8 +6,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
@@ -49,38 +49,38 @@ import com.sep.vox.domain.valueobject.framework.FrameworkCriterionSignals;
  */
 @Component
 @Order(4)
+@RequiredArgsConstructor
+@Slf4j
 public class FrameworkInitializer implements ApplicationRunner {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(FrameworkInitializer.class);
-
     /**
-     * Khung đánh giá mặc định là Khung năng lực ngoại ngữ 6 bậc dùng cho Việt Nam (KNLNNVN),
-     * với 5 tiêu chí: Pronunciation, Fluency, Grammar, Vocabulary, Coherence.
+     * The default framework is the 6-level Foreign Language Competency Framework for Vietnam (KNLNNVN),
+     * with 5 criteria: Pronunciation, Fluency, Grammar, Vocabulary, Coherence.
      */
     private static final String FRAMEWORK_CODE = "KNLNNVN";
 
-    // Mặc định khởi tạo là version 1
+    // The initial version is version 1 by default
     private static final String FRAMEWORK_VERSION_CODE = "KNLNNVN_V1";
 
-    // Các tiêu chí của chuẩn, bắt buộc phải đúng 5 code ở từng tiêu chí
-    // Hiện tại, do những hạn chế về cấu hình của Service AI chấm điểm, nếu các code này định nghĩa sai, model sẽ không thể đọc và đưa ra kết quả đánh giá đúng
+    // The criteria of the standard; each criterion must have exactly these 5 codes.
+    // Currently, because of configuration limits in the AI grading service, if these codes are defined wrongly the model cannot read them and cannot produce a correct evaluation.
     //
-    // Năm hằng số này PHẢI trùng khít FrameworkCriterionCode.ALLOWED_CODES: lúc xuất bản,
-    // UpdateFrameworkVersionStatusUseCase so sánh hai tập bằng equals(), nên lệch một ký tự
-    // là không version nào xuất bản được nữa. PracticeQuestionSelectionService và
-    // SubAttributePolicy cũng tra theo đúng các chuỗi đó.
+    // These five constants MUST match FrameworkCriterionCode.ALLOWED_CODES exactly: when publishing,
+    // UpdateFrameworkVersionStatusUseCase compares the two sets with equals(), so a single wrong character
+    // means no version can be published any more. PracticeQuestionSelectionService and
+    // SubAttributePolicy also look up exactly these strings.
     private static final String FRAMEWORK_VERSION_CRITERION_CODE_PRONUNCIATION = "PRONUNCIATION";
     private static final String FRAMEWORK_VERSION_CRITERION_CODE_FLUENCY = "FLUENCY";
     private static final String FRAMEWORK_VERSION_CRITERION_CODE_GRAMMAR = "GRAMMAR";
     private static final String FRAMEWORK_VERSION_CRITERION_CODE_VOCABULARY = "VOCABULARY";
     private static final String FRAMEWORK_VERSION_CRITERION_CODE_COHERENCE = "COHERENCE";
 
-    // Sáu bậc của KNLNNVN. Bậc 1..6 tương ứng CEFR A1..C2 theo Thông tư 01/2014/TT-BGDĐT.
+    // The six levels of KNLNNVN. Levels 1..6 map to CEFR A1..C2 under Circular 01/2014/TT-BGDĐT.
     //
-    // Mã viết hoa liền, KHÔNG dấu cách: mã band là thứ đi ra ngoài hệ thống -- nó hiện trong
-    // file Excel xuất điểm và màn hình kết quả, đồng thời là khoá đối chiếu khi import chính
-    // sách chấm (AssessmentPolicyImportCommitHandler chuẩn hoá bằng toUpperCase). Dấu cách
-    // trong mã sẽ theo vào cả ba đường đó. Phần chữ cho người đọc nằm ở label.
+    // Codes are upper case with NO spaces: a band code leaves the system -- it appears in the
+    // score export Excel file and on the result screen, and it is also the matching key when importing a
+    // grading policy (AssessmentPolicyImportCommitHandler normalizes with toUpperCase). A space
+    // in the code would follow into all three paths. The human-readable text lives in the label.
     private static final String FRAMEWORK_VERSION_BAND_CODE_1 = "BAC_1";
     private static final String FRAMEWORK_VERSION_BAND_CODE_2 = "BAC_2";
     private static final String FRAMEWORK_VERSION_BAND_CODE_3 = "BAC_3";
@@ -134,19 +134,6 @@ public class FrameworkInitializer implements ApplicationRunner {
     private final FrameworkResultBandRepository frameworkResultBandRepository;
     private final FrameworkCriterionBandRepository frameworkCriterionBandRepository;
 
-    public FrameworkInitializer(
-            FrameworkRepository frameworkRepository,
-            FrameworkVersionRepository frameworkVersionRepository,
-            FrameworkCriterionRepository frameworkCriterionRepository,
-            FrameworkResultBandRepository frameworkResultBandRepository,
-            FrameworkCriterionBandRepository frameworkCriterionBandRepository) {
-        this.frameworkRepository = frameworkRepository;
-        this.frameworkVersionRepository = frameworkVersionRepository;
-        this.frameworkCriterionRepository = frameworkCriterionRepository;
-        this.frameworkResultBandRepository = frameworkResultBandRepository;
-        this.frameworkCriterionBandRepository = frameworkCriterionBandRepository;
-    }
-
     /**
      * {@code @Transactional} here is not for optimization: this data is a graph with foreign keys
      * (framework -> version -> criterion/result band -> criterion band). If the process dies midway without rolling
@@ -156,7 +143,7 @@ public class FrameworkInitializer implements ApplicationRunner {
     @Transactional
     public void run(ApplicationArguments args) throws Exception {
         if (frameworkRepository.findByCode(FRAMEWORK_CODE).isPresent()) {
-            LOGGER.info("Framework {} đã tồn tại. Bỏ qua khởi tạo khung đánh giá", FRAMEWORK_CODE);
+            log.info("Framework {} đã tồn tại. Bỏ qua khởi tạo khung đánh giá", FRAMEWORK_CODE);
             return;
         }
 
@@ -204,7 +191,7 @@ public class FrameworkInitializer implements ApplicationRunner {
 
         frameworkCriterionBandRepository.saveAll(buildCriterionBands(criteria, resultBands));
 
-        LOGGER.info("Đã khởi tạo framework {} ({}) với {} tiêu chí và {} thang kết quả",
+        log.info("Đã khởi tạo framework {} ({}) với {} tiêu chí và {} thang kết quả",
             FRAMEWORK_CODE, FRAMEWORK_VERSION_CODE, criteria.size(), resultBands.size());
     }
 

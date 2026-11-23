@@ -9,6 +9,7 @@ import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,18 +30,12 @@ import com.sep.vox.domain.repository.OrderRepository;
  * khác nhau.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewPlatformBusinessHealthUseCase
         implements IUseCase<ViewPlatformBusinessHealthQuery, PlatformBusinessHealthResponse> {
 
     private final PlatformBusinessHealthQueryRepository platformBusinessHealthQueryRepository;
     private final OrderRepository orderRepository;
-
-    public ViewPlatformBusinessHealthUseCase(
-            PlatformBusinessHealthQueryRepository platformBusinessHealthQueryRepository,
-            OrderRepository orderRepository) {
-        this.platformBusinessHealthQueryRepository = platformBusinessHealthQueryRepository;
-        this.orderRepository = orderRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +31,7 @@ import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopicOffersQuery, List<PracticeTopicOffer>> {
 
     private static final String ASSESSMENT_TOPIC_INTEREST_DIMENSION = "ACADEMIC_ASSESSMENT";
@@ -43,25 +45,6 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
     private final PracticeTopicRepository practiceTopicRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final SchoolClassUserRepository schoolClassUserRepository;
-
-    public ViewPracticeTopicOffersUseCase(
-            PracticeTopicQueryRepository practiceTopicQueryRepository,
-            LearnerProfileRepository learnerProfileRepository,
-            PracticePaperRepository practicePaperRepository,
-            PracticeTopicOfferEnrichmentService enrichmentService,
-            UserContextPort userContextPort,
-            PracticeTopicRepository practiceTopicRepository,
-            SchoolUserRepository schoolUserRepository,
-            SchoolClassUserRepository schoolClassUserRepository) {
-        this.practiceTopicQueryRepository = practiceTopicQueryRepository;
-        this.learnerProfileRepository = learnerProfileRepository;
-        this.practicePaperRepository = practicePaperRepository;
-        this.enrichmentService = enrichmentService;
-        this.userContextPort = userContextPort;
-        this.practiceTopicRepository = practiceTopicRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.schoolClassUserRepository = schoolClassUserRepository;
-    }
 
     @Override
     @Transactional

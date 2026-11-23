@@ -4,8 +4,8 @@ import com.sep.vox.domain.model.assessment.Assessment;
 import java.time.Instant;
 
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -29,19 +29,12 @@ import com.sep.vox.domain.repository.AssessmentRepository;
  * they share one clock.
  */
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class AssessmentHumanGradingNoticeBatch {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(AssessmentHumanGradingNoticeBatch.class);
 
     private final AssessmentRepository assessmentRepository;
     private final AssessmentHumanGradingNotificationService assessmentHumanGradingNotificationService;
-
-    public AssessmentHumanGradingNoticeBatch(
-            AssessmentRepository assessmentRepository,
-            AssessmentHumanGradingNotificationService assessmentHumanGradingNotificationService) {
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentHumanGradingNotificationService = assessmentHumanGradingNotificationService;
-    }
 
     /**
      * Not {@code @Transactional} here: each attempt must be its own transaction of
@@ -65,10 +58,10 @@ public class AssessmentHumanGradingNoticeBatch {
             } catch (Exception e) {
                 // One failing attempt (lost recipient, inconsistent data) must not cut off the rest
                 // of the sweep. The marker is not closed so this attempt will be retried on the next tick.
-                LOGGER.error("Không nhắc được chấm tay cho bài thi {}", assessment.getId(), e);
+                log.error("Không nhắc được chấm tay cho bài thi {}", assessment.getId(), e);
             }
         }
 
-        LOGGER.info("Quét nhắc chấm tay: {}/{} bài thi đã được báo", notified, due.size());
+        log.info("Quét nhắc chấm tay: {}/{} bài thi đã được báo", notified, due.size());
     }
 }

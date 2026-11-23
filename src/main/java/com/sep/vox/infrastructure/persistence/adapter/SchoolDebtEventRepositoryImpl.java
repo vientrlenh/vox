@@ -3,6 +3,7 @@ package com.sep.vox.infrastructure.persistence.adapter;
 import com.sep.vox.infrastructure.persistence.entity.school.SchoolDebtEventJpaEntity;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Repository;
 
@@ -14,13 +15,10 @@ import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolDebtEventRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class SchoolDebtEventRepositoryImpl implements SchoolDebtEventRepository {
 
     private final SpringDataSchoolDebtEventRepository springDataSchoolDebtEventRepository;
-
-    public SchoolDebtEventRepositoryImpl(SpringDataSchoolDebtEventRepository springDataSchoolDebtEventRepository) {
-        this.springDataSchoolDebtEventRepository = springDataSchoolDebtEventRepository;
-    }
 
     @Override
     public SchoolDebtEvent save(SchoolDebtEvent event) {

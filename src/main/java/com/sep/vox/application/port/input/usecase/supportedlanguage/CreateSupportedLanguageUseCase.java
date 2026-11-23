@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.supportedlanguage;
 
 import com.sep.vox.application.exception.DataConflictException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +16,7 @@ import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.domain.valueobject.LanguageCode;
 
 @Service
+@RequiredArgsConstructor
 public class CreateSupportedLanguageUseCase implements IUseCase<CreateSupportedLanguageCommand, CreateSupportedLanguageResponse> {
 
     private static final int MAX_CODE_LENGTH = 10;
@@ -22,10 +24,6 @@ public class CreateSupportedLanguageUseCase implements IUseCase<CreateSupportedL
     private static final int MAX_DESCRIPTION_LENGTH = 2048;
 
     private final SupportedLanguageRepository supportedLanguageRepository;
-
-    public CreateSupportedLanguageUseCase(SupportedLanguageRepository supportedLanguageRepository) {
-        this.supportedLanguageRepository = supportedLanguageRepository;
-    }
 
     @Override
     @Transactional

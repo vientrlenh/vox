@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,28 +28,18 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class RefreshUseCase implements IUseCase<RefreshCommand, RefreshResponse> {
 
     private final DeviceSessionRepository deviceSessionRepository;
     private final RefreshTokenRepository refreshTokenRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserRepository userRepository;
+    private final UserRoleQueryRepository userRoleQueryRepository;
     private final SessionTokenManagerPort sessionTokenManagerPort;
     private final SessionManagerPort sessionManagerPort;
     private final AuthTokenPort authTokenPort;
     private final SchoolUserRepository schoolUserRepository;
 
-
-    public RefreshUseCase(DeviceSessionRepository deviceSessionRepository, RefreshTokenRepository refreshTokenRepository, UserRepository userRepository, UserRoleQueryRepository userRoleQueryRepository, SessionTokenManagerPort sessionTokenManagerPort, SessionManagerPort sessionManagerPort, AuthTokenPort authTokenPort, SchoolUserRepository schoolUserRepository) {
-        this.deviceSessionRepository = deviceSessionRepository;
-        this.refreshTokenRepository = refreshTokenRepository;
-        this.userRepository = userRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-        this.sessionTokenManagerPort = sessionTokenManagerPort;
-        this.sessionManagerPort = sessionManagerPort;
-        this.authTokenPort = authTokenPort;
-        this.schoolUserRepository = schoolUserRepository;
-    }
 
     @Override
     @Transactional

@@ -8,6 +8,7 @@ import com.sep.vox.application.port.input.command.PreviewSystemAssessmentPolicyI
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -58,6 +59,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/assessment-policies")
+@RequiredArgsConstructor
 public class AssessmentPolicyController {
 
     private final CreateSystemAssessmentPolicyUseCase createSystemAssessmentPolicyUseCase;
@@ -74,37 +76,6 @@ public class AssessmentPolicyController {
     private final PublishSchoolAssessmentPoliciesByRubricVersionUseCase publishSchoolAssessmentPoliciesByRubricVersionUseCase;
     private final ArchiveSystemAssessmentPolicyUseCase archiveSystemAssessmentPolicyUseCase;
     private final ArchiveSchoolAssessmentPolicyUseCase archiveSchoolAssessmentPolicyUseCase;
-
-    public AssessmentPolicyController(
-            CreateSystemAssessmentPolicyUseCase createSystemAssessmentPolicyUseCase,
-            CreateSchoolAssessmentPolicyUseCase createSchoolAssessmentPolicyUseCase,
-            DeleteSystemAssessmentPolicyUseCase deleteSystemAssessmentPolicyUseCase,
-            DeleteSchoolAssessmentPolicyUseCase deleteSchoolAssessmentPolicyUseCase,
-            PreviewSystemAssessmentPolicyImportFromFileUseCase previewSystemAssessmentPolicyImportFromFileUseCase,
-            AcceptSystemAssessmentPolicyImportUseCase acceptSystemAssessmentPolicyImportUseCase,
-            PreviewSchoolAssessmentPolicyImportFromFileUseCase previewSchoolAssessmentPolicyImportFromFileUseCase,
-            AcceptSchoolAssessmentPolicyImportUseCase acceptSchoolAssessmentPolicyImportUseCase,
-            PublishSystemAssessmentPolicyUseCase publishSystemAssessmentPolicyUseCase,
-            PublishSchoolAssessmentPolicyUseCase publishSchoolAssessmentPolicyUseCase,
-            PublishSystemAssessmentPoliciesByRubricVersionUseCase publishSystemAssessmentPoliciesByRubricVersionUseCase,
-            PublishSchoolAssessmentPoliciesByRubricVersionUseCase publishSchoolAssessmentPoliciesByRubricVersionUseCase,
-            ArchiveSystemAssessmentPolicyUseCase archiveSystemAssessmentPolicyUseCase,
-            ArchiveSchoolAssessmentPolicyUseCase archiveSchoolAssessmentPolicyUseCase) {
-        this.createSystemAssessmentPolicyUseCase = createSystemAssessmentPolicyUseCase;
-        this.createSchoolAssessmentPolicyUseCase = createSchoolAssessmentPolicyUseCase;
-        this.deleteSystemAssessmentPolicyUseCase = deleteSystemAssessmentPolicyUseCase;
-        this.deleteSchoolAssessmentPolicyUseCase = deleteSchoolAssessmentPolicyUseCase;
-        this.previewSystemAssessmentPolicyImportFromFileUseCase = previewSystemAssessmentPolicyImportFromFileUseCase;
-        this.acceptSystemAssessmentPolicyImportUseCase = acceptSystemAssessmentPolicyImportUseCase;
-        this.previewSchoolAssessmentPolicyImportFromFileUseCase = previewSchoolAssessmentPolicyImportFromFileUseCase;
-        this.acceptSchoolAssessmentPolicyImportUseCase = acceptSchoolAssessmentPolicyImportUseCase;
-        this.publishSystemAssessmentPolicyUseCase = publishSystemAssessmentPolicyUseCase;
-        this.publishSchoolAssessmentPolicyUseCase = publishSchoolAssessmentPolicyUseCase;
-        this.publishSystemAssessmentPoliciesByRubricVersionUseCase = publishSystemAssessmentPoliciesByRubricVersionUseCase;
-        this.publishSchoolAssessmentPoliciesByRubricVersionUseCase = publishSchoolAssessmentPoliciesByRubricVersionUseCase;
-        this.archiveSystemAssessmentPolicyUseCase = archiveSystemAssessmentPolicyUseCase;
-        this.archiveSchoolAssessmentPolicyUseCase = archiveSchoolAssessmentPolicyUseCase;
-    }
 
     // Tạo mới Assessment Policy áp dụng toàn hệ thống (System Admin) - có thể gửi 1 lúc nhiều Policy
     @Operation(summary = "Tạo mới một hoặc nhiều Assessment Policy cho hệ thống (áp dụng toàn hệ thống, trạng thái khởi tạo DRAFT)")

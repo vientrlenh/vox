@@ -12,26 +12,19 @@ import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class DeleteSystemAssessmentPolicyUseCase implements IUseCase<DeleteSystemAssessmentPolicyCommand, Void> {
 
     private final AssessmentPolicyRepository assessmentPolicyRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
-
-    public DeleteSystemAssessmentPolicyUseCase(
-            AssessmentPolicyRepository assessmentPolicyRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort) {
-        this.assessmentPolicyRepository = assessmentPolicyRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

@@ -5,6 +5,7 @@ import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,27 +30,17 @@ import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
  * only because quota used to be split per type.
  */
 @Service
+@RequiredArgsConstructor
 public class CreateTopUpOrderUseCase implements IUseCase<CreateTopUpOrderCommand, UUID> {
 
-    // orders.total_amount_vnd là numeric(15,0). Chặn theo TỔNG (đã cộng phí) chứ không theo phần tiền
-    // hạn mức: vượt ngưỡng chỉ lộ ra ở tận tầng DB dưới dạng "numeric field overflow".
+    // orders.total_amount_vnd is numeric(15,0). Capped by the TOTAL (fee included), not by the quota
+    // amount alone: exceeding the limit only shows up at the DB layer as "numeric field overflow".
     private static final BigDecimal MAX_TOTAL_AMOUNT_VND = new BigDecimal("999999999999999");
 
     private final OrderRepository orderRepository;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final ServiceFeePort serviceFeePort;
     private final UserContextPort userContextPort;
-
-    public CreateTopUpOrderUseCase(
-            OrderRepository orderRepository,
-            SchoolSubscriptionRepository schoolSubscriptionRepository,
-            ServiceFeePort serviceFeePort,
-            UserContextPort userContextPort) {
-        this.orderRepository = orderRepository;
-        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
-        this.serviceFeePort = serviceFeePort;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

@@ -3,6 +3,7 @@ package com.sep.vox.interfaces.graphql.controller;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -49,6 +50,7 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.interfaces.shared.PageArguments;
 
 @Controller
+@RequiredArgsConstructor
 public class DashboardController {
 
     private final ViewSystemAdminDashboardUseCase viewSystemAdminDashboardUseCase;
@@ -64,34 +66,6 @@ public class DashboardController {
     private final ViewSchoolGradingFailuresUseCase viewSchoolGradingFailuresUseCase;
     private final ViewSchoolAiCostTimeseriesUseCase viewSchoolAiCostTimeseriesUseCase;
     private final ViewSchoolAiSpendByUserUseCase viewSchoolAiSpendByUserUseCase;
-
-    public DashboardController(ViewSystemAdminDashboardUseCase viewSystemAdminDashboardUseCase,
-            ViewSchoolAdminDashboardUseCase viewSchoolAdminDashboardUseCase,
-            ViewTeacherDashboardUseCase viewTeacherDashboardUseCase,
-            ViewNearestCentralizedAssessmentUseCase viewNearestCentralizedAssessmentUseCase,
-            ViewQuestionBankStatsUseCase viewQuestionBankStatsUseCase,
-            ViewPlatformOperationalHealthUseCase viewPlatformOperationalHealthUseCase,
-            ViewPlatformBusinessHealthUseCase viewPlatformBusinessHealthUseCase,
-            ViewGradingFailureOverviewUseCase viewGradingFailureOverviewUseCase,
-            ViewGradingFailureSessionsUseCase viewGradingFailureSessionsUseCase,
-            ViewSchoolsAtRiskUseCase viewSchoolsAtRiskUseCase,
-            ViewSchoolGradingFailuresUseCase viewSchoolGradingFailuresUseCase,
-            ViewSchoolAiCostTimeseriesUseCase viewSchoolAiCostTimeseriesUseCase,
-            ViewSchoolAiSpendByUserUseCase viewSchoolAiSpendByUserUseCase) {
-        this.viewSystemAdminDashboardUseCase = viewSystemAdminDashboardUseCase;
-        this.viewSchoolAdminDashboardUseCase = viewSchoolAdminDashboardUseCase;
-        this.viewTeacherDashboardUseCase = viewTeacherDashboardUseCase;
-        this.viewNearestCentralizedAssessmentUseCase = viewNearestCentralizedAssessmentUseCase;
-        this.viewQuestionBankStatsUseCase = viewQuestionBankStatsUseCase;
-        this.viewPlatformOperationalHealthUseCase = viewPlatformOperationalHealthUseCase;
-        this.viewPlatformBusinessHealthUseCase = viewPlatformBusinessHealthUseCase;
-        this.viewGradingFailureOverviewUseCase = viewGradingFailureOverviewUseCase;
-        this.viewGradingFailureSessionsUseCase = viewGradingFailureSessionsUseCase;
-        this.viewSchoolsAtRiskUseCase = viewSchoolsAtRiskUseCase;
-        this.viewSchoolGradingFailuresUseCase = viewSchoolGradingFailuresUseCase;
-        this.viewSchoolAiCostTimeseriesUseCase = viewSchoolAiCostTimeseriesUseCase;
-        this.viewSchoolAiSpendByUserUseCase = viewSchoolAiSpendByUserUseCase;
-    }
 
     @QueryMapping(name = "systemAdminDashboard")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")

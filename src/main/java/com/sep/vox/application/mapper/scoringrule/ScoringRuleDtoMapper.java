@@ -1,18 +1,16 @@
 package com.sep.vox.application.mapper.scoringrule;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.domain.dto.ScoringRuleDto;
 import com.sep.vox.domain.model.scoringrule.ScoringRule;
 
 @Service
+@RequiredArgsConstructor
 public class ScoringRuleDtoMapper {
 
     private final ScoringRuleParamsMapper scoringRuleParamsMapper;
-
-    public ScoringRuleDtoMapper(ScoringRuleParamsMapper scoringRuleParamsMapper) {
-        this.scoringRuleParamsMapper = scoringRuleParamsMapper;
-    }
 
     public ScoringRuleDto toDto(ScoringRule rule) {
         return new ScoringRuleDto(

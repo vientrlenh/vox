@@ -3,6 +3,7 @@ package com.sep.vox.interfaces.graphql.controller;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.stereotype.Controller;
@@ -36,23 +37,13 @@ import com.sep.vox.interfaces.shared.PageArguments;
  * sides.
  */
 @Controller("graphqlSchoolBalanceController")
+@RequiredArgsConstructor
 public class SchoolBalanceController {
 
     private final ViewSchoolBalanceUseCase viewSchoolBalanceUseCase;
     private final ViewSchoolBalanceEntriesUseCase viewSchoolBalanceEntriesUseCase;
     private final ViewSchoolBalanceSummaryUseCase viewSchoolBalanceSummaryUseCase;
     private final ViewSchoolDebtEventsUseCase viewSchoolDebtEventsUseCase;
-
-    public SchoolBalanceController(
-            ViewSchoolBalanceUseCase viewSchoolBalanceUseCase,
-            ViewSchoolBalanceEntriesUseCase viewSchoolBalanceEntriesUseCase,
-            ViewSchoolBalanceSummaryUseCase viewSchoolBalanceSummaryUseCase,
-            ViewSchoolDebtEventsUseCase viewSchoolDebtEventsUseCase) {
-        this.viewSchoolBalanceUseCase = viewSchoolBalanceUseCase;
-        this.viewSchoolBalanceEntriesUseCase = viewSchoolBalanceEntriesUseCase;
-        this.viewSchoolBalanceSummaryUseCase = viewSchoolBalanceSummaryUseCase;
-        this.viewSchoolDebtEventsUseCase = viewSchoolDebtEventsUseCase;
-    }
 
     @QueryMapping(name = "schoolBalance")
     public SchoolBalanceDto schoolBalance(@Argument(name = "schoolId") UUID schoolId) {

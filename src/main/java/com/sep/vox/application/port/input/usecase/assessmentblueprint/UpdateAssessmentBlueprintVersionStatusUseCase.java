@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +42,7 @@ import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateAssessmentBlueprintVersionStatusUseCase
         implements IUseCase<UpdateAssessmentBlueprintVersionStatusCommand, AssessmentBlueprintVersionDto> {
 
@@ -54,29 +56,6 @@ public class UpdateAssessmentBlueprintVersionStatusUseCase
     private final OutboxRepository outboxRepository;
     private final JsonSerializationPort jsonSerializationPort;
     private final UserRoleQueryRepository userRoleQueryRepository;
-
-    public UpdateAssessmentBlueprintVersionStatusUseCase(
-            AssessmentBlueprintVersionRepository assessmentBlueprintVersionRepository,
-            AssessmentBlueprintRepository assessmentBlueprintRepository,
-            AssessmentBlueprintSectionRepository assessmentBlueprintSectionRepository,
-            AssessmentBlueprintSlotRepository assessmentBlueprintSlotRepository,
-            QuestionRepository questionRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserContextPort userContextPort,
-            OutboxRepository outboxRepository, 
-            JsonSerializationPort jsonSerializationPort, 
-            UserRoleQueryRepository userRoleQueryRepository) {
-        this.assessmentBlueprintVersionRepository = assessmentBlueprintVersionRepository;
-        this.assessmentBlueprintRepository = assessmentBlueprintRepository;
-        this.assessmentBlueprintSectionRepository = assessmentBlueprintSectionRepository;
-        this.assessmentBlueprintSlotRepository = assessmentBlueprintSlotRepository;
-        this.questionRepository = questionRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userContextPort = userContextPort;
-        this.outboxRepository = outboxRepository;
-        this.jsonSerializationPort = jsonSerializationPort;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-    }
 
     @Override
     @Transactional

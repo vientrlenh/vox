@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.personalization.PracticeSession;
@@ -13,13 +14,10 @@ import com.sep.vox.infrastructure.persistence.mapper.personalization.PracticeSes
 import com.sep.vox.infrastructure.persistence.repository.SpringDataPracticeSessionRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class PracticeSessionRepositoryImpl implements PracticeSessionRepository {
 
     private final SpringDataPracticeSessionRepository repository;
-
-    public PracticeSessionRepositoryImpl(SpringDataPracticeSessionRepository repository) {
-        this.repository = repository;
-    }
 
     @Override
     public Optional<PracticeSession> findById(UUID id) {

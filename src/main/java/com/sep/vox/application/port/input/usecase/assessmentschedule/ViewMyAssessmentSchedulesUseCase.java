@@ -7,6 +7,7 @@ import java.util.Objects;
 
 import java.util.Set;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,7 @@ import com.sep.vox.domain.repository.AssessmentRepository;
 import com.sep.vox.domain.repository.AssessmentScheduleRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewMyAssessmentSchedulesUseCase
         implements IUseCase<ViewAssessmentSchedulesQuery, List<AssessmentScheduleDto>> {
 
@@ -30,17 +32,6 @@ public class ViewMyAssessmentSchedulesUseCase
     private final AssessmentScheduleRepository assessmentScheduleRepository;
     private final AssessmentRepository assessmentRepository;
     private final UserContextPort userContextPort;
-
-    public ViewMyAssessmentSchedulesUseCase(
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            AssessmentScheduleRepository assessmentScheduleRepository,
-            AssessmentRepository assessmentRepository,
-            UserContextPort userContextPort) {
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.assessmentScheduleRepository = assessmentScheduleRepository;
-        this.assessmentRepository = assessmentRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional(readOnly = true)

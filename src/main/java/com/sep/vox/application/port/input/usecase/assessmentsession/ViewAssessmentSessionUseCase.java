@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.assessmentsession;
 
 import com.sep.vox.domain.model.assessment.AssessmentSession;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.input.query.ViewAssessmentSessionQuery;
@@ -10,17 +11,11 @@ import com.sep.vox.application.response.input.assessmentsession.AssessmentSessio
 import com.sep.vox.domain.repository.AssessmentCandidateRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewAssessmentSessionUseCase implements IUseCase<ViewAssessmentSessionQuery, AssessmentSessionResponse> {
 
     private final AssessmentResultAccessService assessmentResultAccessService;
     private final AssessmentCandidateRepository assessmentCandidateRepository;
-
-    public ViewAssessmentSessionUseCase(
-            AssessmentResultAccessService assessmentResultAccessService,
-            AssessmentCandidateRepository assessmentCandidateRepository) {
-        this.assessmentResultAccessService = assessmentResultAccessService;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-    }
 
     @Override
     public AssessmentSessionResponse execute(ViewAssessmentSessionQuery input) {

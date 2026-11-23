@@ -18,6 +18,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.NotFoundException;
@@ -55,9 +56,10 @@ import com.sep.vox.domain.repository.RubricCriterionRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 
 @Service
+@RequiredArgsConstructor
 public class RecordAssessmentAttemptEvaluationUseCase implements IUseCase<RecordAssessmentAttemptEvaluationCommand, Void> {
 
-    /** Hệ số quy đổi tỉ lệ 0-1 (overall_confidence) sang phần trăm (ngưỡng nhà trường nhập). */
+    /** Factor that converts the 0-1 ratio (overall_confidence) to a percentage (the threshold the school enters). */
     private static final BigDecimal ONE_HUNDRED = BigDecimal.valueOf(100);
 
     private final AssessmentItemResponseRepository assessmentItemResponseRepository;
@@ -71,46 +73,11 @@ public class RecordAssessmentAttemptEvaluationUseCase implements IUseCase<Record
     private final RubricVersionRepository rubricVersionRepository;
     private final UpsertAssessmentCandidateResultUseCase upsertAssessmentCandidateResultUseCase;
     private final CompleteAssessmentSessionGradingUseCase completeAssessmentSessionGradingUseCase;
-    private final JsonSerializationPort jsonSerializationPort;
     private final RequiresNewTransactionPort requiresNewTransactionPort;
+    private final JsonSerializationPort jsonSerializationPort;
     private final ConfidenceReviewCalculator confidenceReviewCalculator;
     private final ClassTestGradingAssignmentService classTestGradingAssignmentService;
     private final AssessmentProctoringAlertRepository assessmentProctoringAlertRepository;
-
-    public RecordAssessmentAttemptEvaluationUseCase(
-            AssessmentItemResponseRepository assessmentItemResponseRepository,
-            AssessmentItemEvaluationRepository assessmentItemEvaluationRepository,
-            AssessmentItemCriterionScoreRepository assessmentItemCriterionScoreRepository,
-            AssessmentItemEvaluationTurnRepository assessmentItemEvaluationTurnRepository,
-            RubricCriterionRepository rubricCriterionRepository,
-            AssessmentSessionRepository assessmentSessionRepository,
-            AssessmentRepository assessmentRepository,
-            AssessmentPolicyRepository assessmentPolicyRepository,
-            RubricVersionRepository rubricVersionRepository,
-            UpsertAssessmentCandidateResultUseCase upsertAssessmentCandidateResultUseCase,
-            CompleteAssessmentSessionGradingUseCase completeAssessmentSessionGradingUseCase,
-            RequiresNewTransactionPort requiresNewTransactionPort,
-            JsonSerializationPort jsonSerializationPort,
-            ConfidenceReviewCalculator confidenceReviewCalculator,
-            ClassTestGradingAssignmentService classTestGradingAssignmentService,
-            AssessmentProctoringAlertRepository assessmentProctoringAlertRepository) {
-        this.assessmentItemResponseRepository = assessmentItemResponseRepository;
-        this.assessmentItemEvaluationRepository = assessmentItemEvaluationRepository;
-        this.assessmentItemCriterionScoreRepository = assessmentItemCriterionScoreRepository;
-        this.assessmentItemEvaluationTurnRepository = assessmentItemEvaluationTurnRepository;
-        this.rubricCriterionRepository = rubricCriterionRepository;
-        this.assessmentSessionRepository = assessmentSessionRepository;
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentPolicyRepository = assessmentPolicyRepository;
-        this.rubricVersionRepository = rubricVersionRepository;
-        this.upsertAssessmentCandidateResultUseCase = upsertAssessmentCandidateResultUseCase;
-        this.completeAssessmentSessionGradingUseCase = completeAssessmentSessionGradingUseCase;
-        this.jsonSerializationPort = jsonSerializationPort;
-        this.requiresNewTransactionPort = requiresNewTransactionPort;
-        this.confidenceReviewCalculator = confidenceReviewCalculator;
-        this.classTestGradingAssignmentService = classTestGradingAssignmentService;
-        this.assessmentProctoringAlertRepository = assessmentProctoringAlertRepository;
-    }
 
     @Override
     public Void execute(RecordAssessmentAttemptEvaluationCommand input) {

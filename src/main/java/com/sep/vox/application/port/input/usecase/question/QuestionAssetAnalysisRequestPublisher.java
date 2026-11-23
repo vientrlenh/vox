@@ -1,8 +1,8 @@
 package com.sep.vox.application.port.input.usecase.question;
 
 import com.sep.vox.domain.model.question.QuestionEvaluationGuide;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.event.QuestionAssetAnalysisRequestedExternalEvent;
@@ -13,19 +13,12 @@ import com.sep.vox.domain.model.question.QuestionAssetType;
 import com.sep.vox.domain.repository.QuestionEvaluationGuideRepository;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class QuestionAssetAnalysisRequestPublisher {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(QuestionAssetAnalysisRequestPublisher.class);
 
     private final QuestionEvaluationGuideRepository questionEvaluationGuideRepository;
     private final ExternalEventPublisherPort externalEventPublisherPort;
-
-    public QuestionAssetAnalysisRequestPublisher(
-            QuestionEvaluationGuideRepository questionEvaluationGuideRepository,
-            ExternalEventPublisherPort externalEventPublisherPort) {
-        this.questionEvaluationGuideRepository = questionEvaluationGuideRepository;
-        this.externalEventPublisherPort = externalEventPublisherPort;
-    }
 
     public void publishIfNeeded(Question question, QuestionAsset asset) {
         // AI only ever fills a field that is currently blank -- see the matching check in
@@ -72,7 +65,7 @@ public class QuestionAssetAnalysisRequestPublisher {
         try {
             externalEventPublisherPort.publish(event);
         } catch (Exception ex) {
-            LOGGER.warn("Không thể publish yêu cầu phân tích asset questionAssetId={}", asset.getId(), ex);
+            log.warn("Không thể publish yêu cầu phân tích asset questionAssetId={}", asset.getId(), ex);
         }
     }
 

@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,23 +36,13 @@ import com.sep.vox.domain.repository.AssessmentRepository;
  * quả và khi đóng bài) chồng lên nhau cũng không sinh dòng thứ hai.
  */
 @Service
+@RequiredArgsConstructor
 public class ClassTestGradingAssignmentService {
 
     private final AssessmentRepository assessmentRepository;
     private final AssessmentMemberRepository assessmentMemberRepository;
     private final AssessmentCandidateResultRepository assessmentCandidateResultRepository;
     private final AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository;
-
-    public ClassTestGradingAssignmentService(
-            AssessmentRepository assessmentRepository,
-            AssessmentMemberRepository assessmentMemberRepository,
-            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
-            AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository) {
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentMemberRepository = assessmentMemberRepository;
-        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
-        this.assessmentGradingAssignmentRepository = assessmentGradingAssignmentRepository;
-    }
 
     /**
      * Opens the assignment for ONE attempt that has just landed in {@code PENDING_REVIEW}.

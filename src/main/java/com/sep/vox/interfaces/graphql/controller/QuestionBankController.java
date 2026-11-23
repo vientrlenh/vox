@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+import lombok.RequiredArgsConstructor;
 import org.dataloader.DataLoader;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
@@ -25,17 +26,11 @@ import com.sep.vox.domain.model.question.QuestionBankStatus;
 import com.sep.vox.interfaces.shared.PageArguments;
 
 @Controller("graphqlQuestionBankController")
+@RequiredArgsConstructor
 public class QuestionBankController {
 
     private final ViewQuestionBanksUseCase viewQuestionBanksUseCase;
     private final ViewQuestionBankDetailsUseCase viewQuestionBankDetailsUseCase;
-
-    public QuestionBankController(
-            ViewQuestionBanksUseCase viewQuestionBanksUseCase,
-            ViewQuestionBankDetailsUseCase viewQuestionBankDetailsUseCase) {
-        this.viewQuestionBanksUseCase = viewQuestionBanksUseCase;
-        this.viewQuestionBankDetailsUseCase = viewQuestionBankDetailsUseCase;
-    }
 
     @QueryMapping(name = "questionBanks")
     public PageResult<QuestionBankDto> questionBanks(

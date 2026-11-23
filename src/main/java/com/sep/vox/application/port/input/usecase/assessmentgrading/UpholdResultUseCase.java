@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +39,7 @@ import com.sep.vox.domain.repository.AssessmentSessionRepository;
  * các item cũ. Bất biến {@code total = f(items)} được giữ mà không phải chạm gì.
  */
 @Service
+@RequiredArgsConstructor
 public class UpholdResultUseCase implements IUseCase<GradingDecisionCommand, GradingActionResponse> {
 
     private final GradingActionSupport gradingActionSupport;
@@ -46,21 +48,6 @@ public class UpholdResultUseCase implements IUseCase<GradingDecisionCommand, Gra
     private final AssessmentItemEvaluationRepository assessmentItemEvaluationRepository;
     private final MissingResponseBackfillService missingResponseBackfillService;
     private final UpsertAssessmentCandidateResultUseCase upsertAssessmentCandidateResultUseCase;
-
-    public UpholdResultUseCase(
-            GradingActionSupport gradingActionSupport,
-            AssessmentSessionRepository assessmentSessionRepository,
-            AssessmentItemResponseRepository assessmentItemResponseRepository,
-            AssessmentItemEvaluationRepository assessmentItemEvaluationRepository,
-            MissingResponseBackfillService missingResponseBackfillService,
-            UpsertAssessmentCandidateResultUseCase upsertAssessmentCandidateResultUseCase) {
-        this.gradingActionSupport = gradingActionSupport;
-        this.assessmentSessionRepository = assessmentSessionRepository;
-        this.assessmentItemResponseRepository = assessmentItemResponseRepository;
-        this.assessmentItemEvaluationRepository = assessmentItemEvaluationRepository;
-        this.missingResponseBackfillService = missingResponseBackfillService;
-        this.upsertAssessmentCandidateResultUseCase = upsertAssessmentCandidateResultUseCase;
-    }
 
     @Override
     @Transactional

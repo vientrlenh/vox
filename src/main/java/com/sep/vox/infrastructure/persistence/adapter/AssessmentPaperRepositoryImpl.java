@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.assessment.AssessmentPaper;
@@ -15,13 +16,10 @@ import com.sep.vox.infrastructure.persistence.mapper.AssessmentPaperMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataAssessmentPaperRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class AssessmentPaperRepositoryImpl implements AssessmentPaperRepository {
 
     private final SpringDataAssessmentPaperRepository springDataAssessmentPaperRepository;
-
-    public AssessmentPaperRepositoryImpl(SpringDataAssessmentPaperRepository springDataAssessmentPaperRepository) {
-        this.springDataAssessmentPaperRepository = springDataAssessmentPaperRepository;
-    }
 
     @Override
     public AssessmentPaper save(AssessmentPaper paper) {

@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.assessmentgrading;
 import com.sep.vox.domain.model.assessment.Assessment;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,20 +30,12 @@ import com.sep.vox.domain.repository.AssessmentRepository;
  * here answers exactly that question -- and still keeps the scope inside one assessment.
  */
 @Service
+@RequiredArgsConstructor
 public class PreviewBulkFinalizeUseCase implements IUseCase<UUID, BulkFinalizePreviewInfo> {
 
     private final AssessmentGradingQueryRepository assessmentGradingQueryRepository;
     private final AssessmentRepository assessmentRepository;
     private final AssessmentGradingAccessService assessmentGradingAccessService;
-
-    public PreviewBulkFinalizeUseCase(
-            AssessmentGradingQueryRepository assessmentGradingQueryRepository,
-            AssessmentRepository assessmentRepository,
-            AssessmentGradingAccessService assessmentGradingAccessService) {
-        this.assessmentGradingQueryRepository = assessmentGradingQueryRepository;
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentGradingAccessService = assessmentGradingAccessService;
-    }
 
     @Override
     @Transactional(readOnly = true)

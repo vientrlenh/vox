@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.framework.FrameworkResultBand;
@@ -17,13 +18,10 @@ import java.util.Optional;
 
 
 @Repository
+@RequiredArgsConstructor
 public class FrameworkResultBandRepositoryImpl implements FrameworkResultBandRepository {
 
     private final SpringDataFrameworkResultBandRepository springDataFrameworkResultBandRepository;
-
-    public FrameworkResultBandRepositoryImpl(SpringDataFrameworkResultBandRepository springDataFrameworkResultBandRepository) {
-        this.springDataFrameworkResultBandRepository = springDataFrameworkResultBandRepository;
-    }
 
     @Override
     public boolean existsByFrameworkVersionId(UUID frameworkVersionId) {

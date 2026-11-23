@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +38,7 @@ import com.sep.vox.domain.repository.QuestionTopicRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class PreviewQuestionImportFromFileUseCase
         implements IUseCase<PreviewQuestionImportFromFileCommand, PreviewQuestionImportResponse> {
 
@@ -51,27 +53,6 @@ public class PreviewQuestionImportFromFileUseCase
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final QuestionBankRepository questionBankRepository;
     private final QuestionTopicRepository questionTopicRepository;
-
-    public PreviewQuestionImportFromFileUseCase(
-            FileProcessingPort fileProcessingPort,
-            ImportSessionRepository importSessionRepository,
-            ImportRowRepository importRowRepository,
-            JsonSerializationPort jsonSerializationPort,
-            UserContextPort userContextPort,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
-            QuestionBankRepository questionBankRepository,
-            QuestionTopicRepository questionTopicRepository) {
-        this.fileProcessingPort = fileProcessingPort;
-        this.importSessionRepository = importSessionRepository;
-        this.importRowRepository = importRowRepository;
-        this.jsonSerializationPort = jsonSerializationPort;
-        this.userContextPort = userContextPort;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-        this.questionBankRepository = questionBankRepository;
-        this.questionTopicRepository = questionTopicRepository;
-    }
 
     @Override
     @Transactional

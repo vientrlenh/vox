@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.worker;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -10,13 +11,10 @@ import com.sep.vox.application.port.input.service.QuotaPricingCalibrationService
 // computation periodically on the real ai_usage_record/assessment_item_responses data, so the guard adapts
 // to the real AI cost without constant human intervention.
 @Component
+@RequiredArgsConstructor
 public class QuotaPricingCalibrationJob {
 
     private final QuotaPricingCalibrationService quotaPricingCalibrationService;
-
-    public QuotaPricingCalibrationJob(QuotaPricingCalibrationService quotaPricingCalibrationService) {
-        this.quotaPricingCalibrationService = quotaPricingCalibrationService;
-    }
 
     @Scheduled(cron = "0 0 3 * * MON")
     public void run() {

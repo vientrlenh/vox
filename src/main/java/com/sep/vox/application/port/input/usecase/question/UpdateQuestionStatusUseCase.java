@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.question;
 import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionBank;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,23 +29,13 @@ import com.sep.vox.domain.service.question.QuestionStatusTransition;
  * exception để giữ nguyên HTTP status của endpoint đơn (404 / 403 / 400).
  */
 @Service
+@RequiredArgsConstructor
 public class UpdateQuestionStatusUseCase implements IUseCase<UpdateQuestionStatusCommand, QuestionDto> {
 
     private final QuestionRepository questionRepository;
     private final QuestionBankRepository questionBankRepository;
     private final QuestionCollaboratorRepository questionCollaboratorRepository;
     private final QuestionStatusActorResolver questionStatusActorResolver;
-
-    public UpdateQuestionStatusUseCase(
-            QuestionRepository questionRepository,
-            QuestionBankRepository questionBankRepository,
-            QuestionCollaboratorRepository questionCollaboratorRepository,
-            QuestionStatusActorResolver questionStatusActorResolver) {
-        this.questionRepository = questionRepository;
-        this.questionBankRepository = questionBankRepository;
-        this.questionCollaboratorRepository = questionCollaboratorRepository;
-        this.questionStatusActorResolver = questionStatusActorResolver;
-    }
 
     @Override
     @Transactional

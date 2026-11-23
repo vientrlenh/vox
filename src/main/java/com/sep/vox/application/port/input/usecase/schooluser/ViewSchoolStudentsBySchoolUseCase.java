@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.schooluser;
 
 import com.sep.vox.domain.model.user.Role;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,17 +15,11 @@ import com.sep.vox.domain.model.user.SchoolRoleCodes;
 import com.sep.vox.domain.repository.RoleRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewSchoolStudentsBySchoolUseCase implements IUseCase<ViewSchoolStudentsBySchoolQuery, PageResult<SchoolUserDto>> {
 
     private final RoleRepository roleRepository;
     private final ViewSchoolUsersBySchoolUseCase viewSchoolUsersBySchoolUseCase;
-
-    public ViewSchoolStudentsBySchoolUseCase(
-            RoleRepository roleRepository,
-            ViewSchoolUsersBySchoolUseCase viewSchoolUsersBySchoolUseCase) {
-        this.roleRepository = roleRepository;
-        this.viewSchoolUsersBySchoolUseCase = viewSchoolUsersBySchoolUseCase;
-    }
 
     @Override
     @Transactional(readOnly = true)

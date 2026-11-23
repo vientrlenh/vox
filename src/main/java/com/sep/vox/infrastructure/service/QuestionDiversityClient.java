@@ -11,8 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -22,11 +21,8 @@ import tools.jackson.databind.json.JsonMapper;
 import com.sep.vox.application.port.output.QuestionDiversityPort;
 
 @Service
+@Slf4j
 public class QuestionDiversityClient implements QuestionDiversityPort {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(
-        QuestionDiversityClient.class
-    );
 
     private final HttpClient httpClient;
     private final JsonMapper jsonMapper;
@@ -88,7 +84,7 @@ public class QuestionDiversityClient implements QuestionDiversityPort {
             }
             return result;
         } catch (IOException | InterruptedException | RuntimeException exception) {
-            LOGGER.warn(
+            log.warn(
                 "Question similarity endpoint unavailable; "
                     + "no additional paper item will be selected",
                 exception

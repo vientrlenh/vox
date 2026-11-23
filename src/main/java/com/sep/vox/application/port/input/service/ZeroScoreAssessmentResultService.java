@@ -9,6 +9,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,18 +33,17 @@ import com.sep.vox.domain.repository.RubricResultBandRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class ZeroScoreAssessmentResultService {
 
-    private static final org.slf4j.Logger LOGGER =
-        org.slf4j.LoggerFactory.getLogger(ZeroScoreAssessmentResultService.class);
-
     /**
-     * Chỉ còn là mức lùi khi không tra được thang của rubric -- KHÔNG còn là "điểm của bài trống".
+     * Only a fallback when the rubric scale cannot be looked up -- it is NO LONGER "the score of an empty submission".
      *
-     * <p>Sửa 2026-08-11: điểm bài trống nay là SÀN CỦA THANG rubric (xem {@code floorScore}). Số 0
-     * chỉ tình cờ đúng với thang bắt đầu từ 0; trường khai thang 4-10 thì 0 nằm dưới sàn và không
-     * dải xếp loại nào chứa nó -- đúng những bài đáng ra phải được ghi nhận lại là những bài mất
-     * xếp loại.
+     * <p>Changed 2026-08-11: the score of an empty submission is now the FLOOR OF THE rubric SCALE (see {@code floorScore}). Zero
+     * is only coincidentally right for a scale that starts at 0; a school that declares a 4-10 scale has 0 below the floor and no
+     * grade band contains it -- exactly the submissions that should be recorded again are the ones that lost their
+     * grade.
      */
     private static final BigDecimal ZERO_SCORE = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
 
@@ -55,27 +56,6 @@ public class ZeroScoreAssessmentResultService {
     private final AssessmentPolicyRepository assessmentPolicyRepository;
     private final RubricResultBandRepository rubricResultBandRepository;
     private final RubricVersionRepository rubricVersionRepository;
-
-    public ZeroScoreAssessmentResultService(
-            AssessmentRepository assessmentRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            AssessmentSessionRepository assessmentSessionRepository,
-            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
-            AssessmentItemResponseRepository assessmentItemResponseRepository,
-            AssessmentPaperRepository assessmentPaperRepository,
-            AssessmentPolicyRepository assessmentPolicyRepository,
-            RubricResultBandRepository rubricResultBandRepository,
-            RubricVersionRepository rubricVersionRepository) {
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.assessmentSessionRepository = assessmentSessionRepository;
-        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
-        this.assessmentItemResponseRepository = assessmentItemResponseRepository;
-        this.assessmentPaperRepository = assessmentPaperRepository;
-        this.assessmentPolicyRepository = assessmentPolicyRepository;
-        this.rubricResultBandRepository = rubricResultBandRepository;
-        this.rubricVersionRepository = rubricVersionRepository;
-    }
 
     @Transactional
     public AssessmentCandidateResult releaseZeroForEmptySession(UUID sessionId) {
@@ -197,14 +177,14 @@ public class ZeroScoreAssessmentResultService {
                 && floorScore.compareTo(band.getScoreMax()) <= 0)
             .toList();
         if (matchingBands.isEmpty()) {
-            LOGGER.info(
+            log.info(
                 "Không có dải điểm kết quả nào chứa {} (rubricVersionId={}) -- lưu kết quả điểm sàn không kèm xếp loại.",
                 floorScore, policy.getRubricVersionId()
             );
             return null;
         }
         if (matchingBands.size() > 1) {
-            LOGGER.error(
+            log.error(
                 "Cấu hình dải điểm CHỒNG LẤN tại {}: khớp {} dải của rubricVersionId={}."
                     + " Lấy dải order nhỏ nhất ({}). Quản trị cần sửa lại dải.",
                 floorScore, matchingBands.size(), policy.getRubricVersionId(),

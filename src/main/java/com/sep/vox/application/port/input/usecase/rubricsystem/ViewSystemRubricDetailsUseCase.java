@@ -15,23 +15,16 @@ import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class ViewSystemRubricDetailsUseCase implements IUseCase<ViewSystemRubricDetailsQuery, RubricDto> {
     private final RubricRepository rubricRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
-
-    public ViewSystemRubricDetailsUseCase(
-            RubricRepository rubricRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort) {
-        this.rubricRepository = rubricRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional(readOnly = true)

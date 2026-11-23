@@ -5,8 +5,8 @@ import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.output.CacheManagerPort;
@@ -28,52 +28,52 @@ import com.sep.vox.domain.repository.PracticeTopicRepository;
  * thường tự thấy chúng -- không cần pha hai hay endpoint hỏi lại.
  */
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class TopicOfferBackfillService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(TopicOfferBackfillService.class);
-
     /**
-     * Kho đủ lớn thì hạ tốc độ sinh. Dưới ngưỡng là giai đoạn gây dựng -- học sinh mới hoặc vừa
-     * dựng lại dữ liệu, cần kho đủ rộng để xếp hạng có gì mà chọn (ε-greedy còn đòi hẳn
-     * {@code ranked.size() > 10} mới chạy). Trên ngưỡng thì mỗi phiên chỉ tiêu thụ một chủ đề,
-     * nên sinh nhiều là phình ròng: đo sau 6 phiên với nhịp 8/phiên ra 56 chủ đề mà 37 cái chưa
-     * từng được chào lấy một lần.
+     * Once the bank is large enough, slow generation down. Below the threshold is the build-up phase -- a new student or freshly
+     * rebuilt data -- and the bank must be wide enough for ranking to have something to choose from (ε-greedy even requires
+     * {@code ranked.size() > 10} before it runs). Above the threshold each session consumes only one topic,
+     * so generating a lot just bloats the bank: measured after 6 sessions at 8 per session, that gave 56 topics, 37 of which
+     * were never offered even once.
      */
     private static final long POOL_TARGET = 40;
 
-    /** Nhịp sinh lúc kho còn mỏng -- ưu tiên lấp đầy nhanh. */
+    /** Generation pace while the bank is thin -- prioritize filling it quickly. */
     private static final int BACKFILL_COUNT_BUILDING = 8;
 
     /**
-     * Nhịp sinh khi kho đã đạt {@link #POOL_TARGET} -- chỉ đủ bù hao.
+     * Generation pace once the bank has reached {@link #POOL_TARGET} -- only enough to cover wear.
      *
-     * <p>Vẫn nhanh hơn tốc độ tiêu thụ (1 chủ đề/phiên) nên kho không teo, mà không loãng thành
-     * các biến thể na ná nhau: mọi lô đều sinh từ cùng sáu điểm sở thích gần như không đổi, nên
-     * sinh càng dày thì lô sau càng giống lô trước và tự nghiền vào bộ lọc trùng của chính nó.
+     * <p>Still faster than the consumption rate (1 topic/session), so the bank does not shrink, yet it does not dilute into
+     * near-identical variants: every batch is generated from the same six interest scores, which barely change, so
+     * the denser the generation, the more a batch resembles the previous one and grinds itself against its own duplicate filter.
      */
     private static final int BACKFILL_COUNT_STEADY = 2;
 
     /**
-     * Chống chạy trùng trên TOÀN CỤM, không phải trong RAM một pod.
+     * Prevents duplicate runs across the WHOLE CLUSTER, not only in the RAM of one pod.
      *
-     * <p>Bản trước là {@code ConcurrentHashMap.newKeySet()} -- chỉ thấy được các lượt chạy của
-     * chính pod đó. Với 3 replica sau ALB chia tải luân phiên thì ba lời gọi
-     * {@code practiceTopicOffers} liên tiếp rơi vào ba pod là ba lượt sinh chủ đề chạy song song
-     * cho cùng một học sinh: tiền LLM nhân ba, và tệ hơn là cả ba đều nạp {@code activeNameCards()}
-     * TRƯỚC khi hai lượt kia kịp ghi nên không thấy nhau -- phép chống trùng theo tên vô hiệu, chỉ
-     * còn Chroma bên Python đỡ.
+     * <p>The previous version was {@code ConcurrentHashMap.newKeySet()} -- it only saw the runs of
+     * its own pod. With 3 replicas behind an ALB that balances round-robin, three consecutive
+     * {@code practiceTopicOffers} calls landing on three pods are three topic-generation runs in parallel
+     * for the same student: the LLM cost triples, and worse, all three load {@code activeNameCards()}
+     * BEFORE the other two have written, so they do not see each other -- the duplicate check by name is ineffective and only
+     * Chroma on the Python side helps.
      *
-     * <p>(Đường gọi từ {@code PracticeSessionClosedHandler.afterClosed} vốn đã an toàn: job dọn
-     * phiên dùng {@code FOR UPDATE SKIP LOCKED} nên chỉ một pod cầm được phiên đó.)
+     * <p>(The call path from {@code PracticeSessionClosedHandler.afterClosed} was already safe: the session cleanup
+     * job uses {@code FOR UPDATE SKIP LOCKED}, so only one pod can hold that session.)
      */
     private static final String IN_FLIGHT_KEY_PREFIX = "practice:backfill:";
 
     /**
-     * Dài hơn hẳn một lượt sinh để khoá không hết hạn giữa chừng: HTTP timeout sang agents là 45
-     * giây, cộng thời gian ghi chủ đề và index sang vector store.
+     * Clearly longer than one generation run so the lock does not expire midway: the HTTP timeout to the agents is 45
+     * seconds, plus the time to write the topics and index them into the vector store.
      *
-     * <p>Đây chỉ là lưới an toàn cho trường hợp pod chết giữa chừng -- đường bình thường luôn xoá
-     * khoá trong {@code finally}.
+     * <p>This is only a safety net for the case where a pod dies midway -- the normal path always removes
+     * the lock in {@code finally}.
      */
     private static final Duration IN_FLIGHT_TTL = Duration.ofMinutes(2);
 
@@ -82,19 +82,6 @@ public class TopicOfferBackfillService {
     private final LearnerProfileRepository learnerProfileRepository;
     private final CacheManagerPort cacheManagerPort;
     private final PracticeGenerationExecutorPort practiceGenerationExecutorPort;
-
-    public TopicOfferBackfillService(
-            TopicSuggestionService topicSuggestionService,
-            PracticeTopicRepository practiceTopicRepository,
-            LearnerProfileRepository learnerProfileRepository,
-            CacheManagerPort cacheManagerPort,
-            PracticeGenerationExecutorPort practiceGenerationExecutorPort) {
-        this.topicSuggestionService = topicSuggestionService;
-        this.practiceTopicRepository = practiceTopicRepository;
-        this.learnerProfileRepository = learnerProfileRepository;
-        this.cacheManagerPort = cacheManagerPort;
-        this.practiceGenerationExecutorPort = practiceGenerationExecutorPort;
-    }
 
     public void backfillAsync(UUID studentId) {
         practiceGenerationExecutorPort.runAsync(() -> backfill(studentId));
@@ -120,7 +107,7 @@ public class TopicOfferBackfillService {
         // Đường gọi từ PracticeSessionClosedHandler về lý thuyết luôn có quiz rồi (phải luyện
         // xong một phiên mới tới đó), nên với nó điều kiện này là vô hại.
         if (!hasCompletedInterestQuiz(studentId)) {
-            LOGGER.debug("Bỏ lượt bổ sung chủ đề: học sinh {} chưa nộp quiz sở thích.", studentId);
+            log.debug("Bỏ lượt bổ sung chủ đề: học sinh {} chưa nộp quiz sở thích.", studentId);
             return;
         }
         String key = IN_FLIGHT_KEY_PREFIX + studentId;
@@ -137,14 +124,14 @@ public class TopicOfferBackfillService {
             long pool = practiceTopicRepository.countOfferablePool();
             int requested = pool < POOL_TARGET ? BACKFILL_COUNT_BUILDING : BACKFILL_COUNT_STEADY;
             List<PracticePlanningResponses.PracticeTopicOffer> created = topicSuggestionService.synchronousOffers(studentId, requested);
-            LOGGER.info(
+            log.info(
                 "Đã bổ sung {}/{} chủ đề cho học sinh {} (kho hiện có {}).",
                 created.size(), requested, studentId, pool
             );
         } catch (RuntimeException exception) {
             // Nuốt lỗi có chủ đích: đây là việc nền làm giàu kho. Hỏng thì màn chọn chủ đề vẫn
             // hiện được những gì đang có, và lần mở sau sẽ thử lại.
-            LOGGER.warn("Bổ sung chủ đề thất bại cho học sinh {}", studentId, exception);
+            log.warn("Bổ sung chủ đề thất bại cho học sinh {}", studentId, exception);
         } finally {
             cacheManagerPort.deleteIfValueMatches(key, token);
         }

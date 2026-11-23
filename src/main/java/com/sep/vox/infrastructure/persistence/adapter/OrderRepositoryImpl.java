@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Repository;
 
@@ -21,13 +22,10 @@ import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataOrderRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class OrderRepositoryImpl implements OrderRepository {
 
     private final SpringDataOrderRepository springDataOrderRepository;
-
-    public OrderRepositoryImpl(SpringDataOrderRepository springDataOrderRepository) {
-        this.springDataOrderRepository = springDataOrderRepository;
-    }
 
     @Override
     public Optional<Order> findById(UUID id) {

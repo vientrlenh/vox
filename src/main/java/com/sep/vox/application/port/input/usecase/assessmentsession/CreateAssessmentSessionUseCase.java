@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.assessmentsession;
 
 import java.time.Instant;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.NotFoundException;
@@ -16,23 +17,13 @@ import com.sep.vox.domain.repository.AssessmentRepository;
 import com.sep.vox.domain.repository.AssessmentSessionRepository;
 
 @Service
+@RequiredArgsConstructor
 public class CreateAssessmentSessionUseCase implements IUseCase<CreateAssessmentSessionCommand, AssessmentSessionResponse> {
 
     private final AssessmentRepository assessmentRepository;
     private final AssessmentCandidateRepository assessmentCandidateRepository;
     private final AssessmentPaperRepository assessmentPaperRepository;
     private final AssessmentSessionRepository assessmentSessionRepository;
-
-    public CreateAssessmentSessionUseCase(
-            AssessmentRepository assessmentRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            AssessmentPaperRepository assessmentPaperRepository,
-            AssessmentSessionRepository assessmentSessionRepository) {
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.assessmentPaperRepository = assessmentPaperRepository;
-        this.assessmentSessionRepository = assessmentSessionRepository;
-    }
 
     @Override
     public AssessmentSessionResponse execute(CreateAssessmentSessionCommand input) {

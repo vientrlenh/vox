@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.school.SchoolBalance;
@@ -13,13 +14,10 @@ import com.sep.vox.infrastructure.persistence.mapper.SchoolBalanceMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolBalanceRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class SchoolBalanceRepositoryImpl implements SchoolBalanceRepository {
 
     private final SpringDataSchoolBalanceRepository springDataSchoolBalanceRepository;
-
-    public SchoolBalanceRepositoryImpl(SpringDataSchoolBalanceRepository springDataSchoolBalanceRepository) {
-        this.springDataSchoolBalanceRepository = springDataSchoolBalanceRepository;
-    }
 
     @Override
     public Optional<SchoolBalance> findById(UUID id) {

@@ -11,12 +11,14 @@ import com.sep.vox.domain.model.school.SchoolGradeStatus;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class DeleteSchoolUseCase implements IUseCase<DeleteSchoolCommand, UUID> {
 
     private final SchoolRepository schoolRepository;
@@ -26,20 +28,7 @@ public class DeleteSchoolUseCase implements IUseCase<DeleteSchoolCommand, UUID> 
     private final UserContextPort userContextPort;
     private final SchoolRoomRepository schoolRoomRepository;
 
-    // Nhớ inject thêm 2 cái repo của Grade và Class vào đây nha
-    public DeleteSchoolUseCase(
-            SchoolRepository schoolRepository,
-            SchoolGradeRepository schoolGradeRepository,
-            SchoolClassRepository schoolClassRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort, SchoolRoomRepository schoolRoomRepository) {
-        this.schoolRepository = schoolRepository;
-        this.schoolGradeRepository = schoolGradeRepository;
-        this.schoolClassRepository = schoolClassRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-        this.schoolRoomRepository = schoolRoomRepository;
-    }
+    // Remember to inject the Grade and Class repositories here as well
 
     @Override
     @Transactional // Bắt buộc có để Lock dữ liệu

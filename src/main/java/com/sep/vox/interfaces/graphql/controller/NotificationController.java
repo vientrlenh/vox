@@ -2,6 +2,7 @@ package com.sep.vox.interfaces.graphql.controller;
 
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,20 +17,12 @@ import com.sep.vox.application.query.dto.NotificationDto;
 import com.sep.vox.domain.common.CursorPage;
 
 @Controller("graphqlNotificationController")
+@RequiredArgsConstructor
 public class NotificationController {
 
     private final ViewMyNotificationsCursorPageUseCase viewMyNotificationsCursorPageUseCase;
     private final ViewMyUnreadNotificationCountUseCase viewMyUnreadNotificationCountUseCase;
     private final ViewMyNotificationUseCase viewMyNotificationUseCase;
-
-    public NotificationController(
-            ViewMyNotificationsCursorPageUseCase viewMyNotificationsCursorPageUseCase,
-            ViewMyUnreadNotificationCountUseCase viewMyUnreadNotificationCountUseCase,
-            ViewMyNotificationUseCase viewMyNotificationUseCase) {
-        this.viewMyNotificationsCursorPageUseCase = viewMyNotificationsCursorPageUseCase;
-        this.viewMyUnreadNotificationCountUseCase = viewMyUnreadNotificationCountUseCase;
-        this.viewMyNotificationUseCase = viewMyNotificationUseCase;
-    }
 
     @QueryMapping(name = "myNotifications")
     @PreAuthorize("isAuthenticated()")

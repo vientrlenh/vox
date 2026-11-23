@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,21 +24,18 @@ import com.sep.vox.domain.common.ZoneConstant;
  * mở đầu tiên hai màn hình đã nói hai số khác nhau, và không ai biết số nào đúng.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewGradingFailureOverviewUseCase
         implements IUseCase<ViewGradingFailureOverviewQuery, GradingFailureOverviewResponse> {
 
     /**
-     * Trần số nhóm trả về. Tiền đề của cả trang là "một sự cố = một nhóm"; nếu dịch vụ chấm sinh
-     * thông điệp quá đa dạng để chuẩn hóa gom lại được, số nhóm sẽ nở gần bằng số phiên. Trần giữ
-     * cho trang không kéo về hàng nghìn dòng, và phần bị cắt được báo ra để lỗi đó nhìn thấy được.
+     * Maximum number of groups returned. The premise of the whole page is "one incident = one group"; if the grading service produces
+     * messages too varied to be normalized into groups, the group count grows close to the session count. The cap keeps
+     * the page from pulling back thousands of rows, and the truncated part is reported so that failure stays visible.
      */
     static final int MAX_GROUPS = 50;
 
     private final GradingFailureQueryRepository gradingFailureQueryRepository;
-
-    public ViewGradingFailureOverviewUseCase(GradingFailureQueryRepository gradingFailureQueryRepository) {
-        this.gradingFailureQueryRepository = gradingFailureQueryRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+import lombok.RequiredArgsConstructor;
 import org.dataloader.DataLoader;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
@@ -100,6 +101,7 @@ import com.sep.vox.interfaces.shared.PageArguments;
 import graphql.schema.DataFetchingEnvironment;
 
 @Controller("graphqlSchoolController")
+@RequiredArgsConstructor
 public class SchoolController {
 
         private final ViewSchoolsUseCase viewSchoolsUseCase;
@@ -129,62 +131,6 @@ public class SchoolController {
     private final ViewSchoolDirectoryPageUseCase viewSchoolDirectoryPageUseCase;
     private final ViewSchoolDirectoryDetailsUseCase viewSchoolDirectoryDetailsUseCase;
     private final ListSchoolsWithOnGoingAssessmentUseCase listSchoolsWithOnGoingAssessmentUseCase;
-
-    public SchoolController(ViewSchoolsUseCase viewSchoolsUseCase,
-                            ViewSchoolClassesUseCase viewSchoolClassesUseCase,
-                            ViewSchoolClassesByUserUseCase viewSchoolClassesByUserUseCase,
-                            ViewMySchoolClassesUseCase viewMySchoolClassesUseCase,
-                            ViewSchoolClassDetailsUseCase viewSchoolClassDetailsUseCase,
-                            ViewSchoolClassUsersUseCase viewSchoolClassUsersUseCase,
-                            UpdateSchoolClassUseCase updateSchoolClassUseCase,
-                            ViewSchoolUsersBySchoolUseCase viewSchoolUsersBySchoolUseCase,
-                            ViewSchoolUsersForRequesterUseCase viewSchoolUsersForRequesterUseCase,
-                            ViewSchoolStudentsBySchoolUseCase viewSchoolStudentsBySchoolUseCase,
-                            ViewSchoolTeachersBySchoolUseCase viewSchoolTeachersBySchoolUseCase,
-                            ViewSchoolUserDetailsUseCase viewSchoolUserDetailsUseCase,
-                            UpdateSchoolUserUseCase updateSchoolUserUseCase,
-                            UpdateSchoolUseCase updateSchoolUseCase,
-                            ViewSchoolRoomDetailsUseCase viewSchoolRoomDetailsUseCase,
-                            ViewSchoolRoomsUseCase viewSchoolRoomsUseCase,
-                            UpdateSchoolRoomUseCase updateSchoolRoomUseCase,
-                            UpdateSchoolGradeUseCase updateSchoolGradeUseCase,
-                            ViewSchoolGradesUseCase viewSchoolGradesUseCase,
-                            ViewSchoolGradeDetailsUseCase viewSchoolGradeDetailsUseCase,
-                            ViewGradeLevelsUseCase viewGradeLevelsUseCase,
-                            ViewGradeLevelDetailsUseCase viewGradeLevelDetailsUseCase,
-                            UpdateGradeLevelUseCase updateGradeLevelUseCase,
-                            ViewSchoolDirectoryCursorPageUseCase viewSchoolDirectoryCursorPageUseCase,
-                            ViewSchoolDirectoryPageUseCase viewSchoolDirectoryPageUseCase,
-                            ViewSchoolDirectoryDetailsUseCase viewSchoolDirectoryDetailsUseCase,
-            ListSchoolsWithOnGoingAssessmentUseCase listSchoolsWithOnGoingAssessmentUseCase) {
-        this.viewSchoolsUseCase = viewSchoolsUseCase;
-        this.viewSchoolClassesUseCase = viewSchoolClassesUseCase;
-        this.viewSchoolClassesByUserUseCase = viewSchoolClassesByUserUseCase;
-        this.viewMySchoolClassesUseCase = viewMySchoolClassesUseCase;
-        this.viewSchoolClassDetailsUseCase = viewSchoolClassDetailsUseCase;
-        this.viewSchoolClassUsersUseCase = viewSchoolClassUsersUseCase;
-        this.updateSchoolClassUseCase = updateSchoolClassUseCase;
-        this.viewSchoolUsersBySchoolUseCase = viewSchoolUsersBySchoolUseCase;
-        this.viewSchoolUsersForRequesterUseCase = viewSchoolUsersForRequesterUseCase;
-        this.viewSchoolStudentsBySchoolUseCase = viewSchoolStudentsBySchoolUseCase;
-        this.viewSchoolTeachersBySchoolUseCase = viewSchoolTeachersBySchoolUseCase;
-        this.viewSchoolUserDetailsUseCase = viewSchoolUserDetailsUseCase;
-        this.updateSchoolUserUseCase = updateSchoolUserUseCase;
-        this.updateSchoolUseCase = updateSchoolUseCase;
-        this.viewSchoolRoomDetailsUseCase = viewSchoolRoomDetailsUseCase;
-        this.viewSchoolRoomsUseCase = viewSchoolRoomsUseCase;
-        this.updateSchoolRoomUseCase = updateSchoolRoomUseCase;
-        this.updateSchoolGradeUseCase = updateSchoolGradeUseCase;
-        this.viewSchoolGradesUseCase = viewSchoolGradesUseCase;
-        this.viewSchoolGradeDetailsUseCase = viewSchoolGradeDetailsUseCase;
-        this.viewGradeLevelsUseCase = viewGradeLevelsUseCase;
-        this.viewGradeLevelDetailsUseCase = viewGradeLevelDetailsUseCase;
-        this.updateGradeLevelUseCase = updateGradeLevelUseCase;
-        this.viewSchoolDirectoryCursorPageUseCase = viewSchoolDirectoryCursorPageUseCase;
-        this.viewSchoolDirectoryPageUseCase = viewSchoolDirectoryPageUseCase;
-        this.viewSchoolDirectoryDetailsUseCase = viewSchoolDirectoryDetailsUseCase;
-        this.listSchoolsWithOnGoingAssessmentUseCase = listSchoolsWithOnGoingAssessmentUseCase;
-    }
 
 
 

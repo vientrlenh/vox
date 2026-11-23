@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.schooluser;
 import com.sep.vox.application.query.dto.UserRoleInfo;
 import com.sep.vox.domain.model.school.SchoolUser;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,23 +31,13 @@ import java.util.UUID;
  * list of students in the school.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewSchoolUsersForRequesterUseCase implements IUseCase<ViewSchoolUsersBySchoolQuery, PageResult<SchoolUserDto>> {
 
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
-
-    public ViewSchoolUsersForRequesterUseCase(
-            UserContextPort userContextPort,
-            UserRepository userRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository) {
-        this.userContextPort = userContextPort;
-        this.userRepository = userRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

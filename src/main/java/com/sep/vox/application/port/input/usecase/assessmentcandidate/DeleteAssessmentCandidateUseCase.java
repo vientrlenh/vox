@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.assessmentcandidate;
 import com.sep.vox.domain.model.assessment.AssessmentCandidate;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +30,7 @@ import com.sep.vox.domain.service.assessment.AssessmentEditingGuard;
  * session while keeping the history, use {@link AssignAssessmentCandidateScheduleUseCase} with {@code scheduleId = null}.
  */
 @Service
+@RequiredArgsConstructor
 public class DeleteAssessmentCandidateUseCase implements IUseCase<DeleteAssessmentCandidateCommand, Void> {
 
     private final AssessmentRepository assessmentRepository;
@@ -38,23 +40,6 @@ public class DeleteAssessmentCandidateUseCase implements IUseCase<DeleteAssessme
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
-
-    public DeleteAssessmentCandidateUseCase(
-            AssessmentRepository assessmentRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            AssessmentSessionRepository assessmentSessionRepository,
-            AssessmentMemberRepository assessmentMemberRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
-            UserContextPort userContextPort) {
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.assessmentSessionRepository = assessmentSessionRepository;
-        this.assessmentMemberRepository = assessmentMemberRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

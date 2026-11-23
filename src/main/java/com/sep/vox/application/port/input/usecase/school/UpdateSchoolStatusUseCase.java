@@ -12,6 +12,7 @@ import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,23 +20,13 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateSchoolStatusUseCase implements IUseCase<UpdateSchoolStatusCommand, UUID> {
 
     private final SchoolRepository schoolRepository;
     private final UserRepository userRepository;
-    private final SchoolUserRepository schoolUserRepository; // Bổ sung Repository này
+    private final SchoolUserRepository schoolUserRepository; // Added this repository
     private final UserContextPort userContextPort;
-
-    public UpdateSchoolStatusUseCase(
-            SchoolRepository schoolRepository,
-            UserRepository userRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserContextPort userContextPort) {
-        this.schoolRepository = schoolRepository;
-        this.userRepository = userRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

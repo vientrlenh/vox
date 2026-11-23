@@ -5,6 +5,7 @@ import com.sep.vox.domain.model.school.School;
 import java.util.Objects;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +29,7 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewImportRowsUseCase implements IUseCase<ViewImportRowsQuery, PageResult<ImportRowResponse>> {
 
     private final ImportSessionRepository importSessionRepository;
@@ -38,25 +40,6 @@ public class ViewImportRowsUseCase implements IUseCase<ViewImportRowsQuery, Page
     private final ImportRowResponseMapper importRowResponseMapper;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
-
-    public ViewImportRowsUseCase(
-            ImportSessionRepository importSessionRepository,
-            ImportRowRepository importRowRepository,
-            UserRepository userRepository,
-            SchoolRepository schoolRepository,
-            UserContextPort userContextPort,
-            ImportRowResponseMapper importRowResponseMapper,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository) {
-        this.importSessionRepository = importSessionRepository;
-        this.importRowRepository = importRowRepository;
-        this.userRepository = userRepository;
-        this.schoolRepository = schoolRepository;
-        this.userContextPort = userContextPort;
-        this.importRowResponseMapper = importRowResponseMapper;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

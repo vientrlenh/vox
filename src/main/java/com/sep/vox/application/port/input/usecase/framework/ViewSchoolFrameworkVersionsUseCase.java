@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
 import com.sep.vox.domain.model.framework.FrameworkVersion;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.NotFoundException;
@@ -16,17 +17,11 @@ import com.sep.vox.domain.repository.FrameworkVersionRepository;
 // Query gốc cho School Admin: chỉ được xem danh sách FrameworkVersion đã PUBLISHED
 // (đối xứng với ViewSchoolFrameworkCriteriaUseCase).
 @Service
+@RequiredArgsConstructor
 public class ViewSchoolFrameworkVersionsUseCase implements IUseCase<ViewFrameworkVersionsQuery, PageResult<FrameworkVersionDto>> {
 
     private final FrameworkRepository frameworkRepository;
     private final FrameworkVersionRepository frameworkVersionRepository;
-
-    public ViewSchoolFrameworkVersionsUseCase(
-            FrameworkRepository frameworkRepository,
-            FrameworkVersionRepository frameworkVersionRepository) {
-        this.frameworkRepository = frameworkRepository;
-        this.frameworkVersionRepository = frameworkVersionRepository;
-    }
 
     @Override
     public PageResult<FrameworkVersionDto> execute(ViewFrameworkVersionsQuery input) {

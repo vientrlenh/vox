@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.subscription;
 import com.sep.vox.domain.model.subscription.SubscriptionPlan;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,18 +24,12 @@ import com.sep.vox.domain.repository.SubscriptionPlanRepository;
  * SubscriptionPlanReplacementValidator.requireCompatibleTerms.
  */
 @Service
+@RequiredArgsConstructor
 public class CreateSubscriptionPlanReplacementUseCase
         implements IUseCase<CreateSubscriptionPlanReplacementCommand, UUID> {
 
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final CreateSubscriptionPlanUseCase createSubscriptionPlanUseCase;
-
-    public CreateSubscriptionPlanReplacementUseCase(
-            SubscriptionPlanRepository subscriptionPlanRepository,
-            CreateSubscriptionPlanUseCase createSubscriptionPlanUseCase) {
-        this.subscriptionPlanRepository = subscriptionPlanRepository;
-        this.createSubscriptionPlanUseCase = createSubscriptionPlanUseCase;
-    }
 
     @Override
     @Transactional

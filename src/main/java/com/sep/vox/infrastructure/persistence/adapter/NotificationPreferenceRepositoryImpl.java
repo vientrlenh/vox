@@ -4,6 +4,7 @@ import com.sep.vox.infrastructure.persistence.entity.notification.NotificationPr
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.notification.NotificationCategory;
@@ -13,14 +14,10 @@ import com.sep.vox.infrastructure.persistence.mapper.NotificationPreferenceMappe
 import com.sep.vox.infrastructure.persistence.repository.SpringDataNotificationPreferenceRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class NotificationPreferenceRepositoryImpl implements NotificationPreferenceRepository {
 
     private final SpringDataNotificationPreferenceRepository springDataNotificationPreferenceRepository;
-
-    public NotificationPreferenceRepositoryImpl(
-            SpringDataNotificationPreferenceRepository springDataNotificationPreferenceRepository) {
-        this.springDataNotificationPreferenceRepository = springDataNotificationPreferenceRepository;
-    }
 
     @Override
     public Optional<NotificationPreference> findById(UUID id) {

@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.framework;
 
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,21 +20,13 @@ import com.sep.vox.domain.repository.FrameworkVersionRepository;
 import com.sep.vox.domain.valueobject.framework.FrameworkCriterionSignals;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateFrameworkCriterionBandUseCase
         implements IUseCase<UpdateFrameworkCriterionBandCommand, UUID> {
 
     private final FrameworkVersionRepository frameworkVersionRepository;
     private final FrameworkCriterionRepository frameworkCriterionRepository;
     private final FrameworkCriterionBandRepository frameworkCriterionBandRepository;
-
-    public UpdateFrameworkCriterionBandUseCase(
-            FrameworkVersionRepository frameworkVersionRepository,
-            FrameworkCriterionRepository frameworkCriterionRepository,
-            FrameworkCriterionBandRepository frameworkCriterionBandRepository) {
-        this.frameworkVersionRepository = frameworkVersionRepository;
-        this.frameworkCriterionRepository = frameworkCriterionRepository;
-        this.frameworkCriterionBandRepository = frameworkCriterionBandRepository;
-    }
 
     @Override
     @Transactional

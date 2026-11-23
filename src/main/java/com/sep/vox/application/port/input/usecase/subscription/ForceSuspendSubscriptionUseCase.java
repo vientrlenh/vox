@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +32,7 @@ import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
  * SchoolSubscriptionEvent.
  */
 @Service
+@RequiredArgsConstructor
 public class ForceSuspendSubscriptionUseCase implements IUseCase<ForceSuspendSubscriptionCommand, UUID> {
 
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
@@ -38,19 +40,6 @@ public class ForceSuspendSubscriptionUseCase implements IUseCase<ForceSuspendSub
     private final SchoolSubscriptionSuspensionNotificationService suspensionNotificationService;
     private final AssessmentScheduleRepository assessmentScheduleRepository;
     private final UserContextPort userContextPort;
-
-    public ForceSuspendSubscriptionUseCase(
-            SchoolSubscriptionRepository schoolSubscriptionRepository,
-            SchoolSubscriptionEventRepository schoolSubscriptionEventRepository,
-            SchoolSubscriptionSuspensionNotificationService suspensionNotificationService,
-            AssessmentScheduleRepository assessmentScheduleRepository,
-            UserContextPort userContextPort) {
-        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
-        this.schoolSubscriptionEventRepository = schoolSubscriptionEventRepository;
-        this.suspensionNotificationService = suspensionNotificationService;
-        this.assessmentScheduleRepository = assessmentScheduleRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

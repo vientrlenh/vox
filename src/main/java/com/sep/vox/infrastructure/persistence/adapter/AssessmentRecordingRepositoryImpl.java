@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.assessment.AssessmentRecording;
@@ -14,13 +15,10 @@ import com.sep.vox.infrastructure.persistence.mapper.AssessmentRecordingMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataAssessmentRecordingRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class AssessmentRecordingRepositoryImpl implements AssessmentRecordingRepository {
 
     private final SpringDataAssessmentRecordingRepository springDataAssessmentRecordingRepository;
-
-    public AssessmentRecordingRepositoryImpl(SpringDataAssessmentRecordingRepository springDataAssessmentRecordingRepository) {
-        this.springDataAssessmentRecordingRepository = springDataAssessmentRecordingRepository;
-    }
 
     @Override
     public List<AssessmentRecording> findByAssessmentSessionId(UUID assessmentSessionId) {

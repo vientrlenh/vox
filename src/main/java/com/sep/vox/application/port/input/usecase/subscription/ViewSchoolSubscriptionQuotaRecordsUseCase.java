@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaRecord;
 import java.util.List;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,20 +17,12 @@ import com.sep.vox.domain.dto.SchoolSubscriptionQuotaRecordDto;
 import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewSchoolSubscriptionQuotaRecordsUseCase implements IUseCase<ViewSchoolSubscriptionQuotaRecordsQuery, List<SchoolSubscriptionQuotaRecordDto>> {
 
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final SchoolSubscriptionQuotaRecordRepository schoolSubscriptionQuotaRecordRepository;
     private final UserContextPort userContextPort;
-
-    public ViewSchoolSubscriptionQuotaRecordsUseCase(
-            SchoolSubscriptionRepository schoolSubscriptionRepository,
-            SchoolSubscriptionQuotaRecordRepository schoolSubscriptionQuotaRecordRepository,
-            UserContextPort userContextPort) {
-        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
-        this.schoolSubscriptionQuotaRecordRepository = schoolSubscriptionQuotaRecordRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional(readOnly = true)

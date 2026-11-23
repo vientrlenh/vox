@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.io.ClassPathResource;
@@ -19,14 +20,11 @@ import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
 
 @Component
+@RequiredArgsConstructor
 public class InterestQuizSeedInitializer implements ApplicationRunner {
 
     private final InterestQuizItemRepository quizItemRepository;
     private final JsonMapper jsonMapper = new JsonMapper();
-
-    public InterestQuizSeedInitializer(InterestQuizItemRepository quizItemRepository) {
-        this.quizItemRepository = quizItemRepository;
-    }
 
     @Override
     public void run(ApplicationArguments args) throws IOException {

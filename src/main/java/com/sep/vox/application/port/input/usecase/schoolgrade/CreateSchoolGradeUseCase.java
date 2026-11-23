@@ -17,6 +17,7 @@ import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository; // Bổ sung
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.application.exception.DataConflictException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,7 @@ import java.util.UUID;
 
 
 @Service
+@RequiredArgsConstructor
 public class CreateSchoolGradeUseCase implements IUseCase<CreateSchoolGradeCommand, UUID> {
 
     private final SchoolGradeRepository schoolGradeRepository;
@@ -31,19 +33,6 @@ public class CreateSchoolGradeUseCase implements IUseCase<CreateSchoolGradeComma
     private final UserRepository userRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserContextPort userContextPort;
-
-    public CreateSchoolGradeUseCase(
-            SchoolGradeRepository schoolGradeRepository,
-            GradeLevelRepository gradeLevelRepository,
-            UserRepository userRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserContextPort userContextPort) {
-        this.schoolGradeRepository = schoolGradeRepository;
-        this.gradeLevelRepository = gradeLevelRepository;
-        this.userRepository = userRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

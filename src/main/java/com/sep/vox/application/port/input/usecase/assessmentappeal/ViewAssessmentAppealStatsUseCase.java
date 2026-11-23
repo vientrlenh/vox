@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.assessmentappeal;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,20 +12,12 @@ import com.sep.vox.application.query.repository.AssessmentAppealQueryRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewAssessmentAppealStatsUseCase {
 
     private final AssessmentAppealQueryRepository assessmentAppealQueryRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final AssessmentAppealAccessService assessmentAppealAccessService;
-
-    public ViewAssessmentAppealStatsUseCase(
-            AssessmentAppealQueryRepository assessmentAppealQueryRepository,
-            SchoolUserRepository schoolUserRepository,
-            AssessmentAppealAccessService assessmentAppealAccessService) {
-        this.assessmentAppealQueryRepository = assessmentAppealQueryRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.assessmentAppealAccessService = assessmentAppealAccessService;
-    }
 
     @Transactional(readOnly = true)
     public AppealStatsInfo execute() {

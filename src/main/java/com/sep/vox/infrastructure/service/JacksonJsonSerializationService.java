@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.output.JsonSerializationPort;
@@ -14,6 +15,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 @Service
+@RequiredArgsConstructor
 public class JacksonJsonSerializationService implements JsonSerializationPort {
 
     private final JsonMapper jsonMapper;
@@ -21,10 +23,6 @@ public class JacksonJsonSerializationService implements JsonSerializationPort {
     private final JsonMapper unknownPropertyRejectingJsonMapper = JsonMapper.builder()
         .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
         .build();
-
-    public JacksonJsonSerializationService(JsonMapper jsonMapper) {
-        this.jsonMapper = jsonMapper;
-    }
 
     @Override
     public String toJson(Object value) {

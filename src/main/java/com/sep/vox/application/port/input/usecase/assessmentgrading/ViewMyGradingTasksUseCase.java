@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.assessmentgrading;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,18 +25,12 @@ import com.sep.vox.domain.model.assessment.AssessmentKind;
  * teacherId condition and does not replace it, so it cannot open anything more.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewMyGradingTasksUseCase
         implements IUseCase<ViewMyGradingTasksQuery, PageResult<GradingTaskInfo>> {
 
     private final AssessmentGradingQueryRepository assessmentGradingQueryRepository;
     private final AssessmentGradingAccessService assessmentGradingAccessService;
-
-    public ViewMyGradingTasksUseCase(
-            AssessmentGradingQueryRepository assessmentGradingQueryRepository,
-            AssessmentGradingAccessService assessmentGradingAccessService) {
-        this.assessmentGradingQueryRepository = assessmentGradingQueryRepository;
-        this.assessmentGradingAccessService = assessmentGradingAccessService;
-    }
 
     @Override
     @Transactional(readOnly = true)

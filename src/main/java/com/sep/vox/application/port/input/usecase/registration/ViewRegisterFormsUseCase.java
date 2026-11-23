@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.registration;
 
 import com.sep.vox.domain.model.registerform.RegisterForm;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,13 +13,10 @@ import com.sep.vox.domain.mapper.RegisterFormDtoMapper;
 import com.sep.vox.domain.repository.RegisterFormRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewRegisterFormsUseCase implements IUseCase<ViewRegisterFormsQuery, PageResult<RegisterFormDto>>{
 
     private final RegisterFormRepository registerFormRepository;
-
-    public ViewRegisterFormsUseCase(RegisterFormRepository registerFormRepository) {
-        this.registerFormRepository = registerFormRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

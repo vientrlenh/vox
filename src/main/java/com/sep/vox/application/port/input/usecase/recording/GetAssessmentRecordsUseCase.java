@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.input.query.GetAssessmentRecordsQuery;
@@ -27,18 +28,11 @@ import com.sep.vox.domain.service.recording.RecordingPrecedence;
  * proctor request sign a URL for something it does not use.
  */
 @Service
+@RequiredArgsConstructor
 public class GetAssessmentRecordsUseCase implements IUseCase<GetAssessmentRecordsQuery, List<AssessmentRecordingDto>> {
 
     private final AssessmentRecordingAccessService accessService;
     private final AssessmentRecordingRepository assessmentRecordingRepository;
-
-    public GetAssessmentRecordsUseCase(
-        AssessmentRecordingAccessService accessService,
-        AssessmentRecordingRepository assessmentRecordingRepository
-    ) {
-        this.accessService = accessService;
-        this.assessmentRecordingRepository = assessmentRecordingRepository;
-    }
 
     @Override
     public List<AssessmentRecordingDto> execute(GetAssessmentRecordsQuery input) {

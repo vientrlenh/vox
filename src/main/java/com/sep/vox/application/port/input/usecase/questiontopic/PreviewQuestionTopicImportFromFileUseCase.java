@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,6 +41,7 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
  * Excel không cần chứa id ngân hàng, và cũng không thể chứa: mỗi dòng chỉ mang code/tên/mô tả.
  */
 @Service
+@RequiredArgsConstructor
 public class PreviewQuestionTopicImportFromFileUseCase
         implements IUseCase<PreviewQuestionTopicImportFromFileCommand, PreviewImportResponse> {
 
@@ -52,23 +54,6 @@ public class PreviewQuestionTopicImportFromFileUseCase
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository;
     private final QuestionBankRepository questionBankRepository;
-
-    public PreviewQuestionTopicImportFromFileUseCase(
-            FileProcessingPort fileProcessingPort,
-            ImportSessionRepository importSessionRepository,
-            ImportRowRepository importRowRepository,
-            JsonSerializationPort jsonSerializationPort,
-            UserContextPort userContextPort,
-            SchoolUserRepository schoolUserRepository,
-            QuestionBankRepository questionBankRepository) {
-        this.fileProcessingPort = fileProcessingPort;
-        this.importSessionRepository = importSessionRepository;
-        this.importRowRepository = importRowRepository;
-        this.jsonSerializationPort = jsonSerializationPort;
-        this.userContextPort = userContextPort;
-        this.schoolUserRepository = schoolUserRepository;
-        this.questionBankRepository = questionBankRepository;
-    }
 
     @Override
     @Transactional

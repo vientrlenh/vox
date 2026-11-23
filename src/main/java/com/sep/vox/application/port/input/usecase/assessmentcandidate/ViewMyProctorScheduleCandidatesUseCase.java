@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.assessment.AssessmentSchedule;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,17 +14,11 @@ import com.sep.vox.application.query.dto.ProctorCandidateSummary;
 import com.sep.vox.application.query.repository.ProctorScheduleCandidatesQueryRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewMyProctorScheduleCandidatesUseCase implements IUseCase<UUID, List<ProctorCandidateSummary>> {
 
     private final ProctorScheduleCandidatesQueryRepository proctorScheduleCandidatesQueryRepository;
     private final ProctorScheduleAccessService accessService;
-
-    public ViewMyProctorScheduleCandidatesUseCase(
-            ProctorScheduleCandidatesQueryRepository proctorScheduleCandidatesQueryRepository,
-            ProctorScheduleAccessService accessService) {
-        this.proctorScheduleCandidatesQueryRepository = proctorScheduleCandidatesQueryRepository;
-        this.accessService = accessService;
-    }
 
     @Override
     @Transactional(readOnly = true)

@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,15 +15,11 @@ import com.sep.vox.infrastructure.persistence.entity.personalization.TopicIntere
 import com.sep.vox.infrastructure.persistence.repository.SpringDataTopicInterestScoreRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class TopicInterestScoreRepositoryImpl
         implements TopicInterestScoreRepository {
 
     private final SpringDataTopicInterestScoreRepository repository;
-
-    public TopicInterestScoreRepositoryImpl(
-            SpringDataTopicInterestScoreRepository repository) {
-        this.repository = repository;
-    }
 
     @Override
     @Transactional

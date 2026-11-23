@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.assessment;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +39,7 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
  * uses a JOIN but still show up on any screen that loads by id, for example the student's assessment schedule.
  */
 @Service
+@RequiredArgsConstructor
 public class DeleteAssessmentUseCase implements IUseCase<DeleteAssessmentCommand, DeleteAssessmentResponse> {
 
     private final AssessmentRepository assessmentRepository;
@@ -53,35 +55,6 @@ public class DeleteAssessmentUseCase implements IUseCase<DeleteAssessmentCommand
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
-
-    public DeleteAssessmentUseCase(
-            AssessmentRepository assessmentRepository,
-            AssessmentScheduleRepository assessmentScheduleRepository,
-            AssessmentScheduleProctorRepository assessmentScheduleProctorRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            AssessmentPaperRepository assessmentPaperRepository,
-            AssessmentPaperSectionRepository assessmentPaperSectionRepository,
-            AssessmentPaperItemRepository assessmentPaperItemRepository,
-            AssessmentMemberRepository assessmentMemberRepository,
-            AssessmentQuestionSecureLockService assessmentQuestionSecureLockService,
-            AssessmentScheduleClosureService assessmentScheduleClosureService,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
-            UserContextPort userContextPort) {
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentScheduleRepository = assessmentScheduleRepository;
-        this.assessmentScheduleProctorRepository = assessmentScheduleProctorRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.assessmentPaperRepository = assessmentPaperRepository;
-        this.assessmentPaperSectionRepository = assessmentPaperSectionRepository;
-        this.assessmentPaperItemRepository = assessmentPaperItemRepository;
-        this.assessmentMemberRepository = assessmentMemberRepository;
-        this.assessmentQuestionSecureLockService = assessmentQuestionSecureLockService;
-        this.assessmentScheduleClosureService = assessmentScheduleClosureService;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

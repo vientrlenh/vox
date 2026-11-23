@@ -4,6 +4,8 @@ import com.sep.vox.application.query.dto.SessionRowInfo;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,10 +31,9 @@ import com.sep.vox.application.query.repository.PracticeSessionQueryRepository;
  * Gộp vào một chỗ thay vì chép sang job dọn: chép thì hai bản sẽ trôi lệch ngay lần sửa sau.
  */
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class PracticeSessionClosedHandler {
-
-    private static final org.slf4j.Logger LOGGER =
-        org.slf4j.LoggerFactory.getLogger(PracticeSessionClosedHandler.class);
 
     private final PracticeSessionQueryRepository practiceSessionQueryRepository;
     private final InterestVectorService interestVectorService;
@@ -40,21 +41,6 @@ public class PracticeSessionClosedHandler {
     private final UndeliveredQuestionCleanupService undeliveredQuestionCleanupService;
     private final EventPublisherPort eventPublisherPort;
     private final JsonSerializationPort jsonSerializationPort;
-
-    public PracticeSessionClosedHandler(
-            PracticeSessionQueryRepository practiceSessionQueryRepository,
-            InterestVectorService interestVectorService,
-            TopicOfferBackfillService topicOfferBackfillService,
-            UndeliveredQuestionCleanupService undeliveredQuestionCleanupService,
-            EventPublisherPort eventPublisherPort,
-            JsonSerializationPort jsonSerializationPort) {
-        this.practiceSessionQueryRepository = practiceSessionQueryRepository;
-        this.interestVectorService = interestVectorService;
-        this.topicOfferBackfillService = topicOfferBackfillService;
-        this.undeliveredQuestionCleanupService = undeliveredQuestionCleanupService;
-        this.eventPublisherPort = eventPublisherPort;
-        this.jsonSerializationPort = jsonSerializationPort;
-    }
 
     /**
      * Chạy trong TRANSACTION RIÊNG của từng phiên, không dùng chung với transaction gọi tới.
@@ -107,7 +93,7 @@ public class PracticeSessionClosedHandler {
                 studentId, sessionId, row.getPracticePaperId()
             );
         } catch (RuntimeException exception) {
-            LOGGER.warn("Không trả được câu chưa dùng về kho cho phiên {}.", sessionId, exception);
+            log.warn("Không trả được câu chưa dùng về kho cho phiên {}.", sessionId, exception);
         }
         interestVectorService.recordSessionOutcome(
             studentId,

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.mapper.learnerprofile.LearnerProfileResponseMapper;
@@ -25,35 +26,17 @@ import com.sep.vox.domain.repository.TopicInterestEventRepository;
  * theo lịch sử). Xem task/implement/13-quiz-so-thich-sinh-theo-tinh-huong.md mục 3.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewInterestQuizItemsUseCase implements IUseCase<Void, List<InterestQuizItem>> {
 
-    private final InterestQuizConfigPort quizConfig;
     private final InterestQuizItemRepository quizItemRepository;
     private final TopicInterestEventRepository topicInterestEventRepository;
     private final InterestQuizGenerationPort quizGenerationPort;
     private final UserContextPort userContextPort;
     private final InterestQuizScorer interestQuizScorer;
     private final InterestQuizItemSelector itemSelector;
+    private final InterestQuizConfigPort quizConfig;
     private final LearnerProfileRepository learnerProfileRepository;
-
-    public ViewInterestQuizItemsUseCase(
-            InterestQuizItemRepository quizItemRepository,
-            TopicInterestEventRepository topicInterestEventRepository,
-            InterestQuizGenerationPort quizGenerationPort,
-            UserContextPort userContextPort,
-            InterestQuizScorer interestQuizScorer,
-            InterestQuizItemSelector itemSelector,
-            InterestQuizConfigPort quizConfig,
-            LearnerProfileRepository learnerProfileRepository) {
-        this.quizConfig = quizConfig;
-        this.itemSelector = itemSelector;
-        this.quizItemRepository = quizItemRepository;
-        this.topicInterestEventRepository = topicInterestEventRepository;
-        this.quizGenerationPort = quizGenerationPort;
-        this.userContextPort = userContextPort;
-        this.interestQuizScorer = interestQuizScorer;
-        this.learnerProfileRepository = learnerProfileRepository;
-    }
 
     // Không @Transactional -- quizGenerationPort.generate() gọi LLM chậm (Python agents,
     // 10-20s). Bọc trong transaction từng gây HikariCP cạn pool dưới tải (xem

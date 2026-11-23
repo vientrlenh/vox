@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.assessmentgrading;
 import java.util.List;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,17 +26,11 @@ import com.sep.vox.domain.model.assessment.AssessmentKind;
  * lọc trên cùng một tập, nếu không dropdown liệt kê ra kỳ thi mà hàng đợi trả về rỗng.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewMyGradingAssessmentsUseCase implements IUseCase<Void, List<GradingAssessmentOptionInfo>> {
 
     private final AssessmentGradingQueryRepository assessmentGradingQueryRepository;
     private final AssessmentGradingAccessService assessmentGradingAccessService;
-
-    public ViewMyGradingAssessmentsUseCase(
-            AssessmentGradingQueryRepository assessmentGradingQueryRepository,
-            AssessmentGradingAccessService assessmentGradingAccessService) {
-        this.assessmentGradingQueryRepository = assessmentGradingQueryRepository;
-        this.assessmentGradingAccessService = assessmentGradingAccessService;
-    }
 
     @Override
     @Transactional(readOnly = true)

@@ -5,6 +5,7 @@ import com.sep.vox.domain.model.subscription.SubscriptionPlan;
 import java.time.Instant;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +33,7 @@ import com.sep.vox.domain.repository.SubscriptionPlanRepository;
  * trạng gói của một trường thì dùng màn quản trị gói đăng ký, không đi qua đường này.
  */
 @Service
+@RequiredArgsConstructor
 public class PreviewSchoolSubscriptionRenewalUseCase
         implements IUseCase<Void, SchoolSubscriptionRenewalPreviewResponse> {
 
@@ -39,17 +41,6 @@ public class PreviewSchoolSubscriptionRenewalUseCase
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final SubscriptionPlanResolver subscriptionPlanResolver;
     private final UserContextPort userContextPort;
-
-    public PreviewSchoolSubscriptionRenewalUseCase(
-            SchoolSubscriptionRepository schoolSubscriptionRepository,
-            SubscriptionPlanRepository subscriptionPlanRepository,
-            SubscriptionPlanResolver subscriptionPlanResolver,
-            UserContextPort userContextPort) {
-        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
-        this.subscriptionPlanRepository = subscriptionPlanRepository;
-        this.subscriptionPlanResolver = subscriptionPlanResolver;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional(readOnly = true)

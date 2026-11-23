@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.IntStream; // Sử dụng Command dùng chung của bác
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +39,7 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class PreviewSchoolRubricCriterionImportFromFileUseCase implements IUseCase<PreviewRubricCriterionImportCommand, PreviewRubricCriterionImportResponse> {
 
     private final RubricVersionRepository rubricVersionRepository;
@@ -49,27 +51,6 @@ public class PreviewSchoolRubricCriterionImportFromFileUseCase implements IUseCa
     private final UserRepository userRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserContextPort userContextPort;
-
-    public PreviewSchoolRubricCriterionImportFromFileUseCase(
-            RubricVersionRepository rubricVersionRepository,
-            RubricRepository rubricRepository,
-            ImportSessionRepository importSessionRepository,
-            ImportRowRepository importRowRepository,
-            FileProcessingPort fileProcessingPort,
-            JsonSerializationPort jsonSerializationPort,
-            UserRepository userRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserContextPort userContextPort) {
-        this.rubricVersionRepository = rubricVersionRepository;
-        this.rubricRepository = rubricRepository;
-        this.importSessionRepository = importSessionRepository;
-        this.importRowRepository = importRowRepository;
-        this.fileProcessingPort = fileProcessingPort;
-        this.jsonSerializationPort = jsonSerializationPort;
-        this.userRepository = userRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

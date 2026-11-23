@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.personalization.PracticeTopic;
@@ -15,13 +16,10 @@ import com.sep.vox.infrastructure.persistence.mapper.personalization.PracticeTop
 import com.sep.vox.infrastructure.persistence.repository.SpringDataPracticeTopicRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class PracticeTopicRepositoryImpl implements PracticeTopicRepository {
 
     private final SpringDataPracticeTopicRepository repository;
-
-    public PracticeTopicRepositoryImpl(SpringDataPracticeTopicRepository repository) {
-        this.repository = repository;
-    }
 
     @Override
     public Optional<PracticeTopic> findTopicById(UUID id) {

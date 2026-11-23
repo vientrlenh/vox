@@ -9,6 +9,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +32,7 @@ import com.sep.vox.domain.repository.AssessmentPaperSectionRepository;
 import com.sep.vox.domain.repository.AssessmentRepository;
 
 @Service
+@RequiredArgsConstructor
 public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSectionCommand, AssessmentDto> {
 
     private final AssessmentRepository assessmentRepository;
@@ -40,23 +42,6 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
     private final AssessmentPaperItemRepository assessmentPaperItemRepository;
     private final RecalculateAssessmentTimeDurationService recalculateAssessmentTimeDurationService;
     private final UserContextPort userContextPort;
-
-    public DeleteClassTestSectionUseCase(
-            AssessmentRepository assessmentRepository,
-            AssessmentMemberRepository assessmentMemberRepository,
-            AssessmentPaperRepository assessmentPaperRepository,
-            AssessmentPaperSectionRepository assessmentPaperSectionRepository,
-            AssessmentPaperItemRepository assessmentPaperItemRepository,
-            RecalculateAssessmentTimeDurationService recalculateAssessmentTimeDurationService,
-            UserContextPort userContextPort) {
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentMemberRepository = assessmentMemberRepository;
-        this.assessmentPaperRepository = assessmentPaperRepository;
-        this.assessmentPaperSectionRepository = assessmentPaperSectionRepository;
-        this.assessmentPaperItemRepository = assessmentPaperItemRepository;
-        this.recalculateAssessmentTimeDurationService = recalculateAssessmentTimeDurationService;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

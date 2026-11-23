@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,17 +21,11 @@ import com.sep.vox.domain.repository.AssessmentResultAppealRepository;
  * finalize a single result right away) so that it is not written twice.
  */
 @Service
+@RequiredArgsConstructor
 public class AssessmentCandidateResultFinalizationService {
 
     private final AssessmentCandidateResultRepository assessmentCandidateResultRepository;
     private final AssessmentResultAppealRepository assessmentResultAppealRepository;
-
-    public AssessmentCandidateResultFinalizationService(
-            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
-            AssessmentResultAppealRepository assessmentResultAppealRepository) {
-        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
-        this.assessmentResultAppealRepository = assessmentResultAppealRepository;
-    }
 
     /**
      * G.4 case 1: a violation detected late for a session that already has a result (RELEASED/FINAL with a real

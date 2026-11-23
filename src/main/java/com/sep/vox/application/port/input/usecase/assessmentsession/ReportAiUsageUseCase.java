@@ -4,6 +4,7 @@ import com.sep.vox.application.port.input.command.RecordAiUsageCommand;
 import com.sep.vox.domain.model.assessment.AssessmentCandidate;
 import com.sep.vox.domain.model.assessment.AssessmentSession;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
@@ -27,23 +28,13 @@ import com.sep.vox.domain.repository.AssessmentSessionRepository;
  * only makes sense while the session is running.
  */
 @Service
+@RequiredArgsConstructor
 public class ReportAiUsageUseCase implements IUseCase<ReportAiUsageCommand, Void> {
 
     private final UserContextPort userContextPort;
     private final AssessmentSessionRepository assessmentSessionRepository;
     private final AssessmentCandidateRepository assessmentCandidateRepository;
     private final RecordAiUsageUseCase recordAiUsageUseCase;
-
-    public ReportAiUsageUseCase(
-            UserContextPort userContextPort,
-            AssessmentSessionRepository assessmentSessionRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            RecordAiUsageUseCase recordAiUsageUseCase) {
-        this.userContextPort = userContextPort;
-        this.assessmentSessionRepository = assessmentSessionRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.recordAiUsageUseCase = recordAiUsageUseCase;
-    }
 
     /**
      * CỐ Ý KHÔNG @Transactional: mỗi usage event phải đứng độc lập, đúng như đường Kafka

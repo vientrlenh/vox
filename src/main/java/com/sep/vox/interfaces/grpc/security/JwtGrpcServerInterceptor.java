@@ -1,7 +1,7 @@
 package com.sep.vox.interfaces.grpc.security;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.grpc.server.GlobalServerInterceptor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContext;
@@ -24,9 +24,9 @@ import io.grpc.Status;
 
 @Component
 @GlobalServerInterceptor
+@RequiredArgsConstructor
+@Slf4j
 public class JwtGrpcServerInterceptor implements ServerInterceptor {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(JwtGrpcServerInterceptor.class);
 
     private static final String BEARER_PREFIX = "Bearer ";
     private static final Metadata.Key<String> AUTHORIZATION_KEY =
@@ -34,11 +34,6 @@ public class JwtGrpcServerInterceptor implements ServerInterceptor {
 
     private final AuthTokenPort authTokenPort;
     private final UserDetailsService userDetailsService;
-
-    public JwtGrpcServerInterceptor(AuthTokenPort authTokenPort, UserDetailsService userDetailsService) {
-        this.authTokenPort = authTokenPort;
-        this.userDetailsService = userDetailsService;
-    }
 
     @Override
     public <ReqT, RespT> Listener<ReqT> interceptCall(
@@ -98,13 +93,13 @@ public class JwtGrpcServerInterceptor implements ServerInterceptor {
             String email = authTokenPort.getEmailFromToken(token);
             UserDetails userDetails = userDetailsService.loadUserByUsername(email);
             if (!userDetails.isEnabled()) {
-                LOGGER.warn("gRPC auth rejected: disabled user {}", email);
+                log.warn("gRPC auth rejected: disabled user {}", email);
                 return null;
             }
             return new UsernamePasswordAuthenticationToken(
                     userDetails, null, userDetails.getAuthorities());
         } catch (Exception e) {
-            LOGGER.warn("gRPC JWT validation failed: {}", e.getMessage());
+            log.warn("gRPC JWT validation failed: {}", e.getMessage());
             return null;
         }
     }

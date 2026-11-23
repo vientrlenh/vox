@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.assessmentblueprint;
 
 import com.sep.vox.domain.model.assessment.AssessmentBlueprint;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,23 +18,13 @@ import com.sep.vox.domain.repository.AssessmentBlueprintRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewAssessmentBlueprintsUseCase implements IUseCase<ViewAssessmentBlueprintsQuery, PageResult<AssessmentBlueprintDto>> {
 
     private final AssessmentBlueprintRepository assessmentBlueprintRepository;
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
-
-    public ViewAssessmentBlueprintsUseCase(
-            AssessmentBlueprintRepository assessmentBlueprintRepository,
-            UserContextPort userContextPort,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository) {
-        this.assessmentBlueprintRepository = assessmentBlueprintRepository;
-        this.userContextPort = userContextPort;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

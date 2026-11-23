@@ -10,6 +10,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,6 +47,7 @@ import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.service.assessment.PaperTimeCalculator;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTestQuestionsCommand, AssessmentDto> {
 
     private final AssessmentRepository assessmentRepository;
@@ -60,33 +62,6 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
     private final AssessmentTimeQuotaGuardService assessmentTimeQuotaGuardService;
     private final RecalculateAssessmentTimeDurationService recalculateAssessmentTimeDurationService;
     private final UserContextPort userContextPort;
-
-    public UpdateClassTestQuestionsUseCase(
-            AssessmentRepository assessmentRepository,
-            AssessmentMemberRepository assessmentMemberRepository,
-            ClassTestPaperResolver classTestPaperResolver,
-            AssessmentPaperSectionRepository assessmentPaperSectionRepository,
-            AssessmentPaperItemRepository assessmentPaperItemRepository,
-            QuestionRepository questionRepository,
-            QuestionAssetRepository questionAssetRepository,
-            QuestionCollaboratorRepository questionCollaboratorRepository,
-            AssessmentQuestionSecureLockService assessmentQuestionSecureLockService,
-            AssessmentTimeQuotaGuardService assessmentTimeQuotaGuardService,
-            RecalculateAssessmentTimeDurationService recalculateAssessmentTimeDurationService,
-            UserContextPort userContextPort) {
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentMemberRepository = assessmentMemberRepository;
-        this.classTestPaperResolver = classTestPaperResolver;
-        this.assessmentPaperSectionRepository = assessmentPaperSectionRepository;
-        this.assessmentPaperItemRepository = assessmentPaperItemRepository;
-        this.questionRepository = questionRepository;
-        this.questionAssetRepository = questionAssetRepository;
-        this.questionCollaboratorRepository = questionCollaboratorRepository;
-        this.assessmentQuestionSecureLockService = assessmentQuestionSecureLockService;
-        this.assessmentTimeQuotaGuardService = assessmentTimeQuotaGuardService;
-        this.recalculateAssessmentTimeDurationService = recalculateAssessmentTimeDurationService;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

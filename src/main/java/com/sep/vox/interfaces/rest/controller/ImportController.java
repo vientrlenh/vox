@@ -3,6 +3,7 @@ package com.sep.vox.interfaces.rest.controller;
 import com.sep.vox.application.port.input.command.RejectImportSessionCommand;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,13 +20,10 @@ import com.sep.vox.interfaces.rest.mapper.RejectImportSessionCommandMapper;
 
 @RestController
 @RequestMapping("/api/v1/imports")
+@RequiredArgsConstructor
 public class ImportController {
 
     private final RejectImportSessionUseCase rejectImportSessionUseCase;
-
-    public ImportController(RejectImportSessionUseCase rejectImportSessionUseCase) {
-        this.rejectImportSessionUseCase = rejectImportSessionUseCase;
-    }
 
     @PostMapping("/{sessionId}/reject")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")

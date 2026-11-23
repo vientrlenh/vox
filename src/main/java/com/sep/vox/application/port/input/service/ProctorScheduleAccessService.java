@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.service;
 
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
@@ -23,6 +24,7 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
  * is the kind of bug nobody sees until it is too late.
  */
 @Service
+@RequiredArgsConstructor
 public class ProctorScheduleAccessService {
 
     private final AssessmentScheduleProctorRepository assessmentScheduleProctorRepository;
@@ -31,21 +33,6 @@ public class ProctorScheduleAccessService {
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
-
-    public ProctorScheduleAccessService(
-            AssessmentScheduleProctorRepository assessmentScheduleProctorRepository,
-            AssessmentScheduleRepository assessmentScheduleRepository,
-            AssessmentRepository assessmentRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
-            UserContextPort userContextPort) {
-        this.assessmentScheduleProctorRepository = assessmentScheduleProctorRepository;
-        this.assessmentScheduleRepository = assessmentScheduleRepository;
-        this.assessmentRepository = assessmentRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-        this.userContextPort = userContextPort;
-    }
 
     /**
      * Trả về ca thi nếu người đang đăng nhập được phép giám sát nó, ném lỗi nếu không.

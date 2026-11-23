@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.NotFoundException;
@@ -36,10 +37,11 @@ import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
  * ResolveNextPracticeQuestionUseCase.
  */
 @Service
+@RequiredArgsConstructor
 public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCommand, PracticePaper> {
 
-    // Trùng scale của school_subscription_quota_records.used_amount_vnd numeric(18,6) -- cùng hằng số
-    // với SubmitPracticeTurnUseCase, nơi khoản chi thật của từng lượt được quy đổi và trừ.
+    // Same scale as school_subscription_quota_records.used_amount_vnd numeric(18,6) -- the same constant
+    // as in SubmitPracticeTurnUseCase, where the real cost of each turn is converted and deducted.
     private static final int COST_VND_SCALE = 6;
 
     private final PracticeTopicRepository topicRepository;
@@ -53,31 +55,6 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
     private final QuotaPricingPort quotaPricingPort;
     private final SchoolSubscriptionActiveGuardService schoolSubscriptionActiveGuardService;
     private final PracticePaperDtoMapper practicePaperDtoMapper;
-
-    public BuildPracticePaperUseCase(
-            PracticeTopicRepository topicRepository,
-            PracticePaperRepository paperRepository,
-            SchoolSubscriptionRepository schoolSubscriptionRepository,
-            PracticeTopicOfferEnrichmentService enrichmentService,
-            PracticeQuestionSelectionService selectionService,
-            PracticePaperPersistenceService persistenceService,
-            UserContextPort userContextPort,
-            ViewPracticeTopicOffersUseCase viewPracticeTopicOffersUseCase,
-            QuotaPricingPort quotaPricingPort,
-            SchoolSubscriptionActiveGuardService schoolSubscriptionActiveGuardService,
-            PracticePaperDtoMapper practicePaperDtoMapper) {
-        this.viewPracticeTopicOffersUseCase = viewPracticeTopicOffersUseCase;
-        this.topicRepository = topicRepository;
-        this.paperRepository = paperRepository;
-        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
-        this.enrichmentService = enrichmentService;
-        this.selectionService = selectionService;
-        this.persistenceService = persistenceService;
-        this.userContextPort = userContextPort;
-        this.quotaPricingPort = quotaPricingPort;
-        this.schoolSubscriptionActiveGuardService = schoolSubscriptionActiveGuardService;
-        this.practicePaperDtoMapper = practicePaperDtoMapper;
-    }
 
     @Override
     public PracticePaper execute(BuildPracticePaperCommand input) {

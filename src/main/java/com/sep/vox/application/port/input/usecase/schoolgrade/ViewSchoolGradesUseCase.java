@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.schoolgrade;
 
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +23,7 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewSchoolGradesUseCase implements IUseCase<ViewSchoolGradesQuery, PageResult<SchoolGradeDto>> {
 
     private final SchoolGradeRepository schoolGradeRepository;
@@ -29,19 +31,6 @@ public class ViewSchoolGradesUseCase implements IUseCase<ViewSchoolGradesQuery, 
     private final UserRepository userRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserContextPort userContextPort;
-
-    public ViewSchoolGradesUseCase(
-            SchoolGradeRepository schoolGradeRepository,
-            SchoolRepository schoolRepository,
-            UserRepository userRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserContextPort userContextPort) {
-        this.schoolGradeRepository = schoolGradeRepository;
-        this.schoolRepository = schoolRepository;
-        this.userRepository = userRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional(readOnly = true)

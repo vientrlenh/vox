@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.assessment.AssessmentItemEvaluationTurn;
@@ -12,14 +13,10 @@ import com.sep.vox.infrastructure.persistence.mapper.AssessmentItemEvaluationTur
 import com.sep.vox.infrastructure.persistence.repository.SpringDataAssessmentItemEvaluationTurnRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class AssessmentItemEvaluationTurnRepositoryImpl implements AssessmentItemEvaluationTurnRepository {
 
     private final SpringDataAssessmentItemEvaluationTurnRepository springDataAssessmentItemEvaluationTurnRepository;
-
-    public AssessmentItemEvaluationTurnRepositoryImpl(
-            SpringDataAssessmentItemEvaluationTurnRepository springDataAssessmentItemEvaluationTurnRepository) {
-        this.springDataAssessmentItemEvaluationTurnRepository = springDataAssessmentItemEvaluationTurnRepository;
-    }
 
     @Override
     public List<AssessmentItemEvaluationTurn> saveAll(List<AssessmentItemEvaluationTurn> turns) {

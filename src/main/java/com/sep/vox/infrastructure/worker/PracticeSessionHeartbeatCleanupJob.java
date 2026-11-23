@@ -3,6 +3,7 @@ package com.sep.vox.infrastructure.worker;
 import java.time.Duration;
 import java.time.Instant;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -10,24 +11,18 @@ import com.sep.vox.application.port.input.service.PracticeGradingFlushService;
 import com.sep.vox.application.port.input.service.PracticeSessionCleanupService;
 
 @Component
+@RequiredArgsConstructor
 public class PracticeSessionHeartbeatCleanupJob {
 
     /**
-     * Chỉ quét lại phiên đóng trong vòng 24h. Nếu việc chấm hỏng thật thì quét không giới hạn
-     * sẽ bắn lại cùng bộ sự kiện mỗi 5 phút, mãi mãi -- quá hạn thì thôi, và màn tổng kết nói
-     * thẳng là chấm không xong thay vì quay tiếp.
+     * Only re-sweeps sessions closed within the last 24h. If grading is truly broken, an unbounded sweep
+     * would fire the same set of events every 5 minutes forever -- past the window we stop, and the summary screen says
+     * plainly that grading did not finish instead of retrying again.
      */
     private static final Duration ORPHAN_SWEEP_WINDOW = Duration.ofHours(24);
 
     private final PracticeSessionCleanupService cleanupService;
     private final PracticeGradingFlushService gradingFlushService;
-
-    public PracticeSessionHeartbeatCleanupJob(
-            PracticeSessionCleanupService cleanupService,
-            PracticeGradingFlushService gradingFlushService) {
-        this.cleanupService = cleanupService;
-        this.gradingFlushService = gradingFlushService;
-    }
 
     /**
      * Nới 3 -> 10 phút (2026-08-12). Ba phút quá ngắn cho luyện NÓI: riêng câu hỏi AI đọc đã gần

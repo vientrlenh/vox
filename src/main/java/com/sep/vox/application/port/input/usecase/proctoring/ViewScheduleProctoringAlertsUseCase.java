@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.assessment.AssessmentSchedule;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,17 +26,11 @@ import com.sep.vox.domain.repository.AssessmentProctoringAlertRepository;
  * trang không còn xoá sạch mọi thứ.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewScheduleProctoringAlertsUseCase implements IUseCase<UUID, List<AssessmentProctoringAlertDto>> {
 
     private final ProctorScheduleAccessService accessService;
     private final AssessmentProctoringAlertRepository assessmentProctoringAlertRepository;
-
-    public ViewScheduleProctoringAlertsUseCase(
-            ProctorScheduleAccessService accessService,
-            AssessmentProctoringAlertRepository assessmentProctoringAlertRepository) {
-        this.accessService = accessService;
-        this.assessmentProctoringAlertRepository = assessmentProctoringAlertRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

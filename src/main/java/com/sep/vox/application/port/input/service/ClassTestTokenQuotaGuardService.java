@@ -7,6 +7,7 @@ import java.math.RoundingMode;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.PlanLimitExceededException;
@@ -53,15 +54,16 @@ import com.sep.vox.domain.repository.SchoolSubscriptionQuotaUserAllocationReposi
  * logic does not diverge between places.
  */
 @Service
+@RequiredArgsConstructor
 public class ClassTestTokenQuotaGuardService {
 
-    // Trùng scale của school_subscription_quota_records.used_amount_vnd numeric(18,6) -- cùng lý do
-    // như RecordAiUsageUseCase: rộng hơn thì Postgres cắt tiếp, hẹp hơn thì con số so sánh ở đây đã
-    // lệch khỏi con số sẽ bị trừ thật.
+    // Matches the scale of school_subscription_quota_records.used_amount_vnd numeric(18,6) -- same reason
+    // as RecordAiUsageUseCase: if wider, Postgres truncates further; if narrower, the number compared here has
+    // already drifted from the number that will actually be deducted.
     private static final int COST_VND_SCALE = 6;
 
-    // % nên đủ mượt để hiện "37.5%" thay vì làm tròn cả về số nguyên -- không cần khớp scale tiền tệ
-    // vì đây là tỉ lệ hiển thị, không phải con số đem trừ/so trực tiếp với ai_usage_records.
+    // % so it is smooth enough to show "37.5%" instead of rounding to a whole number -- it does not need to match the money scale
+    // because this is a displayed ratio, not a number deducted or compared directly with ai_usage_records.
     private static final int RATIO_SCALE = 4;
 
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
@@ -71,23 +73,6 @@ public class ClassTestTokenQuotaGuardService {
     private final SchoolBalanceRepository schoolBalanceRepository;
     private final QuotaPricingPort quotaPricingPort;
     private final SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService;
-
-    public ClassTestTokenQuotaGuardService(
-            SchoolSubscriptionRepository schoolSubscriptionRepository,
-            SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository,
-            SchoolSubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            SchoolBalanceRepository schoolBalanceRepository,
-            QuotaPricingPort quotaPricingPort,
-            SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService) {
-        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
-        this.subscriptionQuotaRepository = subscriptionQuotaRepository;
-        this.subscriptionQuotaUserAllocationRepository = subscriptionQuotaUserAllocationRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.schoolBalanceRepository = schoolBalanceRepository;
-        this.quotaPricingPort = quotaPricingPort;
-        this.schoolSubscriptionDebtGuardService = schoolSubscriptionDebtGuardService;
-    }
 
     public void requireWithinTokenQuota(Assessment assessment) {
         // If the attempt duration cannot be computed yet (no paper variant/questions yet), the estimate is 0 tokens and there is nothing

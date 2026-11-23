@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.framework.FrameworkResultBand;
@@ -14,15 +15,11 @@ import com.sep.vox.infrastructure.persistence.mapper.personalization.LearnerProf
 import com.sep.vox.infrastructure.persistence.repository.SpringDataLearnerProfileRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class LearnerProfileRepositoryImpl
         implements LearnerProfileRepository {
 
     private final SpringDataLearnerProfileRepository profileRepository;
-
-    public LearnerProfileRepositoryImpl(
-            SpringDataLearnerProfileRepository profileRepository) {
-        this.profileRepository = profileRepository;
-    }
 
     @Override
     public Optional<LearnerProfile> findCurrent(UUID studentId) {

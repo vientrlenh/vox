@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.auth;
 
 import com.sep.vox.application.response.output.VerifiedGoogleIdentity;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,19 +28,14 @@ import com.sep.vox.application.response.input.auth.LoginResponse;
  * ở đây thì không, nên {@link GoogleIdTokenVerifierPort} phải làm đúng phần đó trước.
  */
 @Service
+@RequiredArgsConstructor
 public class GoogleTokenLoginUseCase implements IUseCase<GoogleTokenLoginCommand, LoginResponse> {
 
-    /** Nhà cung cấp, ghi vào phiên. Trùng {@code registrationId} của đường web -- cùng một Google. */
+    /** The provider, recorded in the session. Equals the {@code registrationId} of the web path -- the same Google. */
     private static final String PROVIDER = "google";
 
     private final GoogleIdTokenVerifierPort googleIdTokenVerifierPort;
     private final OAuth2LoginUseCase oAuth2LoginUseCase;
-
-    public GoogleTokenLoginUseCase(GoogleIdTokenVerifierPort googleIdTokenVerifierPort,
-            OAuth2LoginUseCase oAuth2LoginUseCase) {
-        this.googleIdTokenVerifierPort = googleIdTokenVerifierPort;
-        this.oAuth2LoginUseCase = oAuth2LoginUseCase;
-    }
 
     /**
      * Email CHƯA xác minh bị từ chối ngay tại đây, trước khi tra người dùng.

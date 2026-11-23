@@ -6,6 +6,7 @@ import com.sep.vox.domain.model.question.QuestionTopic;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ import com.sep.vox.domain.repository.QuestionTopicRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class DeleteQuestionTopicUseCase implements IUseCase<DeleteQuestionTopicCommand, Void> {
 
     private final QuestionTopicRepository questionTopicRepository;
@@ -35,25 +37,6 @@ public class DeleteQuestionTopicUseCase implements IUseCase<DeleteQuestionTopicC
     private final QuestionCollaboratorRepository questionCollaboratorRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserContextPort userContextPort;
-
-    public DeleteQuestionTopicUseCase(
-            QuestionTopicRepository questionTopicRepository,
-            QuestionBankRepository questionBankRepository,
-            QuestionRepository questionRepository,
-            QuestionAssetRepository questionAssetRepository,
-            QuestionEvaluationGuideRepository questionEvaluationGuideRepository,
-            QuestionCollaboratorRepository questionCollaboratorRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserContextPort userContextPort) {
-        this.questionTopicRepository = questionTopicRepository;
-        this.questionBankRepository = questionBankRepository;
-        this.questionRepository = questionRepository;
-        this.questionAssetRepository = questionAssetRepository;
-        this.questionEvaluationGuideRepository = questionEvaluationGuideRepository;
-        this.questionCollaboratorRepository = questionCollaboratorRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

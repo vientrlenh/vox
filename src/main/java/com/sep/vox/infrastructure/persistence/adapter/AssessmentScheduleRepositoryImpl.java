@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.assessment.AssessmentSchedule;
@@ -16,13 +17,10 @@ import com.sep.vox.infrastructure.persistence.mapper.AssessmentScheduleMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataAssessmentScheduleRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class AssessmentScheduleRepositoryImpl implements AssessmentScheduleRepository {
 
     private final SpringDataAssessmentScheduleRepository springDataAssessmentScheduleRepository;
-
-    public AssessmentScheduleRepositoryImpl(SpringDataAssessmentScheduleRepository springDataAssessmentScheduleRepository) {
-        this.springDataAssessmentScheduleRepository = springDataAssessmentScheduleRepository;
-    }
 
     @Override
     public Optional<AssessmentSchedule> findById(UUID id) {

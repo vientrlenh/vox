@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,23 +27,13 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
  * name of the assessment, otherwise the top of the page is empty while the session list below still lists normally.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewMonitorableAssessmentUseCase implements IUseCase<UUID, MonitoredAssessmentSummary> {
 
     private final MonitoredAssessmentQueryRepository monitoredAssessmentQueryRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
-
-    public ViewMonitorableAssessmentUseCase(
-            MonitoredAssessmentQueryRepository monitoredAssessmentQueryRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
-            UserContextPort userContextPort) {
-        this.monitoredAssessmentQueryRepository = monitoredAssessmentQueryRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional(readOnly = true)

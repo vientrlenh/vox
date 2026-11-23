@@ -1,6 +1,7 @@
 package com.sep.vox.infrastructure.security;
 
 
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
@@ -14,14 +15,11 @@ import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Component
+@RequiredArgsConstructor
 public class CustomOidcUserService implements OAuth2UserService<OidcUserRequest, OidcUser>{
     
     private final OidcUserService delegate = new OidcUserService();
     private final UserRepository userRepository;
-
-    public CustomOidcUserService(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
 
     @Override
     public @Nullable OidcUser loadUser(OidcUserRequest userRequest) throws OAuth2AuthenticationException {

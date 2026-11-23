@@ -11,6 +11,7 @@ import com.sep.vox.domain.repository.AssessmentRepository;
 import com.sep.vox.domain.repository.AssessmentScheduleRepository;
 import com.sep.vox.domain.repository.AssessmentSessionRepository;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +27,7 @@ import com.sep.vox.domain.model.assessment.AssessmentRequiredStreamType;
 import com.sep.vox.domain.model.assessment.AssessmentSession;
 
 @Service
+@RequiredArgsConstructor
 public class IssueStudentStreamTokenUseCase implements IUseCase<IssueStudentStreamTokenCommand, IssueStudentStreamTokenResponse> {
 
     private final UserContextPort userContextPort;
@@ -35,20 +37,6 @@ public class IssueStudentStreamTokenUseCase implements IUseCase<IssueStudentStre
     private final AssessmentSessionRepository assessmentSessionRepository;
     private final StreamTokenProvider streamTokenProvider; 
 
-
-    public IssueStudentStreamTokenUseCase(UserContextPort userContextPort, 
-                                            AssessmentScheduleRepository assessmentScheduleRepository, 
-                                            AssessmentRepository assessmentRepository, 
-                                            AssessmentCandidateRepository assessmentCandidateRepository, 
-                                            AssessmentSessionRepository assessmentSessionRepository, 
-                                            StreamTokenProvider streamTokenProvider) {
-        this.userContextPort = userContextPort;
-        this.assessmentScheduleRepository = assessmentScheduleRepository;
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.assessmentSessionRepository = assessmentSessionRepository;
-        this.streamTokenProvider = streamTokenProvider;
-    }
 
     @Override
     @Transactional

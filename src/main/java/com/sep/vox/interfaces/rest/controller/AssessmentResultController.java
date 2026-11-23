@@ -3,6 +3,7 @@ package com.sep.vox.interfaces.rest.controller;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -40,11 +41,12 @@ import jakarta.validation.Valid;
  */
 @RestController
 @RequestMapping("/api/v1/assessment-results")
+@RequiredArgsConstructor
 public class AssessmentResultController {
 
     /**
-     * MIME type của .xlsx. Viết ra hằng vì chuỗi này dài và sai một ký tự thì trình duyệt
-     * tải về một file Excel không mở được.
+     * MIME type of .xlsx. Written out as a constant because the string is long, and one wrong character
+     * makes the browser download an Excel file that cannot be opened.
      */
     private static final String XLSX_MEDIA_TYPE =
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -53,17 +55,6 @@ public class AssessmentResultController {
     private final BulkFinalizeAssessmentResultsUseCase bulkFinalizeAssessmentResultsUseCase;
     private final ExportAssessmentScoresUseCase exportAssessmentScoresUseCase;
     private final ExportAssessmentScoresExcelUseCase exportAssessmentScoresExcelUseCase;
-
-    public AssessmentResultController(
-            PreviewBulkFinalizeUseCase previewBulkFinalizeUseCase,
-            BulkFinalizeAssessmentResultsUseCase bulkFinalizeAssessmentResultsUseCase,
-            ExportAssessmentScoresUseCase exportAssessmentScoresUseCase,
-            ExportAssessmentScoresExcelUseCase exportAssessmentScoresExcelUseCase) {
-        this.previewBulkFinalizeUseCase = previewBulkFinalizeUseCase;
-        this.bulkFinalizeAssessmentResultsUseCase = bulkFinalizeAssessmentResultsUseCase;
-        this.exportAssessmentScoresUseCase = exportAssessmentScoresUseCase;
-        this.exportAssessmentScoresExcelUseCase = exportAssessmentScoresExcelUseCase;
-    }
 
     @Operation(summary = "Xem trước việc chốt sổ kỳ thi: còn bao nhiêu bài chưa chấm, "
         + "đang chấm dở, và đơn phúc khảo chưa xong. KHÔNG ghi gì.")

@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.assessment.AssessmentRequiredStreamType;
@@ -18,13 +19,10 @@ import com.sep.vox.infrastructure.persistence.mapper.AssessmentSessionMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataAssessmentSessionRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class AssessmentSessionRepositoryImpl implements AssessmentSessionRepository {
 
     private final SpringDataAssessmentSessionRepository springDataAssessmentSessionRepository;
-
-    public AssessmentSessionRepositoryImpl(SpringDataAssessmentSessionRepository springDataAssessmentSessionRepository) {
-        this.springDataAssessmentSessionRepository = springDataAssessmentSessionRepository;
-    }
 
 
 

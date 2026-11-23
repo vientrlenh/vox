@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.order;
 
 import com.sep.vox.domain.model.order.Order;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,15 +26,11 @@ import com.sep.vox.domain.repository.OrderRepository;
  * sẵn lúc tạo ("Đăng ký {tên gói}") nên danh sách tự mô tả được mà không cần join.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewMySchoolOrdersUseCase implements IUseCase<ViewMySchoolOrdersQuery, PageResult<OrderDto>> {
 
     private final OrderRepository orderRepository;
     private final UserContextPort userContextPort;
-
-    public ViewMySchoolOrdersUseCase(OrderRepository orderRepository, UserContextPort userContextPort) {
-        this.orderRepository = orderRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional(readOnly = true)

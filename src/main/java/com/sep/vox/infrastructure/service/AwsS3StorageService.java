@@ -4,6 +4,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
@@ -27,17 +28,12 @@ import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignReques
 
 @Service
 @ConditionalOnProperty(prefix = "storage", name = "provider", havingValue = "s3")
+@RequiredArgsConstructor
 public class AwsS3StorageService implements StoragePort {
 
     private final S3Client s3Client;
     private final S3Presigner s3Presigner;
     private final AwsS3StorageProperties properties;
-
-    public AwsS3StorageService(S3Client s3Client, S3Presigner s3Presigner, AwsS3StorageProperties properties) {
-        this.s3Client = s3Client;
-        this.s3Presigner = s3Presigner;
-        this.properties = properties;
-    }
 
     @Override
     public StoredFile store(String key, UploadedFile file) {

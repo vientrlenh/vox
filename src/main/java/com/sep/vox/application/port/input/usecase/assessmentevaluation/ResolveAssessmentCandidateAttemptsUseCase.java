@@ -12,6 +12,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,17 +24,11 @@ import com.sep.vox.domain.model.assessment.ResultDecisionMethod;
 import com.sep.vox.domain.repository.AssessmentRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ResolveAssessmentCandidateAttemptsUseCase {
 
     private final AssessmentCandidateAttemptsQueryRepository assessmentCandidateAttemptsQueryRepository;
     private final AssessmentRepository assessmentRepository;
-
-    public ResolveAssessmentCandidateAttemptsUseCase(
-            AssessmentCandidateAttemptsQueryRepository assessmentCandidateAttemptsQueryRepository,
-            AssessmentRepository assessmentRepository) {
-        this.assessmentCandidateAttemptsQueryRepository = assessmentCandidateAttemptsQueryRepository;
-        this.assessmentRepository = assessmentRepository;
-    }
 
     @Transactional(readOnly = true)
     public Map<UUID, AssessmentCandidateAttempts> executeBatch(Collection<UUID> candidateIds) {

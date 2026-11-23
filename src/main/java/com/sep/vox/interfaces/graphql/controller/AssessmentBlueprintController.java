@@ -6,8 +6,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.graphql.data.method.annotation.SchemaMapping;
@@ -35,9 +35,9 @@ import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.interfaces.shared.PageArguments;
 
 @Controller("graphqlAssessmentBlueprintController")
+@RequiredArgsConstructor
+@Slf4j
 public class AssessmentBlueprintController {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(AssessmentBlueprintController.class);
 
     private final ViewAssessmentBlueprintsUseCase viewAssessmentBlueprintsUseCase;
     private final ViewAssessmentBlueprintDetailsUseCase viewAssessmentBlueprintDetailsUseCase;
@@ -45,21 +45,6 @@ public class AssessmentBlueprintController {
     private final AssessmentBlueprintSectionRepository assessmentBlueprintSectionRepository;
     private final AssessmentBlueprintSlotRepository assessmentBlueprintSlotRepository;
     private final QuestionRepository questionRepository;
-
-    public AssessmentBlueprintController(
-            ViewAssessmentBlueprintsUseCase viewAssessmentBlueprintsUseCase,
-            ViewAssessmentBlueprintDetailsUseCase viewAssessmentBlueprintDetailsUseCase,
-            AssessmentBlueprintVersionRepository assessmentBlueprintVersionRepository,
-            AssessmentBlueprintSectionRepository assessmentBlueprintSectionRepository,
-            AssessmentBlueprintSlotRepository assessmentBlueprintSlotRepository,
-            QuestionRepository questionRepository) {
-        this.viewAssessmentBlueprintsUseCase = viewAssessmentBlueprintsUseCase;
-        this.viewAssessmentBlueprintDetailsUseCase = viewAssessmentBlueprintDetailsUseCase;
-        this.assessmentBlueprintVersionRepository = assessmentBlueprintVersionRepository;
-        this.assessmentBlueprintSectionRepository = assessmentBlueprintSectionRepository;
-        this.assessmentBlueprintSlotRepository = assessmentBlueprintSlotRepository;
-        this.questionRepository = questionRepository;
-    }
 
     @QueryMapping(name = "assessmentBlueprints")
     public PageResult<AssessmentBlueprintDto> assessmentBlueprints(
@@ -79,23 +64,23 @@ public class AssessmentBlueprintController {
     @QueryMapping(name = "assessmentBlueprint")
     public AssessmentBlueprintDto assessmentBlueprint(@Argument(name = "id") UUID id) {
         long startedAt = System.nanoTime();
-        LOGGER.info("[blueprint-perf] query assessmentBlueprint start id={}", id);
+        log.info("[blueprint-perf] query assessmentBlueprint start id={}", id);
         AssessmentBlueprintDto dto = viewAssessmentBlueprintDetailsUseCase.execute(new ViewAssessmentBlueprintDetailsQuery(id));
-        LOGGER.info("[blueprint-perf] query assessmentBlueprint done id={} tookMs={}", id, (System.nanoTime() - startedAt) / 1_000_000);
+        log.info("[blueprint-perf] query assessmentBlueprint done id={} tookMs={}", id, (System.nanoTime() - startedAt) / 1_000_000);
         return dto;
     }
 
     @QueryMapping(name = "assessmentBlueprintVersion")
     public AssessmentBlueprintVersionDto assessmentBlueprintVersion(@Argument(name = "id") UUID id) {
         long startedAt = System.nanoTime();
-        LOGGER.info("[blueprint-perf] query assessmentBlueprintVersion start id={}", id);
+        log.info("[blueprint-perf] query assessmentBlueprintVersion start id={}", id);
         AssessmentBlueprintVersionDto dto = assessmentBlueprintVersionRepository.findById(id)
             .map(version -> {
                 viewAssessmentBlueprintDetailsUseCase.execute(new ViewAssessmentBlueprintDetailsQuery(version.getBlueprintId()));
                 return AssessmentBlueprintVersionDtoMapper.toDto(version);
             })
             .orElse(null);
-        LOGGER.info("[blueprint-perf] query assessmentBlueprintVersion done id={} tookMs={}", id, (System.nanoTime() - startedAt) / 1_000_000);
+        log.info("[blueprint-perf] query assessmentBlueprintVersion done id={} tookMs={}", id, (System.nanoTime() - startedAt) / 1_000_000);
         return dto;
     }
 

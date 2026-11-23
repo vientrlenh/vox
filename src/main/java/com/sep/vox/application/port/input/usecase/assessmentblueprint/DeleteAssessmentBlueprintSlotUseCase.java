@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.assessment.AssessmentBlueprint;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlot;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersion;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +21,7 @@ import com.sep.vox.domain.repository.AssessmentBlueprintVersionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class DeleteAssessmentBlueprintSlotUseCase implements IUseCase<DeleteAssessmentBlueprintSlotCommand, Void> {
 
     private final AssessmentBlueprintSlotRepository assessmentBlueprintSlotRepository;
@@ -28,21 +30,6 @@ public class DeleteAssessmentBlueprintSlotUseCase implements IUseCase<DeleteAsse
     private final SchoolUserRepository schoolUserRepository;
     private final RecalculateBlueprintVersionTimeLimitService recalculateBlueprintVersionTimeLimitService;
     private final UserContextPort userContextPort;
-
-    public DeleteAssessmentBlueprintSlotUseCase(
-            AssessmentBlueprintSlotRepository assessmentBlueprintSlotRepository,
-            AssessmentBlueprintVersionRepository assessmentBlueprintVersionRepository,
-            AssessmentBlueprintRepository assessmentBlueprintRepository,
-            SchoolUserRepository schoolUserRepository,
-            RecalculateBlueprintVersionTimeLimitService recalculateBlueprintVersionTimeLimitService,
-            UserContextPort userContextPort) {
-        this.assessmentBlueprintSlotRepository = assessmentBlueprintSlotRepository;
-        this.assessmentBlueprintVersionRepository = assessmentBlueprintVersionRepository;
-        this.assessmentBlueprintRepository = assessmentBlueprintRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.recalculateBlueprintVersionTimeLimitService = recalculateBlueprintVersionTimeLimitService;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

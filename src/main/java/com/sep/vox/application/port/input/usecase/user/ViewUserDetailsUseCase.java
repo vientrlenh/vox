@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.user;
 
 import com.sep.vox.domain.model.user.User;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.NotFoundException;
@@ -11,13 +12,10 @@ import com.sep.vox.domain.mapper.UserDtoMapper;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewUserDetailsUseCase implements IUseCase<ViewUserDetailsQuery, UserDto> {
 
     private final UserRepository userRepository; 
-
-    public ViewUserDetailsUseCase(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
 
     @Override
     public UserDto execute(ViewUserDetailsQuery input) {

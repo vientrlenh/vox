@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.framework.FrameworkResultBand;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,14 +21,10 @@ import com.sep.vox.application.response.input.learnerprofile.LearnerProfileRespo
  * bậc kèm mô tả để học sinh tự chọn.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewPracticeBandOptionsUseCase implements IUseCase<Void, List<PracticeBandOption>> {
 
     private final PracticeTopicOfferEnrichmentService enrichmentService;
-
-    public ViewPracticeBandOptionsUseCase(
-            PracticeTopicOfferEnrichmentService enrichmentService) {
-        this.enrichmentService = enrichmentService;
-    }
 
     @Override
     @Transactional(readOnly = true)

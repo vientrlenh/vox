@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,13 +23,14 @@ import com.sep.vox.domain.repository.SubscriptionPlanQuotaRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateSubscriptionPlanUseCase implements IUseCase<UpdateSubscriptionPlanCommand, UUID> {
 
-    // Cột subscription_plan_quotas.included_amount_vnd là numeric(18,6) -- vượt ngưỡng này Postgres
-    // báo "numeric field overflow" ở tận tầng DB thay vì một thông báo đọc được ở đây.
+    // Column subscription_plan_quotas.included_amount_vnd is numeric(18,6) -- above this limit Postgres
+    // reports "numeric field overflow" at the DB layer instead of a readable message here.
     private static final BigDecimal MAX_INCLUDED_AMOUNT_VND = new BigDecimal("999999999999.999999");
 
-    // Cột subscription_plans.price_vnd là numeric(15,0), cùng độ rộng với orders.total_amount_vnd.
+    // Column subscription_plans.price_vnd is numeric(15,0), the same width as orders.total_amount_vnd.
     private static final BigDecimal MAX_PRICE_VND = new BigDecimal("999999999999999");
 
     private static final int MAX_NAME_LENGTH = 255;
@@ -36,13 +38,6 @@ public class UpdateSubscriptionPlanUseCase implements IUseCase<UpdateSubscriptio
 
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final SubscriptionPlanQuotaRepository subscriptionPlanQuotaRepository;
-
-    public UpdateSubscriptionPlanUseCase(
-            SubscriptionPlanRepository subscriptionPlanRepository,
-            SubscriptionPlanQuotaRepository subscriptionPlanQuotaRepository) {
-        this.subscriptionPlanRepository = subscriptionPlanRepository;
-        this.subscriptionPlanQuotaRepository = subscriptionPlanQuotaRepository;
-    }
 
     @Override
     @Transactional

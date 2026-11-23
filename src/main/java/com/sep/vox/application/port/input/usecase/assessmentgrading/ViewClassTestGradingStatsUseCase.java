@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.assessmentgrading;
 
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,17 +24,11 @@ import com.sep.vox.domain.model.assessment.AssessmentKind;
  * graded, so a total larger than the class size is correct, not a duplicate-row bug.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewClassTestGradingStatsUseCase implements IUseCase<UUID, GradingStatsInfo> {
 
     private final AssessmentGradingQueryRepository assessmentGradingQueryRepository;
     private final AssessmentGradingAccessService assessmentGradingAccessService;
-
-    public ViewClassTestGradingStatsUseCase(
-            AssessmentGradingQueryRepository assessmentGradingQueryRepository,
-            AssessmentGradingAccessService assessmentGradingAccessService) {
-        this.assessmentGradingQueryRepository = assessmentGradingQueryRepository;
-        this.assessmentGradingAccessService = assessmentGradingAccessService;
-    }
 
     @Override
     @Transactional(readOnly = true)

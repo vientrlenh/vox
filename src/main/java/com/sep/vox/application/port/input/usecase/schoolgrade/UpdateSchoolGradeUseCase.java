@@ -13,6 +13,7 @@ import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,22 +22,12 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateSchoolGradeUseCase implements IUseCase<UpdateSchoolGradeCommand, UUID> {
     private final SchoolGradeRepository schoolGradeRepository;
-    private final SchoolUserRepository schoolUserRepository; // Bổ sung repo bảo mật
+    private final SchoolUserRepository schoolUserRepository; // Added this repository for the security check
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
-
-    public UpdateSchoolGradeUseCase(
-            SchoolGradeRepository schoolGradeRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserContextPort userContextPort,
-            UserRepository userRepository) {
-        this.schoolGradeRepository = schoolGradeRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userContextPort = userContextPort;
-        this.userRepository = userRepository;
-    }
 
     @Override
     @Transactional

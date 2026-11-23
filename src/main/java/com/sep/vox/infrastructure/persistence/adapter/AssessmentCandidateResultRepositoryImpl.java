@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.assessment.AssessmentCandidateResult;
@@ -15,13 +16,10 @@ import com.sep.vox.infrastructure.persistence.mapper.AssessmentCandidateResultMa
 import com.sep.vox.infrastructure.persistence.repository.SpringDataAssessmentCandidateResultRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class AssessmentCandidateResultRepositoryImpl implements AssessmentCandidateResultRepository {
 
     private final SpringDataAssessmentCandidateResultRepository springDataAssessmentCandidateResultRepository;
-
-    public AssessmentCandidateResultRepositoryImpl(SpringDataAssessmentCandidateResultRepository springDataAssessmentCandidateResultRepository) {
-        this.springDataAssessmentCandidateResultRepository = springDataAssessmentCandidateResultRepository;
-    }
 
     @Override
     public Optional<AssessmentCandidateResult> findById(UUID id) {

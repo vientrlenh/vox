@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.service;
 
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
@@ -20,6 +21,7 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
  * để thêm use case mới không phải thêm một bản sao nữa.
  */
 @Service
+@RequiredArgsConstructor
 public class AssessmentScheduleManageAccessService {
 
     private static final String SCHOOL_ADMIN = "SCHOOL_ADMIN";
@@ -28,17 +30,6 @@ public class AssessmentScheduleManageAccessService {
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
-
-    public AssessmentScheduleManageAccessService(
-            AssessmentMemberRepository assessmentMemberRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
-            UserContextPort userContextPort) {
-        this.assessmentMemberRepository = assessmentMemberRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-        this.userContextPort = userContextPort;
-    }
 
     /** Trả về id người dùng hiện tại nếu họ được phép, ném {@link ForbiddenException} nếu không. */
     public UUID requireCanManage(Assessment assessment) {

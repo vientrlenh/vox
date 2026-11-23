@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.balance;
 import java.math.BigDecimal;
 import java.time.Instant;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,18 +27,12 @@ import com.sep.vox.domain.repository.SchoolBalanceEntryRepository;
  * thích được. QUOTA_FUNDING từng bị bỏ sót đúng như vậy.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewSchoolBalanceSummaryUseCase
         implements IUseCase<ViewSchoolBalanceSummaryQuery, SchoolBalanceSummaryResponse> {
 
     private final SchoolBalanceEntryRepository schoolBalanceEntryRepository;
     private final SchoolScopedReadGuard schoolScopedReadGuard;
-
-    public ViewSchoolBalanceSummaryUseCase(
-            SchoolBalanceEntryRepository schoolBalanceEntryRepository,
-            SchoolScopedReadGuard schoolScopedReadGuard) {
-        this.schoolBalanceEntryRepository = schoolBalanceEntryRepository;
-        this.schoolScopedReadGuard = schoolScopedReadGuard;
-    }
 
     @Override
     @Transactional(readOnly = true)

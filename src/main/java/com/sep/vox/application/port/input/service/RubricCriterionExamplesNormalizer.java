@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.service;
 
 import java.util.List;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.output.JsonSerializationPort;
@@ -12,15 +13,12 @@ import com.sep.vox.domain.valueobject.rubric.RubricCriterionExamples;
  * Validates the examples JSON of a rubric criterion and rewrites it in the stored shape {@code {"values": [...]}}.
  */
 @Service
+@RequiredArgsConstructor
 public class RubricCriterionExamplesNormalizer {
 
     private static final String INVALID_FORMAT_MESSAGE = "Định dạng JSON của phần Examples không hợp lệ.";
 
     private final JsonSerializationPort jsonSerializationPort;
-
-    public RubricCriterionExamplesNormalizer(JsonSerializationPort jsonSerializationPort) {
-        this.jsonSerializationPort = jsonSerializationPort;
-    }
 
     /**
      * Returns {@code examplesJson} unchanged when it is null or blank.

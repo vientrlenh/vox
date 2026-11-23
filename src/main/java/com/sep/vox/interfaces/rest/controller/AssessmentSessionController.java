@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import com.sep.vox.application.port.input.command.*;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -42,11 +43,11 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/assessment-sessions")
+@RequiredArgsConstructor
 public class AssessmentSessionController {
 
-    private final CompleteAssessmentSessionGradingUseCase completeAssessmentSessionGradingUseCase;
-
     private final CreateAssessmentSessionUseCase createAssessmentSessionUseCase;
+    private final CompleteAssessmentSessionGradingUseCase completeAssessmentSessionGradingUseCase;
     private final UpdateAssessmentSessionStatusUseCase updateAssessmentSessionStatusUseCase;
     private final GetAssessmentSessionPaperUseCase getAssessmentSessionPaperUseCase;
     private final DeleteAssessmentSessionUseCase deleteAssessmentSessionUseCase;
@@ -56,31 +57,6 @@ public class AssessmentSessionController {
     private final HandOffGradingToHumanUseCase handOffGradingToHumanUseCase;
     private final UpdateAssessmentSessionRemainingTimeUseCase updateAssessmentSessionRemainingTimeUseCase;
     private final ReportAiUsageUseCase reportAiUsageUseCase;
-
-    public AssessmentSessionController(
-            CreateAssessmentSessionUseCase createAssessmentSessionUseCase,
-            CompleteAssessmentSessionGradingUseCase completeAssessmentSessionGradingUseCase,
-            UpdateAssessmentSessionStatusUseCase updateAssessmentSessionStatusUseCase,
-            GetAssessmentSessionPaperUseCase getAssessmentSessionPaperUseCase,
-            DeleteAssessmentSessionUseCase deleteAssessmentSessionUseCase,
-            FlagAssessmentSessionUseCase flagAssessmentSessionUseCase,
-            ForceEndAssessmentSessionUseCase forceEndAssessmentSessionUseCase,
-            RetryGradingAssessmentSessionUseCase retryGradingAssessmentSessionUseCase,
-            HandOffGradingToHumanUseCase handOffGradingToHumanUseCase,
-            UpdateAssessmentSessionRemainingTimeUseCase updateAssessmentSessionRemainingTimeUseCase,
-            ReportAiUsageUseCase reportAiUsageUseCase) {
-        this.createAssessmentSessionUseCase = createAssessmentSessionUseCase;
-        this.completeAssessmentSessionGradingUseCase = completeAssessmentSessionGradingUseCase;
-        this.updateAssessmentSessionStatusUseCase = updateAssessmentSessionStatusUseCase;
-        this.getAssessmentSessionPaperUseCase = getAssessmentSessionPaperUseCase;
-        this.deleteAssessmentSessionUseCase = deleteAssessmentSessionUseCase;
-        this.flagAssessmentSessionUseCase = flagAssessmentSessionUseCase;
-        this.forceEndAssessmentSessionUseCase = forceEndAssessmentSessionUseCase;
-        this.retryGradingAssessmentSessionUseCase = retryGradingAssessmentSessionUseCase;
-        this.handOffGradingToHumanUseCase = handOffGradingToHumanUseCase;
-        this.updateAssessmentSessionRemainingTimeUseCase = updateAssessmentSessionRemainingTimeUseCase;
-        this.reportAiUsageUseCase = reportAiUsageUseCase;
-    }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER', 'STUDENT')")

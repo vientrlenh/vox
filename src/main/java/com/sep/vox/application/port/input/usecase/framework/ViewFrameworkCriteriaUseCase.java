@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.framework;
 import com.sep.vox.domain.model.framework.FrameworkCriterion;
 import java.util.List;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import com.sep.vox.application.exception.NotFoundException;
 import com.sep.vox.application.port.input.query.ViewFrameworkCriteriaQuery;
@@ -15,17 +16,11 @@ import com.sep.vox.domain.repository.FrameworkVersionRepository;
 // Query gốc cho System Admin: lấy toàn bộ FrameworkCriterion của 1 FrameworkVersion bất kỳ trạng thái
 // (System Admin được xem cả DRAFT vì họ là người biên soạn Framework).
 @Service
+@RequiredArgsConstructor
 public class ViewFrameworkCriteriaUseCase implements IUseCase<ViewFrameworkCriteriaQuery, List<FrameworkCriterionDto>> {
 
     private final FrameworkVersionRepository frameworkVersionRepository;
     private final FrameworkCriterionRepository frameworkCriterionRepository;
-
-    public ViewFrameworkCriteriaUseCase(
-            FrameworkVersionRepository frameworkVersionRepository,
-            FrameworkCriterionRepository frameworkCriterionRepository) {
-        this.frameworkVersionRepository = frameworkVersionRepository;
-        this.frameworkCriterionRepository = frameworkCriterionRepository;
-    }
 
     @Override
     public List<FrameworkCriterionDto> execute(ViewFrameworkCriteriaQuery query) {

@@ -24,6 +24,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -56,6 +57,7 @@ import com.sep.vox.domain.repository.QuestionTopicRepository;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
 
 @Service
+@RequiredArgsConstructor
 public class SubmitAssessmentSessionUseCase implements IUseCase<SubmitAssessmentSessionCommand, Void> {
 
     private final AssessmentSessionRepository assessmentSessionRepository;
@@ -77,47 +79,6 @@ public class SubmitAssessmentSessionUseCase implements IUseCase<SubmitAssessment
     private final FrameworkResultBandRepository frameworkResultBandRepository;
     private final ExternalEventPublisherPort externalEventPublisherPort;
     private final ZeroScoreAssessmentResultService zeroScoreAssessmentResultService;
-
-    public SubmitAssessmentSessionUseCase(
-            AssessmentSessionRepository assessmentSessionRepository,
-            AssessmentRepository assessmentRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
-            AssessmentItemResponseRepository assessmentItemResponseRepository,
-            MissingResponseBackfillService missingResponseBackfillService,
-            AssessmentItemResponseTurnRepository assessmentItemResponseTurnRepository,
-            AssessmentPaperItemRepository assessmentPaperItemRepository,
-            QuestionRepository questionRepository,
-            QuestionEvaluationGuideRepository questionEvaluationGuideRepository,
-            QuestionAssetRepository questionAssetRepository,
-            QuestionTopicRepository questionTopicRepository,
-            AssessmentPolicyRepository assessmentPolicyRepository,
-            RubricCriterionRepository rubricCriterionRepository,
-            FrameworkCriterionRepository frameworkCriterionRepository,
-            FrameworkCriterionBandRepository frameworkCriterionBandRepository,
-            FrameworkResultBandRepository frameworkResultBandRepository,
-            ExternalEventPublisherPort externalEventPublisherPort,
-            ZeroScoreAssessmentResultService zeroScoreAssessmentResultService) {
-        this.assessmentSessionRepository = assessmentSessionRepository;
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
-        this.assessmentItemResponseRepository = assessmentItemResponseRepository;
-        this.missingResponseBackfillService = missingResponseBackfillService;
-        this.assessmentItemResponseTurnRepository = assessmentItemResponseTurnRepository;
-        this.assessmentPaperItemRepository = assessmentPaperItemRepository;
-        this.questionRepository = questionRepository;
-        this.questionEvaluationGuideRepository = questionEvaluationGuideRepository;
-        this.questionAssetRepository = questionAssetRepository;
-        this.questionTopicRepository = questionTopicRepository;
-        this.assessmentPolicyRepository = assessmentPolicyRepository;
-        this.rubricCriterionRepository = rubricCriterionRepository;
-        this.frameworkCriterionRepository = frameworkCriterionRepository;
-        this.frameworkCriterionBandRepository = frameworkCriterionBandRepository;
-        this.frameworkResultBandRepository = frameworkResultBandRepository;
-        this.externalEventPublisherPort = externalEventPublisherPort;
-        this.zeroScoreAssessmentResultService = zeroScoreAssessmentResultService;
-    }
 
     @Override
     @Transactional

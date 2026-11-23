@@ -2,6 +2,7 @@ package com.sep.vox.interfaces.rest.controller;
 
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -38,23 +39,13 @@ import jakarta.validation.Valid;
  */
 @RestController
 @RequestMapping("/api/v1/orders")
+@RequiredArgsConstructor
 public class OrderController {
 
     private final CreateSubscriptionOrderUseCase createSubscriptionOrderUseCase;
     private final CreateTopUpOrderUseCase createTopUpOrderUseCase;
     private final CancelOrderUseCase cancelOrderUseCase;
     private final RenewSchoolSubscriptionUseCase renewSchoolSubscriptionUseCase;
-
-    public OrderController(
-            CreateSubscriptionOrderUseCase createSubscriptionOrderUseCase,
-            CreateTopUpOrderUseCase createTopUpOrderUseCase,
-            CancelOrderUseCase cancelOrderUseCase,
-            RenewSchoolSubscriptionUseCase renewSchoolSubscriptionUseCase) {
-        this.createSubscriptionOrderUseCase = createSubscriptionOrderUseCase;
-        this.createTopUpOrderUseCase = createTopUpOrderUseCase;
-        this.cancelOrderUseCase = cancelOrderUseCase;
-        this.renewSchoolSubscriptionUseCase = renewSchoolSubscriptionUseCase;
-    }
 
     /**
      * Đặt đơn mua một chu kỳ gói. Trả về id đơn ở trạng thái PENDING -- gói CHƯA được cấp, bước tiếp

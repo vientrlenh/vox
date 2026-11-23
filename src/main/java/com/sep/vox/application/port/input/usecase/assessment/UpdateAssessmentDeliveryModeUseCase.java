@@ -5,6 +5,7 @@ import com.sep.vox.domain.model.assessment.AssessmentPaper;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +28,7 @@ import com.sep.vox.domain.repository.AssessmentRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateAssessmentDeliveryModeUseCase implements IUseCase<UpdateAssessmentDeliveryModeCommand, AssessmentDto> {
 
     private final AssessmentRepository assessmentRepository;
@@ -36,23 +38,6 @@ public class UpdateAssessmentDeliveryModeUseCase implements IUseCase<UpdateAsses
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
-
-    public UpdateAssessmentDeliveryModeUseCase(
-            AssessmentRepository assessmentRepository,
-            AssessmentPaperRepository assessmentPaperRepository,
-            AssessmentMemberRepository assessmentMemberRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
-            UserContextPort userContextPort) {
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentPaperRepository = assessmentPaperRepository;
-        this.assessmentMemberRepository = assessmentMemberRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

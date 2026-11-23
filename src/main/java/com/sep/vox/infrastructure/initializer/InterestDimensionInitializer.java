@@ -3,8 +3,8 @@ package com.sep.vox.infrastructure.initializer;
 import java.time.Instant;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
@@ -36,9 +36,9 @@ import com.sep.vox.domain.repository.InterestDimensionRepository;
  */
 @Component
 @Order(11)
+@RequiredArgsConstructor
+@Slf4j
 public class InterestDimensionInitializer implements ApplicationRunner {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(InterestDimensionInitializer.class);
 
     /**
      * The six dimensions put to the student in the quiz, plus ACADEMIC_ASSESSMENT.
@@ -86,10 +86,6 @@ public class InterestDimensionInitializer implements ApplicationRunner {
 
     private final InterestDimensionRepository interestDimensionRepository;
 
-    public InterestDimensionInitializer(InterestDimensionRepository interestDimensionRepository) {
-        this.interestDimensionRepository = interestDimensionRepository;
-    }
-
     @Override
     public void run(ApplicationArguments args) throws Exception {
         int added = 0;
@@ -102,9 +98,9 @@ public class InterestDimensionInitializer implements ApplicationRunner {
         }
 
         if (added == 0) {
-            LOGGER.info("Interest dimensions already present. Skip initialize");
+            log.info("Interest dimensions already present. Skip initialize");
             return;
         }
-        LOGGER.info("Interest dimensions initialized successfully: them {} chieu moi", added);
+        log.info("Interest dimensions initialized successfully: them {} chieu moi", added);
     }
 }

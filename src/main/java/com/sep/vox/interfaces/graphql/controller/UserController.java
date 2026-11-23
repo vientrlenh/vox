@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+import lombok.RequiredArgsConstructor;
 import org.dataloader.DataLoader;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
@@ -34,6 +35,7 @@ import com.sep.vox.interfaces.shared.PageArguments;
 import graphql.schema.DataFetchingEnvironment;
 
 @Controller("graphqlUserController")
+@RequiredArgsConstructor
 public class UserController {
 
     private final ViewUserDetailsUseCase viewUserDetailsUseCase;
@@ -42,21 +44,6 @@ public class UserController {
     private final UpdateProfileUseCase updateProfileUseCase;
     private final SchoolUserRepository schoolUserRepository;
     private final SchoolRepository schoolRepository;
-
-    public UserController(
-            ViewUserDetailsUseCase viewUserDetailsUseCase,
-            ViewUsersUseCase viewUsersUseCase,
-            ViewProfileUseCase viewProfileUseCase,
-            UpdateProfileUseCase updateProfileUseCase,
-            SchoolUserRepository schoolUserRepository,
-            SchoolRepository schoolRepository) {
-        this.viewUserDetailsUseCase = viewUserDetailsUseCase;
-        this.viewUsersUseCase = viewUsersUseCase;
-        this.viewProfileUseCase = viewProfileUseCase;
-        this.updateProfileUseCase = updateProfileUseCase;
-        this.schoolUserRepository = schoolUserRepository;
-        this.schoolRepository = schoolRepository;
-    }
 
     @QueryMapping(name = "user")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")

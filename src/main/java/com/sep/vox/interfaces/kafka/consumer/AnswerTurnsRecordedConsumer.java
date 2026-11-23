@@ -4,9 +4,9 @@ import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.BackOff;
 import org.springframework.kafka.annotation.DltHandler;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -24,22 +24,13 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class AnswerTurnsRecordedConsumer {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(AnswerTurnsRecordedConsumer.class);
 
     private final RecordAnswerTurnUseCase recordAnswerTurnUseCase;
     private final RecordAnswerTerminationReasonUseCase recordAnswerTerminationReasonUseCase;
     private final JsonMapper jsonMapper;
-
-    public AnswerTurnsRecordedConsumer(
-            RecordAnswerTurnUseCase recordAnswerTurnUseCase,
-            RecordAnswerTerminationReasonUseCase recordAnswerTerminationReasonUseCase,
-            JsonMapper jsonMapper) {
-        this.recordAnswerTurnUseCase = recordAnswerTurnUseCase;
-        this.recordAnswerTerminationReasonUseCase = recordAnswerTerminationReasonUseCase;
-        this.jsonMapper = jsonMapper;
-    }
 
     @RetryableTopic(
         attempts = "4",
@@ -56,7 +47,7 @@ public class AnswerTurnsRecordedConsumer {
             JsonNode payload = jsonMapper.valueToTree(record.value());
             AnswerTurnsRecordedEventDto event = jsonMapper.treeToValue(payload, AnswerTurnsRecordedEventDto.class);
 
-            LOGGER.info("Receive answer turns event topic={} partition={} offset={} answerKey={}",
+            log.info("Receive answer turns event topic={} partition={} offset={} answerKey={}",
                 record.topic(), record.partition(), record.offset(), record.key());
 
             if (event == null || event.payload() == null || event.payload().turns() == null) {
@@ -93,7 +84,7 @@ public class AnswerTurnsRecordedConsumer {
 
             ack.acknowledge();
         } catch (Exception e) {
-            LOGGER.error("Answer turns processed failed, no ack: {}", e.getMessage(), e);
+            log.error("Answer turns processed failed, no ack: {}", e.getMessage(), e);
             throw e instanceof RuntimeException runtimeException
                 ? runtimeException
                 : new IllegalStateException("Failed to process answer turns event", e);
@@ -102,7 +93,7 @@ public class AnswerTurnsRecordedConsumer {
 
     @DltHandler
     public void dltHandler(ConsumerRecord<String, Object> record) {
-        LOGGER.error("Answer turns DLT message at topic {}: {}", record.topic(), record.value());
+        log.error("Answer turns DLT message at topic {}: {}", record.topic(), record.value());
     }
 
     private UUID parseUuid(String value, String fieldName) {

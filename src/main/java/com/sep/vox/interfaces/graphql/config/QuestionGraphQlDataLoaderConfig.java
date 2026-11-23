@@ -7,9 +7,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import lombok.extern.slf4j.Slf4j;
 import org.dataloader.BatchLoaderEnvironment;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.graphql.execution.BatchLoaderRegistry;
 
@@ -41,9 +40,8 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import reactor.core.publisher.Mono;
 
 @Configuration
+@Slf4j
 public class QuestionGraphQlDataLoaderConfig {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(QuestionGraphQlDataLoaderConfig.class);
 
     public QuestionGraphQlDataLoaderConfig(
             BatchLoaderRegistry registry,
@@ -133,7 +131,7 @@ public class QuestionGraphQlDataLoaderConfig {
                         .stream()
                         .map(QuestionDtoMapper::toQuestionDto)
                         .collect(Collectors.toMap(question -> question.id(), dto -> dto));
-                    LOGGER.info("[blueprint-perf] loader=questionByIdAccessible batchSize={} tookMs={}",
+                    log.info("[blueprint-perf] loader=questionByIdAccessible batchSize={} tookMs={}",
                         ids.size(), (System.nanoTime() - startedAt) / 1_000_000);
                     return result;
                 })
@@ -149,7 +147,7 @@ public class QuestionGraphQlDataLoaderConfig {
                     Map<UUID, QuestionDto> result = questionRepository.findByIdIn(ids).stream()
                         .map(QuestionDtoMapper::toQuestionDto)
                         .collect(Collectors.toMap(question -> question.id(), dto -> dto));
-                    LOGGER.info("[blueprint-perf] loader=questionByIdBasic batchSize={} tookMs={}",
+                    log.info("[blueprint-perf] loader=questionByIdBasic batchSize={} tookMs={}",
                         ids.size(), (System.nanoTime() - startedAt) / 1_000_000);
                     return result;
                 })

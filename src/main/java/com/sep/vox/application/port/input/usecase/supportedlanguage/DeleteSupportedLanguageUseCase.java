@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.supportedlanguage;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -10,13 +11,10 @@ import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
 
 @Service
+@RequiredArgsConstructor
 public class DeleteSupportedLanguageUseCase implements IUseCase<DeleteSupportedLanguageCommand, Void> {
 
     private final SupportedLanguageRepository supportedLanguageRepository;
-
-    public DeleteSupportedLanguageUseCase(SupportedLanguageRepository supportedLanguageRepository) {
-        this.supportedLanguageRepository = supportedLanguageRepository;
-    }
 
     @Override
     @Transactional

@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.personalization.TopicInterestEvent;
@@ -12,15 +13,11 @@ import com.sep.vox.infrastructure.persistence.entity.personalization.TopicIntere
 import com.sep.vox.infrastructure.persistence.repository.SpringDataTopicInterestEventRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class TopicInterestEventRepositoryImpl
         implements TopicInterestEventRepository {
 
     private final SpringDataTopicInterestEventRepository repository;
-
-    public TopicInterestEventRepositoryImpl(
-            SpringDataTopicInterestEventRepository repository) {
-        this.repository = repository;
-    }
 
     @Override
     public void save(

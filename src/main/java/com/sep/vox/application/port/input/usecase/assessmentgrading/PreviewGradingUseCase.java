@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,20 +31,12 @@ import com.sep.vox.application.response.input.assessmentgrading.GradingPreviewRe
  * {@code RegradeResultUseCase} nên tổng ở đây bằng đúng tổng khi nộp.
  */
 @Service
+@RequiredArgsConstructor
 public class PreviewGradingUseCase implements IUseCase<SubmitGradingCommand, GradingPreviewResponse> {
 
     private final AssessmentSessionResultCalculator assessmentSessionResultCalculator;
     private final AssessmentGradingAccessService assessmentGradingAccessService;
     private final GradingItemScoreResolver gradingItemScoreResolver;
-
-    public PreviewGradingUseCase(
-            AssessmentSessionResultCalculator assessmentSessionResultCalculator,
-            AssessmentGradingAccessService assessmentGradingAccessService,
-            GradingItemScoreResolver gradingItemScoreResolver) {
-        this.assessmentSessionResultCalculator = assessmentSessionResultCalculator;
-        this.assessmentGradingAccessService = assessmentGradingAccessService;
-        this.gradingItemScoreResolver = gradingItemScoreResolver;
-    }
 
     @Override
     @Transactional(readOnly = true)

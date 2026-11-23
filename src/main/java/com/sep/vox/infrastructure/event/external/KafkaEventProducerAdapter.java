@@ -3,8 +3,8 @@ package com.sep.vox.infrastructure.event.external;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
@@ -14,15 +14,11 @@ import com.sep.vox.application.port.output.ExternalEventPublisherPort;
 import com.sep.vox.infrastructure.exception.InfrastructureException;
 
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class KafkaEventProducerAdapter implements ExternalEventPublisherPort {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(KafkaEventProducerAdapter.class);
     private final KafkaTemplate<String, Object> kafkaTemplate;
-
-    public KafkaEventProducerAdapter(
-            KafkaTemplate<String, Object> kafkaTemplate) {
-        this.kafkaTemplate = kafkaTemplate;
-    }
 
     @Override
     public void publish(Object event) {
@@ -33,16 +29,16 @@ public class KafkaEventProducerAdapter implements ExternalEventPublisherPort {
         String topic = resolveTopic(event);
         String eventType = event.getClass().getSimpleName();
         String key = event instanceof HasPartitionKey keyed ? keyed.partitionKey() : eventType;
-        LOGGER.info("Publishing event {} to kafka", eventType);
+        log.info("Publishing event {} to kafka", eventType);
         try {
             kafkaTemplate.send(topic, key, event).get();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            LOGGER.error("Interrupted when sending event: {}", e);
+            log.error("Interrupted when sending event: {}", e);
             throw new InfrastructureException("Bị gián đoạn khi gửi event");
         }
         catch (ExecutionException e) {
-            LOGGER.error("Event published failed to kafka: {}", e);
+            log.error("Event published failed to kafka: {}", e);
             throw new InfrastructureException("Có lỗi xảy ra, không thể gửi event lên kafka");
         }
     }

@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.domain.model.personalization.InterestQuizSeedItem;
@@ -28,13 +29,10 @@ import com.sep.vox.domain.model.personalization.InterestQuizSeedItem;
  *    0 lượt thì điểm của nó hoàn toàn vô nghĩa.
  */
 @Service
+@RequiredArgsConstructor
 public class InterestQuizItemSelector {
 
     private final InterestQuizScorer interestQuizScorer;
-
-    public InterestQuizItemSelector(InterestQuizScorer interestQuizScorer) {
-        this.interestQuizScorer = interestQuizScorer;
-    }
 
     public List<InterestQuizSeedItem> select(List<InterestQuizSeedItem> pool, int count) {
         Set<String> eligible = Set.copyOf(interestQuizScorer.quizDimensionCodes());

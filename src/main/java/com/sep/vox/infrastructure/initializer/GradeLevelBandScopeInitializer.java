@@ -7,8 +7,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
@@ -52,16 +52,16 @@ import com.sep.vox.domain.repository.GradeLevelRepository;
  */
 @Component
 @Order(8)
+@RequiredArgsConstructor
+@Slf4j
 public class GradeLevelBandScopeInitializer implements ApplicationRunner {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(GradeLevelBandScopeInitializer.class);
 
     private static final String FRAMEWORK_CODE = "KNLNNVN";
 
-    // Phải trùng khít mã bậc mà FrameworkInitializer dựng ra. Sai một ký tự thì initializer này
-    // không tìm thấy bậc và bỏ qua toàn bộ -- có log cảnh báo, không âm thầm.
-    // BAND_CODE_DEFAULT_TARGET = trần CENTRALIZE, BAND_CODE_HARD_MAX = trần CLASS_TEST -- xem
-    // Javadoc lớp.
+    // Must match exactly the band codes that FrameworkInitializer builds. With one wrong character this initializer
+    // cannot find the band and skips everything -- with a warning log, not silently.
+    // BAND_CODE_DEFAULT_TARGET = the CENTRALIZE ceiling, BAND_CODE_HARD_MAX = the CLASS_TEST ceiling -- see the
+    // class Javadoc.
     private static final String BAND_CODE_DEFAULT_TARGET = "BAC_4";
     private static final String BAND_CODE_HARD_MAX = "BAC_5";
 
@@ -77,19 +77,6 @@ public class GradeLevelBandScopeInitializer implements ApplicationRunner {
     private final FrameworkVersionRepository frameworkVersionRepository;
     private final FrameworkResultBandRepository frameworkResultBandRepository;
 
-    public GradeLevelBandScopeInitializer(
-            GradeLevelRepository gradeLevelRepository,
-            GradeLevelBandScopeRepository gradeLevelBandScopeRepository,
-            FrameworkRepository frameworkRepository,
-            FrameworkVersionRepository frameworkVersionRepository,
-            FrameworkResultBandRepository frameworkResultBandRepository) {
-        this.gradeLevelRepository = gradeLevelRepository;
-        this.gradeLevelBandScopeRepository = gradeLevelBandScopeRepository;
-        this.frameworkRepository = frameworkRepository;
-        this.frameworkVersionRepository = frameworkVersionRepository;
-        this.frameworkResultBandRepository = frameworkResultBandRepository;
-    }
-
     /**
      * Idempotent PER ROW, unlike {@link GradeLevelInitializer} which only seeds when the table is empty.
      * The unique key of the table is {@code (grade_level_id, framework_version_id)}, so adding a missing row is an additive operation and does not overwrite
@@ -101,13 +88,13 @@ public class GradeLevelBandScopeInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) throws Exception {
         Framework framework = frameworkRepository.findByCode(FRAMEWORK_CODE).orElse(null);
         if (framework == null || !framework.isActive()) {
-            LOGGER.warn("Chưa có khung {} đang hoạt động. Bỏ qua khởi tạo trần bậc theo khối", FRAMEWORK_CODE);
+            log.warn("Chưa có khung {} đang hoạt động. Bỏ qua khởi tạo trần bậc theo khối", FRAMEWORK_CODE);
             return;
         }
 
         FrameworkVersion frameworkVersion = latestPublishedVersion(framework.getId());
         if (frameworkVersion == null) {
-            LOGGER.warn("Khung {} chưa có phiên bản nào được ban hành. Bỏ qua khởi tạo trần bậc theo khối",
+            log.warn("Khung {} chưa có phiên bản nào được ban hành. Bỏ qua khởi tạo trần bậc theo khối",
                 FRAMEWORK_CODE);
             return;
         }
@@ -117,7 +104,7 @@ public class GradeLevelBandScopeInitializer implements ApplicationRunner {
         FrameworkResultBand hardMaxBand = frameworkResultBandRepository
             .findByVersionIdAndCode(frameworkVersion.getId(), BAND_CODE_HARD_MAX).orElse(null);
         if (defaultTargetBand == null || hardMaxBand == null) {
-            LOGGER.warn("Phiên bản khung {} thiếu bậc {} hoặc {}. Bỏ qua khởi tạo trần bậc theo khối",
+            log.warn("Phiên bản khung {} thiếu bậc {} hoặc {}. Bỏ qua khởi tạo trần bậc theo khối",
                 frameworkVersion.getCode(), BAND_CODE_DEFAULT_TARGET, BAND_CODE_HARD_MAX);
             return;
         }
@@ -135,7 +122,7 @@ public class GradeLevelBandScopeInitializer implements ApplicationRunner {
         for (String gradeLevelCode : GRADE_LEVEL_CODES) {
             GradeLevel gradeLevel = gradeLevelRepository.findByCode(gradeLevelCode).orElse(null);
             if (gradeLevel == null) {
-                LOGGER.warn("Không tìm thấy khối {}. Bỏ qua trần bậc cho khối này", gradeLevelCode);
+                log.warn("Không tìm thấy khối {}. Bỏ qua trần bậc cho khối này", gradeLevelCode);
                 continue;
             }
             if (gradeLevelBandScopeRepository
@@ -154,10 +141,10 @@ public class GradeLevelBandScopeInitializer implements ApplicationRunner {
         }
 
         if (created == 0) {
-            LOGGER.info("Trần bậc theo khối trên phiên bản khung {} đã đầy đủ. Bỏ qua", frameworkVersion.getCode());
+            log.info("Trần bậc theo khối trên phiên bản khung {} đã đầy đủ. Bỏ qua", frameworkVersion.getCode());
             return;
         }
-        LOGGER.info("Đã khởi tạo {} trần bậc theo khối trên phiên bản khung {} (CENTRALIZE {}, CLASS_TEST {})",
+        log.info("Đã khởi tạo {} trần bậc theo khối trên phiên bản khung {} (CENTRALIZE {}, CLASS_TEST {})",
             created, frameworkVersion.getCode(), BAND_CODE_DEFAULT_TARGET, BAND_CODE_HARD_MAX);
     }
 

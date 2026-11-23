@@ -6,6 +6,7 @@ import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,9 +28,10 @@ import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
 // Internal service-to-service use case (called sau khi pipeline chấm bài AI hoàn tất), không end-user-facing
 @Service
+@RequiredArgsConstructor
 public class CompleteAssessmentSessionGradingUseCase implements IUseCase<CompleteAssessmentSessionGradingCommand, Void> {
 
-    // Trùng scale của school_balance_entries.fx_rate_used numeric(12,4).
+    // Matches the scale of school_balance_entries.fx_rate_used numeric(12,4).
     private static final int FX_RATE_SCALE = 4;
 
     private final AssessmentSessionRepository assessmentSessionRepository;
@@ -38,21 +40,6 @@ public class CompleteAssessmentSessionGradingUseCase implements IUseCase<Complet
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final ConsumeQuotaService consumeQuotaService;
     private final QuotaPricingPort quotaPricingPort;
-
-    public CompleteAssessmentSessionGradingUseCase(
-            AssessmentSessionRepository assessmentSessionRepository,
-            AssessmentRepository assessmentRepository,
-            AiUsageRecordRepository aiUsageRecordRepository,
-            SchoolSubscriptionRepository schoolSubscriptionRepository,
-            ConsumeQuotaService consumeQuotaService,
-            QuotaPricingPort quotaPricingPort) {
-        this.assessmentSessionRepository = assessmentSessionRepository;
-        this.assessmentRepository = assessmentRepository;
-        this.aiUsageRecordRepository = aiUsageRecordRepository;
-        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
-        this.consumeQuotaService = consumeQuotaService;
-        this.quotaPricingPort = quotaPricingPort;
-    }
 
     @Override
     @Transactional

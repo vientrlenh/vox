@@ -18,6 +18,7 @@ import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.ImportRowRepository;
 import com.sep.vox.domain.repository.ImportSessionRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +29,7 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 
 @Service
+@RequiredArgsConstructor
 public class PreviewSystemAssessmentPolicyImportFromFileUseCase implements IUseCase<PreviewSystemAssessmentPolicyImportFromFileCommand, PreviewAssessmentPolicyImportResponse> {
 
     private final ImportSessionRepository importSessionRepository;
@@ -36,21 +38,6 @@ public class PreviewSystemAssessmentPolicyImportFromFileUseCase implements IUseC
     private final JsonSerializationPort jsonSerializationPort;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
-
-    public PreviewSystemAssessmentPolicyImportFromFileUseCase(
-            ImportSessionRepository importSessionRepository,
-            ImportRowRepository importRowRepository,
-            FileProcessingPort fileProcessingPort,
-            JsonSerializationPort jsonSerializationPort,
-            UserRepository userRepository,
-            UserContextPort userContextPort) {
-        this.importSessionRepository = importSessionRepository;
-        this.importRowRepository = importRowRepository;
-        this.fileProcessingPort = fileProcessingPort;
-        this.jsonSerializationPort = jsonSerializationPort;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

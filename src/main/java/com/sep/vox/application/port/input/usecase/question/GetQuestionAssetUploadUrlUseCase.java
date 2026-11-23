@@ -6,6 +6,7 @@ import java.time.Duration;
 import java.util.Locale;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
@@ -22,6 +23,7 @@ import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 
 @Service
+@RequiredArgsConstructor
 public class GetQuestionAssetUploadUrlUseCase implements IUseCase<GetQuestionAssetUploadUrlQuery, QuestionAssetUploadUrlResponse> {
 
     private static final Duration TTL = Duration.ofMinutes(10);
@@ -31,19 +33,6 @@ public class GetQuestionAssetUploadUrlUseCase implements IUseCase<GetQuestionAss
     private final QuestionCollaboratorRepository questionCollaboratorRepository;
     private final UserContextPort userContextPort;
     private final StoragePort storagePort;
-
-    public GetQuestionAssetUploadUrlUseCase(
-            QuestionRepository questionRepository,
-            QuestionBankRepository questionBankRepository,
-            QuestionCollaboratorRepository questionCollaboratorRepository,
-            UserContextPort userContextPort,
-            StoragePort storagePort) {
-        this.questionRepository = questionRepository;
-        this.questionBankRepository = questionBankRepository;
-        this.questionCollaboratorRepository = questionCollaboratorRepository;
-        this.userContextPort = userContextPort;
-        this.storagePort = storagePort;
-    }
 
     @Override
     public QuestionAssetUploadUrlResponse execute(GetQuestionAssetUploadUrlQuery input) {

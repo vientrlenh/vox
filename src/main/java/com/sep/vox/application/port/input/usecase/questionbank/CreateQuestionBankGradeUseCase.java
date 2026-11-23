@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.question.QuestionBank;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,7 @@ import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class CreateQuestionBankGradeUseCase implements IUseCase<CreateQuestionBankGradeCommand, QuestionBankGradeDto> {
 
     private final QuestionBankRepository questionBankRepository;
@@ -30,19 +32,6 @@ public class CreateQuestionBankGradeUseCase implements IUseCase<CreateQuestionBa
     private final SchoolGradeRepository schoolGradeRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserContextPort userContextPort;
-
-    public CreateQuestionBankGradeUseCase(
-            QuestionBankRepository questionBankRepository,
-            QuestionBankGradeRepository questionBankGradeRepository,
-            SchoolGradeRepository schoolGradeRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserContextPort userContextPort) {
-        this.questionBankRepository = questionBankRepository;
-        this.questionBankGradeRepository = questionBankGradeRepository;
-        this.schoolGradeRepository = schoolGradeRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

@@ -3,6 +3,7 @@ package com.sep.vox.infrastructure.persistence.adapter;
 import com.sep.vox.infrastructure.persistence.entity.metering.QuotaPricingCalibrationJpaEntity;
 import java.util.Optional;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.metering.QuotaPricingCalibration;
@@ -12,14 +13,10 @@ import com.sep.vox.infrastructure.persistence.mapper.QuotaPricingCalibrationMapp
 import com.sep.vox.infrastructure.persistence.repository.SpringDataQuotaPricingCalibrationRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class QuotaPricingCalibrationRepositoryImpl implements QuotaPricingCalibrationRepository {
 
     private final SpringDataQuotaPricingCalibrationRepository springDataQuotaPricingCalibrationRepository;
-
-    public QuotaPricingCalibrationRepositoryImpl(
-            SpringDataQuotaPricingCalibrationRepository springDataQuotaPricingCalibrationRepository) {
-        this.springDataQuotaPricingCalibrationRepository = springDataQuotaPricingCalibrationRepository;
-    }
 
     @Override
     public QuotaPricingCalibration save(QuotaPricingCalibration calibration) {

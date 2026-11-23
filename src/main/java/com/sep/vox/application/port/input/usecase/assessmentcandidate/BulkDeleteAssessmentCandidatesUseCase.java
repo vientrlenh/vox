@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +37,7 @@ import com.sep.vox.domain.service.assessment.AssessmentEditingGuard;
  * who was deleted and who was not, and this operation cannot be undone.
  */
 @Service
+@RequiredArgsConstructor
 public class BulkDeleteAssessmentCandidatesUseCase implements IUseCase<BulkDeleteAssessmentCandidatesCommand, Void> {
 
     private final AssessmentRepository assessmentRepository;
@@ -45,23 +47,6 @@ public class BulkDeleteAssessmentCandidatesUseCase implements IUseCase<BulkDelet
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
-
-    public BulkDeleteAssessmentCandidatesUseCase(
-            AssessmentRepository assessmentRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            AssessmentSessionRepository assessmentSessionRepository,
-            AssessmentMemberRepository assessmentMemberRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
-            UserContextPort userContextPort) {
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.assessmentSessionRepository = assessmentSessionRepository;
-        this.assessmentMemberRepository = assessmentMemberRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

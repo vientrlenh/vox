@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.assessment.AssessmentAppealStatus;
@@ -16,14 +17,10 @@ import com.sep.vox.infrastructure.persistence.mapper.AssessmentResultAppealMappe
 import com.sep.vox.infrastructure.persistence.repository.SpringDataAssessmentResultAppealRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class AssessmentResultAppealRepositoryImpl implements AssessmentResultAppealRepository {
 
     private final SpringDataAssessmentResultAppealRepository springDataAssessmentResultAppealRepository;
-
-    public AssessmentResultAppealRepositoryImpl(
-            SpringDataAssessmentResultAppealRepository springDataAssessmentResultAppealRepository) {
-        this.springDataAssessmentResultAppealRepository = springDataAssessmentResultAppealRepository;
-    }
 
     @Override
     public Optional<AssessmentResultAppeal> findById(UUID id) {

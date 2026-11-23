@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.school.SchoolAiSpendEntry;
@@ -8,14 +9,10 @@ import com.sep.vox.infrastructure.persistence.entity.school.SchoolAiSpendEntryJp
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolAiSpendEntryRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class SchoolAiSpendEntryRepositoryImpl implements SchoolAiSpendEntryRepository {
 
     private final SpringDataSchoolAiSpendEntryRepository springDataSchoolAiSpendEntryRepository;
-
-    public SchoolAiSpendEntryRepositoryImpl(
-            SpringDataSchoolAiSpendEntryRepository springDataSchoolAiSpendEntryRepository) {
-        this.springDataSchoolAiSpendEntryRepository = springDataSchoolAiSpendEntryRepository;
-    }
 
     /**
      * No separate mapper: the table is append-only and the read path does not go through this repository, so the

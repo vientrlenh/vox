@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +28,7 @@ import com.sep.vox.domain.repository.AssessmentSessionRepository;
 import com.sep.vox.domain.repository.RubricResultBandRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewMyAssessmentResultsUseCase implements IUseCase<Void, List<StudentAssessmentResultSummaryResponse>> {
 
     private final AssessmentCandidateRepository assessmentCandidateRepository;
@@ -36,23 +38,6 @@ public class ViewMyAssessmentResultsUseCase implements IUseCase<Void, List<Stude
     private final RubricResultBandRepository rubricResultBandRepository;
     private final com.sep.vox.domain.repository.RubricVersionRepository rubricVersionRepository;
     private final UserContextPort userContextPort;
-
-    public ViewMyAssessmentResultsUseCase(
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            AssessmentSessionRepository assessmentSessionRepository,
-            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
-            AssessmentRepository assessmentRepository,
-            RubricResultBandRepository rubricResultBandRepository,
-            com.sep.vox.domain.repository.RubricVersionRepository rubricVersionRepository,
-            UserContextPort userContextPort) {
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.assessmentSessionRepository = assessmentSessionRepository;
-        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
-        this.assessmentRepository = assessmentRepository;
-        this.rubricResultBandRepository = rubricResultBandRepository;
-        this.rubricVersionRepository = rubricVersionRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional(readOnly = true)

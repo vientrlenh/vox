@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.assessmentitemresponse;
 
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,13 +16,10 @@ import com.sep.vox.domain.repository.AssessmentItemResponseRepository;
  * its own use case because the interfaces layer (the Kafka consumer) must not call a domain repository directly.
  */
 @Service
+@RequiredArgsConstructor
 public class ResolveAssessmentSessionIdByResponseIdUseCase implements IUseCase<UUID, UUID> {
 
     private final AssessmentItemResponseRepository assessmentItemResponseRepository;
-
-    public ResolveAssessmentSessionIdByResponseIdUseCase(AssessmentItemResponseRepository assessmentItemResponseRepository) {
-        this.assessmentItemResponseRepository = assessmentItemResponseRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

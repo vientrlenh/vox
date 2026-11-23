@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,7 @@ import com.sep.vox.domain.common.DecimalText;
 
 /** Bảng "ai đang tiêu hạn mức", đứng ngay dưới biểu đồ chi phí AI và đọc cùng một cửa sổ. */
 @Service
+@RequiredArgsConstructor
 public class ViewSchoolAiSpendByUserUseCase
         implements IUseCase<SearchSchoolAiSpendByUserQuery, SchoolAiSpendByUserPageResponse> {
 
@@ -26,12 +28,6 @@ public class ViewSchoolAiSpendByUserUseCase
 
     private final UserContextPort userContextPort;
     private final SchoolAiCostQueryRepository schoolAiCostQueryRepository;
-
-    public ViewSchoolAiSpendByUserUseCase(UserContextPort userContextPort,
-            SchoolAiCostQueryRepository schoolAiCostQueryRepository) {
-        this.userContextPort = userContextPort;
-        this.schoolAiCostQueryRepository = schoolAiCostQueryRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

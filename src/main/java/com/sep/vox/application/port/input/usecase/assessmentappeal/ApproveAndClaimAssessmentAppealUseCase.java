@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,9 +31,10 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
  * the FE calling two APIs in a row and leaving the appeal stuck in the middle.
  */
 @Service
+@RequiredArgsConstructor
 public class ApproveAndClaimAssessmentAppealUseCase implements IUseCase<UUID, UUID> {
 
-    /** Lý do cố định cho luật xung đột lợi ích: bài trên lớp chỉ chủ bài chấm được. */
+    /** Fixed reason for the conflict-of-interest rule: a class test can only be graded by its owner. */
     static final String SELF_CLAIM_OVERRIDE_REASON =
         "Bài kiểm tra trên lớp: giáo viên phụ trách bài tự nhận chấm phúc khảo.";
     static final int DEFAULT_DEADLINE_DAYS = 3;
@@ -41,15 +43,6 @@ public class ApproveAndClaimAssessmentAppealUseCase implements IUseCase<UUID, UU
     private final ApproveAssessmentAppealUseCase approveAssessmentAppealUseCase;
     private final AssignAssessmentAppealReviewerUseCase assignAssessmentAppealReviewerUseCase;
     private final AssessmentAppealAccessService assessmentAppealAccessService;
-
-    public ApproveAndClaimAssessmentAppealUseCase(
-            ApproveAssessmentAppealUseCase approveAssessmentAppealUseCase,
-            AssignAssessmentAppealReviewerUseCase assignAssessmentAppealReviewerUseCase,
-            AssessmentAppealAccessService assessmentAppealAccessService) {
-        this.approveAssessmentAppealUseCase = approveAssessmentAppealUseCase;
-        this.assignAssessmentAppealReviewerUseCase = assignAssessmentAppealReviewerUseCase;
-        this.assessmentAppealAccessService = assessmentAppealAccessService;
-    }
 
     /** @return id DÒNG PHÂN CÔNG vừa mở (giống {@code /reviewer}), không phải id đơn. */
     @Override

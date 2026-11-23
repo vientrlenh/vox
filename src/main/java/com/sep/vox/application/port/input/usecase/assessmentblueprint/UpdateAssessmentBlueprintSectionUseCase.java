@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ import com.sep.vox.domain.repository.AssessmentBlueprintVersionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateAssessmentBlueprintSectionUseCase implements IUseCase<UpdateAssessmentBlueprintSectionCommand, AssessmentBlueprintSectionDto> {
 
     private final AssessmentBlueprintSectionRepository assessmentBlueprintSectionRepository;
@@ -32,19 +34,6 @@ public class UpdateAssessmentBlueprintSectionUseCase implements IUseCase<UpdateA
     private final AssessmentBlueprintRepository assessmentBlueprintRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserContextPort userContextPort;
-
-    public UpdateAssessmentBlueprintSectionUseCase(
-            AssessmentBlueprintSectionRepository assessmentBlueprintSectionRepository,
-            AssessmentBlueprintVersionRepository assessmentBlueprintVersionRepository,
-            AssessmentBlueprintRepository assessmentBlueprintRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserContextPort userContextPort) {
-        this.assessmentBlueprintSectionRepository = assessmentBlueprintSectionRepository;
-        this.assessmentBlueprintVersionRepository = assessmentBlueprintVersionRepository;
-        this.assessmentBlueprintRepository = assessmentBlueprintRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

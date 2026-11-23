@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.worker;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -12,6 +13,7 @@ import com.sep.vox.infrastructure.service.ExchangeRateRefreshService;
 // lượt dùng không bị lệch xa thị trường. Chạy hằng ngày (không phải hằng tuần như
 // QuotaPricingCalibrationJob) vì tỷ giá đổi nhanh hơn nhiều so với chi phí AI calibrate.
 @Component
+@RequiredArgsConstructor
 public class ExchangeRateRefreshJob {
 
     @EventListener(ApplicationReadyEvent.class)
@@ -20,10 +22,6 @@ public class ExchangeRateRefreshJob {
     }
 
     private final ExchangeRateRefreshService exchangeRateRefreshService;
-
-    public ExchangeRateRefreshJob(ExchangeRateRefreshService exchangeRateRefreshService) {
-        this.exchangeRateRefreshService = exchangeRateRefreshService;
-    }
 
     @Scheduled(cron = "0 0 4 * * *")
     public void run() {

@@ -2,6 +2,7 @@ package com.sep.vox.interfaces.rest.controller;
 
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -64,6 +65,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1")
+@RequiredArgsConstructor
 public class AssessmentBlueprintController {
 
     private final CreateAssessmentBlueprintUseCase createAssessmentBlueprintUseCase;
@@ -81,39 +83,6 @@ public class AssessmentBlueprintController {
     private final CreateAssessmentBlueprintSlotUseCase createAssessmentBlueprintSlotUseCase;
     private final UpdateAssessmentBlueprintSlotUseCase updateAssessmentBlueprintSlotUseCase;
     private final DeleteAssessmentBlueprintSlotUseCase deleteAssessmentBlueprintSlotUseCase;
-
-    public AssessmentBlueprintController(
-            CreateAssessmentBlueprintUseCase createAssessmentBlueprintUseCase,
-            UpdateAssessmentBlueprintUseCase updateAssessmentBlueprintUseCase,
-            UpdateAssessmentBlueprintActiveStatusUseCase updateAssessmentBlueprintActiveStatusUseCase,
-            DeleteAssessmentBlueprintUseCase deleteAssessmentBlueprintUseCase,
-            CreateAssessmentBlueprintVersionUseCase createAssessmentBlueprintVersionUseCase,
-            DuplicateAssessmentBlueprintVersionUseCase duplicateAssessmentBlueprintVersionUseCase,
-            UpdateAssessmentBlueprintVersionUseCase updateAssessmentBlueprintVersionUseCase,
-            UpdateAssessmentBlueprintVersionStatusUseCase updateAssessmentBlueprintVersionStatusUseCase,
-            DeleteAssessmentBlueprintVersionUseCase deleteAssessmentBlueprintVersionUseCase,
-            CreateAssessmentBlueprintSectionUseCase createAssessmentBlueprintSectionUseCase,
-            UpdateAssessmentBlueprintSectionUseCase updateAssessmentBlueprintSectionUseCase,
-            DeleteAssessmentBlueprintSectionUseCase deleteAssessmentBlueprintSectionUseCase,
-            CreateAssessmentBlueprintSlotUseCase createAssessmentBlueprintSlotUseCase,
-            UpdateAssessmentBlueprintSlotUseCase updateAssessmentBlueprintSlotUseCase,
-            DeleteAssessmentBlueprintSlotUseCase deleteAssessmentBlueprintSlotUseCase) {
-        this.createAssessmentBlueprintUseCase = createAssessmentBlueprintUseCase;
-        this.updateAssessmentBlueprintUseCase = updateAssessmentBlueprintUseCase;
-        this.updateAssessmentBlueprintActiveStatusUseCase = updateAssessmentBlueprintActiveStatusUseCase;
-        this.deleteAssessmentBlueprintUseCase = deleteAssessmentBlueprintUseCase;
-        this.createAssessmentBlueprintVersionUseCase = createAssessmentBlueprintVersionUseCase;
-        this.duplicateAssessmentBlueprintVersionUseCase = duplicateAssessmentBlueprintVersionUseCase;
-        this.updateAssessmentBlueprintVersionUseCase = updateAssessmentBlueprintVersionUseCase;
-        this.updateAssessmentBlueprintVersionStatusUseCase = updateAssessmentBlueprintVersionStatusUseCase;
-        this.deleteAssessmentBlueprintVersionUseCase = deleteAssessmentBlueprintVersionUseCase;
-        this.createAssessmentBlueprintSectionUseCase = createAssessmentBlueprintSectionUseCase;
-        this.updateAssessmentBlueprintSectionUseCase = updateAssessmentBlueprintSectionUseCase;
-        this.deleteAssessmentBlueprintSectionUseCase = deleteAssessmentBlueprintSectionUseCase;
-        this.createAssessmentBlueprintSlotUseCase = createAssessmentBlueprintSlotUseCase;
-        this.updateAssessmentBlueprintSlotUseCase = updateAssessmentBlueprintSlotUseCase;
-        this.deleteAssessmentBlueprintSlotUseCase = deleteAssessmentBlueprintSlotUseCase;
-    }
 
     @PostMapping("/assessment-blueprints")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")

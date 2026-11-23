@@ -5,6 +5,8 @@ import java.time.Instant;
 import java.util.Locale;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,26 +18,14 @@ import com.sep.vox.domain.repository.PracticeItemResponseRepository;
 import com.sep.vox.domain.repository.PracticeSessionRepository;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class RecordPracticeAttemptEvaluationUseCase implements IUseCase<RecordPracticeAttemptEvaluationCommand, Void> {
-
-    private static final org.slf4j.Logger LOGGER =
-        org.slf4j.LoggerFactory.getLogger(RecordPracticeAttemptEvaluationUseCase.class);
 
     private final PracticeItemEvaluationRepository evaluationRepository;
     private final PracticeCriterionScoreRepository criterionScoreRepository;
     private final PracticeItemResponseRepository responseRepository;
     private final PracticeSessionRepository practiceSessionRepository;
-
-    public RecordPracticeAttemptEvaluationUseCase(
-            PracticeItemEvaluationRepository evaluationRepository,
-            PracticeCriterionScoreRepository criterionScoreRepository,
-            PracticeItemResponseRepository responseRepository,
-            PracticeSessionRepository practiceSessionRepository) {
-        this.evaluationRepository = evaluationRepository;
-        this.criterionScoreRepository = criterionScoreRepository;
-        this.responseRepository = responseRepository;
-        this.practiceSessionRepository = practiceSessionRepository;
-    }
 
     @Override
     @Transactional
@@ -64,7 +54,7 @@ public class RecordPracticeAttemptEvaluationUseCase implements IUseCase<RecordPr
                 ? ""
                 : criterion.criterionCode().trim().toUpperCase(Locale.ROOT);
             if (code.isBlank()) {
-                LOGGER.warn(
+                log.warn(
                     "Bỏ qua một tiêu chí không có mã ở bản chấm luyện tập {}",
                     input.practiceResponseId()
                 );
@@ -100,7 +90,7 @@ public class RecordPracticeAttemptEvaluationUseCase implements IUseCase<RecordPr
         } catch (RuntimeException exception) {
             // Điểm đã chấm là dữ liệu chính; tổng hợp lại điểm phiên là phần phái sinh, lần
             // chấm sau bù được. Không để nó kéo đổ cả việc ghi bản chấm.
-            LOGGER.warn("Không tính lại được điểm phiên từ response {}.", responseId, exception);
+            log.warn("Không tính lại được điểm phiên từ response {}.", responseId, exception);
         }
     }
 

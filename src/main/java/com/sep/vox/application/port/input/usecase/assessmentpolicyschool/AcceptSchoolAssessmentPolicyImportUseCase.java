@@ -17,12 +17,14 @@ import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.ImportSessionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class AcceptSchoolAssessmentPolicyImportUseCase implements IUseCase<AcceptSchoolAssessmentPolicyImportCommand, AcceptAssessmentPolicyImportResponse> {
 
     private final ImportSessionRepository importSessionRepository;
@@ -30,19 +32,6 @@ public class AcceptSchoolAssessmentPolicyImportUseCase implements IUseCase<Accep
     private final SchoolUserRepository schoolUserRepository;
     private final UserContextPort userContextPort;
     private final JsonSerializationPort jsonSerializationPort;
-
-    public AcceptSchoolAssessmentPolicyImportUseCase(
-            ImportSessionRepository importSessionRepository,
-            UserRepository userRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserContextPort userContextPort,
-            JsonSerializationPort jsonSerializationPort) {
-        this.importSessionRepository = importSessionRepository;
-        this.userRepository = userRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userContextPort = userContextPort;
-        this.jsonSerializationPort = jsonSerializationPort;
-    }
 
     @Override
     @Transactional

@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.subscription;
 import com.sep.vox.domain.model.subscription.SubscriptionPlan;
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,20 +18,12 @@ import com.sep.vox.domain.model.subscription.SubscriptionPlanStatus;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewSubscriptionPlansUseCase implements IUseCase<ViewSubscriptionPlansQuery, PageResult<ViewSubscriptionPlansResponse>> {
 
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final SubscriptionPlanQueryRepository subscriptionPlanQueryRepository;
     private final UserContextPort userContextPort;
-
-    public ViewSubscriptionPlansUseCase(
-            SubscriptionPlanRepository subscriptionPlanRepository,
-            SubscriptionPlanQueryRepository subscriptionPlanQueryRepository,
-            UserContextPort userContextPort) {
-        this.subscriptionPlanRepository = subscriptionPlanRepository;
-        this.subscriptionPlanQueryRepository = subscriptionPlanQueryRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional(readOnly = true)

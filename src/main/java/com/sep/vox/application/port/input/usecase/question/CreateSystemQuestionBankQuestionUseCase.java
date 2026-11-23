@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +40,7 @@ import com.sep.vox.domain.repository.QuestionTopicRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateSystemQuestionBankQuestionCommand, CreateQuestionResponse> {
 
     private final SchoolUserRepository schoolUserRepository;
@@ -49,25 +51,6 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
     private final QuestionBankRepository questionBankRepository;
     private final UserContextPort userContextPort;
     private final UserRoleQueryRepository userRoleQueryRepository;
-
-    public CreateSystemQuestionBankQuestionUseCase(
-            SchoolUserRepository schoolUserRepository,
-            QuestionRepository questionRepository,
-            QuestionAssetRepository questionAssetRepository,
-            QuestionEvaluationGuideRepository questionEvaluationGuideRepository,
-            QuestionTopicRepository questionTopicRepository,
-            QuestionBankRepository questionBankRepository,
-            UserContextPort userContextPort,
-            UserRoleQueryRepository userRoleQueryRepository) {
-        this.schoolUserRepository = schoolUserRepository;
-        this.questionRepository = questionRepository;
-        this.questionAssetRepository = questionAssetRepository;
-        this.questionEvaluationGuideRepository = questionEvaluationGuideRepository;
-        this.questionTopicRepository = questionTopicRepository;
-        this.questionBankRepository = questionBankRepository;
-        this.userContextPort = userContextPort;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-    }
 
     @Override
     @Transactional

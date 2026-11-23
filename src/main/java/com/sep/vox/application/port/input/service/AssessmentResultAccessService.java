@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentCandidate;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,7 @@ import com.sep.vox.domain.repository.AssessmentSessionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class AssessmentResultAccessService {
 
     private final AssessmentSessionRepository assessmentSessionRepository;
@@ -35,27 +37,6 @@ public class AssessmentResultAccessService {
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
-
-    public AssessmentResultAccessService(
-            AssessmentSessionRepository assessmentSessionRepository,
-            AssessmentItemResponseRepository assessmentItemResponseRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
-            AssessmentRepository assessmentRepository,
-            AssessmentMemberRepository assessmentMemberRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
-            UserContextPort userContextPort) {
-        this.assessmentSessionRepository = assessmentSessionRepository;
-        this.assessmentItemResponseRepository = assessmentItemResponseRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentMemberRepository = assessmentMemberRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-        this.userContextPort = userContextPort;
-    }
 
     /**
      * The assessment session together with the answers and "is the caller the candidate themself". The status-based visibility

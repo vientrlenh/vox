@@ -2,8 +2,8 @@ package com.sep.vox.infrastructure.filter;
 
 import java.io.IOException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -21,26 +21,22 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final AuthTokenPort authTokenPort;
     private final UserDetailsService userDetailsService;
 
-    public JwtAuthenticationFilter(AuthTokenPort authTokenPort, UserDetailsService userDetailsService) {
-        this.authTokenPort = authTokenPort;
-        this.userDetailsService = userDetailsService;
-    }
-
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
     private static final int TOKEN_BEGIN_INDEX = 7;
-    private static final Logger LOGGER = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         try {
-            LOGGER.info("Incoming request: {}", request.getRequestURI());
+            log.info("Incoming request: {}", request.getRequestURI());
             String jwtToken = getTokenFromRequest(request);
             if (jwtToken != null) {
                 String email = authTokenPort.getEmailFromToken(jwtToken);
@@ -54,7 +50,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         } catch (Exception e) {
             SecurityContextHolder.clearContext();
-            LOGGER.error("User authentication set failed: {}", e.getMessage());
+            log.error("User authentication set failed: {}", e.getMessage());
         }
         filterChain.doFilter(request, response);
     }

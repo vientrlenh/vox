@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.subscription;
 
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,20 +23,12 @@ import com.sep.vox.domain.repository.SchoolSubscriptionQuotaUserAllocationReposi
  * SchoolSubscriptionRepository.findPracticeSpendableFundsVnd -- it no longer falls back to the school pool).
  */
 @Service
+@RequiredArgsConstructor
 public class ViewMyPracticeQuotaAllocationUseCase implements IUseCase<Void, SchoolSubscriptionQuotaUserAllocationDto> {
 
     private final UserContextPort userContextPort;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final SchoolSubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository;
-
-    public ViewMyPracticeQuotaAllocationUseCase(
-            UserContextPort userContextPort,
-            SchoolSubscriptionRepository schoolSubscriptionRepository,
-            SchoolSubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository) {
-        this.userContextPort = userContextPort;
-        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
-        this.subscriptionQuotaUserAllocationRepository = subscriptionQuotaUserAllocationRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

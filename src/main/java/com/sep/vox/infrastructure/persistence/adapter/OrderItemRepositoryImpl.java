@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.order.OrderItem;
@@ -14,13 +15,10 @@ import com.sep.vox.infrastructure.persistence.mapper.OrderItemMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataOrderItemRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class OrderItemRepositoryImpl implements OrderItemRepository {
 
     private final SpringDataOrderItemRepository springDataOrderItemRepository;
-
-    public OrderItemRepositoryImpl(SpringDataOrderItemRepository springDataOrderItemRepository) {
-        this.springDataOrderItemRepository = springDataOrderItemRepository;
-    }
 
     @Override
     public Optional<OrderItem> findById(UUID id) {

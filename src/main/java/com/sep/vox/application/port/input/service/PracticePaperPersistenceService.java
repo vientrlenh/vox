@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,9 +27,10 @@ import com.sep.vox.domain.repository.StudentQuestionExposureRepository;
  * nếu gọi qua this.
  */
 @Service
+@RequiredArgsConstructor
 public class PracticePaperPersistenceService {
 
-    /** Thời gian giữ chỗ quota cho một đề đã dựng nhưng chưa vào phiên. */
+    /** How long quota stays reserved for a paper that was built but has not entered a session yet. */
     private static final Duration RESERVATION_WINDOW = Duration.ofMinutes(10);
 
     private final PracticePaperRepository paperRepository;
@@ -36,19 +38,6 @@ public class PracticePaperPersistenceService {
     private final StudentQuestionExposureRepository studentQuestionExposureRepository;
     private final LearnerProfileRepository learnerProfileRepository;
     private final JsonSerializationPort jsonSerializationPort;
-
-    public PracticePaperPersistenceService(
-            PracticePaperRepository paperRepository,
-            PracticePaperItemRepository paperItemRepository,
-            StudentQuestionExposureRepository studentQuestionExposureRepository,
-            LearnerProfileRepository learnerProfileRepository,
-            JsonSerializationPort jsonSerializationPort) {
-        this.paperRepository = paperRepository;
-        this.paperItemRepository = paperItemRepository;
-        this.studentQuestionExposureRepository = studentQuestionExposureRepository;
-        this.learnerProfileRepository = learnerProfileRepository;
-        this.jsonSerializationPort = jsonSerializationPort;
-    }
 
     @Transactional
     public com.sep.vox.domain.model.personalization.PracticePaper persist(

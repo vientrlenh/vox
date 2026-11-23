@@ -7,6 +7,7 @@ import java.time.temporal.ChronoUnit;
 
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,20 +25,15 @@ import com.sep.vox.domain.common.DecimalText;
  * schema, và repository duy nhất có thể phục vụ nó đọc một bảng không mã nào còn ghi vào. Xem V10.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewSchoolAiCostTimeseriesUseCase
         implements IUseCase<ViewSchoolAiCostQuery, SchoolAiCostTimeseriesResponse> {
 
-    /** Bỏ trống mốc đầu = lùi 30 ngày, cùng mặc định mà thẻ trên trang tổng quan vẫn hiển thị. */
+    /** An empty start bound means 30 days back, the same default the overview page card shows. */
     private static final int DEFAULT_WINDOW_DAYS = 30;
 
     private final UserContextPort userContextPort;
     private final SchoolAiCostQueryRepository schoolAiCostQueryRepository;
-
-    public ViewSchoolAiCostTimeseriesUseCase(UserContextPort userContextPort,
-            SchoolAiCostQueryRepository schoolAiCostQueryRepository) {
-        this.userContextPort = userContextPort;
-        this.schoolAiCostQueryRepository = schoolAiCostQueryRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

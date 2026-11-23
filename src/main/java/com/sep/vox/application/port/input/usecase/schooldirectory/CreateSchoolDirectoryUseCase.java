@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.schooldirectory;
 
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,13 +14,10 @@ import com.sep.vox.domain.model.school.SchoolDirectory;
 import com.sep.vox.domain.repository.SchoolDirectoryRepository;
 
 @Service
+@RequiredArgsConstructor
 public class CreateSchoolDirectoryUseCase implements IUseCase<CreateSchoolDirectoryCommand, CreateSchoolDirectoryResponse> {
 
     private final SchoolDirectoryRepository schoolDirectoryRepository;
-
-    public CreateSchoolDirectoryUseCase(SchoolDirectoryRepository schoolDirectoryRepository) {
-        this.schoolDirectoryRepository = schoolDirectoryRepository;
-    }
 
     @Override
     @Transactional

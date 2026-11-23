@@ -5,6 +5,7 @@ import com.sep.vox.domain.model.question.Question;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,17 +16,11 @@ import com.sep.vox.domain.repository.AssessmentSecurePoolRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 
 @Service
+@RequiredArgsConstructor
 public class AssessmentQuestionSecureLockService {
 
     private final AssessmentSecurePoolRepository assessmentSecurePoolRepository;
     private final QuestionRepository questionRepository;
-
-    public AssessmentQuestionSecureLockService(
-            AssessmentSecurePoolRepository assessmentSecurePoolRepository,
-            QuestionRepository questionRepository) {
-        this.assessmentSecurePoolRepository = assessmentSecurePoolRepository;
-        this.questionRepository = questionRepository;
-    }
 
     /**
      * DISABLED ON PURPOSE -- attaching a question to an assessment no longer seals that question.

@@ -12,6 +12,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,20 +34,12 @@ import com.sep.vox.domain.repository.RubricVersionRepository;
  * sinh nhận — đó chính là lý do endpoint preview tồn tại.
  */
 @Service
+@RequiredArgsConstructor
 public class GradingItemScoreResolver {
 
     private final AssessmentItemResponseRepository assessmentItemResponseRepository;
     private final RubricCriterionRepository rubricCriterionRepository;
     private final RubricVersionRepository rubricVersionRepository;
-
-    public GradingItemScoreResolver(
-            AssessmentItemResponseRepository assessmentItemResponseRepository,
-            RubricCriterionRepository rubricCriterionRepository,
-            RubricVersionRepository rubricVersionRepository) {
-        this.assessmentItemResponseRepository = assessmentItemResponseRepository;
-        this.rubricCriterionRepository = rubricCriterionRepository;
-        this.rubricVersionRepository = rubricVersionRepository;
-    }
 
     /** Một phần thi đã chấm xong, sẵn sàng ghi xuống hoặc đem đi tính thử. */
     public record ResolvedItem(

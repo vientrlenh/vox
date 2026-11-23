@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.schooldirectory;
 import com.sep.vox.domain.model.school.SchoolDirectory;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,13 +13,10 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.repository.SchoolDirectoryRepository;
 
 @Service
+@RequiredArgsConstructor
 public class VerifySchoolDirectoryUseCase implements IUseCase<VerifySchoolDirectoryCommand, UUID>{
 
     private final SchoolDirectoryRepository schoolDirectoryRepository;
-
-    public VerifySchoolDirectoryUseCase(SchoolDirectoryRepository schoolDirectoryRepository) {
-        this.schoolDirectoryRepository = schoolDirectoryRepository;
-    }
 
     @Override
     @Transactional

@@ -12,6 +12,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +43,7 @@ import com.sep.vox.domain.repository.AssessmentGradingAssignmentRepository;
  * <p>Bài đã có phân công đang mở bị loại ở tầng query, nên gọi lại nhiều lần là an toàn.
  */
 @Service
+@RequiredArgsConstructor
 public class AutoAssignGradingUseCase implements IUseCase<AutoAssignGradingCommand, List<UUID>> {
 
     private final AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository;
@@ -51,23 +53,6 @@ public class AutoAssignGradingUseCase implements IUseCase<AutoAssignGradingComma
     private final GradingSampleSelector gradingSampleSelector;
     private final RoundRobinLoadBalancer roundRobinLoadBalancer;
     private final GradingAssignmentNotificationService gradingAssignmentNotificationService;
-
-    public AutoAssignGradingUseCase(
-            AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository,
-            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
-            AssessmentGradingQueryRepository assessmentGradingQueryRepository,
-            AssessmentGradingAccessService assessmentGradingAccessService,
-            GradingSampleSelector gradingSampleSelector,
-            RoundRobinLoadBalancer roundRobinLoadBalancer,
-            GradingAssignmentNotificationService gradingAssignmentNotificationService) {
-        this.assessmentGradingAssignmentRepository = assessmentGradingAssignmentRepository;
-        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
-        this.assessmentGradingQueryRepository = assessmentGradingQueryRepository;
-        this.assessmentGradingAccessService = assessmentGradingAccessService;
-        this.gradingSampleSelector = gradingSampleSelector;
-        this.roundRobinLoadBalancer = roundRobinLoadBalancer;
-        this.gradingAssignmentNotificationService = gradingAssignmentNotificationService;
-    }
 
     @Override
     @Transactional

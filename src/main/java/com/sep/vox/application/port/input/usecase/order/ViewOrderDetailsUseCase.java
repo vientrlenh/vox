@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.order;
 
 import com.sep.vox.domain.model.order.Order;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
@@ -12,15 +13,11 @@ import com.sep.vox.domain.dto.OrderDto;
 import com.sep.vox.domain.repository.OrderRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewOrderDetailsUseCase implements IUseCase<ViewOrderDetailsQuery, OrderDto> {
 
     private final OrderRepository orderRepository;
     private final UserContextPort userContextPort;
-
-    public ViewOrderDetailsUseCase(OrderRepository orderRepository, UserContextPort userContextPort) {
-        this.orderRepository = orderRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     public OrderDto execute(ViewOrderDetailsQuery input) {

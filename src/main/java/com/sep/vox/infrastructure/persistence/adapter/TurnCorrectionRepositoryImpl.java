@@ -3,6 +3,7 @@ package com.sep.vox.infrastructure.persistence.adapter;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.dto.personalization.TurnCorrectionDto;
@@ -11,13 +12,10 @@ import com.sep.vox.infrastructure.persistence.entity.personalization.TurnCorrect
 import com.sep.vox.infrastructure.persistence.repository.SpringDataTurnCorrectionRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class TurnCorrectionRepositoryImpl implements TurnCorrectionRepository {
 
     private final SpringDataTurnCorrectionRepository repository;
-
-    public TurnCorrectionRepositoryImpl(SpringDataTurnCorrectionRepository repository) {
-        this.repository = repository;
-    }
 
     @Override
     public void save(

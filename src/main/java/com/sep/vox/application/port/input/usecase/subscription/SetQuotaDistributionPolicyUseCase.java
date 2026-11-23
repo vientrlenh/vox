@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.subscription;
 
 import java.math.BigDecimal;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,17 +20,11 @@ import com.sep.vox.domain.repository.SchoolQuotaPolicyRepository;
  * vượt để họ biết cần thu bớt của ai, và mọi lần chia TIẾP theo đều bị chặn tới khi tổng về dưới trần.
  */
 @Service
+@RequiredArgsConstructor
 public class SetQuotaDistributionPolicyUseCase implements IUseCase<SetQuotaDistributionPolicyCommand, BigDecimal> {
 
     private final SchoolQuotaPolicyRepository schoolQuotaPolicyRepository;
     private final UserContextPort userContextPort;
-
-    public SetQuotaDistributionPolicyUseCase(
-            SchoolQuotaPolicyRepository schoolQuotaPolicyRepository,
-            UserContextPort userContextPort) {
-        this.schoolQuotaPolicyRepository = schoolQuotaPolicyRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

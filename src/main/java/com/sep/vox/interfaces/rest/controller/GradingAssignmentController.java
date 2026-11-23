@@ -11,6 +11,7 @@ import com.sep.vox.application.port.input.command.SubmitGradingCommand;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -58,6 +59,7 @@ import jakarta.validation.Valid;
  */
 @RestController
 @RequestMapping("/api/v1/grading-assignments")
+@RequiredArgsConstructor
 public class GradingAssignmentController {
 
     private final AssignGradingUseCase assignGradingUseCase;
@@ -72,33 +74,6 @@ public class GradingAssignmentController {
     private final DeclineGradingAssignmentUseCase declineGradingAssignmentUseCase;
     private final SetGradingDeadlineUseCase setGradingDeadlineUseCase;
     private final ReclaimOverdueAssignmentsUseCase reclaimOverdueAssignmentsUseCase;
-
-    public GradingAssignmentController(
-            AssignGradingUseCase assignGradingUseCase,
-            AutoAssignGradingUseCase autoAssignGradingUseCase,
-            ReassignGradingUseCase reassignGradingUseCase,
-            RemoveGradingAssignmentUseCase removeGradingAssignmentUseCase,
-            PreviewGradingUseCase previewGradingUseCase,
-            UpholdResultUseCase upholdResultUseCase,
-            RegradeResultUseCase regradeResultUseCase,
-            InvalidateResultUseCase invalidateResultUseCase,
-            ClearInvalidResultUseCase clearInvalidResultUseCase,
-            DeclineGradingAssignmentUseCase declineGradingAssignmentUseCase,
-            SetGradingDeadlineUseCase setGradingDeadlineUseCase,
-            ReclaimOverdueAssignmentsUseCase reclaimOverdueAssignmentsUseCase) {
-        this.assignGradingUseCase = assignGradingUseCase;
-        this.autoAssignGradingUseCase = autoAssignGradingUseCase;
-        this.reassignGradingUseCase = reassignGradingUseCase;
-        this.removeGradingAssignmentUseCase = removeGradingAssignmentUseCase;
-        this.previewGradingUseCase = previewGradingUseCase;
-        this.upholdResultUseCase = upholdResultUseCase;
-        this.regradeResultUseCase = regradeResultUseCase;
-        this.invalidateResultUseCase = invalidateResultUseCase;
-        this.clearInvalidResultUseCase = clearInvalidResultUseCase;
-        this.declineGradingAssignmentUseCase = declineGradingAssignmentUseCase;
-        this.setGradingDeadlineUseCase = setGradingDeadlineUseCase;
-        this.reclaimOverdueAssignmentsUseCase = reclaimOverdueAssignmentsUseCase;
-    }
 
     @Operation(summary = "Phân công giáo viên chấm bài (gán tay, nhiều bài một lần, một vòng chấm)")
     @PostMapping

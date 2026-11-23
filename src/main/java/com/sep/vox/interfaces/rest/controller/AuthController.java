@@ -13,6 +13,7 @@ import com.sep.vox.application.port.input.command.VerifyRegisterFormOtpCommand;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CookieValue;
@@ -72,6 +73,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/auth")
+@RequiredArgsConstructor
 public class AuthController {
     
     private final LoginUseCase loginUseCase;
@@ -85,20 +87,6 @@ public class AuthController {
     private final VerifyRegisterFormOtpUseCase verifyRegisterFormOtpUseCase;
     private final GoogleTokenLoginUseCase googleTokenLoginUseCase;
     private final HttpCookieProvider httpCookieProvider;
-
-    public AuthController(LoginUseCase loginUseCase, RegisterFromSchoolDirectoryUseCase registerFromSchoolDirectoryUseCase, SetUpPasswordUseCase setUpPasswordUseCase, RefreshUseCase refreshUseCase, LogoutUseCase logoutUseCase, SendResetPasswordOtpUseCase sendResetPasswordOtpUseCase, ResetPasswordUseCase resetPasswordUseCase, RegisterBySelfDeclaredUseCase registerBySelfDeclaredUseCase, VerifyRegisterFormOtpUseCase verifyRegisterFormOtpUseCase, GoogleTokenLoginUseCase googleTokenLoginUseCase, HttpCookieProvider httpCookieProvider) {
-        this.loginUseCase = loginUseCase;
-        this.registerFromSchoolDirectoryUseCase = registerFromSchoolDirectoryUseCase;
-        this.setUpPasswordUseCase = setUpPasswordUseCase;
-        this.refreshUseCase = refreshUseCase;
-        this.logoutUseCase = logoutUseCase;
-        this.sendResetPasswordOtpUseCase = sendResetPasswordOtpUseCase;
-        this.resetPasswordUseCase = resetPasswordUseCase;
-        this.registerBySelfDeclaredUseCase = registerBySelfDeclaredUseCase;
-        this.verifyRegisterFormOtpUseCase = verifyRegisterFormOtpUseCase;
-        this.googleTokenLoginUseCase = googleTokenLoginUseCase;
-        this.httpCookieProvider = httpCookieProvider;
-    }
 
     private static final String REFRESH_TOKEN_COOKIE_KEY = "refresh_token";
     private static final long REFRESH_TOKEN_COOKIE_TTL_SECONDS = 259200L;

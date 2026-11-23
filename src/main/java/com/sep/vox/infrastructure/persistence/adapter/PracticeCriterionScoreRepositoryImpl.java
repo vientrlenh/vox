@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,14 +14,10 @@ import com.sep.vox.infrastructure.persistence.entity.personalization.PracticeCri
 import com.sep.vox.infrastructure.persistence.repository.SpringDataPracticeCriterionScoreRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class PracticeCriterionScoreRepositoryImpl implements PracticeCriterionScoreRepository {
 
     private final SpringDataPracticeCriterionScoreRepository repository;
-
-    public PracticeCriterionScoreRepositoryImpl(
-            SpringDataPracticeCriterionScoreRepository repository) {
-        this.repository = repository;
-    }
 
     @Override
     @Transactional

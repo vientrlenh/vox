@@ -5,6 +5,7 @@ import com.sep.vox.domain.model.user.User;
 import java.util.Optional;
 import java.util.UUID;
 import com.sep.vox.application.exception.DataConflictException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,20 +36,12 @@ import com.sep.vox.domain.valueobject.Phone;
  * bảng không lệch luật nhau (họ tên không được rỗng, số điện thoại không được rỗng và không trùng).
  */
 @Service
+@RequiredArgsConstructor
 public class UpdateProfileUseCase implements IUseCase<UpdateProfileCommand, UserDto> {
 
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
     private final AvatarConfigPort avatarConfigPort;
-
-    public UpdateProfileUseCase(
-            UserContextPort userContextPort,
-            UserRepository userRepository,
-            AvatarConfigPort avatarConfigPort) {
-        this.userContextPort = userContextPort;
-        this.userRepository = userRepository;
-        this.avatarConfigPort = avatarConfigPort;
-    }
 
     @Override
     @Transactional

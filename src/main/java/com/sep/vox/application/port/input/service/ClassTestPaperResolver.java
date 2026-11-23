@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.service;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.NotFoundException;
@@ -17,13 +18,10 @@ import com.sep.vox.domain.repository.AssessmentPaperRepository;
  * chỉ hợp lệ khi bài có đúng một mã đề.
  */
 @Service
+@RequiredArgsConstructor
 public class ClassTestPaperResolver {
 
     private final AssessmentPaperRepository assessmentPaperRepository;
-
-    public ClassTestPaperResolver(AssessmentPaperRepository assessmentPaperRepository) {
-        this.assessmentPaperRepository = assessmentPaperRepository;
-    }
 
     public AssessmentPaper resolve(UUID assessmentId, UUID requestedPaperId) {
         List<AssessmentPaper> papers = assessmentPaperRepository.findByAssessmentId(assessmentId);

@@ -7,8 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -52,9 +51,8 @@ import com.sep.vox.interfaces.rest.dto.response.ValidationErrorResponse;
  * và chết tiếp lần nữa với {@code HttpMessageNotWritableException}.
  */
 @RestControllerAdvice(basePackages = "com.sep.vox")
+@Slf4j
 public class GlobalExceptionHandler {
-    
-    private static final Logger LOGGER = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     private static final String DUPLICATED_ERROR = "DUPLICATED";
     private static final String NOT_FOUND_ERROR = "NOT_FOUND";
@@ -142,7 +140,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<Object> handleUnreadableBody(HttpMessageNotReadableException e) {
-        LOGGER.warn("Unreadable request body: {}", e.getCause() == null ? e.getClass() : e.getCause().getClass());
+        log.warn("Unreadable request body: {}", e.getCause() == null ? e.getClass() : e.getCause().getClass());
         if (e.getCause() instanceof MismatchedInputException mismatch && !mismatch.getPath().isEmpty()) {
             Map<String, String> errors = Map.of(jsonPathOf(mismatch), describeInvalidValue(mismatch));
             return ResponseEntity.badRequest().body(new ValidationErrorResponse(errors, VALIDATION_ERROR));
@@ -247,7 +245,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception e) {
-        LOGGER.error("An unexpected error occurred", e);
+        log.error("An unexpected error occurred", e);
         ErrorResponse error = new ErrorResponse(INTERNAL_ERROR, "Có lỗi xảy ra");
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }

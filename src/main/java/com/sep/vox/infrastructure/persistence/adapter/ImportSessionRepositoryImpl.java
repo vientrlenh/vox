@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -22,13 +23,10 @@ import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataImportSessionRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class ImportSessionRepositoryImpl implements ImportSessionRepository {
 
     private final SpringDataImportSessionRepository springDataImportSessionRepository;
-
-    public ImportSessionRepositoryImpl(SpringDataImportSessionRepository springDataImportSessionRepository) {
-        this.springDataImportSessionRepository = springDataImportSessionRepository;
-    }
 
     @Override
     public ImportSession save(ImportSession session) {

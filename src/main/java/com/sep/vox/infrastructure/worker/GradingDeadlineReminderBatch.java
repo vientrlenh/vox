@@ -10,6 +10,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +39,7 @@ import com.sep.vox.domain.repository.OutboxRepository;
  * không còn giữ khoá tới lúc commit, tức mất luôn phần chống trùng giữa các instance.
  */
 @Component
+@RequiredArgsConstructor
 public class GradingDeadlineReminderBatch {
 
     private final AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository;
@@ -45,19 +47,6 @@ public class GradingDeadlineReminderBatch {
     private final AssessmentRepository assessmentRepository;
     private final OutboxRepository outboxRepository;
     private final JsonSerializationPort jsonSerializationPort;
-
-    public GradingDeadlineReminderBatch(
-            AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository,
-            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
-            AssessmentRepository assessmentRepository,
-            OutboxRepository outboxRepository,
-            JsonSerializationPort jsonSerializationPort) {
-        this.assessmentGradingAssignmentRepository = assessmentGradingAssignmentRepository;
-        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
-        this.assessmentRepository = assessmentRepository;
-        this.outboxRepository = outboxRepository;
-        this.jsonSerializationPort = jsonSerializationPort;
-    }
 
     /**
      * {@code reminded_at} and the outbox row are in ONE transaction, so the write order

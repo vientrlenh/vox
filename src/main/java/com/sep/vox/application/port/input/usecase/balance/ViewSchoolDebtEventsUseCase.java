@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.balance;
 
 import com.sep.vox.domain.model.school.SchoolDebtEvent;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,18 +19,12 @@ import com.sep.vox.domain.repository.SchoolDebtEventRepository;
  * khoản nợ -- nên nó thuộc về cùng một nhóm với sao kê ví, không phải với lớp học và phòng thi.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewSchoolDebtEventsUseCase
         implements IUseCase<ViewSchoolDebtEventsQuery, PageResult<SchoolDebtEventDto>> {
 
     private final SchoolDebtEventRepository schoolDebtEventRepository;
     private final SchoolScopedReadGuard schoolScopedReadGuard;
-
-    public ViewSchoolDebtEventsUseCase(
-            SchoolDebtEventRepository schoolDebtEventRepository,
-            SchoolScopedReadGuard schoolScopedReadGuard) {
-        this.schoolDebtEventRepository = schoolDebtEventRepository;
-        this.schoolScopedReadGuard = schoolScopedReadGuard;
-    }
 
     @Override
     @Transactional(readOnly = true)

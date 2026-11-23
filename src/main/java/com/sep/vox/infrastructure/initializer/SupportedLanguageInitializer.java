@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.initializer;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
@@ -13,22 +13,18 @@ import com.sep.vox.domain.valueobject.LanguageCode;
 
 @Component
 @Order(3)
+@RequiredArgsConstructor
+@Slf4j
 public class SupportedLanguageInitializer implements ApplicationRunner {
 
     private final SupportedLanguageRepository supportedLanguageRepository;
 
-    public SupportedLanguageInitializer(SupportedLanguageRepository supportedLanguageRepository) {
-        this.supportedLanguageRepository = supportedLanguageRepository;
-    }
-
     private static final String ENGLISH_CODE = "ENG";
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(SupportedLanguageInitializer.class);
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
         if (supportedLanguageRepository.count() > 0) {
-            LOGGER.info("Supported language already exist in database. Skip initialize");
+            log.info("Supported language already exist in database. Skip initialize");
             return;
         }
         SupportedLanguage english = SupportedLanguage.builder()
@@ -38,7 +34,7 @@ public class SupportedLanguageInitializer implements ApplicationRunner {
             .active(true)
             .build();
         supportedLanguageRepository.save(english);
-        LOGGER.info("Supported language initialized successfully");
+        log.info("Supported language initialized successfully");
     }
     
 }

@@ -13,6 +13,7 @@ import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.GradeLevelRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.application.exception.DataConflictException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,20 +24,12 @@ import java.util.UUID;
  * a school admin create a grade level just for their own school, but now one record affects every school.
  */
 @Service
+@RequiredArgsConstructor
 public class CreateGradeLevelUseCase implements IUseCase<CreateGradeLevelCommand, UUID> {
 
     private final GradeLevelRepository gradeLevelRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
-
-    public CreateGradeLevelUseCase(
-            GradeLevelRepository gradeLevelRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort) {
-        this.gradeLevelRepository = gradeLevelRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

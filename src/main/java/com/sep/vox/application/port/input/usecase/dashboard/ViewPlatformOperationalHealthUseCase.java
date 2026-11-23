@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,25 +31,21 @@ import com.sep.vox.domain.common.ZoneConstant;
  * biến mất thay vì hiện thành khoảng trống, tức là đúng ngày đáng chú ý nhất lại vô hình.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewPlatformOperationalHealthUseCase
         implements IUseCase<ViewPlatformOperationalHealthQuery, PlatformOperationalHealthResponse> {
 
-    /** Cửa sổ mặc định khi client không truyền mốc nào. */
+    /** Default window when the client sends no bounds. */
     static final int DEFAULT_WINDOW_DAYS = 14;
 
     /**
-     * Trần số ngày vẽ ra. Không phải để bảo vệ DB (query đã gộp sẵn ở đó), mà để một khoảng vô tình
-     * rộng — client gửi nhầm mốc EPOCH chẳng hạn — không sinh ra hàng nghìn phần tử mà biểu đồ không
-     * vẽ nổi. Mốc đầu bị kéo lên theo, để con số tổng và chuỗi ngày luôn nói cùng một cửa sổ.
+     * Maximum number of days drawn. It is not there to protect the DB (the query already aggregates), but so that an accidentally
+     * wide range — a client sending an EPOCH bound by mistake, for example — does not produce thousands of elements the chart cannot
+     * draw. The start bound is moved up with it, so the total and the day series always describe the same window.
      */
     static final int MAX_WINDOW_DAYS = 366;
 
     private final PlatformOperationalHealthQueryRepository platformOperationalHealthQueryRepository;
-
-    public ViewPlatformOperationalHealthUseCase(
-            PlatformOperationalHealthQueryRepository platformOperationalHealthQueryRepository) {
-        this.platformOperationalHealthQueryRepository = platformOperationalHealthQueryRepository;
-    }
 
 
     @Override

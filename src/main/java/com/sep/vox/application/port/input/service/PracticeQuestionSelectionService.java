@@ -9,8 +9,8 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.output.JsonSerializationPort;
@@ -34,25 +34,25 @@ import com.sep.vox.domain.service.personalization.TensePolicy;
  * đầy đủ ghi ở {@link #ladderCandidatesForOneQuestion}.
  */
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class PracticeQuestionSelectionService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(PracticeQuestionSelectionService.class);
-
     /**
-     * Lấy ngẫu nhiên trong {@value} câu tốt nhất thay vì luôn lấy câu đầu bảng -- randomesque
-     * (Kingsbury &amp; Zara 1989). Chọn cứng câu đầu thì cùng một kho, cùng một trọng tâm sẽ
-     * cho ra cùng một câu cho mọi học sinh, và câu đó bị dùng mòn trong khi phần còn lại của
-     * kho không ai đụng tới.
+     * Pick at random among the {@value} best questions instead of always taking the top one -- randomesque
+     * (Kingsbury &amp; Zara 1989). Always taking the top one would give the same bank and the same focus
+     * the same question for every student, and that question would be worn out while the rest of the
+     * bank is never touched.
      */
     private static final int TOP_CANDIDATES_BEFORE_RANDOM = 5;
 
     /**
-     * Năm tiêu chí của khung chấm, cố định (quyết định của người dùng: không tổng quát hoá
-     * phần này). Dùng để BÙ cho những tiêu chí chưa có điểm nào -- xem {@link #resolveFocus}.
+     * The five criteria of the grading framework, fixed (user decision: this part is not
+     * generalized). Used to COMPENSATE for criteria that have no score yet -- see {@link #resolveFocus}.
      *
-     * <p>Thứ tự liệt kê ở đây là thứ tự dự phòng khi học sinh chưa được chấm gì: bắt đầu từ
-     * ngữ pháp như hành vi cũ ({@code criteria.isEmpty() ? List.of("GRAMMAR")}), nhưng KHÔNG
-     * dừng ở đó -- dừng ở đó chính là cái bẫy "mọi câu hỏi vĩnh viễn là ngữ pháp".
+     * <p>The listing order here is the fallback order when the student has not been graded on anything: start from
+     * grammar as the old behavior did ({@code criteria.isEmpty() ? List.of("GRAMMAR")}), but do NOT
+     * stop there -- stopping there is exactly the trap "every question is grammar forever".
      */
     private static final List<String> ALL_PRACTICE_CRITERIA = List.of(
         "GRAMMAR", "VOCABULARY", "COHERENCE", "PRONUNCIATION", "FLUENCY"
@@ -65,23 +65,6 @@ public class PracticeQuestionSelectionService {
     private final CriterionScoreAverageRepository criterionScoreRepository;
     private final PracticeTopicOfferEnrichmentService enrichmentService;
     private final JsonSerializationPort jsonSerializationPort;
-
-    public PracticeQuestionSelectionService(
-            PracticeQuestionRepository questionRepository,
-            PracticeQuestionGenerationService generationService,
-            QuestionDiversityPort diversityPort,
-            PracticeGenerationConfigPort generationConfig,
-            CriterionScoreAverageRepository criterionScoreRepository,
-            PracticeTopicOfferEnrichmentService enrichmentService,
-            JsonSerializationPort jsonSerializationPort) {
-        this.enrichmentService = enrichmentService;
-        this.jsonSerializationPort = jsonSerializationPort;
-        this.questionRepository = questionRepository;
-        this.generationService = generationService;
-        this.diversityPort = diversityPort;
-        this.generationConfig = generationConfig;
-        this.criterionScoreRepository = criterionScoreRepository;
-    }
 
     /**
      * Tiêu chí/sub-attribute trọng tâm của học sinh -- dùng chung bởi BuildPracticePaperUseCase
@@ -351,7 +334,7 @@ public class PracticeQuestionSelectionService {
                 Math.min(bandCount, targetRank + 1)
             ).forEach(question -> putIfNotExcluded(selected, question, excludeIds));
         } catch (RuntimeException exception) {
-            LOGGER.warn("Hết bậc sinh trực tiếp cho câu tiếp theo trong phiên.", exception);
+            log.warn("Hết bậc sinh trực tiếp cho câu tiếp theo trong phiên.", exception);
         }
         return List.copyOf(selected.values());
     }

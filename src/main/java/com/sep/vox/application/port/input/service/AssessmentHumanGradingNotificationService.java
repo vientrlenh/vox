@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,9 +44,9 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
  * in", and the exact number is always shown by the grading queue anyway.
  */
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class AssessmentHumanGradingNotificationService {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(AssessmentHumanGradingNotificationService.class);
 
     private final AssessmentRepository assessmentRepository;
     private final AssessmentCandidateResultRepository assessmentCandidateResultRepository;
@@ -54,21 +54,6 @@ public class AssessmentHumanGradingNotificationService {
     private final SchoolUserRepository schoolUserRepository;
     private final OutboxRepository outboxRepository;
     private final JsonSerializationPort jsonSerializationPort;
-
-    public AssessmentHumanGradingNotificationService(
-            AssessmentRepository assessmentRepository,
-            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
-            AssessmentMemberRepository assessmentMemberRepository,
-            SchoolUserRepository schoolUserRepository,
-            OutboxRepository outboxRepository,
-            JsonSerializationPort jsonSerializationPort) {
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
-        this.assessmentMemberRepository = assessmentMemberRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.outboxRepository = outboxRepository;
-        this.jsonSerializationPort = jsonSerializationPort;
-    }
 
     /**
      * {@code REQUIRED} and not {@code MANDATORY}: the two callers are different in nature --
@@ -103,7 +88,7 @@ public class AssessmentHumanGradingNotificationService {
         if (recipientIds.isEmpty()) {
             // Bài trên lớp không có CHAIR, hoặc trường không còn admin nào đang hoạt động.
             // Bài vẫn nằm trong hàng đợi chấm, chỉ là không có ai để đánh động.
-            LOGGER.warn("Bài thi {} còn {} bài chờ chấm tay nhưng không tìm được người nhận thông báo",
+            log.warn("Bài thi {} còn {} bài chờ chấm tay nhưng không tìm được người nhận thông báo",
                 assessment.getId(), pendingCount);
             return;
         }
@@ -126,7 +111,7 @@ public class AssessmentHumanGradingNotificationService {
         assessment.setHumanGradingNotifiedAt(now);
         assessmentRepository.save(assessment);
 
-        LOGGER.info("Bài thi {} có {} bài chờ chấm tay -- báo cho {} người",
+        log.info("Bài thi {} có {} bài chờ chấm tay -- báo cho {} người",
             assessment.getId(), pendingCount, recipientIds.size());
     }
 

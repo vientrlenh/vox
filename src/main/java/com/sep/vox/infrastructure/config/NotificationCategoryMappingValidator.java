@@ -1,8 +1,7 @@
 package com.sep.vox.infrastructure.config;
 
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,9 +23,8 @@ import com.sep.vox.infrastructure.exception.InfrastructureException;
  * event nào sinh notification, target quyết định notification đó mở đi đâu.
  */
 @Configuration
+@Slf4j
 public class NotificationCategoryMappingValidator {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(NotificationCategoryMappingValidator.class);
 
     // Tên bean phải khác tên class đã decapitalize ("notificationCategoryMappingValidator"),
     // nếu không sẽ đụng với chính bean của @Configuration này khi component scan.
@@ -75,7 +73,7 @@ public class NotificationCategoryMappingValidator {
                         + "notification: " + targetWithoutCategory);
             }
 
-            LOGGER.info("Notification mapping: {} eventType đã khai báo (dẫn về {} target), "
+            log.info("Notification mapping: {} eventType đã khai báo (dẫn về {} target), "
                 + "{} eventType không tạo notification",
                 NotificationCategory.mappedEventTypes().size(),
                 NotificationTarget.mappedEventTypes().stream().map(NotificationTarget::of).distinct().count(),

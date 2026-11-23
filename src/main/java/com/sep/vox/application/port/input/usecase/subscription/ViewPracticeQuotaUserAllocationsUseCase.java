@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,14 +13,11 @@ import com.sep.vox.domain.model.user.SchoolRoleCodes;
 
 /** Đường đọc của màn chia hạn mức luyện nói cho học sinh -- có phân trang và tìm kiếm theo tên. */
 @Service
+@RequiredArgsConstructor
 public class ViewPracticeQuotaUserAllocationsUseCase
         implements IUseCase<ViewQuotaUserAllocationsQuery, QuotaUserAllocationPageResponse> {
 
     private final DistributeQuotaToUsersService distributeQuotaToUsersService;
-
-    public ViewPracticeQuotaUserAllocationsUseCase(DistributeQuotaToUsersService distributeQuotaToUsersService) {
-        this.distributeQuotaToUsersService = distributeQuotaToUsersService;
-    }
 
     @Override
     @Transactional(readOnly = true)

@@ -24,6 +24,7 @@ import com.sep.vox.domain.repository.ImportSessionRepository;
 import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,7 +35,8 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 
 @Service
-public class PreviewSystemRubricVersionImportFromFileUseCase implements IUseCase<PreviewRubricVersionImportFromFileCommand, PreviewRubricVersionImportResponse> { // 👉 ĐỔI KIỂU TRẢ VỀ Ở ĐÂY
+@RequiredArgsConstructor
+public class PreviewSystemRubricVersionImportFromFileUseCase implements IUseCase<PreviewRubricVersionImportFromFileCommand, PreviewRubricVersionImportResponse> { // Changed: the return type is declared here
 
     private final RubricRepository rubricRepository;
     private final ImportSessionRepository importSessionRepository;
@@ -43,23 +45,6 @@ public class PreviewSystemRubricVersionImportFromFileUseCase implements IUseCase
     private final JsonSerializationPort jsonSerializationPort;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
-
-    public PreviewSystemRubricVersionImportFromFileUseCase(
-            RubricRepository rubricRepository,
-            ImportSessionRepository importSessionRepository,
-            ImportRowRepository importRowRepository,
-            FileProcessingPort fileProcessingPort,
-            JsonSerializationPort jsonSerializationPort,
-            UserRepository userRepository,
-            UserContextPort userContextPort) {
-        this.rubricRepository = rubricRepository;
-        this.importSessionRepository = importSessionRepository;
-        this.importRowRepository = importRowRepository;
-        this.fileProcessingPort = fileProcessingPort;
-        this.jsonSerializationPort = jsonSerializationPort;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

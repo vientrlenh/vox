@@ -9,8 +9,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,12 +37,11 @@ import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.TurnCorrectionRepository;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCommand, SubmitTurnResult> {
 
-    private static final Logger LOGGER =
-        LoggerFactory.getLogger(SubmitPracticeTurnUseCase.class);
-
-    // Trùng scale của school_subscription_quota_records.used_amount_vnd numeric(18,6).
+    // Same scale as school_subscription_quota_records.used_amount_vnd numeric(18,6).
     private static final int COST_VND_SCALE = 6;
 
     private final PracticeSessionRepository practiceSessionRepository;
@@ -58,33 +57,6 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
     private final QuotaPricingPort quotaPricingPort;
     // Separate REQUIRES_NEW transaction for the ConsumeQuotaService call -- see the full reason where it is used below.
     private final RequiresNewTransactionPort requiresNewTransactionPort;
-
-    public SubmitPracticeTurnUseCase(
-            PracticeSessionRepository practiceSessionRepository,
-            PracticeItemResponseRepository practiceItemResponseRepository,
-            PracticeResponseTurnRepository practiceResponseTurnRepository,
-            TurnCorrectionRepository turnCorrectionRepository,
-            SchoolSubscriptionRepository schoolSubscriptionRepository,
-            PracticeEvaluationRequestFactory evaluationRequestFactory,
-            PracticeTopicOfferEnrichmentService enrichmentService,
-            ConsumeQuotaService consumeQuotaService,
-            ExternalEventPublisherPort eventPublisher,
-            UserContextPort userContextPort,
-            QuotaPricingPort quotaPricingPort,
-            RequiresNewTransactionPort requiresNewTransactionPort) {
-        this.practiceSessionRepository = practiceSessionRepository;
-        this.practiceItemResponseRepository = practiceItemResponseRepository;
-        this.practiceResponseTurnRepository = practiceResponseTurnRepository;
-        this.turnCorrectionRepository = turnCorrectionRepository;
-        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
-        this.evaluationRequestFactory = evaluationRequestFactory;
-        this.enrichmentService = enrichmentService;
-        this.consumeQuotaService = consumeQuotaService;
-        this.eventPublisher = eventPublisher;
-        this.userContextPort = userContextPort;
-        this.quotaPricingPort = quotaPricingPort;
-        this.requiresNewTransactionPort = requiresNewTransactionPort;
-    }
 
     // CẢNH BÁO: lời gọi execute(...) bên dưới là SELF-INVOCATION -- không đi qua proxy, nên
     // @Transactional trên overload kia KHÔNG có tác dụng ở đường này; transaction đang chạy là
@@ -190,7 +162,7 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
             quotaExhausted = consumeResult != null && consumeResult.fundsExhausted();
             if (quotaExhausted) {
                 // Đã nói thì phải được ghi. Hết tiền chỉ có nghĩa là phiên dừng SAU lượt này.
-                LOGGER.info(
+                log.info(
                     "Hết hạn mức lẫn số dư PRACTICE ở phiên {} -- vẫn ghi lượt {} rồi đóng phiên.",
                     turn.getSessionId(),
                     turn.getTurnOrder()

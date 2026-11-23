@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.role;
 
 import com.sep.vox.domain.model.user.Role;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,13 +13,10 @@ import com.sep.vox.domain.mapper.RoleDtoMapper;
 import com.sep.vox.domain.repository.RoleRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewRoleDetailsUseCase implements IUseCase<ViewRoleDetailsQuery, RoleDto>{
 
     private final RoleRepository roleRepository;
-
-    public ViewRoleDetailsUseCase(RoleRepository roleRepository) {
-        this.roleRepository = roleRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

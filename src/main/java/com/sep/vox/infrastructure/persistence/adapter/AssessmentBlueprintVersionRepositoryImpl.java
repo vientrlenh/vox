@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersion;
@@ -17,15 +17,11 @@ import com.sep.vox.infrastructure.persistence.mapper.AssessmentBlueprintVersionM
 import com.sep.vox.infrastructure.persistence.repository.SpringDataAssessmentBlueprintVersionRepository;
 
 @Repository
+@RequiredArgsConstructor
+@Slf4j
 public class AssessmentBlueprintVersionRepositoryImpl implements AssessmentBlueprintVersionRepository {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AssessmentBlueprintVersionRepositoryImpl.class);
-
     private final SpringDataAssessmentBlueprintVersionRepository springDataAssessmentBlueprintVersionRepository;
-
-    public AssessmentBlueprintVersionRepositoryImpl(SpringDataAssessmentBlueprintVersionRepository springDataAssessmentBlueprintVersionRepository) {
-        this.springDataAssessmentBlueprintVersionRepository = springDataAssessmentBlueprintVersionRepository;
-    }
 
     @Override
     public AssessmentBlueprintVersion save(AssessmentBlueprintVersion version) {
@@ -38,7 +34,7 @@ public class AssessmentBlueprintVersionRepositoryImpl implements AssessmentBluep
         long startedAt = System.nanoTime();
         Optional<AssessmentBlueprintVersion> result = springDataAssessmentBlueprintVersionRepository.findById(id)
             .map(AssessmentBlueprintVersionMapper::toDomain);
-        LOGGER.info("[blueprint-perf] repo AssessmentBlueprintVersionRepositoryImpl.findById id={} tookMs={}",
+        log.info("[blueprint-perf] repo AssessmentBlueprintVersionRepositoryImpl.findById id={} tookMs={}",
             id, (System.nanoTime() - startedAt) / 1_000_000);
         return result;
     }
@@ -69,7 +65,7 @@ public class AssessmentBlueprintVersionRepositoryImpl implements AssessmentBluep
         List<AssessmentBlueprintVersion> result = springDataAssessmentBlueprintVersionRepository.findByBlueprintIdInOrderByVersionDesc(blueprintIds).stream()
             .map(AssessmentBlueprintVersionMapper::toDomain)
             .toList();
-        LOGGER.info("[blueprint-perf] repo AssessmentBlueprintVersionRepositoryImpl.findByBlueprintIdIn blueprintIds={} tookMs={}",
+        log.info("[blueprint-perf] repo AssessmentBlueprintVersionRepositoryImpl.findByBlueprintIdIn blueprintIds={} tookMs={}",
             blueprintIds.size(), (System.nanoTime() - startedAt) / 1_000_000);
         return result;
     }

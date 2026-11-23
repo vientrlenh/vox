@@ -4,9 +4,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.kafka.annotation.BackOff;
 import org.springframework.kafka.annotation.DltHandler;
@@ -43,9 +43,9 @@ import tools.jackson.databind.json.JsonMapper;
  * mail đúng" lại khớp với thứ người dùng chờ đợi.
  */
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class ResetPasswordOtpEmailConsumer {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(ResetPasswordOtpEmailConsumer.class);
 
     private static final String CONSUMER_GROUP = "reset-password-otp-email";
     private static final String SUBJECT = "Mã xác thực đặt lại mật khẩu VOX";
@@ -60,21 +60,6 @@ public class ResetPasswordOtpEmailConsumer {
     private final MailTemplatePort mailTemplatePort;
     private final ProcessedEventRepository processedEventRepository;
     private final JsonMapper jsonMapper;
-
-    public ResetPasswordOtpEmailConsumer(
-            CacheManagerPort cacheManagerPort,
-            OneTimePasswordPort oneTimePasswordPort,
-            MailSendingPort mailSendingPort,
-            MailTemplatePort mailTemplatePort,
-            ProcessedEventRepository processedEventRepository,
-            JsonMapper jsonMapper) {
-        this.cacheManagerPort = cacheManagerPort;
-        this.oneTimePasswordPort = oneTimePasswordPort;
-        this.mailSendingPort = mailSendingPort;
-        this.mailTemplatePort = mailTemplatePort;
-        this.processedEventRepository = processedEventRepository;
-        this.jsonMapper = jsonMapper;
-    }
 
     @RetryableTopic(
         attempts = "4",
@@ -91,11 +76,11 @@ public class ResetPasswordOtpEmailConsumer {
     public void consume(ConsumerRecord<String, String> record, Acknowledgment ack) {
         UUID eventId = KafkaEventHeaders.readEventId(record);
 
-        LOGGER.info("Receive event reset-password-otp: eventId={}, partition={}, offset={}",
+        log.info("Receive event reset-password-otp: eventId={}, partition={}, offset={}",
             eventId, record.partition(), record.offset());
 
         if (processedEventRepository.existsByEventIdAndConsumerGroup(eventId, CONSUMER_GROUP)) {
-            LOGGER.info("Skip processed event: eventId={}, consumer={}", eventId, CONSUMER_GROUP);
+            log.info("Skip processed event: eventId={}, consumer={}", eventId, CONSUMER_GROUP);
             ack.acknowledge();
             return;
         }
@@ -105,7 +90,7 @@ public class ResetPasswordOtpEmailConsumer {
             payload = jsonMapper.readValue(record.value(), ResetPasswordOtpRequestedPayloadV1.class);
         } catch (Exception e) {
             // Not logging record.value() here loses nothing -- the payload only has the email.
-            LOGGER.error("Invalid payload: eventId={}", eventId, e);
+            log.error("Invalid payload: eventId={}", eventId, e);
             throw new IllegalStateException("Payload reset-password-otp không hợp lệ, eventId=" + eventId, e);
         }
 
@@ -119,21 +104,21 @@ public class ResetPasswordOtpEmailConsumer {
             String html = mailTemplatePort.renderResetPasswordOtpEmail(otp, EXPIRES_IN);
             mailSendingPort.sendHtml(payload.to(), SUBJECT, html);
         } catch (Exception e) {
-            LOGGER.error("Send mail error: eventId={}", eventId, e);
+            log.error("Send mail error: eventId={}", eventId, e);
             throw new IllegalStateException("Gửi mail OTP đặt lại mật khẩu thất bại: eventId=" + eventId, e);
         }
 
         markProcessed(eventId);
 
         // Never log the OTP or the recipient address at INFO level.
-        LOGGER.info("Reset password OTP mail sent: eventId={}", eventId);
+        log.info("Reset password OTP mail sent: eventId={}", eventId);
         ack.acknowledge();
     }
 
     @DltHandler
     public void handleDlt(ConsumerRecord<String, String> record) {
         UUID eventId = KafkaEventHeaders.readEventIdOrNull(record);
-        LOGGER.error("reset-password-otp event sent to DLT: eventId={}, topic={}, partition={}, offset={}",
+        log.error("reset-password-otp event sent to DLT: eventId={}, topic={}, partition={}, offset={}",
             eventId, record.topic(), record.partition(), record.offset());
     }
 
@@ -145,7 +130,7 @@ public class ResetPasswordOtpEmailConsumer {
                     .processedAt(Instant.now())
                     .build());
         } catch (DataIntegrityViolationException e) {
-            LOGGER.warn("This event was already marked by another instance: eventId={}", eventId);
+            log.warn("This event was already marked by another instance: eventId={}", eventId);
         }
     }
 }

@@ -5,6 +5,7 @@ import com.sep.vox.application.port.input.command.UpdateSchoolScoringRuleCommand
 import com.sep.vox.application.port.input.command.UpdateScoringRuleCommand;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
@@ -34,6 +35,7 @@ import com.sep.vox.interfaces.shared.PageArguments;
 
 
 @Controller("graphqlScoringRuleController")
+@RequiredArgsConstructor
 public class ScoringRuleController {
 
     private final SearchSystemScoringRuleUseCase searchSystemScoringRuleUseCase;
@@ -45,27 +47,6 @@ public class ScoringRuleController {
     private final UpdateSystemScoringRuleUseCase updateSystemScoringRuleUseCase;
     private final UpdateSchoolScoringRuleUseCase updateSchoolScoringRuleUseCase;
     private final ScoringRuleParamsMapper scoringRuleParamsMapper;
-
-    public ScoringRuleController(
-            SearchSystemScoringRuleUseCase searchSystemScoringRuleUseCase,
-            SearchSchoolScoringRuleUseCase searchSchoolScoringRuleUseCase,
-            ViewAllSystemScoringRuleUseCase viewAllSystemScoringRuleUseCase,
-            ViewAllSchoolScoringRuleUseCase viewAllSchoolScoringRuleUseCase,
-            ViewSystemScoringRuleDetailUseCase viewSystemScoringRuleDetailUseCase,
-            ViewSchoolScoringRuleDetailUseCase viewSchoolScoringRuleDetailUseCase,
-            UpdateSystemScoringRuleUseCase updateSystemScoringRuleUseCase,
-            UpdateSchoolScoringRuleUseCase updateSchoolScoringRuleUseCase,
-            ScoringRuleParamsMapper scoringRuleParamsMapper) {
-        this.searchSystemScoringRuleUseCase = searchSystemScoringRuleUseCase;
-        this.searchSchoolScoringRuleUseCase = searchSchoolScoringRuleUseCase;
-        this.viewAllSystemScoringRuleUseCase = viewAllSystemScoringRuleUseCase;
-        this.viewAllSchoolScoringRuleUseCase = viewAllSchoolScoringRuleUseCase;
-        this.viewSystemScoringRuleDetailUseCase = viewSystemScoringRuleDetailUseCase;
-        this.viewSchoolScoringRuleDetailUseCase = viewSchoolScoringRuleDetailUseCase;
-        this.updateSystemScoringRuleUseCase = updateSystemScoringRuleUseCase;
-        this.updateSchoolScoringRuleUseCase = updateSchoolScoringRuleUseCase;
-        this.scoringRuleParamsMapper = scoringRuleParamsMapper;
-    }
 
     @QueryMapping(name = "searchSystemScoringRules")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")

@@ -3,8 +3,8 @@ package com.sep.vox.application.port.input.usecase.practicesession;
 import java.time.Instant;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,10 +23,9 @@ import com.sep.vox.domain.repository.PracticeSessionRepository;
 import com.sep.vox.domain.service.personalization.SessionDiagnosisPolicy;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class EndPracticeSessionUseCase implements IUseCase<EndPracticeSessionCommand, PracticeSession> {
-
-    private static final Logger LOGGER =
-        LoggerFactory.getLogger(EndPracticeSessionUseCase.class);
 
     private final PracticeSessionRepository practiceSessionRepository;
     private final PracticeSessionQueryRepository practiceSessionQueryRepository;
@@ -34,21 +33,6 @@ public class EndPracticeSessionUseCase implements IUseCase<EndPracticeSessionCom
     private final PracticeGradingFlushService gradingFlushService;
     private final PracticeSessionClosedHandler sessionClosedHandler;
     private final UserContextPort userContextPort;
-
-    public EndPracticeSessionUseCase(
-            PracticeSessionRepository practiceSessionRepository,
-            PracticeSessionQueryRepository practiceSessionQueryRepository,
-            PracticeItemEvaluationRepository practiceItemEvaluationRepository,
-            PracticeGradingFlushService gradingFlushService,
-            PracticeSessionClosedHandler sessionClosedHandler,
-            UserContextPort userContextPort) {
-        this.practiceSessionRepository = practiceSessionRepository;
-        this.practiceSessionQueryRepository = practiceSessionQueryRepository;
-        this.practiceItemEvaluationRepository = practiceItemEvaluationRepository;
-        this.gradingFlushService = gradingFlushService;
-        this.sessionClosedHandler = sessionClosedHandler;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional
@@ -100,7 +84,7 @@ public class EndPracticeSessionUseCase implements IUseCase<EndPracticeSessionCom
         } catch (RuntimeException exception) {
             // Phiên ĐÃ đóng xong ở trên; phần ghi nhận phía sau hỏng thì không được làm hỏng
             // cả yêu cầu kết thúc phiên của học sinh. Bắt ở đây, ngoài ranh giới REQUIRES_NEW.
-            LOGGER.warn("Ghi nhận sau khi kết thúc phiên {} thất bại.", sessionId, exception);
+            log.warn("Ghi nhận sau khi kết thúc phiên {} thất bại.", sessionId, exception);
         }
         return PracticeSessionResponseMapper.toResponse(
             SessionRowMapper.toDto(

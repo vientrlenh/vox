@@ -6,8 +6,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.output.ExternalEventPublisherPort;
@@ -31,22 +31,13 @@ import com.sep.vox.domain.repository.PracticeItemResponseRepository;
  * đầy đủ thì chắc chắn thấp; lấy tín hiệu thì được, tính điểm thì không công bằng.
  */
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class PracticeGradingFlushService {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(PracticeGradingFlushService.class);
 
     private final PracticeItemResponseRepository practiceItemResponseRepository;
     private final PracticeEvaluationRequestFactory evaluationRequestFactory;
     private final ExternalEventPublisherPort eventPublisher;
-
-    public PracticeGradingFlushService(
-            PracticeItemResponseRepository practiceItemResponseRepository,
-            PracticeEvaluationRequestFactory evaluationRequestFactory,
-            ExternalEventPublisherPort eventPublisher) {
-        this.practiceItemResponseRepository = practiceItemResponseRepository;
-        this.evaluationRequestFactory = evaluationRequestFactory;
-        this.eventPublisher = eventPublisher;
-    }
 
     /**
      * Quét các phiên ĐÃ ĐÓNG còn lượt chưa chấm và xả chấm cho chúng.
@@ -64,7 +55,7 @@ public class PracticeGradingFlushService {
             total += flush(sessionId);
         }
         if (total > 0) {
-            LOGGER.info("Quét lại: xả chấm {} câu mồ côi ở {} phiên đã đóng.", total, sessionIds.size());
+            log.info("Quét lại: xả chấm {} câu mồ côi ở {} phiên đã đóng.", total, sessionIds.size());
         }
         return total;
     }
@@ -106,14 +97,14 @@ public class PracticeGradingFlushService {
             } catch (RuntimeException exception) {
                 // Một câu hỏng không được kéo theo cả việc đóng phiên: đóng phiên là hành động
                 // của học sinh, còn xả chấm là việc dọn dẹp của hệ thống.
-                LOGGER.warn(
+                log.warn(
                     "Không xả được chấm cho câu {} của phiên {}.",
                     row.getQuestionId(), sessionId, exception
                 );
             }
         }
         if (flushed > 0) {
-            LOGGER.info("Đã xả chấm {} câu dở dang của phiên {}.", flushed, sessionId);
+            log.info("Đã xả chấm {} câu dở dang của phiên {}.", flushed, sessionId);
         }
         return flushed;
     }

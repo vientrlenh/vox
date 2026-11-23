@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,6 +59,7 @@ import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.service.assessment.PaperTimeCalculator;
 
 @Service
+@RequiredArgsConstructor
 public class CreateAssessmentPaperUseCase implements IUseCase<CreateAssessmentPaperCommand, AssessmentPaperDto> {
 
     private final AssessmentRepository assessmentRepository;
@@ -75,39 +77,6 @@ public class CreateAssessmentPaperUseCase implements IUseCase<CreateAssessmentPa
     private final AssessmentTimeQuotaGuardService assessmentTimeQuotaGuardService;
     private final RecalculateAssessmentTimeDurationService recalculateAssessmentTimeDurationService;
     private final UserContextPort userContextPort;
-
-    public CreateAssessmentPaperUseCase(
-            AssessmentRepository assessmentRepository,
-            AssessmentPaperAuthoringAccessService assessmentPaperAuthoringAccessService,
-            AssessmentBlueprintVersionRepository assessmentBlueprintVersionRepository,
-            AssessmentBlueprintSectionRepository assessmentBlueprintSectionRepository,
-            AssessmentBlueprintSlotRepository assessmentBlueprintSlotRepository,
-            AssessmentPaperRepository assessmentPaperRepository,
-            AssessmentPaperSectionRepository assessmentPaperSectionRepository,
-            AssessmentPaperItemRepository assessmentPaperItemRepository,
-            QuestionRepository questionRepository,
-            QuestionAssetRepository questionAssetRepository,
-            QuestionCollaboratorRepository questionCollaboratorRepository,
-            AssessmentQuestionSecureLockService assessmentQuestionSecureLockService,
-            AssessmentTimeQuotaGuardService assessmentTimeQuotaGuardService,
-            RecalculateAssessmentTimeDurationService recalculateAssessmentTimeDurationService,
-            UserContextPort userContextPort) {
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentPaperAuthoringAccessService = assessmentPaperAuthoringAccessService;
-        this.assessmentBlueprintVersionRepository = assessmentBlueprintVersionRepository;
-        this.assessmentBlueprintSectionRepository = assessmentBlueprintSectionRepository;
-        this.assessmentBlueprintSlotRepository = assessmentBlueprintSlotRepository;
-        this.assessmentPaperRepository = assessmentPaperRepository;
-        this.assessmentPaperSectionRepository = assessmentPaperSectionRepository;
-        this.assessmentPaperItemRepository = assessmentPaperItemRepository;
-        this.questionRepository = questionRepository;
-        this.questionAssetRepository = questionAssetRepository;
-        this.questionCollaboratorRepository = questionCollaboratorRepository;
-        this.assessmentQuestionSecureLockService = assessmentQuestionSecureLockService;
-        this.assessmentTimeQuotaGuardService = assessmentTimeQuotaGuardService;
-        this.recalculateAssessmentTimeDurationService = recalculateAssessmentTimeDurationService;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

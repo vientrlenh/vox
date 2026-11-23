@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.common.RoleConstant;
@@ -26,20 +27,12 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
  * SchoolSubscriptionEvent(SUSPENDED/UNSUSPENDED) làm sổ bền vững, xem ForceSuspendSubscriptionUseCase.
  */
 @Service
+@RequiredArgsConstructor
 public class SchoolSubscriptionSuspensionNotificationService {
 
     private final OutboxRepository outboxRepository;
     private final JsonSerializationPort jsonSerializationPort;
     private final SchoolUserRepository schoolUserRepository;
-
-    public SchoolSubscriptionSuspensionNotificationService(
-            OutboxRepository outboxRepository,
-            JsonSerializationPort jsonSerializationPort,
-            SchoolUserRepository schoolUserRepository) {
-        this.outboxRepository = outboxRepository;
-        this.jsonSerializationPort = jsonSerializationPort;
-        this.schoolUserRepository = schoolUserRepository;
-    }
 
     public void publishSuspended(UUID subscriptionId, UUID schoolId, String reason, Instant now) {
         List<UUID> schoolAdminIds = schoolAdminIdsOf(schoolId);

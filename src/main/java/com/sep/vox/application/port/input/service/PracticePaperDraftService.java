@@ -9,8 +9,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
@@ -48,32 +48,26 @@ import com.sep.vox.application.response.input.practiceplanning.PracticePlanningR
  * Redis, pod nào đọc cũng thấy.
  */
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class PracticePaperDraftService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(PracticePaperDraftService.class);
     private static final Duration FAST_PATH_WAIT = Duration.ofSeconds(2);
     private static final Duration DRAFT_TTL = Duration.ofMinutes(10);
 
     private static final String DRAFT_KEY_PREFIX = "practice:draft:";
 
     /**
-     * PUBLIC vì Jackson phải dựng lại được bản ghi này khi đọc từ Redis.
+     * PUBLIC because Jackson must be able to rebuild this record when reading it from Redis.
      *
-     * <p>Bỏ trường {@code createdAt}: nó chỉ phục vụ {@code evictExpired()}, mà TTL của Redis nay
-     * làm việc đó -- và làm đúng hơn, vì bản cũ chỉ dọn khi có người tạo draft mới.
+     * <p>The {@code createdAt} field was dropped: it only served {@code evictExpired()}, and the Redis TTL
+     * now does that job, and does it better, because the old version only cleaned up when someone created a new draft.
      */
     public record Entry(UUID studentId, PracticePaperDraft draft) {
     }
 
-    private final CacheManagerPort cacheManagerPort;
     private final PracticeGenerationExecutorPort practiceGenerationExecutorPort;
-
-    public PracticePaperDraftService(
-            PracticeGenerationExecutorPort practiceGenerationExecutorPort,
-            CacheManagerPort cacheManagerPort) {
-        this.practiceGenerationExecutorPort = practiceGenerationExecutorPort;
-        this.cacheManagerPort = cacheManagerPort;
-    }
+    private final CacheManagerPort cacheManagerPort;
 
     public PracticePaperDraft start(UUID studentId, Supplier<PracticePaper> buildPaper) {
         UUID draftId = UUID.randomUUID();
@@ -128,7 +122,7 @@ public class PracticePaperDraftService {
     }
 
     private static PracticePaperDraft failure(UUID draftId, Throwable error) {
-        LOGGER.warn("Dựng đề thất bại cho draft {}", draftId, error);
+        log.warn("Dựng đề thất bại cho draft {}", draftId, error);
         FailureReason reason = readableReason(error);
         return PracticePaperDraft.failed(draftId, reason.message(), reason.errorCode());
     }

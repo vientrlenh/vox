@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import com.sep.vox.domain.common.PageResult;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
@@ -18,13 +19,10 @@ import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolRoomRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class SchoolRoomRepositoryImpl implements SchoolRoomRepository {
 
     private final SpringDataSchoolRoomRepository springDataSchoolRoomRepository;
-
-    public SchoolRoomRepositoryImpl(SpringDataSchoolRoomRepository springDataSchoolRoomRepository) {
-        this.springDataSchoolRoomRepository = springDataSchoolRoomRepository;
-    }
 
     @Override
     public Optional<SchoolRoom> findById(UUID id) {

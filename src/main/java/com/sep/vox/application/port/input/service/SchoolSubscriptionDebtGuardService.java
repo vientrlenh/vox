@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.service;
 
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.PlanLimitExceededException;
@@ -27,13 +28,10 @@ import com.sep.vox.domain.repository.SchoolBalanceRepository;
  * reconcile nào.
  */
 @Service
+@RequiredArgsConstructor
 public class SchoolSubscriptionDebtGuardService {
 
     private final SchoolBalanceRepository schoolBalanceRepository;
-
-    public SchoolSubscriptionDebtGuardService(SchoolBalanceRepository schoolBalanceRepository) {
-        this.schoolBalanceRepository = schoolBalanceRepository;
-    }
 
     /**
      * Chưa có dòng số dư nào = trường chưa từng nạp và cũng chưa từng tiêu vượt hạn mức = KHÔNG nợ.

@@ -7,17 +7,15 @@ import com.sep.vox.domain.dto.RubricDto;
 import com.sep.vox.domain.mapper.RubricDtoMapper;
 import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.repository.RubricRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class SearchSystemRubricsUseCase implements IUseCase<SearchSystemRubricsQuery, PageResult<RubricDto>> {
 
     private final RubricRepository rubricRepository;
-
-    public SearchSystemRubricsUseCase(RubricRepository rubricRepository) {
-        this.rubricRepository = rubricRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

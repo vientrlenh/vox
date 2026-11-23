@@ -3,8 +3,8 @@ package com.sep.vox.infrastructure.worker;
 import java.time.Instant;
 
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -40,35 +40,25 @@ import com.sep.vox.domain.repository.PaymentRecordRepository;
  * lưới an toàn: job này mới là đường phục hồi duy nhất mình kiểm soát được.
  */
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class PendingOrderReconciler {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(PendingOrderReconciler.class);
-
-    // 400ms giữa hai lần hỏi (~2.5 req/s). SePay giới hạn vài request/giây và trả 429 kèm header
-    // X-SePay-UserApi-Retry-After (xem SePayPaymentProcessService.getPaymentLinkStatus); PayOS không
-    // công bố ngưỡng cụ thể nên con số này lấy theo bên chặt hơn. Job chạy nền, chậm thêm vài giây
-    // một lượt không ai thấy, còn bị cổng chặn vì dội thì mất hẳn đường đối soát.
+    // 400ms between two polls (~2.5 req/s). SePay limits a few requests per second and answers 429 with the header
+    // X-SePay-UserApi-Retry-After (see SePayPaymentProcessService.getPaymentLinkStatus); PayOS does not
+    // publish a specific threshold, so this value follows the stricter side. The job runs in the background: a few
+    // extra seconds per sweep go unnoticed, while being blocked by the gateway for flooding it would lose the
+    // reconciliation path altogether.
     private static final long THROTTLE_MILLIS = 400L;
 
-    // Chặn trên số lần gọi cổng mỗi lượt để một đợt tồn đọng bất thường không biến job thành cuộc
-    // gọi API kéo dài hàng chục phút. Phần còn lại để lượt sau (5 phút nữa).
+    // Upper bound on gateway calls per sweep so an abnormal backlog does not turn the job into API calls that
+    // run for tens of minutes. The rest is left for the next sweep (5 minutes later).
     private static final int MAX_REMOTE_CALLS_PER_RUN = 200;
 
     private final OrderRepository orderRepository;
     private final PaymentRecordRepository paymentRecordRepository;
     private final PaymentProcessResolver paymentProcessResolver;
     private final OrderSettlementService orderSettlementService;
-
-    public PendingOrderReconciler(
-            OrderRepository orderRepository,
-            PaymentRecordRepository paymentRecordRepository,
-            PaymentProcessResolver paymentProcessResolver,
-            OrderSettlementService orderSettlementService) {
-        this.orderRepository = orderRepository;
-        this.paymentRecordRepository = paymentRecordRepository;
-        this.paymentProcessResolver = paymentProcessResolver;
-        this.orderSettlementService = orderSettlementService;
-    }
 
     /**
      * NOT {@code @Transactional} here. A sweep can take several minutes because it has to call out to the external network, and
@@ -93,7 +83,7 @@ public class PendingOrderReconciler {
 
             if (pendingAttempt != null) {
                 if (remoteCalls >= MAX_REMOTE_CALLS_PER_RUN) {
-                    LOGGER.warn("Dừng đối soát ở {} lần gọi cổng trong lượt này, phần còn lại để lượt sau",
+                    log.warn("Dừng đối soát ở {} lần gọi cổng trong lượt này, phần còn lại để lượt sau",
                         MAX_REMOTE_CALLS_PER_RUN);
                     break;
                 }
@@ -119,7 +109,7 @@ public class PendingOrderReconciler {
         }
 
         if (settled > 0 || expired > 0) {
-            LOGGER.info("[RECONCILER] Quét {} đơn PENDING: chốt {} đơn đã thu được tiền, đóng {} đơn quá hạn",
+            log.info("[RECONCILER] Quét {} đơn PENDING: chốt {} đơn đã thu được tiền, đóng {} đơn quá hạn",
                 pendingOrders.size(), settled, expired);
         }
     }
@@ -136,7 +126,7 @@ public class PendingOrderReconciler {
                 .status();
 
             if (remoteStatus == PaymentLinkRemoteStatus.PAID) {
-                LOGGER.info("[RECONCILER] Chốt lần thanh toán {} (orderRef={}) thành PAID qua polling {}",
+                log.info("[RECONCILER] Chốt lần thanh toán {} (orderRef={}) thành PAID qua polling {}",
                     attempt.getId(), attempt.getProviderOrderRef(), attempt.getProvider());
                 orderSettlementService.settlePaid(attempt, Instant.now());
                 return true;
@@ -145,7 +135,7 @@ public class PendingOrderReconciler {
             // Close only the ATTEMPT, not the order -- same reason as in the callback: the school must be able to press pay
             // again without placing a new order. See OrderSettlementService.failAttempt.
             if (isFinalFailure(remoteStatus, attempt)) {
-                LOGGER.info("[RECONCILER] Chốt lần thanh toán {} (orderRef={}) thành FAILED do cổng {} báo {}",
+                log.info("[RECONCILER] Chốt lần thanh toán {} (orderRef={}) thành FAILED do cổng {} báo {}",
                     attempt.getId(), attempt.getProviderOrderRef(), attempt.getProvider(), remoteStatus);
                 orderSettlementService.failAttempt(attempt, PaymentStatus.FAILED);
             }
@@ -153,7 +143,7 @@ public class PendingOrderReconciler {
         } catch (Exception e) {
             // Swallow the error of EACH order: a failing gateway must not be allowed to block reconciling the remaining
             // orders in the same sweep.
-            LOGGER.warn("Lỗi khi đối soát đơn {} provider={} orderRef={}",
+            log.warn("Lỗi khi đối soát đơn {} provider={} orderRef={}",
                 order.getId(), attempt.getProvider(), attempt.getProviderOrderRef(), e);
             return false;
         }
@@ -163,7 +153,7 @@ public class PendingOrderReconciler {
         try {
             return orderSettlementService.expireIfOverdue(order.getId(), now);
         } catch (Exception e) {
-            LOGGER.warn("Lỗi khi đóng đơn quá hạn {}", order.getId(), e);
+            log.warn("Lỗi khi đóng đơn quá hạn {}", order.getId(), e);
             return false;
         }
     }
@@ -199,7 +189,7 @@ public class PendingOrderReconciler {
             return true;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            LOGGER.warn("Job đối soát bị ngắt giữa chừng, dừng lượt quét này");
+            log.warn("Job đối soát bị ngắt giữa chừng, dừng lượt quét này");
             return false;
         }
     }

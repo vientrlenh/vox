@@ -8,9 +8,8 @@ import java.util.UUID;
 
 import javax.crypto.SecretKey;
 
+import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -23,6 +22,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 
 @Component
+@Slf4j
 public class JwtAuthTokenProvider implements AuthTokenPort {
 
     @Value("${jwt.secret}")
@@ -31,8 +31,6 @@ public class JwtAuthTokenProvider implements AuthTokenPort {
     @Value("${jwt.expiration-ms}")
     private long expirationMs;
 
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(JwtAuthTokenProvider.class);
 
     @Override
     public String generateJwtToken(String userId, @Nullable UUID schoolId, String email, List<String> roles) {
@@ -97,10 +95,10 @@ public class JwtAuthTokenProvider implements AuthTokenPort {
                 .parseSignedClaims(token)
                 .getPayload();
         } catch (ExpiredJwtException e) {
-            LOGGER.info("JWT Token expired: {}", e.getMessage());
+            log.info("JWT Token expired: {}", e.getMessage());
             throw new IllegalArgumentException("Token đã hết hạn");
         } catch (JwtException e) {
-            LOGGER.info("JWT Token error: {}", e.getMessage());
+            log.info("JWT Token error: {}", e.getMessage());
             throw new IllegalArgumentException("Token không hợp lệ");
         }
     }

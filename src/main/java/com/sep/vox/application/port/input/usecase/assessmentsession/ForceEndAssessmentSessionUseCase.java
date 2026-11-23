@@ -6,8 +6,8 @@ import com.sep.vox.domain.model.assessment.AssessmentSession;
 import java.time.Instant;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,9 +26,9 @@ import com.sep.vox.domain.repository.AssessmentRepository;
 import com.sep.vox.domain.repository.AssessmentSessionRepository;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class ForceEndAssessmentSessionUseCase implements IUseCase<ForceEndAssessmentSessionCommand, UUID> {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(ForceEndAssessmentSessionUseCase.class);
 
     private final AssessmentSessionRepository assessmentSessionRepository;
     private final AssessmentCandidateRepository assessmentCandidateRepository;
@@ -36,21 +36,6 @@ public class ForceEndAssessmentSessionUseCase implements IUseCase<ForceEndAssess
     private final AssessmentSessionModerationAccessService moderationAccessService;
     private final AssessmentCandidateResultFinalizationService assessmentCandidateResultFinalizationService;
     private final ExternalEventPublisherPort externalEventPublisherPort;
-
-    public ForceEndAssessmentSessionUseCase(
-            AssessmentSessionRepository assessmentSessionRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            AssessmentRepository assessmentRepository,
-            AssessmentSessionModerationAccessService moderationAccessService,
-            AssessmentCandidateResultFinalizationService assessmentCandidateResultFinalizationService,
-            ExternalEventPublisherPort externalEventPublisherPort) {
-        this.assessmentSessionRepository = assessmentSessionRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.assessmentRepository = assessmentRepository;
-        this.moderationAccessService = moderationAccessService;
-        this.assessmentCandidateResultFinalizationService = assessmentCandidateResultFinalizationService;
-        this.externalEventPublisherPort = externalEventPublisherPort;
-    }
 
     @Override
     @Transactional
@@ -128,7 +113,7 @@ public class ForceEndAssessmentSessionUseCase implements IUseCase<ForceEndAssess
                 new AssessmentAttemptForceEndRequestedExternalEvent(session.getId().toString(), normalizedReason)
             );
         } catch (RuntimeException ex) {
-            LOGGER.warn("Không thể publish sự kiện buộc kết thúc cho session {}", session.getId(), ex);
+            log.warn("Không thể publish sự kiện buộc kết thúc cho session {}", session.getId(), ex);
         }
         return session.getId();
     }

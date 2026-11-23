@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.domain.model.assessment.AssessmentSchedule;
@@ -24,17 +25,11 @@ import com.sep.vox.domain.repository.AssessmentSessionRepository;
  * the same function, with a note "change one, change both"), and the job that sweeps sessions whose time has run out.
  */
 @Service
+@RequiredArgsConstructor
 public class AssessmentScheduleClosureService {
 
     private final AssessmentScheduleRepository assessmentScheduleRepository;
     private final AssessmentSessionRepository assessmentSessionRepository;
-
-    public AssessmentScheduleClosureService(
-            AssessmentScheduleRepository assessmentScheduleRepository,
-            AssessmentSessionRepository assessmentSessionRepository) {
-        this.assessmentScheduleRepository = assessmentScheduleRepository;
-        this.assessmentSessionRepository = assessmentSessionRepository;
-    }
 
     /**
      * Blocks closing an assessment while a running session still has people in the middle of an attempt.

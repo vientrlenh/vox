@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.supportedlanguage;
 
 import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.NotFoundException;
@@ -12,15 +13,11 @@ import com.sep.vox.domain.mapper.SupportedLanguageDtoMapper;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewSupportedLanguageDetailsUseCase implements IUseCase<ViewSupportedLanguageDetailsQuery, SupportedLanguageDto> {
 
     private final SupportedLanguageRepository supportedLanguageRepository;
     private final UserContextPort userContextPort;
-
-    public ViewSupportedLanguageDetailsUseCase(SupportedLanguageRepository supportedLanguageRepository, UserContextPort userContextPort) {
-        this.supportedLanguageRepository = supportedLanguageRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     public SupportedLanguageDto execute(ViewSupportedLanguageDetailsQuery input) {

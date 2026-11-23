@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.assessment.AssessmentCandidateResult;
 import com.sep.vox.domain.model.assessment.AssessmentGradingAssignment;
 import java.time.Instant;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,21 +28,13 @@ import com.sep.vox.domain.repository.OutboxRepository;
  * đã từ chối bài này", mà đó chính là thứ admin cần khi giao lại.
  */
 @Service
+@RequiredArgsConstructor
 public class DeclineGradingAssignmentUseCase
         implements IUseCase<GradingDecisionCommand, GradingActionResponse> {
 
     private final GradingActionSupport gradingActionSupport;
     private final OutboxRepository outboxRepository;
     private final JsonSerializationPort jsonSerializationPort;
-
-    public DeclineGradingAssignmentUseCase(
-            GradingActionSupport gradingActionSupport,
-            OutboxRepository outboxRepository,
-            JsonSerializationPort jsonSerializationPort) {
-        this.gradingActionSupport = gradingActionSupport;
-        this.outboxRepository = outboxRepository;
-        this.jsonSerializationPort = jsonSerializationPort;
-    }
 
     @Override
     @Transactional

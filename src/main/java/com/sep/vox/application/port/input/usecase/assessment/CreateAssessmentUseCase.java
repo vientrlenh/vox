@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +31,7 @@ import com.sep.vox.domain.repository.AssessmentRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class CreateAssessmentUseCase implements IUseCase<CreateAssessmentCommand, AssessmentDto> {
 
     private final AssessmentRepository assessmentRepository;
@@ -40,25 +42,6 @@ public class CreateAssessmentUseCase implements IUseCase<CreateAssessmentCommand
     private final AssessmentStreamConfigResolver assessmentStreamConfigResolver;
     private final AssessmentPolicyValidator assessmentPolicyValidator;
     private final SubscriptionPeriodGuardService subscriptionPeriodGuardService;
-
-    public CreateAssessmentUseCase(
-            AssessmentRepository assessmentRepository,
-            AssessmentBlueprintRepository assessmentBlueprintRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
-            UserContextPort userContextPort,
-            AssessmentStreamConfigResolver assessmentStreamConfigResolver,
-            AssessmentPolicyValidator assessmentPolicyValidator,
-            SubscriptionPeriodGuardService subscriptionPeriodGuardService) {
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentBlueprintRepository = assessmentBlueprintRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-        this.userContextPort = userContextPort;
-        this.assessmentStreamConfigResolver = assessmentStreamConfigResolver;
-        this.assessmentPolicyValidator = assessmentPolicyValidator;
-        this.subscriptionPeriodGuardService = subscriptionPeriodGuardService;
-    }
 
     @Override
     @Transactional

@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,21 +41,13 @@ import com.sep.vox.domain.service.question.QuestionScopeStatusTransition.Rejecti
  * <p>Nạp theo lô trước vòng lặp nên số query không phụ thuộc số mục được chọn.
  */
 @Service
+@RequiredArgsConstructor
 public class BulkUpdateQuestionBankStatusUseCase
         implements IUseCase<BulkUpdateQuestionScopeStatusCommand, BulkUpdateQuestionBankStatusResponse> {
 
     private final QuestionBankRepository questionBankRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserContextPort userContextPort;
-
-    public BulkUpdateQuestionBankStatusUseCase(
-            QuestionBankRepository questionBankRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserContextPort userContextPort) {
-        this.questionBankRepository = questionBankRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

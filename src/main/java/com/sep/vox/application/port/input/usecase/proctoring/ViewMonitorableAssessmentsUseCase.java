@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.List;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,14 +25,15 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
  * and then filtered "running" in the browser -- so an assessment room could vanish from the proctoring screen just because the first page was full.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewMonitorableAssessmentsUseCase implements IUseCase<Void, List<MonitoredAssessmentSummary>> {
 
     /**
-     * Hiện trước giờ thi bao lâu.
+     * How long before the exam time it is shown.
      *
-     * <p>Giám thị vào phòng trước khi ca bắt đầu -- để điểm danh, để chờ học viên kết nối. Danh sách
-     * chỉ hiện đúng ca đang chạy thì đến lúc mở được cũng là lúc đã muộn. Nửa tiếng đủ rộng cho việc
-     * chuẩn bị mà chưa kéo theo ca của buổi khác trong ngày.
+     * <p>The proctor enters the room before the session starts -- to take attendance and wait for students to connect. If the list
+     * showed only the running session, it would be too late by the time it could be opened. Half an hour is wide enough for
+     * preparation without pulling in sessions of another period of the day.
      */
     static final Duration LEAD_TIME = Duration.ofMinutes(30);
 
@@ -39,17 +41,6 @@ public class ViewMonitorableAssessmentsUseCase implements IUseCase<Void, List<Mo
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
-
-    public ViewMonitorableAssessmentsUseCase(
-            MonitoredAssessmentQueryRepository monitoredAssessmentQueryRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
-            UserContextPort userContextPort) {
-        this.monitoredAssessmentQueryRepository = monitoredAssessmentQueryRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional(readOnly = true)

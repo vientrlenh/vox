@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.assessmentblueprint;
 
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,23 +20,13 @@ import com.sep.vox.domain.repository.GradeLevelRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class CreateAssessmentBlueprintUseCase implements IUseCase<CreateAssessmentBlueprintCommand, AssessmentBlueprintDto> {
 
     private final AssessmentBlueprintRepository assessmentBlueprintRepository;
     private final GradeLevelRepository gradeLevelRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserContextPort userContextPort;
-
-    public CreateAssessmentBlueprintUseCase(
-            AssessmentBlueprintRepository assessmentBlueprintRepository,
-            GradeLevelRepository gradeLevelRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserContextPort userContextPort) {
-        this.assessmentBlueprintRepository = assessmentBlueprintRepository;
-        this.gradeLevelRepository = gradeLevelRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

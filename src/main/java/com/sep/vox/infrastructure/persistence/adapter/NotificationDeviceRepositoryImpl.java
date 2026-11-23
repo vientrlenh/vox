@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,14 +18,10 @@ import com.sep.vox.infrastructure.persistence.mapper.NotificationDeviceMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataNotificationDeviceRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class NotificationDeviceRepositoryImpl implements NotificationDeviceRepository {
 
     private final SpringDataNotificationDeviceRepository springDataNotificationDeviceRepository;
-
-    public NotificationDeviceRepositoryImpl(
-            SpringDataNotificationDeviceRepository springDataNotificationDeviceRepository) {
-        this.springDataNotificationDeviceRepository = springDataNotificationDeviceRepository;
-    }
 
     @Override
     public Optional<NotificationDevice> findById(UUID id) {

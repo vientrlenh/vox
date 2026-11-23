@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.initializer;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
@@ -39,31 +39,26 @@ import tools.jackson.databind.node.ObjectNode;
  * {@code storage.s3.fail-on-error=true} neu muon chung cung chan startup.
  */
 @Order(0)
+@RequiredArgsConstructor
+@Slf4j
 public class S3BucketInitializer implements ApplicationRunner {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(S3BucketInitializer.class);
     private static final String US_EAST_1 = "us-east-1";
 
     private final S3Client s3Client;
     private final AwsS3StorageProperties properties;
     private final JsonMapper jsonMapper;
 
-    public S3BucketInitializer(S3Client s3Client, AwsS3StorageProperties properties, JsonMapper jsonMapper) {
-        this.s3Client = s3Client;
-        this.properties = properties;
-        this.jsonMapper = jsonMapper;
-    }
-
     @Override
     public void run(ApplicationArguments args) {
         String bucket = properties.getBucket();
         if (!hasText(bucket)) {
-            LOGGER.warn("storage.s3.bucket chua duoc cau hinh. Bo qua buoc khoi tao bucket S3");
+            log.warn("storage.s3.bucket chua duoc cau hinh. Bo qua buoc khoi tao bucket S3");
             return;
         }
 
         if (bucketExists(bucket)) {
-            LOGGER.info("Bucket S3 '{}' da ton tai", bucket);
+            log.info("Bucket S3 '{}' da ton tai", bucket);
         } else {
             createBucket(bucket);
         }
@@ -85,7 +80,7 @@ public class S3BucketInitializer implements ApplicationRunner {
             }
             if (e.statusCode() == 403) {
                 // Thieu quyen s3:ListBucket: coi nhu bucket da ton tai thay vi tao moi.
-                LOGGER.warn("Khong du quyen kiem tra bucket S3 '{}'. Gia dinh bucket da ton tai", bucket);
+                log.warn("Khong du quyen kiem tra bucket S3 '{}'. Gia dinh bucket da ton tai", bucket);
                 return true;
             }
             if (e.statusCode() == 301) {
@@ -112,7 +107,7 @@ public class S3BucketInitializer implements ApplicationRunner {
         try {
             s3Client.createBucket(request.build());
         } catch (BucketAlreadyOwnedByYouException e) {
-            LOGGER.info("Bucket S3 '{}' vua duoc tao boi mot tien trinh khac", bucket);
+            log.info("Bucket S3 '{}' vua duoc tao boi mot tien trinh khac", bucket);
             return;
         } catch (BucketAlreadyExistsException e) {
             throw new InfrastructureException(
@@ -123,7 +118,7 @@ public class S3BucketInitializer implements ApplicationRunner {
         }
 
         s3Client.waiter().waitUntilBucketExists(HeadBucketRequest.builder().bucket(bucket).build());
-        LOGGER.info("Da tao bucket S3 '{}' tai region '{}'", bucket, region);
+        log.info("Da tao bucket S3 '{}' tai region '{}'", bucket, region);
     }
 
     private void relaxPublicAccessBlock(String bucket) {
@@ -173,7 +168,7 @@ public class S3BucketInitializer implements ApplicationRunner {
         }
 
         if (statements.isEmpty()) {
-            LOGGER.info("Khong co statement nao can ap dung cho bucket S3 '{}'. Bo qua bucket policy", bucket);
+            log.info("Khong co statement nao can ap dung cho bucket S3 '{}'. Bo qua bucket policy", bucket);
             return;
         }
 
@@ -209,7 +204,7 @@ public class S3BucketInitializer implements ApplicationRunner {
             if (properties.isFailOnError()) {
                 throw new InfrastructureException(message);
             }
-            LOGGER.warn("{}. Ung dung van tiep tuc khoi dong", message, e);
+            log.warn("{}. Ung dung van tiep tuc khoi dong", message, e);
         }
     }
 

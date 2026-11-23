@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.assessmentgrading;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,17 +18,11 @@ import com.sep.vox.application.query.repository.AssessmentResultAuditQueryReposi
  * trường không phải thứ trường khác được xem.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewAiQualityReportUseCase implements IUseCase<ViewAiQualityReportQuery, AiQualityReportInfo> {
 
     private final AssessmentResultAuditQueryRepository assessmentResultAuditQueryRepository;
     private final AssessmentGradingAccessService assessmentGradingAccessService;
-
-    public ViewAiQualityReportUseCase(
-            AssessmentResultAuditQueryRepository assessmentResultAuditQueryRepository,
-            AssessmentGradingAccessService assessmentGradingAccessService) {
-        this.assessmentResultAuditQueryRepository = assessmentResultAuditQueryRepository;
-        this.assessmentGradingAccessService = assessmentGradingAccessService;
-    }
 
     @Override
     @Transactional(readOnly = true)

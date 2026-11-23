@@ -4,6 +4,7 @@ import com.sep.vox.infrastructure.persistence.entity.subscription.SchoolSubscrip
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionEvent;
@@ -12,14 +13,10 @@ import com.sep.vox.infrastructure.persistence.mapper.SchoolSubscriptionEventMapp
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolSubscriptionEventRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class SchoolSubscriptionEventRepositoryImpl implements SchoolSubscriptionEventRepository {
 
     private final SpringDataSchoolSubscriptionEventRepository springDataRepository;
-
-    public SchoolSubscriptionEventRepositoryImpl(
-            SpringDataSchoolSubscriptionEventRepository springDataRepository) {
-        this.springDataRepository = springDataRepository;
-    }
 
     @Override
     public SchoolSubscriptionEvent save(SchoolSubscriptionEvent event) {

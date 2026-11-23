@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.assessmentitemresponse;
 import java.time.Instant;
 import java.util.Locale;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,20 +18,12 @@ import com.sep.vox.domain.repository.AssessmentItemResponseTurnRepository;
 import com.sep.vox.domain.repository.AssessmentSessionRepository;
 
 @Service
+@RequiredArgsConstructor
 public class RecordAnswerTurnUseCase implements IUseCase<RecordAnswerTurnCommand, Void> {
 
     private final AssessmentSessionRepository assessmentSessionRepository;
     private final AssessmentItemResponseRepository assessmentItemResponseRepository;
     private final AssessmentItemResponseTurnRepository assessmentItemResponseTurnRepository;
-
-    public RecordAnswerTurnUseCase(
-            AssessmentSessionRepository assessmentSessionRepository,
-            AssessmentItemResponseRepository assessmentItemResponseRepository,
-            AssessmentItemResponseTurnRepository assessmentItemResponseTurnRepository) {
-        this.assessmentSessionRepository = assessmentSessionRepository;
-        this.assessmentItemResponseRepository = assessmentItemResponseRepository;
-        this.assessmentItemResponseTurnRepository = assessmentItemResponseTurnRepository;
-    }
 
     @Override
     @Transactional

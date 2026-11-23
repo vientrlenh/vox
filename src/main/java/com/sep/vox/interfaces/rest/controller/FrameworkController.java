@@ -10,6 +10,7 @@ import com.sep.vox.application.port.input.command.UpdateFrameworkVersionStatusCo
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -61,6 +62,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/frameworks")
+@RequiredArgsConstructor
 public class FrameworkController {
 
     private final CreateFrameworkUseCase createFrameworkUseCase;
@@ -76,35 +78,6 @@ public class FrameworkController {
     private final DeleteFrameworkCriterionBandUseCase deleteFrameworkCriterionBandUseCase;
     private final CreateFrameworkCriteriaUseCase createFrameworkCriteriaUseCase;
     private final DeleteFrameworkCriterionUseCase deleteFrameworkCriterionUseCase;
-
-    public FrameworkController(
-            CreateFrameworkUseCase createFrameworkUseCase,
-            UpdateFrameworkUseCase updateFrameworkUseCase,
-            UpdateFrameworkStatusUseCase updateFrameworkStatusUseCase,
-            DeleteFrameworkUseCase deleteFrameworkUseCase,
-            CreateFrameworkVersionUseCase createFrameworkVersionUseCase,
-            UpdateFrameworkVersionStatusUseCase updateFrameworkVersionStatusUseCase,
-            DeleteFrameworkVersionUseCase deleteFrameworkVersionUseCase,
-            CreateFrameworkCriterionBandsUseCase createFrameworkCriterionBandsUseCase,
-            CreateFrameworkResultBandsUseCase createFrameworkResultBandsUseCase,
-            DeleteFrameworkResultBandUseCase deleteFrameworkResultBandUseCase,
-            DeleteFrameworkCriterionBandUseCase deleteFrameworkCriterionBandUseCase,
-            CreateFrameworkCriteriaUseCase createFrameworkCriteriaUseCase,
-            DeleteFrameworkCriterionUseCase deleteFrameworkCriterionUseCase) {
-        this.createFrameworkUseCase = createFrameworkUseCase;
-        this.updateFrameworkUseCase = updateFrameworkUseCase;
-        this.updateFrameworkStatusUseCase = updateFrameworkStatusUseCase;
-        this.deleteFrameworkUseCase = deleteFrameworkUseCase;
-        this.createFrameworkVersionUseCase = createFrameworkVersionUseCase;
-        this.updateFrameworkVersionStatusUseCase = updateFrameworkVersionStatusUseCase;
-        this.deleteFrameworkVersionUseCase = deleteFrameworkVersionUseCase;
-        this.createFrameworkCriterionBandsUseCase = createFrameworkCriterionBandsUseCase;
-        this.createFrameworkResultBandsUseCase = createFrameworkResultBandsUseCase;
-        this.deleteFrameworkResultBandUseCase = deleteFrameworkResultBandUseCase;
-        this.deleteFrameworkCriterionBandUseCase = deleteFrameworkCriterionBandUseCase;
-        this.createFrameworkCriteriaUseCase = createFrameworkCriteriaUseCase;
-        this.deleteFrameworkCriterionUseCase = deleteFrameworkCriterionUseCase;
-    }
 
     @PostMapping
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")

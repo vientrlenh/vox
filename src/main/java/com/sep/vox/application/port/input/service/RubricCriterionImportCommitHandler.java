@@ -18,6 +18,7 @@ import com.sep.vox.domain.repository.*;
 import com.sep.vox.domain.valueobject.rubric.RubricCriterionExample;
 import com.sep.vox.domain.valueobject.rubric.RubricCriterionExamples;
 import com.sep.vox.application.exception.DataConflictException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -26,9 +27,10 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
 
-    /** File Excel ghi phần trăm, DB lưu phân số -- xem chỗ dùng bên dưới. */
+    /** The Excel file stores percentages while the database stores fractions -- see where it is used below. */
     private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
 
 
@@ -38,20 +40,6 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
     private final FrameworkCriterionRepository frameworkCriterionRepository;
     private final JsonSerializationPort jsonSerializationPort;
     private final FrameworkVersionRepository frameworkVersionRepository;
-
-    public RubricCriterionImportCommitHandler(
-            RubricCriterionRepository rubricCriterionRepository,
-            RubricVersionRepository rubricVersionRepository,
-            RubricRepository rubricRepository,
-            FrameworkCriterionRepository frameworkCriterionRepository,
-            JsonSerializationPort jsonSerializationPort, FrameworkVersionRepository frameworkVersionRepository) {
-        this.rubricCriterionRepository = rubricCriterionRepository;
-        this.rubricVersionRepository = rubricVersionRepository;
-        this.rubricRepository = rubricRepository;
-        this.frameworkCriterionRepository = frameworkCriterionRepository;
-        this.jsonSerializationPort = jsonSerializationPort;
-        this.frameworkVersionRepository = frameworkVersionRepository;
-    }
 
     @Override
     public ImportType supportedType() {

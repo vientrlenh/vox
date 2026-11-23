@@ -9,6 +9,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +23,7 @@ import com.sep.vox.domain.model.importfile.ImportType;
 import com.sep.vox.domain.repository.ImportSessionRepository;
 
 @Service
+@RequiredArgsConstructor
 public class AcceptQuestionImportUseCase implements IUseCase<AcceptQuestionImportCommand, Void> {
 
     private static final Set<String> REQUIRED_FIELDS = Set.of(
@@ -36,15 +38,6 @@ public class AcceptQuestionImportUseCase implements IUseCase<AcceptQuestionImpor
     private final ImportSessionRepository importSessionRepository;
     private final UserContextPort userContextPort;
     private final JsonSerializationPort jsonSerializationPort;
-
-    public AcceptQuestionImportUseCase(
-            ImportSessionRepository importSessionRepository,
-            UserContextPort userContextPort,
-            JsonSerializationPort jsonSerializationPort) {
-        this.importSessionRepository = importSessionRepository;
-        this.userContextPort = userContextPort;
-        this.jsonSerializationPort = jsonSerializationPort;
-    }
 
     @Override
     @Transactional

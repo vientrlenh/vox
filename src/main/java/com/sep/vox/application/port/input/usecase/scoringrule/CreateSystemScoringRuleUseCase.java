@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.scoringrule;
 import com.sep.vox.domain.model.user.User;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +34,7 @@ import com.sep.vox.domain.valueobject.scoringrulecondition.CriterionScoreThresho
 import com.sep.vox.domain.valueobject.scoringrulecondition.ScoringRuleConditionParams;
 
 @Service
+@RequiredArgsConstructor
 public class CreateSystemScoringRuleUseCase implements IUseCase<CreateScoringRuleCommand, UUID> {
 
     private final ScoringRuleRepository scoringRuleRepository;
@@ -42,23 +44,6 @@ public class CreateSystemScoringRuleUseCase implements IUseCase<CreateScoringRul
     private final RubricCriterionRepository rubricCriterionRepository;
     private final FrameworkResultBandRepository frameworkResultBandRepository;
     private final ScoringRuleParamsMapper scoringRuleParamsMapper;
-
-    public CreateSystemScoringRuleUseCase(
-            ScoringRuleRepository scoringRuleRepository,
-            AssessmentPolicyRepository assessmentPolicyRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort,
-            RubricCriterionRepository rubricCriterionRepository,
-            FrameworkResultBandRepository frameworkResultBandRepository,
-            ScoringRuleParamsMapper scoringRuleParamsMapper) {
-        this.scoringRuleRepository = scoringRuleRepository;
-        this.assessmentPolicyRepository = assessmentPolicyRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-        this.rubricCriterionRepository = rubricCriterionRepository;
-        this.frameworkResultBandRepository = frameworkResultBandRepository;
-        this.scoringRuleParamsMapper = scoringRuleParamsMapper;
-    }
 
     @Override
     @Transactional

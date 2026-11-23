@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.application.query.dto.CriterionFrameworkInfo;
@@ -12,13 +13,10 @@ import com.sep.vox.application.query.repository.PracticeSessionQueryRepository;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataPracticeSessionRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class JpaPracticeSessionQueryRepository implements PracticeSessionQueryRepository {
 
     private final SpringDataPracticeSessionRepository repository;
-
-    public JpaPracticeSessionQueryRepository(SpringDataPracticeSessionRepository repository) {
-        this.repository = repository;
-    }
 
     @Override
     public Optional<SessionRowInfo> findSessionRow(UUID sessionId, UUID studentId) {

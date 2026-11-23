@@ -2,8 +2,8 @@ package com.sep.vox.application.port.input.usecase.proctoring;
 
 import java.time.Instant;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.input.command.RecordProctoringAlertCommand;
@@ -21,19 +21,12 @@ import com.sep.vox.domain.repository.AssessmentSessionRepository;
  * bắt exception. Để mỗi lần ghi tự lo transaction của nó thì việc nuốt lỗi mới thật sự nuốt được.
  */
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class RecordProctoringAlertUseCase implements IUseCase<RecordProctoringAlertCommand, Boolean> {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(RecordProctoringAlertUseCase.class);
 
     private final AssessmentProctoringAlertRepository assessmentProctoringAlertRepository;
     private final AssessmentSessionRepository assessmentSessionRepository;
-
-    public RecordProctoringAlertUseCase(
-            AssessmentProctoringAlertRepository assessmentProctoringAlertRepository,
-            AssessmentSessionRepository assessmentSessionRepository) {
-        this.assessmentProctoringAlertRepository = assessmentProctoringAlertRepository;
-        this.assessmentSessionRepository = assessmentSessionRepository;
-    }
 
     @Override
     public Boolean execute(RecordProctoringAlertCommand input) {
@@ -43,7 +36,7 @@ public class RecordProctoringAlertUseCase implements IUseCase<RecordProctoringAl
         // sẽ đẩy chúng vào DLT rồi retry mãi, làm tắc luôn những cảnh báo hợp lệ đứng sau trong cùng
         // partition -- đánh đổi tệ hại cho một bản ghi mà ta vốn không dùng được.
         if (!assessmentSessionRepository.findById(input.assessmentSessionId()).isPresent()) {
-            LOGGER.warn(
+            log.warn(
                 "Bỏ qua cảnh báo giám sát vì không tìm thấy phiên thi: eventId={} assessmentSessionId={} alertType={}",
                 input.eventId(), input.assessmentSessionId(), input.alertType()
             );

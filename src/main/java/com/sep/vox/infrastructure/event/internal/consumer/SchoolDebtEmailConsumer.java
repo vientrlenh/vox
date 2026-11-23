@@ -10,9 +10,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.kafka.annotation.BackOff;
 import org.springframework.kafka.annotation.DltHandler;
@@ -45,13 +45,13 @@ import tools.jackson.databind.json.JsonMapper;
  * thẳng từ payload (đã chốt lúc publish), không truy vấn lại.
  */
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class SchoolDebtEmailConsumer {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(SchoolDebtEmailConsumer.class);
 
     private static final String CONSUMER_GROUP = "school-debt-email";
 
-    /** DecimalFormat KHÔNG thread-safe, nên đây phải là ThreadLocal chứ không phải field dùng chung. */
+    /** DecimalFormat is NOT thread-safe, so this must be a ThreadLocal and not a shared field. */
     private static final ThreadLocal<DecimalFormat> AMOUNT_FORMAT = ThreadLocal.withInitial(
         () -> new DecimalFormat("#,###", DecimalFormatSymbols.getInstance(Locale.of("vi", "VN"))));
 
@@ -61,21 +61,6 @@ public class SchoolDebtEmailConsumer {
     private final MailTemplatePort mailTemplatePort;
     private final ProcessedEventRepository processedEventRepository;
     private final JsonMapper jsonMapper;
-
-    public SchoolDebtEmailConsumer(
-            SchoolRepository schoolRepository,
-            UserRepository userRepository,
-            MailSendingPort mailSendingPort,
-            MailTemplatePort mailTemplatePort,
-            ProcessedEventRepository processedEventRepository,
-            JsonMapper jsonMapper) {
-        this.schoolRepository = schoolRepository;
-        this.userRepository = userRepository;
-        this.mailSendingPort = mailSendingPort;
-        this.mailTemplatePort = mailTemplatePort;
-        this.processedEventRepository = processedEventRepository;
-        this.jsonMapper = jsonMapper;
-    }
 
     @RetryableTopic(
         attempts = "4",
@@ -92,11 +77,11 @@ public class SchoolDebtEmailConsumer {
     public void consume(ConsumerRecord<String, String> record, Acknowledgment ack) {
         UUID eventId = KafkaEventHeaders.readEventId(record);
 
-        LOGGER.info("Receive event school-debt: eventId={}, partition={}, offset={}",
+        log.info("Receive event school-debt: eventId={}, partition={}, offset={}",
             eventId, record.partition(), record.offset());
 
         if (processedEventRepository.existsByEventIdAndConsumerGroup(eventId, CONSUMER_GROUP)) {
-            LOGGER.info("Skip processed event: eventId={}, consumer={}", eventId, CONSUMER_GROUP);
+            log.info("Skip processed event: eventId={}, consumer={}", eventId, CONSUMER_GROUP);
             ack.acknowledge();
             return;
         }
@@ -150,7 +135,7 @@ public class SchoolDebtEmailConsumer {
         };
 
         if (mail.recipientIds() == null || mail.recipientIds().isEmpty()) {
-            LOGGER.warn("Skip mail, không có người nhận: eventId={}, eventType={}", eventId, eventType);
+            log.warn("Skip mail, không có người nhận: eventId={}, eventType={}", eventId, eventType);
             markProcessed(eventId);
             ack.acknowledge();
             return;
@@ -162,14 +147,14 @@ public class SchoolDebtEmailConsumer {
         for (UUID recipientId : mail.recipientIds()) {
             User recipient = userRepository.findById(recipientId).orElse(null);
             if (recipient == null) {
-                LOGGER.warn("Bỏ qua người nhận không còn tồn tại: eventId={}, userId={}", eventId, recipientId);
+                log.warn("Bỏ qua người nhận không còn tồn tại: eventId={}, userId={}", eventId, recipientId);
                 continue;
             }
             try {
                 mailSendingPort.sendHtml(recipient.getEmail().value(), mail.subject(), mail.html());
             } catch (Exception e) {
                 failed++;
-                LOGGER.error("Send mail error: eventId={}, to={}", eventId, recipient.getEmail().value(), e);
+                log.error("Send mail error: eventId={}, to={}", eventId, recipient.getEmail().value(), e);
             }
         }
 
@@ -180,7 +165,7 @@ public class SchoolDebtEmailConsumer {
 
         markProcessed(eventId);
 
-        LOGGER.info("School-debt mail sent: eventId={}, eventType={}, recipients={}",
+        log.info("School-debt mail sent: eventId={}, eventType={}, recipients={}",
             eventId, eventType, mail.recipientIds().size());
         ack.acknowledge();
     }
@@ -188,7 +173,7 @@ public class SchoolDebtEmailConsumer {
     @DltHandler
     public void handleDlt(ConsumerRecord<String, String> record) {
         UUID eventId = KafkaEventHeaders.readEventIdOrNull(record);
-        LOGGER.error("school-debt event sent to DLT: eventId={}, topic={}, partition={}, offset={}, payload={}",
+        log.error("school-debt event sent to DLT: eventId={}, topic={}, partition={}, offset={}, payload={}",
             eventId, record.topic(), record.partition(), record.offset(), record.value());
     }
 
@@ -242,7 +227,7 @@ public class SchoolDebtEmailConsumer {
                     .processedAt(Instant.now())
                     .build());
         } catch (DataIntegrityViolationException e) {
-            LOGGER.warn("This event was already marked by another instance: eventId={}", eventId);
+            log.warn("This event was already marked by another instance: eventId={}", eventId);
         }
     }
 

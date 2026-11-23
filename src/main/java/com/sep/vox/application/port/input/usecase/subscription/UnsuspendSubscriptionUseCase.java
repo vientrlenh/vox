@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,23 +32,13 @@ import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
  * từng bị đình chỉ.
  */
 @Service
+@RequiredArgsConstructor
 public class UnsuspendSubscriptionUseCase implements IUseCase<UnsuspendSubscriptionCommand, UUID> {
 
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final SchoolSubscriptionEventRepository schoolSubscriptionEventRepository;
     private final SchoolSubscriptionSuspensionNotificationService suspensionNotificationService;
     private final UserContextPort userContextPort;
-
-    public UnsuspendSubscriptionUseCase(
-            SchoolSubscriptionRepository schoolSubscriptionRepository,
-            SchoolSubscriptionEventRepository schoolSubscriptionEventRepository,
-            SchoolSubscriptionSuspensionNotificationService suspensionNotificationService,
-            UserContextPort userContextPort) {
-        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
-        this.schoolSubscriptionEventRepository = schoolSubscriptionEventRepository;
-        this.suspensionNotificationService = suspensionNotificationService;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

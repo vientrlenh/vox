@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.assessmentitemresponse;
 
 import java.util.List;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,18 +13,12 @@ import com.sep.vox.application.response.input.assessmentitemresponse.AssessmentS
 import com.sep.vox.domain.repository.AssessmentItemResponseTurnRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewAssessmentSessionFollowupsUseCase
         implements IUseCase<ViewAssessmentSessionFollowupsQuery, List<AssessmentSessionFollowupResponse>> {
 
     private final AssessmentResultAccessService assessmentResultAccessService;
     private final AssessmentItemResponseTurnRepository assessmentItemResponseTurnRepository;
-
-    public ViewAssessmentSessionFollowupsUseCase(
-            AssessmentResultAccessService assessmentResultAccessService,
-            AssessmentItemResponseTurnRepository assessmentItemResponseTurnRepository) {
-        this.assessmentResultAccessService = assessmentResultAccessService;
-        this.assessmentItemResponseTurnRepository = assessmentItemResponseTurnRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

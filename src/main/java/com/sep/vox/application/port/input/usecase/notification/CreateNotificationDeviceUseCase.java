@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.notification;
 import java.time.Instant;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,15 +14,11 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.repository.NotificationDeviceRepository;
 
 @Service
+@RequiredArgsConstructor
 public class CreateNotificationDeviceUseCase implements IUseCase<CreateNotificationDeviceCommand, Void> {
     
     private final NotificationDeviceRepository notificationDeviceRepository;
     private final UserContextPort userContextPort;
-
-    public CreateNotificationDeviceUseCase(NotificationDeviceRepository notificationDeviceRepository, UserContextPort userContextPort) {
-        this.notificationDeviceRepository = notificationDeviceRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

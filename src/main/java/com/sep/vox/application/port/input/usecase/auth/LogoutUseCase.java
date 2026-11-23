@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,6 +55,7 @@ import com.sep.vox.domain.repository.RefreshTokenRepository;
  * nó mua được. Bù lại phía client: cả web lẫn desktop đều xoá access token ngay khi đăng xuất.
  */
 @Service
+@RequiredArgsConstructor
 public class LogoutUseCase implements IUseCase<LogoutCommand, Void> {
 
     private final RefreshTokenRepository refreshTokenRepository;
@@ -61,14 +63,6 @@ public class LogoutUseCase implements IUseCase<LogoutCommand, Void> {
     private final SessionTokenManagerPort sessionTokenManagerPort;
     private final SessionManagerPort sessionManagerPort;
     private final UserContextPort userContextPort;
-
-    public LogoutUseCase(RefreshTokenRepository refreshTokenRepository, DeviceSessionRepository deviceSessionRepository, SessionTokenManagerPort sessionTokenManagerPort, SessionManagerPort sessionManagerPort, UserContextPort userContextPort) {
-        this.refreshTokenRepository = refreshTokenRepository;
-        this.deviceSessionRepository = deviceSessionRepository;
-        this.sessionTokenManagerPort = sessionTokenManagerPort;
-        this.sessionManagerPort = sessionManagerPort;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

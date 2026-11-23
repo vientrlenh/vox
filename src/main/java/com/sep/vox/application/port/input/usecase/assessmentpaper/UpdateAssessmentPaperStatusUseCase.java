@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,6 +45,7 @@ import com.sep.vox.domain.repository.AssessmentRepository;
  * <p>Bài trên lớp luôn đi đường tắt: giáo viên tạo bài vừa là CHAIR vừa là người soạn mọi mã đề.
  */
 @Service
+@RequiredArgsConstructor
 public class UpdateAssessmentPaperStatusUseCase implements IUseCase<UpdateAssessmentPaperStatusCommand, AssessmentPaperDto> {
 
     private final AssessmentPaperRepository assessmentPaperRepository;
@@ -54,25 +56,6 @@ public class UpdateAssessmentPaperStatusUseCase implements IUseCase<UpdateAssess
     private final AssessmentTimeQuotaGuardService assessmentTimeQuotaGuardService;
     private final AssessmentPaperAutoAssigner assessmentPaperAutoAssigner;
     private final UserContextPort userContextPort;
-
-    public UpdateAssessmentPaperStatusUseCase(
-            AssessmentPaperRepository assessmentPaperRepository,
-            AssessmentPaperItemRepository assessmentPaperItemRepository,
-            AssessmentRepository assessmentRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            AssessmentPaperAuthoringAccessService assessmentPaperAuthoringAccessService,
-            AssessmentTimeQuotaGuardService assessmentTimeQuotaGuardService,
-            AssessmentPaperAutoAssigner assessmentPaperAutoAssigner,
-            UserContextPort userContextPort) {
-        this.assessmentPaperRepository = assessmentPaperRepository;
-        this.assessmentPaperItemRepository = assessmentPaperItemRepository;
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.assessmentPaperAuthoringAccessService = assessmentPaperAuthoringAccessService;
-        this.assessmentTimeQuotaGuardService = assessmentTimeQuotaGuardService;
-        this.assessmentPaperAutoAssigner = assessmentPaperAutoAssigner;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.assessment;
 
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentMember;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,20 +18,12 @@ import com.sep.vox.domain.repository.AssessmentMemberRepository;
 import com.sep.vox.domain.repository.AssessmentRepository;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateAssessmentMemberUseCase implements IUseCase<UpdateAssessmentMemberCommand, AssessmentMemberDto> {
 
     private final AssessmentRepository assessmentRepository;
     private final AssessmentMemberRepository assessmentMemberRepository;
     private final AssessmentMemberManageAccessService assessmentMemberManageAccessService;
-
-    public UpdateAssessmentMemberUseCase(
-            AssessmentRepository assessmentRepository,
-            AssessmentMemberRepository assessmentMemberRepository,
-            AssessmentMemberManageAccessService assessmentMemberManageAccessService) {
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentMemberRepository = assessmentMemberRepository;
-        this.assessmentMemberManageAccessService = assessmentMemberManageAccessService;
-    }
 
     @Override
     @Transactional

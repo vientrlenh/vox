@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.assessmentblueprint;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
@@ -15,21 +16,13 @@ import com.sep.vox.domain.repository.AssessmentBlueprintRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewAssessmentBlueprintDetailsUseCase implements IUseCase<ViewAssessmentBlueprintDetailsQuery, AssessmentBlueprintDto> {
 
 
     private final AssessmentBlueprintRepository assessmentBlueprintRepository;
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository;
-
-    public ViewAssessmentBlueprintDetailsUseCase(
-            AssessmentBlueprintRepository assessmentBlueprintRepository,
-            UserContextPort userContextPort,
-            SchoolUserRepository schoolUserRepository) {
-        this.assessmentBlueprintRepository = assessmentBlueprintRepository;
-        this.userContextPort = userContextPort;
-        this.schoolUserRepository = schoolUserRepository;
-    }
 
     @Override
     public AssessmentBlueprintDto execute(ViewAssessmentBlueprintDetailsQuery input) {

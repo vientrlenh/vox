@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +35,7 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.valueobject.QuestionSelectionSpec;
 
 @Service
+@RequiredArgsConstructor
 public class CreateAssessmentBlueprintSlotUseCase implements IUseCase<CreateAssessmentBlueprintSlotItemCommand, AssessmentBlueprintSlotDto> {
 
     private final AssessmentBlueprintSectionRepository assessmentBlueprintSectionRepository;
@@ -44,25 +46,6 @@ public class CreateAssessmentBlueprintSlotUseCase implements IUseCase<CreateAsse
     private final SchoolUserRepository schoolUserRepository;
     private final RecalculateBlueprintVersionTimeLimitService recalculateBlueprintVersionTimeLimitService;
     private final UserContextPort userContextPort;
-
-    public CreateAssessmentBlueprintSlotUseCase(
-            AssessmentBlueprintSectionRepository assessmentBlueprintSectionRepository,
-            AssessmentBlueprintSlotRepository assessmentBlueprintSlotRepository,
-            AssessmentBlueprintVersionRepository assessmentBlueprintVersionRepository,
-            AssessmentBlueprintRepository assessmentBlueprintRepository,
-            QuestionRepository questionRepository,
-            SchoolUserRepository schoolUserRepository,
-            RecalculateBlueprintVersionTimeLimitService recalculateBlueprintVersionTimeLimitService,
-            UserContextPort userContextPort) {
-        this.assessmentBlueprintSectionRepository = assessmentBlueprintSectionRepository;
-        this.assessmentBlueprintSlotRepository = assessmentBlueprintSlotRepository;
-        this.assessmentBlueprintVersionRepository = assessmentBlueprintVersionRepository;
-        this.assessmentBlueprintRepository = assessmentBlueprintRepository;
-        this.questionRepository = questionRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.recalculateBlueprintVersionTimeLimitService = recalculateBlueprintVersionTimeLimitService;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

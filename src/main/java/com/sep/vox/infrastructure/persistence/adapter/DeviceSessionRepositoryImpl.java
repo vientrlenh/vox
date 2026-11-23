@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.devicesession.DeviceSession;
@@ -14,13 +15,10 @@ import com.sep.vox.infrastructure.persistence.mapper.DeviceSessionMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataDeviceSessionRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class DeviceSessionRepositoryImpl implements DeviceSessionRepository {
 
     private final SpringDataDeviceSessionRepository springDataDeviceSessionRepository;
-
-    public DeviceSessionRepositoryImpl(SpringDataDeviceSessionRepository springDataDeviceSessionRepository) {
-        this.springDataDeviceSessionRepository = springDataDeviceSessionRepository;
-    }
 
     @Override
     public DeviceSession save(DeviceSession session) {

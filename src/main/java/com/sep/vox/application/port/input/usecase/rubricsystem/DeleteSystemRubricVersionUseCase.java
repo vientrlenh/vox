@@ -13,12 +13,14 @@ import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class DeleteSystemRubricVersionUseCase implements IUseCase<DeleteSystemRubricVersionCommand, Void> {
 
     private final AssessmentPolicyRepository assessmentPolicyRepository;
@@ -28,16 +30,6 @@ public class DeleteSystemRubricVersionUseCase implements IUseCase<DeleteSystemRu
     private final RubricResultBandRepository rubricResultBandRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
-
-    public DeleteSystemRubricVersionUseCase(AssessmentPolicyRepository assessmentPolicyRepository, RubricVersionRepository rubricVersionRepository, RubricRepository rubricRepository, RubricCriterionRepository rubricCriterionRepository, RubricResultBandRepository rubricResultBandRepository, UserRepository userRepository, UserContextPort userContextPort) {
-        this.assessmentPolicyRepository = assessmentPolicyRepository;
-        this.rubricVersionRepository = rubricVersionRepository;
-        this.rubricRepository = rubricRepository;
-        this.rubricCriterionRepository = rubricCriterionRepository;
-        this.rubricResultBandRepository = rubricResultBandRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.gradelevel;
 
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,20 +18,12 @@ import com.sep.vox.domain.repository.GradeLevelRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewGradeLevelDetailsUseCase implements IUseCase<ViewGradeLevelDetailsQuery, GradeLevelDto> {
 
     private final GradeLevelRepository gradeLevelRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
-
-    public ViewGradeLevelDetailsUseCase(
-            GradeLevelRepository gradeLevelRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort) {
-        this.gradeLevelRepository = gradeLevelRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional(readOnly = true)

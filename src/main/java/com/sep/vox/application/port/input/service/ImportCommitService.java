@@ -6,8 +6,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.NotFoundException;
@@ -19,9 +18,8 @@ import com.sep.vox.domain.repository.ImportRowRepository;
 import com.sep.vox.domain.repository.ImportSessionRepository;
 
 @Service
+@Slf4j
 public class ImportCommitService {
-
-    private static final Logger log = LoggerFactory.getLogger(ImportCommitService.class);
 
     private final Map<ImportType, ImportCommitHandler> handlers;
     private final ImportSessionRepository importSessionRepository;

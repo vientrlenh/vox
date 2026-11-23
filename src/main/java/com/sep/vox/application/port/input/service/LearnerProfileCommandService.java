@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.NotFoundException;
@@ -17,23 +18,13 @@ import com.sep.vox.domain.repository.InterestQuizItemRepository;
 import com.sep.vox.domain.repository.LearnerProfileRepository;
 
 @Service
+@RequiredArgsConstructor
 public class LearnerProfileCommandService {
 
     private final LearnerProfileRepository repository;
     private final InterestQuizItemRepository quizItemRepository;
     private final DimensionInterestScoreRepository dimensionScoreRepository;
     private final InterestQuizScorer interestQuizScorer;
-
-    public LearnerProfileCommandService(
-            LearnerProfileRepository repository,
-            InterestQuizItemRepository quizItemRepository,
-            DimensionInterestScoreRepository dimensionScoreRepository,
-            InterestQuizScorer interestQuizScorer) {
-        this.repository = repository;
-        this.quizItemRepository = quizItemRepository;
-        this.dimensionScoreRepository = dimensionScoreRepository;
-        this.interestQuizScorer = interestQuizScorer;
-    }
 
     public void submitQuiz(UUID studentId, List<QuizAnswer> answers) {
         if (answers == null || answers.size() < 5 || answers.size() > 7) {

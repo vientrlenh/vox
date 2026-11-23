@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
@@ -19,13 +20,10 @@ import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolUserRep
 import com.sep.vox.infrastructure.persistence.DataConflictTranslation;
 
 @Repository
+@RequiredArgsConstructor
 public class SchoolUserRepositoryImpl implements SchoolUserRepository {
 
     private final SpringDataSchoolUserRepository springDataSchoolUserRepository;
-
-    public SchoolUserRepositoryImpl(SpringDataSchoolUserRepository springDataSchoolUserRepository) {
-        this.springDataSchoolUserRepository = springDataSchoolUserRepository;
-    }
 
     @Override
     public Optional<SchoolUser> findByUserId(UUID userId) {

@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.questionbank;
 
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,16 +16,11 @@ import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
 
 @Service
+@RequiredArgsConstructor
 public class CreateSystemQuestionBankUseCase implements IUseCase<CreateSystemQuestionBankCommand, CreateQuestionBankResponse> {
 
     private final QuestionBankRepository questionBankRepository;
     private final SupportedLanguageRepository supportedLanguageRepository;
-
-    public CreateSystemQuestionBankUseCase(QuestionBankRepository questionBankRepository, 
-            SupportedLanguageRepository supportedLanguageRepository) {
-        this.questionBankRepository = questionBankRepository;
-        this.supportedLanguageRepository = supportedLanguageRepository;
-    }
 
     @Override
     @Transactional

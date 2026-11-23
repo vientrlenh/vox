@@ -4,9 +4,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
@@ -16,12 +15,11 @@ import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.infrastructure.properties.OutboxTopicProperties;
 
 @Component
+@Slf4j
 public class KafkaEventMessagePublisherAdapter implements EventMessagePublisherPort {
     
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final Map<String, String> topicsByEventType;
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(KafkaEventMessagePublisherAdapter.class);
 
     public KafkaEventMessagePublisherAdapter(
         @Qualifier("outboxKafkaTemplate") KafkaTemplate<String, String> kafkaTemplate, 
@@ -34,7 +32,7 @@ public class KafkaEventMessagePublisherAdapter implements EventMessagePublisherP
     public CompletableFuture<Void> publish(Outbox event) {
         String topic = topicsByEventType.get(event.getEventType());
         if (topic == null) {
-            LOGGER.error("Topic not configured: eventId={}, eventType={}", event.getId(), event.getEventType());
+            log.error("Topic not configured: eventId={}, eventType={}", event.getId(), event.getEventType());
             return CompletableFuture.failedFuture(
                 new IllegalStateException("Chưa cấu hình topic cho eventType=" + event.getEventType())
             );
@@ -47,7 +45,7 @@ public class KafkaEventMessagePublisherAdapter implements EventMessagePublisherP
         try {
             return kafkaTemplate.send(record).thenApply(result -> null);
         } catch (Exception e) {
-            LOGGER.error("Event publish failed: eventId={}, eventType={}, payload={}", event.getId(), event.getEventType(), event.getPayload());
+            log.error("Event publish failed: eventId={}, eventType={}, payload={}", event.getId(), event.getEventType(), event.getPayload());
             return CompletableFuture.failedFuture(e);
         }
     }

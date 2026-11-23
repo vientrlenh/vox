@@ -2,6 +2,7 @@ package com.sep.vox.infrastructure.security;
 
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -11,13 +12,10 @@ import com.sep.vox.application.port.output.AuthenticationManagerPort;
 import com.sep.vox.infrastructure.exception.InfrastructureException;
 
 @Component
+@RequiredArgsConstructor
 public class AuthenticationManagerProvider implements AuthenticationManagerPort {
 
     private final AuthenticationManager authenticationManager;
-
-    public AuthenticationManagerProvider(AuthenticationManager authenticationManager) {
-        this.authenticationManager = authenticationManager;
-    }
 
     @Override
     public String setAuthenticationAndGetUserEmail(String login, String password) {

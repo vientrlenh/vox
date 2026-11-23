@@ -8,6 +8,7 @@ import com.sep.vox.domain.model.user.User;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,6 +60,7 @@ import com.sep.vox.domain.repository.UserRepository;
  * chính sách hỏng validate sẽ cuộn lại cả bản sao rubric, không để lại rubric mồ côi.
  */
 @Service
+@RequiredArgsConstructor
 public class CloneSystemRubricToSchoolUseCase implements IUseCase<CloneSystemRubricToSchoolCommand, UUID> {
 
     private final RubricRepository rubricRepository;
@@ -70,27 +72,6 @@ public class CloneSystemRubricToSchoolUseCase implements IUseCase<CloneSystemRub
     private final SchoolUserRepository schoolUserRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
-
-    public CloneSystemRubricToSchoolUseCase(
-            RubricRepository rubricRepository,
-            RubricVersionRepository rubricVersionRepository,
-            RubricCriterionRepository rubricCriterionRepository,
-            RubricCloneService rubricCloneService,
-            AssessmentPolicyRepository assessmentPolicyRepository,
-            CreateSchoolAssessmentPolicyUseCase createSchoolAssessmentPolicyUseCase,
-            SchoolUserRepository schoolUserRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort) {
-        this.rubricRepository = rubricRepository;
-        this.rubricVersionRepository = rubricVersionRepository;
-        this.rubricCriterionRepository = rubricCriterionRepository;
-        this.rubricCloneService = rubricCloneService;
-        this.assessmentPolicyRepository = assessmentPolicyRepository;
-        this.createSchoolAssessmentPolicyUseCase = createSchoolAssessmentPolicyUseCase;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

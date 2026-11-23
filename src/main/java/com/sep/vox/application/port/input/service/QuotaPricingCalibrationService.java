@@ -14,8 +14,8 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import com.sep.vox.domain.repository.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,9 +45,9 @@ import com.sep.vox.application.port.output.QuotaPricingConfigPort;
  * only ever needs to take the latest row per source, without having to filter on "is it reliable enough".
  */
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class QuotaPricingCalibrationService {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(QuotaPricingCalibrationService.class);
 
     private final SessionCostQueryRepository sessionCostQueryRepository;
     private final AssessmentItemResponseRepository assessmentItemResponseRepository;
@@ -55,21 +55,6 @@ public class QuotaPricingCalibrationService {
     private final QuotaPricingCalibrationRepository quotaPricingCalibrationRepository;
     private final QuotaPricingCalibrationConfigPort calibrationConfig;
     private final QuotaPricingConfigPort quotaPricingConfig;
-
-    public QuotaPricingCalibrationService(
-            SessionCostQueryRepository sessionCostQueryRepository,
-            AssessmentItemResponseRepository assessmentItemResponseRepository,
-            PracticeResponseTurnRepository practiceResponseTurnRepository,
-            QuotaPricingCalibrationRepository quotaPricingCalibrationRepository,
-            QuotaPricingCalibrationConfigPort calibrationConfig,
-            QuotaPricingConfigPort quotaPricingConfig) {
-        this.sessionCostQueryRepository = sessionCostQueryRepository;
-        this.assessmentItemResponseRepository = assessmentItemResponseRepository;
-        this.practiceResponseTurnRepository = practiceResponseTurnRepository;
-        this.quotaPricingCalibrationRepository = quotaPricingCalibrationRepository;
-        this.calibrationConfig = calibrationConfig;
-        this.quotaPricingConfig = quotaPricingConfig;
-    }
 
     /** Calibrates estimatedCostPerAssessmentSecondUsd -- the real answer seconds come from assessment_item_responses. */
     @Transactional
@@ -101,7 +86,7 @@ public class QuotaPricingCalibrationService {
 
         List<SessionCostDto> costs = sessionCostQueryRepository.sumCostUsdGroupedBySessionSince(since);
         if (costs.size() < minSampleSessions) {
-            LOGGER.info(
+            log.info(
                 "[quota-pricing-calibration] {} bỏ qua: chỉ có {} session phát sinh usage trong {} ngày gần nhất, "
                     + "cần tối thiểu {}",
                 source, costs.size(), windowDays, minSampleSessions
@@ -130,7 +115,7 @@ public class QuotaPricingCalibrationService {
         }
 
         if (matchedCount < minSampleSessions || totalSeconds <= 0) {
-            LOGGER.info(
+            log.info(
                 "[quota-pricing-calibration] {} bỏ qua: chỉ khớp được {} session có cả cost lẫn giây trả lời thật, "
                     + "cần tối thiểu {}",
                 source, matchedCount, minSampleSessions
@@ -169,7 +154,7 @@ public class QuotaPricingCalibrationService {
             .build();
         quotaPricingCalibrationRepository.save(calibration);
 
-        LOGGER.info(
+        log.info(
             "[quota-pricing-calibration] {} đã tính lại: sessionCount={} rawRate={} appliedRate={} (trước đó {})",
             source, matchedCount, rawRate, applied, previousApplied
         );

@@ -6,6 +6,7 @@ import java.util.List;
 
 import java.util.Map;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,7 @@ import com.sep.vox.application.response.input.practiceplanning.PracticePlanningR
 
 
 @Service
+@RequiredArgsConstructor
 public class SearchPracticeTopicsSemanticUseCase
         implements IUseCase<SearchPracticeTopicsQuery, List<PracticeTopicOffer>> {
 
@@ -29,17 +31,6 @@ public class SearchPracticeTopicsSemanticUseCase
     private final PracticeTopicOfferEnrichmentService enrichmentService;
     private final TopicGenerationPort topicGenerationPort;
     private final UserContextPort userContextPort;
-
-    public SearchPracticeTopicsSemanticUseCase(
-            PracticeTopicQueryRepository practiceTopicQueryRepository,
-            PracticeTopicOfferEnrichmentService enrichmentService,
-            TopicGenerationPort topicGenerationPort,
-            UserContextPort userContextPort) {
-        this.practiceTopicQueryRepository = practiceTopicQueryRepository;
-        this.enrichmentService = enrichmentService;
-        this.topicGenerationPort = topicGenerationPort;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional(readOnly = true)

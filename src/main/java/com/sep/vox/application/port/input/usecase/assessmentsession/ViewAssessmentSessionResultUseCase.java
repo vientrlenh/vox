@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +36,7 @@ import com.sep.vox.domain.repository.RubricResultBandRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewAssessmentSessionResultUseCase implements IUseCase<ViewAssessmentSessionResultQuery, AssessmentCandidateResultResponse> {
 
     private final AssessmentCandidateResultRepository assessmentCandidateResultRepository;
@@ -48,31 +50,6 @@ public class ViewAssessmentSessionResultUseCase implements IUseCase<ViewAssessme
     private final AssessmentItemEvaluationRepository assessmentItemEvaluationRepository;
     private final AssessmentPaperItemRepository assessmentPaperItemRepository;
     private final com.sep.vox.domain.repository.QuestionAssetRepository questionAssetRepository;
-
-    public ViewAssessmentSessionResultUseCase(
-            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
-            AssessmentSessionResultCalculator assessmentSessionResultCalculator,
-            FrameworkResultBandRepository frameworkResultBandRepository,
-            RubricResultBandRepository rubricResultBandRepository,
-            RubricVersionRepository rubricVersionRepository,
-            AssessmentResultAccessService assessmentResultAccessService,
-            QuestionRepository questionRepository,
-            AssessmentItemResponseRepository assessmentItemResponseRepository,
-            AssessmentItemEvaluationRepository assessmentItemEvaluationRepository,
-            AssessmentPaperItemRepository assessmentPaperItemRepository,
-            com.sep.vox.domain.repository.QuestionAssetRepository questionAssetRepository) {
-        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
-        this.assessmentSessionResultCalculator = assessmentSessionResultCalculator;
-        this.frameworkResultBandRepository = frameworkResultBandRepository;
-        this.rubricResultBandRepository = rubricResultBandRepository;
-        this.rubricVersionRepository = rubricVersionRepository;
-        this.assessmentResultAccessService = assessmentResultAccessService;
-        this.questionRepository = questionRepository;
-        this.assessmentItemResponseRepository = assessmentItemResponseRepository;
-        this.assessmentItemEvaluationRepository = assessmentItemEvaluationRepository;
-        this.assessmentPaperItemRepository = assessmentPaperItemRepository;
-        this.questionAssetRepository = questionAssetRepository;
-    }
 
     /**
      * The resources of the questions, loaded once and then mapped by questionId.

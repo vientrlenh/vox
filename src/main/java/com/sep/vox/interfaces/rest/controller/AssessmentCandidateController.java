@@ -3,6 +3,7 @@ package com.sep.vox.interfaces.rest.controller;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -54,6 +55,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/assessments/{assessmentId}/candidates")
+@RequiredArgsConstructor
 public class AssessmentCandidateController {
 
     private final AddAssessmentCandidateUseCase addAssessmentCandidateUseCase;
@@ -67,31 +69,6 @@ public class AssessmentCandidateController {
     private final UnblockAssessmentCandidateUseCase unblockAssessmentCandidateUseCase;
     private final DeleteAssessmentCandidateUseCase deleteAssessmentCandidateUseCase;
     private final BulkDeleteAssessmentCandidatesUseCase bulkDeleteAssessmentCandidatesUseCase;
-
-    public AssessmentCandidateController(
-            AddAssessmentCandidateUseCase addAssessmentCandidateUseCase,
-            ImportAssessmentCandidatesFromClassUseCase importAssessmentCandidatesFromClassUseCase,
-            ImportAssessmentCandidatesFromGradeUseCase importAssessmentCandidatesFromGradeUseCase,
-            AssignAssessmentCandidateScheduleUseCase assignAssessmentCandidateScheduleUseCase,
-            BulkAssignAssessmentCandidateScheduleUseCase bulkAssignAssessmentCandidateScheduleUseCase,
-            AutoFillAssessmentCandidatesUseCase autoFillAssessmentCandidatesUseCase,
-            AssignAssessmentPapersUseCase assignAssessmentPapersUseCase,
-            UpdateAssessmentCandidateStatusUseCase updateAssessmentCandidateStatusUseCase,
-            UnblockAssessmentCandidateUseCase unblockAssessmentCandidateUseCase,
-            DeleteAssessmentCandidateUseCase deleteAssessmentCandidateUseCase,
-            BulkDeleteAssessmentCandidatesUseCase bulkDeleteAssessmentCandidatesUseCase) {
-        this.addAssessmentCandidateUseCase = addAssessmentCandidateUseCase;
-        this.importAssessmentCandidatesFromClassUseCase = importAssessmentCandidatesFromClassUseCase;
-        this.importAssessmentCandidatesFromGradeUseCase = importAssessmentCandidatesFromGradeUseCase;
-        this.assignAssessmentCandidateScheduleUseCase = assignAssessmentCandidateScheduleUseCase;
-        this.bulkAssignAssessmentCandidateScheduleUseCase = bulkAssignAssessmentCandidateScheduleUseCase;
-        this.autoFillAssessmentCandidatesUseCase = autoFillAssessmentCandidatesUseCase;
-        this.assignAssessmentPapersUseCase = assignAssessmentPapersUseCase;
-        this.updateAssessmentCandidateStatusUseCase = updateAssessmentCandidateStatusUseCase;
-        this.unblockAssessmentCandidateUseCase = unblockAssessmentCandidateUseCase;
-        this.deleteAssessmentCandidateUseCase = deleteAssessmentCandidateUseCase;
-        this.bulkDeleteAssessmentCandidatesUseCase = bulkDeleteAssessmentCandidatesUseCase;
-    }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")

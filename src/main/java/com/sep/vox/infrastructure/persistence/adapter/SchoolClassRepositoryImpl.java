@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -24,13 +25,10 @@ import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolClassRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class SchoolClassRepositoryImpl implements SchoolClassRepository {
 
     private final SpringDataSchoolClassRepository springDataSchoolClassRepository;
-
-    public SchoolClassRepositoryImpl(SpringDataSchoolClassRepository springDataSchoolClassRepository) {
-        this.springDataSchoolClassRepository = springDataSchoolClassRepository;
-    }
 
     @Override
     public Optional<SchoolClass> findById(UUID id) {

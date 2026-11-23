@@ -16,12 +16,14 @@ import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class SearchSchoolRubricResultBandsUseCase implements IUseCase<SearchSchoolRubricResultBandsQuery, PageResult<RubricResultBandDto>> {
 
     private final RubricResultBandRepository rubricResultBandRepository;
@@ -31,23 +33,6 @@ public class SearchSchoolRubricResultBandsUseCase implements IUseCase<SearchScho
     private final UserRepository userRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final SchoolRepository schoolRepository;
-
-    public SearchSchoolRubricResultBandsUseCase(
-            RubricResultBandRepository rubricResultBandRepository,
-            RubricVersionRepository rubricVersionRepository,
-            RubricRepository rubricRepository,
-            UserContextPort userContextPort,
-            UserRepository userRepository,
-            SchoolUserRepository schoolUserRepository,
-            SchoolRepository schoolRepository) {
-        this.rubricResultBandRepository = rubricResultBandRepository;
-        this.rubricVersionRepository = rubricVersionRepository;
-        this.rubricRepository = rubricRepository;
-        this.userContextPort = userContextPort;
-        this.userRepository = userRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.schoolRepository = schoolRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

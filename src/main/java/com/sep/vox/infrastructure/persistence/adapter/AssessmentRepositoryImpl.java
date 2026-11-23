@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
@@ -22,13 +23,10 @@ import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataAssessmentRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class AssessmentRepositoryImpl implements AssessmentRepository {
 
     private final SpringDataAssessmentRepository springDataAssessmentRepository;
-
-    public AssessmentRepositoryImpl(SpringDataAssessmentRepository springDataAssessmentRepository) {
-        this.springDataAssessmentRepository = springDataAssessmentRepository;
-    }
 
     @Override
     public Optional<Assessment> findById(UUID id) {

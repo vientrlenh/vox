@@ -6,6 +6,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.common.CacheKey;
@@ -24,6 +25,7 @@ import com.sep.vox.domain.repository.AssessmentScheduleRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class GetAssessmentScheduleOtpUseCase implements IUseCase<GetAssessmentScheduleOtpQuery, GetAssessmentScheduleOtpResponse> {
 
     private static final int OTP_LENGTH = 8;
@@ -37,25 +39,6 @@ public class GetAssessmentScheduleOtpUseCase implements IUseCase<GetAssessmentSc
     private final OneTimePasswordPort oneTimePasswordPort;
     private final CacheManagerPort cacheManagerPort;
     private final UserContextPort userContextPort;
-
-    public GetAssessmentScheduleOtpUseCase(
-            AssessmentScheduleRepository assessmentScheduleRepository,
-            AssessmentScheduleProctorRepository assessmentScheduleProctorRepository,
-            AssessmentRepository assessmentRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
-            OneTimePasswordPort oneTimePasswordPort,
-            CacheManagerPort cacheManagerPort,
-            UserContextPort userContextPort) {
-        this.assessmentScheduleRepository = assessmentScheduleRepository;
-        this.assessmentScheduleProctorRepository = assessmentScheduleProctorRepository;
-        this.assessmentRepository = assessmentRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-        this.oneTimePasswordPort = oneTimePasswordPort;
-        this.cacheManagerPort = cacheManagerPort;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     public GetAssessmentScheduleOtpResponse execute(GetAssessmentScheduleOtpQuery input) {

@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.balance;
 
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,17 +18,11 @@ import com.sep.vox.domain.repository.SchoolBalanceRepository;
  * {@link SchoolBalanceDto#emptyFor}.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewSchoolBalanceUseCase implements IUseCase<UUID, SchoolBalanceDto> {
 
     private final SchoolBalanceRepository schoolBalanceRepository;
     private final SchoolScopedReadGuard schoolScopedReadGuard;
-
-    public ViewSchoolBalanceUseCase(
-            SchoolBalanceRepository schoolBalanceRepository,
-            SchoolScopedReadGuard schoolScopedReadGuard) {
-        this.schoolBalanceRepository = schoolBalanceRepository;
-        this.schoolScopedReadGuard = schoolScopedReadGuard;
-    }
 
     @Override
     @Transactional(readOnly = true)

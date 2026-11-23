@@ -17,29 +17,20 @@ import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class SearchSystemRubricVersionsUseCase implements IUseCase<SearchSystemRubricVersionsQuery, PageResult<RubricVersionDto>> {
 
     private final RubricVersionRepository rubricVersionRepository;
     private final RubricRepository rubricRepository;
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
-
-    public SearchSystemRubricVersionsUseCase(
-            RubricVersionRepository rubricVersionRepository,
-            RubricRepository rubricRepository,
-            UserContextPort userContextPort,
-            UserRepository userRepository) {
-        this.rubricVersionRepository = rubricVersionRepository;
-        this.rubricRepository = rubricRepository;
-        this.userContextPort = userContextPort;
-        this.userRepository = userRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.domain.model.assessment.Assessment;
@@ -40,17 +41,11 @@ import com.sep.vox.domain.repository.AssessmentPaperRepository;
  * seating plan -- the system does not store where a candidate sits.
  */
 @Service
+@RequiredArgsConstructor
 public class AssessmentPaperAutoAssigner {
 
     private final AssessmentPaperRepository assessmentPaperRepository;
     private final AssessmentCandidateRepository assessmentCandidateRepository;
-
-    public AssessmentPaperAutoAssigner(
-            AssessmentPaperRepository assessmentPaperRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository) {
-        this.assessmentPaperRepository = assessmentPaperRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-    }
 
     /**
      * Gán đề cho những thí sinh chưa có đề trong danh sách. Chỉ sửa đối tượng trong bộ nhớ -- người

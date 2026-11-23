@@ -27,6 +27,7 @@ import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
 import com.sep.vox.interfaces.graphql.dto.request.UpdateAssessmentPolicyInput;
 import com.sep.vox.interfaces.graphql.mapper.UpdateAssessmentPolicyGraphQLMapper;
 import com.sep.vox.interfaces.shared.PageArguments;
+import lombok.RequiredArgsConstructor;
 import org.dataloader.DataLoader;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
@@ -41,6 +42,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 @Controller("graphqlAssessmentPolicyController")
+@RequiredArgsConstructor
 public class AssessmentPolicyController {
 
     private final UpdateSystemAssessmentPolicyUseCase updateSystemAssessmentPolicyUseCase;
@@ -50,23 +52,6 @@ public class AssessmentPolicyController {
     private final ViewTeacherAssessmentPoliciesUseCase viewTeacherAssessmentPoliciesUseCase;
     private final ViewSystemAssessmentPolicyDetailsUseCase viewSystemAssessmentPolicyDetailsUseCase;
     private final ViewSchoolAssessmentPolicyDetailsUseCase viewSchoolAssessmentPolicyDetailsUseCase;
-
-    public AssessmentPolicyController(
-            UpdateSystemAssessmentPolicyUseCase updateSystemAssessmentPolicyUseCase,
-            UpdateSchoolAssessmentPolicyUseCase updateSchoolAssessmentPolicyUseCase,
-            ViewSystemAssessmentPoliciesUseCase viewSystemAssessmentPoliciesUseCase,
-            ViewSchoolAssessmentPoliciesUseCase viewSchoolAssessmentPoliciesUseCase,
-            ViewTeacherAssessmentPoliciesUseCase viewTeacherAssessmentPoliciesUseCase,
-            ViewSystemAssessmentPolicyDetailsUseCase viewSystemAssessmentPolicyDetailsUseCase,
-            ViewSchoolAssessmentPolicyDetailsUseCase viewSchoolAssessmentPolicyDetailsUseCase) {
-        this.updateSystemAssessmentPolicyUseCase = updateSystemAssessmentPolicyUseCase;
-        this.updateSchoolAssessmentPolicyUseCase = updateSchoolAssessmentPolicyUseCase;
-        this.viewSystemAssessmentPoliciesUseCase = viewSystemAssessmentPoliciesUseCase;
-        this.viewSchoolAssessmentPoliciesUseCase = viewSchoolAssessmentPoliciesUseCase;
-        this.viewTeacherAssessmentPoliciesUseCase = viewTeacherAssessmentPoliciesUseCase;
-        this.viewSystemAssessmentPolicyDetailsUseCase = viewSystemAssessmentPolicyDetailsUseCase;
-        this.viewSchoolAssessmentPolicyDetailsUseCase = viewSchoolAssessmentPolicyDetailsUseCase;
-    }
 
     // School Admin can read this too: it is the store of TEMPLATE policies a school picks from and
     // copies, the same way a school browses the system's template criteria set. The use case itself

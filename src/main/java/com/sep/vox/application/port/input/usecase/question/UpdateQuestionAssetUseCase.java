@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionBank;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +27,7 @@ import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateQuestionAssetUseCase implements IUseCase<UpdateQuestionAssetCommand, QuestionAssetDto> {
 
     private final QuestionRepository questionRepository;
@@ -34,21 +36,6 @@ public class UpdateQuestionAssetUseCase implements IUseCase<UpdateQuestionAssetC
     private final QuestionAssetRepository questionAssetRepository;
     private final QuestionCloneService questionCloneService;
     private final UserContextPort userContextPort;
-
-    public UpdateQuestionAssetUseCase(
-            QuestionRepository questionRepository,
-            QuestionBankRepository questionBankRepository,
-            QuestionCollaboratorRepository questionCollaboratorRepository,
-            QuestionAssetRepository questionAssetRepository,
-            QuestionCloneService questionCloneService,
-            UserContextPort userContextPort) {
-        this.questionRepository = questionRepository;
-        this.questionBankRepository = questionBankRepository;
-        this.questionCollaboratorRepository = questionCollaboratorRepository;
-        this.questionAssetRepository = questionAssetRepository;
-        this.questionCloneService = questionCloneService;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

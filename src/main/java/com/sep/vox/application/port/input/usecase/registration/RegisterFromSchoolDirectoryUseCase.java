@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +36,7 @@ import com.sep.vox.domain.repository.UserRepository;
 
 
 @Service
+@RequiredArgsConstructor
 public class RegisterFromSchoolDirectoryUseCase implements IUseCase<RegisterFromSchoolDirectoryCommand, RegisterFromSchoolDirectoryResponse> {
 
     private final RegisterFormRepository registerFormRepository;
@@ -45,17 +47,6 @@ public class RegisterFromSchoolDirectoryUseCase implements IUseCase<RegisterFrom
     private final CacheManagerPort cacheManagerPort;
     private final OutboxRepository outboxRepository;
     private final JsonSerializationPort jsonSerializationPort;
-
-    public RegisterFromSchoolDirectoryUseCase(RegisterFormRepository registerFormRepository, RegisterFormDocumentRepository registerFormDocumentRepository, SchoolRepository schoolRepository, SchoolDirectoryRepository schoolDirectoryRepository, UserRepository userRepository, CacheManagerPort cacheManagerPort, OutboxRepository outboxRepository, JsonSerializationPort jsonSerializationPort) {
-        this.registerFormRepository = registerFormRepository;
-        this.registerFormDocumentRepository = registerFormDocumentRepository;
-        this.schoolRepository = schoolRepository;
-        this.schoolDirectoryRepository = schoolDirectoryRepository;
-        this.userRepository = userRepository;
-        this.cacheManagerPort = cacheManagerPort;
-        this.outboxRepository = outboxRepository;
-        this.jsonSerializationPort = jsonSerializationPort;
-    }
 
     private static final List<RegisterFormStatus> blockingFormStatuses = List.of(
         RegisterFormStatus.APPROVED, 

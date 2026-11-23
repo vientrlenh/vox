@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlot;
@@ -16,15 +16,11 @@ import com.sep.vox.infrastructure.persistence.mapper.AssessmentBlueprintSlotMapp
 import com.sep.vox.infrastructure.persistence.repository.SpringDataAssessmentBlueprintSlotRepository;
 
 @Repository
+@RequiredArgsConstructor
+@Slf4j
 public class AssessmentBlueprintSlotRepositoryImpl implements AssessmentBlueprintSlotRepository {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AssessmentBlueprintSlotRepositoryImpl.class);
-
     private final SpringDataAssessmentBlueprintSlotRepository springDataAssessmentBlueprintSlotRepository;
-
-    public AssessmentBlueprintSlotRepositoryImpl(SpringDataAssessmentBlueprintSlotRepository springDataAssessmentBlueprintSlotRepository) {
-        this.springDataAssessmentBlueprintSlotRepository = springDataAssessmentBlueprintSlotRepository;
-    }
 
     @Override
     public AssessmentBlueprintSlot save(AssessmentBlueprintSlot slot) {
@@ -64,7 +60,7 @@ public class AssessmentBlueprintSlotRepositoryImpl implements AssessmentBlueprin
         List<AssessmentBlueprintSlot> result = springDataAssessmentBlueprintSlotRepository.findByBlueprintVersionIdInOrderByOrderAsc(blueprintVersionIds).stream()
             .map(AssessmentBlueprintSlotMapper::toDomain)
             .toList();
-        LOGGER.info("[blueprint-perf] repo AssessmentBlueprintSlotRepositoryImpl.findByBlueprintVersionIdIn versionIds={} tookMs={}",
+        log.info("[blueprint-perf] repo AssessmentBlueprintSlotRepositoryImpl.findByBlueprintVersionIdIn versionIds={} tookMs={}",
             blueprintVersionIds.size(), (System.nanoTime() - startedAt) / 1_000_000);
         return result;
     }
@@ -85,7 +81,7 @@ public class AssessmentBlueprintSlotRepositoryImpl implements AssessmentBlueprin
         List<AssessmentBlueprintSlot> result = springDataAssessmentBlueprintSlotRepository.findBySectionIdInOrderByOrderAsc(sectionIds).stream()
             .map(AssessmentBlueprintSlotMapper::toDomain)
             .toList();
-        LOGGER.info("[blueprint-perf] repo AssessmentBlueprintSlotRepositoryImpl.findBySectionIdIn sectionIds={} tookMs={}",
+        log.info("[blueprint-perf] repo AssessmentBlueprintSlotRepositoryImpl.findBySectionIdIn sectionIds={} tookMs={}",
             sectionIds.size(), (System.nanoTime() - startedAt) / 1_000_000);
         return result;
     }

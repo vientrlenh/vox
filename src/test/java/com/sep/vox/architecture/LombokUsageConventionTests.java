@@ -18,7 +18,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Keeps Lombok out of the inner layers: domain uses none, application uses only {@code @RequiredArgsConstructor} and
- * {@code @Slf4j}. Infrastructure and interfaces have no restriction.
+ * {@code @Slf4j}. Infrastructure and interfaces have no restriction on Lombok types, but loggers come from
+ * {@code @Slf4j} and assignment-only constructors come from {@code @RequiredArgsConstructor} in all three layers.
  *
  * <p>Why scan source text instead of using ArchUnit like {@link LayeredArchitectureTests}: Lombok's annotations have
  * source retention, so they are gone from the bytecode and no bytecode rule can see them.
@@ -41,6 +42,23 @@ class LombokUsageConventionTests {
      * Known debt, not a permission: the list may only shrink. It is empty now, so it must stay empty.
      */
     private static final Set<String> APPLICATION_EXEMPTIONS = Set.of();
+
+    private static final Path INFRASTRUCTURE_DIR = MAIN_ROOT.resolve("infrastructure");
+
+    private static final Path INTERFACES_DIR = MAIN_ROOT.resolve("interfaces");
+
+    private static final Pattern MANUAL_LOGGER = Pattern.compile("\\bLoggerFactory\\s*\\.\\s*getLogger\\b");
+
+    /** A public constructor whose body only assigns each parameter to a field: {@code @RequiredArgsConstructor} does it. */
+    private static final Pattern ASSIGNMENT_ONLY_CONSTRUCTOR =
+        Pattern.compile("public\\s+\\w+\\s*\\([^)]*\\)\\s*\\{\\s*(?:this\\.\\w+\\s*=\\s*\\w+;\\s*)+\\}");
+
+    /**
+     * Known debt, not a permission: the list may only shrink. GradingSampleSelector has two constructors and
+     * RefreshTokenSessionProvider takes a parameter it does not store, so Lombok cannot generate either one.
+     */
+    private static final Set<String> ASSIGNMENT_ONLY_CONSTRUCTOR_EXEMPTIONS =
+        Set.of("GradingSampleSelector.java", "RefreshTokenSessionProvider.java");
 
     @Test
     @DisplayName("domain uses no Lombok")
@@ -79,6 +97,63 @@ class LombokUsageConventionTests {
         assertThat(stale)
             .as("exempted files that no longer use a disallowed Lombok type: remove them from APPLICATION_EXEMPTIONS")
             .isEmpty();
+    }
+
+    @Test
+    @DisplayName("no class creates its logger with LoggerFactory.getLogger; use @Slf4j")
+    void no_manual_logger_under_main() throws IOException {
+        List<Path> files = javaFilesUnder(MAIN_ROOT);
+
+        assertScannedEnough(files);
+        assertThat(filesMatching(files, MANUAL_LOGGER, Set.of()))
+            .as("write @Slf4j and use the generated field `log` instead of LoggerFactory.getLogger")
+            .isEmpty();
+    }
+
+    @Test
+    @DisplayName("no assignment-only constructor in application, infrastructure or interfaces; use @RequiredArgsConstructor")
+    void no_assignment_only_constructor() throws IOException {
+        List<Path> files = outerLayerFiles();
+
+        assertScannedEnough(files);
+        assertThat(filesMatching(files, ASSIGNMENT_ONLY_CONSTRUCTOR, ASSIGNMENT_ONLY_CONSTRUCTOR_EXEMPTIONS))
+            .as("replace the hand-written constructor with @RequiredArgsConstructor")
+            .isEmpty();
+    }
+
+    @Test
+    @DisplayName("every exempted assignment-only constructor file still matches the pattern")
+    void assignment_only_constructor_exemptions_still_apply() throws IOException {
+        List<String> stale = new ArrayList<String>(ASSIGNMENT_ONLY_CONSTRUCTOR_EXEMPTIONS);
+
+        for (Path file : outerLayerFiles()) {
+            if (!filesMatching(List.of(file), ASSIGNMENT_ONLY_CONSTRUCTOR, Set.of()).isEmpty()) {
+                stale.remove(file.getFileName().toString());
+            }
+        }
+
+        assertThat(stale)
+            .as("exempted files without an assignment-only constructor: remove them from the exemption set")
+            .isEmpty();
+    }
+
+    private static List<Path> outerLayerFiles() throws IOException {
+        List<Path> files = new ArrayList<Path>(javaFilesUnder(APPLICATION_DIR));
+        files.addAll(javaFilesUnder(INFRASTRUCTURE_DIR));
+        files.addAll(javaFilesUnder(INTERFACES_DIR));
+        return files;
+    }
+
+    private static List<String> filesMatching(List<Path> files, Pattern pattern, Set<String> exemptFileNames)
+        throws IOException {
+        List<String> offenders = new ArrayList<String>();
+        for (Path file : files) {
+            if (!exemptFileNames.contains(file.getFileName().toString())
+                && pattern.matcher(readWithoutComments(file)).find()) {
+                offenders.add(file.getFileName().toString());
+            }
+        }
+        return offenders;
     }
 
     private static void assertScannedEnough(List<Path> files) {

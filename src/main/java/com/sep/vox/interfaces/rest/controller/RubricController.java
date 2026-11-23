@@ -31,6 +31,7 @@ import com.sep.vox.application.port.input.command.PreviewSchoolRubricVersionImpo
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -119,6 +120,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/rubrics")
+@RequiredArgsConstructor
 public class RubricController {
 
     private final CreateSchoolRubricCriterionUseCase createSchoolRubricCriterionUseCase;
@@ -137,8 +139,6 @@ public class RubricController {
     private final DeleteSystemRubricResultBandUseCase deleteSystemRubricResultBandUseCase;
     private final ChangeSystemRubricVersionStatusUseCase changeSystemRubricVersionStatusUseCase;
     private final ChangeSchoolRubricVersionStatusUseCase changeSchoolRubricVersionStatusUseCase;
-    private final ArchiveSystemRubricVersionUseCase archiveSystemRubricVersionUseCase;
-    private final ArchiveSchoolRubricVersionUseCase archiveSchoolRubricVersionUseCase;
     private final PreviewSystemRubricVersionImportFromFileUseCase previewSystemRubricVersionImportFromFileUseCase;
     private final AcceptSystemRubricVersionImportUseCase acceptSystemRubricVersionImportUseCase;
     private final AddSystemRubricVersionsUseCase addSystemRubricVersionsUseCase;
@@ -153,57 +153,9 @@ public class RubricController {
     private final AcceptSystemRubricResultBandImportUseCase acceptSystemRubricResultBandImportUseCase;
     private final PreviewSchoolRubricResultBandImportFromFileUseCase previewSchoolRubricResultBandImportFromFileUseCase;
     private final AcceptSchoolRubricResultBandImportUseCase acceptSchoolRubricResultBandImportUseCase;
+    private final ArchiveSystemRubricVersionUseCase archiveSystemRubricVersionUseCase;
+    private final ArchiveSchoolRubricVersionUseCase archiveSchoolRubricVersionUseCase;
     private final CloneSystemRubricToSchoolUseCase cloneSystemRubricToSchoolUseCase;
-
-    public RubricController(CreateSchoolRubricCriterionUseCase createSchoolRubricCriterionUseCase,
-                            CreateSchoolRubricUseCase createSchoolRubricUseCase,
-                            CreateSystemRubricUseCase createSystemRubricUseCase,
-                            CreateSystemRubricCriteriaUseCase createSystemRubricCriteriaUseCase,
-                            CreateSchoolRubricResultBandsUseCase createSchoolRubricResultBandsUseCase,
-                            CreateSystemRubricResultBandsUseCase createSystemRubricResultBandsUseCase,
-                            DeleteSchoolRubricVersionUseCase deleteSchoolRubricVersionUseCase,
-                            DeleteSchoolRubricCriterionUseCase deleteSchoolRubricCriterionUseCase,
-                            DeleteSchoolRubricResultBandUseCase deleteSchoolRubricResultBandUseCase,
-                            DeleteSchoolRubricUseCase deleteSchoolRubricUseCase,
-                            DeleteSystemRubricUseCase deleteSystemRubricUseCase,
-                            DeleteSystemRubricVersionUseCase deleteSystemRubricVersionUseCase,
-                            DeleteSystemRubricCriterionUseCase deleteSystemRubricCriterionUseCase, DeleteSystemRubricResultBandUseCase deleteSystemRubricResultBandUseCase, ChangeSystemRubricVersionStatusUseCase changeSystemRubricVersionStatusUseCase,
-                            ChangeSchoolRubricVersionStatusUseCase changeSchoolRubricVersionStatusUseCase, PreviewSystemRubricVersionImportFromFileUseCase previewSystemRubricVersionImportFromFileUseCase, AcceptSystemRubricVersionImportUseCase acceptSystemRubricVersionImportUseCase, AddSystemRubricVersionsUseCase addSystemRubricVersionsUseCase, AcceptSchoolRubricVersionImportUseCase acceptSchoolRubricVersionImportUseCase, PreviewSchoolRubricVersionImportFromFileUseCase previewSchoolRubricVersionImportFromFileUseCase, AddSchoolRubricVersionsUseCase addSchoolRubricVersionsUseCase, PreviewSystemRubricCriterionImportFromFileUseCase previewSystemRubricCriterionImportFromFileUseCase, AcceptSystemRubricCriterionImportUseCase acceptSystemRubricCriterionImportUseCase, PreviewSchoolRubricCriterionImportFromFileUseCase previewSchoolRubricCriterionImportFromFileUseCase1, AcceptSchoolRubricCriterionImportUseCase acceptSchoolRubricCriterionImportUseCase, PreviewSystemRubricResultBandImportFromFileUseCase previewSystemRubricResultBandImportFromFileUseCase, AcceptSystemRubricResultBandImportUseCase acceptSystemRubricResultBandImportUseCase, PreviewSchoolRubricResultBandImportFromFileUseCase previewSchoolRubricResultBandImportFromFileUseCase, AcceptSchoolRubricResultBandImportUseCase acceptSchoolRubricResultBandImportUseCase, ArchiveSystemRubricVersionUseCase archiveSystemRubricVersionUseCase, ArchiveSchoolRubricVersionUseCase archiveSchoolRubricVersionUseCase,
-                            CloneSystemRubricToSchoolUseCase cloneSystemRubricToSchoolUseCase) {
-        this.createSchoolRubricCriterionUseCase = createSchoolRubricCriterionUseCase;
-        this.createSchoolRubricUseCase = createSchoolRubricUseCase;
-        this.createSystemRubricUseCase = createSystemRubricUseCase;
-        this.createSystemRubricCriteriaUseCase = createSystemRubricCriteriaUseCase;
-        this.createSchoolRubricResultBandsUseCase = createSchoolRubricResultBandsUseCase;
-        this.createSystemRubricResultBandsUseCase = createSystemRubricResultBandsUseCase;
-        this.deleteSchoolRubricVersionUseCase = deleteSchoolRubricVersionUseCase;
-        this.deleteSchoolRubricCriterionUseCase = deleteSchoolRubricCriterionUseCase;
-        this.deleteSchoolRubricResultBandUseCase = deleteSchoolRubricResultBandUseCase;
-        this.deleteSchoolRubricUseCase = deleteSchoolRubricUseCase;
-        this.deleteSystemRubricUseCase = deleteSystemRubricUseCase;
-        this.deleteSystemRubricVersionUseCase = deleteSystemRubricVersionUseCase;
-        this.deleteSystemRubricCriterionUseCase = deleteSystemRubricCriterionUseCase;
-        this.deleteSystemRubricResultBandUseCase = deleteSystemRubricResultBandUseCase;
-        this.changeSystemRubricVersionStatusUseCase = changeSystemRubricVersionStatusUseCase;
-        this.changeSchoolRubricVersionStatusUseCase = changeSchoolRubricVersionStatusUseCase;
-        this.previewSystemRubricVersionImportFromFileUseCase = previewSystemRubricVersionImportFromFileUseCase;
-        this.acceptSystemRubricVersionImportUseCase = acceptSystemRubricVersionImportUseCase;
-        this.addSystemRubricVersionsUseCase = addSystemRubricVersionsUseCase;
-        this.acceptSchoolRubricVersionImportUseCase = acceptSchoolRubricVersionImportUseCase;
-        this.previewSchoolRubricVersionImportFromFileUseCase = previewSchoolRubricVersionImportFromFileUseCase;
-        this.addSchoolRubricVersionsUseCase = addSchoolRubricVersionsUseCase;
-        this.previewSystemRubricCriterionImportFromFileUseCase = previewSystemRubricCriterionImportFromFileUseCase;
-        this.acceptSystemRubricCriterionImportUseCase = acceptSystemRubricCriterionImportUseCase;
-        this.previewSchoolRubricCriterionImportFromFileUseCase = previewSchoolRubricCriterionImportFromFileUseCase1;
-        this.acceptSchoolRubricCriterionImportUseCase = acceptSchoolRubricCriterionImportUseCase;
-        this.previewSystemRubricResultBandImportFromFileUseCase = previewSystemRubricResultBandImportFromFileUseCase;
-        this.acceptSystemRubricResultBandImportUseCase = acceptSystemRubricResultBandImportUseCase;
-        this.previewSchoolRubricResultBandImportFromFileUseCase = previewSchoolRubricResultBandImportFromFileUseCase;
-        this.acceptSchoolRubricResultBandImportUseCase = acceptSchoolRubricResultBandImportUseCase;
-        this.archiveSystemRubricVersionUseCase = archiveSystemRubricVersionUseCase;
-        this.archiveSchoolRubricVersionUseCase = archiveSchoolRubricVersionUseCase;
-        this.cloneSystemRubricToSchoolUseCase = cloneSystemRubricToSchoolUseCase;
-    }
 
     //==========================RUBRIC  & RUBRIC VERSION===================================
 

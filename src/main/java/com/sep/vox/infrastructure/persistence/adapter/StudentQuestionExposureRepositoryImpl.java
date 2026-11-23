@@ -3,6 +3,7 @@ package com.sep.vox.infrastructure.persistence.adapter;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,13 +12,10 @@ import com.sep.vox.infrastructure.persistence.entity.question.StudentQuestionExp
 import com.sep.vox.infrastructure.persistence.repository.SpringDataStudentQuestionExposureRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class StudentQuestionExposureRepositoryImpl implements StudentQuestionExposureRepository {
 
     private final SpringDataStudentQuestionExposureRepository repository;
-
-    public StudentQuestionExposureRepositoryImpl(SpringDataStudentQuestionExposureRepository repository) {
-        this.repository = repository;
-    }
 
     @Override
     @Transactional

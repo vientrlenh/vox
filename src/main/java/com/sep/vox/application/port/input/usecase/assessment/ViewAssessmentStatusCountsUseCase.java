@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.assessment;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,23 +15,13 @@ import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewAssessmentStatusCountsUseCase implements IUseCase<ViewAssessmentStatusCountsQuery, AssessmentStatusCountsDto> {
 
     private final AssessmentStatusCountsQueryRepository assessmentStatusCountsQueryRepository;
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
-
-    public ViewAssessmentStatusCountsUseCase(
-            AssessmentStatusCountsQueryRepository assessmentStatusCountsQueryRepository,
-            UserContextPort userContextPort,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository) {
-        this.assessmentStatusCountsQueryRepository = assessmentStatusCountsQueryRepository;
-        this.userContextPort = userContextPort;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

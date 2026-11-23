@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.balance;
 import com.sep.vox.domain.model.school.SchoolBalanceEntry;
 import java.time.Instant;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,18 +17,12 @@ import com.sep.vox.domain.repository.SchoolBalanceEntryRepository;
 
 /** Sao kê ví của một trường, mới nhất trước. */
 @Service
+@RequiredArgsConstructor
 public class ViewSchoolBalanceEntriesUseCase
         implements IUseCase<ViewSchoolBalanceEntriesQuery, PageResult<SchoolBalanceEntryDto>> {
 
     private final SchoolBalanceEntryRepository schoolBalanceEntryRepository;
     private final SchoolScopedReadGuard schoolScopedReadGuard;
-
-    public ViewSchoolBalanceEntriesUseCase(
-            SchoolBalanceEntryRepository schoolBalanceEntryRepository,
-            SchoolScopedReadGuard schoolScopedReadGuard) {
-        this.schoolBalanceEntryRepository = schoolBalanceEntryRepository;
-        this.schoolScopedReadGuard = schoolScopedReadGuard;
-    }
 
     @Override
     @Transactional(readOnly = true)

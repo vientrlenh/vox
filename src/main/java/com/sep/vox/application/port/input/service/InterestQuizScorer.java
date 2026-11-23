@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.domain.repository.InterestDimensionRepository;
@@ -21,13 +22,10 @@ import com.sep.vox.domain.repository.InterestDimensionRepository;
  * hết thay vì chia cho 0.
  */
 @Service
+@RequiredArgsConstructor
 public class InterestQuizScorer {
 
     private final InterestDimensionRepository dimensionRepository;
-
-    public InterestQuizScorer(InterestDimensionRepository dimensionRepository) {
-        this.dimensionRepository = dimensionRepository;
-    }
 
     /** The dimensions that are put to the student in the quiz -- excluding system dimensions such as ACADEMIC_ASSESSMENT. */
     public List<String> quizDimensionCodes() {

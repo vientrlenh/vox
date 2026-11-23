@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,21 +25,13 @@ import com.sep.vox.domain.repository.AssessmentScheduleRepository;
  * inside the transaction at write time. This is not a protection layer.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewStudentBusySlotsUseCase
         implements IUseCase<ViewStudentBusySlotsQuery, List<StudentBusySlotResponse>> {
 
     private final AssessmentScheduleRepository assessmentScheduleRepository;
     private final AssessmentCandidateRepository assessmentCandidateRepository;
     private final AssessmentDirectoryAccessService assessmentDirectoryAccessService;
-
-    public ViewStudentBusySlotsUseCase(
-            AssessmentScheduleRepository assessmentScheduleRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            AssessmentDirectoryAccessService assessmentDirectoryAccessService) {
-        this.assessmentScheduleRepository = assessmentScheduleRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.assessmentDirectoryAccessService = assessmentDirectoryAccessService;
-    }
 
     @Override
     @Transactional(readOnly = true)

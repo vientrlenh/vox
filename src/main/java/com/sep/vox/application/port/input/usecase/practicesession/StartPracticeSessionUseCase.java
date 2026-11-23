@@ -7,6 +7,7 @@ import com.sep.vox.application.port.output.PracticeAgentAvailabilityPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.PracticeSession;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
@@ -17,20 +18,12 @@ import org.springframework.stereotype.Service;
  * StartPracticeSessionPersistenceService, transaction riêng, chạy SAU khi readiness-check xong.
  */
 @Service
+@RequiredArgsConstructor
 public class StartPracticeSessionUseCase implements IUseCase<StartPracticeSessionCommand, PracticeSession> {
 
     private final PracticeAgentAvailabilityPort agentAvailabilityPort;
     private final StartPracticeSessionPersistenceService persistenceService;
     private final UserContextPort userContextPort;
-
-    public StartPracticeSessionUseCase(
-            PracticeAgentAvailabilityPort agentAvailabilityPort,
-            StartPracticeSessionPersistenceService persistenceService,
-            UserContextPort userContextPort) {
-        this.agentAvailabilityPort = agentAvailabilityPort;
-        this.persistenceService = persistenceService;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     public PracticeSession execute(StartPracticeSessionCommand input) {

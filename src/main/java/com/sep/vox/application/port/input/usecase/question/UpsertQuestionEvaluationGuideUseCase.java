@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.question;
 import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionBank;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,7 @@ import com.sep.vox.domain.repository.QuestionEvaluationGuideRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 
 @Service
+@RequiredArgsConstructor
 public class UpsertQuestionEvaluationGuideUseCase implements IUseCase<UpsertQuestionEvaluationGuideCommand, QuestionEvaluationGuideDto> {
 
     private final QuestionRepository questionRepository;
@@ -32,21 +34,6 @@ public class UpsertQuestionEvaluationGuideUseCase implements IUseCase<UpsertQues
     private final QuestionEvaluationGuideRepository questionEvaluationGuideRepository;
     private final QuestionCloneService questionCloneService;
     private final UserContextPort userContextPort;
-
-    public UpsertQuestionEvaluationGuideUseCase(
-            QuestionRepository questionRepository,
-            QuestionBankRepository questionBankRepository,
-            QuestionCollaboratorRepository questionCollaboratorRepository,
-            QuestionEvaluationGuideRepository questionEvaluationGuideRepository,
-            QuestionCloneService questionCloneService,
-            UserContextPort userContextPort) {
-        this.questionRepository = questionRepository;
-        this.questionBankRepository = questionBankRepository;
-        this.questionCollaboratorRepository = questionCollaboratorRepository;
-        this.questionEvaluationGuideRepository = questionEvaluationGuideRepository;
-        this.questionCloneService = questionCloneService;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

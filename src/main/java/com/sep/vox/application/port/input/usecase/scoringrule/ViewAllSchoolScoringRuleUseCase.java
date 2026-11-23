@@ -6,6 +6,7 @@ import com.sep.vox.domain.model.scoringrule.ScoringRule;
 import com.sep.vox.domain.model.user.User;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewAllSchoolScoringRuleUseCase implements IUseCase<ViewAllSchoolScoringRuleQuery, PageResult<ScoringRuleDto>> {
 
     private final ScoringRuleRepository scoringRuleRepository;
@@ -33,21 +35,6 @@ public class ViewAllSchoolScoringRuleUseCase implements IUseCase<ViewAllSchoolSc
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
     private final ScoringRuleDtoMapper scoringRuleDtoMapper;
-
-    public ViewAllSchoolScoringRuleUseCase(
-            ScoringRuleRepository scoringRuleRepository,
-            AssessmentPolicyRepository assessmentPolicyRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort,
-            ScoringRuleDtoMapper scoringRuleDtoMapper) {
-        this.scoringRuleRepository = scoringRuleRepository;
-        this.assessmentPolicyRepository = assessmentPolicyRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-        this.scoringRuleDtoMapper = scoringRuleDtoMapper;
-    }
 
     @Override
     @Transactional(readOnly = true)

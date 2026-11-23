@@ -11,8 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -23,11 +22,8 @@ import com.sep.vox.application.port.output.TopicGenerationPort;
 import com.sep.vox.domain.service.personalization.TensePolicy;
 
 @Service
+@Slf4j
 public class TopicGenerationClient implements TopicGenerationPort {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(
-        TopicGenerationClient.class
-    );
 
     private final HttpClient httpClient;
     private final JsonMapper jsonMapper;
@@ -90,7 +86,7 @@ public class TopicGenerationClient implements TopicGenerationPort {
         try {
             HttpResponse<String> response = send(proposeUri, body);
             if (response.statusCode() / 100 != 2) {
-                LOGGER.warn(
+                log.warn(
                     "Topic proposal endpoint returned status {}: {}",
                     response.statusCode(),
                     response.body()
@@ -130,7 +126,7 @@ public class TopicGenerationClient implements TopicGenerationPort {
             }
             return proposals;
         } catch (Exception exception) {
-            LOGGER.warn(
+            log.warn(
                 "Topic proposal endpoint unavailable; no topic was generated",
                 exception
             );
@@ -159,7 +155,7 @@ public class TopicGenerationClient implements TopicGenerationPort {
         try {
             HttpResponse<String> response = send(indexUri, body);
             if (response.statusCode() / 100 != 2) {
-                LOGGER.warn(
+                log.warn(
                     "Topic index endpoint returned status {} for {}: {}",
                     response.statusCode(),
                     topicId,
@@ -167,7 +163,7 @@ public class TopicGenerationClient implements TopicGenerationPort {
                 );
             }
         } catch (Exception exception) {
-            LOGGER.warn(
+            log.warn(
                 "Topic index endpoint unavailable for {}",
                 topicId,
                 exception
@@ -211,7 +207,7 @@ public class TopicGenerationClient implements TopicGenerationPort {
         try {
             HttpResponse<String> response = send(searchUri, body);
             if (response.statusCode() / 100 != 2) {
-                LOGGER.warn(
+                log.warn(
                     "Topic search endpoint returned status {}: {}",
                     response.statusCode(),
                     response.body()
@@ -227,7 +223,7 @@ public class TopicGenerationClient implements TopicGenerationPort {
             }
             return hits;
         } catch (Exception exception) {
-            LOGGER.warn("Topic search endpoint unavailable; falling back to name search only",
+            log.warn("Topic search endpoint unavailable; falling back to name search only",
                 exception);
             return List.of();
         }

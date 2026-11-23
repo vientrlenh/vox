@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
 import com.sep.vox.domain.model.framework.FrameworkVersion;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.NotFoundException;
@@ -11,13 +12,10 @@ import com.sep.vox.domain.mapper.FrameworkVersionDtoMapper;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewFrameworkVersionDetailsUseCase implements IUseCase<ViewFrameworkVersionDetailsQuery, FrameworkVersionDto> {
 
     private final FrameworkVersionRepository frameworkVersionRepository;
-
-    public ViewFrameworkVersionDetailsUseCase(FrameworkVersionRepository frameworkVersionRepository) {
-        this.frameworkVersionRepository = frameworkVersionRepository;
-    }
 
     @Override
     public FrameworkVersionDto execute(ViewFrameworkVersionDetailsQuery input) {

@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,17 +22,11 @@ import com.sep.vox.domain.repository.AssessmentGradingAssignmentRepository;
  * viên xứng đáng được nhắc lại theo hạn đó thay vì bị coi như đã nhắc rồi.
  */
 @Service
+@RequiredArgsConstructor
 public class SetGradingDeadlineUseCase implements IUseCase<SetGradingDeadlineCommand, List<UUID>> {
 
     private final AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository;
     private final AssessmentGradingAccessService assessmentGradingAccessService;
-
-    public SetGradingDeadlineUseCase(
-            AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository,
-            AssessmentGradingAccessService assessmentGradingAccessService) {
-        this.assessmentGradingAssignmentRepository = assessmentGradingAssignmentRepository;
-        this.assessmentGradingAccessService = assessmentGradingAccessService;
-    }
 
     @Override
     @Transactional

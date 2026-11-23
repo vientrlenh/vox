@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import com.sep.vox.application.exception.DataConflictException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.common.StringNormalization;
@@ -22,17 +23,12 @@ import com.sep.vox.domain.model.school.SchoolDirectory;
 import com.sep.vox.domain.repository.SchoolDirectoryRepository;
 
 @Service
+@RequiredArgsConstructor
 public class SchoolDirectoryImportCommitHandler implements ImportCommitHandler {
 
     private final SchoolDirectoryRepository schoolDirectoryRepository;
     private final JsonSerializationPort jsonSerializationPort;
     private final RequiresNewTransactionPort requiresNewTransactionPort;
-
-    public SchoolDirectoryImportCommitHandler(SchoolDirectoryRepository schoolDirectoryRepository, JsonSerializationPort jsonSerializationPort, RequiresNewTransactionPort requiresNewTransactionPort) {
-        this.schoolDirectoryRepository = schoolDirectoryRepository;
-        this.jsonSerializationPort = jsonSerializationPort;
-        this.requiresNewTransactionPort = requiresNewTransactionPort;
-    }
 
     private static final Pattern DOMAIN_PATTERN = Pattern.compile("^([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+edu\\.vn$", Pattern.CASE_INSENSITIVE);
 

@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -24,13 +25,10 @@ import com.sep.vox.infrastructure.persistence.repository.SpringDataSupportedLang
 import com.sep.vox.infrastructure.persistence.DataConflictTranslation;
 
 @Repository
+@RequiredArgsConstructor
 public class SupportedLanguageRepositoryImpl implements SupportedLanguageRepository {
 
     private final SpringDataSupportedLanguageRepository springDataSupportedLanguageRepository;
-
-    public SupportedLanguageRepositoryImpl(SpringDataSupportedLanguageRepository springDataSupportedLanguageRepository) {
-        this.springDataSupportedLanguageRepository = springDataSupportedLanguageRepository;
-    }
 
     @Override
     public Optional<SupportedLanguage> findById(UUID id) {

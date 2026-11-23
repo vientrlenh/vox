@@ -22,6 +22,7 @@ import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +30,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class PublishSchoolAssessmentPoliciesByRubricVersionUseCase
         implements IUseCase<PublishSchoolAssessmentPoliciesByRubricVersionCommand, List<UUID>> {
 
@@ -39,23 +41,6 @@ public class PublishSchoolAssessmentPoliciesByRubricVersionUseCase
     private final SchoolUserRepository schoolUserRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
-
-    public PublishSchoolAssessmentPoliciesByRubricVersionUseCase(
-            AssessmentPolicyRepository assessmentPolicyRepository,
-            FrameworkVersionRepository frameworkVersionRepository,
-            RubricVersionRepository rubricVersionRepository,
-            SchoolRepository schoolRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort) {
-        this.assessmentPolicyRepository = assessmentPolicyRepository;
-        this.frameworkVersionRepository = frameworkVersionRepository;
-        this.rubricVersionRepository = rubricVersionRepository;
-        this.schoolRepository = schoolRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

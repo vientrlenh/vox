@@ -1,18 +1,16 @@
 package com.sep.vox.infrastructure.security;
 
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import com.sep.vox.application.port.output.OneTimePasswordPort;
 
 @Component
+@RequiredArgsConstructor
 public class OneTimePasswordProvider implements OneTimePasswordPort {
 
     private final SecureTokenProvider secureTokenProvider;
-
-    public OneTimePasswordProvider(SecureTokenProvider secureTokenProvider) {
-        this.secureTokenProvider = secureTokenProvider;
-    }
 
     @Override
     public String generate(int size) {

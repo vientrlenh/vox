@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +31,7 @@ import com.sep.vox.domain.service.personalization.SessionDiagnosisPolicy;
  * việc của một adapter CRUD đơn lẻ.
  */
 @Service
+@RequiredArgsConstructor
 public class InterestVectorService {
 
     private final TopicInterestEventRepository eventRepository;
@@ -37,19 +39,6 @@ public class InterestVectorService {
     private final DimensionInterestScoreRepository dimensionScoreRepository;
     private final LearnerProfileRepository learnerProfileRepository;
     private final PracticeTopicRepository topicRepository;
-
-    public InterestVectorService(
-            TopicInterestEventRepository eventRepository,
-            TopicInterestScoreRepository scoreRepository,
-            DimensionInterestScoreRepository dimensionScoreRepository,
-            LearnerProfileRepository learnerProfileRepository,
-            PracticeTopicRepository topicRepository) {
-        this.eventRepository = eventRepository;
-        this.scoreRepository = scoreRepository;
-        this.dimensionScoreRepository = dimensionScoreRepository;
-        this.learnerProfileRepository = learnerProfileRepository;
-        this.topicRepository = topicRepository;
-    }
 
     @Transactional
     public void appendInterestEvent(

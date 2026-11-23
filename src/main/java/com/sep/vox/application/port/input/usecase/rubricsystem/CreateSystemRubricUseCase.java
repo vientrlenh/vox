@@ -15,12 +15,14 @@ import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class CreateSystemRubricUseCase implements IUseCase<CreateSystemRubricCommand, UUID> {
 
     private final RubricRepository rubricRepository;
@@ -28,19 +30,6 @@ public class CreateSystemRubricUseCase implements IUseCase<CreateSystemRubricCom
     private final UserContextPort userContextPort;
     private final SupportedLanguageRepository languageRepository;
     private final FrameworkRepository frameworkRepository;
-
-    public CreateSystemRubricUseCase(
-            RubricRepository rubricRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort,
-            SupportedLanguageRepository languageRepository,
-            FrameworkRepository frameworkRepository) {
-        this.rubricRepository = rubricRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-        this.languageRepository = languageRepository;
-        this.frameworkRepository = frameworkRepository;
-    }
 
     @Override
     @Transactional

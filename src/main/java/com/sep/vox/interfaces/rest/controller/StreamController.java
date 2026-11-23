@@ -2,6 +2,7 @@ package com.sep.vox.interfaces.rest.controller;
 
 import com.sep.vox.application.port.input.command.IssueMonitorTokenCommand;
 import com.sep.vox.application.port.input.command.IssueStudentStreamTokenCommand;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,15 +23,11 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/streams")
+@RequiredArgsConstructor
 public class StreamController {
     
     private final IssueStudentStreamTokenUseCase issueStudentStreamTokenUseCase;
     private final IssueMonitorTokenUseCase issueMonitorTokenUseCase;
-
-    public StreamController(IssueStudentStreamTokenUseCase issueStudentStreamTokenUseCase, IssueMonitorTokenUseCase issueMonitorTokenUseCase) {
-        this.issueStudentStreamTokenUseCase = issueStudentStreamTokenUseCase; 
-        this.issueMonitorTokenUseCase = issueMonitorTokenUseCase;
-    }
 
     @PostMapping("/student/token")
     @PreAuthorize("hasRole('STUDENT')")

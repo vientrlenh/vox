@@ -9,8 +9,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,17 +41,11 @@ import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
  * {@code school_balances}, nên bất biến SUM(entries) = balance_vnd không liên quan.
  */
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class CarryQuotaFundingAtPeriodStartService {
 
-    private static final Logger LOGGER =
-        LoggerFactory.getLogger(CarryQuotaFundingAtPeriodStartService.class);
-
     private final SchoolSubscriptionQuotaRecordRepository quotaRecordRepository;
-
-    public CarryQuotaFundingAtPeriodStartService(
-            SchoolSubscriptionQuotaRecordRepository quotaRecordRepository) {
-        this.quotaRecordRepository = quotaRecordRepository;
-    }
 
     /**
      * @return số ví đã nhận tiền mang sang. 0 là trạng thái bình thường -- chỉ gia hạn sớm mới sinh hẹn.
@@ -99,7 +93,7 @@ public class CarryQuotaFundingAtPeriodStartService {
         quotaRecordRepository.addFundingFromBalance(target.getId(), unspentVnd);
         quotaRecordRepository.clearFundingCarry(target.getId());
 
-        LOGGER.info("Kỳ {} bắt đầu: mang {}đ tiền tự nạp chưa tiêu của ví {} từ kỳ {} sang",
+        log.info("Kỳ {} bắt đầu: mang {}đ tiền tự nạp chưa tiêu của ví {} từ kỳ {} sang",
             target.getSchoolSubscriptionId(), unspentVnd, target.getQuotaType(), sourceSubscriptionId);
         return true;
     }
@@ -120,7 +114,7 @@ public class CarryQuotaFundingAtPeriodStartService {
         for (SchoolSubscriptionQuotaRecord pool : sourcePools) {
             BigDecimal unspentVnd = pool.unspentFundedVnd();
             if (unspentVnd.signum() > 0 && !carriedTypes.contains(pool.getQuotaType())) {
-                LOGGER.warn("Kỳ {} còn {}đ tiền tự nạp chưa tiêu ở ví {} nhưng kỳ kế tiếp không có loại"
+                log.warn("Kỳ {} còn {}đ tiền tự nạp chưa tiêu ở ví {} nhưng kỳ kế tiếp không có loại"
                     + " hạn mức này -- khoản đó nằm lại và cần xử lý tay.",
                     sourceSubscriptionId, unspentVnd, pool.getQuotaType());
             }

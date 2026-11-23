@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.service;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,17 +21,11 @@ import com.sep.vox.domain.service.assessment.GradingScopeKind;
  * bỏ quên là một đường vòng để lấy nguyên bảng điểm của trường.
  */
 @Service
+@RequiredArgsConstructor
 public class AssessmentScoreExportSupport {
 
     private final AssessmentGradingQueryRepository assessmentGradingQueryRepository;
     private final AssessmentGradingAccessService assessmentGradingAccessService;
-
-    public AssessmentScoreExportSupport(
-            AssessmentGradingQueryRepository assessmentGradingQueryRepository,
-            AssessmentGradingAccessService assessmentGradingAccessService) {
-        this.assessmentGradingQueryRepository = assessmentGradingQueryRepository;
-        this.assessmentGradingAccessService = assessmentGradingAccessService;
-    }
 
     @Transactional(readOnly = true)
     public List<AssessmentScoreRowInfo> loadRows(ExportAssessmentScoresQuery input) {

@@ -4,8 +4,8 @@ import java.math.BigDecimal;
 import java.time.Instant;
 
 import java.util.Optional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.domain.model.financial.CurrencyCode;
@@ -21,27 +21,18 @@ import com.sep.vox.infrastructure.properties.ExchangeRateApiProperties;
  * safe bounds before returning, so whatever is fetched is stored directly.
  */
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class ExchangeRateRefreshService {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(ExchangeRateRefreshService.class);
 
     private final ExchangeRateApiClient exchangeRateApiClient;
     private final ExchangeRateSnapshotRepository exchangeRateSnapshotRepository;
     private final ExchangeRateApiProperties exchangeRateApiProperties;
 
-    public ExchangeRateRefreshService(
-            ExchangeRateApiClient exchangeRateApiClient,
-            ExchangeRateSnapshotRepository exchangeRateSnapshotRepository,
-            ExchangeRateApiProperties exchangeRateApiProperties) {
-        this.exchangeRateApiClient = exchangeRateApiClient;
-        this.exchangeRateSnapshotRepository = exchangeRateSnapshotRepository;
-        this.exchangeRateApiProperties = exchangeRateApiProperties;
-    }
-
     public void refresh() {
         Optional<BigDecimal> rate = exchangeRateApiClient.fetchUsdToVndRate();
         if (rate.isEmpty()) {
-            LOGGER.info("[exchange-rate] Bỏ qua lần refresh này -- giữ nguyên snapshot mới nhất hiện có");
+            log.info("[exchange-rate] Bỏ qua lần refresh này -- giữ nguyên snapshot mới nhất hiện có");
             return;
         }
 
@@ -55,6 +46,6 @@ public class ExchangeRateRefreshService {
             .sourceUrl(exchangeRateApiProperties.baseUrl())
             .build();
         exchangeRateSnapshotRepository.save(snapshot);
-        LOGGER.info("[exchange-rate] Đã lưu snapshot tỷ giá mới: {}", rate.get());
+        log.info("[exchange-rate] Đã lưu snapshot tỷ giá mới: {}", rate.get());
     }
 }

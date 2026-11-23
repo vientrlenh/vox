@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.service;
 
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.PlanLimitExceededException;
@@ -14,13 +15,10 @@ import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
  * ClassTestTokenQuotaGuardService.
  */
 @Service
+@RequiredArgsConstructor
 public class SchoolSubscriptionActiveGuardService {
 
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
-
-    public SchoolSubscriptionActiveGuardService(SchoolSubscriptionRepository schoolSubscriptionRepository) {
-        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
-    }
 
     public void requireActiveForSchool(UUID schoolId, String actionLabel) {
         schoolSubscriptionRepository.findActiveBySchoolId(schoolId)

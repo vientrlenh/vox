@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.subscription;
 import java.util.Comparator;
 import java.util.List;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
@@ -14,15 +15,11 @@ import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewSchoolSubscriptionHistoryUseCase implements IUseCase<ViewSchoolSubscriptionHistoryQuery, List<SchoolSubscriptionDto>> {
 
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final UserContextPort userContextPort;
-
-    public ViewSchoolSubscriptionHistoryUseCase(SchoolSubscriptionRepository schoolSubscriptionRepository, UserContextPort userContextPort) {
-        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     public List<SchoolSubscriptionDto> execute(ViewSchoolSubscriptionHistoryQuery input) {

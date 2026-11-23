@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.assessmentblueprint;
 
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersion;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +21,7 @@ import com.sep.vox.domain.repository.AssessmentBlueprintVersionRepository;
 import com.sep.vox.domain.valueobject.QuestionSelectionSpec;
 
 @Service
+@RequiredArgsConstructor
 public class DuplicateAssessmentBlueprintVersionUseCase
         implements IUseCase<DuplicateAssessmentBlueprintVersionCommand, AssessmentBlueprintVersionDto> {
 
@@ -27,17 +29,6 @@ public class DuplicateAssessmentBlueprintVersionUseCase
     private final AssessmentBlueprintSectionRepository assessmentBlueprintSectionRepository;
     private final AssessmentBlueprintSlotRepository assessmentBlueprintSlotRepository;
     private final CreateAssessmentBlueprintVersionUseCase createAssessmentBlueprintVersionUseCase;
-
-    public DuplicateAssessmentBlueprintVersionUseCase(
-            AssessmentBlueprintVersionRepository assessmentBlueprintVersionRepository,
-            AssessmentBlueprintSectionRepository assessmentBlueprintSectionRepository,
-            AssessmentBlueprintSlotRepository assessmentBlueprintSlotRepository,
-            CreateAssessmentBlueprintVersionUseCase createAssessmentBlueprintVersionUseCase) {
-        this.assessmentBlueprintVersionRepository = assessmentBlueprintVersionRepository;
-        this.assessmentBlueprintSectionRepository = assessmentBlueprintSectionRepository;
-        this.assessmentBlueprintSlotRepository = assessmentBlueprintSlotRepository;
-        this.createAssessmentBlueprintVersionUseCase = createAssessmentBlueprintVersionUseCase;
-    }
 
     @Override
     @Transactional

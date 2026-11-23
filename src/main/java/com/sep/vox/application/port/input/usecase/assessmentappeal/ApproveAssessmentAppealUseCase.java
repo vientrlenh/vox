@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.assessment.AssessmentResultAppeal;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,17 +15,11 @@ import com.sep.vox.domain.model.assessment.AssessmentAppealStatus;
 import com.sep.vox.domain.repository.AssessmentResultAppealRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ApproveAssessmentAppealUseCase implements IUseCase<ApproveAssessmentAppealCommand, UUID> {
 
     private final AssessmentResultAppealRepository assessmentResultAppealRepository;
     private final AssessmentAppealAccessService assessmentAppealAccessService;
-
-    public ApproveAssessmentAppealUseCase(
-            AssessmentResultAppealRepository assessmentResultAppealRepository,
-            AssessmentAppealAccessService assessmentAppealAccessService) {
-        this.assessmentResultAppealRepository = assessmentResultAppealRepository;
-        this.assessmentAppealAccessService = assessmentAppealAccessService;
-    }
 
     @Override
     @Transactional

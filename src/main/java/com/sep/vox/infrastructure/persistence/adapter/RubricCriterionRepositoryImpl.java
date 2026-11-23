@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import com.sep.vox.domain.common.PageResult;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -23,13 +24,10 @@ import com.sep.vox.infrastructure.persistence.repository.SpringDataRubricCriteri
 import com.sep.vox.infrastructure.persistence.DataConflictTranslation;
 
 @Repository
+@RequiredArgsConstructor
 public class RubricCriterionRepositoryImpl implements RubricCriterionRepository {
 
     private final SpringDataRubricCriterionRepository springDataRubricCriterionRepository;
-
-    public RubricCriterionRepositoryImpl(SpringDataRubricCriterionRepository springDataRubricCriterionRepository) {
-        this.springDataRubricCriterionRepository = springDataRubricCriterionRepository;
-    }
 
     @Override
     public Optional<RubricCriterion> findById(UUID id) {

@@ -16,6 +16,7 @@ import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class ArchiveSystemRubricVersionUseCase implements IUseCase<ArchiveSystemRubricVersionCommand, UUID> {
 
     private final RubricVersionRepository rubricVersionRepository;
@@ -30,19 +32,6 @@ public class ArchiveSystemRubricVersionUseCase implements IUseCase<ArchiveSystem
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
     private final AssessmentPolicyRepository assessmentPolicyRepository;
-
-    public ArchiveSystemRubricVersionUseCase(
-            RubricVersionRepository rubricVersionRepository,
-            RubricRepository rubricRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort,
-            AssessmentPolicyRepository assessmentPolicyRepository) {
-        this.rubricVersionRepository = rubricVersionRepository;
-        this.rubricRepository = rubricRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-        this.assessmentPolicyRepository = assessmentPolicyRepository;
-    }
 
     @Override
     @Transactional

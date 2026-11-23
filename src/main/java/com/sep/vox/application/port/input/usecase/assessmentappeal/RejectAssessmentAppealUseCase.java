@@ -5,6 +5,7 @@ import com.sep.vox.domain.model.assessment.AssessmentResultAppeal;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,7 @@ import com.sep.vox.domain.repository.AssessmentResultAppealRepository;
 import com.sep.vox.domain.repository.OutboxRepository;
 
 @Service
+@RequiredArgsConstructor
 public class RejectAssessmentAppealUseCase implements IUseCase<RejectAssessmentAppealCommand, UUID> {
 
     private final AssessmentResultAppealRepository assessmentResultAppealRepository;
@@ -30,19 +32,6 @@ public class RejectAssessmentAppealUseCase implements IUseCase<RejectAssessmentA
     private final AssessmentAppealAccessService assessmentAppealAccessService;
     private final OutboxRepository outboxRepository;
     private final JsonSerializationPort jsonSerializationPort;
-
-    public RejectAssessmentAppealUseCase(
-            AssessmentResultAppealRepository assessmentResultAppealRepository,
-            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
-            AssessmentAppealAccessService assessmentAppealAccessService,
-            OutboxRepository outboxRepository,
-            JsonSerializationPort jsonSerializationPort) {
-        this.assessmentResultAppealRepository = assessmentResultAppealRepository;
-        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
-        this.assessmentAppealAccessService = assessmentAppealAccessService;
-        this.outboxRepository = outboxRepository;
-        this.jsonSerializationPort = jsonSerializationPort;
-    }
 
     @Override
     @Transactional

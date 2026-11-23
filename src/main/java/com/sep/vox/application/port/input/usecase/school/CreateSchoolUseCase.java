@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.school.SchoolDirectory;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,20 +30,12 @@ import com.sep.vox.domain.repository.SchoolDirectoryRepository;
  * consumer ngay trước lúc gửi, không nằm plaintext trong outbox/Kafka.
  */
 @Service
+@RequiredArgsConstructor
 public class CreateSchoolUseCase implements IUseCase<CreateSchoolCommand, UUID> {
 
     private final SchoolDirectoryRepository schoolDirectoryRepository;
     private final ProvisionSchoolService provisionSchoolService;
     private final AvatarConfigPort avatarConfigPort;
-
-    public CreateSchoolUseCase(
-            SchoolDirectoryRepository schoolDirectoryRepository,
-            ProvisionSchoolService provisionSchoolService,
-            AvatarConfigPort avatarConfigPort) {
-        this.schoolDirectoryRepository = schoolDirectoryRepository;
-        this.provisionSchoolService = provisionSchoolService;
-        this.avatarConfigPort = avatarConfigPort;
-    }
 
     @Override
     @Transactional

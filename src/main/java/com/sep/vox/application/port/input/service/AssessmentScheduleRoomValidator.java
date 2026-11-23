@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.school.SchoolRoom;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.DuplicatedException;
@@ -21,17 +22,11 @@ import com.sep.vox.domain.repository.SchoolRoomRepository;
  * bài kiểm tra trên lớp.
  */
 @Service
+@RequiredArgsConstructor
 public class AssessmentScheduleRoomValidator {
 
     private final SchoolRoomRepository schoolRoomRepository;
     private final AssessmentScheduleRepository assessmentScheduleRepository;
-
-    public AssessmentScheduleRoomValidator(
-            SchoolRoomRepository schoolRoomRepository,
-            AssessmentScheduleRepository assessmentScheduleRepository) {
-        this.schoolRoomRepository = schoolRoomRepository;
-        this.assessmentScheduleRepository = assessmentScheduleRepository;
-    }
 
     /** Phòng phải tồn tại và thuộc trường của bài kiểm tra. */
     public void requireRoomOfAssessmentSchool(UUID schoolRoomId, Assessment assessment) {

@@ -3,8 +3,8 @@ package com.sep.vox.application.port.input.usecase.assessmentsession;
 import java.time.Instant;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,25 +20,14 @@ import com.sep.vox.domain.repository.AssessmentCandidateRepository;
 import com.sep.vox.domain.repository.AssessmentSessionRepository;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class UpdateAssessmentSessionStatusUseCase implements IUseCase<UpdateAssessmentSessionStatusCommand, AssessmentSessionResponse> {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(UpdateAssessmentSessionStatusUseCase.class);
 
     private final AssessmentSessionRepository assessmentSessionRepository;
     private final AssessmentCandidateRepository assessmentCandidateRepository;
     private final AiUsageRecordRepository aiUsageRecordRepository;
     private final SubmitAssessmentSessionUseCase submitAssessmentSessionUseCase;
-
-    public UpdateAssessmentSessionStatusUseCase(
-            AssessmentSessionRepository assessmentSessionRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            AiUsageRecordRepository aiUsageRecordRepository,
-            SubmitAssessmentSessionUseCase submitAssessmentSessionUseCase) {
-        this.assessmentSessionRepository = assessmentSessionRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.aiUsageRecordRepository = aiUsageRecordRepository;
-        this.submitAssessmentSessionUseCase = submitAssessmentSessionUseCase;
-    }
 
     @Override
     @Transactional
@@ -112,7 +101,7 @@ public class UpdateAssessmentSessionStatusUseCase implements IUseCase<UpdateAsse
     private void waiveFailedRoundCost(UUID sessionId) {
         int waived = aiUsageRecordRepository.markWaivedByAssessmentSessionId(sessionId, Instant.now());
         if (waived > 0) {
-            LOGGER.info("Miễn {} dòng chi phí AI của lượt chấm hỏng ở phiên {}", waived, sessionId);
+            log.info("Miễn {} dòng chi phí AI của lượt chấm hỏng ở phiên {}", waived, sessionId);
         }
     }
 

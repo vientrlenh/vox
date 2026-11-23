@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,17 +27,11 @@ import com.sep.vox.domain.service.personalization.TensePolicy;
  * (b) generateFromKeyword có gọi LLM chậm ở giữa, không được nằm trong transaction.
  */
 @Service
+@RequiredArgsConstructor
 public class KeywordTopicPersistenceService {
 
     private final PracticeTopicRepository practiceTopicRepository;
     private final TopicSuggestionRepository topicSuggestionRepository;
-
-    public KeywordTopicPersistenceService(
-            PracticeTopicRepository practiceTopicRepository,
-            TopicSuggestionRepository topicSuggestionRepository) {
-        this.practiceTopicRepository = practiceTopicRepository;
-        this.topicSuggestionRepository = topicSuggestionRepository;
-    }
 
     @Transactional
     public UUID createTopicAndRecordRequest(

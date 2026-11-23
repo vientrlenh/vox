@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateAssessmentPaperSectionCommand;
 import com.sep.vox.application.port.input.service.AssessmentPaperAuthoringAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -38,19 +38,19 @@ public class UpdateAssessmentPaperSectionUseCase implements IUseCase<UpdateAsses
     public AssessmentPaperSectionDto execute(UpdateAssessmentPaperSectionCommand input) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         AssessmentPaperSection section = assessmentPaperSectionRepository.findById(input.sectionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phần trong đề thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phần trong đề thi"));
         if (!section.getPaperId().equals(input.paperId())) {
-            throw new NotFoundException("Không tìm thấy phần trong đề thi");
+            throw new ResourceNotFoundException("Không tìm thấy phần trong đề thi");
         }
         AssessmentPaper paper = assessmentPaperRepository.findById(input.paperId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy đề thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đề thi"));
         Assessment assessment = assessmentRepository.findById(paper.getAssessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
         if (assessment.getKind() == AssessmentKind.CENTRALIZED && paper.getStatus() == AssessmentPaperStatus.LOCKED) {
-            throw new IllegalStateException("Đề thi đã bị khoá, không thể sửa");
+            throw new IllegalArgumentException("Đề thi đã bị khoá, không thể sửa");
         }
         if (assessment.getStatus() == AssessmentStatus.IN_PROGRESS) {
-            throw new IllegalStateException("Không thể sửa khi bài kiểm tra đang diễn ra");
+            throw new IllegalArgumentException("Không thể sửa khi bài kiểm tra đang diễn ra");
         }
         assessmentPaperAuthoringAccessService.requireCanAuthor(assessment, currentUserId);
 

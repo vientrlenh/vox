@@ -48,7 +48,7 @@ public class ReassignGradingUseCase implements IUseCase<ReassignGradingCommand, 
 
         AssessmentGradingAssignment assignment = context.assignment();
         if (assignment.isCompleted()) {
-            throw new IllegalStateException("Không thể đổi giáo viên cho bài đã chấm xong.");
+            throw new IllegalArgumentException("Không thể đổi giáo viên cho bài đã chấm xong.");
         }
         if (command.teacherId() == null) {
             throw new IllegalArgumentException("Thiếu giáo viên cần phân công.");

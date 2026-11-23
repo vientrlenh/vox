@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.ViewOrderDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -22,7 +22,7 @@ public class ViewOrderDetailsUseCase implements IUseCase<ViewOrderDetailsQuery, 
     @Override
     public OrderDto execute(ViewOrderDetailsQuery input) {
         Order order = orderRepository.findById(input.id())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy thông tin của đơn hàng yêu cầu"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin của đơn hàng yêu cầu"));
         if (!userContextPort.isSystemAdmin() && !order.getSchoolId().equals(userContextPort.getCurrentSchoolId())) {
             throw new ForbiddenException("Bạn không có quyền truy cập vào đơn hàng này");
         }

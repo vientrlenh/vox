@@ -53,14 +53,7 @@ class AssessmentStatusAutoTransitionJobTests {
         when(assessmentRepository.findByStatusAndOpenAtBefore(any(), any())).thenReturn(List.of());
         when(assessmentRepository.findByStatusAndCloseAtBefore(any(), any())).thenReturn(List.of());
 
-        job = new AssessmentStatusAutoTransitionJob(
-            assessmentRepository,
-            mock(AssessmentPaperRepository.class),
-            mock(AssessmentQuestionSecureLockService.class),
-            mock(ZeroScoreAssessmentResultService.class),
-            mock(ClassTestGradingAssignmentService.class),
-            mock(AssessmentHumanGradingNotificationService.class),
-            new AssessmentScheduleClosureService(assessmentScheduleRepository, assessmentSessionRepository));
+        job = jobWith(new AssessmentScheduleClosureService(assessmentScheduleRepository, assessmentSessionRepository));
     }
 
     @Test
@@ -99,6 +92,30 @@ class AssessmentStatusAutoTransitionJobTests {
     }
 
     /**
+     * The closure guard rejects with IllegalArgumentException; the job must postpone closing and carry on with the
+     * next assessment instead of letting the exception abort the whole tick.
+     */
+    @Test
+    void should_postpone_closing_and_continue_when_the_closure_guard_rejects() {
+        Assessment blocked = classTest();
+        Assessment closable = classTest();
+        closable.setId(UUID.randomUUID());
+        AssessmentScheduleClosureService closureService = mock(AssessmentScheduleClosureService.class);
+        org.mockito.Mockito.doThrow(new IllegalArgumentException("Still has an active session"))
+            .when(closureService).requireNoActiveSessionInOngoingSchedule(eq(blocked.getId()), any());
+        when(assessmentRepository.findByStatusAndCloseAtBefore(eq(AssessmentStatus.IN_PROGRESS), any()))
+            .thenReturn(List.of(blocked, closable));
+        AssessmentStatusAutoTransitionJob jobWithMockedGuard = jobWith(closureService);
+
+        jobWithMockedGuard.run();
+
+        assertThat(blocked.getStatus()).isEqualTo(AssessmentStatus.IN_PROGRESS);
+        assertThat(closable.getStatus()).isEqualTo(AssessmentStatus.CLOSED);
+        verify(assessmentRepository, never()).save(blocked);
+        verify(closureService, never()).closeSchedulesForAssessment(eq(blocked.getId()), any());
+    }
+
+    /**
      * A centralized assessment does not close itself -- this job deliberately only accepts class tests.
      */
     @Test
@@ -111,6 +128,17 @@ class AssessmentStatusAutoTransitionJobTests {
 
         assertThat(assessment.getStatus()).isEqualTo(AssessmentStatus.IN_PROGRESS);
         verify(assessmentScheduleRepository, never()).save(any());
+    }
+
+    private AssessmentStatusAutoTransitionJob jobWith(AssessmentScheduleClosureService closureService) {
+        return new AssessmentStatusAutoTransitionJob(
+            assessmentRepository,
+            mock(AssessmentPaperRepository.class),
+            mock(AssessmentQuestionSecureLockService.class),
+            mock(ZeroScoreAssessmentResultService.class),
+            mock(ClassTestGradingAssignmentService.class),
+            mock(AssessmentHumanGradingNotificationService.class),
+            closureService);
     }
 
     private Assessment classTest() {

@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.assessment.Assessment;
@@ -56,7 +56,7 @@ public class AssessmentDirectoryAccessService {
 
     public Assessment requireAssessment(UUID assessmentId) {
         return assessmentRepository.findById(assessmentId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
     }
 
     public AssessmentDirectoryScope resolveByAssessmentId(UUID assessmentId) {

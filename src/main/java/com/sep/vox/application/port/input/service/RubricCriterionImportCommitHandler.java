@@ -3,7 +3,7 @@ package com.sep.vox.application.port.input.service;
 import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.service.rubric.ScoreRangeValidator;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.model.framework.FrameworkCriterion;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
@@ -50,12 +50,12 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
     public ImportCommitResult commit(ImportSession session, List<ImportRow> rows) {
         UUID versionId = session.getImportedEntityId();
         RubricVersion version = rubricVersionRepository.findById(versionId)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản Rubric khi xử lý ngầm."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Rubric khi xử lý ngầm."));
         if (version.getStatus() != RubricStatus.DRAFT) {
-            throw new IllegalStateException("Chỉ có thể import Tiêu chí khi phiên bản Rubric đang ở trạng thái DRAFT.");
+            throw new IllegalArgumentException("Chỉ có thể import Tiêu chí khi phiên bản Rubric đang ở trạng thái DRAFT.");
         }
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc khi xử lý ngầm."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc khi xử lý ngầm."));
 
         Map<String, String> mapping = new HashMap<>();
         if (session.getConfirmedMappingJson() != null && !session.getConfirmedMappingJson().isBlank()) {
@@ -70,7 +70,7 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
         );
 
         FrameworkVersion activeFwVersion = activeVersions.stream().findFirst()
-                .orElseThrow(() -> new IllegalStateException("Không tìm thấy phiên bản Khung tiêu chuẩn nào đang hoạt động cho Framework này."));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiên bản Khung tiêu chuẩn nào đang hoạt động cho Framework này."));
 
         // 2. SỬA CHỖ NÀY: Phải lấy theo ID của Phiên bản (Version ID), chứ không lấy theo Framework ID nữa!
         List<FrameworkCriterion> fwCriterions = frameworkCriterionRepository.findByFrameworkVersionId(activeFwVersion.getId());
@@ -309,7 +309,7 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
             try {
                 rubricCriterionRepository.saveAll(criterionsToSave);
             } catch (DataConflictException e) {
-                throw new IllegalStateException("Lỗi lưu dữ liệu: Mã tiêu chí hoặc Khung tiêu chuẩn (Framework) bị trùng lặp trong phiên bản Rubric này.", e);
+                throw new IllegalArgumentException("Lỗi lưu dữ liệu: Mã tiêu chí hoặc Khung tiêu chuẩn (Framework) bị trùng lặp trong phiên bản Rubric này.", e);
             }
         }
 

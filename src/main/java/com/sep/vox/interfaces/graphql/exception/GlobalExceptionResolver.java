@@ -13,10 +13,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
-import com.sep.vox.application.exception.DuplicatedException;
-import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.exception.PlanLimitExceededException;
-import com.sep.vox.application.exception.QuotaExceededException;
+import com.sep.vox.application.exception.BusinessRuleViolationException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 
 import graphql.GraphQLError;
@@ -33,7 +32,7 @@ public class GlobalExceptionResolver extends DataFetcherExceptionResolverAdapter
         // -- switched to a real logger so INTERNAL_ERROR (the last branch) can be traced after it happens.
         log.error("Unhandled exception resolving field {}", env.getExecutionStepInfo().getPath(), ex);
 
-        if (ex instanceof NotFoundException) {
+        if (ex instanceof ResourceNotFoundException) {
             return GraphQLError.newError()
                 .errorType(ErrorType.NOT_FOUND)
                 .message(ex.getMessage())
@@ -42,7 +41,7 @@ public class GlobalExceptionResolver extends DataFetcherExceptionResolverAdapter
                 .build();
         }
 
-        if (ex instanceof DuplicatedException) {
+        if (ex instanceof ResourceDuplicatedException) {
             return GraphQLError.newError()
                 .errorType(ErrorType.BAD_REQUEST)
                 .message(ex.getMessage())
@@ -52,15 +51,6 @@ public class GlobalExceptionResolver extends DataFetcherExceptionResolverAdapter
         }
 
         if (ex instanceof IllegalArgumentException) {
-            return GraphQLError.newError()
-                .errorType(ErrorType.BAD_REQUEST)
-                .message(ex.getMessage())
-                .path(env.getExecutionStepInfo().getPath())
-                .location(env.getField().getSourceLocation())
-                .build();
-        }
-
-        if (ex instanceof IllegalStateException) {
             return GraphQLError.newError()
                 .errorType(ErrorType.BAD_REQUEST)
                 .message(ex.getMessage())
@@ -107,20 +97,11 @@ public class GlobalExceptionResolver extends DataFetcherExceptionResolverAdapter
                     .build();
         }
 
-        if (ex instanceof PlanLimitExceededException) {
+        if (ex instanceof BusinessRuleViolationException) {
             return GraphQLError.newError()
                     .errorType(ErrorType.BAD_REQUEST)
                     .message(ex.getMessage())
-                    .extensions(Map.of("code", "PLAN_LIMIT_EXCEEDED"))
-                    .path(env.getExecutionStepInfo().getPath())
-                    .location(env.getField().getSourceLocation())
-                    .build();
-        }
-
-        if (ex instanceof QuotaExceededException) {
-            return GraphQLError.newError()
-                    .errorType(ErrorType.BAD_REQUEST)
-                    .message(ex.getMessage())
+                    .extensions(Map.of("code", "BUSINESS_RULE_VIOLATION"))
                     .path(env.getExecutionStepInfo().getPath())
                     .location(env.getField().getSourceLocation())
                     .build();

@@ -17,7 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.port.input.command.AssignAssessmentAppealReviewerCommand;
 import com.sep.vox.application.port.input.service.AssessmentAppealAccessService;
 import com.sep.vox.application.port.input.service.AssessmentAppealAccessService.AppealContext;
@@ -165,7 +165,7 @@ class AssignAssessmentAppealReviewerUseCaseTests {
         appeal.setStatus(AssessmentAppealStatus.PENDING);
 
         assertThatThrownBy(() -> useCase.execute(command(freshTeacher, null)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("đã được duyệt");
     }
 
@@ -177,7 +177,7 @@ class AssignAssessmentAppealReviewerUseCaseTests {
 
         // Hai người cùng ghi điểm một bài là nguồn gốc của review BE-4.
         assertThatThrownBy(() -> useCase.execute(command(freshTeacher, null)))
-            .isInstanceOf(DuplicatedException.class);
+            .isInstanceOf(ResourceDuplicatedException.class);
     }
 
     @Test

@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateFrameworkVersionStatusCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.model.framework.FrameworkCriterion;
@@ -44,19 +44,19 @@ public class UpdateFrameworkVersionStatusUseCase implements IUseCase<UpdateFrame
         checkValidRequest(input, version);
         int updated = frameworkVersionRepository.updateStatus(input.versionId(), input.status());
         if (updated == 0) {
-            throw new NotFoundException("Không tìm thấy phiên bản framework để cập nhật trạng thái");
+            throw new ResourceNotFoundException("Không tìm thấy phiên bản framework để cập nhật trạng thái");
         }
         return input.versionId();
     }
 
     private void getFramework(UpdateFrameworkVersionStatusCommand input) {
         frameworkRepository.findFrameworkByIdForUpdate(input.frameworkId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy framework"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy framework"));
     }
 
     private FrameworkVersion getVersion(UpdateFrameworkVersionStatusCommand input) {
         return frameworkVersionRepository.findByIdForUpdate(input.versionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản framework"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản framework"));
     }
 
     private void checkValidRequest(UpdateFrameworkVersionStatusCommand input, FrameworkVersion version) {
@@ -65,16 +65,16 @@ public class UpdateFrameworkVersionStatusUseCase implements IUseCase<UpdateFrame
 
         if (input.status() == FrameworkVersionStatus.PUBLISHED) {
             if (version.getStatus() != FrameworkVersionStatus.DRAFT)
-                throw new IllegalStateException("Chỉ có thể xuất bản phiên bản ở trạng thái DRAFT");
+                throw new IllegalArgumentException("Chỉ có thể xuất bản phiên bản ở trạng thái DRAFT");
             if (!frameworkCriterionRepository.existsByFrameworkVersionId(input.versionId()))
-                throw new IllegalStateException("Phiên bản framework phải có ít nhất một tiêu chí trước khi xuất bản");
+                throw new IllegalArgumentException("Phiên bản framework phải có ít nhất một tiêu chí trước khi xuất bản");
             if (!frameworkResultBandRepository.existsByFrameworkVersionId(input.versionId()))
-                throw new IllegalStateException("Phiên bản framework phải có ít nhất một dải kết quả trước khi xuất bản");
+                throw new IllegalArgumentException("Phiên bản framework phải có ít nhất một dải kết quả trước khi xuất bản");
             validateEveryCriterionHasBandsWithSignals(input.versionId());
             validateNoConflictingPublished(input.frameworkId(), input.versionId(), version.getEffectiveFrom(), version.getEffectiveTo());
         } else if (input.status() == FrameworkVersionStatus.ARCHIVED) {
             if (version.getStatus() != FrameworkVersionStatus.PUBLISHED)
-                throw new IllegalStateException("Chỉ có thể lưu trữ phiên bản ở trạng thái PUBLISHED");
+                throw new IllegalArgumentException("Chỉ có thể lưu trữ phiên bản ở trạng thái PUBLISHED");
         } else {
             throw new IllegalArgumentException("Trạng thái không hợp lệ để cập nhật");
         }
@@ -85,7 +85,7 @@ public class UpdateFrameworkVersionStatusUseCase implements IUseCase<UpdateFrame
 
         Set<String> presentCodes = criteria.stream().map(fc -> fc.getCode()).collect(Collectors.toSet());
         if (!presentCodes.equals(FrameworkCriterionCode.ALLOWED_CODES)) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                     "Phiên bản framework phải có đầy đủ và chỉ có 5 tiêu chí: " + FrameworkCriterionCode.ALLOWED_CODES);
         }
 
@@ -97,13 +97,13 @@ public class UpdateFrameworkVersionStatusUseCase implements IUseCase<UpdateFrame
         for (FrameworkCriterion criterion : criteria) {
             List<FrameworkCriterionBand> criterionBands = bandsByCriterion.getOrDefault(criterion.getId(), List.of());
             if (criterionBands.isEmpty()) {
-                throw new IllegalStateException(
+                throw new IllegalArgumentException(
                         "Tiêu chí \"" + criterion.getName() + "\" phải có ít nhất một thang kết quả trước khi xuất bản");
             }
             for (FrameworkCriterionBand band : criterionBands) {
                 if (band.getPositiveSignals() == null || band.getPositiveSignals().values().isEmpty()
                         || band.getNegativeSignals() == null || band.getNegativeSignals().values().isEmpty()) {
-                    throw new IllegalStateException(
+                    throw new IllegalArgumentException(
                             "Tiêu chí \"" + criterion.getName() + "\" phải có ít nhất một dấu hiệu tích cực và tiêu cực ở mỗi thang kết quả trước khi xuất bản");
                 }
             }
@@ -116,7 +116,7 @@ public class UpdateFrameworkVersionStatusUseCase implements IUseCase<UpdateFrame
             .filter(v -> !v.getId().equals(versionId))
             .anyMatch(v -> rangesOverlap(effectiveFrom, effectiveTo, v.getEffectiveFrom(), v.getEffectiveTo()));
         if (hasConflict) {
-            throw new IllegalStateException("Đã tồn tại phiên bản đã xuất bản có hiệu lực trong khoảng thời gian này");
+            throw new IllegalArgumentException("Đã tồn tại phiên bản đã xuất bản có hiệu lực trong khoảng thời gian này");
         }
     }
 

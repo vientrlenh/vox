@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.mapper.practicesession.PracticeSessionResponseMapper;
 import com.sep.vox.application.query.repository.PracticeSessionQueryRepository;
 import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.TeacherPracticeSessionDetail;
@@ -49,7 +49,7 @@ public class PracticeSessionDetailAssemblyService {
     @Transactional(readOnly = true)
     public TeacherPracticeSessionDetail assemble(UUID sessionId) {
         SessionRowInfo summary = practiceSessionQueryRepository.findSessionRowById(sessionId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên luyện."));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên luyện."));
         List<TeacherPracticeTurnViewDto> turns = practiceResponseTurnRepository.findBySessionIdOrderByTurnOrder(sessionId).stream()
             .map(turn -> new TeacherPracticeTurnViewDto(
                 turn.turnOrder(),

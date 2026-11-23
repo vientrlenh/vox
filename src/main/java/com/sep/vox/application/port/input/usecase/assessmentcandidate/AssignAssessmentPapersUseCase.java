@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.AssignAssessmentPapersCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -50,7 +50,7 @@ public class AssignAssessmentPapersUseCase implements IUseCase<AssignAssessmentP
     @Transactional
     public AssignAssessmentPapersResponse execute(AssignAssessmentPapersCommand input) {
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
         UUID currentUserId = authorize(assessment);
         AssessmentEditingGuard.requireScheduleEditable(assessment);
 
@@ -61,7 +61,7 @@ public class AssignAssessmentPapersUseCase implements IUseCase<AssignAssessmentP
         // Toàn bộ mã đề của kỳ thi phải đã khoá (LOCKED) mới được phân đề.
         List<AssessmentPaper> papers = assessmentPaperRepository.findByAssessmentId(assessment.getId());
         if (papers.isEmpty() || papers.stream().anyMatch(paper -> paper.getStatus() != AssessmentPaperStatus.LOCKED)) {
-            throw new IllegalStateException("Tất cả mã đề của kỳ thi phải được khoá trước khi phân đề");
+            throw new IllegalArgumentException("Tất cả mã đề của kỳ thi phải được khoá trước khi phân đề");
         }
         Set<UUID> lockedPaperIds = papers.stream()
             .map(paper -> paper.getId())
@@ -76,10 +76,10 @@ public class AssignAssessmentPapersUseCase implements IUseCase<AssignAssessmentP
         // Validate all-or-nothing: mọi cặp phải hợp lệ trước khi ghi bất kỳ thứ gì.
         for (AssessmentPaperAssignmentItem assignment : input.assignments()) {
             if (!candidatesById.containsKey(assignment.candidateId())) {
-                throw new IllegalStateException("Thí sinh không thuộc kỳ thi này");
+                throw new IllegalArgumentException("Thí sinh không thuộc kỳ thi này");
             }
             if (assignment.paperId() == null || !lockedPaperIds.contains(assignment.paperId())) {
-                throw new IllegalStateException("Mã đề không hợp lệ hoặc chưa được khoá");
+                throw new IllegalArgumentException("Mã đề không hợp lệ hoặc chưa được khoá");
             }
         }
 

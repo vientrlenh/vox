@@ -67,7 +67,7 @@ class RecalculateAssessmentTimeDurationServiceTests {
             .thenReturn(List.of(schedule(AssessmentScheduleStatus.PUBLISHED, start, start.plus(30, ChronoUnit.MINUTES))));
 
         assertThatThrownBy(() -> service.recalculate(assessmentId))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("vượt quá thời lượng");
         verify(assessmentRepository, never()).save(any(Assessment.class));
     }
@@ -79,7 +79,7 @@ class RecalculateAssessmentTimeDurationServiceTests {
             .thenReturn(List.of(schedule(AssessmentScheduleStatus.PUBLISHED, start, start.plus(30, ChronoUnit.MINUTES))));
 
         assertThatThrownBy(() -> service.recalculate(assessmentId))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("thời gian đóng bài");
     }
 

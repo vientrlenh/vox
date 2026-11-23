@@ -16,7 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.BulkFinalizeAssessmentResultsCommand;
 import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
 import com.sep.vox.application.port.input.service.ResultStatusHistoryRecorder;
@@ -97,7 +97,7 @@ public class BulkFinalizeAssessmentResultsUseCase
     public Integer execute(BulkFinalizeAssessmentResultsCommand command) {
         UUID currentUserId = assessmentGradingAccessService.requireActiveUserId();
         Assessment assessment = assessmentRepository.findById(command.assessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra."));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra."));
         // A class test: the school does not grade it, so if only the school admin could close the
         // books the teacher would be stuck -- publishing results requires EVERY attempt to be RELEASED
         // or INVALID (UpdateAssessmentStatusUseCase.requirePublishReadiness).
@@ -111,7 +111,7 @@ public class BulkFinalizeAssessmentResultsUseCase
         // quả: đơn treo mở vĩnh viễn, và học sinh rút đơn sau đó lại kéo bài về RELEASED
         // trong khi kỳ thi đã công bố xong.
         if (preview.openAppeals() > 0) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 "Kỳ thi còn " + preview.openAppeals() + " đơn phúc khảo chưa xong. "
                     + "Hãy xử lý hoặc từ chối các đơn này trước khi chốt sổ.");
         }
@@ -119,10 +119,10 @@ public class BulkFinalizeAssessmentResultsUseCase
         List<AssessmentCandidateResult> results = assessmentCandidateResultRepository.findByAssessmentId(command.assessmentId());
         Map<AssessmentCandidateResultStatus, Integer> blocking = countBlocking(results);
         if (!blocking.isEmpty()) {
-            throw new IllegalStateException(describeBlocking(blocking));
+            throw new IllegalArgumentException(describeBlocking(blocking));
         }
         if (!preview.isClean() && !command.releasePendingWithAiScores()) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 "Kỳ thi còn " + preview.pendingUnassigned() + " bài chưa ai chấm và "
                     + preview.pendingAssigned() + " bài đang chấm dở. "
                     + "Hãy xử lý nốt, hoặc xác nhận công bố theo điểm AI hiện có.");

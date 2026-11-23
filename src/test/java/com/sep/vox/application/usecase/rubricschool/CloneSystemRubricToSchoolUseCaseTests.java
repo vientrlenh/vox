@@ -18,7 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CloneSystemRubricToSchoolCommand;
 import com.sep.vox.application.port.input.command.CloneSystemRubricToSchoolCommand.PolicyToClone;
 import com.sep.vox.application.port.input.command.CreateAssessmentPolicyCommand;
@@ -233,7 +233,7 @@ class CloneSystemRubricToSchoolUseCaseTests {
         assertThatThrownBy(() -> useCase.execute(command(List.of(
                 new PolicyToClone(UUID.randomUUID(), null, null, UUID.randomUUID(),
                         Instant.parse("2026-09-01T00:00:00Z"), null)))))
-                .isInstanceOf(NotFoundException.class);
+                .isInstanceOf(ResourceNotFoundException.class);
 
         verify(createSchoolAssessmentPolicyUseCase, never()).execute(any());
     }

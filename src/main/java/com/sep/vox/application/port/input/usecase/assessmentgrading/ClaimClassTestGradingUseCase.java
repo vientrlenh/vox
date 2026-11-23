@@ -14,8 +14,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.DuplicatedException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.ClaimClassTestGradingCommand;
 import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -61,7 +61,7 @@ public class ClaimClassTestGradingUseCase
             throw new IllegalArgumentException("Phải chọn ít nhất một bài để nhận chấm.");
         }
         if (new HashSet<>(candidateResultIds).size() != candidateResultIds.size()) {
-            throw new DuplicatedException("Không được chọn trùng bài.");
+            throw new ResourceDuplicatedException("Không được chọn trùng bài.");
         }
 
         Map<UUID, AssessmentCandidateResult> resultsById = assessmentCandidateResultRepository.findByIdIn(candidateResultIds).stream()
@@ -79,18 +79,18 @@ public class ClaimClassTestGradingUseCase
         for (UUID candidateResultId : candidateResultIds) {
             AssessmentCandidateResult result = resultsById.get(candidateResultId);
             if (result == null) {
-                throw new NotFoundException("Không tìm thấy kết quả bài thi.");
+                throw new ResourceNotFoundException("Không tìm thấy kết quả bài thi.");
             }
             // Blocks claiming an attempt of another test -- the assessmentId in the URL is the thing that has passed the permission check.
             if (!command.assessmentId().equals(result.getAssessmentId())) {
-                throw new NotFoundException("Bài thi không thuộc bài kiểm tra này.");
+                throw new ResourceNotFoundException("Bài thi không thuộc bài kiểm tra này.");
             }
             if (!GradingRoundPolicy.isAssignable(roundType, result.getStatus())) {
-                throw new IllegalStateException(
+                throw new IllegalArgumentException(
                     "Bài thi không ở trạng thái phù hợp với vòng chấm " + roundType.name() + ".");
             }
             if (alreadyOpen.contains(candidateResultId)) {
-                throw new DuplicatedException("Bài thi này đang được chấm.");
+                throw new ResourceDuplicatedException("Bài thi này đang được chấm.");
             }
 
             // scoreBefore chụp NGAY LÚC NHẬN — mốc đo độ lệch so với vòng trước.

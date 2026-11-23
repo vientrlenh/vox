@@ -6,7 +6,7 @@ import com.sep.vox.domain.service.rubric.RubricResultBandValidator;
 import com.sep.vox.domain.service.rubric.ScoreRangeValidator;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CreateSystemRubricResultBandsCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -50,15 +50,15 @@ public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSyst
 
         // 2. Lấy Version và kiểm tra trạng thái DRAFT
         RubricVersion version = rubricVersionRepository.findById(command.versionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản Rubric."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản Rubric."));
 
         if (version.getStatus() != RubricStatus.DRAFT) {
-            throw new IllegalStateException("Chỉ được thêm Thang điểm kết quả khi Rubric ở trạng thái DRAFT.");
+            throw new IllegalArgumentException("Chỉ được thêm Thang điểm kết quả khi Rubric ở trạng thái DRAFT.");
         }
 
         // 3. Phân quyền: Chặn System Admin sửa vào Rubric của Trường học
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             throw new ForbiddenException("Rubric này thuộc về Trường học. System Admin không có quyền can thiệp.");
@@ -124,7 +124,7 @@ public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSyst
         try {
             savedBands = rubricResultBandRepository.saveAll(bandsToSave);
         } catch (DataConflictException e) {
-            throw new IllegalStateException("Lỗi lưu dữ liệu: Mã thang điểm (Code) hoặc Thứ tự (order) đã tồn tại trong phiên bản Rubric hệ thống này từ trước.");
+            throw new IllegalArgumentException("Lỗi lưu dữ liệu: Mã thang điểm (Code) hoặc Thứ tự (order) đã tồn tại trong phiên bản Rubric hệ thống này từ trước.");
         }
 
         // 5. Trích xuất ID từ List trả về và gửi cho Client

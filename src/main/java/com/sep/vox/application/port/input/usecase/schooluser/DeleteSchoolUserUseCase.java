@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.DeleteSchoolUserCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -32,7 +32,7 @@ public class DeleteSchoolUserUseCase implements IUseCase<DeleteSchoolUserCommand
         UUID callerId = userContextPort.getCurrentAuthenticatedUserId();
 
         userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
         SchoolUser callerSchoolUser = schoolUserRepository.findByUserId(callerId)
             .orElseThrow(() -> new IllegalArgumentException("Không có quyền thực hiện thao tác này"));
         if (!input.schoolId().equals(callerSchoolUser.getSchoolId())) {
@@ -43,11 +43,11 @@ public class DeleteSchoolUserUseCase implements IUseCase<DeleteSchoolUserCommand
         }
 
         User targetUser = userRepository.findById(input.userId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
         SchoolUser targetSchoolUser = schoolUserRepository.findByUserId(input.userId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
         if (!input.schoolId().equals(targetSchoolUser.getSchoolId())) {
-            throw new NotFoundException("Không tìm thấy người dùng");
+            throw new ResourceNotFoundException("Không tìm thấy người dùng");
         }
 
         targetUser.softDelete();

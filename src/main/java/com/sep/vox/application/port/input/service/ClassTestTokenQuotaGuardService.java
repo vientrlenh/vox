@@ -10,7 +10,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.exception.PlanLimitExceededException;
+import com.sep.vox.application.exception.BusinessRuleViolationException;
 import com.sep.vox.application.port.output.QuotaPricingPort;
 import com.sep.vox.application.response.input.assessment.AssessmentTokenEstimateResponse;
 import com.sep.vox.domain.model.assessment.Assessment;
@@ -85,7 +85,7 @@ public class ClassTestTokenQuotaGuardService {
         BigDecimal estimatedCostVnd = computeEstimatedCostVnd(assessment);
 
         SchoolSubscription subscription = schoolSubscriptionRepository.findActiveBySchoolId(assessment.getSchoolId())
-            .orElseThrow(() -> new PlanLimitExceededException(
+            .orElseThrow(() -> new BusinessRuleViolationException(
                 "Trường chưa có gói subscription đang hoạt động, không thể lên lịch kỳ thi"));
 
         // Trường đang nợ (số dư ví tự nạp âm) thì chặn luôn ở đây, trước cả khi soi ước lượng
@@ -232,10 +232,10 @@ public class ClassTestTokenQuotaGuardService {
             BigDecimal estimatedCostVnd) {
         BigDecimal remaining = spendableSchoolFundsVnd(subscriptionId, schoolId, quotaType);
         if (remaining == null) {
-            throw new PlanLimitExceededException("Không tìm thấy hạn mức " + quotaType + " của gói đăng ký");
+            throw new BusinessRuleViolationException("Không tìm thấy hạn mức " + quotaType + " của gói đăng ký");
         }
         if (estimatedCostVnd.compareTo(remaining) > 0) {
-            throw new PlanLimitExceededException(
+            throw new BusinessRuleViolationException(
                 "Chi phí ước tính cần dùng (" + estimatedCostVnd + "đ) vượt quá số tiền trường còn chi được cho "
                     + quotaType + " (" + remaining + "đ, gồm hạn mức kèm gói và số dư ví), vui lòng nạp thêm tiền"
                     + " hoặc nâng cấp gói"
@@ -251,7 +251,7 @@ public class ClassTestTokenQuotaGuardService {
     private void requireWithinUserAllocation(UUID subscriptionId, UUID teacherId, BigDecimal estimatedCostVnd) {
         BigDecimal remaining = remainingUserAllocation(subscriptionId, teacherId);
         if (remaining != null && estimatedCostVnd.compareTo(remaining) > 0) {
-            throw new PlanLimitExceededException(
+            throw new BusinessRuleViolationException(
                 "Chi phí ước tính cần dùng (" + estimatedCostVnd
                     + "đ) vượt quá hạn mức bài kiểm tra trên lớp cá nhân còn lại (" + remaining
                     + "đ), vui lòng liên hệ quản trị trường để cấp thêm hạn mức"

@@ -15,7 +15,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.PlanLimitExceededException;
+import com.sep.vox.application.exception.BusinessRuleViolationException;
 import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
 import com.sep.vox.application.port.input.service.SchoolSubscriptionDebtGuardService;
 import com.sep.vox.application.port.output.QuotaPricingPort;
@@ -139,7 +139,7 @@ class ClassTestTokenQuotaGuardServiceTests {
         givenSchoolQuota(100_000, 0);
 
         assertThatThrownBy(() -> guard.requireWithinTokenQuota(classTest(ASSESSMENT_SECONDS)))
-            .isInstanceOf(PlanLimitExceededException.class);
+            .isInstanceOf(BusinessRuleViolationException.class);
     }
 
     @Test
@@ -147,7 +147,7 @@ class ClassTestTokenQuotaGuardServiceTests {
         givenSchoolQuota(1_000_000, 0);
 
         assertThatThrownBy(() -> guard.requireWithinTokenQuota(classTest(ASSESSMENT_SECONDS)))
-            .isInstanceOf(PlanLimitExceededException.class);
+            .isInstanceOf(BusinessRuleViolationException.class);
     }
 
     /**
@@ -169,7 +169,7 @@ class ClassTestTokenQuotaGuardServiceTests {
         givenBalance(1_000_000);
 
         assertThatThrownBy(() -> guard.requireWithinTokenQuota(classTest(ASSESSMENT_SECONDS)))
-            .isInstanceOf(PlanLimitExceededException.class);
+            .isInstanceOf(BusinessRuleViolationException.class);
     }
 
     /**
@@ -187,7 +187,7 @@ class ClassTestTokenQuotaGuardServiceTests {
         givenBalance(-9_000_000);
 
         assertThatThrownBy(() -> guard.requireWithinTokenQuota(centralizedAssessment(ASSESSMENT_SECONDS)))
-            .isInstanceOf(PlanLimitExceededException.class)
+            .isInstanceOf(BusinessRuleViolationException.class)
             .hasMessageContaining("khóa");
     }
 
@@ -201,7 +201,7 @@ class ClassTestTokenQuotaGuardServiceTests {
         givenUserAllocation(100_000, 0);
 
         assertThatThrownBy(() -> guard.requireWithinTokenQuota(classTest(ASSESSMENT_SECONDS)))
-            .isInstanceOf(PlanLimitExceededException.class)
+            .isInstanceOf(BusinessRuleViolationException.class)
             .hasMessageContaining("cá nhân");
     }
 
@@ -224,7 +224,7 @@ class ClassTestTokenQuotaGuardServiceTests {
         when(schoolSubscriptionRepository.findActiveBySchoolId(schoolId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> guard.requireWithinTokenQuota(classTest(ASSESSMENT_SECONDS)))
-            .isInstanceOf(PlanLimitExceededException.class);
+            .isInstanceOf(BusinessRuleViolationException.class);
     }
 
     /** An ASSESSMENT wallet that is not configured is completely different from "configured but with 0 left" -- the self-topped-up wallet balance does not fill that gap. */
@@ -235,7 +235,7 @@ class ClassTestTokenQuotaGuardServiceTests {
         givenBalance(50_000_000);
 
         assertThatThrownBy(() -> guard.requireWithinTokenQuota(classTest(ASSESSMENT_SECONDS)))
-            .isInstanceOf(PlanLimitExceededException.class)
+            .isInstanceOf(BusinessRuleViolationException.class)
             .hasMessageContaining("Không tìm thấy hạn mức");
     }
 

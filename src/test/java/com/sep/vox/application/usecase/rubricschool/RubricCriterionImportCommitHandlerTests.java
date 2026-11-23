@@ -68,11 +68,11 @@ class RubricCriterionImportCommitHandlerTests {
     }
 
     @Test
-    void should_throw_illegal_state_when_repository_reports_a_data_conflict() {
+    void should_throw_illegal_argument_when_repository_reports_a_data_conflict() {
         doThrow(new DataConflictException("unique violation", null)).when(rubricCriterionRepository).saveAll(any());
 
         assertThatThrownBy(() -> handler.commit(session(), List.of(row())))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageStartingWith("Lỗi lưu dữ liệu: Mã tiêu chí hoặc Khung tiêu chuẩn (Framework) bị trùng lặp")
             .hasCauseInstanceOf(DataConflictException.class);
     }

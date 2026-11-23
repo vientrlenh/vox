@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricsystem;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.AcceptSystemRubricVersionImportCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -44,18 +44,18 @@ public class AcceptSystemRubricVersionImportUseCase implements IUseCase<AcceptSy
 
         // 2. Kiểm tra tính hợp lệ của phiên Import (ImportSession)
         ImportSession session = importSessionRepository.findById(command.sessionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên làm việc Import (Session ID không hợp lệ)."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên làm việc Import (Session ID không hợp lệ)."));
 
         if (session.getType() != ImportType.RUBRIC_VERSION || session.getImportedEntityId() == null) {
             throw new IllegalArgumentException("Phiên làm việc này không phải là Import Rubric Version.");
         }
         if (session.getStatus() != ImportSessionStatus.PREVIEWED) {
-            throw new IllegalStateException("Chỉ có thể Accept những phiên làm việc đang ở trạng thái PREVIEWED.");
+            throw new IllegalArgumentException("Chỉ có thể Accept những phiên làm việc đang ở trạng thái PREVIEWED.");
         }
 
         // 3. Kiểm tra bảo mật đích đến (Rubric gốc phải thuộc hệ thống)
         UUID rubricId = session.getImportedEntityId();
-        Rubric rubric = rubricRepository.findById(rubricId).orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
+        Rubric rubric = rubricRepository.findById(rubricId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             throw new ForbiddenException("Bảo mật: Bộ Rubric này thuộc trường học. System Admin không được phép can thiệp.");
         }

@@ -15,7 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.DeleteAssessmentCandidateCommand;
 import com.sep.vox.application.port.input.usecase.assessmentcandidate.DeleteAssessmentCandidateUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -83,7 +83,7 @@ class DeleteAssessmentCandidateUseCaseTests {
         when(assessmentSessionRepository.findByCandidateId(candidateId)).thenReturn(List.of(new AssessmentSession()));
 
         assertThatThrownBy(() -> useCase.execute(new DeleteAssessmentCandidateCommand(assessmentId, candidateId)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("đã có bài thi");
         verify(assessmentCandidateRepository, never()).deleteById(any());
     }
@@ -93,7 +93,7 @@ class DeleteAssessmentCandidateUseCaseTests {
         when(assessmentRepository.findById(assessmentId)).thenReturn(Optional.of(assessment(AssessmentStatus.IN_PROGRESS)));
 
         assertThatThrownBy(() -> useCase.execute(new DeleteAssessmentCandidateCommand(assessmentId, candidateId)))
-            .isInstanceOf(IllegalStateException.class);
+            .isInstanceOf(IllegalArgumentException.class);
         verify(assessmentCandidateRepository, never()).deleteById(any());
     }
 
@@ -112,7 +112,7 @@ class DeleteAssessmentCandidateUseCaseTests {
         when(assessmentCandidateRepository.findById(candidateId)).thenReturn(Optional.of(candidate(UUID.randomUUID())));
 
         assertThatThrownBy(() -> useCase.execute(new DeleteAssessmentCandidateCommand(assessmentId, candidateId)))
-            .isInstanceOf(NotFoundException.class);
+            .isInstanceOf(ResourceNotFoundException.class);
         verify(assessmentCandidateRepository, never()).deleteById(any());
     }
 

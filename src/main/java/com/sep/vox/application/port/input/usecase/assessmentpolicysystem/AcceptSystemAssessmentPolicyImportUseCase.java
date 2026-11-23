@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.assessmentpolicysystem;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.AcceptSystemAssessmentPolicyImportCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -37,13 +37,13 @@ public class AcceptSystemAssessmentPolicyImportUseCase implements IUseCase<Accep
         if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
 
         ImportSession session = importSessionRepository.findById(command.sessionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên làm việc Import (Session ID không hợp lệ)."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên làm việc Import (Session ID không hợp lệ)."));
 
         if (session.getType() != ImportType.ASSESSMENT_POLICY || session.getSchoolId() != null) {
             throw new IllegalArgumentException("Phiên làm việc này không phải là Import Assessment Policy hệ thống.");
         }
         if (session.getStatus() != ImportSessionStatus.PREVIEWED) {
-            throw new IllegalStateException("Chỉ có thể Accept những phiên làm việc đang ở trạng thái PREVIEWED.");
+            throw new IllegalArgumentException("Chỉ có thể Accept những phiên làm việc đang ở trạng thái PREVIEWED.");
         }
 
         if (command.confirmedMapping() != null) {

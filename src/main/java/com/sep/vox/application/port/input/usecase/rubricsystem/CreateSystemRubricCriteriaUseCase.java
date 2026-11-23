@@ -4,7 +4,7 @@ import com.sep.vox.domain.service.rubric.RubricOrderValidator;
 import com.sep.vox.domain.service.rubric.ScoreRangeValidator;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CreateSystemRubricCriteriaCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -62,15 +62,15 @@ public class CreateSystemRubricCriteriaUseCase implements IUseCase<CreateSystemR
 
         // 2. Validate Version
         RubricVersion version = rubricVersionRepository.findById(command.versionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản Rubric."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản Rubric."));
 
         if (version.getStatus() != RubricStatus.DRAFT) {
-            throw new IllegalStateException("Chỉ được thêm tiêu chí khi Rubric ở trạng thái DRAFT.");
+            throw new IllegalArgumentException("Chỉ được thêm tiêu chí khi Rubric ở trạng thái DRAFT.");
         }
 
         // 3. BẢO MẬT: Đảm bảo Rubric này thực sự là của SYSTEM
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             throw new ForbiddenException("Rubric này thuộc về một trường học. System Admin không được phép chỉnh sửa.");
@@ -86,7 +86,7 @@ public class CreateSystemRubricCriteriaUseCase implements IUseCase<CreateSystemR
 
         // Nếu số lượng tìm thấy dưới DB không bằng số lượng Set ID gửi lên -> Có ID Fake!
         if (existingFwCriteria.size() != inputFrameworkIds.size()) {
-            throw new NotFoundException("Dữ liệu không hợp lệ: Một hoặc nhiều Framework Criterion ID gửi lên không tồn tại trong hệ thống.");
+            throw new ResourceNotFoundException("Dữ liệu không hợp lệ: Một hoặc nhiều Framework Criterion ID gửi lên không tồn tại trong hệ thống.");
         }
 
         // 4. Lặp và xử lý danh sách tiêu chí (CÓ CHỐNG TRÙNG LẶP NỘI BỘ)
@@ -166,7 +166,7 @@ public class CreateSystemRubricCriteriaUseCase implements IUseCase<CreateSystemR
             rubricCriterionRepository.saveAll(criteriaToSave);
         } catch (DataConflictException e) {
             // Thanks to the database validation above, a data conflict here is certainly a unique constraint violation (a code/framework that duplicates OLD data saved by an earlier request)
-            throw new IllegalStateException("Lỗi lưu dữ liệu: Mã tiêu chí, Khung tiêu chuẩn (Framework) hoặc Thứ tự (order) đã tồn tại trong phiên bản Rubric hệ thống này từ trước.");
+            throw new IllegalArgumentException("Lỗi lưu dữ liệu: Mã tiêu chí, Khung tiêu chuẩn (Framework) hoặc Thứ tự (order) đã tồn tại trong phiên bản Rubric hệ thống này từ trước.");
         }
 
         return criteriaToSave.stream().map(rc -> rc.getId()).collect(Collectors.toList());

@@ -200,7 +200,7 @@ class CreateClassTestPaperTests {
         when(assessmentRepository.findById(ASSESSMENT_ID)).thenReturn(Optional.of(classTest(UUID.randomUUID())));
 
         assertThatThrownBy(() -> useCase.execute(questionsCommand()))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("không thể soạn câu hỏi trực tiếp");
     }
 
@@ -212,7 +212,7 @@ class CreateClassTestPaperTests {
         ));
 
         assertThatThrownBy(() -> useCase.execute(command))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("không thể xuất hiện nhiều lần");
     }
 
@@ -230,7 +230,7 @@ class CreateClassTestPaperTests {
         CreateAssessmentPaperCommand command = new CreateAssessmentPaperCommand(ASSESSMENT_ID, "questions", null, List.of());
 
         assertThatThrownBy(() -> useCase.execute(command))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Phải có ít nhất một phần trong đề");
     }
 

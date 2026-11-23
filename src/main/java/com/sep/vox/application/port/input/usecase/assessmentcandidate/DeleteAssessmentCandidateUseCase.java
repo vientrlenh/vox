@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.DeleteAssessmentCandidateCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -45,18 +45,18 @@ public class DeleteAssessmentCandidateUseCase implements IUseCase<DeleteAssessme
     @Transactional
     public Void execute(DeleteAssessmentCandidateCommand input) {
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
         authorize(assessment);
         AssessmentEditingGuard.requireScheduleEditable(assessment);
 
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(input.candidateId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy thí sinh"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thí sinh"));
         if (!candidate.getAssessmentId().equals(assessment.getId())) {
-            throw new NotFoundException("Không tìm thấy thí sinh");
+            throw new ResourceNotFoundException("Không tìm thấy thí sinh");
         }
 
         if (!assessmentSessionRepository.findByCandidateId(candidate.getId()).isEmpty()) {
-            throw new IllegalStateException("Thí sinh đã có bài thi — không thể xóa khỏi kỳ thi");
+            throw new IllegalArgumentException("Thí sinh đã có bài thi — không thể xóa khỏi kỳ thi");
         }
 
         assessmentCandidateRepository.deleteById(candidate.getId());

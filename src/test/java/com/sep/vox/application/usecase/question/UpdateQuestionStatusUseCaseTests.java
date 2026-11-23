@@ -14,7 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateQuestionStatusCommand;
 import com.sep.vox.application.port.input.service.QuestionStatusActorResolver;
 import com.sep.vox.application.port.input.usecase.question.UpdateQuestionStatusUseCase;
@@ -101,7 +101,7 @@ class UpdateQuestionStatusUseCaseTests {
         when(questionRepository.findById(any())).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> useCase.execute(new UpdateQuestionStatusCommand(UUID.randomUUID(), "SUBMIT", null)))
-            .isInstanceOf(NotFoundException.class)
+            .isInstanceOf(ResourceNotFoundException.class)
             .hasMessage("Không tìm thấy câu hỏi");
     }
 
@@ -112,7 +112,7 @@ class UpdateQuestionStatusUseCaseTests {
         when(questionBankRepository.findById(any())).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> useCase.execute(new UpdateQuestionStatusCommand(question.getId(), "SUBMIT", null)))
-            .isInstanceOf(NotFoundException.class)
+            .isInstanceOf(ResourceNotFoundException.class)
             .hasMessage("Không tìm thấy ngân hàng câu hỏi");
     }
 
@@ -133,7 +133,7 @@ class UpdateQuestionStatusUseCaseTests {
         mockQuestion(question);
 
         assertThatThrownBy(() -> useCase.execute(new UpdateQuestionStatusCommand(question.getId(), "SUBMIT", null)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessage("Không thể gửi duyệt: câu hỏi đang ở trạng thái \"Chờ duyệt\", "
                 + "thao tác này chỉ áp dụng cho câu hỏi ở trạng thái \"Bản nháp\" hoặc \"Yêu cầu sửa\"");
     }
@@ -144,7 +144,7 @@ class UpdateQuestionStatusUseCaseTests {
         mockQuestion(question);
 
         assertThatThrownBy(() -> useCase.execute(new UpdateQuestionStatusCommand(question.getId(), "DEMOLISH", null)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessage("Action không hợp lệ");
     }
 

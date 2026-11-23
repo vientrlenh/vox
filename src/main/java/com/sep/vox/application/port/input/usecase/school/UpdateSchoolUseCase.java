@@ -1,9 +1,9 @@
 package com.sep.vox.application.port.input.usecase.school;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.UpdateSchoolCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -36,7 +36,7 @@ public class UpdateSchoolUseCase implements IUseCase<UpdateSchoolCommand, UUID> 
     public UUID execute(UpdateSchoolCommand command) {
         // 1. Validate sự tồn tại của trường học
         School school = schoolRepository.findById(command.id())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
 
         // 2. Validate User bằng hàm exists cho tối ưu hiệu năng
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
@@ -65,7 +65,7 @@ public class UpdateSchoolUseCase implements IUseCase<UpdateSchoolCommand, UUID> 
         if (command.contactPhone() != null) {
             phone = StringNormalization.normalizePhone(command.contactPhone());
             if (schoolRepository.existsByContactPhoneAndIdNot(phone, command.id())) {
-                throw new DuplicatedException("Số điện thoại này đã được sử dụng.");
+                throw new ResourceDuplicatedException("Số điện thoại này đã được sử dụng.");
             }
         }
 
@@ -73,7 +73,7 @@ public class UpdateSchoolUseCase implements IUseCase<UpdateSchoolCommand, UUID> 
         if (command.contactEmail() != null) {
             email = StringNormalization.normalizeEmail(command.contactEmail());
             if (schoolRepository.existsByContactEmailAndIdNot(email, command.id())) {
-                throw new DuplicatedException("Email này đã được sử dụng.");
+                throw new ResourceDuplicatedException("Email này đã được sử dụng.");
             }
         }
 
@@ -98,7 +98,7 @@ public class UpdateSchoolUseCase implements IUseCase<UpdateSchoolCommand, UUID> 
         );
 
         if (updatedRows == 0) {
-            throw new NotFoundException("Cập nhật thất bại hoặc không có thay đổi.");
+            throw new ResourceNotFoundException("Cập nhật thất bại hoặc không có thay đổi.");
         }
 
         return command.id();

@@ -7,7 +7,7 @@ import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.service.rubric.ScoreRangeValidator;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.UpdateSchoolRubricVersionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -69,7 +69,7 @@ public class UpdateSchoolRubricVersionUseCase
 
         School school = schoolRepository.findById(command.schoolId())
                 .orElseThrow(() ->
-                        new NotFoundException("Không tìm thấy trường học.")
+                        new ResourceNotFoundException("Không tìm thấy trường học.")
                 );
 
         if (!school.isActive()) {
@@ -79,11 +79,11 @@ public class UpdateSchoolRubricVersionUseCase
         // 3. Load the Rubric Version
         RubricVersion version = rubricVersionRepository.findById(command.versionId())
                 .orElseThrow(() ->
-                        new NotFoundException("Không tìm thấy Rubric Version.")
+                        new ResourceNotFoundException("Không tìm thấy Rubric Version.")
                 );
 
         if (version.getStatus() != RubricStatus.DRAFT) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                     "Chỉ có thể cập nhật Rubric Version ở trạng thái DRAFT."
             );
         }
@@ -91,7 +91,7 @@ public class UpdateSchoolRubricVersionUseCase
         // 4. Check that the Rubric belongs to the right school
         Rubric rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() ->
-                        new NotFoundException("Không tìm thấy bộ Rubric gốc.")
+                        new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc.")
                 );
 
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL

@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.ViewFrameworkCriteriaQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.FrameworkCriterionDto;
@@ -32,9 +32,9 @@ public class ViewSchoolFrameworkCriteriaUseCase implements IUseCase<ViewFramewor
     public List<FrameworkCriterionDto> execute(ViewFrameworkCriteriaQuery query) {
         // 1. Kiểm tra FrameworkVersion tồn tại và đã PUBLISHED
         FrameworkVersion version = frameworkVersionRepository.findById(query.frameworkVersionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản Framework."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản Framework."));
         if (version.getStatus() != FrameworkVersionStatus.PUBLISHED) {
-            throw new NotFoundException("Không tìm thấy phiên bản Framework.");
+            throw new ResourceNotFoundException("Không tìm thấy phiên bản Framework.");
         }
 
         // 2. Lấy Criteria + Band tương ứng, map sang DTO

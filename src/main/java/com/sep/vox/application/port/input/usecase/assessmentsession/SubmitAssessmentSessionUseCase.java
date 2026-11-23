@@ -29,7 +29,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.event.AssessmentAttemptEvaluationRequestedExternalEvent;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.SubmitAssessmentSessionCommand;
 import com.sep.vox.application.port.input.service.MissingResponseBackfillService;
 import com.sep.vox.application.port.input.service.ZeroScoreAssessmentResultService;
@@ -84,7 +84,7 @@ public class SubmitAssessmentSessionUseCase implements IUseCase<SubmitAssessment
     @Transactional
     public Void execute(SubmitAssessmentSessionCommand input) {
         AssessmentSession session = assessmentSessionRepository.findById(input.sessionId())
-            .orElseThrow(() -> new NotFoundException("Không thể tìm thấy phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không thể tìm thấy phiên thi"));
         // GRADED is accepted here for exactly 1 case: G.4 - a session that was wrongly flagged as a
         // violation (INVALID, never had any AssessmentItemEvaluation), has been unblocked, and is called back by
         // RetryGradingAssessmentSessionUseCase for the AI to really grade it for the first time.
@@ -93,7 +93,7 @@ public class SubmitAssessmentSessionUseCase implements IUseCase<SubmitAssessment
                 && fromStatus != AssessmentSessionStatus.EXPIRED
                 && fromStatus != AssessmentSessionStatus.GRADING_FAILED
                 && fromStatus != AssessmentSessionStatus.GRADED) {
-            throw new IllegalStateException("chỉ được gửi chấm khi phiên thi đã nộp hoặc hết giờ");
+            throw new IllegalArgumentException("chỉ được gửi chấm khi phiên thi đã nộp hoặc hết giờ");
         }
 
        
@@ -105,9 +105,9 @@ public class SubmitAssessmentSessionUseCase implements IUseCase<SubmitAssessment
         session.setStatus(AssessmentSessionStatus.GRADING);
 
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(session.getCandidateId())
-            .orElseThrow(() -> new NotFoundException("không thể tìm thấy thí sinh của phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("không thể tìm thấy thí sinh của phiên thi"));
         Assessment assessment = assessmentRepository.findById(session.getAssessmentId())
-            .orElseThrow(() -> new NotFoundException("không thể tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("không thể tìm thấy bài kiểm tra"));
         List<AssessmentItemResponse> responses = assessmentItemResponseRepository.findBySessionId(session.getId());
         if (candidate.getBlockedAt() != null) {
             persistInvalidBlockedResult(session);
@@ -142,7 +142,7 @@ public class SubmitAssessmentSessionUseCase implements IUseCase<SubmitAssessment
             }
             UUID paperItemId = response.getPaperItemId();
             if (paperItemId == null) {
-                throw new NotFoundException("không thể tìm thấy paperItemId cho câu trả lời " + response.getId());
+                throw new ResourceNotFoundException("không thể tìm thấy paperItemId cho câu trả lời " + response.getId());
             }
 
             // Thí sinh ĐƯỢC hỏi nhưng KHÔNG NÓI GÌ: ghi thẳng 0 điểm, không gửi sang LLM.
@@ -161,9 +161,9 @@ public class SubmitAssessmentSessionUseCase implements IUseCase<SubmitAssessment
             }
 
             AssessmentPaperItem paperItem = assessmentPaperItemRepository.findById(paperItemId)
-                .orElseThrow(() -> new NotFoundException("không thể tìm thấy paper item " + paperItemId));
+                .orElseThrow(() -> new ResourceNotFoundException("không thể tìm thấy paper item " + paperItemId));
             Question question = questionRepository.findById(paperItem.getQuestionId())
-                .orElseThrow(() -> new NotFoundException("không thể tìm thấy câu hỏi " + paperItem.getQuestionId()));
+                .orElseThrow(() -> new ResourceNotFoundException("không thể tìm thấy câu hỏi " + paperItem.getQuestionId()));
             QuestionEvaluationGuide guide = questionEvaluationGuideRepository.findByQuestionId(question.getId()).orElse(null);
             QuestionAsset asset = questionAssetRepository.findByQuestionId(question.getId()).stream().findFirst().orElse(null);
             QuestionTopic topic = question.getQuestionTopicId() == null
@@ -243,7 +243,7 @@ public class SubmitAssessmentSessionUseCase implements IUseCase<SubmitAssessment
      */
     private void persistInvalidBlockedResult(com.sep.vox.domain.model.assessment.AssessmentSession session) {
         Assessment assessment = assessmentRepository.findById(session.getAssessmentId())
-            .orElseThrow(() -> new NotFoundException("không thể tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("không thể tìm thấy bài kiểm tra"));
         AssessmentPolicy policy = assessment.getAssessmentPolicyId() == null
             ? null
             : assessmentPolicyRepository.findById(assessment.getAssessmentPolicyId()).orElse(null);
@@ -282,7 +282,7 @@ public class SubmitAssessmentSessionUseCase implements IUseCase<SubmitAssessment
             throw new IllegalStateException("Assessment policy chưa cấu hình bậc mục tiêu để AI chấm.");
         }
         FrameworkResultBand targetBand = frameworkResultBandRepository.findById(policy.getTargetFrameworkBandId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bậc mục tiêu của assessment policy."));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bậc mục tiêu của assessment policy."));
         if (!policy.getFrameworkVersionId().equals(targetBand.getFrameworkVersionId())) {
             throw new IllegalStateException("Bậc mục tiêu không thuộc framework version của assessment policy.");
         }
@@ -312,7 +312,7 @@ public class SubmitAssessmentSessionUseCase implements IUseCase<SubmitAssessment
         return rubricCriteria.stream().map(criterion -> {
             if (criterion.getMinScore() == null || criterion.getMaxScore() == null
                     || criterion.getMinScore().compareTo(criterion.getMaxScore()) >= 0) {
-                throw new IllegalStateException("Tiêu chí rubric '" + criterion.getName()
+                throw new IllegalArgumentException("Tiêu chí rubric '" + criterion.getName()
                     + "' phải có minScore nhỏ hơn maxScore trước khi gửi sang AI.");
             }
             FrameworkCriterion frameworkCriterion = frameworkCriteriaById.get(criterion.getFrameworkCriterionId());
@@ -321,7 +321,7 @@ public class SubmitAssessmentSessionUseCase implements IUseCase<SubmitAssessment
             FrameworkCriterionBand targetCriterionBand = criterionBands.stream()
                 .filter(item -> policy.getTargetFrameworkBandId().equals(item.getFrameworkResultBandId()))
                 .findFirst()
-                .orElseThrow(() -> new IllegalStateException(
+                .orElseThrow(() -> new IllegalArgumentException(
                     "Tiêu chí framework chưa có mô tả cho bậc mục tiêu " + targetBand.getLabel() + "."));
             String criterionKey = agentCriterionKey(criterion.getCode());
             List<FrameworkCriterionBand> sourceBands = criterionKey != null && ladderCriterionKeys.contains(criterionKey)

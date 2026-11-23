@@ -14,7 +14,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewMyClassDetailsQuery;
 import com.sep.vox.application.port.input.usecase.schoolclass.MyClassAccessGuard;
@@ -88,8 +88,8 @@ class ViewMyClassDetailsUseCaseTests {
         when(schoolClassUserRepository.findByUserIdAndSchoolClassId(callerId, classId))
             .thenReturn(Optional.empty());
 
-        NotFoundException exception = assertThrows(
-            NotFoundException.class,
+        ResourceNotFoundException exception = assertThrows(
+            ResourceNotFoundException.class,
             () -> useCase.execute(new ViewMyClassDetailsQuery(classId))
         );
 
@@ -102,8 +102,8 @@ class ViewMyClassDetailsUseCaseTests {
         givenActiveCaller();
         givenMembership(false);
 
-        NotFoundException exception = assertThrows(
-            NotFoundException.class,
+        ResourceNotFoundException exception = assertThrows(
+            ResourceNotFoundException.class,
             () -> useCase.execute(new ViewMyClassDetailsQuery(classId))
         );
 
@@ -116,7 +116,7 @@ class ViewMyClassDetailsUseCaseTests {
         givenMembership(true);
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> useCase.execute(new ViewMyClassDetailsQuery(classId)));
+        assertThrows(ResourceNotFoundException.class, () -> useCase.execute(new ViewMyClassDetailsQuery(classId)));
     }
 
     private void givenActiveCaller() {

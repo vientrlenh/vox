@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.MarkNotificationAsReadCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -28,7 +28,7 @@ public class MarkNotificationAsReadUseCase implements IUseCase<MarkNotificationA
         Instant now = Instant.now();
 
         Notification notification = notificationRepository.findByIdAndUserId(input.id(), userId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy thông báo"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông báo"));
         notificationRepository.markRead(userId, input.id(), now);
 
         return notification.getId();

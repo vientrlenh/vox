@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.gradelevel;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CreateGradeLevelCommand;
@@ -54,10 +54,10 @@ public class CreateGradeLevelUseCase implements IUseCase<CreateGradeLevelCommand
 
     private void validateUniqueness(String code, Integer order) {
         if (gradeLevelRepository.existsByCode(code)) {
-            throw new DuplicatedException("Mã khối học đã tồn tại.");
+            throw new ResourceDuplicatedException("Mã khối học đã tồn tại.");
         }
         if (order != null && gradeLevelRepository.existsByOrder(order)) {
-            throw new DuplicatedException("Thứ tự khối học đã được sử dụng.");
+            throw new ResourceDuplicatedException("Thứ tự khối học đã được sử dụng.");
         }
     }
 
@@ -73,7 +73,7 @@ public class CreateGradeLevelUseCase implements IUseCase<CreateGradeLevelCommand
             return gradeLevelRepository.save(newGradeLevel).getId();
         } catch (DataConflictException e) {
             // Race-condition guard: two requests that create the same code/order both pass the exists check and only then hit the unique index.
-            throw new DuplicatedException("Mã hoặc thứ tự khối học đã tồn tại.");
+            throw new ResourceDuplicatedException("Mã hoặc thứ tự khối học đã tồn tại.");
         }
     }
 }

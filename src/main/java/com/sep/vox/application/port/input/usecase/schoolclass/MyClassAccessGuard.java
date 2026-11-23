@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.user.UserStatus;
@@ -55,9 +55,9 @@ public class MyClassAccessGuard {
         UUID callerId = requireActiveCaller();
         SchoolClassUser membership = schoolClassUserRepository
             .findByUserIdAndSchoolClassId(callerId, schoolClassId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy lớp học"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp học"));
         if (!membership.isActive()) {
-            throw new NotFoundException("Không tìm thấy lớp học");
+            throw new ResourceNotFoundException("Không tìm thấy lớp học");
         }
         return callerId;
     }

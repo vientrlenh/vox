@@ -7,8 +7,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.DuplicatedException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.mapper.framework.CreateFrameworkVersionResponseMapper;
 import com.sep.vox.application.port.input.command.CreateFrameworkVersionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -34,7 +34,7 @@ public class CreateFrameworkVersionUseCase implements IUseCase<CreateFrameworkVe
         }
 
         frameworkRepository.findById(command.frameworkId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy framework"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy framework"));
 
         FrameworkVersion version = FrameworkVersion.builder()
             .frameworkId(command.frameworkId())
@@ -51,7 +51,7 @@ public class CreateFrameworkVersionUseCase implements IUseCase<CreateFrameworkVe
             FrameworkVersion saved = frameworkVersionRepository.save(version);
             return CreateFrameworkVersionResponseMapper.toResponse(saved.getId());
         } catch (DataConflictException e) {
-            throw new DuplicatedException("Phiên bản hoặc mã phiên bản này đã tồn tại trong framework");
+            throw new ResourceDuplicatedException("Phiên bản hoặc mã phiên bản này đã tồn tại trong framework");
         }
     }
 

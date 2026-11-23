@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.ViewRegisterFormDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.RegisterFormDto;
@@ -25,13 +25,13 @@ public class ViewRegisterFormDetailsUseCase implements IUseCase<ViewRegisterForm
     @Transactional(readOnly = true)
     public RegisterFormDto execute(ViewRegisterFormDetailsQuery input) {
         RegisterForm registerForm = registerFormRepository.findById(input.id())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn đăng ký"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn đăng ký"));
         String schoolDomain = null;
         String schoolName = null;
         String schoolAddress = null;
         if (registerForm.getSchoolDirectoryId() != null) {
             SchoolDirectory schoolDirectory = schoolDirectoryRepository.findById(registerForm.getSchoolDirectoryId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy danh mục trường"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục trường"));
             schoolDomain = schoolDirectory.getDomain();
             schoolName = schoolDirectory.getName();
             schoolAddress = schoolDirectory.getAddress();

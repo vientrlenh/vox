@@ -15,8 +15,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.DuplicatedException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateAssessmentAppealCommand;
 import com.sep.vox.application.port.input.service.AssessmentAppealAccessService;
 import com.sep.vox.application.port.input.service.ResultStatusHistoryRecorder;
@@ -60,14 +60,14 @@ public class CreateAssessmentAppealUseCase implements IUseCase<CreateAssessmentA
 
         AssessmentCandidateResult candidateResult = context.candidateResult();
         if (candidateResult.getStatus() != AssessmentCandidateResultStatus.RELEASED) {
-            throw new IllegalStateException("Chỉ có thể phúc khảo kết quả đã được công bố.");
+            throw new IllegalArgumentException("Chỉ có thể phúc khảo kết quả đã được công bố.");
         }
         if (assessmentResultAppealRepository.existsOpenByCandidateResultId(command.candidateResultId())) {
-            throw new DuplicatedException("Đã có đơn phúc khảo đang được xử lý cho kết quả này.");
+            throw new ResourceDuplicatedException("Đã có đơn phúc khảo đang được xử lý cho kết quả này.");
         }
         if (assessmentResultAppealRepository.countPublishedByCandidateResultId(command.candidateResultId())
                 >= MAX_APPEAL_ROUNDS) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 "Mỗi kết quả chỉ được phúc khảo tối đa " + MAX_APPEAL_ROUNDS + " lần.");
         }
         // Trùng phần thi là lỗi của client, phát hiện trước khi chạm DB.
@@ -95,13 +95,13 @@ public class CreateAssessmentAppealUseCase implements IUseCase<CreateAssessmentA
             // each question: the comparison screen of the school administrator takes baselineScores + turns from exactly
             // those rows, and dropping them would lose the comparison data.
             if (responsesByPaperItem.isEmpty()) {
-                throw new NotFoundException("Bài thi này không có câu trả lời nào để phúc khảo.");
+                throw new ResourceNotFoundException("Bài thi này không có câu trả lời nào để phúc khảo.");
             }
             distinctPaperItemIds = new LinkedHashSet<>(responsesByPaperItem.keySet());
         } else {
             distinctPaperItemIds = selected;
             if (!responsesByPaperItem.keySet().containsAll(distinctPaperItemIds)) {
-                throw new NotFoundException("Không tìm thấy câu trả lời của phần thi cần phúc khảo.");
+                throw new ResourceNotFoundException("Không tìm thấy câu trả lời của phần thi cần phúc khảo.");
             }
         }
 

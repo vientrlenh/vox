@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.mapper.supportedlanguage.CreateSupportedLanguageResponseMapper;
 import com.sep.vox.application.port.input.command.CreateSupportedLanguageCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -32,7 +32,7 @@ public class CreateSupportedLanguageUseCase implements IUseCase<CreateSupportedL
         validateCommand(command);
 
         if (supportedLanguageRepository.findByCode(command.code()).isPresent()) {
-            throw new DuplicatedException("Ngôn ngữ đã tồn tại với mã: " + command.code());
+            throw new ResourceDuplicatedException("Ngôn ngữ đã tồn tại với mã: " + command.code());
         }
 
         SupportedLanguage language = SupportedLanguage.builder()
@@ -46,7 +46,7 @@ public class CreateSupportedLanguageUseCase implements IUseCase<CreateSupportedL
             SupportedLanguage saved = supportedLanguageRepository.save(language);
             return CreateSupportedLanguageResponseMapper.toResponse(saved.getId());
         } catch (DataConflictException e) {
-            throw new DuplicatedException("Ngôn ngữ đã tồn tại với mã: " + command.code());
+            throw new ResourceDuplicatedException("Ngôn ngữ đã tồn tại với mã: " + command.code());
         }
     }
 

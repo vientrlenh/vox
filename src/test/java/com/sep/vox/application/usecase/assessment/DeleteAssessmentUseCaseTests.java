@@ -210,7 +210,7 @@ class DeleteAssessmentUseCaseTests {
         when(assessmentRepository.findById(assessmentId)).thenReturn(Optional.of(assessment(AssessmentStatus.RESULTS_PUBLISHED)));
 
         assertThatThrownBy(() -> useCase.execute(new DeleteAssessmentCommand(assessmentId)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("công bố kết quả");
         verify(assessmentRepository, never()).deleteById(any());
         verify(assessmentRepository, never()).save(any());

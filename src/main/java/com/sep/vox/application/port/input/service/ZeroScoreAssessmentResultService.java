@@ -14,7 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import com.sep.vox.domain.model.assessment.AssessmentCandidateResult;
 import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
@@ -60,14 +60,14 @@ public class ZeroScoreAssessmentResultService {
     @Transactional
     public AssessmentCandidateResult releaseZeroForEmptySession(UUID sessionId) {
         AssessmentSession session = assessmentSessionRepository.findById(sessionId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi"));
         return releaseZeroForSession(session, Instant.now());
     }
 
     @Transactional
     public void ensureZeroResultsForMissingOrEmptyAttempts(UUID assessmentId) {
         Assessment assessment = assessmentRepository.findById(assessmentId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
         AssessmentPolicy policy = resolvePolicy(assessment);
         Instant now = Instant.now();
         UUID fallbackPaperId = assessmentPaperRepository.findByAssessmentId(assessmentId).stream()
@@ -120,7 +120,7 @@ public class ZeroScoreAssessmentResultService {
 
     private AssessmentCandidateResult releaseZeroForSession(AssessmentSession session, Instant now) {
         Assessment assessment = assessmentRepository.findById(session.getAssessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
         return releaseZeroForSession(session, resolvePolicy(assessment), now);
     }
 
@@ -149,10 +149,10 @@ public class ZeroScoreAssessmentResultService {
 
     private AssessmentPolicy resolvePolicy(com.sep.vox.domain.model.assessment.Assessment assessment) {
         if (assessment.getAssessmentPolicyId() == null) {
-            throw new NotFoundException("Bài kiểm tra chưa gắn assessment policy");
+            throw new ResourceNotFoundException("Bài kiểm tra chưa gắn assessment policy");
         }
         return assessmentPolicyRepository.findById(assessment.getAssessmentPolicyId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy assessment policy"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy assessment policy"));
     }
 
     private BigDecimal floorScore(AssessmentPolicy policy) {

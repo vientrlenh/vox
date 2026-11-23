@@ -18,8 +18,8 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.DuplicatedException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.BulkAssignAssessmentCandidateScheduleCommand;
 import com.sep.vox.application.port.input.service.AssessmentPaperAutoAssigner;
 import com.sep.vox.application.port.input.service.AssessmentScheduleCandidateConflictValidator;
@@ -131,7 +131,7 @@ class BulkAssignAssessmentCandidateScheduleUseCaseTests {
         givenCandidates(candidate(firstCandidateId, null));
 
         assertThatThrownBy(() -> useCase.execute(command(scheduleId)))
-            .isInstanceOf(NotFoundException.class);
+            .isInstanceOf(ResourceNotFoundException.class);
         verify(assessmentCandidateRepository, never()).saveAll(anyCollection());
     }
 
@@ -140,7 +140,7 @@ class BulkAssignAssessmentCandidateScheduleUseCaseTests {
         givenSchedule(AssessmentScheduleStatus.COMPLETED);
 
         assertThatThrownBy(() -> useCase.execute(command(scheduleId)))
-            .isInstanceOf(IllegalStateException.class);
+            .isInstanceOf(IllegalArgumentException.class);
         verify(assessmentCandidateRepository, never()).saveAll(anyCollection());
     }
 
@@ -149,7 +149,7 @@ class BulkAssignAssessmentCandidateScheduleUseCaseTests {
         when(assessmentRepository.findById(assessmentId)).thenReturn(Optional.of(assessment(AssessmentStatus.IN_PROGRESS)));
 
         assertThatThrownBy(() -> useCase.execute(command(scheduleId)))
-            .isInstanceOf(IllegalStateException.class);
+            .isInstanceOf(IllegalArgumentException.class);
         verify(assessmentCandidateRepository, never()).saveAll(anyCollection());
     }
 
@@ -172,7 +172,7 @@ class BulkAssignAssessmentCandidateScheduleUseCaseTests {
         givenName(second.getStudentId(), "Trần Thị Bình");
 
         assertThatThrownBy(() -> useCase.execute(command(scheduleId)))
-            .isInstanceOf(DuplicatedException.class)
+            .isInstanceOf(ResourceDuplicatedException.class)
             .hasMessageContaining("Trần Thị Bình");
         // The whole batch fails: nobody is assigned, not even those with no conflict.
         verify(assessmentCandidateRepository, never()).saveAll(anyCollection());

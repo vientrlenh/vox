@@ -23,7 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.PlanLimitExceededException;
+import com.sep.vox.application.exception.BusinessRuleViolationException;
 import com.sep.vox.application.port.input.command.ImportAssessmentCandidatesFromClassCommand;
 import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
 import com.sep.vox.application.port.input.service.AssessmentDirectoryAccessService;
@@ -153,11 +153,11 @@ class ImportAssessmentCandidatesFromClassUseCaseTests {
             Collection<AssessmentCandidate> arg = inv.getArgument(0);
             return arg.stream().peek(c -> c.setId(UUID.randomUUID())).toList();
         });
-        doThrow(new PlanLimitExceededException("Đã vượt quá hạn mức"))
+        doThrow(new BusinessRuleViolationException("Đã vượt quá hạn mức"))
             .when(classTestTokenQuotaGuardService).requireWithinTokenQuota(assessment);
 
         assertThatThrownBy(() -> useCase.execute(new ImportAssessmentCandidatesFromClassCommand(assessmentId, classId)))
-            .isInstanceOf(PlanLimitExceededException.class)
+            .isInstanceOf(BusinessRuleViolationException.class)
             .hasMessageContaining("vượt quá hạn mức");
     }
 

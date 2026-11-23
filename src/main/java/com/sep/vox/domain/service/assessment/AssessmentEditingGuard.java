@@ -17,14 +17,14 @@ public final class AssessmentEditingGuard {
     /** Thông tin kỳ thi: tên, mô tả, khung giờ, chính sách đánh giá... */
     public static void requireAssessmentEditable(Assessment assessment) {
         if (assessment.isLockedForEditing()) {
-            throw new IllegalStateException("Không thể chỉnh sửa kỳ thi khi kỳ thi đã bắt đầu");
+            throw new IllegalArgumentException("Không thể chỉnh sửa kỳ thi khi kỳ thi đã bắt đầu");
         }
     }
 
     /** Lịch thi: ca thi, giám thị, xếp thí sinh vào ca, phân đề. */
     public static void requireScheduleEditable(Assessment assessment) {
         if (assessment.isLockedForEditing()) {
-            throw new IllegalStateException("Không thể thay đổi lịch thi khi kỳ thi đã bắt đầu");
+            throw new IllegalArgumentException("Không thể thay đổi lịch thi khi kỳ thi đã bắt đầu");
         }
     }
 }

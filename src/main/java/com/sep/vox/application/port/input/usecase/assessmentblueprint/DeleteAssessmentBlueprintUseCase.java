@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.DeleteAssessmentBlueprintCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -31,17 +31,17 @@ public class DeleteAssessmentBlueprintUseCase implements IUseCase<DeleteAssessme
             .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
 
         AssessmentBlueprint blueprint = assessmentBlueprintRepository.findById(input.blueprintId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint đề thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy blueprint đề thi"));
         if (!assessmentBlueprintRepository.canEditBlueprint(blueprint.getId(), currentUserId, currentSchoolId)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
         if (assessmentBlueprintRepository.existsUsedByAssessment(blueprint.getId())) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 "Blueprint vẫn đang được ít nhất 1 bài kiểm tra tham chiếu, không thể xóa — hãy gỡ blueprint khỏi bài kiểm tra đó trước");
         }
 
         if (blueprint.isActive()) {
-            throw new IllegalStateException("Chỉ được xóa blueprint khi isActive=false");
+            throw new IllegalArgumentException("Chỉ được xóa blueprint khi isActive=false");
         }
 
         assessmentBlueprintRepository.deleteById(blueprint.getId());

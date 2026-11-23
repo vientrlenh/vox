@@ -42,7 +42,7 @@ public class RejectAssessmentAppealUseCase implements IUseCase<RejectAssessmentA
 
         AssessmentResultAppeal appeal = context.appeal();
         if (appeal.getStatus() != AssessmentAppealStatus.PENDING) {
-            throw new IllegalStateException("Chỉ có thể từ chối đơn phúc khảo đang ở trạng thái Chờ duyệt.");
+            throw new IllegalArgumentException("Chỉ có thể từ chối đơn phúc khảo đang ở trạng thái Chờ duyệt.");
         }
         if (command.reason() == null || command.reason().isBlank()) {
             throw new IllegalArgumentException("Phải nêu lý do từ chối đơn phúc khảo.");

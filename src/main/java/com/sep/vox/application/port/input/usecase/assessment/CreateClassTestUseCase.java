@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateClassTestCommand;
 import com.sep.vox.application.port.input.service.AssessmentPolicyValidator;
 import com.sep.vox.application.port.input.service.AssessmentScheduleProctorConflictValidator;
@@ -88,7 +88,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         }
 
         SchoolClass schoolClass = schoolClassRepository.findById(command.schoolClassId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy lớp học"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp học"));
 
         SchoolClassUser membership = schoolClassUserRepository.findByUserIdAndSchoolClassId(currentUserId, schoolClass.getId())
             .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
@@ -213,7 +213,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
      */
     private AssessmentSchedule createDraftSchedule(Assessment assessment, UUID schoolRoomId) {
         if (assessment.getOpenAt() == null || assessment.getCloseAt() == null) {
-            throw new IllegalStateException("Bài kiểm tra trên lớp phải có thời gian mở bài và đóng bài");
+            throw new IllegalArgumentException("Bài kiểm tra trên lớp phải có thời gian mở bài và đóng bài");
         }
         if (schoolRoomId != null) {
             assessmentScheduleRoomValidator.validateForNewSchedule(
@@ -264,10 +264,10 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
 
     private void validateOpenClose(Instant open, Instant close, UUID schoolId) {
         if (open == null || close == null) {
-            throw new IllegalStateException("Bài kiểm tra trên lớp phải có thời gian mở bài và đóng bài");
+            throw new IllegalArgumentException("Bài kiểm tra trên lớp phải có thời gian mở bài và đóng bài");
         }
         if (!open.isBefore(close)) {
-            throw new IllegalStateException("Thời gian mở bài phải nhỏ hơn thời gian đóng bài");
+            throw new IllegalArgumentException("Thời gian mở bài phải nhỏ hơn thời gian đóng bài");
         }
         subscriptionPeriodGuardService.requireWithinSubscriptionPeriod(schoolId, open, close);
     }

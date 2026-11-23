@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateAssessmentCommand;
 import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
 import com.sep.vox.application.port.input.service.AssessmentPolicyValidator;
@@ -67,13 +67,13 @@ public class UpdateAssessmentUseCase implements IUseCase<UpdateAssessmentCommand
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
 
         Assessment assessment = assessmentRepository.findById(command.assessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
 
         authorizeMutation(assessment.getId(), assessment.getSchoolId(), assessment.getKind(), currentUserId, currentSchoolId, schoolAdmin);
         if (assessment.getKind() == AssessmentKind.CLASS_TEST
                 && assessment.getStatus() != AssessmentStatus.DRAFT
                 && assessment.getStatus() != AssessmentStatus.SCHEDULED) {
-            throw new IllegalStateException("Chỉ được cập nhật bài kiểm tra trên lớp khi chưa bắt đầu");
+            throw new IllegalArgumentException("Chỉ được cập nhật bài kiểm tra trên lớp khi chưa bắt đầu");
         }
         // Kỳ thi thường: thí sinh đã vào phòng thi nên mọi thay đổi thông tin đều làm lệch dữ liệu
         // đang chạy (khung giờ, thời gian làm bài, cách chốt điểm).
@@ -139,7 +139,7 @@ public class UpdateAssessmentUseCase implements IUseCase<UpdateAssessmentCommand
             // Khung mở/đóng sẽ được đồng bộ thẳng xuống ca thi ở dưới, nên phải đủ dài cho bài làm.
             if (touchesScheduleTiming(command)
                     && assessment.isScheduleWindowShorterThanAssessmentTime(assessment.getOpenAt(), assessment.getCloseAt())) {
-                throw new IllegalStateException(AssessmentScheduleWindowMessages.schedulesNoLongerFit(1, assessment));
+                throw new IllegalArgumentException(AssessmentScheduleWindowMessages.schedulesNoLongerFit(1, assessment));
             }
         } else {
             requireAssessmentWindow(assessment.getOpenAt(), assessment.getCloseAt(), assessment.getKind());
@@ -221,7 +221,7 @@ public class UpdateAssessmentUseCase implements IUseCase<UpdateAssessmentCommand
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
         if (assessmentRepository.existsSubmittedSessionByAssessmentId(assessmentId)) {
-            throw new IllegalStateException("Không thể cập nhật bài kiểm tra khi đã có bài nộp");
+            throw new IllegalArgumentException("Không thể cập nhật bài kiểm tra khi đã có bài nộp");
         }
     }
 
@@ -254,14 +254,14 @@ public class UpdateAssessmentUseCase implements IUseCase<UpdateAssessmentCommand
             .filter(schedule -> assessment.isScheduleWindowOutsideAssessmentWindow(schedule.getStartDate(), schedule.getEndDate()))
             .count();
         if (outsideCount > 0) {
-            throw new IllegalStateException(AssessmentScheduleWindowMessages.schedulesOutsideNewWindow((int) outsideCount));
+            throw new IllegalArgumentException(AssessmentScheduleWindowMessages.schedulesOutsideNewWindow((int) outsideCount));
         }
 
         long tooShortCount = activeSchedules.stream()
             .filter(schedule -> assessment.isScheduleWindowShorterThanAssessmentTime(schedule.getStartDate(), schedule.getEndDate()))
             .count();
         if (tooShortCount > 0) {
-            throw new IllegalStateException(AssessmentScheduleWindowMessages.schedulesNoLongerFit((int) tooShortCount, assessment));
+            throw new IllegalArgumentException(AssessmentScheduleWindowMessages.schedulesNoLongerFit((int) tooShortCount, assessment));
         }
     }
 
@@ -276,12 +276,12 @@ public class UpdateAssessmentUseCase implements IUseCase<UpdateAssessmentCommand
      */
     private void requireAssessmentWindow(Instant openAt, Instant closeAt, AssessmentKind kind) {
         if (openAt == null || closeAt == null) {
-            throw new IllegalStateException(kind == AssessmentKind.CLASS_TEST
+            throw new IllegalArgumentException(kind == AssessmentKind.CLASS_TEST
                 ? "Bài kiểm tra trên lớp phải có thời gian mở bài và đóng bài"
                 : "Kỳ thi phải có thời gian mở bài và đóng bài");
         }
         if (!openAt.isBefore(closeAt)) {
-            throw new IllegalStateException("Thời gian mở bài phải nhỏ hơn thời gian đóng bài");
+            throw new IllegalArgumentException("Thời gian mở bài phải nhỏ hơn thời gian đóng bài");
         }
     }
 }

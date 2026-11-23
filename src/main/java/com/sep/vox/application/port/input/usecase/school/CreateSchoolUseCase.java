@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.AvatarUrlPolicy;
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateSchoolCommand;
 import com.sep.vox.application.port.input.command.ProvisionSchoolCommand;
 import com.sep.vox.application.port.input.service.ProvisionSchoolService;
@@ -107,7 +107,7 @@ public class CreateSchoolUseCase implements IUseCase<CreateSchoolCommand, UUID> 
         }
 
         SchoolDirectory directory = schoolDirectoryRepository.findById(command.schoolDirectoryId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy danh mục trường theo yêu cầu"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục trường theo yêu cầu"));
 
         // KHÔNG chặn khi danh mục chưa xác minh -- API này cố tình bỏ vòng duyệt, và chính việc
         // SYSTEM_ADMIN tạo trường ở đây đã là hành vi xác minh. Đánh dấu luôn để không còn trạng

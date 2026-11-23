@@ -16,7 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateSchoolCommand;
 import com.sep.vox.application.port.input.command.ProvisionSchoolCommand;
 import com.sep.vox.application.port.input.service.ProvisionSchoolService;
@@ -152,7 +152,7 @@ class CreateSchoolUseCaseTests {
         when(schoolDirectoryRepository.findById(directoryId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> useCase.execute(commandWith(directoryId, null, null, null, null)))
-            .isInstanceOf(NotFoundException.class);
+            .isInstanceOf(ResourceNotFoundException.class);
 
         verify(provisionSchoolService, never()).provision(any());
     }

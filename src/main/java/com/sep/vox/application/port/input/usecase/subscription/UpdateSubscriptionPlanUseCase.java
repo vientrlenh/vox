@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateSubscriptionPlanCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.model.metering.QuotaType;
@@ -43,7 +43,7 @@ public class UpdateSubscriptionPlanUseCase implements IUseCase<UpdateSubscriptio
     @Transactional
     public UUID execute(UpdateSubscriptionPlanCommand input) {
         SubscriptionPlan plan = subscriptionPlanRepository.findById(input.subscriptionPlanId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói"));
 
         // A published plan (ACTIVE/ARCHIVED) is locked against editing entirely, even fields unrelated to money/quota: renewal
         // (CreatePaymentLinkForRenewalUseCase / InvoiceSettlementService) reads the price and quota LIVE from this very plan, with
@@ -51,7 +51,7 @@ public class UpdateSubscriptionPlanUseCase implements IUseCase<UpdateSubscriptio
         // confirmation step. It can only be edited while DRAFT (not published, so no school uses it yet); to change a published
         // plan, archive it and create a new plan (with replacedByPlanId).
         if (plan.getStatus() != SubscriptionPlanStatus.DRAFT) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 "Chỉ có thể chỉnh sửa gói khi đang ở trạng thái nháp. Gói đã xuất bản thì phải lưu trữ và tạo gói mới thay thế.");
         }
 

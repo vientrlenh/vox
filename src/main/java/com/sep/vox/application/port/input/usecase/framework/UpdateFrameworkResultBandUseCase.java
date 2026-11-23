@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateFrameworkResultBandCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.model.framework.FrameworkResultBand;
@@ -39,7 +39,7 @@ public class UpdateFrameworkResultBandUseCase
         try {
             frameworkResultBandRepository.save(band);
         } catch (DataConflictException e) {
-            throw new IllegalStateException("Mã hoặc nhãn kết quả đã tồn tại cho phiên bản này", e);
+            throw new IllegalArgumentException("Mã hoặc nhãn kết quả đã tồn tại cho phiên bản này", e);
         }
 
         return band.getId();
@@ -47,12 +47,12 @@ public class UpdateFrameworkResultBandUseCase
 
     private FrameworkVersion getVersion(UpdateFrameworkResultBandCommand command) {
         return frameworkVersionRepository.findById(command.versionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản khung năng lực"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản khung năng lực"));
     }
 
     private FrameworkResultBand getBand(UpdateFrameworkResultBandCommand command) {
         return frameworkResultBandRepository.findById(command.bandId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy mức kết quả"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy mức kết quả"));
     }
 
     private void checkValidRequest(UpdateFrameworkResultBandCommand command, FrameworkVersion version, FrameworkResultBand band) {
@@ -60,7 +60,7 @@ public class UpdateFrameworkResultBandUseCase
             throw new IllegalArgumentException("Phiên bản không thuộc khung năng lực này");
 
         if (version.getStatus() != FrameworkVersionStatus.DRAFT)
-            throw new IllegalStateException("Chỉ có thể cập nhật mức kết quả khi phiên bản đang ở trạng thái DRAFT");
+            throw new IllegalArgumentException("Chỉ có thể cập nhật mức kết quả khi phiên bản đang ở trạng thái DRAFT");
 
         if (!band.getFrameworkVersionId().equals(command.versionId()))
             throw new IllegalArgumentException("Mức kết quả không thuộc phiên bản này");
@@ -68,10 +68,10 @@ public class UpdateFrameworkResultBandUseCase
         String safeCode = StringNormalization.normalizeCode(command.code());
         String safeLabel = StringNormalization.trimAndCollapseSpaces(command.label());
         if (frameworkResultBandRepository.existsByFrameworkVersionIdAndCodeAndIdNot(command.versionId(), safeCode, command.bandId())) {
-            throw new IllegalStateException("Mã kết quả đã tồn tại");
+            throw new IllegalArgumentException("Mã kết quả đã tồn tại");
         }
         if (frameworkResultBandRepository.existsByFrameworkVersionIdAndLabelAndIdNot(command.versionId(), safeLabel, command.bandId())) {
-            throw new IllegalStateException("Nhãn kết quả đã tồn tại");
+            throw new IllegalArgumentException("Nhãn kết quả đã tồn tại");
         }
 
         Set<Integer> otherOrders = frameworkResultBandRepository.findByFrameworkVersionId(command.versionId())

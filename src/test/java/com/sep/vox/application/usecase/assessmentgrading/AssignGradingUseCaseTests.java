@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import com.sep.vox.application.port.input.service.GradingAssignmentNotificationService;
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.command.AssignGradingCommand;
 import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
@@ -161,7 +161,7 @@ public class AssignGradingUseCaseTests {
 
         // Một bài, một giáo viên. Unique index là chốt cuối; đây là lỗi đọc được.
         assertThatThrownBy(() -> useCase.execute(command(firstResultId, secondResultId)))
-            .isInstanceOf(DuplicatedException.class)
+            .isInstanceOf(ResourceDuplicatedException.class)
             .hasMessageContaining("đang được một giáo viên chấm");
 
         verify(assessmentGradingAssignmentRepository, never()).saveAll(anyList());
@@ -170,7 +170,7 @@ public class AssignGradingUseCaseTests {
     @Test
     void should_reject_duplicate_results_in_the_same_batch() {
         assertThatThrownBy(() -> useCase.execute(command(firstResultId, firstResultId)))
-            .isInstanceOf(DuplicatedException.class)
+            .isInstanceOf(ResourceDuplicatedException.class)
             .hasMessageContaining("trùng bài thi");
 
         verify(assessmentGradingAssignmentRepository, never()).saveAll(anyList());
@@ -184,7 +184,7 @@ public class AssignGradingUseCaseTests {
 
         // Vòng INITIAL chỉ nhận bài PENDING_REVIEW; bài RELEASED thuộc vòng SPOT_CHECK.
         assertThatThrownBy(() -> useCase.execute(command(firstResultId, secondResultId)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("INITIAL");
 
         // Bài đầu hợp lệ vẫn không được ghi: validate hết rồi mới persist.

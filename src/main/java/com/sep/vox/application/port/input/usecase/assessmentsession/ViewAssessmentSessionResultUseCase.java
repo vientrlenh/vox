@@ -17,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.ViewAssessmentSessionResultQuery;
 import com.sep.vox.application.port.input.service.AssessmentResultAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -170,7 +170,7 @@ public class ViewAssessmentSessionResultUseCase implements IUseCase<ViewAssessme
         AssessmentResultAccessService.SessionAccess access = assessmentResultAccessService.authorizeSession(input.sessionId());
         AssessmentSession session = access.session();
         AssessmentCandidateResult result = assessmentCandidateResultRepository.findBySessionId(session.getId())
-            .orElseThrow(() -> new NotFoundException("Khong tim thay ket qua phien thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay ket qua phien thi"));
         // Chính chủ chỉ xem được bài đã có kết luận; giáo viên/admin thì luôn xem được.
         // Trang vẫn trả về bản ghi kèm status — che field chứ không chặn, để học sinh còn
         // biết bài mình đang ở đâu thay vì gặp màn "không tìm thấy".
@@ -232,7 +232,7 @@ public class ViewAssessmentSessionResultUseCase implements IUseCase<ViewAssessme
      *
      * <p>It breaks as soon as an ungraded attempt carries another status. Measured 2026-08-17 on session
      * 01a00e64: unblocking moved the attempt from INVALID to PENDING_REVIEW, the old condition let it pass, the calculator
-     * met a question without an evaluation and threw NotFoundException -- breaking the WHOLE
+     * met a question without an evaluation and threw ResourceNotFoundException -- breaking the WHOLE
      * {@code assessmentSessionResult} query, so the Result page showed "No answer data" even though the
      * answers were intact in the DB.
      *

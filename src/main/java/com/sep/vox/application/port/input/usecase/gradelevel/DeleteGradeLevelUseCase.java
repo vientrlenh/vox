@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.gradelevel;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.DeleteGradeLevelCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -40,13 +40,13 @@ public class DeleteGradeLevelUseCase implements IUseCase<DeleteGradeLevelCommand
         }
 
         GradeLevel gradeLevel = gradeLevelRepository.findById(command.id())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Khối học sinh với ID đã cho."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Khối học sinh với ID đã cho."));
 
         // Nếu Khối đã bị xóa mềm trước đó (INACTIVE) thì coi như không còn tồn tại.
         // KHÔNG deleteById ở đây: cùng nằm trong @Transactional nên throw sẽ rollback
         // và xóa cứng không bao giờ thực sự xảy ra (bug cũ).
         if (gradeLevel.getStatus() != GradeLevelStatus.ACTIVE) {
-            throw new NotFoundException("Không tìm thấy khối học.");
+            throw new ResourceNotFoundException("Không tìm thấy khối học.");
         }
 
         // Chặn xóa khi còn Năm học CHƯA bị xóa mềm. Catalog giờ dùng chung nên phép kiểm tra này
@@ -54,7 +54,7 @@ public class DeleteGradeLevelUseCase implements IUseCase<DeleteGradeLevelCommand
         boolean isUsed = schoolGradeRepository.existsByGradeLevelIdAndStatusNot(
                 gradeLevel.getId(), SchoolGradeStatus.ARCHIVED.name());
         if (isUsed) {
-            throw new IllegalStateException("Không thể xóa vì Khối này đang được các trường sử dụng.");
+            throw new IllegalArgumentException("Không thể xóa vì Khối này đang được các trường sử dụng.");
         }
 
         // Soft delete: switch to INACTIVE.

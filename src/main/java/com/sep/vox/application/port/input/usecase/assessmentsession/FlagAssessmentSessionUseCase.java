@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.FlagAssessmentSessionCommand;
 import com.sep.vox.application.port.input.service.AssessmentSessionModerationAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -29,11 +29,11 @@ public class FlagAssessmentSessionUseCase implements IUseCase<FlagAssessmentSess
     @Transactional
     public java.util.UUID execute(FlagAssessmentSessionCommand input) {
         AssessmentSession session = assessmentSessionRepository.findById(input.sessionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi"));
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(session.getCandidateId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy thí sinh của phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thí sinh của phiên thi"));
         Assessment assessment = assessmentRepository.findById(session.getAssessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy kỳ thi của phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kỳ thi của phiên thi"));
 
         moderationAccessService.authorize(assessment, candidate);
 

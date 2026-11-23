@@ -9,7 +9,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 import com.sep.vox.application.port.output.AuthenticationManagerPort;
-import com.sep.vox.infrastructure.exception.InfrastructureException;
 
 @Component
 @RequiredArgsConstructor
@@ -31,7 +30,7 @@ public class AuthenticationManagerProvider implements AuthenticationManagerPort 
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(login, password));
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
         if (userDetails == null) {
-            throw new InfrastructureException("An unexpected error when setting username password authentication token");
+            throw new IllegalStateException("An unexpected error when setting username password authentication token");
         }
         return userDetails.getId();
     }

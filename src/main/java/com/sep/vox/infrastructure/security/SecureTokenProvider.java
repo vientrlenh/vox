@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
-import com.sep.vox.infrastructure.exception.InfrastructureException;
 
 @Component
 public class SecureTokenProvider {
@@ -58,7 +57,7 @@ public class SecureTokenProvider {
             }
             return sb.toString();
         } catch (NoSuchAlgorithmException e) {
-            throw new InfrastructureException(method + " algorithm not found: " + e.getMessage());
+            throw new IllegalStateException(method + " algorithm not found: " + e.getMessage());
         } 
     }
 }

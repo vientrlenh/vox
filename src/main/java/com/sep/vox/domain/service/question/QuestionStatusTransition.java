@@ -82,13 +82,13 @@ public final class QuestionStatusTransition {
     }
 
     /**
-     * Kiểm tra một action có được phép trên câu hỏi đã tồn tại hay không.
+     * Checks whether an action is allowed on a question that already exists.
      *
-     * <p>{@code question} và {@code bank} phải khác {@code null}: "dữ liệu có tồn tại không" là
-     * việc của tầng gọi (nó mới biết nên ném {@code NotFoundException} hay gom vào {@code failed[]}),
-     * còn ở đây chỉ còn thuần quy tắc nghiệp vụ.
+     * <p>{@code question} and {@code bank} must not be {@code null}: "does the data exist" is the
+     * caller's concern (only the caller knows whether to throw {@code ResourceNotFoundException} or collect
+     * the failure into {@code failed[]}), so what remains here is purely the business rule.
      *
-     * @return {@code null} nếu action được phép, ngược lại là lý do từ chối.
+     * @return {@code null} if the action is allowed, otherwise the reason it is rejected.
      */
     public static Rejection rejectionFor(
             Question question,

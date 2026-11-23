@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricsystem;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.DeleteSystemRubricCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -49,7 +49,7 @@ public class DeleteSystemRubricUseCase implements IUseCase<DeleteSystemRubricCom
 
         // 2. Lấy Rubric
         Rubric rubric = rubricRepository.findById(command.rubricId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric hệ thống này."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric hệ thống này."));
 
         // 3. THIẾT QUÂN LUẬT: System Admin tuyệt đối không được xóa Rubric của Trường
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
@@ -62,7 +62,7 @@ public class DeleteSystemRubricUseCase implements IUseCase<DeleteSystemRubricCom
                 .anyMatch(v -> v.getStatus() != RubricStatus.DRAFT);
 
         if (hasLockedVersion) {
-            throw new IllegalStateException("Không thể xóa Rubric này vì bên trong đang có phiên bản đã được Ban hành (PUBLISHED) hoặc Lưu trữ (ARCHIVED).");
+            throw new IllegalArgumentException("Không thể xóa Rubric này vì bên trong đang có phiên bản đã được Ban hành (PUBLISHED) hoặc Lưu trữ (ARCHIVED).");
         }
 
         // 5. XÓA SẠCH SẼ (CASCADE DELETE)

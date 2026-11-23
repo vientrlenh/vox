@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricsystem;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.AcceptRubricCriterionImportCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -46,19 +46,19 @@ public class AcceptSystemRubricCriterionImportUseCase implements IUseCase<Accept
         if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
 
         ImportSession session = importSessionRepository.findById(command.sessionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên làm việc Import."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên làm việc Import."));
 
         if (session.getType() != ImportType.RUBRIC_CRITERION || session.getImportedEntityId() == null) {
             throw new IllegalArgumentException("Phiên làm việc này không phải là Import Tiêu chí (Rubric Criterion).");
         }
         if (session.getStatus() != ImportSessionStatus.PREVIEWED) {
-            throw new IllegalStateException("Chỉ có thể Accept những phiên làm việc đang ở trạng thái PREVIEWED.");
+            throw new IllegalArgumentException("Chỉ có thể Accept những phiên làm việc đang ở trạng thái PREVIEWED.");
         }
 
         // Kiểm tra quyền sở hữu hệ thống của Rubric
         UUID versionId = session.getImportedEntityId();
-        RubricVersion version = rubricVersionRepository.findById(versionId).orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản Rubric."));
-        Rubric rubric = rubricRepository.findById(version.getRubricId()).orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
+        RubricVersion version = rubricVersionRepository.findById(versionId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Rubric."));
+        Rubric rubric = rubricRepository.findById(version.getRubricId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             throw new ForbiddenException("Bảo mật: Bộ Rubric này thuộc trường học. System Admin không được phép can thiệp.");

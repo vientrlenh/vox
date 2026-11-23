@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateAssessmentCandidateStatusCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -44,11 +44,11 @@ public class UpdateAssessmentCandidateStatusUseCase implements IUseCase<UpdateAs
     @Transactional
     public AssessmentCandidateDto execute(UpdateAssessmentCandidateStatusCommand input) {
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(input.candidateId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy thí sinh"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thí sinh"));
         Assessment assessment = assessmentRepository.findById(candidate.getAssessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy kỳ thi của thí sinh"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kỳ thi của thí sinh"));
         if (candidate.getScheduleId() == null) {
-            throw new IllegalStateException("Thí sinh chưa được xếp ca thi");
+            throw new IllegalArgumentException("Thí sinh chưa được xếp ca thi");
         }
 
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
@@ -57,12 +57,12 @@ public class UpdateAssessmentCandidateStatusUseCase implements IUseCase<UpdateAs
         }
 
         AssessmentSchedule schedule = assessmentScheduleRepository.findById(candidate.getScheduleId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi của thí sinh"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi của thí sinh"));
         Instant now = Instant.now();
         Instant windowStart = schedule.getStartDate().minus(30, ChronoUnit.MINUTES);
         Instant windowEnd = schedule.getEndDate();
         if (now.isBefore(windowStart) || now.isAfter(windowEnd)) {
-            throw new IllegalStateException("Chỉ được điểm danh trong khoảng 30 phút trước đến khi kết thúc ca thi");
+            throw new IllegalArgumentException("Chỉ được điểm danh trong khoảng 30 phút trước đến khi kết thúc ca thi");
         }
 
         candidate.setStatus(input.status());

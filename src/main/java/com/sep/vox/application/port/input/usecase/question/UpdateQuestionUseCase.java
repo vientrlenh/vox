@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.mapper.question.UpdateQuestionResponseMapper;
 import com.sep.vox.application.port.input.command.UpdateQuestionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -39,9 +39,9 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Up
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         Question question = questionRepository.findById(command.id())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi"));
         QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
         boolean owner = question.isCreatedBy(currentUserId);
         boolean editorCollaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId)
@@ -68,7 +68,7 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Up
             boolean usedInAssessment = questionRepository.existsUsedInAssessment(question.getId());
             boolean immutable = question.getStatus() == QuestionStatus.PUBLISHED || question.isLocked() || usedInAssessment;
             if (immutable) {
-                throw new IllegalStateException(
+                throw new IllegalArgumentException(
                     "Câu hỏi đã publish hoặc đã dùng trong bài kiểm tra, không thể sửa trực tiếp — dùng nút Nhân bản để tạo bản có thể sửa");
             }
             if (!systemAdminOnSystemBank
@@ -78,7 +78,7 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Up
                 throw new ForbiddenException("Chỉ được sửa câu hỏi khi ở trạng thái DRAFT hoặc REVISION_REQUESTED");
             }
             if (command.preparationTimeSeconds() == null || command.minResponseSeconds() == null || command.maxResponseSeconds() == null) {
-                throw new IllegalStateException("Phải nhập đầy đủ thời gian chuẩn bị, thời gian trả lời tối thiểu và tối đa");
+                throw new IllegalArgumentException("Phải nhập đầy đủ thời gian chuẩn bị, thời gian trả lời tối thiểu và tối đa");
             }
             applyContentUpdates(question, command, currentUserId);
         }
@@ -98,7 +98,7 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Up
         if (command.minResponseSeconds() != null) question.setMinResponseSeconds(command.minResponseSeconds());
         if (command.maxResponseSeconds() != null) question.setMaxResponseSeconds(command.maxResponseSeconds());
         if (question.getMinResponseSeconds() > question.getMaxResponseSeconds()) {
-            throw new IllegalStateException("Thời gian trả lời tối thiểu không được lớn hơn thời gian trả lời tối đa");
+            throw new IllegalArgumentException("Thời gian trả lời tối thiểu không được lớn hơn thời gian trả lời tối đa");
         }
     }
 

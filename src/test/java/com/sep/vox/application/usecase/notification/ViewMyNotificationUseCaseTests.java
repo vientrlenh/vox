@@ -13,7 +13,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.ViewMyNotificationQuery;
 import com.sep.vox.application.port.input.usecase.notification.ViewMyNotificationUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -78,7 +78,7 @@ class ViewMyNotificationUseCaseTests {
             .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> useCase.execute(new ViewMyNotificationQuery(notificationId)))
-            .isInstanceOf(NotFoundException.class);
+            .isInstanceOf(ResourceNotFoundException.class);
 
         verify(notificationRepository).findByIdAndUserId(notificationId, userId);
     }

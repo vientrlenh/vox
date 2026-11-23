@@ -1,9 +1,9 @@
 package com.sep.vox.application.port.input.usecase.schoolgrade;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CreateSchoolGradeCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -48,13 +48,13 @@ public class CreateSchoolGradeUseCase implements IUseCase<CreateSchoolGradeComma
         //    chỉ cần khối tồn tại và chưa bị xóa mềm.
         gradeLevelRepository.findById(command.gradeLevelId())
                 .filter(gl -> gl.getStatus() == GradeLevelStatus.ACTIVE)
-                .orElseThrow(() -> new NotFoundException("Khối lớp không tồn tại hoặc đã ngừng sử dụng."));
+                .orElseThrow(() -> new ResourceNotFoundException("Khối lớp không tồn tại hoặc đã ngừng sử dụng."));
 
         // 4. Kiểm tra trùng mã trong phạm vi (trường, khối)
         String normalizedCode = StringNormalization.normalizeCode(command.code());
         if (schoolGradeRepository.existsBySchoolIdAndGradeLevelIdAndCode(
                 command.schoolId(), command.gradeLevelId(), normalizedCode)) {
-            throw new DuplicatedException("Mã năm học đã tồn tại trong Khối lớp này.");
+            throw new ResourceDuplicatedException("Mã năm học đã tồn tại trong Khối lớp này.");
         }
 
         // 5. Lưu và trả về UUID
@@ -96,7 +96,7 @@ public class CreateSchoolGradeUseCase implements IUseCase<CreateSchoolGradeComma
             return schoolGradeRepository.save(newGrade).getId();
         } catch (DataConflictException e) {
             // Race-condition guard: two requests that create the same code both pass the exists check and only then hit the unique index.
-            throw new DuplicatedException("Mã năm học đã tồn tại trong Khối lớp này.");
+            throw new ResourceDuplicatedException("Mã năm học đã tồn tại trong Khối lớp này.");
         }
     }
 }

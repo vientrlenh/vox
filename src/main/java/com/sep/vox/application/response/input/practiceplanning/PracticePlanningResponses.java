@@ -68,8 +68,9 @@ public final class PracticePlanningResponses {
             String status,
             String reason,
             PracticePaper paper,
-            /** Chỉ có khi status=FAILED. Mã lỗi máy đọc được (vd QUOTA_EXCEEDED) để client phân
-             * biệt lỗi nghiệp vụ (không đáng cho thử lại) với lỗi tạm thời (mất mạng, AI sinh lỗi). */
+            /** Only present when status=FAILED. A machine-readable error code (for example BUSINESS_RULE_VIOLATION) so
+             * the client can tell a business error (not worth retrying) from a temporary one (network loss, AI
+             * generation failure). */
             String errorCode) {
 
         public static PracticePaperDraft preparing(UUID draftId) {

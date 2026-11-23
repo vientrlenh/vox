@@ -104,7 +104,7 @@ public class ApproveRejectAssessmentAppealUseCaseTests {
 
         assertThatThrownBy(() -> approveUseCase.execute(
             new ApproveAssessmentAppealCommand(appealId, Instant.now().plus(7, ChronoUnit.DAYS))))
-            .isInstanceOf(IllegalStateException.class);
+            .isInstanceOf(IllegalArgumentException.class);
     }
 
     // ---- reject ------------------------------------------------------------
@@ -152,6 +152,6 @@ public class ApproveRejectAssessmentAppealUseCaseTests {
         when(assessmentAppealAccessService.load(appealId)).thenReturn(context(AssessmentAppealStatus.GRADING));
 
         assertThatThrownBy(() -> rejectUseCase.execute(new RejectAssessmentAppealCommand(appealId, "lý do")))
-            .isInstanceOf(IllegalStateException.class);
+            .isInstanceOf(IllegalArgumentException.class);
     }
 }

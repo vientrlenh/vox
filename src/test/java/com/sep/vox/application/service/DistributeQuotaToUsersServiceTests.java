@@ -21,7 +21,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.sep.vox.application.exception.WalletDrawConfirmationRequiredException;
+import com.sep.vox.application.exception.BusinessRuleViolationException;
 import com.sep.vox.application.port.input.command.AllocateUserQuotaAmountCommand;
 import com.sep.vox.application.port.input.service.DistributeQuotaToUsersService;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -265,7 +265,9 @@ class DistributeQuotaToUsersServiceTests {
         givenWallet(4_000_000);
 
         assertThatThrownBy(() -> allocateManually(teacherA, 12_000_000))
-            .isInstanceOf(WalletDrawConfirmationRequiredException.class);
+            .isInstanceOf(BusinessRuleViolationException.class)
+            .hasMessage("Phân bổ này vượt phần chia từ gói, sẽ trích thêm 2000000.000000đ từ ví tự nạp của trường "
+                + "(đang còn 4000000đ). Xác nhận để tiếp tục.");
 
         assertThatCode(() -> service.distribute(
                 schoolId, QuotaType.ASSESSMENT, SchoolRoleCodes.TEACHER, DistributionMode.MANUAL,

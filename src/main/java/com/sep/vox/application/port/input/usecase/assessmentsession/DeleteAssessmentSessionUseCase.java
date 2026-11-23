@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.DeleteAssessmentSessionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -74,14 +74,14 @@ public class DeleteAssessmentSessionUseCase implements IUseCase<DeleteAssessment
     public Void execute(DeleteAssessmentSessionCommand input) {
         UUID sessionId = input.sessionId();
         AssessmentSession session = assessmentSessionRepository.findById(sessionId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi"));
         Assessment assessment = assessmentRepository.findById(session.getAssessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra của phiên thi này"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra của phiên thi này"));
 
         authorizeDelete(assessment.getId(), assessment.getSchoolId());
         // Once an assessment has closed the books, the score has reached (or is about to reach) the student -- see Assessment#isResultsFinalized.
         if (assessment.isResultsFinalized()) {
-            throw new IllegalStateException("Không thể xóa bài thi khi kỳ thi đã đóng hoặc đã công bố kết quả");
+            throw new IllegalArgumentException("Không thể xóa bài thi khi kỳ thi đã đóng hoặc đã công bố kết quả");
         }
         // Đơn phúc khảo đang mở là tranh chấp điểm mà học sinh đã chính thức nêu: xoá mềm kết quả
         // sẽ rút mất chính bài đang bị khiếu nại và để đơn treo trỏ vào một dòng đã ẩn.
@@ -93,7 +93,7 @@ public class DeleteAssessmentSessionUseCase implements IUseCase<DeleteAssessment
         AssessmentCandidateResult candidateResult = assessmentCandidateResultRepository.findBySessionId(sessionId).orElse(null);
         if (candidateResult != null
                 && assessmentResultAppealRepository.existsOpenByCandidateResultId(candidateResult.getId())) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 "Bài thi này đang có đơn phúc khảo chưa xử lý xong. Hãy xử lý hoặc từ chối đơn trước khi xoá.");
         }
 

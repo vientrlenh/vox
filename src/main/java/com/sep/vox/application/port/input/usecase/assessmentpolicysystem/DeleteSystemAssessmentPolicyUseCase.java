@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.assessmentpolicysystem;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.DeleteSystemAssessmentPolicyCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -39,14 +39,14 @@ public class DeleteSystemAssessmentPolicyUseCase implements IUseCase<DeleteSyste
 
         // 2. Kiểm tra Assessment Policy tồn tại và thuộc phạm vi toàn hệ thống
         AssessmentPolicy policy = assessmentPolicyRepository.findById(command.policyId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Assessment Policy."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
         if (policy.getSchoolId() != null) {
             throw new ForbiddenException("Không thể can thiệp vào Assessment Policy của trường học.");
         }
 
         // 3. Chỉ được xóa cứng khi đang DRAFT, các trạng thái khác dùng chức năng Lưu trữ (Archive) riêng
         if (policy.getStatus() != AssessmentPolicyStatus.DRAFT) {
-            throw new IllegalStateException("Chỉ có thể xóa Assessment Policy đang ở trạng thái DRAFT. Vui lòng dùng chức năng Lưu trữ (Archive) nếu Policy đã PUBLISHED.");
+            throw new IllegalArgumentException("Chỉ có thể xóa Assessment Policy đang ở trạng thái DRAFT. Vui lòng dùng chức năng Lưu trữ (Archive) nếu Policy đã PUBLISHED.");
         }
         assessmentPolicyRepository.deleteById(policy.getId());
         return null;

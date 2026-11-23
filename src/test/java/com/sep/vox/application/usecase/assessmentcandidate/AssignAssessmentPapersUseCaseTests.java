@@ -100,7 +100,7 @@ class AssignAssessmentPapersUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new AssignAssessmentPapersCommand(assessmentId, List.of(
             new AssessmentPaperAssignmentItem(candidate1, paper1)))))
-            .isInstanceOf(IllegalStateException.class);
+            .isInstanceOf(IllegalArgumentException.class);
         verify(assessmentCandidateRepository, never()).saveAll(anyCollection());
     }
 
@@ -112,7 +112,7 @@ class AssignAssessmentPapersUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new AssignAssessmentPapersCommand(assessmentId, List.of(
             new AssessmentPaperAssignmentItem(candidate1, paper1)))))
-            .isInstanceOf(IllegalStateException.class);
+            .isInstanceOf(IllegalArgumentException.class);
         verify(assessmentCandidateRepository, never()).saveAll(anyCollection());
     }
 
@@ -124,7 +124,7 @@ class AssignAssessmentPapersUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new AssignAssessmentPapersCommand(assessmentId, List.of(
             new AssessmentPaperAssignmentItem(candidate1, UUID.randomUUID())))))
-            .isInstanceOf(IllegalStateException.class);
+            .isInstanceOf(IllegalArgumentException.class);
         verify(assessmentCandidateRepository, never()).saveAll(anyCollection());
     }
 

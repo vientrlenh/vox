@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.BulkDeleteAssessmentCandidatesCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -52,7 +52,7 @@ public class BulkDeleteAssessmentCandidatesUseCase implements IUseCase<BulkDelet
     @Transactional
     public Void execute(BulkDeleteAssessmentCandidatesCommand input) {
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
         authorize(assessment);
         AssessmentEditingGuard.requireScheduleEditable(assessment);
 
@@ -65,7 +65,7 @@ public class BulkDeleteAssessmentCandidatesUseCase implements IUseCase<BulkDelet
         // Looked up by (id, assessmentId) so a missing row means an id that does not exist or belongs to another assessment --
         // the whole batch fails instead of silently deleting only part of it.
         if (candidates.size() != candidateIds.stream().distinct().count()) {
-            throw new NotFoundException("Không tìm thấy thí sinh");
+            throw new ResourceNotFoundException("Không tìm thấy thí sinh");
         }
 
         // Một query cho cả lô: phiên đã xoá mềm không tính (findByCandidateIdIn đã loại DELETED),
@@ -77,10 +77,11 @@ public class BulkDeleteAssessmentCandidatesUseCase implements IUseCase<BulkDelet
             .collect(java.util.stream.Collectors.toSet());
 
         if (!busyCandidateIds.isEmpty()) {
-            // Chỉ nêu SỐ LƯỢNG: ở tầng này chỉ có studentId dạng UUID, in ra thì người dùng cũng
-            // không nhận ra ai. Giao diện đã loại sẵn nhóm này khỏi lượt xoá nên đây là lưới an
-            // toàn cho trường hợp danh sách vừa đổi, và người dùng chỉ cần biết phải chọn lại.
-            throw new IllegalStateException(busyCandidateIds.size()
+            // Only the COUNT is named: at this layer only the studentId (a UUID) is known, and printing it
+            // would not tell the user who it is. The UI already filters this group out of the delete
+            // request, so this is a safety net for a list that just changed, and the user only needs to
+            // know they must select again.
+            throw new IllegalArgumentException(busyCandidateIds.size()
                 + " thí sinh trong danh sách đã có bài thi nên không thể xóa khỏi kỳ thi."
                 + " Hãy tải lại danh sách và chọn lại.");
         }

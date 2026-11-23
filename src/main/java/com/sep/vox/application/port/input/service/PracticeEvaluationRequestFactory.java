@@ -18,7 +18,7 @@ import com.sep.vox.application.query.dto.CriterionFrameworkInfo;
 import com.sep.vox.application.query.repository.PracticeQuestionQueryRepository;
 import com.sep.vox.application.query.repository.PracticeSessionQueryRepository;
 import com.sep.vox.domain.repository.PracticeResponseTurnRepository;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 
 /**
  * Dựng yêu cầu chấm cho MỘT câu của phiên luyện.
@@ -43,7 +43,7 @@ public class PracticeEvaluationRequestFactory {
             UUID responseId,
             UUID questionId) {
         QuestionEvaluationInfo question = practiceQuestionQueryRepository.findQuestionWithTopic(questionId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi luyện."));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi luyện."));
         List<AssessmentAttemptEvaluationRequestedExternalEvent.TurnInput> turns = practiceResponseTurnRepository
             .findByPracticeResponseIdOrderByTurnOrder(responseId).stream()
             .map(record -> new AssessmentAttemptEvaluationRequestedExternalEvent.TurnInput(

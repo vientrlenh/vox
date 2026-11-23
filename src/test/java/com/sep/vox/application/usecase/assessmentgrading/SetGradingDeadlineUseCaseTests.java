@@ -121,7 +121,7 @@ class SetGradingDeadlineUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(
             command(List.of(open.getId(), closed.getId()), Instant.now().plus(2, ChronoUnit.DAYS))))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("đã chốt");
 
         // No row is written: a partly broken batch is harder to clean up than a batch that is

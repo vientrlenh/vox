@@ -17,7 +17,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.DeleteSchoolUserCommand;
 import com.sep.vox.application.port.input.usecase.schooluser.DeleteSchoolUserUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -88,7 +88,7 @@ public class DeleteSchoolUserUseCaseTests {
         when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(caller));
         when(userRepository.findById(targetId)).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> deleteSchoolUserUseCase.execute(command));
+        assertThrows(ResourceNotFoundException.class, () -> deleteSchoolUserUseCase.execute(command));
         verify(userRepository, never()).save(any(User.class));
     }
 
@@ -103,7 +103,7 @@ public class DeleteSchoolUserUseCaseTests {
         when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.of(caller));
         when(userRepository.findById(targetId)).thenReturn(Optional.of(target));
 
-        assertThrows(NotFoundException.class, () -> deleteSchoolUserUseCase.execute(command));
+        assertThrows(ResourceNotFoundException.class, () -> deleteSchoolUserUseCase.execute(command));
         verify(userRepository, never()).save(any(User.class));
     }
 
@@ -143,7 +143,7 @@ public class DeleteSchoolUserUseCaseTests {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(callerId);
         when(userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> deleteSchoolUserUseCase.execute(command));
+        assertThrows(ResourceNotFoundException.class, () -> deleteSchoolUserUseCase.execute(command));
         verify(userRepository, never()).save(any(User.class));
     }
 

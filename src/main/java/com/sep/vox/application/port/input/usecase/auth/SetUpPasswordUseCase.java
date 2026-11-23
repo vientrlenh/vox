@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.SetUpPasswordCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.PasswordEncoderPort;
@@ -37,7 +37,7 @@ public class SetUpPasswordUseCase implements IUseCase<SetUpPasswordCommand, Void
 
         String passwordHash = passwordEncoderPort.hash(input.password());
         User user = userRepository.findById(input.userId())
-            .orElseThrow(() -> new NotFoundException("Không tỉm thấy người dùng"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tỉm thấy người dùng"));
         user.updatePasswordAndActivate(passwordHash);
         userRepository.save(user);
 

@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateSubscriptionPlanReplacementCommand;
 import com.sep.vox.application.port.input.service.SubscriptionPlanReplacementValidator;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -46,17 +46,17 @@ public class UpdateSubscriptionPlanReplacementUseCase
     @Transactional
     public UUID execute(UpdateSubscriptionPlanReplacementCommand input) {
         SubscriptionPlan plan = subscriptionPlanRepository.findById(input.subscriptionPlanId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói"));
 
         // ONLY applies to an archived plan: the replacedByPlanId of a plan still on sale means nothing -- resolveActivePlan only
         // follows that pointer when the plan is ARCHIVED. Allowing it on an ACTIVE plan would create data that is never read, and
         // one day someone would believe it has an effect.
         if (plan.getStatus() != SubscriptionPlanStatus.ARCHIVED) {
-            throw new IllegalStateException("Chỉ gói đã lưu trữ mới cần gói thay thế.");
+            throw new IllegalArgumentException("Chỉ gói đã lưu trữ mới cần gói thay thế.");
         }
 
         SubscriptionPlan replacement = subscriptionPlanRepository.findById(input.replacedByPlanId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy gói thay thế"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói thay thế"));
 
         // The same rule set as at archive time. Editing the pointer later must NOT be looser: schools are still forced to follow
         // it on renewal, and still have no chance to refuse.

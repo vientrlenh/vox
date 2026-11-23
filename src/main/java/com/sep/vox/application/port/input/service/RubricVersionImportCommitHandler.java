@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.service;
 
 import com.sep.vox.application.common.DateMapper;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.model.importfile.ImportRow;
 import com.sep.vox.domain.model.importfile.ImportRowStatus;
@@ -38,7 +38,7 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
     public ImportCommitResult commit(ImportSession session, List<ImportRow> rows) {
         UUID rubricId = session.getImportedEntityId();
         Rubric rubric = rubricRepository.findById(rubricId)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc khi xử lý ngầm."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc khi xử lý ngầm."));
 
         // Lấy bộ từ điển map cột
         Map<String, String> mapping = new HashMap<>();

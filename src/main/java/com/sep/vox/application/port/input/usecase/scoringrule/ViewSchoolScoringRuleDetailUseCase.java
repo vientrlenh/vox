@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.mapper.scoringrule.ScoringRuleDtoMapper;
 import com.sep.vox.application.port.input.query.ViewSchoolScoringRuleDetailQuery;
@@ -55,7 +55,7 @@ public class ViewSchoolScoringRuleDetailUseCase implements IUseCase<ViewSchoolSc
 
         // 3. Kiểm tra Scoring Rule tồn tại
         ScoringRule rule = scoringRuleRepository.findById(query.ruleId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Scoring Rule."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Scoring Rule."));
 
         // 4. BẢO MẬT: policyId trên path phải khớp với policyId thật sự của rule
         if (!rule.getPolicyId().equals(query.policyId())) {
@@ -64,7 +64,7 @@ public class ViewSchoolScoringRuleDetailUseCase implements IUseCase<ViewSchoolSc
 
         // 5. Kiểm tra Assessment Policy tồn tại và thuộc đúng trường học
         AssessmentPolicy policy = assessmentPolicyRepository.findById(rule.getPolicyId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Assessment Policy."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
         if (policy.getSchoolId() == null || !policy.getSchoolId().equals(query.schoolId())) {
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền xem Scoring Rule của trường khác.");
         }

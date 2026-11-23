@@ -11,9 +11,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.AvatarUrlPolicy;
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateProfileCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.AvatarConfigPort;
@@ -57,7 +57,7 @@ public class UpdateProfileUseCase implements IUseCase<UpdateProfileCommand, User
         UUID callerId = userContextPort.getCurrentAuthenticatedUserId();
 
         User target = userRepository.findByIdForUpdate(callerId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
         if (target.getStatus() != UserStatus.ACTIVE) {
             throw new ForbiddenException("Tài khoản không ở trạng thái hoạt động");
         }
@@ -77,7 +77,7 @@ public class UpdateProfileUseCase implements IUseCase<UpdateProfileCommand, User
             }
             Optional<User> existing = userRepository.findByPhone(normalized);
             if (existing.isPresent() && !existing.get().getId().equals(target.getId())) {
-                throw new DuplicatedException("Số điện thoại đã tồn tại");
+                throw new ResourceDuplicatedException("Số điện thoại đã tồn tại");
             }
             target.setPhone(new Phone(normalized));
         }
@@ -97,7 +97,7 @@ public class UpdateProfileUseCase implements IUseCase<UpdateProfileCommand, User
         try {
             userRepository.saveAndFlush(target);
         } catch (DataConflictException e) {
-            throw new DuplicatedException("Số điện thoại đã tồn tại");
+            throw new ResourceDuplicatedException("Số điện thoại đã tồn tại");
         }
 
         return UserDtoMapper.toUserDto(target);

@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CancelOrderCommand;
 import com.sep.vox.application.port.input.service.PaymentProcessResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -56,13 +56,13 @@ public class CancelOrderUseCase implements IUseCase<CancelOrderCommand, UUID> {
         // order as PENDING, one closes it CANCELLED and the other closes it SUCCESS -- the write order decides the outcome, and one
         // of the two outcomes is wrong.
         Order order = orderRepository.findByIdForUpdate(input.orderId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn hàng"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
 
         if (!order.getSchoolId().equals(userContextPort.getCurrentSchoolId())) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
         if (order.getStatus() != OrderStatus.PENDING) {
-            throw new IllegalStateException("Đơn hàng không còn ở trạng thái chờ thanh toán, không thể hủy.");
+            throw new IllegalArgumentException("Đơn hàng không còn ở trạng thái chờ thanh toán, không thể hủy.");
         }
 
         closeLivePaymentAttempt(order);
@@ -91,7 +91,7 @@ public class CancelOrderUseCase implements IUseCase<CancelOrderCommand, UUID> {
         PaymentLinkRemoteStatus remoteStatus = paymentPort.getPaymentLinkStatus(attempt.getProviderOrderRef()).status();
 
         if (remoteStatus == PaymentLinkRemoteStatus.PAID) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 "Đơn hàng này đã được thanh toán, hệ thống đang ghi nhận. Không thể hủy.");
         }
 
@@ -101,7 +101,7 @@ public class CancelOrderUseCase implements IUseCase<CancelOrderCommand, UUID> {
         // vài phút, chứ không phải "đợi đơn hết hạn".
         if (remoteStatus == PaymentLinkRemoteStatus.NOT_FOUND
                 && !attempt.canRetireOnGatewayNotFound(Instant.now())) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 "Đơn hàng vừa mở một phiên thanh toán mà cổng chưa xác nhận. Vui lòng thử lại sau vài phút.");
         }
 
@@ -114,10 +114,10 @@ public class CancelOrderUseCase implements IUseCase<CancelOrderCommand, UUID> {
 
         // Phiên vẫn sống -> phải đóng được nó ở phía cổng mới dám đóng đơn.
         if (!paymentPort.cancelPaymentLink(attempt.getProviderOrderRef(), CANCELLATION_REASON)) {
-            // SePay rơi vào đây MỌI LẦN vì cổng không có API hủy phiên chưa trả -- xem
-            // PaymentProcessPort.cancelPaymentLink. Chấp nhận bắt trường đợi hết hạn (tối đa 24
-            // tiếng, và hạn đó đã hiện trên đơn) thay vì mở ra ca thu tiền cho một đơn đã đóng.
-            throw new IllegalStateException(
+            // SePay lands here EVERY time because the gateway has no API to cancel an unpaid session -- see
+            // PaymentProcessPort.cancelPaymentLink. We accept making the school wait for expiry (at most 24
+            // hours, and that deadline is already shown on the order) instead of opening a payment for a closed order.
+            throw new IllegalArgumentException(
                 "Đơn hàng đang có một phiên thanh toán chờ xử lý mà cổng không cho hủy sớm. "
                     + "Vui lòng hoàn tất phiên đó hoặc đợi đơn hết hạn.");
         }
@@ -144,10 +144,10 @@ public class CancelOrderUseCase implements IUseCase<CancelOrderCommand, UUID> {
      */
     private void markAttemptFailed(Order order, UUID attemptId) {
         PaymentRecord current = paymentRecordRepository.findById(attemptId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy lần thanh toán của đơn"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lần thanh toán của đơn"));
 
         if (current.getStatus() == PaymentStatus.PAID) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 "Đơn hàng này vừa được thanh toán, hệ thống đang ghi nhận. Không thể hủy.");
         }
         if (current.isSettled()) {

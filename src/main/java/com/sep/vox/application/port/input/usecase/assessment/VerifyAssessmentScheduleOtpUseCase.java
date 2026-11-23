@@ -11,8 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.common.CacheKey;
-import com.sep.vox.application.exception.DuplicatedException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CreateAssessmentSessionCommand;
 import com.sep.vox.application.port.input.command.UpdateAssessmentSessionStatusCommand;
@@ -61,10 +61,10 @@ public class VerifyAssessmentScheduleOtpUseCase implements IUseCase<VerifyAssess
     public AssessmentEntryTicketResponse execute(VerifyAssessmentScheduleOtpCommand input) {
         UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
         AssessmentCandidate candidate = assessmentCandidateRepository.findByAssessmentIdAndStudentId(input.assessmentId(), studentId)
-            .orElseThrow(() -> new NotFoundException("Bạn không phải thí sinh của kỳ thi này"));
+            .orElseThrow(() -> new ResourceNotFoundException("Bạn không phải thí sinh của kỳ thi này"));
 
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
 
         // Chặn ngay ở cổng vào: vào thi được nhưng không ghi được dữ liệu giám sát thì bài thi coi
         // như bỏ. Không lọc theo kind — bài kiểm tra trên lớp cũng bật stream được.
@@ -73,32 +73,32 @@ public class VerifyAssessmentScheduleOtpUseCase implements IUseCase<VerifyAssess
         }
 
         if (!assessment.isRequiresOtp()) {
-            throw new IllegalStateException("Bài kiểm tra này không yêu cầu xác thực OTP, vui lòng dùng luồng bắt đầu trực tiếp");
+            throw new IllegalArgumentException("Bài kiểm tra này không yêu cầu xác thực OTP, vui lòng dùng luồng bắt đầu trực tiếp");
         }
 
         Instant now = Instant.now();
         if (candidate.getBlockedAt() != null) {
-            throw new IllegalStateException("Bạn đã bị buộc kết thúc bài thi này, không thể vào lại");
+            throw new IllegalArgumentException("Bạn đã bị buộc kết thúc bài thi này, không thể vào lại");
         }
         if (AssessmentCandidateStatus.isBlockedForEntry(candidate.getStatus())) {
-            throw new IllegalStateException("Bạn không đủ điều kiện tham gia kỳ thi này");
+            throw new IllegalArgumentException("Bạn không đủ điều kiện tham gia kỳ thi này");
         }
         if (!AssessmentCandidateStatus.isAttended(candidate.getStatus())) {
-            throw new IllegalStateException("Bạn chưa được điểm danh có mặt, vui lòng liên hệ giám thị");
+            throw new IllegalArgumentException("Bạn chưa được điểm danh có mặt, vui lòng liên hệ giám thị");
         }
         if (isAssessmentClosedForEntry(assessment, now)) {
-            throw new IllegalStateException("Kỳ thi hiện không mở để thi (trạng thái: " + assessment.getStatus() + ")");
+            throw new IllegalArgumentException("Kỳ thi hiện không mở để thi (trạng thái: " + assessment.getStatus() + ")");
         }
 
         if (candidate.getScheduleId() == null) {
-            throw new IllegalStateException("Bạn chưa được xếp ca thi");
+            throw new IllegalArgumentException("Bạn chưa được xếp ca thi");
         }
         if (candidate.getAssignedPaperId() == null) {
-            throw new IllegalStateException("Bạn chưa được gán đề thi");
+            throw new IllegalArgumentException("Bạn chưa được gán đề thi");
         }
 
         AssessmentSchedule schedule = assessmentScheduleRepository.findByIdAndInSchedule(candidate.getScheduleId(), now)
-            .orElseThrow(() -> new NotFoundException("Ca thi không hợp lệ hoặc đã hết hạn"));
+            .orElseThrow(() -> new ResourceNotFoundException("Ca thi không hợp lệ hoặc đã hết hạn"));
 
         if (!schedule.getAssessmentId().equals(input.assessmentId())) {
             throw new IllegalArgumentException("Ca thi không thuộc bài kiểm tra đã chọn");
@@ -127,7 +127,7 @@ public class VerifyAssessmentScheduleOtpUseCase implements IUseCase<VerifyAssess
         if (assessment.getMaxAttempt() != null) {
             long usedAttempts = countUsedAttempts(candidate.getId());
             if (usedAttempts >= assessment.getMaxAttempt()) {
-                throw new DuplicatedException("Đã hết số lượt thi cho phép (" + assessment.getMaxAttempt() + " lượt)");
+                throw new ResourceDuplicatedException("Đã hết số lượt thi cho phép (" + assessment.getMaxAttempt() + " lượt)");
             }
         }
 

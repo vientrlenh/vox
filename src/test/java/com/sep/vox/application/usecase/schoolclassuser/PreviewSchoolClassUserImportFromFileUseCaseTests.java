@@ -141,7 +141,7 @@ class PreviewSchoolClassUserImportFromFileUseCaseTests {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user(userId, UUID.randomUUID(), UserStatus.INACTIVE)));
 
-        assertThrows(IllegalStateException.class,
+        assertThrows(IllegalArgumentException.class,
             () -> useCase.execute(new PreviewSchoolClassUserImportFromFileCommand(UUID.randomUUID(), file)));
 
         verifyNoInteractions(schoolRepository, fileProcessingPort, importSessionRepository, importRowRepository);
@@ -155,7 +155,7 @@ class PreviewSchoolClassUserImportFromFileUseCaseTests {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(activeUser(userId, null)));
 
-        assertThrows(IllegalStateException.class,
+        assertThrows(IllegalArgumentException.class,
             () -> useCase.execute(new PreviewSchoolClassUserImportFromFileCommand(UUID.randomUUID(), file)));
 
         verifyNoInteractions(schoolRepository, fileProcessingPort, importSessionRepository, importRowRepository);
@@ -189,7 +189,7 @@ class PreviewSchoolClassUserImportFromFileUseCaseTests {
         when(userRepository.findById(userId)).thenReturn(Optional.of(activeUser(userId, schoolId)));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(school));
 
-        assertThrows(IllegalStateException.class,
+        assertThrows(IllegalArgumentException.class,
             () -> useCase.execute(new PreviewSchoolClassUserImportFromFileCommand(schoolId, file)));
 
         verifyNoInteractions(fileProcessingPort, importSessionRepository, importRowRepository);

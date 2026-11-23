@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.schoolroom;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.DeleteSchoolRoomCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -51,7 +51,7 @@ public class DeleteSchoolRoomUseCase implements IUseCase<DeleteSchoolRoomCommand
 
         // 2. Tìm phòng học cần xóa
         SchoolRoom room = schoolRoomRepository.findById(command.id())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phòng học với ID đã cho."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phòng học với ID đã cho."));
 
         // VÒNG BẢO MẬT 2: KIỂM TRA PHÒNG HỌC CÓ ĐÚNG CỦA TRƯỜNG NÀY KHÔNG
         if (!room.getSchoolId().equals(command.schoolId())) {
@@ -61,7 +61,7 @@ public class DeleteSchoolRoomUseCase implements IUseCase<DeleteSchoolRoomCommand
 
         // 3. THỰC HIỆN XÓA MỀM (SOFT DELETE)
         if (!room.isActive()) {
-            throw new IllegalStateException("Phòng học này đã bị xóa (vô hiệu hóa) từ trước rồi.");
+            throw new IllegalArgumentException("Phòng học này đã bị xóa (vô hiệu hóa) từ trước rồi.");
         }
 
         room.setActive(false); // Switch the status to false

@@ -99,7 +99,7 @@ class CancelOrderUseCaseTests {
             Instant.now().minus(3, ChronoUnit.SECONDS), PaymentLinkRemoteStatus.NOT_FOUND);
 
         assertThatThrownBy(() -> useCase.execute(new CancelOrderCommand(ORDER_ID)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("thử lại sau vài phút");
 
         assertThat(justOpened.getStatus()).isEqualTo(PaymentStatus.PENDING);
@@ -112,7 +112,7 @@ class CancelOrderUseCaseTests {
         givenPendingAttempt(Instant.now().minus(10, ChronoUnit.MINUTES), PaymentLinkRemoteStatus.PAID);
 
         assertThatThrownBy(() -> useCase.execute(new CancelOrderCommand(ORDER_ID)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("đã được thanh toán");
 
         verify(orderRepository, never()).save(any());
@@ -125,7 +125,7 @@ class CancelOrderUseCaseTests {
         when(paymentProcessPort.cancelPaymentLink(anyString(), anyString())).thenReturn(false);
 
         assertThatThrownBy(() -> useCase.execute(new CancelOrderCommand(ORDER_ID)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("cổng không cho hủy sớm");
 
         verify(orderRepository, never()).save(any());

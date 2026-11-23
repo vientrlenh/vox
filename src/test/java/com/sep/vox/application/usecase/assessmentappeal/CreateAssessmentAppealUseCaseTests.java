@@ -17,9 +17,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateAssessmentAppealCommand;
 import com.sep.vox.application.port.input.service.AssessmentAppealAccessService;
 import com.sep.vox.application.port.input.service.ResultStatusHistoryRecorder;
@@ -159,7 +159,7 @@ public class CreateAssessmentAppealUseCaseTests {
             .thenReturn(context(AssessmentCandidateResultStatus.PENDING_REVIEW));
 
         assertThatThrownBy(() -> useCase.execute(command()))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("đã được công bố");
 
         verify(assessmentResultAppealRepository, never()).save(any());
@@ -172,7 +172,7 @@ public class CreateAssessmentAppealUseCaseTests {
         when(assessmentResultAppealRepository.existsOpenByCandidateResultId(candidateResultId)).thenReturn(true);
 
         assertThatThrownBy(() -> useCase.execute(command()))
-            .isInstanceOf(DuplicatedException.class);
+            .isInstanceOf(ResourceDuplicatedException.class);
 
         verify(assessmentResultAppealRepository, never()).save(any());
     }
@@ -196,7 +196,7 @@ public class CreateAssessmentAppealUseCaseTests {
         when(assessmentResultAppealRepository.countPublishedByCandidateResultId(candidateResultId)).thenReturn(2L);
 
         assertThatThrownBy(() -> useCase.execute(command()))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("tối đa 2 lần");
 
         verify(assessmentResultAppealRepository, never()).save(any());
@@ -224,7 +224,7 @@ public class CreateAssessmentAppealUseCaseTests {
 
         // Vướng cả hai thì báo lỗi cụ thể hơn: đang có đơn xử lý dở.
         assertThatThrownBy(() -> useCase.execute(command()))
-            .isInstanceOf(DuplicatedException.class);
+            .isInstanceOf(ResourceDuplicatedException.class);
     }
 
     @Test
@@ -247,7 +247,7 @@ public class CreateAssessmentAppealUseCaseTests {
         when(assessmentItemResponseRepository.findBySessionId(sessionId)).thenReturn(List.of());
 
         assertThatThrownBy(() -> useCase.execute(command()))
-            .isInstanceOf(NotFoundException.class)
+            .isInstanceOf(ResourceNotFoundException.class)
             .hasMessageContaining("câu trả lời");
     }
 
@@ -289,7 +289,7 @@ public class CreateAssessmentAppealUseCaseTests {
         when(assessmentItemResponseRepository.findBySessionId(sessionId)).thenReturn(List.of());
 
         assertThatThrownBy(() -> useCase.execute(command(null)))
-            .isInstanceOf(NotFoundException.class)
+            .isInstanceOf(ResourceNotFoundException.class)
             .hasMessageContaining("không có câu trả lời nào");
 
         verify(assessmentResultAppealRepository, never()).save(any());
@@ -332,7 +332,7 @@ public class CreateAssessmentAppealUseCaseTests {
         when(assessmentItemResponseRepository.findBySessionId(sessionId)).thenReturn(List.of(response()));
 
         assertThatThrownBy(() -> useCase.execute(command(List.of(paperItemId, otherPaperItemId))))
-            .isInstanceOf(NotFoundException.class)
+            .isInstanceOf(ResourceNotFoundException.class)
             .hasMessageContaining("câu trả lời");
 
         verify(assessmentResultAppealRepository, never()).save(any());    

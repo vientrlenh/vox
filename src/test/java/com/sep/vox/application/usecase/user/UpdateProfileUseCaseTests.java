@@ -14,7 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sep.vox.application.exception.DataConflictException;
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.port.input.command.UpdateProfileCommand;
 import com.sep.vox.application.port.input.usecase.user.UpdateProfileUseCase;
 import com.sep.vox.application.port.output.AvatarConfigPort;
@@ -50,7 +50,7 @@ class UpdateProfileUseCaseTests {
             null, false, "0987654321", true, null, false, null, false, null, false);
 
         assertThatThrownBy(() -> useCase.execute(command))
-            .isInstanceOf(DuplicatedException.class)
+            .isInstanceOf(ResourceDuplicatedException.class)
             .hasMessage("Số điện thoại đã tồn tại");
     }
 }

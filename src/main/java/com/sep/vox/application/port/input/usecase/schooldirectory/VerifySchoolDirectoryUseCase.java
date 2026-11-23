@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.VerifySchoolDirectoryCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.repository.SchoolDirectoryRepository;
@@ -22,10 +22,10 @@ public class VerifySchoolDirectoryUseCase implements IUseCase<VerifySchoolDirect
     @Transactional
     public UUID execute(VerifySchoolDirectoryCommand input) {
         SchoolDirectory directory = schoolDirectoryRepository.findById(input.id())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy danh mục truờng"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục truờng"));
 
         if (directory.isVerified()) {
-            throw new IllegalStateException("Danh mục truờng đã được kiểm duyệt");
+            throw new IllegalArgumentException("Danh mục truờng đã được kiểm duyệt");
         }
 
         directory.verify();

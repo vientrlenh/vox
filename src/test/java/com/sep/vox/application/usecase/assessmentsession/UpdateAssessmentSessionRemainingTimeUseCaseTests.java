@@ -17,7 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateAssessmentSessionRemainingTimeCommand;
 import com.sep.vox.application.port.input.usecase.assessmentsession.UpdateAssessmentSessionRemainingTimeUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -149,7 +149,7 @@ class UpdateAssessmentSessionRemainingTimeUseCaseTests {
         when(assessmentSessionRepository.findByIdAndResumable(sessionId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> useCase.execute(command(900)))
-            .isInstanceOf(NotFoundException.class);
+            .isInstanceOf(ResourceNotFoundException.class);
         verify(assessmentSessionRepository, never()).checkpointRemainingSeconds(any(), anyInt());
     }
 }

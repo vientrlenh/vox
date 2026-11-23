@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateSubscriptionOrderCommand;
 import com.sep.vox.application.port.input.command.RenewSchoolSubscriptionCommand;
 import com.sep.vox.application.port.input.service.SubscriptionPlanResolver;
@@ -49,11 +49,11 @@ public class RenewSchoolSubscriptionUseCase implements IUseCase<RenewSchoolSubsc
         UUID schoolId = userContextPort.getCurrentSchoolId();
 
         SchoolSubscription subscription = schoolSubscriptionRepository.findMostRecentBySchoolId(schoolId)
-            .orElseThrow(() -> new NotFoundException(
+            .orElseThrow(() -> new ResourceNotFoundException(
                 "Trường chưa từng đăng ký gói nào, hãy chọn gói từ danh sách thay vì gia hạn."));
 
         SubscriptionPlan currentPlan = subscriptionPlanRepository.findById(subscription.getSubscriptionPlanId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói"));
         SubscriptionPlan renewalPlan = subscriptionPlanResolver.resolveActivePlan(currentPlan);
 
         // Đối chiếu với gói trường ĐÃ XÁC NHẬN ở màn xem trước. Không phải thủ tục cho có: giữa lúc
@@ -61,7 +61,7 @@ public class RenewSchoolSubscriptionUseCase implements IUseCase<RenewSchoolSubsc
         // gói thay thế -- và vì gia hạn TỰ đi theo chuỗi thay thế, không có bước này thì trường trả
         // tiền cho một gói khác hẳn gói vừa nhìn thấy.
         if (!renewalPlan.getId().equals(input.acceptedPlanId())) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 "Gói gia hạn đã thay đổi kể từ lúc bạn xem, vui lòng xem lại thông tin gia hạn trước khi tiếp tục.");
         }
 

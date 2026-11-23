@@ -16,7 +16,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.port.input.command.AddAssessmentScheduleProctorCommand;
 import com.sep.vox.application.port.input.service.AssessmentScheduleManageAccessService;
 import com.sep.vox.application.port.input.service.AssessmentScheduleProctorConflictValidator;
@@ -127,7 +127,7 @@ class AddAssessmentScheduleProctorUseCaseTests {
         when(assessmentScheduleProctorRepository.existsByScheduleIdAndTeacherId(scheduleId, teacherId)).thenReturn(true);
 
         assertThatThrownBy(() -> useCase.execute(new AddAssessmentScheduleProctorCommand(assessmentId, scheduleId, teacherId)))
-            .isInstanceOf(DuplicatedException.class);
+            .isInstanceOf(ResourceDuplicatedException.class);
         verify(assessmentScheduleProctorRepository, never()).save(any());
     }
 
@@ -139,7 +139,7 @@ class AddAssessmentScheduleProctorUseCaseTests {
             .thenReturn(true);
 
         assertThatThrownBy(() -> useCase.execute(new AddAssessmentScheduleProctorCommand(assessmentId, scheduleId, teacherId)))
-            .isInstanceOf(DuplicatedException.class)
+            .isInstanceOf(ResourceDuplicatedException.class)
             .hasMessageContaining("khoảng thời gian này");
         verify(assessmentScheduleProctorRepository, never()).save(any());
     }

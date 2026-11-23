@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateAssessmentCandidatesAttendanceCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -51,9 +51,9 @@ public class UpdateAssessmentCandidatesAttendanceUseCase
     @Transactional
     public List<AssessmentCandidateDto> execute(UpdateAssessmentCandidatesAttendanceCommand input) {
         AssessmentSchedule schedule = assessmentScheduleRepository.findById(input.scheduleId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi"));
         if (schedule.getStatus() != null && !schedule.getStatus().allowsAttendance()) {
-            throw new IllegalStateException("Không thể điểm danh ca thi đã bị huỷ, dời hoặc xoá");
+            throw new IllegalArgumentException("Không thể điểm danh ca thi đã bị huỷ, dời hoặc xoá");
         }
         List<AssessmentCandidate> candidates = assessmentCandidateRepository.findByScheduleId(schedule.getId());
         if (candidates.isEmpty()) {
@@ -61,7 +61,7 @@ public class UpdateAssessmentCandidatesAttendanceUseCase
         }
 
         Assessment assessment = assessmentRepository.findById(schedule.getAssessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy kỳ thi của ca thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kỳ thi của ca thi"));
 
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!hasAttendanceAccess(assessment, schedule.getId(), currentUserId)) {
@@ -72,7 +72,7 @@ public class UpdateAssessmentCandidatesAttendanceUseCase
         Instant windowStart = schedule.getStartDate().minus(30, ChronoUnit.MINUTES);
         Instant windowEnd = schedule.getEndDate();
         if (now.isBefore(windowStart) || now.isAfter(windowEnd)) {
-            throw new IllegalStateException("Chỉ được điểm danh trong khoảng 30 phút trước giờ bắt đầu đến khi kết thúc ca thi");
+            throw new IllegalArgumentException("Chỉ được điểm danh trong khoảng 30 phút trước giờ bắt đầu đến khi kết thúc ca thi");
         }
 
         Set<UUID> absentIds = new HashSet<>(input.candidateIds() == null ? List.<UUID>of() : input.candidateIds());

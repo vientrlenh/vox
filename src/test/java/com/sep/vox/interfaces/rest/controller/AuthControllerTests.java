@@ -18,7 +18,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.ClientDeviceCommand;
 import com.sep.vox.application.port.input.command.LoginCommand;
@@ -238,7 +238,7 @@ class AuthControllerTests {
     @Test
     void send_reset_password_otp_should_map_not_found_exception_to_404() {
         when(sendResetPasswordOtpUseCase.execute(any(SendResetPasswordOtpCommand.class)))
-            .thenThrow(new NotFoundException("User not found"));
+            .thenThrow(new ResourceNotFoundException("User not found"));
 
         MvcTestResult result = mvc.post().uri("/api/v1/auth/reset-password-otp")
             .contentType(MediaType.APPLICATION_JSON)

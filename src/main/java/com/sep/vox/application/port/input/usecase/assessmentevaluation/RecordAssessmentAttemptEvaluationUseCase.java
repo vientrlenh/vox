@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.mapper.assessmentevaluation.AssessmentEvaluationSignalMapper;
 import com.sep.vox.application.port.input.command.CompleteAssessmentSessionGradingCommand;
 import com.sep.vox.application.port.input.command.assessmentevaluation.CriterionScoreInput;
@@ -99,7 +99,7 @@ public class RecordAssessmentAttemptEvaluationUseCase implements IUseCase<Record
         PersistedEvaluation persisted = requiresNewTransactionPort.callInNewTransaction(() -> {
             UUID responseId = UUID.fromString(input.answerId());
             AssessmentItemResponse response = assessmentItemResponseRepository.findById(responseId)
-                .orElseThrow(() -> new NotFoundException("không thể tìm thấy câu trả lời cho evaluation"));
+                .orElseThrow(() -> new ResourceNotFoundException("không thể tìm thấy câu trả lời cho evaluation"));
 
             // A score finalized by a person beats the AI. There is no optimistic lock on
             // assessment_item_evaluations, so a regrading run by the AI (re-run, Kafka replay)
@@ -388,7 +388,7 @@ public class RecordAssessmentAttemptEvaluationUseCase implements IUseCase<Record
         });
 
         if (persisted == null) {
-            throw new IllegalStateException("Không thể lưu kết quả chấm cho câu trả lời");
+            throw new IllegalArgumentException("Không thể lưu kết quả chấm cho câu trả lời");
         }
         return persisted;
     }
@@ -469,16 +469,16 @@ public class RecordAssessmentAttemptEvaluationUseCase implements IUseCase<Record
 
     private EvaluationContext resolveEvaluationContext(UUID sessionId) {
         AssessmentSession session = assessmentSessionRepository.findById(sessionId)
-            .orElseThrow(() -> new NotFoundException("không thể tìm thấy phiên thi cho evaluation"));
+            .orElseThrow(() -> new ResourceNotFoundException("không thể tìm thấy phiên thi cho evaluation"));
         Assessment assessment = assessmentRepository.findById(session.getAssessmentId())
-            .orElseThrow(() -> new NotFoundException("không thể tìm thấy bài kiểm tra cho evaluation"));
+            .orElseThrow(() -> new ResourceNotFoundException("không thể tìm thấy bài kiểm tra cho evaluation"));
         if (assessment.getAssessmentPolicyId() == null) {
-            throw new NotFoundException("bài kiểm tra chưa gắn assessment policy");
+            throw new ResourceNotFoundException("bài kiểm tra chưa gắn assessment policy");
         }
         AssessmentPolicy policy = assessmentPolicyRepository.findById(assessment.getAssessmentPolicyId())
-            .orElseThrow(() -> new NotFoundException("không thể tìm thấy assessment policy cho bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("không thể tìm thấy assessment policy cho bài kiểm tra"));
         RubricVersion rubricVersion = rubricVersionRepository.findById(policy.getRubricVersionId())
-            .orElseThrow(() -> new NotFoundException("không thể tìm thấy rubric version cho bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("không thể tìm thấy rubric version cho bài kiểm tra"));
         return new EvaluationContext(
             policy.getRubricVersionId(),
             assessment.getKind(),

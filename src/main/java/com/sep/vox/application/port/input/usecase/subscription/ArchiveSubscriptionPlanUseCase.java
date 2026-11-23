@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.ArchiveSubscriptionPlanCommand;
 import com.sep.vox.application.port.input.service.SubscriptionPlanReplacementValidator;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -27,13 +27,13 @@ public class ArchiveSubscriptionPlanUseCase implements IUseCase<ArchiveSubscript
     @Transactional
     public UUID execute(ArchiveSubscriptionPlanCommand input) {
         SubscriptionPlan plan = subscriptionPlanRepository.findById(input.subscriptionPlanId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói"));
 
         if (plan.getStatus() == SubscriptionPlanStatus.DRAFT) {
-            throw new IllegalStateException("Gói đang ở trạng thái nháp thì phải xóa cứng, không lưu trữ.");
+            throw new IllegalArgumentException("Gói đang ở trạng thái nháp thì phải xóa cứng, không lưu trữ.");
         }
         if (plan.getStatus() == SubscriptionPlanStatus.ARCHIVED) {
-            throw new IllegalStateException("Gói đã được lưu trữ trước đó.");
+            throw new IllegalArgumentException("Gói đã được lưu trữ trước đó.");
         }
 
         // existsActiveByPlanId already existed but was never called -- a real gap: archiving unconditionally while an ACTIVE
@@ -58,7 +58,7 @@ public class ArchiveSubscriptionPlanUseCase implements IUseCase<ArchiveSubscript
 
         if (input.replacedByPlanId() != null) {
             SubscriptionPlan replacement = subscriptionPlanRepository.findById(input.replacedByPlanId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy gói thay thế"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói thay thế"));
             // A school forced to change plan on renewal (SubscriptionPlanResolver.resolveActivePlan) has no chance to refuse -- see
             // SubscriptionPlanReplacementValidator for the full set of rules.
             replacementValidator.requireValidReplacement(replacement, plan);

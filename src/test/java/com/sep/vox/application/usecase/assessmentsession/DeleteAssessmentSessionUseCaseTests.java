@@ -159,7 +159,7 @@ public class DeleteAssessmentSessionUseCaseTests {
         assessment.setStatus(AssessmentStatus.CLOSED);
 
         assertThatThrownBy(() -> delete("Chấm lỗi"))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("đã đóng");
 
         verify(assessmentSessionRepository, never()).softDelete(any(), any(), any());
@@ -169,7 +169,7 @@ public class DeleteAssessmentSessionUseCaseTests {
     void should_refuse_when_results_are_already_published() {
         assessment.setStatus(AssessmentStatus.RESULTS_PUBLISHED);
 
-        assertThatThrownBy(() -> delete("Chấm lỗi")).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> delete("Chấm lỗi")).isInstanceOf(IllegalArgumentException.class);
 
         verify(assessmentSessionRepository, never()).softDelete(any(), any(), any());
     }
@@ -247,7 +247,7 @@ public class DeleteAssessmentSessionUseCaseTests {
         when(assessmentResultAppealRepository.existsOpenByCandidateResultId(result.getId())).thenReturn(true);
 
         assertThatThrownBy(() -> delete("Chấm lỗi"))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("phúc khảo");
 
         verify(assessmentSessionRepository, never()).softDelete(any(), any(), any());

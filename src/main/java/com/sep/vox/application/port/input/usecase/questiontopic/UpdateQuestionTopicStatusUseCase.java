@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateQuestionTopicStatusCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -41,21 +41,21 @@ public class UpdateQuestionTopicStatusUseCase implements IUseCase<UpdateQuestion
             .orElse(null);
 
         QuestionTopic topic = questionTopicRepository.findById(command.id())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chủ đề câu hỏi"));
         QuestionBank bank = questionBankRepository.findById(topic.getQuestionBankId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
         validateAccess(bank.getOwnerType(), bank.getSchoolId(), currentSchoolId);
 
         switch (command.action()) {
             case "PUBLISH" -> {
                 if (topic.getStatus() != QuestionTopicStatus.DRAFT) {
-                    throw new IllegalStateException("Chỉ được publish chủ đề đang ở trạng thái DRAFT");
+                    throw new IllegalArgumentException("Chỉ được publish chủ đề đang ở trạng thái DRAFT");
                 }
                 topic.setStatus(QuestionTopicStatus.PUBLISHED);
             }
             case "ARCHIVE" -> topic.setStatus(QuestionTopicStatus.ARCHIVED);
-            default -> throw new IllegalStateException("Action không hợp lệ");
+            default -> throw new IllegalArgumentException("Action không hợp lệ");
         }
 
 

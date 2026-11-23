@@ -17,7 +17,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.ViewMyClassMembersQuery;
 import com.sep.vox.application.port.input.usecase.schoolclass.MyClassAccessGuard;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewMyClassMembersUseCase;
@@ -88,8 +88,8 @@ class ViewMyClassMembersUseCaseTests {
         when(schoolClassUserRepository.findByUserIdAndSchoolClassId(callerId, classId))
             .thenReturn(Optional.empty());
 
-        NotFoundException exception = assertThrows(
-            NotFoundException.class,
+        ResourceNotFoundException exception = assertThrows(
+            ResourceNotFoundException.class,
             () -> useCase.execute(new ViewMyClassMembersQuery(classId, null, null, 1, 20))
         );
 

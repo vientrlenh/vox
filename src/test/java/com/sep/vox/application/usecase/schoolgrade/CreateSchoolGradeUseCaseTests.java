@@ -104,7 +104,7 @@ class CreateSchoolGradeUseCaseTests {
             LocalDate.of(2024, 9, 1), LocalDate.of(2025, 6, 30));
 
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> useCase.execute(command))
-            .isInstanceOf(com.sep.vox.application.exception.DuplicatedException.class)
+            .isInstanceOf(com.sep.vox.application.exception.ResourceDuplicatedException.class)
             .hasMessage("Mã năm học đã tồn tại trong Khối lớp này.");
     }
 }

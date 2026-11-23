@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateAssessmentPaperItemCommand;
 import com.sep.vox.application.port.input.service.AssessmentPaperAuthoringAccessService;
 import com.sep.vox.application.port.input.service.AssessmentTimeQuotaGuardService;
@@ -70,21 +70,21 @@ public class UpdateAssessmentPaperItemUseCase implements IUseCase<UpdateAssessme
     public AssessmentPaperItemDto execute(UpdateAssessmentPaperItemCommand input) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         AssessmentPaperItem item = assessmentPaperItemRepository.findById(input.itemId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi trong đề thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi trong đề thi"));
         if (!item.getPaperId().equals(input.paperId())) {
-            throw new NotFoundException("Không tìm thấy câu hỏi trong đề thi");
+            throw new ResourceNotFoundException("Không tìm thấy câu hỏi trong đề thi");
         }
         AssessmentPaper paper = assessmentPaperRepository.findById(item.getPaperId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy đề thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đề thi"));
         Assessment assessment = assessmentRepository.findById(paper.getAssessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
         // Bài trên lớp khoá đề bằng một bước DRAFT → LOCKED và mở lại tự do, nên LOCKED ở đó là trạng
         // thái làm việc bình thường; chỉ ở kỳ thi tập trung nó mới mang nghĩa "chốt, không sửa nữa".
         if (assessment.getKind() == AssessmentKind.CENTRALIZED && paper.getStatus() == AssessmentPaperStatus.LOCKED) {
-            throw new IllegalStateException("Đề thi đã bị khoá, không thể sửa câu hỏi");
+            throw new IllegalArgumentException("Đề thi đã bị khoá, không thể sửa câu hỏi");
         }
         if (assessment.getStatus() == AssessmentStatus.IN_PROGRESS) {
-            throw new IllegalStateException("Không thể sửa câu hỏi khi bài kiểm tra đang diễn ra");
+            throw new IllegalArgumentException("Không thể sửa câu hỏi khi bài kiểm tra đang diễn ra");
         }
         assessmentPaperAuthoringAccessService.requireCanAuthor(assessment, currentUserId);
 
@@ -98,7 +98,7 @@ public class UpdateAssessmentPaperItemUseCase implements IUseCase<UpdateAssessme
             ? null
             : assessmentBlueprintSlotRepository.findById(item.getBlueprintSlotId()).orElse(null);
         if (slot != null && slot.getSlotType() == AssessmentBlueprintSlotType.FIXED) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 "Ô câu hỏi này cố định theo blueprint, không thể đổi câu hỏi trực tiếp - phải qua đổi version blueprint");
         }
 
@@ -109,7 +109,7 @@ public class UpdateAssessmentPaperItemUseCase implements IUseCase<UpdateAssessme
             .orElseThrow(() -> new ForbiddenException("Không có quyền dùng câu hỏi này"));
         if ((assessment.getKind() == AssessmentKind.CENTRALIZED || slot != null)
                 && question.getStatus() != QuestionStatus.PUBLISHED) {
-            throw new IllegalStateException("Chỉ được gán câu hỏi đã PUBLISHED vào đề thi");
+            throw new IllegalArgumentException("Chỉ được gán câu hỏi đã PUBLISHED vào đề thi");
         }
         if (slot != null && slot.getSlotType() == AssessmentBlueprintSlotType.SELECTION) {
             requireMatchesSelectionSpec(slot.getSelectionSpec(), question);
@@ -172,11 +172,11 @@ public class UpdateAssessmentPaperItemUseCase implements IUseCase<UpdateAssessme
             return;
         }
         if (spec.questionType() != null && question.getType() != spec.questionType()) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 "Ô câu hỏi này yêu cầu câu hỏi loại " + spec.questionType() + ", câu hỏi đã chọn không khớp tiêu chí");
         }
         if (spec.topicId() != null && !spec.topicId().equals(question.getQuestionTopicId())) {
-            throw new IllegalStateException("Câu hỏi đã chọn không thuộc chủ đề mà ô câu hỏi yêu cầu");
+            throw new IllegalArgumentException("Câu hỏi đã chọn không thuộc chủ đề mà ô câu hỏi yêu cầu");
         }
     }
 

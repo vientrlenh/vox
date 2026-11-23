@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.ViewRoleDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.RoleDto;
@@ -22,7 +22,7 @@ public class ViewRoleDetailsUseCase implements IUseCase<ViewRoleDetailsQuery, Ro
     @Transactional(readOnly = true)
     public RoleDto execute(ViewRoleDetailsQuery input) {
         Role role = roleRepository.findById(input.id())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy vai trò yêu cầu"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vai trò yêu cầu"));
         return RoleDtoMapper.toRoleDto(role);
     }
     

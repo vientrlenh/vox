@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.event.AssessmentAppealPublishedPayloadV1;
 import com.sep.vox.application.event.AssessmentResultRegradedPayloadV1;
 import com.sep.vox.application.event.AssessmentResultReleasedPayloadV1;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.service.AssessmentGradingAccessService.GradingContext;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.common.AggregateTypeConstant;
@@ -65,10 +65,10 @@ public class GradingActionSupport {
     }
 
     /**
-     * Phân quyền + kiểm luật, chụp ảnh trạng thái trước. Gọi TRƯỚC mọi thay đổi.
+     * Authorizes, checks the rules and captures the state beforehand. Call BEFORE any change.
      *
-     * @throws IllegalStateException khi phân công đã chốt, hành động không hợp lệ với
-     *         vòng, hoặc bài đã rời khỏi trạng thái mà vòng này xử lý
+     * @throws IllegalArgumentException when the assignment is already finalized, the action is not
+     *         valid for the round, or the result has left the status this round handles
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public PreparedAction prepare(UUID assignmentId, GradingOutcome outcome, String reason) {
@@ -80,19 +80,19 @@ public class GradingActionSupport {
 
         AssessmentGradingAssignment assignment = context.assignment();
         if (assignment.isCompleted()) {
-            throw new IllegalStateException("Bạn đã chốt kết quả cho bài thi này.");
+            throw new IllegalArgumentException("Bạn đã chốt kết quả cho bài thi này.");
         }
         GradingRoundType roundType = assignment.getRoundType();
         if (roundType == null) {
-            throw new IllegalStateException("Phân công này thiếu vòng chấm.");
+            throw new IllegalArgumentException("Phân công này thiếu vòng chấm.");
         }
         if (!GradingRoundPolicy.isAllowed(roundType, outcome)) {
-            throw new IllegalStateException("Hành động này không hợp lệ với vòng chấm hiện tại.");
+            throw new IllegalArgumentException("Hành động này không hợp lệ với vòng chấm hiện tại.");
         }
-        // Bài có thể đã bị luồng khác kéo đi (phúc khảo, chốt sổ) trong lúc giáo viên
-        // đang mở màn chấm; lúc đó phân công vẫn ASSIGNED nhưng không còn gì để làm.
+        // Another flow (appeal, finalization) may have moved the result while the teacher had the
+        // grading screen open; the assignment is then still ASSIGNED but there is nothing left to do.
         if (!GradingRoundPolicy.isAssignable(roundType, context.candidateResult().getStatus())) {
-            throw new IllegalStateException("Bài thi này không còn ở trạng thái xử lý được của vòng chấm.");
+            throw new IllegalArgumentException("Bài thi này không còn ở trạng thái xử lý được của vòng chấm.");
         }
         String normalizedReason = reason == null || reason.isBlank() ? null : reason.trim();
         if (GradingRoundPolicy.requiresReason(outcome) && normalizedReason == null) {
@@ -284,7 +284,7 @@ public class GradingActionSupport {
     public UUID requireStudentId(AssessmentCandidateResult result) {
         UUID studentId = resolveStudentId(result);
         if (studentId == null) {
-            throw new NotFoundException("Không tìm thấy thí sinh của bài thi.");
+            throw new ResourceNotFoundException("Không tìm thấy thí sinh của bài thi.");
         }
         return studentId;
     }

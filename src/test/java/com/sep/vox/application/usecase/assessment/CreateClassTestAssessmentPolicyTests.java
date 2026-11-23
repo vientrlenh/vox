@@ -19,8 +19,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.exception.PlanLimitExceededException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.BusinessRuleViolationException;
 import com.sep.vox.application.port.input.command.CreateClassTestCommand;
 import com.sep.vox.application.port.input.service.AssessmentPolicyValidator;
 import com.sep.vox.application.port.input.service.AssessmentScheduleProctorConflictValidator;
@@ -138,11 +138,11 @@ class CreateClassTestAssessmentPolicyTests {
 
     @Test
     void should_reject_when_school_has_no_active_subscription() {
-        doThrow(new PlanLimitExceededException("Trường chưa có gói subscription đang hoạt động, không thể tạo Class Test."))
+        doThrow(new BusinessRuleViolationException("Trường chưa có gói subscription đang hoạt động, không thể tạo Class Test."))
             .when(schoolSubscriptionActiveGuardService).requireActiveForSchool(eq(SCHOOL_ID), any());
 
         assertThatThrownBy(() -> useCase.execute(command(POLICY_ID)))
-            .isInstanceOf(PlanLimitExceededException.class)
+            .isInstanceOf(BusinessRuleViolationException.class)
             .hasMessageContaining("chưa có gói subscription đang hoạt động");
     }
 
@@ -158,7 +158,7 @@ class CreateClassTestAssessmentPolicyTests {
         when(assessmentPolicyRepository.findById(POLICY_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> useCase.execute(command(POLICY_ID)))
-            .isInstanceOf(NotFoundException.class)
+            .isInstanceOf(ResourceNotFoundException.class)
             .hasMessageContaining("Không tìm thấy bộ tiêu chí đánh giá");
     }
 
@@ -168,7 +168,7 @@ class CreateClassTestAssessmentPolicyTests {
             .thenReturn(Optional.of(policy(SCHOOL_ID, AssessmentPolicyStatus.DRAFT)));
 
         assertThatThrownBy(() -> useCase.execute(command(POLICY_ID)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Chỉ được dùng bộ tiêu chí đã xuất bản");
     }
 

@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateAssessmentScheduleStatusCommand;
 import com.sep.vox.application.port.input.service.AssessmentScheduleCandidateConflictValidator;
 import com.sep.vox.application.port.input.service.AssessmentScheduleProctorConflictValidator;
@@ -51,12 +51,12 @@ public class UpdateAssessmentScheduleStatusUseCase implements IUseCase<UpdateAss
     @Transactional
     public AssessmentScheduleDto execute(UpdateAssessmentScheduleStatusCommand input) {
         AssessmentSchedule schedule = assessmentScheduleRepository.findById(input.scheduleId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi"));
         if (!schedule.getAssessmentId().equals(input.assessmentId())) {
-            throw new NotFoundException("Không tìm thấy ca thi");
+            throw new ResourceNotFoundException("Không tìm thấy ca thi");
         }
         Assessment assessment = assessmentRepository.findById(schedule.getAssessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
         UUID currentUserId = authorize(assessment);
 
         Instant now = Instant.now();
@@ -79,16 +79,16 @@ public class UpdateAssessmentScheduleStatusUseCase implements IUseCase<UpdateAss
 
     private void requireAssessmentNotStarted(Assessment assessment) {
         if (assessment.isLockedForEditing()) {
-            throw new IllegalStateException("Không thể thay đổi lịch thi khi kỳ thi đã bắt đầu");
+            throw new IllegalArgumentException("Không thể thay đổi lịch thi khi kỳ thi đã bắt đầu");
         }
     }
 
     private void publish(AssessmentSchedule schedule) {
         if (schedule.getStatus() != AssessmentScheduleStatus.DRAFT) {
-            throw new IllegalStateException("Chỉ có thể công bố ca thi ở trạng thái nháp");
+            throw new IllegalArgumentException("Chỉ có thể công bố ca thi ở trạng thái nháp");
         }
         if (assessmentScheduleProctorRepository.countByScheduleId(schedule.getId()) < 1) {
-            throw new IllegalStateException("Cần ít nhất 1 giám thị trước khi công bố ca thi");
+            throw new IllegalArgumentException("Cần ít nhất 1 giám thị trước khi công bố ca thi");
         }
         requireEveryCandidateHasPaper(schedule);
         schedule.setStatus(AssessmentScheduleStatus.PUBLISHED);
@@ -105,13 +105,13 @@ public class UpdateAssessmentScheduleStatusUseCase implements IUseCase<UpdateAss
             .filter(candidate -> !AssessmentCandidateStatus.isNonScorable(candidate.getStatus()))
             .toList();
         if (candidates.isEmpty()) {
-            throw new IllegalStateException("Ca thi chưa có thí sinh nào, không thể công bố");
+            throw new IllegalArgumentException("Ca thi chưa có thí sinh nào, không thể công bố");
         }
         long withoutPaper = candidates.stream()
             .filter(candidate -> candidate.getAssignedPaperId() == null)
             .count();
         if (withoutPaper > 0) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 "Còn " + withoutPaper + " học sinh chưa được gán đề, không thể công bố ca thi");
         }
     }
@@ -124,22 +124,22 @@ public class UpdateAssessmentScheduleStatusUseCase implements IUseCase<UpdateAss
      */
     private void move(AssessmentSchedule schedule, UUID targetScheduleId, UUID currentUserId, Instant now) {
         if (schedule.getStatus() != AssessmentScheduleStatus.DRAFT && schedule.getStatus() != AssessmentScheduleStatus.PUBLISHED) {
-            throw new IllegalStateException("Chỉ có thể chuyển ca thi ở trạng thái nháp hoặc đã công bố");
+            throw new IllegalArgumentException("Chỉ có thể chuyển ca thi ở trạng thái nháp hoặc đã công bố");
         }
         if (targetScheduleId == null) {
             throw new IllegalArgumentException("Ca thi đích là bắt buộc khi chuyển");
         }
         if (targetScheduleId.equals(schedule.getId())) {
-            throw new IllegalStateException("Ca thi đích phải khác ca thi hiện tại");
+            throw new IllegalArgumentException("Ca thi đích phải khác ca thi hiện tại");
         }
         // Khoá hàng ca đích để không chạy song song với thao tác xếp thí sinh vào đúng ca đó.
         AssessmentSchedule target = assessmentScheduleRepository.findByIdForUpdate(targetScheduleId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi đích"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi đích"));
         if (!target.getAssessmentId().equals(schedule.getAssessmentId())) {
-            throw new IllegalStateException("Ca thi đích không thuộc cùng bài kiểm tra");
+            throw new IllegalArgumentException("Ca thi đích không thuộc cùng bài kiểm tra");
         }
         if (target.getStatus() != AssessmentScheduleStatus.DRAFT && target.getStatus() != AssessmentScheduleStatus.PUBLISHED) {
-            throw new IllegalStateException("Ca thi đích không ở trạng thái hợp lệ");
+            throw new IllegalArgumentException("Ca thi đích không ở trạng thái hợp lệ");
         }
 
         moveCandidates(schedule.getId(), target, currentUserId, now);
@@ -185,14 +185,14 @@ public class UpdateAssessmentScheduleStatusUseCase implements IUseCase<UpdateAss
 
     private void complete(AssessmentSchedule schedule) {
         if (schedule.getStatus() != AssessmentScheduleStatus.PUBLISHED) {
-            throw new IllegalStateException("Chỉ có thể hoàn thành ca thi đã công bố");
+            throw new IllegalArgumentException("Chỉ có thể hoàn thành ca thi đã công bố");
         }
         schedule.setStatus(AssessmentScheduleStatus.COMPLETED);
     }
 
     private void cancel(AssessmentSchedule schedule) {
         if (schedule.getStatus() != AssessmentScheduleStatus.DRAFT && schedule.getStatus() != AssessmentScheduleStatus.PUBLISHED) {
-            throw new IllegalStateException("Chỉ có thể huỷ ca thi ở trạng thái nháp hoặc đã công bố");
+            throw new IllegalArgumentException("Chỉ có thể huỷ ca thi ở trạng thái nháp hoặc đã công bố");
         }
         schedule.setStatus(AssessmentScheduleStatus.CANCELLED);
     }

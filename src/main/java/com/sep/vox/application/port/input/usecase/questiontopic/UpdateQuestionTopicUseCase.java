@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateQuestionTopicCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -41,9 +41,9 @@ public class UpdateQuestionTopicUseCase implements IUseCase<UpdateQuestionTopicC
             .orElse(null);
 
         QuestionTopic topic = questionTopicRepository.findById(command.id())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chủ đề câu hỏi"));
         QuestionBank bank = questionBankRepository.findById(topic.getQuestionBankId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
         if (bank.getOwnerType() == QuestionBankOwnerType.SYSTEM) {
             if (!userContextPort.isSystemAdmin()) {
@@ -54,7 +54,7 @@ public class UpdateQuestionTopicUseCase implements IUseCase<UpdateQuestionTopicC
         }
 
         if (topic.getStatus() != QuestionTopicStatus.DRAFT) {
-            throw new IllegalStateException("Chỉ được cập nhật chủ đề ở trạng thái DRAFT");
+            throw new IllegalArgumentException("Chỉ được cập nhật chủ đề ở trạng thái DRAFT");
         }
 
         if (command.name() != null) {

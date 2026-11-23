@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateAssessmentBlueprintSectionItemCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -45,20 +45,20 @@ public class CreateAssessmentBlueprintSectionUseCase implements IUseCase<CreateA
             .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
 
         AssessmentBlueprintVersion version = assessmentBlueprintVersionRepository.findById(command.versionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy version blueprint"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy version blueprint"));
         AssessmentBlueprint blueprint = assessmentBlueprintRepository.findById(version.getBlueprintId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint đề thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy blueprint đề thi"));
         if (!assessmentBlueprintRepository.canEditBlueprint(blueprint.getId(), currentUserId, currentSchoolId)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
         if (version.getStatus() != AssessmentBlueprintVersionStatus.DRAFT) {
-            throw new IllegalStateException("Chỉ được thêm section khi version đang DRAFT");
+            throw new IllegalArgumentException("Chỉ được thêm section khi version đang DRAFT");
         }
 
         List<AssessmentBlueprintSection> siblings = assessmentBlueprintSectionRepository.findByBlueprintVersionId(version.getId());
         if (siblings.stream().anyMatch(s -> s.getOrder() == command.order())) {
-            throw new IllegalStateException("Thứ tự section đã tồn tại trong version này");
+            throw new IllegalArgumentException("Thứ tự section đã tồn tại trong version này");
         }
 
         AssessmentBlueprintSection section = AssessmentBlueprintSection.builder()

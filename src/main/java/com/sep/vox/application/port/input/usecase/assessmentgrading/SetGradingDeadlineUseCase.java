@@ -52,7 +52,7 @@ public class SetGradingDeadlineUseCase implements IUseCase<SetGradingDeadlineCom
         for (UUID assignmentId : lockOrderedIds) {
             AssessmentGradingAccessService.GradingContext context = assessmentGradingAccessService.loadForUpdate(assignmentId);
             if (context.assignment().isCompleted()) {
-                throw new IllegalStateException("Không thể đặt hạn cho phân công đã chốt.");
+                throw new IllegalArgumentException("Không thể đặt hạn cho phân công đã chốt.");
             }
             contexts.add(context);
         }

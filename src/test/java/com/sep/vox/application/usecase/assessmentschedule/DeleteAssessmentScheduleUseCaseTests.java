@@ -77,7 +77,7 @@ class DeleteAssessmentScheduleUseCaseTests {
         when(assessmentCandidateRepository.countByScheduleId(scheduleId)).thenReturn(3L);
 
         assertThatThrownBy(() -> useCase.execute(new DeleteAssessmentScheduleCommand(assessmentId, scheduleId)))
-            .isInstanceOf(IllegalStateException.class);
+            .isInstanceOf(IllegalArgumentException.class);
         verify(assessmentScheduleRepository, never()).save(any());
     }
 
@@ -87,7 +87,7 @@ class DeleteAssessmentScheduleUseCaseTests {
         when(assessmentScheduleProctorRepository.countByScheduleId(scheduleId)).thenReturn(2L);
 
         assertThatThrownBy(() -> useCase.execute(new DeleteAssessmentScheduleCommand(assessmentId, scheduleId)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("giám thị");
         verify(assessmentScheduleRepository, never()).save(any());
     }
@@ -99,7 +99,7 @@ class DeleteAssessmentScheduleUseCaseTests {
         when(assessmentScheduleProctorRepository.countByScheduleId(scheduleId)).thenReturn(0L);
 
         assertThatThrownBy(() -> useCase.execute(new DeleteAssessmentScheduleCommand(assessmentId, scheduleId)))
-            .isInstanceOf(IllegalStateException.class);
+            .isInstanceOf(IllegalArgumentException.class);
         verify(assessmentScheduleRepository, never()).save(any());
     }
 

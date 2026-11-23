@@ -13,7 +13,7 @@ import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.DecideAssessmentCandidateResultOutcomeCommand;
 import com.sep.vox.application.port.input.command.FlagAssessmentSessionCommand;
 import com.sep.vox.application.port.input.command.ForceEndAssessmentSessionCommand;
@@ -117,7 +117,7 @@ public class AssessmentSessionController {
     public AssessmentCandidateResultResponse assessmentSessionResult(@Argument(name = "sessionId") UUID sessionId) {
         try {
             return viewAssessmentSessionResultUseCase.execute(new ViewAssessmentSessionResultQuery(sessionId));
-        } catch (NotFoundException ex) {
+        } catch (ResourceNotFoundException ex) {
             return null;
         }
     }
@@ -151,7 +151,7 @@ public class AssessmentSessionController {
     public AssessmentItemEvaluationDetailsResponse assessmentItemResponseEvaluation(@Argument(name = "answerId") UUID answerId) {
         try {
             return viewAssessmentItemResponseEvaluationUseCase.execute(new ViewAssessmentItemResponseEvaluationQuery(answerId));
-        } catch (NotFoundException ex) {
+        } catch (ResourceNotFoundException ex) {
             return null;
         }
     }

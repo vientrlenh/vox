@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.mapper.scoringrule.ScoringRuleDtoMapper;
 import com.sep.vox.application.port.input.query.SearchScoringRuleQuery;
@@ -46,7 +46,7 @@ public class SearchSystemScoringRuleUseCase implements IUseCase<SearchScoringRul
 
         // 2. Kiểm tra Assessment Policy tồn tại và thuộc phạm vi toàn hệ thống
         AssessmentPolicy policy = assessmentPolicyRepository.findById(query.policyId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Assessment Policy."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
         if (policy.getSchoolId() != null) {
             throw new ForbiddenException("Không thể xem Scoring Rule của Assessment Policy thuộc trường học.");
         }

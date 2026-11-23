@@ -16,7 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import com.sep.vox.domain.model.assessment.AssessmentItemEvaluation;
 import com.sep.vox.domain.model.assessment.AssessmentItemResponse;
@@ -60,7 +60,7 @@ public class AssessmentSessionResultCalculator {
         for (AssessmentItemResponse response : loaded.responses()) {
             AssessmentItemEvaluation evaluation = evaluationsByResponseId.get(response.getId());
             if (evaluation == null) {
-                throw new NotFoundException("Khong tim thay evaluation cho cau tra loi " + response.getId());
+                throw new ResourceNotFoundException("Khong tim thay evaluation cho cau tra loi " + response.getId());
             }
             itemScoreByResponseId.put(response.getId(),
                 evaluation.getItemScore() == null ? BigDecimal.ZERO : evaluation.getItemScore());
@@ -111,7 +111,7 @@ public class AssessmentSessionResultCalculator {
             }
             AssessmentItemEvaluation evaluation = evaluationsByResponseId.get(response.getId());
             if (evaluation == null) {
-                throw new NotFoundException("Khong tim thay evaluation cho cau tra loi " + response.getId());
+                throw new ResourceNotFoundException("Khong tim thay evaluation cho cau tra loi " + response.getId());
             }
             itemScoreByResponseId.put(response.getId(),
                 evaluation.getItemScore() == null ? BigDecimal.ZERO : evaluation.getItemScore());
@@ -150,7 +150,7 @@ public class AssessmentSessionResultCalculator {
         for (AssessmentItemResponse response : loaded.responses()) {
             AssessmentPaperItem paperItem = loaded.paperItemsById().get(response.getPaperItemId());
             if (paperItem == null) {
-                throw new NotFoundException("Khong tim thay paper item " + response.getPaperItemId());
+                throw new ResourceNotFoundException("Khong tim thay paper item " + response.getPaperItemId());
             }
             BigDecimal rawScore = itemScoreByResponseId.getOrDefault(response.getId(), BigDecimal.ZERO);
             BigDecimal itemScore = scaled(rawScore == null ? BigDecimal.ZERO : rawScore);
@@ -203,14 +203,14 @@ public class AssessmentSessionResultCalculator {
     /** Tất cả dữ liệu một lần chấm cần, nạp đúng một lần cho cả calculate lẫn preview. */
     private LoadedSession load(UUID sessionId) {
         AssessmentSession session = assessmentSessionRepository.findById(sessionId)
-            .orElseThrow(() -> new NotFoundException("Khong tim thay phien thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay phien thi"));
         Assessment assessment = assessmentRepository.findById(session.getAssessmentId())
-            .orElseThrow(() -> new NotFoundException("Khong tim thay bai kiem tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay bai kiem tra"));
         if (assessment.getAssessmentPolicyId() == null) {
-            throw new NotFoundException("Bai kiem tra chua gan assessment policy");
+            throw new ResourceNotFoundException("Bai kiem tra chua gan assessment policy");
         }
         AssessmentPolicy policy = assessmentPolicyRepository.findById(assessment.getAssessmentPolicyId())
-            .orElseThrow(() -> new NotFoundException("Khong tim thay assessment policy"));
+            .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay assessment policy"));
 
         List<AssessmentPaperSection> orderedSections = assessmentPaperSectionRepository.findByPaperId(session.getPaperId()).stream()
             .sorted(Comparator.comparingInt(section -> section.getOrder()))

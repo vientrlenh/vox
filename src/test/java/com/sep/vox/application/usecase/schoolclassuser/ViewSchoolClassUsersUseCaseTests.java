@@ -12,7 +12,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewSchoolClassUsersQuery;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.ViewSchoolClassUsersUseCase;
@@ -70,7 +70,7 @@ class ViewSchoolClassUsersUseCaseTests {
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.empty());
         mockUserSchool(currentUserId, schoolId);
 
-        assertThrows(NotFoundException.class, () -> useCase.execute(new ViewSchoolClassUsersQuery(classId, 1, 20)));
+        assertThrows(ResourceNotFoundException.class, () -> useCase.execute(new ViewSchoolClassUsersQuery(classId, 1, 20)));
 
         verifyNoInteractions(schoolClassUserRepository);
     }
@@ -87,7 +87,7 @@ class ViewSchoolClassUsersUseCaseTests {
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(activeSchoolClass(classId, UUID.randomUUID())));
         mockUserSchool(currentUserId, schoolId);
 
-        assertThrows(NotFoundException.class, () -> useCase.execute(new ViewSchoolClassUsersQuery(classId, 1, 20)));
+        assertThrows(ResourceNotFoundException.class, () -> useCase.execute(new ViewSchoolClassUsersQuery(classId, 1, 20)));
 
         verifyNoInteractions(schoolClassUserRepository);
     }
@@ -112,7 +112,7 @@ class ViewSchoolClassUsersUseCaseTests {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(currentUserId);
         when(userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)).thenReturn(true);
 
-        assertThrows(IllegalStateException.class,
+        assertThrows(IllegalArgumentException.class,
             () -> useCase.execute(new ViewSchoolClassUsersQuery(UUID.randomUUID(), 1, 20)));
 
         verifyNoInteractions(schoolRepository, schoolClassRepository, schoolClassUserRepository);
@@ -129,7 +129,7 @@ class ViewSchoolClassUsersUseCaseTests {
         when(userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)).thenReturn(true);
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(school));
 
-        assertThrows(IllegalStateException.class,
+        assertThrows(IllegalArgumentException.class,
             () -> useCase.execute(new ViewSchoolClassUsersQuery(UUID.randomUUID(), 1, 20)));
 
         verifyNoInteractions(schoolClassRepository, schoolClassUserRepository);

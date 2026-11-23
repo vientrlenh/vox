@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.DeleteAssessmentScheduleCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -40,24 +40,24 @@ public class DeleteAssessmentScheduleUseCase implements IUseCase<DeleteAssessmen
     @Transactional
     public UUID execute(DeleteAssessmentScheduleCommand input) {
         AssessmentSchedule schedule = assessmentScheduleRepository.findById(input.scheduleId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi"));
         if (!schedule.getAssessmentId().equals(input.assessmentId())) {
-            throw new NotFoundException("Không tìm thấy ca thi");
+            throw new ResourceNotFoundException("Không tìm thấy ca thi");
         }
         Assessment assessment = assessmentRepository.findById(schedule.getAssessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
         authorize(assessment);
 
         if (assessmentCandidateRepository.countByScheduleId(schedule.getId()) > 0) {
-            throw new IllegalStateException("Không thể xoá ca thi đang có thí sinh");
+            throw new IllegalArgumentException("Không thể xoá ca thi đang có thí sinh");
         }
         // The session is soft-deleted but no FK/cascade cleans up the assessment_schedule_proctors rows, so the
         // proctors must be removed first -- otherwise the attendance screen still joins out the deleted session.
         if (assessmentScheduleProctorRepository.countByScheduleId(schedule.getId()) > 0) {
-            throw new IllegalStateException("Không thể xoá ca thi đang có giám thị");
+            throw new IllegalArgumentException("Không thể xoá ca thi đang có giám thị");
         }
         if (assessment.isLockedForEditing()) {
-            throw new IllegalStateException("Không thể thay đổi lịch thi khi kỳ thi đã bắt đầu");
+            throw new IllegalArgumentException("Không thể thay đổi lịch thi khi kỳ thi đã bắt đầu");
         }
 
         schedule.setStatus(AssessmentScheduleStatus.DELETED);

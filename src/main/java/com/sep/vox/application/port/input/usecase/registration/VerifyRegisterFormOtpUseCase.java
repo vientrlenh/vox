@@ -10,7 +10,7 @@ import com.sep.vox.application.common.CacheKey;
 import com.sep.vox.application.common.CachePayload;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.event.RegisterVerificationConsumedEvent;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.ProvisionSchoolCommand;
 import com.sep.vox.application.port.input.command.VerifyRegisterFormOtpCommand;
@@ -53,7 +53,7 @@ public class VerifyRegisterFormOtpUseCase implements IUseCase<VerifyRegisterForm
         }
 
         SchoolDirectory schoolDirectory = schoolDirectoryRepository.findById(payload.schoolDirectoryId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy danh mục trường"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục trường"));
 
         Instant now = Instant.now();
         provisionSchoolService.provision(new ProvisionSchoolCommand(

@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.AttachAssessmentBlueprintCommand;
 import com.sep.vox.application.port.input.command.CreateBlueprintInlineCommand;
 import com.sep.vox.application.port.input.service.AssessmentTimeQuotaGuardService;
@@ -44,15 +44,15 @@ public class AttachAssessmentBlueprintUseCase implements IUseCase<AttachAssessme
     @Transactional
     public AssessmentDto execute(AttachAssessmentBlueprintCommand input) {
         if (input.blueprintId() == null && input.blueprintVersionId() == null && input.newBlueprint() == null) {
-            throw new IllegalStateException("Phải cung cấp blueprintId, blueprintVersionId hoặc newBlueprint");
+            throw new IllegalArgumentException("Phải cung cấp blueprintId, blueprintVersionId hoặc newBlueprint");
         }
         if (input.blueprintId() != null && input.newBlueprint() != null) {
-            throw new IllegalStateException("Chỉ được cung cấp blueprintId hoặc newBlueprint, không được cung cấp cả hai");
+            throw new IllegalArgumentException("Chỉ được cung cấp blueprintId hoặc newBlueprint, không được cung cấp cả hai");
         }
 
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
 
         if (assessment.getKind() != AssessmentKind.CENTRALIZED) {
             throw new ForbiddenException("Chỉ áp dụng cho bài kiểm tra tập trung");
@@ -69,9 +69,9 @@ public class AttachAssessmentBlueprintUseCase implements IUseCase<AttachAssessme
             }
 
             AssessmentBlueprint blueprint = assessmentBlueprintRepository.findById(input.blueprintId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint đề thi"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy blueprint đề thi"));
             if (!assessment.getSchoolId().equals(blueprint.getSchoolId())) {
-                throw new IllegalStateException("Blueprint không thuộc cùng trường với bài kiểm tra");
+                throw new IllegalArgumentException("Blueprint không thuộc cùng trường với bài kiểm tra");
             }
 
             if (!input.blueprintId().equals(assessment.getBlueprintId())) {
@@ -96,16 +96,16 @@ public class AttachAssessmentBlueprintUseCase implements IUseCase<AttachAssessme
                 throw new ForbiddenException("Chỉ CHAIR được chốt version blueprint");
             }
             if (assessment.getBlueprintId() == null) {
-                throw new IllegalStateException("Bài kiểm tra chưa gắn blueprint");
+                throw new IllegalArgumentException("Bài kiểm tra chưa gắn blueprint");
             }
 
             AssessmentBlueprintVersion version = assessmentBlueprintVersionRepository.findById(input.blueprintVersionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy version blueprint"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy version blueprint"));
             if (!version.getBlueprintId().equals(assessment.getBlueprintId())) {
-                throw new IllegalStateException("Version không thuộc blueprint đang gắn vào exam");
+                throw new IllegalArgumentException("Version không thuộc blueprint đang gắn vào exam");
             }
             if (version.getStatus() != AssessmentBlueprintVersionStatus.PUBLISHED) {
-                throw new IllegalStateException("Chỉ được chốt version đã PUBLISHED");
+                throw new IllegalArgumentException("Chỉ được chốt version đã PUBLISHED");
             }
             assessmentTimeQuotaGuardService.requireWithinPlan(
                 assessment.getSchoolId(),
@@ -124,7 +124,7 @@ public class AttachAssessmentBlueprintUseCase implements IUseCase<AttachAssessme
 
     private void requireNoExistingPapers(UUID assessmentId) {
         if (assessmentPaperRepository.existsByAssessmentId(assessmentId)) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 "Kỳ thi đã có mã đề — phải xóa hết mã đề hiện có trước khi đổi blueprint hoặc chốt sang phiên bản khác");
         }
     }
@@ -135,12 +135,12 @@ public class AttachAssessmentBlueprintUseCase implements IUseCase<AttachAssessme
             UUID assessmentLanguageId) {
         String name = StringNormalization.trimAndCollapseSpaces(command.name());
         if (name == null || name.isBlank()) {
-            throw new IllegalStateException("Tên blueprint là bắt buộc");
+            throw new IllegalArgumentException("Tên blueprint là bắt buộc");
         }
         // Grade level is a shared catalog: it only has to exist, it no longer belongs to a school.
         if (command.gradeLevelId() != null
                 && gradeLevelRepository.findById(command.gradeLevelId()).isEmpty()) {
-            throw new NotFoundException("Không tìm thấy khối lớp");
+            throw new ResourceNotFoundException("Không tìm thấy khối lớp");
         }
         AssessmentBlueprint blueprint = AssessmentBlueprint.builder()
             .schoolId(schoolId)

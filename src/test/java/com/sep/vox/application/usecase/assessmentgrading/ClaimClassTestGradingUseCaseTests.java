@@ -21,9 +21,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.ClaimClassTestGradingCommand;
 import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
 import com.sep.vox.application.port.input.usecase.assessmentgrading.ClaimClassTestGradingUseCase;
@@ -119,7 +119,7 @@ class ClaimClassTestGradingUseCaseTests {
             result(RESULT_ID, UUID.randomUUID(), AssessmentCandidateResultStatus.RELEASED)));
 
         assertThatThrownBy(() -> useCase.execute(command(GradingRoundType.SPOT_CHECK, RESULT_ID)))
-            .isInstanceOf(NotFoundException.class)
+            .isInstanceOf(ResourceNotFoundException.class)
             .hasMessageContaining("không thuộc bài kiểm tra này");
     }
 
@@ -130,7 +130,7 @@ class ClaimClassTestGradingUseCaseTests {
             result(RESULT_ID, ASSESSMENT_ID, AssessmentCandidateResultStatus.PENDING_REVIEW)));
 
         assertThatThrownBy(() -> useCase.execute(command(GradingRoundType.SPOT_CHECK, RESULT_ID)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("SPOT_CHECK");
     }
 
@@ -141,7 +141,7 @@ class ClaimClassTestGradingUseCaseTests {
                 RESULT_ID, CHAIR_ID, GradingRoundType.INITIAL, null, null, Instant.now(), CHAIR_ID, null)));
 
         assertThatThrownBy(() -> useCase.execute(command(GradingRoundType.SPOT_CHECK, RESULT_ID)))
-            .isInstanceOf(DuplicatedException.class)
+            .isInstanceOf(ResourceDuplicatedException.class)
             .hasMessageContaining("đang được chấm");
     }
 
@@ -150,7 +150,7 @@ class ClaimClassTestGradingUseCaseTests {
         assertThatThrownBy(() -> useCase.execute(
                 new ClaimClassTestGradingCommand(
                     ASSESSMENT_ID, GradingRoundType.SPOT_CHECK, List.of(RESULT_ID, RESULT_ID))))
-            .isInstanceOf(DuplicatedException.class);
+            .isInstanceOf(ResourceDuplicatedException.class);
     }
 
     @Test

@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateFrameworkCriteriaCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.model.framework.FrameworkCriterion;
@@ -55,13 +55,13 @@ public class CreateFrameworkCriteriaUseCase
                     .map(fc -> fc.getId())
                     .collect(Collectors.toList());
         } catch (DataConflictException e) {
-            throw new IllegalStateException("Mã tiêu chí đã tồn tại trong cơ sở dữ liệu", e);
+            throw new IllegalArgumentException("Mã tiêu chí đã tồn tại trong cơ sở dữ liệu", e);
         }
     }
 
     private FrameworkVersion getVersion(CreateFrameworkCriteriaCommand command) {
         return frameworkVersionRepository.findById(command.versionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản khung năng lực"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản khung năng lực"));
     }
 
     private void validateRequest(CreateFrameworkCriteriaCommand command, FrameworkVersion version) {
@@ -69,7 +69,7 @@ public class CreateFrameworkCriteriaUseCase
             throw new IllegalArgumentException("Phiên bản không thuộc khung năng lực này");
 
         if (version.getStatus() != FrameworkVersionStatus.DRAFT)
-            throw new IllegalStateException("Chỉ có thể thêm tiêu chí khi phiên bản đang ở trạng thái DRAFT");
+            throw new IllegalArgumentException("Chỉ có thể thêm tiêu chí khi phiên bản đang ở trạng thái DRAFT");
 
         Set<String> requestCodes = new HashSet<>();
         Set<Integer> allOrders = frameworkCriterionRepository.findByFrameworkVersionId(command.versionId())
@@ -94,6 +94,6 @@ public class CreateFrameworkCriteriaUseCase
         }
 
         if (frameworkCriterionRepository.existsByFrameworkVersionIdAndCodeIn(command.versionId(), requestCodes))
-            throw new IllegalStateException("Mã tiêu chí đã tồn tại");
+            throw new IllegalArgumentException("Mã tiêu chí đã tồn tại");
     }
 }

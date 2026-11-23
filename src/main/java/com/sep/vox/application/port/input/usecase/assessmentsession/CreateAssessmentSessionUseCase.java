@@ -5,7 +5,7 @@ import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateAssessmentSessionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.assessmentsession.AssessmentSessionResponse;
@@ -28,11 +28,11 @@ public class CreateAssessmentSessionUseCase implements IUseCase<CreateAssessment
     @Override
     public AssessmentSessionResponse execute(CreateAssessmentSessionCommand input) {
         assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
         assessmentCandidateRepository.findById(input.candidateId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy thí sinh được gán"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thí sinh được gán"));
         assessmentPaperRepository.findById(input.paperId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy đề thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đề thi"));
 
         Instant now = Instant.now();
         AssessmentSession session = AssessmentSession.builder()

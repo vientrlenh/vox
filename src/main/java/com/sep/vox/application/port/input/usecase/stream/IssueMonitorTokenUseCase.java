@@ -15,7 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.IssueMonitorTokenCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.StreamTokenProvider;
@@ -53,7 +53,7 @@ public class IssueMonitorTokenUseCase implements IUseCase<IssueMonitorTokenComma
         Instant now = Instant.now();
 
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy kỳ thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kỳ thi"));
 
         if (schoolId == null || !assessment.getSchoolId().equals(schoolId)) {
             throw new ForbiddenException("Bạn không có quyền giám sát kỳ thi của trường được yêu cầu");
@@ -66,7 +66,7 @@ public class IssueMonitorTokenUseCase implements IUseCase<IssueMonitorTokenComma
         List<AssessmentSchedule> activeSchedules = assessmentScheduleRepository.findByAssessmentIdAndInSchedule(assessment.getId(), now);
 
         if (activeSchedules.isEmpty()) {
-            throw new NotFoundException("Kỳ thi đang không có ca thi diễn ra");
+            throw new ResourceNotFoundException("Kỳ thi đang không có ca thi diễn ra");
         }
 
         List<UUID> requestedIds = normalizeScheduleIds(input.scheduleIds());

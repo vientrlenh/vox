@@ -16,7 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.port.input.command.CreateSchoolClassCommand;
 import com.sep.vox.application.port.input.usecase.schoolclass.CreateSchoolClassUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -122,7 +122,7 @@ class CreateSchoolClassUseCaseTests {
         when(schoolClassRepository.findBySchoolIdAndCode(schoolId, "ENG-01"))
             .thenReturn(Optional.of(SchoolClass.create(schoolId, languageId, gradeId, "ENG-01", "Existing", null)));
 
-        assertThrows(DuplicatedException.class, () -> useCase.execute(command));
+        assertThrows(ResourceDuplicatedException.class, () -> useCase.execute(command));
 
         verify(schoolClassRepository).findBySchoolIdAndCode(schoolId, "ENG-01");
         verify(schoolClassRepository, org.mockito.Mockito.never()).save(any());
@@ -165,7 +165,7 @@ class CreateSchoolClassUseCaseTests {
         User _u0 = user(userId, UUID.randomUUID(), UserStatus.INACTIVE);
         when(userRepository.findById(userId)).thenReturn(Optional.of(_u0));
 
-        assertThrows(IllegalStateException.class, () -> useCase.execute(command));
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
 
         verifyNoInteractions(schoolRepository, supportedLanguageRepository, schoolGradeRepository, schoolClassRepository);
     }

@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricschool;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.DeleteSchoolRubricVersionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -49,11 +49,11 @@ public class DeleteSchoolRubricVersionUseCase implements IUseCase<DeleteSchoolRu
 
         // 2. Lấy thông tin phiên bản
         RubricVersion version = rubricVersionRepository.findById(command.versionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản Rubric này."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản Rubric này."));
 
         // 3. KIỂM TRA QUYỀN SỞ HỮU BẰNG BẢNG SCHOOL_USER
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
 
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
@@ -66,7 +66,7 @@ public class DeleteSchoolRubricVersionUseCase implements IUseCase<DeleteSchoolRu
 
         // Kiểm tra xem trường học có đang hoạt động không
         School school = schoolRepository.findById(command.schoolId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
         if (!school.isActive()) {
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
         }
@@ -74,7 +74,7 @@ public class DeleteSchoolRubricVersionUseCase implements IUseCase<DeleteSchoolRu
 
         // 4. Chỉ được xóa cứng khi đang DRAFT, các trạng thái khác dùng chức năng Lưu trữ (Archive) riêng
         if (version.getStatus() != RubricStatus.DRAFT) {
-            throw new IllegalStateException("Chỉ có thể xóa phiên bản đang ở trạng thái DRAFT. Vui lòng dùng chức năng Lưu trữ (Archive) nếu phiên bản đã PUBLISHED.");
+            throw new IllegalArgumentException("Chỉ có thể xóa phiên bản đang ở trạng thái DRAFT. Vui lòng dùng chức năng Lưu trữ (Archive) nếu phiên bản đã PUBLISHED.");
         }
 
         // 5. Không xóa khi còn Assessment Policy trỏ vào.
@@ -84,7 +84,7 @@ public class DeleteSchoolRubricVersionUseCase implements IUseCase<DeleteSchoolRu
         // (không có khóa ngoại nào canh), chỉ là hậu quả nay lớn hơn nên phải chặn hẳn.
         if (assessmentPolicyRepository.existsPublishedByRubricVersionId(version.getId())
                 || assessmentPolicyRepository.existsNotPublishedByRubricVersionId(version.getId())) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                     "Không thể xóa phiên bản này vì đang có Assessment Policy sử dụng. Hãy xóa hoặc lưu trữ các chính sách đó trước.");
         }
 

@@ -14,7 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.query.ViewSchoolUserDetailsQuery;
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUserDetailsUseCase;
@@ -114,7 +114,7 @@ public class ViewSchoolUserUseCaseTests {
         when(schoolUserRepository.existsBySchoolIdAndUserId(schoolId, callerId)).thenReturn(true);
         when(schoolUserRepository.findBySchoolIdAndUserId(schoolId, targetId)).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> viewSchoolUserUseCase.execute(query));
+        assertThrows(ResourceNotFoundException.class, () -> viewSchoolUserUseCase.execute(query));
     }
 
     private SchoolUser schoolUser(UUID id, UUID userSchoolId, UUID userId) {

@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.event.AssessmentAppealApprovedPayloadV1;
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.port.input.command.AssignAssessmentAppealReviewerCommand;
 import com.sep.vox.application.port.input.service.AssessmentAppealAccessService;
 import com.sep.vox.application.port.input.service.ResultStatusHistoryRecorder;
@@ -68,7 +68,7 @@ public class AssignAssessmentAppealReviewerUseCase implements IUseCase<AssignAss
 
         AssessmentResultAppeal appeal = context.appeal();
         if (appeal.getStatus() != AssessmentAppealStatus.APPROVED) {
-            throw new IllegalStateException("Chỉ có thể phân công người chấm cho đơn phúc khảo đã được duyệt.");
+            throw new IllegalArgumentException("Chỉ có thể phân công người chấm cho đơn phúc khảo đã được duyệt.");
         }
         if (command.reviewerId() == null) {
             throw new IllegalArgumentException("Thiếu người chấm phúc khảo.");
@@ -84,7 +84,7 @@ public class AssignAssessmentAppealReviewerUseCase implements IUseCase<AssignAss
         // Bài đang có phân công khác chưa đóng thì không mở thêm được — unique index
         // trên active_result_id sẽ chặn, nhưng báo lỗi ở đây mới đọc được.
         if (assessmentGradingAssignmentRepository.findOpenByCandidateResultId(candidateResult.getId()).isPresent()) {
-            throw new DuplicatedException("Bài thi này đang được một giáo viên chấm ở vòng khác.");
+            throw new ResourceDuplicatedException("Bài thi này đang được một giáo viên chấm ở vòng khác.");
         }
 
         // Bài kiểm tra trên lớp: chính chủ bài tự nhận, nên luật xung đột lợi ích dưới

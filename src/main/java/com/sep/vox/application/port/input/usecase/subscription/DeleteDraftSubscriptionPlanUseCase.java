@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.DeleteDraftSubscriptionPlanCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.model.subscription.SubscriptionPlanStatus;
@@ -23,14 +23,14 @@ public class DeleteDraftSubscriptionPlanUseCase implements IUseCase<DeleteDraftS
     @Transactional
     public Void execute(DeleteDraftSubscriptionPlanCommand input) {
         SubscriptionPlan plan = subscriptionPlanRepository.findById(input.subscriptionPlanId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói"));
 
         // Gói đã publish thì có thể đã có trường mua, và kể cả chưa có thì dòng đơn hàng
         // (order_items.item_id) vẫn trỏ về id này -- xóa cứng là làm mồ côi chứng từ. Cột đó cố ý
         // KHÔNG phải khóa ngoại (đa hình theo order_items.type) nên DB không chặn giúp. DRAFT thì
         // chưa từng bán được nên xóa hẳn mới sạch, thay vì để lại rác ARCHIVED không ai dùng.
         if (plan.getStatus() != SubscriptionPlanStatus.DRAFT) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 "Chỉ có thể xóa cứng gói đang ở trạng thái nháp. Gói đã xuất bản thì phải lưu trữ (archive) thay vì xóa.");
         }
 

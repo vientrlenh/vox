@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.event.AssessmentBlueprintVersionPublishedEvent;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateAssessmentBlueprintVersionStatusCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
@@ -71,9 +71,9 @@ public class UpdateAssessmentBlueprintVersionStatusUseCase
             .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
 
         AssessmentBlueprintVersion version = assessmentBlueprintVersionRepository.findById(command.versionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy version blueprint"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy version blueprint"));
         AssessmentBlueprint blueprint = assessmentBlueprintRepository.findById(version.getBlueprintId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint đề thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy blueprint đề thi"));
 
         requireStatusActor(version, blueprint, currentUserId, currentSchoolId);
         Instant now = Instant.now();
@@ -81,18 +81,18 @@ public class UpdateAssessmentBlueprintVersionStatusUseCase
         switch (command.action()) {
             case "PUBLISH" -> {
                 if (version.getStatus() != AssessmentBlueprintVersionStatus.DRAFT) {
-                    throw new IllegalStateException("Chỉ được publish version ở trạng thái DRAFT");
+                    throw new IllegalArgumentException("Chỉ được publish version ở trạng thái DRAFT");
                 }
                 validatePublishable(version);
                 version.setStatus(AssessmentBlueprintVersionStatus.PUBLISHED);
             }
             case "ARCHIVE" -> {
                 if (version.getStatus() != AssessmentBlueprintVersionStatus.PUBLISHED) {
-                    throw new IllegalStateException("Chỉ được archive version ở trạng thái PUBLISHED");
+                    throw new IllegalArgumentException("Chỉ được archive version ở trạng thái PUBLISHED");
                 }
                 version.setStatus(AssessmentBlueprintVersionStatus.ARCHIVED);
             }
-            default -> throw new IllegalStateException("Action không hợp lệ");
+            default -> throw new IllegalArgumentException("Action không hợp lệ");
         }
 
         AssessmentBlueprintVersion saved = assessmentBlueprintVersionRepository.save(version);
@@ -152,13 +152,13 @@ public class UpdateAssessmentBlueprintVersionStatusUseCase
     private void validatePublishable(AssessmentBlueprintVersion version) {
         List<AssessmentBlueprintSection> sections = assessmentBlueprintSectionRepository.findByBlueprintVersionId(version.getId());
         if (sections.isEmpty()) {
-            throw new IllegalStateException("Blueprint version phải có ít nhất một section trước khi publish");
+            throw new IllegalArgumentException("Blueprint version phải có ít nhất một section trước khi publish");
         }
         BigDecimal weightSum = sections.stream()
             .map(section -> section.getSectionWeight() == null ? BigDecimal.ZERO : section.getSectionWeight())
             .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
         if (weightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
-            throw new IllegalStateException("Tổng trọng số section phải bằng 1.00 trước khi publish");
+            throw new IllegalArgumentException("Tổng trọng số section phải bằng 1.00 trước khi publish");
         }
 
         List<AssessmentBlueprintSlot> allSlots = assessmentBlueprintSlotRepository.findByBlueprintVersionId(version.getId());
@@ -169,7 +169,7 @@ public class UpdateAssessmentBlueprintVersionStatusUseCase
                     ? null
                     : questionRepository.findById(slot.getFixedQuestionId()).orElse(null);
                 if (question == null || question.getStatus() != QuestionStatus.PUBLISHED) {
-                    throw new IllegalStateException("Câu hỏi fixed cho slot phải ở trạng thái PUBLISHED");
+                    throw new IllegalArgumentException("Câu hỏi fixed cho slot phải ở trạng thái PUBLISHED");
                 }
             });
 
@@ -181,7 +181,7 @@ public class UpdateAssessmentBlueprintVersionStatusUseCase
                 .map(slot -> slot.getWeight() == null ? BigDecimal.ZERO : slot.getWeight())
                 .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
             if (slotWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
-                throw new IllegalStateException(
+                throw new IllegalArgumentException(
                     "Tổng trọng số ô câu hỏi trong phần \"" + section.getTitle() + "\" phải bằng 1.00 trước khi publish");
             }
         }

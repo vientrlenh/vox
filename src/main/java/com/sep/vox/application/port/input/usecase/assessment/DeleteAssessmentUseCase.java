@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.DeleteAssessmentCommand;
 import com.sep.vox.application.port.input.service.AssessmentScheduleClosureService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -67,13 +67,13 @@ public class DeleteAssessmentUseCase implements IUseCase<DeleteAssessmentCommand
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
 
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
 
         authorizeDelete(assessment.getId(), assessment.getSchoolId(), assessment.getKind(), currentUserId, currentSchoolId, schoolAdmin);
 
         return switch (assessment.getStatus()) {
             case RESULTS_PUBLISHED ->
-                throw new IllegalStateException("Không thể xoá kỳ thi đã công bố kết quả");
+                throw new IllegalArgumentException("Không thể xoá kỳ thi đã công bố kết quả");
             // Đã huỷ rồi thì bấm xoá lần nữa không có gì để làm: trả đúng kết quả cũ thay vì ném lỗi.
             case CANCELLED -> new DeleteAssessmentResponse(false, true);
             case DRAFT -> {

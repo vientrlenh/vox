@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.domain.model.assessment.AssessmentCandidateResult;
 import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
 import com.sep.vox.domain.repository.AssessmentCandidateRepository;
@@ -37,12 +37,12 @@ public class UpsertAssessmentCandidateResultUseCase {
 
     private AssessmentCandidateResultStatus resolveDefaultStatus(UUID sessionId, UUID candidateId, boolean anyRequiresHumanReview) {
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(candidateId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy thí sinh"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thí sinh"));
         if (candidate.getBlockedAt() != null) {
             return AssessmentCandidateResultStatus.INVALID;
         }
         AssessmentSession session = assessmentSessionRepository.findById(sessionId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi"));
         if (session.isFlagged() || anyRequiresHumanReview) {
             return AssessmentCandidateResultStatus.PENDING_REVIEW;
         }

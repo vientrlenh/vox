@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.rubricschool;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.ArchiveSchoolRubricVersionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -52,10 +52,10 @@ public class ArchiveSchoolRubricVersionUseCase implements IUseCase<ArchiveSchool
 
         // 2. Lấy phiên bản và kiểm tra quyền sở hữu bằng bảng school_user
         RubricVersion version = rubricVersionRepository.findById(command.versionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản Rubric này."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản Rubric này."));
 
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy bộ Rubric gốc."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
 
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
@@ -67,21 +67,21 @@ public class ArchiveSchoolRubricVersionUseCase implements IUseCase<ArchiveSchool
         }
 
         School school = schoolRepository.findById(command.schoolId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
         if (!school.isActive()) {
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
         }
 
         // 3. Chỉ được lưu trữ (ARCHIVE) khi đang PUBLISHED
         if (version.getStatus() != RubricStatus.PUBLISHED) {
-            throw new IllegalStateException("Chỉ có thể lưu trữ (ARCHIVE) phiên bản đang ở trạng thái PUBLISHED.");
+            throw new IllegalArgumentException("Chỉ có thể lưu trữ (ARCHIVE) phiên bản đang ở trạng thái PUBLISHED.");
         }
 
         // 3b. Chặn archive trực tiếp nếu còn Assessment Policy đang DRAFT/PUBLISHED dùng version này --
         // archive vô điều kiện sẽ để lại Policy còn hiệu lực trỏ vào một version đã ARCHIVED. Đối xứng
         // với existsOtherActiveByRubricVersionId ở chiều archive Policy (ArchiveSchoolAssessmentPolicyUseCase).
         if (assessmentPolicyRepository.existsActiveByRubricVersionId(version.getId())) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                     "Không thể lưu trữ phiên bản này vì còn Assessment Policy đang DRAFT/PUBLISHED sử dụng. "
                             + "Hãy lưu trữ các Assessment Policy đó trước.");
         }

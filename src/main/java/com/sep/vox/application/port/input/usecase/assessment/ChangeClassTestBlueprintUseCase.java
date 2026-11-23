@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.ChangeClassTestBlueprintCommand;
 import com.sep.vox.application.port.input.service.AssessmentTimeQuotaGuardService;
 import com.sep.vox.application.port.input.service.RecalculateAssessmentTimeDurationService;
@@ -73,7 +73,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
     public AssessmentDto execute(ChangeClassTestBlueprintCommand input) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
 
         if (assessment.getKind() != AssessmentKind.CLASS_TEST) {
             throw new ForbiddenException("Chỉ áp dụng cho bài kiểm tra trên lớp");
@@ -82,13 +82,13 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
         if (assessment.getStatus() != AssessmentStatus.DRAFT && assessment.getStatus() != AssessmentStatus.SCHEDULED) {
-            throw new IllegalStateException("Chỉ được đổi blueprint khi bài kiểm tra chưa bắt đầu");
+            throw new IllegalArgumentException("Chỉ được đổi blueprint khi bài kiểm tra chưa bắt đầu");
         }
         if (assessmentRepository.existsSubmittedSessionByAssessmentId(assessment.getId())) {
-            throw new IllegalStateException("Không thể đổi blueprint khi đã có học sinh nộp bài");
+            throw new IllegalArgumentException("Không thể đổi blueprint khi đã có học sinh nộp bài");
         }
         if ((input.blueprintId() == null) != (input.blueprintVersionId() == null)) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 "Phải cung cấp đầy đủ blueprintId và blueprintVersionId, hoặc để trống cả hai để gỡ blueprint");
         }
         if (input.blueprintId() != null) {
@@ -99,12 +99,12 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
         // nào là "mã đề của blueprint" cả — chặn hẳn thay vì âm thầm ghi đè mã đề đầu tiên.
         List<AssessmentPaper> papers = assessmentPaperRepository.findByAssessmentId(assessment.getId());
         if (papers.size() > 1) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 "Bài có nhiều mã đề, hãy xoá bớt chỉ còn một mã đề trước khi đổi blueprint");
         }
         AssessmentPaper paper = papers.stream()
             .findFirst()
-            .orElseThrow(() -> new NotFoundException("Bài kiểm tra chưa có mã đề nào"));
+            .orElseThrow(() -> new ResourceNotFoundException("Bài kiểm tra chưa có mã đề nào"));
 
         clearExistingPaperContent(paper, currentUserId);
 
@@ -123,17 +123,17 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
 
     private void validateExistingBlueprintDuration(ChangeClassTestBlueprintCommand input, Assessment assessment) {
         AssessmentBlueprint blueprint = assessmentBlueprintRepository.findById(input.blueprintId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy blueprint"));
         if (!blueprint.getSchoolId().equals(assessment.getSchoolId())) {
-            throw new IllegalStateException("Blueprint không thuộc trường của giáo viên");
+            throw new IllegalArgumentException("Blueprint không thuộc trường của giáo viên");
         }
         AssessmentBlueprintVersion version = assessmentBlueprintVersionRepository.findById(input.blueprintVersionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy version blueprint"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy version blueprint"));
         if (!version.getBlueprintId().equals(blueprint.getId())) {
-            throw new IllegalStateException("Version không thuộc blueprint đã chọn");
+            throw new IllegalArgumentException("Version không thuộc blueprint đã chọn");
         }
         if (version.getStatus() != AssessmentBlueprintVersionStatus.PUBLISHED) {
-            throw new IllegalStateException("Chỉ được dùng version đã PUBLISHED");
+            throw new IllegalArgumentException("Chỉ được dùng version đã PUBLISHED");
         }
         assessmentTimeQuotaGuardService.requireWithinPlan(
             assessment.getSchoolId(),
@@ -160,24 +160,24 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
             AssessmentPaper paper,
             UUID currentUserId) {
         AssessmentBlueprint blueprint = assessmentBlueprintRepository.findById(input.blueprintId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy blueprint"));
         if (!blueprint.getSchoolId().equals(assessment.getSchoolId())) {
-            throw new IllegalStateException("Blueprint không thuộc trường của giáo viên");
+            throw new IllegalArgumentException("Blueprint không thuộc trường của giáo viên");
         }
         AssessmentBlueprintVersion version = assessmentBlueprintVersionRepository.findById(input.blueprintVersionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy version blueprint"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy version blueprint"));
         if (!version.getBlueprintId().equals(blueprint.getId())) {
-            throw new IllegalStateException("Version không thuộc blueprint đã chọn");
+            throw new IllegalArgumentException("Version không thuộc blueprint đã chọn");
         }
         if (version.getStatus() != AssessmentBlueprintVersionStatus.PUBLISHED) {
-            throw new IllegalStateException("Chỉ được dùng version đã PUBLISHED");
+            throw new IllegalArgumentException("Chỉ được dùng version đã PUBLISHED");
         }
 
         List<AssessmentBlueprintSection> sections = assessmentBlueprintSectionRepository.findByBlueprintVersionId(version.getId()).stream()
             .sorted(Comparator.comparingInt(section -> section.getOrder()))
             .toList();
         if (sections.isEmpty()) {
-            throw new IllegalStateException("Blueprint version không có section nào");
+            throw new IllegalArgumentException("Blueprint version không có section nào");
         }
         Map<UUID, List<AssessmentBlueprintSlot>> slotsBySectionId = assessmentBlueprintSlotRepository.findByBlueprintVersionId(version.getId()).stream()
             .collect(Collectors.groupingBy(slot -> slot.getSectionId()));
@@ -203,7 +203,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
                 UUID questionId = slot.getSlotType() == AssessmentBlueprintSlotType.FIXED ? slot.getFixedQuestionId() : null;
                 if (questionId != null) {
                     Question fixedQuestion = questionRepository.findById(questionId)
-                        .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi cố định trong blueprint"));
+                        .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi cố định trong blueprint"));
                     if (fixedQuestion.getStatus() != QuestionStatus.PUBLISHED) {
                         // The fixed question was archived after the blueprint was published: leave this slot empty, the CHAIR picks another question through the picker.
                         assessmentPaperItemRepository.save(AssessmentPaperItem.builder()
@@ -238,7 +238,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
             .map(section -> section.getSectionWeight() == null ? BigDecimal.ZERO : section.getSectionWeight())
             .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
         if (sectionWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 "Blueprint version đã chốt có tổng trọng số section không hợp lệ, không thể dùng cho bài kiểm tra");
         }
         for (AssessmentBlueprintSection section : sections) {
@@ -247,7 +247,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
                 .map(slot -> slot.getWeight() == null ? BigDecimal.ZERO : slot.getWeight())
                 .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
             if (slotWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
-                throw new IllegalStateException(
+                throw new IllegalArgumentException(
                     "Phần \"" + section.getTitle() + "\" trong blueprint có tổng trọng số ô câu hỏi không hợp lệ");
             }
         }
@@ -259,7 +259,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
                 continue;
             }
             if (slot.getFixedQuestionId() == null) {
-                throw new IllegalStateException("Slot FIXED phải có fixedQuestionId");
+                throw new IllegalArgumentException("Slot FIXED phải có fixedQuestionId");
             }
         }
     }

@@ -7,7 +7,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.exception.PlanLimitExceededException;
+import com.sep.vox.application.exception.BusinessRuleViolationException;
 import com.sep.vox.domain.common.ZoneConstant;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
@@ -45,7 +45,7 @@ public class SubscriptionPeriodGuardService {
         }
 
         SchoolSubscription subscription = schoolSubscriptionRepository.findActiveBySchoolId(schoolId)
-            .orElseThrow(() -> new PlanLimitExceededException(
+            .orElseThrow(() -> new BusinessRuleViolationException(
                 "Trường chưa có gói dịch vụ đang hoạt động, không thể đặt thời gian cho bài kiểm tra"));
 
         Instant startDate = subscription.getStartDate();
@@ -56,19 +56,20 @@ public class SubscriptionPeriodGuardService {
             return;
         }
 
-        // end_date là mốc EXCLUSIVE, đúng bằng thời điểm kỳ kết thúc -- khớp "end_date >
-        // CURRENT_TIMESTAMP" ở các native query và "endDate > :at" ở findInForceBySchoolId.
+        // end_date is an EXCLUSIVE bound, exactly the moment the period ends -- it matches "end_date >
+        // CURRENT_TIMESTAMP" in the native queries and "endDate > :at" in findInForceBySchoolId.
         //
-        // KHÔNG cộng thêm một ngày nữa. Bản cũ cộng vì end_date từng là LocalDate, tức mốc theo NGÀY
-        // nên cận trên thật sự là hết ngày hôm đó. V2 đổi cột sang timestamptz và model sang Instant,
-        // nên end_date giờ đã là chính xác lúc kỳ hết hạn; cộng thêm 24 giờ là mở cửa cho lịch thi
-        // nằm NGOÀI hạn gói -- bài xếp lịch trót lọt rồi chết lúc chạy thật ở
-        // ClassTestTokenQuotaGuardService, đúng cái lỗi muộn mà guard này sinh ra để chặn.
+        // Do NOT add one more day. The old version added it because end_date used to be a LocalDate,
+        // a DAY-level bound whose real upper limit was the end of that day. V2 changed the column to
+        // timestamptz and the model to Instant, so end_date is now exactly the moment the period
+        // expires; adding 24 hours would let a schedule fall OUTSIDE the plan period -- the schedule
+        // would be accepted and then fail at run time in ClassTestTokenQuotaGuardService, the very
+        // late failure this guard exists to prevent.
         if (openAt != null && isOutside(openAt, startDate, endDate)) {
-            throw new IllegalStateException(outsidePeriodMessage("Thời gian mở bài", subscription));
+            throw new IllegalArgumentException(outsidePeriodMessage("Thời gian mở bài", subscription));
         }
         if (closeAt != null && isOutside(closeAt, startDate, endDate)) {
-            throw new IllegalStateException(outsidePeriodMessage("Thời gian đóng bài", subscription));
+            throw new IllegalArgumentException(outsidePeriodMessage("Thời gian đóng bài", subscription));
         }
     }
 

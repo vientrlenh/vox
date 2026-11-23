@@ -3,7 +3,7 @@ package com.sep.vox.application.port.input.service;
 import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.service.rubric.RubricResultBandValidator;
 import com.sep.vox.domain.service.rubric.ScoreRangeValidator;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.domain.model.importfile.*;
 import com.sep.vox.domain.model.rubric.RubricResultBand;
@@ -35,9 +35,9 @@ public class RubricResultBandImportCommitHandler implements ImportCommitHandler 
     public ImportCommitResult commit(ImportSession session, List<ImportRow> rows) {
         UUID versionId = session.getImportedEntityId();
         RubricVersion version = rubricVersionRepository.findById(versionId)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Phiên bản gốc khi xử lý ngầm."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản gốc khi xử lý ngầm."));
         if (version.getStatus() != RubricStatus.DRAFT) {
-            throw new IllegalStateException("Chỉ có thể import Xếp loại (Result Band) khi phiên bản Rubric đang ở trạng thái DRAFT.");
+            throw new IllegalArgumentException("Chỉ có thể import Xếp loại (Result Band) khi phiên bản Rubric đang ở trạng thái DRAFT.");
         }
 
         Map<String, String> mapping = new HashMap<>();
@@ -188,7 +188,7 @@ public class RubricResultBandImportCommitHandler implements ImportCommitHandler 
             try {
                 rubricResultBandRepository.saveAll(bandsToSave);
             } catch (DataConflictException e) {
-                throw new IllegalStateException("Lỗi lưu dữ liệu: Mã xếp loại (Result Band) bị trùng lặp trong Phiên bản Rubric này.", e);
+                throw new IllegalArgumentException("Lỗi lưu dữ liệu: Mã xếp loại (Result Band) bị trùng lặp trong Phiên bản Rubric này.", e);
             }
         }
 

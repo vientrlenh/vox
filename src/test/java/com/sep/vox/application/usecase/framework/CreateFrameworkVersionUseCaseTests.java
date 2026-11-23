@@ -16,8 +16,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import com.sep.vox.application.exception.DataConflictException;
 
-import com.sep.vox.application.exception.DuplicatedException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateFrameworkVersionCommand;
 import com.sep.vox.application.port.input.usecase.framework.CreateFrameworkVersionUseCase;
 import com.sep.vox.application.response.input.framework.CreateFrameworkVersionResponse;
@@ -79,7 +79,7 @@ public class CreateFrameworkVersionUseCaseTests {
 
         when(frameworkRepository.findById(frameworkId)).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> useCase.execute(command));
+        assertThrows(ResourceNotFoundException.class, () -> useCase.execute(command));
     }
 
     @Test
@@ -99,6 +99,6 @@ public class CreateFrameworkVersionUseCaseTests {
         when(frameworkVersionRepository.save(any(FrameworkVersion.class)))
             .thenThrow(new DataConflictException("duplicate", null));
 
-        assertThrows(DuplicatedException.class, () -> useCase.execute(command));
+        assertThrows(ResourceDuplicatedException.class, () -> useCase.execute(command));
     }
 }

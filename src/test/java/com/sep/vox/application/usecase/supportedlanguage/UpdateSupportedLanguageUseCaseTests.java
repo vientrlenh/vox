@@ -18,8 +18,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import com.sep.vox.application.exception.DataConflictException;
 
-import com.sep.vox.application.exception.DuplicatedException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateSupportedLanguageCommand;
 import com.sep.vox.application.port.input.usecase.supportedlanguage.UpdateSupportedLanguageUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -134,7 +134,7 @@ class UpdateSupportedLanguageUseCaseTests {
         UpdateSupportedLanguageCommand command = new UpdateSupportedLanguageCommand(id, "fr", true, null, false, null, false, null, false);
         when(supportedLanguageRepository.findByCode("FR")).thenReturn(Optional.of(language(otherId, "FR", "French", null, true)));
 
-        DuplicatedException exception = assertThrows(DuplicatedException.class, () -> useCase.execute(command));
+        ResourceDuplicatedException exception = assertThrows(ResourceDuplicatedException.class, () -> useCase.execute(command));
 
         assertThat(exception).hasMessage("Ngôn ngữ đã tồn tại với mã: FR");
         verify(supportedLanguageRepository, never()).updateMutableFields(any(), any(), any(Boolean.class), any(), any(Boolean.class),
@@ -236,7 +236,7 @@ class UpdateSupportedLanguageUseCaseTests {
             eq(userId.toString())
         )).thenReturn(0);
 
-        NotFoundException exception = assertThrows(NotFoundException.class, () -> useCase.execute(command));
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> useCase.execute(command));
 
         assertThat(exception).hasMessage("Không tìm thấy ngôn ngữ");
     }
@@ -262,7 +262,7 @@ class UpdateSupportedLanguageUseCaseTests {
             eq(userId.toString())
         )).thenThrow(new DataConflictException("duplicate", null));
 
-        DuplicatedException exception = assertThrows(DuplicatedException.class, () -> useCase.execute(command));
+        ResourceDuplicatedException exception = assertThrows(ResourceDuplicatedException.class, () -> useCase.execute(command));
 
         assertThat(exception).hasMessage("Ngôn ngữ đã tồn tại với mã: FR");
     }

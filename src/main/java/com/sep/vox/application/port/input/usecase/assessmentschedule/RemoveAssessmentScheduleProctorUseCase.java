@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.DeleteAssessmentScheduleProctorCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -39,19 +39,19 @@ public class RemoveAssessmentScheduleProctorUseCase implements IUseCase<DeleteAs
     @Transactional
     public UUID execute(DeleteAssessmentScheduleProctorCommand input) {
         AssessmentSchedule schedule = assessmentScheduleRepository.findById(input.scheduleId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi"));
         if (!schedule.getAssessmentId().equals(input.assessmentId())) {
-            throw new NotFoundException("Không tìm thấy ca thi");
+            throw new ResourceNotFoundException("Không tìm thấy ca thi");
         }
         Assessment assessment = assessmentRepository.findById(schedule.getAssessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
         authorize(assessment);
         AssessmentEditingGuard.requireScheduleEditable(assessment);
 
         AssessmentScheduleProctor proctor = assessmentScheduleProctorRepository.findById(input.proctorId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy giám thị"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy giám thị"));
         if (!proctor.getScheduleId().equals(schedule.getId())) {
-            throw new NotFoundException("Không tìm thấy giám thị");
+            throw new ResourceNotFoundException("Không tìm thấy giám thị");
         }
 
         assessmentScheduleProctorRepository.deleteById(proctor.getId());

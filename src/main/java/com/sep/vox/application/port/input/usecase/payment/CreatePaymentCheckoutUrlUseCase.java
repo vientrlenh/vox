@@ -10,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreatePaymentCheckoutUrlCommand;
 import com.sep.vox.application.port.input.service.PaymentProcessResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -94,7 +94,7 @@ public class CreatePaymentCheckoutUrlUseCase
         // này vì nó cần cổng TRẢ LỜI. Thiếu cấu hình là ca duy nhất biết chắc trước khi gọi, nên nó
         // phải dừng ở đây chứ không phải để lại một dòng không ai dọn được.
         if (!paymentProcessResolver.resolve(provider).isConfigured()) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 "Cổng thanh toán " + provider + " chưa được cấu hình trên hệ thống. Vui lòng chọn cổng khác hoặc liên hệ hỗ trợ.");
         }
 
@@ -171,7 +171,7 @@ public class CreatePaymentCheckoutUrlUseCase
         Order order = requirePayableOrder(orderId);
 
         switch (remoteStatus) {
-            case PAID -> throw new IllegalStateException(
+            case PAID -> throw new IllegalArgumentException(
                 "Đơn hàng này đã được thanh toán, hệ thống đang ghi nhận. Vui lòng đợi trong giây lát.");
 
             case CANCELLED, EXPIRED, FAILED, NOT_FOUND -> {
@@ -180,7 +180,7 @@ public class CreatePaymentCheckoutUrlUseCase
                 // lần thử sắp sống -- xem PaymentRecord.canRetireOnGatewayNotFound.
                 if (remoteStatus == PaymentLinkRemoteStatus.NOT_FOUND
                         && !pending.canRetireOnGatewayNotFound(Instant.now())) {
-                    throw new IllegalStateException(
+                    throw new IllegalArgumentException(
                         "Đơn hàng vừa mở một phiên thanh toán mà cổng chưa xác nhận. "
                             + "Vui lòng thử lại sau vài phút.");
                 }
@@ -212,9 +212,10 @@ public class CreatePaymentCheckoutUrlUseCase
                 }
 
                 if (pending.getCheckoutUrl() == null) {
-                    // Cổng dạng FORM_POST: bộ field mang chữ ký nên cố ý không lưu, không dựng lại
-                    // được ở đây. Để trường đợi hết hạn lần thử cũ còn hơn phát thêm một link song song.
-                    throw new IllegalStateException(
+                    // FORM_POST gateway: the signed field set is deliberately not stored and cannot be rebuilt
+                    // here. Making the school wait for the old attempt to expire is better than issuing a
+                    // second parallel link.
+                    throw new IllegalArgumentException(
                         "Đơn hàng đang có một phiên thanh toán chờ xử lý. Vui lòng hoàn tất phiên đó hoặc thử lại sau.");
                 }
                 return PaymentCheckoutResponse.redirectTo(
@@ -240,7 +241,7 @@ public class CreatePaymentCheckoutUrlUseCase
         // đây để mọi đường TƯƠNG LAI dẫn tới cùng chỗ đều dừng lại với câu nói người đọc hiểu được,
         // chứ không phải để sửa lại lần nữa cùng một lỗi.
         if (order.getTotalAmountVnd() == null || order.getTotalAmountVnd().signum() <= 0) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 "Đơn hàng không có số tiền cần thanh toán, không thể tạo phiên thanh toán. Vui lòng liên hệ hỗ trợ.");
         }
 
@@ -265,7 +266,7 @@ public class CreatePaymentCheckoutUrlUseCase
      */
     private Void attachCheckoutData(UUID paymentId, String checkoutUrl, String qrPayloadJson) {
         PaymentRecord payment = paymentRecordRepository.findById(paymentId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy lần thanh toán vừa tạo"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lần thanh toán vừa tạo"));
         payment.setCheckoutUrl(checkoutUrl);
         if (qrPayloadJson != null) {
             payment.setProviderPayloadJson(qrPayloadJson);
@@ -316,18 +317,18 @@ public class CreatePaymentCheckoutUrlUseCase
      */
     private Order requirePayableOrder(UUID orderId) {
         Order order = orderRepository.findByIdForUpdate(orderId)
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn hàng"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
 
         if (!order.getSchoolId().equals(userContextPort.getCurrentSchoolId())) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
         if (order.getStatus() != OrderStatus.PENDING) {
-            throw new IllegalStateException("Đơn hàng không còn ở trạng thái chờ thanh toán.");
+            throw new IllegalArgumentException("Đơn hàng không còn ở trạng thái chờ thanh toán.");
         }
         // Đơn quá hạn thì KHÔNG phát link mới: hạn này đã gửi sang cổng ở lần thử trước, và cấp thêm
         // thời gian ở đây nghĩa là sửa một cam kết đã chốt. Muốn mua tiếp thì đặt đơn mới.
         if (!Instant.now().isBefore(order.getExpiresAt())) {
-            throw new IllegalStateException("Đơn hàng đã hết hạn thanh toán, hãy đặt đơn mới.");
+            throw new IllegalArgumentException("Đơn hàng đã hết hạn thanh toán, hãy đặt đơn mới.");
         }
         return order;
     }

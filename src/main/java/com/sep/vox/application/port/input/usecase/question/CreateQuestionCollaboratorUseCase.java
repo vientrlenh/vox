@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateQuestionCollaboratorCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -42,20 +42,20 @@ public class CreateQuestionCollaboratorUseCase implements IUseCase<CreateQuestio
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         Question question = questionRepository.findById(command.questionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi"));
         QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
         validateOwner(question, currentUserId);
         validateSchoolQuestion(bank.getOwnerType());
 
         if (question.getStatus() == QuestionStatus.ARCHIVED) {
-            throw new IllegalStateException("Không thể thêm collaborator vào câu hỏi đã ARCHIVED");
+            throw new IllegalArgumentException("Không thể thêm collaborator vào câu hỏi đã ARCHIVED");
         }
 
 
         if (currentUserId.equals(command.userId())) {
-            throw new IllegalStateException("Không thể thêm chính mình làm collaborator");
+            throw new IllegalArgumentException("Không thể thêm chính mình làm collaborator");
         }
 
         UUID schoolId = bank.getSchoolId();
@@ -66,11 +66,11 @@ public class CreateQuestionCollaboratorUseCase implements IUseCase<CreateQuestio
         boolean isTeacher = userRoleQueryRepository.findByUserIdWithRoleInfo(command.userId()).stream()
             .anyMatch(role -> "TEACHER".equals(role.roleCode()));
         if (!isTeacher) {
-            throw new IllegalStateException("Chỉ có thể chia sẻ câu hỏi cho giáo viên");
+            throw new IllegalArgumentException("Chỉ có thể chia sẻ câu hỏi cho giáo viên");
         }
 
         if (questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), command.userId()).isPresent()) {
-            throw new IllegalStateException("Người dùng này đã là collaborator của câu hỏi");
+            throw new IllegalArgumentException("Người dùng này đã là collaborator của câu hỏi");
         }
 
         QuestionCollaborator collaborator = new QuestionCollaborator();
@@ -91,7 +91,7 @@ public class CreateQuestionCollaboratorUseCase implements IUseCase<CreateQuestio
 
     private void validateSchoolQuestion(QuestionBankOwnerType ownerType) {
         if (ownerType != QuestionBankOwnerType.SCHOOL) {
-            throw new IllegalStateException("Chỉ question thuộc school bank mới dùng collaborator");
+            throw new IllegalArgumentException("Chỉ question thuộc school bank mới dùng collaborator");
         }
     }
 }

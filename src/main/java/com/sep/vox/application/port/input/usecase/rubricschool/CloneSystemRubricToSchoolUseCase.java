@@ -13,9 +13,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.CloneSystemRubricToSchoolCommand;
 import com.sep.vox.application.port.input.command.CreateAssessmentPolicyCommand;
@@ -90,9 +90,9 @@ public class CloneSystemRubricToSchoolUseCase implements IUseCase<CloneSystemRub
         }
 
         RubricVersion sourceVersion = rubricVersionRepository.findById(command.sourceRubricVersionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản Rubric mẫu."));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản Rubric mẫu."));
         Rubric sourceRubric = rubricRepository.findById(sourceVersion.getRubricId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy Rubric gốc của bản mẫu."));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric gốc của bản mẫu."));
 
         if (sourceRubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             throw new ForbiddenException("Chỉ được sao chép từ bộ tiêu chí mẫu của hệ thống.");
@@ -100,12 +100,12 @@ public class CloneSystemRubricToSchoolUseCase implements IUseCase<CloneSystemRub
         // Chỉ nhận bản đã ban hành: bản nháp của hệ thống là việc đang làm dở, chưa được rà soát, và
         // không nên lọt ra ngoài phạm vi system admin.
         if (sourceVersion.getStatus() != RubricStatus.PUBLISHED) {
-            throw new IllegalStateException("Chỉ được sao chép từ phiên bản mẫu đã được ban hành (PUBLISHED).");
+            throw new IllegalArgumentException("Chỉ được sao chép từ phiên bản mẫu đã được ban hành (PUBLISHED).");
         }
         // Sao một bản rỗng sẽ tạo ra phiên bản mà trường không bao giờ ban hành được (cửa "phải có
         // tiêu chí" chặn lại), và họ chỉ phát hiện ra ở bước cuối cùng.
         if (rubricCriterionRepository.findByRubricVersionId(sourceVersion.getId()).isEmpty()) {
-            throw new IllegalStateException("Bản mẫu này chưa có tiêu chí nào nên không sao chép được.");
+            throw new IllegalArgumentException("Bản mẫu này chưa có tiêu chí nào nên không sao chép được.");
         }
 
         // Cùng cách chuẩn hoá với CreateSchoolRubricUseCase: hai đường cùng ghi vào một ràng buộc
@@ -131,7 +131,7 @@ public class CloneSystemRubricToSchoolUseCase implements IUseCase<CloneSystemRub
             sourceRubric.getFrameworkId(),
             safeCode);
         if (isCodeTaken) {
-            throw new DuplicatedException("Trường của bạn đã có một bộ tiêu chí mang mã '" + safeCode
+            throw new ResourceDuplicatedException("Trường của bạn đã có một bộ tiêu chí mang mã '" + safeCode
                 + "' cho ngôn ngữ và khung năng lực này. Hãy dùng mã khác (ví dụ đặt theo khối:"
                 + " ENG-K10, ENG-K11).");
         }
@@ -201,10 +201,10 @@ public class CloneSystemRubricToSchoolUseCase implements IUseCase<CloneSystemRub
         AssessmentPolicy template = templates.stream()
                 .filter(candidate -> candidate.getId().equals(choice.sourcePolicyId()))
                 .findFirst()
-                .orElseThrow(() -> new NotFoundException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Không tìm thấy chính sách mẫu đã ban hành nào thuộc phiên bản bộ tiêu chí này."));
         if (template.getStatus() != AssessmentPolicyStatus.PUBLISHED) {
-            throw new IllegalStateException("Chỉ được sao từ chính sách mẫu đã được ban hành (PUBLISHED).");
+            throw new IllegalArgumentException("Chỉ được sao từ chính sách mẫu đã được ban hành (PUBLISHED).");
         }
 
         TargetScope scope = resolveScope(template, choice);

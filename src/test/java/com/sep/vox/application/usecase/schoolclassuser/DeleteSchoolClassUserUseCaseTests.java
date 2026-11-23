@@ -19,7 +19,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.DeleteSchoolClassUserCommand;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.DeleteSchoolClassUserUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -115,7 +115,7 @@ class DeleteSchoolClassUserUseCaseTests {
         mockValidContext(currentUserId, schoolId, classId, targetUserId);
         when(schoolClassUserRepository.findByUserIdAndSchoolClassId(targetUserId, classId)).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> useCase.execute(new DeleteSchoolClassUserCommand(schoolId, classId, targetUserId)));
+        assertThrows(ResourceNotFoundException.class, () -> useCase.execute(new DeleteSchoolClassUserCommand(schoolId, classId, targetUserId)));
     }
 
     @Test
@@ -131,7 +131,7 @@ class DeleteSchoolClassUserUseCaseTests {
         when(schoolClassRepository.findById(classId)).thenReturn(Optional.of(activeSchoolClass(classId, UUID.randomUUID())));
         mockUserSchool(currentUserId, schoolId);
 
-        assertThrows(NotFoundException.class, () -> useCase.execute(new DeleteSchoolClassUserCommand(schoolId, classId, targetUserId)));
+        assertThrows(ResourceNotFoundException.class, () -> useCase.execute(new DeleteSchoolClassUserCommand(schoolId, classId, targetUserId)));
 
         verifyNoInteractions(schoolClassUserRepository);
     }
@@ -150,7 +150,7 @@ class DeleteSchoolClassUserUseCaseTests {
         when(userRepository.findById(targetUserId)).thenReturn(Optional.of(user(targetUserId, schoolId, UserStatus.INACTIVE)));
         mockUserSchool(currentUserId, schoolId);
 
-        assertThrows(IllegalStateException.class, () -> useCase.execute(new DeleteSchoolClassUserCommand(schoolId, classId, targetUserId)));
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(new DeleteSchoolClassUserCommand(schoolId, classId, targetUserId)));
 
         verifyNoInteractions(schoolClassUserRepository);
     }

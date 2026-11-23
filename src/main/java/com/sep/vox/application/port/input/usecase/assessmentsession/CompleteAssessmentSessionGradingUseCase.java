@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.UUID;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CompleteAssessmentSessionGradingCommand;
 import com.sep.vox.application.port.input.service.ConsumeQuotaService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -45,12 +45,12 @@ public class CompleteAssessmentSessionGradingUseCase implements IUseCase<Complet
     @Transactional
     public Void execute(CompleteAssessmentSessionGradingCommand input) {
         AssessmentSession session = assessmentSessionRepository.findById(input.assessmentSessionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi"));
 
         Assessment assessment = assessmentRepository.findById(session.getAssessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
         SchoolSubscription subscription = schoolSubscriptionRepository.findActiveBySchoolId(assessment.getSchoolId())
-            .orElseThrow(() -> new NotFoundException("Trường chưa có gói subscription đang hoạt động"));
+            .orElseThrow(() -> new ResourceNotFoundException("Trường chưa có gói subscription đang hoạt động"));
 
         // Chuyển trạng thái có điều kiện (atomic UPDATE ... WHERE status = GRADING) để giữ row lock
         // của session tới khi transaction này commit/rollback -- đây là "chốt chặn" chống trừ quota

@@ -15,7 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.common.DateMapper;
-import com.sep.vox.application.exception.PlanLimitExceededException;
+import com.sep.vox.application.exception.BusinessRuleViolationException;
 import com.sep.vox.application.port.input.service.SubscriptionPeriodGuardService;
 import com.sep.vox.domain.common.ZoneConstant;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
@@ -78,7 +78,7 @@ class SubscriptionPeriodGuardServiceTests {
     void should_reject_when_open_at_before_subscription_start() {
         assertThatThrownBy(() -> guard.requireWithinSubscriptionPeriod(
             schoolId, at("2025-12-31T23:00"), at("2026-01-02T09:00")))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Thời gian mở bài")
             .hasMessageContaining("01/01/2026")
             .hasMessageContaining("01/01/2027");
@@ -88,7 +88,7 @@ class SubscriptionPeriodGuardServiceTests {
     void should_reject_when_close_at_after_subscription_end() {
         assertThatThrownBy(() -> guard.requireWithinSubscriptionPeriod(
             schoolId, at("2026-06-01T07:00"), at("2027-01-05T09:00")))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Thời gian đóng bài")
             .hasMessageContaining("01/01/2027");
     }
@@ -98,7 +98,7 @@ class SubscriptionPeriodGuardServiceTests {
     void should_reject_when_close_at_is_exactly_end_instant() {
         assertThatThrownBy(() -> guard.requireWithinSubscriptionPeriod(
             schoolId, at("2026-12-31T07:00"), at("2027-01-01T00:00")))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Thời gian đóng bài");
     }
 
@@ -112,7 +112,7 @@ class SubscriptionPeriodGuardServiceTests {
 
         assertThatThrownBy(() -> guard.requireWithinSubscriptionPeriod(
             schoolId, at("2026-06-01T07:00"), at("2026-06-01T09:00")))
-            .isInstanceOf(PlanLimitExceededException.class)
+            .isInstanceOf(BusinessRuleViolationException.class)
             .hasMessageContaining("gói dịch vụ");
     }
 

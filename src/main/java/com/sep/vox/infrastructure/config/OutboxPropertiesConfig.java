@@ -9,7 +9,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.sep.vox.domain.common.EventTypeConstant;
-import com.sep.vox.infrastructure.exception.InfrastructureException;
 import com.sep.vox.infrastructure.properties.OutboxTopicProperties;
 
 @Configuration
@@ -22,14 +21,14 @@ public class OutboxPropertiesConfig {
         return () -> {
             Map<String, String> topics = properties.topics();
             if (topics.isEmpty()) {
-                throw new InfrastructureException("app.outbox.topics chưa được cấu hình -- outbox không publish được event nào");
+                throw new IllegalStateException("app.outbox.topics chưa được cấu hình -- outbox không publish được event nào");
             }
 
             List<String> missing = EventTypeConstant.all().stream()
                 .filter(eventType -> !topics.containsKey(eventType))
                 .toList();
             if (!missing.isEmpty()) {
-                throw new InfrastructureException("Thiếu app.outbox.topics cho eventType: " + missing);
+                throw new IllegalStateException("Thiếu app.outbox.topics cho eventType: " + missing);
             }
 
             topics.forEach((eventType, topic) -> log.info("Outbox routing: {} -> {}", eventType, topic));

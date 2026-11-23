@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateFrameworkCriterionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.model.framework.FrameworkCriterion;
@@ -40,7 +40,7 @@ public class UpdateFrameworkCriterionUseCase
         try {
             frameworkCriterionRepository.save(criterion);
         } catch (DataConflictException e) {
-            throw new IllegalStateException("Mã tiêu chí đã tồn tại", e);
+            throw new IllegalArgumentException("Mã tiêu chí đã tồn tại", e);
         }
 
         return criterion.getId();
@@ -48,12 +48,12 @@ public class UpdateFrameworkCriterionUseCase
 
     private FrameworkVersion getVersion(UpdateFrameworkCriterionCommand command) {
         return frameworkVersionRepository.findById(command.versionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản khung năng lực"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản khung năng lực"));
     }
 
     private FrameworkCriterion getCriterion(UpdateFrameworkCriterionCommand command) {
         return frameworkCriterionRepository.findById(command.criterionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy tiêu chí"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tiêu chí"));
     }
 
     private void checkValidRequest(UpdateFrameworkCriterionCommand command, FrameworkVersion version,
@@ -62,7 +62,7 @@ public class UpdateFrameworkCriterionUseCase
             throw new IllegalArgumentException("Phiên bản không thuộc khung năng lực này");
 
         if (version.getStatus() != FrameworkVersionStatus.DRAFT)
-            throw new IllegalStateException("Chỉ có thể cập nhật tiêu chí khi phiên bản đang ở trạng thái DRAFT");
+            throw new IllegalArgumentException("Chỉ có thể cập nhật tiêu chí khi phiên bản đang ở trạng thái DRAFT");
 
         if (!criterion.getFrameworkVersionId().equals(command.versionId()))
             throw new IllegalArgumentException("Tiêu chí không thuộc phiên bản này");
@@ -72,7 +72,7 @@ public class UpdateFrameworkCriterionUseCase
             throw new IllegalArgumentException("Mã tiêu chí không hợp lệ: " + safeCode);
         }
         if (frameworkCriterionRepository.existsByFrameworkVersionIdAndCodeAndIdNot(command.versionId(), safeCode, command.criterionId())) {
-            throw new IllegalStateException("Mã tiêu chí đã tồn tại");
+            throw new IllegalArgumentException("Mã tiêu chí đã tồn tại");
         }
 
         Set<Integer> otherOrders = frameworkCriterionRepository.findByFrameworkVersionId(command.versionId())

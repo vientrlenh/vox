@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateAssessmentPaperStatusCommand;
 import com.sep.vox.application.port.input.service.AssessmentPaperAuthoringAccessService;
 import com.sep.vox.application.port.input.service.AssessmentPaperAuthoringAccessService.PaperActor;
@@ -67,9 +67,9 @@ public class UpdateAssessmentPaperStatusUseCase implements IUseCase<UpdateAssess
         );
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         AssessmentPaper paper = assessmentPaperRepository.findById(command.paperId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy đề thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đề thi"));
         Assessment assessment = assessmentRepository.findById(paper.getAssessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
         AssessmentPaperAuthoringAccessService.PaperActor actor = assessmentPaperAuthoringAccessService.resolve(assessment, currentUserId);
 
         switch (command.action()) {
@@ -89,7 +89,7 @@ public class UpdateAssessmentPaperStatusUseCase implements IUseCase<UpdateAssess
                 requireCanReview(actor);
                 requireNotAuthor(paper, currentUserId);
                 if (command.note() == null || command.note().isBlank()) {
-                    throw new IllegalStateException("Yêu cầu sửa lại bắt buộc phải có góp ý");
+                    throw new IllegalArgumentException("Yêu cầu sửa lại bắt buộc phải có góp ý");
                 }
                 requireTransition(paper, AssessmentPaperStatus.IN_REVIEW, AssessmentPaperStatus.DRAFT);
             }
@@ -111,7 +111,7 @@ public class UpdateAssessmentPaperStatusUseCase implements IUseCase<UpdateAssess
                 requireTransition(paper, AssessmentPaperStatus.LOCKED, AssessmentPaperStatus.DRAFT);
                 unassignCandidatesOf(paper, currentUserId);
             }
-            default -> throw new IllegalStateException("Action không hợp lệ");
+            default -> throw new IllegalArgumentException("Action không hợp lệ");
         }
 
         Instant now = Instant.now();
@@ -174,7 +174,7 @@ public class UpdateAssessmentPaperStatusUseCase implements IUseCase<UpdateAssess
 
     private void requireAllSlotsAssigned(AssessmentPaper paper, String message) {
         if (assessmentPaperItemRepository.existsUnassignedItemByPaperId(paper.getId())) {
-            throw new IllegalStateException(message);
+            throw new IllegalArgumentException(message);
         }
     }
 
@@ -188,7 +188,7 @@ public class UpdateAssessmentPaperStatusUseCase implements IUseCase<UpdateAssess
 
     private void requireTransition(AssessmentPaper paper, AssessmentPaperStatus from, AssessmentPaperStatus to) {
         if (paper.getStatus() != from) {
-            throw new IllegalStateException("Trạng thái đề thi hiện tại không hợp lệ cho action này");
+            throw new IllegalArgumentException("Trạng thái đề thi hiện tại không hợp lệ cho action này");
         }
         paper.setStatus(to);
     }

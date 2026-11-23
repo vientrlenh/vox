@@ -43,7 +43,6 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.sep.vox.application.port.output.PasswordEncoderPort;
-import com.sep.vox.infrastructure.exception.InfrastructureException;
 import com.sep.vox.infrastructure.filter.JwtAuthenticationFilter;
 import com.sep.vox.infrastructure.properties.AdminConsoleProperties;
 import com.sep.vox.infrastructure.properties.CorsProperties;
@@ -306,7 +305,7 @@ public class SecurityConfig {
         CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
         if (StringUtils.hasText(cookieDomain)) {
             if (cookieDomain.startsWith(".")) {
-                throw new InfrastructureException(
+                throw new IllegalStateException(
                     "app.cookie.domain = '" + cookieDomain + "' -- bỏ dấu chấm ở đầu. Tomcat theo "
                         + "RFC 6265 từ chối domain dạng này và ném lỗi ở TỪNG request, khiến mọi "
                         + "endpoint trả 500. Dùng '" + cookieDomain.substring(1)
@@ -432,7 +431,7 @@ public class SecurityConfig {
      */
     private String requireConfigured(String value, String property, String environmentVariable) {
         if (value == null || value.isBlank()) {
-            throw new InfrastructureException(
+            throw new IllegalStateException(
                 property + " đang trống -- /admin/** mở ra toàn bộ actuator của mọi instance đã "
                     + "đăng ký nên không có mật khẩu mặc định. Đặt biến môi trường "
                     + environmentVariable + ".");
@@ -449,7 +448,7 @@ public class SecurityConfig {
         List<String> allowedOrigins = corsProperties.allowedOrigins();
 
         if (allowedOrigins.isEmpty()) {
-            throw new InfrastructureException(
+            throw new IllegalStateException(
                 "app.cors.allowed-origins đang trống -- mọi request cross-origin sẽ bị chặn. "
                     + "Đặt biến môi trường CORS_ALLOWED_ORIGINS.");
         }
@@ -458,7 +457,7 @@ public class SecurityConfig {
             .filter(origin -> !ORIGIN_PATTERN.matcher(origin).matches())
             .toList();
         if (!malformed.isEmpty()) {
-            throw new InfrastructureException(
+            throw new IllegalStateException(
                 "app.cors.allowed-origins chỉ nhận origin dạng scheme://host[:port], "
                     + "không path, không '/' ở cuối, không wildcard. Sai: " + malformed);
         }

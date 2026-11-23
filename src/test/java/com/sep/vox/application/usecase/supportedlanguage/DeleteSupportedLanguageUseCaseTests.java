@@ -16,7 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.DeleteSupportedLanguageCommand;
 import com.sep.vox.application.port.input.usecase.supportedlanguage.DeleteSupportedLanguageUseCase;
 import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
@@ -68,7 +68,7 @@ class DeleteSupportedLanguageUseCaseTests {
         UUID id = UUID.randomUUID();
         when(supportedLanguageRepository.findById(id)).thenReturn(Optional.empty());
 
-        NotFoundException exception = assertThrows(NotFoundException.class, () -> useCase.execute(new DeleteSupportedLanguageCommand(id)));
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> useCase.execute(new DeleteSupportedLanguageCommand(id)));
 
         assertThat(exception).hasMessage("Không tìm thấy ngôn ngữ");
         verify(supportedLanguageRepository, never()).save(any());

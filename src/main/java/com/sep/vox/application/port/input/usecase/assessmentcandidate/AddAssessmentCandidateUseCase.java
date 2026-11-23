@@ -9,9 +9,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.AddAssessmentCandidateCommand;
 import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
 import com.sep.vox.application.port.input.service.AssessmentDirectoryAccessService;
@@ -44,7 +44,7 @@ public class AddAssessmentCandidateUseCase implements IUseCase<AddAssessmentCand
     @Transactional
     public AssessmentCandidateDto execute(AddAssessmentCandidateCommand input) {
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
         AssessmentDirectoryAccessService.AssessmentDirectoryScope scope = assessmentDirectoryAccessService.resolve(assessment);
         UUID currentUserId = scope.callerId();
         AssessmentEditingGuard.requireScheduleEditable(assessment);
@@ -65,7 +65,7 @@ public class AddAssessmentCandidateUseCase implements IUseCase<AddAssessmentCand
         }
 
         if (assessmentCandidateRepository.existsByAssessmentIdAndStudentId(assessment.getId(), input.studentId())) {
-            throw new DuplicatedException("Thí sinh đã tồn tại trong kỳ thi này");
+            throw new ResourceDuplicatedException("Thí sinh đã tồn tại trong kỳ thi này");
         }
 
         AssessmentCandidate candidate = AssessmentCandidate.createFresh(assessment.getId(), input.studentId(), currentUserId,

@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateAssessmentBlueprintCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -46,7 +46,7 @@ public class CreateAssessmentBlueprintUseCase implements IUseCase<CreateAssessme
         // Grade level is a shared catalog: it only has to exist, it no longer belongs to a school.
         if (command.gradeLevelId() != null
                 && gradeLevelRepository.findById(command.gradeLevelId()).isEmpty()) {
-            throw new NotFoundException("Không tìm thấy khối lớp");
+            throw new ResourceNotFoundException("Không tìm thấy khối lớp");
         }
 
         AssessmentBlueprint blueprint = AssessmentBlueprint.builder()

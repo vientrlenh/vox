@@ -12,7 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.AssignAssessmentCandidateScheduleCommand;
 import com.sep.vox.application.port.input.service.AssessmentPaperAutoAssigner;
 import com.sep.vox.application.port.input.service.AssessmentScheduleCandidateConflictValidator;
@@ -45,14 +45,14 @@ public class AssignAssessmentCandidateScheduleUseCase
     @Transactional
     public AssessmentCandidateDto execute(AssignAssessmentCandidateScheduleCommand input) {
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
         UUID currentUserId = assessmentScheduleManageAccessService.requireCanManage(assessment);
         AssessmentEditingGuard.requireScheduleEditable(assessment);
 
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(input.candidateId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy thí sinh"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thí sinh"));
         if (!candidate.getAssessmentId().equals(assessment.getId())) {
-            throw new NotFoundException("Không tìm thấy thí sinh");
+            throw new ResourceNotFoundException("Không tìm thấy thí sinh");
         }
 
         Instant now = Instant.now();
@@ -69,12 +69,12 @@ public class AssignAssessmentCandidateScheduleUseCase
         }
 
         AssessmentSchedule schedule = assessmentScheduleRepository.findByIdForUpdate(input.scheduleId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi"));
         if (!schedule.getAssessmentId().equals(assessment.getId())) {
-            throw new NotFoundException("Không tìm thấy ca thi");
+            throw new ResourceNotFoundException("Không tìm thấy ca thi");
         }
         if (!ASSIGNABLE_STATUSES.contains(schedule.getStatus())) {
-            throw new IllegalStateException("Chỉ có thể xếp thí sinh vào ca ở trạng thái nháp hoặc đã công bố");
+            throw new IllegalArgumentException("Chỉ có thể xếp thí sinh vào ca ở trạng thái nháp hoặc đã công bố");
         }
 
         // Ca hiện tại của chính thí sinh này được validator tự loại, nên đổi ca trong cùng một kỳ

@@ -16,7 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.BulkDeleteAssessmentCandidatesCommand;
 import com.sep.vox.application.port.input.usecase.assessmentcandidate.BulkDeleteAssessmentCandidatesUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -126,7 +126,7 @@ public class BulkDeleteAssessmentCandidatesUseCaseTests {
         when(assessmentCandidateRepository.findByIdInAndAssessmentId(anyCollection(), any()))
             .thenReturn(List.of(candidate(candidateA)));
 
-        assertThatThrownBy(() -> delete(candidateA, candidateB)).isInstanceOf(NotFoundException.class);
+        assertThatThrownBy(() -> delete(candidateA, candidateB)).isInstanceOf(ResourceNotFoundException.class);
 
         verify(assessmentCandidateRepository, never()).deleteByIdIn(any());
     }
@@ -142,7 +142,7 @@ public class BulkDeleteAssessmentCandidatesUseCaseTests {
         when(assessmentSessionRepository.findByCandidateIdIn(anyCollection())).thenReturn(List.of(session));
 
         assertThatThrownBy(() -> delete(candidateA, candidateB))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("đã có bài thi");
 
         verify(assessmentCandidateRepository, never()).deleteByIdIn(any());
@@ -153,7 +153,7 @@ public class BulkDeleteAssessmentCandidatesUseCaseTests {
     void should_refuse_once_the_assessment_has_started() {
         assessment.setStatus(AssessmentStatus.IN_PROGRESS);
 
-        assertThatThrownBy(() -> delete(candidateA)).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> delete(candidateA)).isInstanceOf(IllegalArgumentException.class);
 
         verify(assessmentCandidateRepository, never()).deleteByIdIn(any());
     }

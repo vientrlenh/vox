@@ -47,8 +47,8 @@ public final class RubricScoringConsistencyValidator {
     }
 
     /**
-     * @param criteria toàn bộ tiêu chí của version; rỗng thì ném lỗi vì phiên bản không có tiêu chí
-     *                 không dùng để chấm được
+     * @param criteria every criterion of the version; an empty list is rejected because a version
+     *                 without criteria cannot be used for grading
      */
     public static void assertPublishable(
             RubricTotalScoreMethod method,
@@ -56,7 +56,7 @@ public final class RubricScoringConsistencyValidator {
             BigDecimal scaleMax,
             List<RubricCriterion> criteria) {
         if (criteria == null || criteria.isEmpty()) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                     "Không thể ban hành: phiên bản này chưa có tiêu chí nào.");
         }
 
@@ -77,7 +77,7 @@ public final class RubricScoringConsistencyValidator {
             // not require rewriting the existing ones.
             BigDecimal expected = BigDecimal.valueOf(criteria.size());
             if (weightSum.compareTo(expected) != 0) {
-                throw new IllegalStateException(String.format(
+                throw new IllegalArgumentException(String.format(
                         "Không thể ban hành: phương pháp Trung bình yêu cầu mọi tiêu chí cân bằng ở"
                                 + " trọng số 100%%, nên tổng trọng số của %d tiêu chí phải bằng %s."
                                 + " Hiện đang là %s.",
@@ -87,7 +87,7 @@ public final class RubricScoringConsistencyValidator {
         }
 
         if (weightSum.compareTo(BigDecimal.ONE) != 0) {
-            throw new IllegalStateException(String.format(
+            throw new IllegalArgumentException(String.format(
                     "Không thể ban hành: phương pháp Phân bổ yêu cầu tổng trọng số của %d tiêu chí"
                             + " phải bằng 100%% (tức 1), hiện đang là %s (%s%%).",
                     criteria.size(), weightSum.toPlainString(),
@@ -96,18 +96,18 @@ public final class RubricScoringConsistencyValidator {
     }
 
     /**
-     * Mỗi tiêu chí phải phủ ĐÚNG thang. Trung bình có trọng số của các giá trị trong [a,b] thì nằm
-     * trong [a,b] -- nhưng chỉ khi MỌI tiêu chí cùng nằm trong [a,b] đó. Lệch một trong hai đầu là
-     * hỏng theo hai kiểu:
+     * Every criterion must cover the scale EXACTLY. The weighted average of values in [a,b] lies
+     * in [a,b] -- but only when EVERY criterion lies in that same [a,b]. A mismatch at either end
+     * breaks it in two ways:
      *
      * <ul>
-     *   <li>tiêu chí RỘNG hơn thang (thang 4-10, tiêu chí 0-100): điểm vọt lên tới 100 rồi bị kẹp
-     *       còn 10, mọi bài khá trở lên đều thành 10.
-     *   <li>tiêu chí HẸP hơn thang (thang 4-10, một tiêu chí 4-5): học sinh làm tối đa mọi thứ vẫn
-     *       không bao giờ chạm được 10, trần thang thành trần chết.
+     *   <li>a criterion WIDER than the scale (scale 4-10, criterion 0-100): the score shoots up to
+     *       100 and is clamped to 10, so every decent answer becomes 10.
+     *   <li>a criterion NARROWER than the scale (scale 4-10, one criterion 4-5): a student who does
+     *       everything perfectly can never reach 10, so the scale ceiling becomes a dead ceiling.
      * </ul>
      *
-     * <p>Chênh lệch giữa các tiêu chí thể hiện bằng TRỌNG SỐ, không phải bằng khoảng điểm.
+     * <p>Differences in importance between criteria are expressed by WEIGHT, not by score range.
      */
     private static void assertEveryCriterionCoversScale(
             BigDecimal scaleMin, BigDecimal scaleMax, List<RubricCriterion> criteria) {
@@ -121,7 +121,7 @@ public final class RubricScoringConsistencyValidator {
         if (mismatched == null) {
             return;
         }
-        throw new IllegalStateException(String.format(
+        throw new IllegalArgumentException(String.format(
                 "Không thể ban hành: tiêu chí \"%s\" có khoảng điểm %s - %s, trong khi thang của"
                         + " phiên bản là %s - %s. Mỗi tiêu chí phải phủ đúng thang; mức quan trọng"
                         + " khác nhau giữa các tiêu chí thể hiện bằng TRỌNG SỐ, không phải bằng"

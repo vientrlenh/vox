@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateAssessmentMemberCommand;
 import com.sep.vox.application.port.input.service.AssessmentMemberManageAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -29,9 +29,9 @@ public class UpdateAssessmentMemberUseCase implements IUseCase<UpdateAssessmentM
     @Transactional
     public AssessmentMemberDto execute(UpdateAssessmentMemberCommand input) {
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
         AssessmentMember member = assessmentMemberRepository.findById(input.memberId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy thành viên bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thành viên bài kiểm tra"));
 
         if (!member.getAssessmentId().equals(assessment.getId())) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");

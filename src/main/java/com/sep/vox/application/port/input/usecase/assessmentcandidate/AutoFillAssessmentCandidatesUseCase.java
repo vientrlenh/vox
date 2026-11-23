@@ -15,7 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.AutoFillAssessmentCandidatesCommand;
 import com.sep.vox.application.port.input.service.AssessmentPaperAutoAssigner;
 import com.sep.vox.application.port.input.service.AssessmentScheduleCandidateConflictValidator;
@@ -50,7 +50,7 @@ public class AutoFillAssessmentCandidatesUseCase
     @Transactional
     public List<AssessmentCandidateDto> execute(AutoFillAssessmentCandidatesCommand input) {
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
         UUID currentUserId = assessmentScheduleManageAccessService.requireCanManage(assessment);
         AssessmentEditingGuard.requireScheduleEditable(assessment);
 
@@ -72,7 +72,7 @@ public class AutoFillAssessmentCandidatesUseCase
         List<AssessmentSchedule> lockedSchedules = new ArrayList<AssessmentSchedule>();
         for (AssessmentSchedule schedule : targetSchedules) {
             AssessmentSchedule locked = assessmentScheduleRepository.findByIdForUpdate(schedule.getId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi"));
             lockedSchedules.add(locked);
         }
         if (lockedSchedules.isEmpty()) {

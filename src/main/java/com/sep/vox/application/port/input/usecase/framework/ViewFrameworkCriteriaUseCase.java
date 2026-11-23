@@ -5,7 +5,7 @@ import java.util.List;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.ViewFrameworkCriteriaQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.FrameworkCriterionDto;
@@ -26,7 +26,7 @@ public class ViewFrameworkCriteriaUseCase implements IUseCase<ViewFrameworkCrite
     public List<FrameworkCriterionDto> execute(ViewFrameworkCriteriaQuery query) {
         // 1. Kiểm tra FrameworkVersion tồn tại
         frameworkVersionRepository.findById(query.frameworkVersionId())
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên bản Framework."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản Framework."));
 
         // 2. Lấy Criteria + Band tương ứng, map sang DTO
         List<FrameworkCriterion> criteria = frameworkCriterionRepository.findByFrameworkVersionId(query.frameworkVersionId());

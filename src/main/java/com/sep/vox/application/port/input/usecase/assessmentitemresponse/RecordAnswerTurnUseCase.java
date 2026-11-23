@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.RecordAnswerTurnCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.model.assessment.AssessmentItemResponse;
@@ -39,7 +39,7 @@ public class RecordAnswerTurnUseCase implements IUseCase<RecordAnswerTurnCommand
         }
 
         if (!assessmentSessionRepository.existsById(input.sessionId())) {
-            throw new NotFoundException("Không tìm thấy phiên thi cho turn đã ghi nhận");
+            throw new ResourceNotFoundException("Không tìm thấy phiên thi cho turn đã ghi nhận");
         }
 
         Instant answeredAt = input.answeredAt() == null ? Instant.now() : input.answeredAt();

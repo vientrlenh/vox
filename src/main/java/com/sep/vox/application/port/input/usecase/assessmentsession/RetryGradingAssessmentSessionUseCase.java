@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.RetryGradingAssessmentSessionCommand;
 import com.sep.vox.application.port.input.command.SubmitAssessmentSessionCommand;
 import com.sep.vox.application.port.input.service.AssessmentSessionModerationAccessService;
@@ -38,15 +38,15 @@ public class RetryGradingAssessmentSessionUseCase implements IUseCase<RetryGradi
     @Transactional
     public java.util.UUID execute(RetryGradingAssessmentSessionCommand input) {
         AssessmentSession session = assessmentSessionRepository.findById(input.sessionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi"));
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(session.getCandidateId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy thí sinh của phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thí sinh của phiên thi"));
         Assessment assessment = assessmentRepository.findById(session.getAssessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy kỳ thi của phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kỳ thi của phiên thi"));
 
         moderationAccessService.authorize(assessment, candidate);
         if (assessment.getStatus() == AssessmentStatus.RESULTS_PUBLISHED) {
-            throw new IllegalStateException("Kỳ thi đã công bố điểm, không thể chấm lại");
+            throw new IllegalArgumentException("Kỳ thi đã công bố điểm, không thể chấm lại");
         }
         // G.4: besides GRADING_FAILED (a technical grading error), it also allows the first AI grading for 1
         // session that was wrongly flagged as a violation (INVALID) -- already unblocked -- and has NEVER had any
@@ -57,7 +57,7 @@ public class RetryGradingAssessmentSessionUseCase implements IUseCase<RetryGradi
             && result.getStatus() == AssessmentCandidateResultStatus.INVALID
             && candidate.getBlockedAt() == null;
         if (session.getStatus() != AssessmentSessionStatus.GRADING_FAILED && !isUnblockedInvalidRetry) {
-            throw new IllegalStateException("Chỉ có thể chấm lại phiên thi đang lỗi chấm");
+            throw new IllegalArgumentException("Chỉ có thể chấm lại phiên thi đang lỗi chấm");
         }
 
         // Định mức chỉ áp cho phía TRƯỜNG, và chỉ cho lượt chấm lại thật (phiên đang lỗi chấm).
@@ -71,7 +71,7 @@ public class RetryGradingAssessmentSessionUseCase implements IUseCase<RetryGradi
         boolean schoolInitiated = !userContextPort.isSystemAdmin();
         if (schoolInitiated && session.getStatus() == AssessmentSessionStatus.GRADING_FAILED) {
             if (!session.canSchoolRequestAiRegrade()) {
-                throw new IllegalStateException(
+                throw new IllegalArgumentException(
                     "Đã dùng hết lượt nhờ AI chấm lại cho phiên thi này, vui lòng chuyển sang chấm tay"
                 );
             }

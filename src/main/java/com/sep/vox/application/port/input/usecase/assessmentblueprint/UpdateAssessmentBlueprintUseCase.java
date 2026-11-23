@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateAssessmentBlueprintCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -44,12 +44,12 @@ public class UpdateAssessmentBlueprintUseCase implements IUseCase<UpdateAssessme
             .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
 
         AssessmentBlueprint blueprint = assessmentBlueprintRepository.findById(command.blueprintId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy blueprint đề thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy blueprint đề thi"));
         if (!assessmentBlueprintRepository.canEditBlueprint(blueprint.getId(), currentUserId, currentSchoolId)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
         if (assessmentRepository.existsByBlueprintIdAndKindAndStatusNot(blueprint.getId(), AssessmentKind.CENTRALIZED, AssessmentStatus.DRAFT)) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 "Blueprint đã được dùng cho kỳ thi tập trung và đã khóa, không thể sửa/xóa trực tiếp — hãy nhân bản phiên bản mới");
         }
 

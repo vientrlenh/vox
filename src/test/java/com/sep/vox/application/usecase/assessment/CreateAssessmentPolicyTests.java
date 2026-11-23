@@ -18,7 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateAssessmentCommand;
 import com.sep.vox.application.port.input.service.AssessmentPolicyValidator;
 import com.sep.vox.application.port.input.service.AssessmentStreamConfigResolver;
@@ -94,7 +94,7 @@ class CreateAssessmentPolicyTests {
         when(assessmentPolicyRepository.findById(POLICY_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> useCase.execute(command(POLICY_ID)))
-            .isInstanceOf(NotFoundException.class)
+            .isInstanceOf(ResourceNotFoundException.class)
             .hasMessageContaining("Không tìm thấy bộ tiêu chí đánh giá");
         verify(assessmentRepository, never()).save(any());
     }
@@ -105,7 +105,7 @@ class CreateAssessmentPolicyTests {
             .thenReturn(Optional.of(policy(SCHOOL_ID, AssessmentPolicyStatus.DRAFT)));
 
         assertThatThrownBy(() -> useCase.execute(command(POLICY_ID)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Chỉ được dùng bộ tiêu chí đã xuất bản");
         verify(assessmentRepository, never()).save(any());
     }
@@ -145,18 +145,18 @@ class CreateAssessmentPolicyTests {
     @Test
     void should_reject_missing_open_at_and_close_at() {
         assertThatThrownBy(() -> useCase.execute(command(null, null, null)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Kỳ thi phải có thời gian mở bài và đóng bài");
         verify(assessmentRepository, never()).save(any());
     }
 
     @Test
     void should_reject_when_window_falls_outside_subscription_period() {
-        doThrow(new IllegalStateException("Thời gian đóng bài phải nằm trong hạn gói dịch vụ của trường"))
+        doThrow(new IllegalArgumentException("Thời gian đóng bài phải nằm trong hạn gói dịch vụ của trường"))
             .when(subscriptionPeriodGuardService).requireWithinSubscriptionPeriod(any(), any(), any());
 
         assertThatThrownBy(() -> useCase.execute(command(null)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("hạn gói dịch vụ");
         verify(assessmentRepository, never()).save(any());
     }
@@ -174,7 +174,7 @@ class CreateAssessmentPolicyTests {
     @Test
     void should_reject_when_only_open_at_is_provided() {
         assertThatThrownBy(() -> useCase.execute(command(null, Instant.parse("2026-08-10T08:00:00Z"), null)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Kỳ thi phải có thời gian mở bài và đóng bài");
         verify(assessmentRepository, never()).save(any());
     }

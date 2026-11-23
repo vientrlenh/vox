@@ -42,7 +42,7 @@ public class RemoveGradingAssignmentUseCase implements IUseCase<RemoveGradingAss
         // Đã chấm xong thì điểm đã ghi và bài đã công bố — xoá dòng phân công lúc
         // này chỉ xoá mất vết ai chấm, không hoàn tác được gì.
         if (assignment.isCompleted()) {
-            throw new IllegalStateException("Không thể gỡ phân công của bài đã chấm xong.");
+            throw new IllegalArgumentException("Không thể gỡ phân công của bài đã chấm xong.");
         }
 
         // Xoá dòng là mất luôn con trỏ tới đơn phúc khảo, nên phải nhả đơn TRƯỚC:

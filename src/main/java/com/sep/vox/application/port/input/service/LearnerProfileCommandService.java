@@ -10,7 +10,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.domain.model.personalization.LearnerProfile;
 import com.sep.vox.domain.model.personalization.QuizAnswer;
 import com.sep.vox.domain.repository.DimensionInterestScoreRepository;
@@ -41,7 +41,7 @@ public class LearnerProfileCommandService {
                 );
             }
             InterestQuizSeedItem item = quizItemRepository.findActiveQuizItem(answer.getItemId())
-                .orElseThrow(() -> new NotFoundException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                     "Không tìm thấy item quiz sở thích"
                 ));
             List<String> dimensions = item.getDimensionPerStatement();

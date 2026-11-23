@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.query.SearchAppealsByAssessmentQuery;
 import com.sep.vox.application.port.input.service.AssessmentAppealAccessService;
 import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
@@ -50,7 +50,7 @@ public class ViewAssessmentAppealsByAssessmentUseCase
     public PageResult<AppealSummaryInfo> execute(SearchAppealsByAssessmentQuery input) {
         UUID currentUserId = assessmentAppealAccessService.requireActiveUserId();
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra."));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra."));
         assessmentGradingAccessService.authorizeSchoolAdminOrAssessmentChair(
             assessment.getSchoolId(), assessment.getId(), currentUserId);
 

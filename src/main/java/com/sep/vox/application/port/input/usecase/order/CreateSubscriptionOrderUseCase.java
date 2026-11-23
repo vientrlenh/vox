@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.CreateSubscriptionOrderCommand;
 import com.sep.vox.application.port.input.service.SubscriptionUpgradePolicyService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -66,23 +66,23 @@ public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscripti
         boolean hasSuspended = schoolSubscriptionRepository.findBySchoolId(schoolId).stream()
             .anyMatch(subscription -> subscription.getStatus() == SchoolSubscriptionStatus.SUSPENDED);
         if (hasSuspended) {
-            throw new IllegalStateException("Gói đăng ký của trường đang bị đình chỉ, không thể đặt đơn mới.");
+            throw new IllegalArgumentException("Gói đăng ký của trường đang bị đình chỉ, không thể đặt đơn mới.");
         }
 
         SubscriptionPlan plan = subscriptionPlanRepository.findById(input.subscriptionPlanId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy gói"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói"));
         // Luồng cũ chỉ kiểm gói CÓ TỒN TẠI -- gap thật: đơn trỏ vào gói DRAFT (chưa chốt giá, admin
         // còn sửa được) hoặc ARCHIVED (đã ngừng bán) vẫn tạo được, và tới lúc settlement thì trường
         // đã trả tiền cho một gói lẽ ra không bán.
         if (plan.getStatus() != SubscriptionPlanStatus.ACTIVE) {
-            throw new IllegalStateException("Gói này hiện không được mở bán.");
+            throw new IllegalArgumentException("Gói này hiện không được mở bán.");
         }
 
         // Block BEFORE the database does, to give a readable message. If skipped, uq_orders_one_open_subscription_order still
         // blocks but as a DataIntegrityViolationException -- the school gets a 500 error instead of learning that it has an
         // unfinished order to pay or cancel.
         if (orderRepository.findOpenSubscriptionOrderBySchoolId(schoolId).isPresent()) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 "Trường đang có một đơn đăng ký chờ thanh toán, hãy hoàn tất hoặc hủy đơn đó trước khi đặt đơn mới.");
         }
 
@@ -97,7 +97,7 @@ public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscripti
         // want to pay early. Blocking by the NUMBER OF WAITING PERIODS is what really needs blocking: it keeps the price-lock
         // risk to exactly one period.
         if (hasQueuedPeriod(schoolId, now)) {
-            throw new IllegalStateException(
+            throw new IllegalArgumentException(
                 "Trường đã có một kỳ đã thanh toán đang chờ tới ngày chạy, hãy đợi kỳ đó bắt đầu rồi mới mua tiếp.");
         }
 

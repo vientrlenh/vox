@@ -154,7 +154,7 @@ class GradingActionSupportTests {
 
         assertThatThrownBy(() ->
             support.prepare(assignmentId, GradingOutcome.CLEARED_INVALID, "lý do"))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("không hợp lệ với vòng chấm");
     }
 
@@ -164,7 +164,7 @@ class GradingActionSupportTests {
         given(GradingRoundType.INITIAL, result(AssessmentCandidateResultStatus.RELEASED, "6.00"));
 
         assertThatThrownBy(() -> support.prepare(assignmentId, GradingOutcome.UPHELD, null))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("không còn ở trạng thái");
     }
 
@@ -176,7 +176,7 @@ class GradingActionSupportTests {
         when(assessmentGradingAccessService.loadForUpdate(assignmentId)).thenReturn(context);
 
         assertThatThrownBy(() -> support.prepare(assignmentId, GradingOutcome.UPHELD, null))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("đã chốt");
     }
 

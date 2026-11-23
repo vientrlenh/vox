@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.ImportAssessmentCandidatesFromClassCommand;
 import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
 import com.sep.vox.application.port.input.service.AssessmentDirectoryAccessService;
@@ -50,13 +50,13 @@ public class ImportAssessmentCandidatesFromClassUseCase
     @Transactional
     public List<AssessmentCandidateDto> execute(ImportAssessmentCandidatesFromClassCommand input) {
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
         AssessmentDirectoryAccessService.AssessmentDirectoryScope scope = assessmentDirectoryAccessService.resolve(assessment);
         UUID currentUserId = scope.callerId();
         AssessmentEditingGuard.requireScheduleEditable(assessment);
 
         SchoolClass schoolClass = schoolClassRepository.findById(input.schoolClassId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy lớp học"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp học"));
         if (!schoolClass.getSchoolId().equals(assessment.getSchoolId())) {
             throw new ForbiddenException("Lớp học không thuộc trường của bài kiểm tra");
         }

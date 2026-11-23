@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateAssessmentScheduleCommand;
 import com.sep.vox.application.port.input.service.AssessmentScheduleCandidateConflictValidator;
 import com.sep.vox.application.port.input.service.AssessmentScheduleProctorConflictValidator;
@@ -51,18 +51,18 @@ public class UpdateAssessmentScheduleUseCase implements IUseCase<UpdateAssessmen
         // một luồng khác đang xếp người vào chính ca này thì hai bên phải nối đuôi chứ không được
         // cùng đọc một trạng thái cũ.
         AssessmentSchedule schedule = assessmentScheduleRepository.findByIdForUpdate(input.id())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ca thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi"));
         Assessment assessment = assessmentRepository.findById(schedule.getAssessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
         UUID currentUserId = authorize(assessment);
         AssessmentEditingGuard.requireScheduleEditable(assessment);
 
         boolean isClassTest = assessment.getKind() == AssessmentKind.CLASS_TEST;
         if (isClassTest && assessment.getStatus() != AssessmentStatus.DRAFT && assessment.getStatus() != AssessmentStatus.SCHEDULED) {
-            throw new IllegalStateException("Chỉ có thể sửa lịch bài kiểm tra trên lớp trước khi bắt đầu");
+            throw new IllegalArgumentException("Chỉ có thể sửa lịch bài kiểm tra trên lớp trước khi bắt đầu");
         }
         if (!isClassTest && !schedule.isModifiable()) {
-            throw new IllegalStateException("Chỉ có thể sửa ca thi khi đang ở trạng thái nháp");
+            throw new IllegalArgumentException("Chỉ có thể sửa ca thi khi đang ở trạng thái nháp");
         }
 
         // Giá trị hiệu dụng: dùng giá trị mới nếu được cung cấp, ngược lại giữ giá trị hiện tại.
@@ -125,7 +125,7 @@ public class UpdateAssessmentScheduleUseCase implements IUseCase<UpdateAssessmen
                 now,
                 currentUserId.toString());
             if (updated == 0) {
-                throw new IllegalStateException("Không thể cập nhật ca thi (đã bị thay đổi trạng thái)");
+                throw new IllegalArgumentException("Không thể cập nhật ca thi (đã bị thay đổi trạng thái)");
             }
         }
         return schedule.getId();

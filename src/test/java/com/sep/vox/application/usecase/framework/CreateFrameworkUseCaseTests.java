@@ -11,7 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sep.vox.application.exception.DataConflictException;
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.port.input.command.CreateFrameworkCommand;
 import com.sep.vox.application.port.input.usecase.framework.CreateFrameworkUseCase;
 import com.sep.vox.domain.model.framework.Framework;
@@ -32,7 +32,7 @@ class CreateFrameworkUseCaseTests {
         CreateFrameworkCommand command = new CreateFrameworkCommand("CEFR", "CEFR framework", "Description", true);
 
         assertThatThrownBy(() -> useCase.execute(command))
-            .isInstanceOf(DuplicatedException.class)
+            .isInstanceOf(ResourceDuplicatedException.class)
             .hasMessage("Mã framework đã tồn tại");
     }
 }

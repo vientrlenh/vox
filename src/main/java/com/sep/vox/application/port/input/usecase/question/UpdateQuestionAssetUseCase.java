@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.UpdateQuestionAssetCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -44,15 +44,15 @@ public class UpdateQuestionAssetUseCase implements IUseCase<UpdateQuestionAssetC
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         Question question = questionRepository.findById(command.questionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi"));
         QuestionAsset sourceAsset = questionAssetRepository.findById(command.assetId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy tài nguyên câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài nguyên câu hỏi"));
         if (!sourceAsset.getQuestionId().equals(question.getId())) {
             throw new ForbiddenException("Tài nguyên không thuộc câu hỏi này");
         }
 
         QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
         boolean owner = question.isCreatedBy(currentUserId);
         boolean editorCollaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId)
@@ -130,14 +130,14 @@ public class UpdateQuestionAssetUseCase implements IUseCase<UpdateQuestionAssetC
         return questionAssetRepository.findByQuestionId(questionId).stream()
             .filter(asset -> asset.getOrder() == order)
             .findFirst()
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy tài nguyên câu hỏi trong bản nháp mới"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài nguyên câu hỏi trong bản nháp mới"));
     }
 
     private void validateAssetOrder(UUID questionId, int order, UUID currentAssetId) {
         boolean duplicated = questionAssetRepository.findByQuestionId(questionId).stream()
             .anyMatch(asset -> asset.getOrder() == order && !asset.getId().equals(currentAssetId));
         if (duplicated) {
-            throw new IllegalStateException("Thứ tự tài nguyên câu hỏi không được trùng lặp");
+            throw new IllegalArgumentException("Thứ tự tài nguyên câu hỏi không được trùng lặp");
         }
     }
 

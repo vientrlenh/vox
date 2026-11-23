@@ -20,7 +20,7 @@ import org.springframework.stereotype.Service;
 import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.event.UserCreatedPayloadV1;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.RequiresNewTransactionPort;
 import com.sep.vox.domain.common.AggregateTypeConstant;
@@ -72,7 +72,7 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
         UUID schoolId = session.getSchoolId();
         Map<String, String> mapping = jsonSerializationPort.toStringMap(session.getConfirmedMappingJson());
         School school = schoolRepository.findById(schoolId)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy trường học"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học"));
         return processRows(rows, mapping, schoolId, school.getName());
     }
 

@@ -7,8 +7,8 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.exception.NotFoundException;
-import com.sep.vox.application.exception.PlanLimitExceededException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.application.exception.BusinessRuleViolationException;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 
@@ -25,10 +25,10 @@ public class AssessmentTimeQuotaGuardService {
         }
 
         SchoolSubscription subscription = schoolSubscriptionRepository.findActiveBySchoolId(schoolId)
-            .orElseThrow(() -> new PlanLimitExceededException(
+            .orElseThrow(() -> new BusinessRuleViolationException(
                 "Trường chưa có gói subscription đang hoạt động, không thể gắn cấu trúc đề này."));
         SubscriptionPlan plan = subscriptionPlanRepository.findById(subscription.getSubscriptionPlanId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy gói subscription"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói subscription"));
 
         Integer maxMinutes = plan.getMaxTimePerAttemptMin();
         if (maxMinutes == null || maxMinutes <= 0) {
@@ -37,7 +37,7 @@ public class AssessmentTimeQuotaGuardService {
 
         long maxSeconds = maxMinutes.longValue() * 60L;
         if (durationSeconds.longValue() > maxSeconds) {
-            throw new PlanLimitExceededException(
+            throw new BusinessRuleViolationException(
                 "%s có thời lượng %s, vượt giới hạn %s của gói %s. Vui lòng giảm câu hỏi hoặc nâng cấp gói trước khi gắn."
                     .formatted(targetLabel, formatDuration(durationSeconds), formatDuration(maxSeconds), plan.getName()));
         }

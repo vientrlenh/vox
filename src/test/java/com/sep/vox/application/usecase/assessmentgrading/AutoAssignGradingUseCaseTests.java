@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import com.sep.vox.application.port.input.service.GradingAssignmentNotificationService;
-import com.sep.vox.application.exception.DuplicatedException;
+import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.port.input.command.AutoAssignGradingCommand;
 import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
 import com.sep.vox.application.port.input.service.GradingSampleSelector;
@@ -191,7 +191,7 @@ public class AutoAssignGradingUseCaseTests {
     @Test
     void should_reject_duplicate_teachers() {
         assertThatThrownBy(() -> useCase.execute(command(anh, anh)))
-            .isInstanceOf(DuplicatedException.class)
+            .isInstanceOf(ResourceDuplicatedException.class)
             .hasMessageContaining("trùng giáo viên");
     }
 

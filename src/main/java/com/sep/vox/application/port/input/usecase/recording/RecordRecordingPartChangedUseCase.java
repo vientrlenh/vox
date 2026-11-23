@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.RecordRecordingPartChangedCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.RecordingStorageConfigPort;
@@ -28,7 +28,7 @@ public class RecordRecordingPartChangedUseCase implements IUseCase<RecordRecordi
     @Override
     public Void execute(RecordRecordingPartChangedCommand input) {
         assessmentSessionRepository.findById(input.assessmentSessionId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy phiên thi cho recording event: " + input.assessmentSessionId()));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi cho recording event: " + input.assessmentSessionId()));
 
         Instant now = Instant.now();
         // Lookup with the source included: each ingest source only updates its own row, so the two ingest

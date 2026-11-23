@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.DeleteAssessmentPaperCommand;
 import com.sep.vox.application.port.input.service.AssessmentPaperAuthoringAccessService;
 import com.sep.vox.application.port.input.service.RecalculateAssessmentTimeDurationService;
@@ -46,9 +46,9 @@ public class DeleteAssessmentPaperUseCase implements IUseCase<DeleteAssessmentPa
     public Void execute(DeleteAssessmentPaperCommand input) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         AssessmentPaper paper = assessmentPaperRepository.findById(input.paperId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy đề thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đề thi"));
         Assessment assessment = assessmentRepository.findById(paper.getAssessmentId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
 
         AssessmentPaperAuthoringAccessService.PaperActor actor = assessmentPaperAuthoringAccessService.requireCanAuthor(assessment, currentUserId);
         // Once an assessment has started, a paper variant is live data -- the same boundary that AssignAssessmentPapersUseCase
@@ -62,13 +62,13 @@ public class DeleteAssessmentPaperUseCase implements IUseCase<DeleteAssessmentPa
             throw new ForbiddenException("Chỉ người đã tạo đề thi này mới được xoá");
         }
         if (paper.getStatus() != AssessmentPaperStatus.DRAFT) {
-            throw new IllegalStateException("Chỉ xoá được đề thi khi còn ở trạng thái DRAFT");
+            throw new IllegalArgumentException("Chỉ xoá được đề thi khi còn ở trạng thái DRAFT");
         }
 
         // Phiên thi trỏ vào mã đề qua paper_id NOT NULL: đã có học sinh làm bài thì không có cách nào
         // dọn con trỏ, chỉ còn cách không cho xoá.
         if (assessmentSessionRepository.existsByPaperId(paper.getId())) {
-            throw new IllegalStateException("Không thể xoá mã đề đã có học sinh làm bài");
+            throw new IllegalArgumentException("Không thể xoá mã đề đã có học sinh làm bài");
         }
 
         // Candidates also point at a paper variant through assigned_paper_id, and no FK cleans that up either. Return them to

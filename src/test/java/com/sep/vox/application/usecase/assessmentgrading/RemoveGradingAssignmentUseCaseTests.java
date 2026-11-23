@@ -119,7 +119,7 @@ class RemoveGradingAssignmentUseCaseTests {
         UUID assignmentId = given(completed);
 
         assertThatThrownBy(() -> useCase.execute(new RemoveGradingAssignmentCommand(assignmentId)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("đã chấm xong");
 
         verify(assessmentResultAppealRepository, never()).save(any());

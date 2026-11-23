@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.mapper.question.CreateQuestionResponseMapper;
 import com.sep.vox.application.port.input.command.CreateQuestionAssetCommand;
 import com.sep.vox.application.port.input.command.CreateQuestionEvaluationGuideCommand;
@@ -65,15 +65,15 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
             .anyMatch(role -> "TEACHER".equals(role.roleCode()));
 
         QuestionBank questionBank = questionBankRepository.findById(command.questionBankId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
         QuestionTopic questionTopic = questionTopicRepository.findById(command.questionTopicId())
-            .orElseThrow(() -> new NotFoundException("Không tìm thấy chủ đề câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chủ đề câu hỏi"));
 
         if (!questionTopic.getQuestionBankId().equals(questionBank.getId())) {
-            throw new IllegalStateException("Chủ đề không thuộc ngân hàng câu hỏi đã chọn");
+            throw new IllegalArgumentException("Chủ đề không thuộc ngân hàng câu hỏi đã chọn");
         }
         if (questionTopic.getStatus() != QuestionTopicStatus.PUBLISHED) {
-            throw new IllegalStateException("Chỉ được tạo câu hỏi trong chủ đề đã PUBLISHED");
+            throw new IllegalArgumentException("Chỉ được tạo câu hỏi trong chủ đề đã PUBLISHED");
         }
 
         if (questionBank.getOwnerType() == QuestionBankOwnerType.SYSTEM) {
@@ -174,7 +174,7 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
 
     private void validateResponseDurationRange(CreateSystemQuestionBankQuestionCommand command) {
         if (command.minResponseSeconds() > command.maxResponseSeconds()) {
-            throw new IllegalStateException("Thời gian trả lời tối thiểu không được lớn hơn thời gian trả lời tối đa");
+            throw new IllegalArgumentException("Thời gian trả lời tối thiểu không được lớn hơn thời gian trả lời tối đa");
         }
     }
 
@@ -182,7 +182,7 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
         Set<Integer> orders = new HashSet<Integer>();
         for (CreateQuestionAssetCommand asset : assets) {
             if (!orders.add(asset.order())) {
-                throw new IllegalStateException("Thứ tự tài nguyên câu hỏi không được trùng lặp");
+                throw new IllegalArgumentException("Thứ tự tài nguyên câu hỏi không được trùng lặp");
             }
         }
     }

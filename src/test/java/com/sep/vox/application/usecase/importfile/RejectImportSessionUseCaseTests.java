@@ -17,7 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.RejectImportSessionCommand;
 import com.sep.vox.application.port.input.usecase.importfile.RejectImportSessionUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -112,7 +112,7 @@ class RejectImportSessionUseCaseTests {
         mockActiveContext(userId, schoolId);
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> useCase.execute(new RejectImportSessionCommand(sessionId, null)));
+        assertThrows(ResourceNotFoundException.class, () -> useCase.execute(new RejectImportSessionCommand(sessionId, null)));
     }
 
     @Test
@@ -125,7 +125,7 @@ class RejectImportSessionUseCaseTests {
         when(importSessionRepository.findById(sessionId))
             .thenReturn(Optional.of(session(sessionId, schoolId, ImportSessionStatus.COMPLETED, Instant.now().plus(1, ChronoUnit.DAYS))));
 
-        assertThrows(IllegalStateException.class, () -> useCase.execute(new RejectImportSessionCommand(sessionId, null)));
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(new RejectImportSessionCommand(sessionId, null)));
     }
 
     @Test
@@ -139,7 +139,7 @@ class RejectImportSessionUseCaseTests {
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
         when(importSessionRepository.save(any(ImportSession.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        assertThrows(IllegalStateException.class, () -> useCase.execute(new RejectImportSessionCommand(sessionId, null)));
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(new RejectImportSessionCommand(sessionId, null)));
 
         ArgumentCaptor<ImportSession> captor = ArgumentCaptor.forClass(ImportSession.class);
         verify(importSessionRepository).save(captor.capture());
@@ -154,7 +154,7 @@ class RejectImportSessionUseCaseTests {
         User _user = user(userId, schoolId, UserStatus.INACTIVE);
         when(userRepository.findById(userId)).thenReturn(Optional.of(_user));
 
-        assertThrows(IllegalStateException.class, () -> useCase.execute(new RejectImportSessionCommand(UUID.randomUUID(), null)));
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(new RejectImportSessionCommand(UUID.randomUUID(), null)));
     }
 
     @Test
@@ -164,7 +164,7 @@ class RejectImportSessionUseCaseTests {
         User _user1 = user(userId, null, UserStatus.ACTIVE);
         when(userRepository.findById(userId)).thenReturn(Optional.of(_user1));
 
-        assertThrows(IllegalStateException.class, () -> useCase.execute(new RejectImportSessionCommand(UUID.randomUUID(), null)));
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(new RejectImportSessionCommand(UUID.randomUUID(), null)));
     }
 
     @Test
@@ -176,7 +176,7 @@ class RejectImportSessionUseCaseTests {
         when(userRepository.findById(userId)).thenReturn(Optional.of(_user2));
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(school(schoolId, false)));
 
-        assertThrows(IllegalStateException.class, () -> useCase.execute(new RejectImportSessionCommand(UUID.randomUUID(), null)));
+        assertThrows(IllegalArgumentException.class, () -> useCase.execute(new RejectImportSessionCommand(UUID.randomUUID(), null)));
     }
 
     @Test

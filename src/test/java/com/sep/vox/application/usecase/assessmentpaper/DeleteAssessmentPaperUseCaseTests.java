@@ -120,7 +120,7 @@ class DeleteAssessmentPaperUseCaseTests {
         when(assessmentPaperRepository.findById(paperId)).thenReturn(Optional.of(paper(AssessmentPaperStatus.LOCKED)));
 
         assertThatThrownBy(() -> useCase.execute(new DeleteAssessmentPaperCommand(paperId)))
-            .isInstanceOf(IllegalStateException.class);
+            .isInstanceOf(IllegalArgumentException.class);
         verify(assessmentPaperItemRepository, never()).deleteByPaperIdIn(anyCollection());
         verify(assessmentPaperRepository, never()).deleteById(any());
     }
@@ -170,7 +170,7 @@ class DeleteAssessmentPaperUseCaseTests {
         when(assessmentPaperRepository.findById(paperId)).thenReturn(Optional.of(paper(AssessmentPaperStatus.LOCKED)));
 
         assertThatThrownBy(() -> useCase.execute(new DeleteAssessmentPaperCommand(paperId)))
-            .isInstanceOf(IllegalStateException.class);
+            .isInstanceOf(IllegalArgumentException.class);
         verify(assessmentCandidateRepository, never()).saveAll(anyCollection());
     }
 
@@ -180,7 +180,7 @@ class DeleteAssessmentPaperUseCaseTests {
         when(assessmentSessionRepository.existsByPaperId(paperId)).thenReturn(true);
 
         assertThatThrownBy(() -> useCase.execute(new DeleteAssessmentPaperCommand(paperId)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("đã có học sinh làm bài");
         verify(assessmentCandidateRepository, never()).saveAll(anyCollection());
         verify(assessmentPaperRepository, never()).deleteById(any());
@@ -193,7 +193,7 @@ class DeleteAssessmentPaperUseCaseTests {
         when(assessmentRepository.findById(assessmentId)).thenReturn(Optional.of(assessment));
 
         assertThatThrownBy(() -> useCase.execute(new DeleteAssessmentPaperCommand(paperId)))
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("kỳ thi đã bắt đầu");
         verify(assessmentCandidateRepository, never()).saveAll(anyCollection());
         verify(assessmentPaperRepository, never()).deleteById(any());

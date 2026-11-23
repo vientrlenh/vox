@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.NotFoundException;
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.port.input.command.DeleteScoringRuleCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -60,7 +60,7 @@ public class DeleteSystemScoringRuleUseCase implements IUseCase<DeleteScoringRul
 
     private ScoringRule requireRuleForPolicy(UUID ruleId, UUID policyId) {
         ScoringRule rule = scoringRuleRepository.findById(ruleId)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Scoring Rule."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Scoring Rule."));
         if (!rule.getPolicyId().equals(policyId)) {
             throw new ForbiddenException("BẢO MẬT: Scoring Rule này không thuộc Assessment Policy đã chỉ định.");
         }
@@ -69,14 +69,14 @@ public class DeleteSystemScoringRuleUseCase implements IUseCase<DeleteScoringRul
 
     private AssessmentPolicy requirePolicy(UUID policyId) {
         return assessmentPolicyRepository.findById(policyId)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy Assessment Policy."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
     }
 
     // Chỉ được xóa Scoring Rule khi Policy còn DRAFT (tránh xóa ngầm luật chấm điểm
     // của 1 Policy đã PUBLISHED đang chấm bài thi thật). Gọi sau khi đã kiểm tra quyền sở hữu/phạm vi.
     private void requireDraftStatus(AssessmentPolicy policy) {
         if (policy.getStatus() != AssessmentPolicyStatus.DRAFT) {
-            throw new IllegalStateException("Chỉ được xóa Scoring Rule khi Assessment Policy đang ở trạng thái DRAFT.");
+            throw new IllegalArgumentException("Chỉ được xóa Scoring Rule khi Assessment Policy đang ở trạng thái DRAFT.");
         }
     }
 }

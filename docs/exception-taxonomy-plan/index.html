@@ -1,0 +1,733 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Exception taxonomy plan</title>
+<style>
+  :root {
+    --bg: #fafaf8; --surface: #ffffff; --text: #1d1d1b; --muted: #5f5f5a; --border: #e2e1dc;
+    --accent: #1f5fbf; --accent-soft: #e8f0fc; --warn: #8a5a00; --warn-soft: #fdf3dc;
+    --ok: #17673a; --ok-soft: #e3f4ea; --bad: #9b1c1c; --bad-soft: #fbe6e6; --code-bg: #f3f2ee;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #151514; --surface: #1d1d1b; --text: #ecebe6; --muted: #a2a19a; --border: #33332f;
+      --accent: #7fb0f5; --accent-soft: #1b2a40; --warn: #f0c36a; --warn-soft: #3a2f14;
+      --ok: #7fd3a0; --ok-soft: #14301f; --bad: #f19a9a; --bad-soft: #3d1b1b; --code-bg: #262623;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #151514; --surface: #1d1d1b; --text: #ecebe6; --muted: #a2a19a; --border: #33332f;
+    --accent: #7fb0f5; --accent-soft: #1b2a40; --warn: #f0c36a; --warn-soft: #3a2f14;
+    --ok: #7fd3a0; --ok-soft: #14301f; --bad: #f19a9a; --bad-soft: #3d1b1b; --code-bg: #262623;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 32px 16px 96px; }
+  h1 { font-size: 1.9rem; line-height: 1.2; margin: 0 0 8px; }
+  h2 { font-size: 1.35rem; margin: 48px 0 12px; padding-top: 16px; border-top: 1px solid var(--border); }
+  h3 { font-size: 1.05rem; margin: 28px 0 8px; }
+  p, li { max-width: 72ch; }
+  .meta { color: var(--muted); font-size: .92rem; margin-bottom: 20px; }
+  .status { display: inline-block; border-radius: 999px; padding: 2px 12px; font-size: .8rem;
+    font-weight: 600; white-space: nowrap; background: var(--code-bg); color: var(--muted); }
+  .status.draft, .status.open { background: var(--warn-soft); color: var(--warn); }
+  .status.approved, .status.progress { background: var(--accent-soft); color: var(--accent); }
+  .status.done, .status.answered { background: var(--ok-soft); color: var(--ok); }
+  .status.blocked { background: var(--bad-soft); color: var(--bad); }
+  nav { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 18px; margin: 20px 0; }
+  nav ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 32px; }
+  nav a, td a { color: var(--accent); text-decoration: none; }
+  code { background: var(--code-bg); padding: 1px 6px; border-radius: 4px;
+    font: .88em ui-monospace, "SF Mono", Menlo, monospace; }
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; font: .85rem/1.5 ui-monospace, "SF Mono", Menlo, monospace; }
+  pre code { background: none; padding: 0; }
+  .table-scroll { overflow-x: auto; margin: 12px 0; }
+  table { border-collapse: collapse; width: 100%; background: var(--surface);
+    border: 1px solid var(--border); font-size: .92rem; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--code-bg); font-weight: 600; white-space: nowrap; }
+  td.indent { padding-left: 32px; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .callout { border-left: 4px solid var(--accent); background: var(--accent-soft);
+    padding: 10px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+  .callout.warn { border-color: var(--warn); background: var(--warn-soft); }
+  .callout.ok { border-color: var(--ok); background: var(--ok-soft); }
+  .callout p { margin: 4px 0; }
+  .decision, .phase { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 4px 18px 14px; margin: 14px 0; }
+  .decision h3, .phase h3 { margin-top: 14px; }
+  .rec { color: var(--ok); font-weight: 600; }
+  .answer { background: var(--code-bg); border-radius: 8px; padding: 8px 12px; margin: 10px 0 0; color: var(--muted); }
+  .decision[data-decision-state="answered"] .answer { background: var(--ok-soft); color: var(--text); }
+  .tag { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .jobs { list-style: none; padding: 0; margin: 10px 0; }
+  .job { border-top: 1px solid var(--border); padding: 10px 0; }
+  .job > .title { font-weight: 600; }
+  .status-log { font-size: .85rem; color: var(--muted); margin: 8px 0 0; padding-left: 20px; }
+  .status-log:empty { display: none; }
+  @media (max-width: 600px) { nav ol { columns: 1; } h1 { font-size: 1.5rem; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Exception taxonomy plan</h1>
+<div class="meta">
+  Repository: <code>vox</code> &middot; Branch: <code>default</code> &middot; Written 2026-11-23 &middot;
+  Plan status: <span class="status approved" id="plan-status" data-plan-status="approved">Approved</span>
+</div>
+
+<p>Shrink the exception vocabulary to what the code really distinguishes. Three exceptions that all mean &ldquo;the request is
+valid but a business rule says no&rdquo; (<code>PlanLimitExceededException</code>, <code>QuotaExceededException</code>,
+<code>WalletDrawConfirmationRequiredException</code>) become one <code>BusinessRuleViolationException</code>.
+<code>InfrastructureException</code> becomes plain <code>IllegalStateException</code>, which means &ldquo;internal fault, answer 500&rdquo;, so the
+handler that turns <code>IllegalStateException</code> into 400 is removed and every bad request is an
+<code>IllegalArgumentException</code>. <code>NotFoundException</code> and <code>DuplicatedException</code> are renamed
+<code>ResourceNotFoundException</code> and <code>ResourceDuplicatedException</code>. It is worth doing because today
+<code>IllegalStateException</code> is used for two opposite things (a client mistake in 565 application sites, a server fault in 78
+infrastructure and interface sites) and both answer 400.</p>
+
+<nav aria-label="Contents">
+  <ol>
+    <li><a href="#progress">Progress</a></li>
+    <li><a href="#current">Current state</a></li>
+    <li><a href="#decisions">Decisions</a></li>
+    <li><a href="#phases">Phases</a></li>
+    <li><a href="#risks">Risks</a></li>
+    <li><a href="#scope">Out of scope</a></li>
+    <li><a href="#verify">Verification</a></li>
+    <li><a href="#changelog">Change log</a></li>
+    <li><a href="#notes">Implementation notes</a></li>
+  </ol>
+</nav>
+
+<h2 id="progress">Progress</h2>
+<p id="overview-summary" class="meta"></p>
+<div class="table-scroll"><table>
+  <thead><tr><th>Phase / job</th><th>Status</th></tr></thead>
+  <tbody id="overview-body"></tbody>
+</table></div>
+
+<h2 id="current">1. Current state (measured)</h2>
+<p>Measured on 2026-11-23 on branch <code>default</code> (clean tree) with <code>grep -rw</code> over <code>src</code>, <code>docs</code>,
+<code>.claude</code> and the root <code>*.md</code>. Spring Boot is <code>4.1.0</code> (<code>build.gradle</code>). The baseline
+<code>./gradlew compileJava compileTestJava</code> exits 0, so the plan takes on no existing compile failure. The baseline
+<code>./gradlew test</code> was <strong>not run</strong> (not checked: it was not needed to plan, and it is the first job of
+<code>implement-plan</code> to run it).</p>
+
+<h3>1.1 The exceptions to remove or rename</h3>
+<div class="table-scroll"><table>
+  <thead><tr><th>Exception</th><th class="num">Lines</th><th>Files</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td><code>PlanLimitExceededException</code></td><td class="num">60</td><td>10 main, 10 test</td>
+      <td>12 throw sites in 6 files (5 guard services in <code>application/port/input/service</code> and <code>UpdateAssessmentStatusUseCase</code>). Handled in REST, GraphQL and gRPC.</td></tr>
+    <tr><td><code>QuotaExceededException</code></td><td class="num">17</td><td>8 main, 0 test</td>
+      <td>1 throw site (<code>BuildPracticePaperUseCase:99</code>). Its nested <code>Scope</code> enum and <code>getScope()</code> have no caller. <code>PracticePaperDraftService:142</code> tests it with <code>instanceof</code> to set the GraphQL <code>errorCode</code> <code>QUOTA_EXCEEDED</code>.</td></tr>
+    <tr><td><code>WalletDrawConfirmationRequiredException</code></td><td class="num">11</td><td>5 main, 1 test</td>
+      <td>1 throw site (<code>DistributeQuotaToUsersService:298</code>). The two getters have no caller; only the REST handler maps it (GraphQL and gRPC do not).</td></tr>
+    <tr><td><code>InfrastructureException</code></td><td class="num">38</td><td>9 main, 1 test class, 1 yaml comment</td>
+      <td>23 throw sites in 8 files; 6 of them are in <code>SecurityConfig</code> (4), <code>SecureTokenProvider</code> (1) and <code>AuthenticationManagerProvider</code> (1). No <code>catch</code> anywhere. Lives in <code>infrastructure/exception</code>, which holds only this class.</td></tr>
+    <tr><td><code>NotFoundException</code></td><td class="num">1,352</td><td>385 main, 57 test</td>
+      <td>435 imports of <code>com.sep.vox.application.exception.NotFoundException</code>.</td></tr>
+    <tr><td><code>DuplicatedException</code></td><td class="num">195</td><td>46 main, 31 test</td>
+      <td>75 imports. Union with the row above: 398 main files and 79 test files (42 files use both).</td></tr>
+  </tbody>
+</table></div>
+<div class="callout warn">
+  <p><strong>Collision trap.</strong> <code>PayOSService</code> imports a different class named <code>vn.payos.exception.NotFoundException</code>
+  (2 lines: the import and <code>catch</code> at line 154). It must not be renamed. Library types that merely contain the text
+  (<code>AuthenticationCredentialsNotFoundException</code> &times;5, <code>UsernameNotFoundException</code> &times;4,
+  <code>FileNotFoundException</code>, <code>ClassNotFoundException</code>) must stay, so the rename has to be word-exact.</p>
+</div>
+<p>Other rename facts: no subclasses, no string literal contains either name, no existing <code>ResourceNotFound*</code> or
+<code>ResourceDuplicated*</code> class, 2 files use <code>import com.sep.vox.application.exception.*</code>
+(<code>SearchSystemRubricResultBandsUseCase</code>, <code>SearchSchoolRubricResultBandsUseCase</code>), 2 tests use the fully qualified name
+(<code>ImportAssessmentCandidatesFromGradeUseCaseTests:192</code>, <code>CreateSchoolGradeUseCaseTests:107</code>), 5 comment lines mention the names,
+and <code>build.gradle</code> has no formatter or linter, so import order is not enforced. The wire codes <code>NOT_FOUND</code> and
+<code>DUPLICATED</code> do not contain the class names and stay.</p>
+
+<h3>1.2 How <code>IllegalStateException</code> is used today</h3>
+<div class="table-scroll"><table>
+  <thead><tr><th>Where</th><th class="num">Sites</th><th>What they are</th></tr></thead>
+  <tbody>
+    <tr><td><code>application</code></td><td class="num">565 in 211 files</td>
+      <td>539 in 31 use-case folders, 26 in <code>application/port/input/service</code>. Almost all report a state the caller can act on (&ldquo;assessment already started&rdquo;, &ldquo;current user belongs to no school&rdquo;). Candidates that look like internal faults: <code>SubmitAssessmentSessionUseCase:282</code> (policy has no target band), <code>CreatePaymentCheckoutUrlUseCase:98</code> (payment gateway not configured; also tells the caller to pick another gateway, so more likely a bad request).</td></tr>
+    <tr><td><code>domain</code></td><td class="num">10 in 6 files</td>
+      <td><code>AssessmentPolicy:157</code>, <code>GradingRoundPolicy:93</code>, <code>AssessmentEditingGuard</code> &times;2, <code>RubricScoringConsistencyValidator</code> &times;4 (rule violations); <code>SubscriptionPlan:123</code> (plan without period: data fault); <code>NativeQueryValues:50</code> (unreadable column type: internal fault).</td></tr>
+    <tr><td><code>infrastructure</code></td><td class="num">63</td>
+      <td>JSON mappers and <code>JacksonJsonSerializationService</code>, POI writer, Firebase config, AI/question clients (<code>PracticeAgentAvailabilityClient</code>, <code>PracticeQuestionGenerationClient</code>, <code>QuestionDiversityClient</code>), SePay signing, 10 e-mail/Kafka consumers. All internal faults.</td></tr>
+    <tr><td><code>interfaces</code></td><td class="num">15</td>
+      <td>5 Kafka consumers wrapping a checked exception, 10 GraphQL &ldquo;DataLoader not found&rdquo; checks. All internal faults.</td></tr>
+    <tr><td>Tests</td><td class="num">221 lines in 97 files</td>
+      <td>189 lines in 82 files under <code>application</code> and <code>domain</code> tests, 32 lines elsewhere. 141 are <code>isInstanceOf(...)</code>, 46 are <code>assertThrows(...)</code>.</td></tr>
+  </tbody>
+</table></div>
+<p>Total <code>new IllegalStateException</code> in <code>src/main</code>: 653 (565 + 10 + 63 + 15). Only 4 places catch or test it:
+<code>PracticePaperDtoMapper:58</code> (catches the JSON port&rsquo;s fault, stays correct), <code>PracticePaperDraftService:146</code>,
+<code>AssessmentStatusAutoTransitionJob:67</code> (guards <code>AssessmentScheduleClosureService.requireNoActiveSessionInOngoingSchedule</code>, an application service that throws it), and the GraphQL resolver. The REST handler <code>handleIllegalState</code> answers 400 <code>INVALID_STATE</code>; the GraphQL resolver answers <code>BAD_REQUEST</code>; the gRPC handler does not map it.</p>
+<p><code>IllegalArgumentException</code> is thrown 596 times in <code>src/main</code> and caught in 54 places (22 in <code>application</code>, mostly import commit handlers that mark a row failed: <code>catch (DataConflictException | IllegalArgumentException)</code>).
+When a site changes from <code>IllegalStateException</code> to <code>IllegalArgumentException</code> those catches can start swallowing it. That is the main behavioural risk (R3).</p>
+
+<h3>1.3 Public contract effects (consumed by the frontend, desktop app, AI grading service)</h3>
+<p>These clients are not in this repository, so what they match on is <strong>not checked</strong>. &ldquo;After&rdquo; assumes D2 option A and D3 option A.</p>
+<div class="table-scroll"><table>
+  <thead><tr><th>Case</th><th>Today</th><th>After</th></tr></thead>
+  <tbody>
+    <tr><td>Plan limit (REST)</td><td>422 <code>PLAN_LIMIT_EXCEEDED</code></td><td>422 <code>BUSINESS_RULE_VIOLATION</code></td></tr>
+    <tr><td>Quota exhausted (REST)</td><td>409 <code>QUOTA_EXCEEDED</code></td><td>422 <code>BUSINESS_RULE_VIOLATION</code></td></tr>
+    <tr><td>Wallet draw needs confirmation (REST)</td><td>422 <code>WALLET_DRAW_CONFIRMATION_REQUIRED</code>; client re-sends with <code>confirmWalletDraw=true</code></td>
+      <td>422 <code>BUSINESS_RULE_VIOLATION</code>. The client can no longer tell &ldquo;needs confirmation&rdquo; from another rule violation by code.</td></tr>
+    <tr><td>GraphQL plan limit / quota</td><td><code>BAD_REQUEST</code>; extensions code <code>PLAN_LIMIT_EXCEEDED</code> for plan limit only</td><td><code>BAD_REQUEST</code>; extensions code <code>BUSINESS_RULE_VIOLATION</code></td></tr>
+    <tr><td>gRPC quota / plan limit</td><td><code>RESOURCE_EXHAUSTED</code> / <code>FAILED_PRECONDITION</code></td><td><code>FAILED_PRECONDITION</code></td></tr>
+    <tr><td>Practice paper draft <code>errorCode</code> (GraphQL field)</td><td><code>QUOTA_EXCEEDED</code> for quota only, <code>null</code> for everything else</td><td><code>BUSINESS_RULE_VIOLATION</code> for every business rule violation</td></tr>
+    <tr><td>Former bad-request <code>IllegalStateException</code> (application, domain)</td><td>400 <code>INVALID_STATE</code></td><td>400 <code>ILLEGAL_ARGUMENT</code>. The code <code>INVALID_STATE</code> disappears.</td></tr>
+    <tr><td>Remaining <code>IllegalStateException</code> (78 infrastructure and interface sites, keep-list)</td><td>400 <code>INVALID_STATE</code> with the raw message</td><td>500 <code>INTERNAL_SERVER_ERROR</code> with &ldquo;C&oacute; l&#7895;i x&#7843;y ra&rdquo;; GraphQL <code>INTERNAL_ERROR</code></td></tr>
+    <tr><td>Renamed classes</td><td colspan="2">No wire change (<code>NOT_FOUND</code>, <code>DUPLICATED</code>, gRPC <code>NOT_FOUND</code> / <code>ALREADY_EXISTS</code> stay).</td></tr>
+  </tbody>
+</table></div>
+<p>No database, Kafka topic or event payload changes, so there is no Flyway migration and no event version.</p>
+
+<h3>1.4 Existing failures and rules that apply</h3>
+<ul>
+  <li>Compile: none (see above). <code>LayeredArchitectureTests</code> stays green throughout: <code>BusinessRuleViolationException</code> lives in <code>application/exception</code> and nothing in <code>domain</code> imports it.</li>
+  <li><code>AGENTS.md</code> Errors: &ldquo;throw the exceptions in <code>application/exception</code>&rdquo;. Line 93 names <code>DuplicatedException</code> and <code>QuotaExceededException</code>, so it is stale after this plan (D8).</li>
+  <li><code>AGENTS.md</code> Ask first: this plan changes public error codes (D2, D3), touches quota code (<code>DistributeQuotaToUsersService</code>, <code>BuildPracticePaperUseCase</code>: only the thrown type changes, no arithmetic), touches security config (D7), and creates files that fit no listed pattern (D2, D5).</li>
+</ul>
+
+<h2 id="decisions">2. Decisions</h2>
+
+<div class="decision" id="d1" data-decision-state="answered">
+  <h3>D1. Direction of the change <span class="status answered">Answered</span></h3>
+  <p>Decided in the request. Removals: <code>PlanLimitExceededException</code>, <code>QuotaExceededException</code>,
+  <code>WalletDrawConfirmationRequiredException</code> (all replaced by <code>BusinessRuleViolationException</code>) and
+  <code>InfrastructureException</code> (replaced by <code>IllegalStateException</code>). The <code>IllegalStateException</code> handler that answers
+  400 is removed; every bad request uses <code>IllegalArgumentException</code>. Renames: <code>DuplicatedException</code> to
+  <code>ResourceDuplicatedException</code>, <code>NotFoundException</code> to <code>ResourceNotFoundException</code>. The contract effects in 1.3
+  follow from it; approving the plan confirms them.</p>
+  <div class="answer"><strong>Answer (2026-11-23):</strong> As requested &ndash; taken from the task description.</div>
+</div>
+
+<div class="decision" id="d2" data-decision-state="answered">
+  <h3>D2. What does <code>BusinessRuleViolationException</code> look like on the wire? <span class="status answered">Answered</span></h3>
+  <p>It is a new class (no <code>AGENTS.md</code> pattern covers it) and changes public error codes of quota and plan-limit code paths, so
+  <code>AGENTS.md</code> Ask first applies. Only the thrown type changes; no quota arithmetic is touched.</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) One class, one constructor <code>(String message)</code>. REST 422 with code
+  <code>BUSINESS_RULE_VIOLATION</code>; GraphQL <code>BAD_REQUEST</code> with extensions code <code>BUSINESS_RULE_VIOLATION</code>; gRPC
+  <code>FAILED_PRECONDITION</code>. It is what you asked for and the simplest. Cost: the table in 1.3. In particular the frontend cannot use the
+  code to decide to show the &ldquo;confirm wallet draw&rdquo; dialog any more, and quota exhaustion changes from 409 to 422. Confirm the
+  clients are updated.</p>
+  <p><strong>B.</strong> Same as A but REST answers 409 <code>CONFLICT</code>. Keeps the status of quota exhaustion; changes plan limit and wallet draw from 422 to 409.</p>
+  <p><strong>C.</strong> One class that carries a string code (<code>BusinessRuleViolationException(String code, String message)</code>) so the three old
+  codes survive on the wire. No client break for codes, but the three code strings stay alive at the throw sites and a code registry has to be
+  invented, which keeps most of what you wanted to remove.</p>
+  <div class="answer"><strong>Answer (2026-11-23):</strong> A &ndash; One class with <code>(String message)</code>; REST 422 <code>BUSINESS_RULE_VIOLATION</code>, GraphQL <code>BAD_REQUEST</code> with extensions code <code>BUSINESS_RULE_VIOLATION</code>, gRPC <code>FAILED_PRECONDITION</code>. The table in 1.3 is accepted.</div>
+</div>
+
+<div class="decision" id="d3" data-decision-state="answered">
+  <h3>D3. Which <code>errorCode</code> does a failed practice paper draft get for a business rule violation? <span class="status answered">Answered</span></h3>
+  <p><code>PracticePaperDraftService</code> stores <code>errorCode = QUOTA_EXCEEDED</code> only for <code>QuotaExceededException</code>, to tell the client the
+  failure is not worth retrying. That field is documented in <code>practice-planning.graphqls:46</code>, so it is a GraphQL contract. After D1 the service
+  can no longer tell quota exhaustion from a plan limit (for example &ldquo;school has no active subscription&rdquo;, thrown by the same flow).</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Every <code>BusinessRuleViolationException</code> gets <code>BUSINESS_RULE_VIOLATION</code>. Both cases are equally not retryable,
+  and the code matches the REST one. The schema description example and <code>PracticePlanningResponses:71</code> are updated.</p>
+  <p><strong>B.</strong> Every <code>BusinessRuleViolationException</code> keeps the literal <code>QUOTA_EXCEEDED</code>. Clients keep working unchanged, but plan-limit failures are mislabelled as quota.</p>
+  <div class="answer"><strong>Answer (2026-11-23):</strong> A &ndash; Every <code>BusinessRuleViolationException</code> gets <code>errorCode</code> <code>BUSINESS_RULE_VIOLATION</code>.</div>
+</div>
+
+<div class="decision" id="d4" data-decision-state="answered">
+  <h3>D4. Which <code>IllegalStateException</code> sites become <code>IllegalArgumentException</code>? <span class="status answered">Answered</span></h3>
+  <p>You said bad requests use <code>IllegalArgumentException</code> and <code>IllegalStateException</code> replaces <code>InfrastructureException</code>. In
+  <code>infrastructure</code> and <code>interfaces</code> (78 sites) all sites are internal faults and stay <code>IllegalStateException</code> (they become 500).
+  The question is the 575 sites in <code>application</code> and <code>domain</code>.</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Convert every site to <code>IllegalArgumentException</code> except a short keep-list of internal faults, each kept
+  only with a written reason in the implementation notes. Measured candidates: <code>NativeQueryValues:50</code>, <code>SubscriptionPlan:123</code>,
+  <code>SubmitAssessmentSessionUseCase:282</code>. Wrongly keeping a request error would turn a 400 into a 500, so a site stays only when the caller
+  cannot cause or fix it.</p>
+  <p><strong>B.</strong> Convert all 575 with no keep-list. Preserves today&rsquo;s 400 answers exactly and is the easiest to review, but a few internal faults would
+  still be reported as bad requests, which is what this change is meant to separate.</p>
+  <div class="answer"><strong>Answer (2026-11-23):</strong> A &ndash; Convert every application and domain site except a short keep-list of internal faults, each kept with a written reason in the implementation notes.</div>
+</div>
+
+<div class="decision" id="d5" data-decision-state="answered">
+  <h3>D5. Add test classes for the error mappers that have none? <span class="status answered">Answered</span></h3>
+  <p>No test covers <code>GlobalExceptionResolver</code> (GraphQL), <code>GlobalGrpcExceptionHandler</code> or <code>PracticePaperDraftService</code> today, and this plan changes
+  what each of them answers. New test classes for existing classes are outside the &ldquo;tests for those&rdquo; wording of <code>AGENTS.md</code>, so I am asking.
+  REST is covered by the existing <code>GlobalExceptionHandlerTests</code>, which is extended either way.</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Add <code>GlobalExceptionResolverTests</code>, <code>GlobalGrpcExceptionHandlerTests</code> and <code>PracticePaperDraftServiceTests</code>
+  (Mockito, no Spring context, same packages as the classes). Every contract change in 1.3 then has a test that fails without it.</p>
+  <p><strong>B.</strong> Only extend <code>GlobalExceptionHandlerTests</code>. Fewer files, but the GraphQL and gRPC mappings and the draft <code>errorCode</code> rely on compilation and review alone.</p>
+  <div class="answer"><strong>Answer (2026-11-23):</strong> A &ndash; Add <code>GlobalExceptionResolverTests</code>, <code>GlobalGrpcExceptionHandlerTests</code> and <code>PracticePaperDraftServiceTests</code>.</div>
+</div>
+
+<div class="decision" id="d6" data-decision-state="answered">
+  <h3>D6. How many Vietnamese comments are translated in the files this plan edits? <span class="status answered">Answered</span></h3>
+  <p><code>AGENTS.md</code> says to translate Vietnamese comments &ldquo;in code you are already changing&rdquo;. This plan edits about 570 files (measured as the union of files naming a removed or renamed class, files with <code>new IllegalStateException</code> in <code>application</code> or <code>domain</code>, and their tests), most of them one
+  import or <code>throw</code> line. A precedent exists: the lombok plan answered the same question on 2026-11-22 with option A below.</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Translate only the Vietnamese comments that sit on or directly above a line this plan edits (and the Javadoc of a method whose signature or
+  <code>throw</code> changes), faithfully, keeping the &ldquo;why&rdquo;. Other comments in the same files stay.</p>
+  <p><strong>B.</strong> Translate every Vietnamese comment in every edited file. Literal reading of <code>AGENTS.md</code>, but thousands of unrelated lines in roughly 570 files.</p>
+  <div class="answer"><strong>Answer (2026-11-23):</strong> A &ndash; Translate only the Vietnamese comments on or directly above a line this plan edits, and the Javadoc of a method whose <code>throw</code> changes.</div>
+</div>
+
+<div class="decision" id="d7" data-decision-state="answered">
+  <h3>D7. May the plan touch the three security files that throw <code>InfrastructureException</code>? <span class="status answered">Answered</span></h3>
+  <p><code>AGENTS.md</code> says to ask before touching security config or JWT/OAuth code. The sites are <code>SecurityConfig</code> (4: cookie domain, admin password, CORS origins
+  checks at start-up), <code>SecureTokenProvider</code> (1: hash algorithm missing) and <code>AuthenticationManagerProvider</code> (1: null principal). The change is the exception type only.</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Yes, swap the type in those 6 sites and nothing else, so <code>InfrastructureException</code> can be deleted.</p>
+  <p><strong>B.</strong> No. The 17 other sites are swapped, those 6 keep <code>InfrastructureException</code>, and the class is not removed. The plan then ends incomplete.</p>
+  <div class="answer"><strong>Answer (2026-11-23):</strong> A &ndash; Swap the exception type in the 6 security sites and change nothing else in those files.</div>
+</div>
+
+<div class="decision" id="d8" data-decision-state="answered">
+  <h3>D8. Update <code>AGENTS.md</code>? <span class="status answered">Answered</span></h3>
+  <p>Its Errors bullet lists <code>DuplicatedException</code> and <code>QuotaExceededException</code>, and later tasks need to know the new rule.
+  Changing <code>AGENTS.md</code> needs your confirmation.</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Rewrite the Errors bullet: the new names, and one line each for <code>IllegalArgumentException</code> (bad request),
+  <code>IllegalStateException</code> (internal fault, 500), <code>BusinessRuleViolationException</code> (valid request, rule says no) and the keep-list rule from D4.</p>
+  <p><strong>B.</strong> Only replace the stale names. Smaller, but the <code>IllegalArgumentException</code> / <code>IllegalStateException</code> rule would live only in this plan.</p>
+  <p><strong>C.</strong> Leave <code>AGENTS.md</code> alone. Not recommended: it would point at classes that no longer exist.</p>
+  <div class="answer"><strong>Answer (2026-11-23):</strong> A &ndash; Rewrite the Errors bullet with the new names and the rule: <code>IllegalArgumentException</code> is a bad request, <code>IllegalStateException</code> an internal fault (500), <code>BusinessRuleViolationException</code> a valid request a rule forbids, plus the keep-list rule from D4. This also confirms the <code>AGENTS.md</code> edit in job 10.1.</div>
+</div>
+
+<h2 id="phases">3. Phases</h2>
+<p>Each phase is independently reviewable and leaves <code>./gradlew compileJava compileTestJava</code> green. Phases 5&ndash;9 change behaviour together
+(the 400 to 500 flip happens in phase 9), so they should be merged as one unit even though each is reviewable alone.</p>
+
+<div class="phase" id="phase-1" data-status="todo">
+  <h3><span class="title">Phase 1 &ndash; Rename NotFoundException and DuplicatedException</span>
+    <span class="tag">large &middot; mechanical &middot; needs D6</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> the two classes are <code>ResourceNotFoundException</code> and <code>ResourceDuplicatedException</code> everywhere, with the wire unchanged.
+  <strong>Depends on:</strong> nothing (D6 only for the comment lines).</p>
+  <ul class="jobs">
+    <li class="job" id="job-1-1" data-status="todo">
+      <span class="title">1.1 Rename both classes and every reference in <code>src/main</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> both files are renamed with <code>git mv</code> (history follows), <code>grep -rwE "NotFoundException|DuplicatedException" src/main</code> prints only the 2 <code>PayOSService</code> lines, and <code>compileJava</code> is green. Replace word-exact, skip <code>PayOSService.java</code>.
+         <strong>Files:</strong> <code>application/exception/NotFoundException.java</code>, <code>application/exception/DuplicatedException.java</code>, and the 398 main files that mention either (<code>grep -rlwE ... src/main</code>).
+         <strong>Verify:</strong> <code>./gradlew compileJava</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-1-2" data-status="todo">
+      <span class="title">1.2 Rename every reference in <code>src/test</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>grep -rwE "NotFoundException|DuplicatedException" src/test</code> prints nothing (including the 2 fully qualified uses) and <code>compileTestJava</code> is green.
+         <strong>Files:</strong> the 79 test files that mention either.
+         <strong>Verify:</strong> <code>./gradlew compileTestJava</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-1-3" data-status="todo">
+      <span class="title">1.3 Comment lines that mention the old names read correctly</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the 5 comment lines (for example <code>ViewAssessmentItemResponseEvaluationUseCase:46</code>, <code>QuestionStatusTransition:88</code>) use the new names and are in English (D6 option A decides how far translation goes).
+         <strong>Files:</strong> the files holding those 5 lines.
+         <strong>Verify:</strong> <code>grep -rnwE "(NotFound|Duplicated)Exception" src</code> prints only the <code>PayOSService</code> lines.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-1-4" data-status="todo">
+      <span class="title">1.4 REST tests for the renamed handlers</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> a use case throwing <code>ResourceNotFoundException</code> answers 404 with code <code>NOT_FOUND</code>, and <code>ResourceDuplicatedException</code> answers 409 with code <code>DUPLICATED</code>.
+         <strong>Files:</strong> <code>src/test/.../interfaces/rest/exception/GlobalExceptionHandlerTests.java</code>.
+         <strong>Verify:</strong> <code>./gradlew test --tests '*GlobalExceptionHandlerTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, then the whole unit suite <code>./gradlew test</code> (a mass rename should be checked by everything), including <code>LayeredArchitectureTests</code>.</p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-2" data-status="todo">
+  <h3><span class="title">Phase 2 &ndash; Introduce BusinessRuleViolationException and its mappings</span>
+    <span class="tag">small &middot; needs D2, D5</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> the new exception exists and every transport answers it, before anything throws it. <strong>Depends on:</strong> D2, D5.</p>
+  <ul class="jobs">
+    <li class="job" id="job-2-1" data-status="todo">
+      <span class="title">2.1 Create <code>BusinessRuleViolationException</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the class exists in <code>application/exception</code>, extends <code>RuntimeException</code>, has the constructor chosen in D2 (<code>(String message)</code> for A and B), and has a short Javadoc stating the contract (valid request, a business rule forbids it; not a bad request, not an internal fault).
+         <strong>Files:</strong> <code>application/exception/BusinessRuleViolationException.java</code> (new).
+         <strong>Verify:</strong> <code>./gradlew compileJava</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-2-2" data-status="todo">
+      <span class="title">2.2 REST mapping and test</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> a use case throwing <code>BusinessRuleViolationException</code> answers the status and code chosen in D2 with the exception message as body message; the test fails without the handler method.
+         <strong>Files:</strong> <code>interfaces/rest/exception/GlobalExceptionHandler.java</code>, <code>GlobalExceptionHandlerTests.java</code>.
+         <strong>Verify:</strong> <code>./gradlew test --tests '*GlobalExceptionHandlerTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-2-3" data-status="todo">
+      <span class="title">2.3 GraphQL mapping and test</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the resolver answers <code>BAD_REQUEST</code> with extensions code per D2 for the new exception; <code>GlobalExceptionResolverTests</code> (D5 option A) covers it and the unchanged <code>ResourceNotFoundException</code> and <code>IllegalArgumentException</code> branches.
+         <strong>Files:</strong> <code>interfaces/graphql/exception/GlobalExceptionResolver.java</code>, <code>GlobalExceptionResolverTests.java</code> (new, D5).
+         <strong>Verify:</strong> <code>./gradlew test --tests '*GlobalExceptionResolverTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-2-4" data-status="todo">
+      <span class="title">2.4 gRPC mapping and test</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the handler answers <code>FAILED_PRECONDITION</code> (D2) for the new exception; <code>GlobalGrpcExceptionHandlerTests</code> (D5 option A) covers it and the existing branches.
+         <strong>Files:</strong> <code>interfaces/grpc/exception/GlobalGrpcExceptionHandler.java</code>, <code>GlobalGrpcExceptionHandlerTests.java</code> (new, D5).
+         <strong>Verify:</strong> <code>./gradlew test --tests '*GlobalGrpcExceptionHandlerTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests '*GlobalExceptionHandlerTests' --tests '*GlobalExceptionResolverTests' --tests '*GlobalGrpcExceptionHandlerTests' --tests '*LayeredArchitectureTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-3" data-status="todo">
+  <h3><span class="title">Phase 3 &ndash; Replace PlanLimitExceededException</span>
+    <span class="tag">medium &middot; mechanical &middot; needs D2</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> plan-limit failures are <code>BusinessRuleViolationException</code> with the same messages, and the old class is gone. <strong>Depends on:</strong> phase 2.</p>
+  <ul class="jobs">
+    <li class="job" id="job-3-1" data-status="todo">
+      <span class="title">3.1 Swap the 12 throw sites</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>grep -rn "new PlanLimitExceededException" src/main</code> prints nothing; messages are unchanged.
+         <strong>Files:</strong> <code>AssessmentTimeQuotaGuardService</code>, <code>SchoolSubscriptionDebtGuardService</code>, <code>SubscriptionPeriodGuardService</code>, <code>SchoolSubscriptionActiveGuardService</code>, <code>ClassTestTokenQuotaGuardService</code> (all in <code>application/port/input/service</code>), <code>UpdateAssessmentStatusUseCase</code>.
+         <strong>Verify:</strong> <code>./gradlew compileJava</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-3-2" data-status="todo">
+      <span class="title">3.2 Update the 10 test classes</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> every <code>doThrow(new PlanLimitExceededException(...))</code> and <code>isInstanceOf(PlanLimitExceededException.class)</code> uses <code>BusinessRuleViolationException</code>, and those tests pass.
+         <strong>Files:</strong> <code>ClassTestTokenQuotaGuardServiceTests</code>, <code>SubscriptionPeriodGuardServiceTests</code>, <code>SchoolSubscriptionActiveGuardServiceTests</code>, <code>AddAssessmentCandidateUseCaseTests</code>, <code>ImportAssessmentCandidatesFromClassUseCaseTests</code>, <code>CreateClassTestAssessmentPolicyTests</code>, <code>UpdateAssessmentUseCaseTests</code>, <code>UpdateAssessmentStatusUseCaseTests</code>, <code>FundQuotaFromBalanceUseCaseTests</code>, <code>BuildPracticePaperUseCaseTests</code>.
+         <strong>Verify:</strong> <code>./gradlew test --tests '*ClassTestTokenQuotaGuardServiceTests' --tests '*SubscriptionPeriodGuardServiceTests' --tests '*SchoolSubscriptionActiveGuardServiceTests' --tests '*AddAssessmentCandidateUseCaseTests' --tests '*ImportAssessmentCandidatesFromClassUseCaseTests' --tests '*CreateClassTestAssessmentPolicyTests' --tests '*UpdateAssessmentUseCaseTests' --tests '*UpdateAssessmentStatusUseCaseTests' --tests '*FundQuotaFromBalanceUseCaseTests' --tests '*BuildPracticePaperUseCaseTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-3-3" data-status="todo">
+      <span class="title">3.3 Delete the class and its three handler branches</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>grep -rw PlanLimitExceededException src</code> prints nothing, the REST handler method and <code>PLAN_LIMIT_EXCEEDED_ERROR</code>, the GraphQL branch with the <code>PLAN_LIMIT_EXCEEDED</code> extension, and the gRPC branch are removed.
+         <strong>Files:</strong> <code>application/exception/PlanLimitExceededException.java</code> (deleted), <code>GlobalExceptionHandler</code>, <code>GlobalExceptionResolver</code>, <code>GlobalGrpcExceptionHandler</code>.
+         <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, the test list of job 3.2, <code>./gradlew test --tests '*GlobalExceptionHandlerTests' --tests '*LayeredArchitectureTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-4" data-status="todo">
+  <h3><span class="title">Phase 4 &ndash; Replace QuotaExceededException and WalletDrawConfirmationRequiredException</span>
+    <span class="tag">medium &middot; touches quota code &middot; needs D2, D3, D5</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> both are <code>BusinessRuleViolationException</code>, the practice draft <code>errorCode</code> follows D3, and both classes are gone. No quota or wallet arithmetic changes. <strong>Depends on:</strong> phase 2, D2, D3.</p>
+  <ul class="jobs">
+    <li class="job" id="job-4-1" data-status="todo">
+      <span class="title">4.1 Quota throw site and the draft <code>errorCode</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>BuildPracticePaperUseCase:99</code> throws <code>BusinessRuleViolationException</code> with the same message; <code>PracticePaperDraftService.readableReason</code> tests <code>instanceof BusinessRuleViolationException</code> and sets the <code>errorCode</code> chosen in D3 (keeping the message); <code>PracticePaperDraftServiceTests</code> (D5 option A) proves it and fails without the branch. Also covers: <code>IllegalArgumentException</code> keeps its message with a null code, an unknown error gives the generic message.
+         <strong>Files:</strong> <code>BuildPracticePaperUseCase</code>, <code>PracticePaperDraftService</code>, <code>PracticePaperDraftServiceTests</code> (new, D5), <code>BuildPracticePaperUseCaseTests</code> if it asserts the quota path.
+         <strong>Verify:</strong> <code>./gradlew test --tests '*PracticePaperDraftServiceTests' --tests '*PracticePaperDraftEntrySerializationTests' --tests '*BuildPracticePaperUseCaseTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-4-2" data-status="todo">
+      <span class="title">4.2 Delete <code>QuotaExceededException</code>, its handlers and mentions</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>grep -rw QuotaExceededException src</code> prints nothing; the class (with its unused <code>Scope</code> enum and <code>getScope()</code>), the REST handler and <code>QUOTA_EXCEEDED_ERROR</code>, the GraphQL branch and the gRPC branch are removed; the comment mentions in <code>SubmitPracticeTurnUseCase:139</code>, <code>SubmitTurnResultDto:16</code>, <code>PracticePaperDraftService:136</code> are rewritten in English; the schema description at <code>practice-planning.graphqls:46</code> and the Javadoc at <code>PracticePlanningResponses:71</code> match D3.
+         <strong>Files:</strong> <code>application/exception/QuotaExceededException.java</code> (deleted), the three handlers, the files named above.
+         <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests '*GlobalExceptionResolverTests' --tests '*GlobalGrpcExceptionHandlerTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-4-3" data-status="todo">
+      <span class="title">4.3 Wallet draw confirmation</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>DistributeQuotaToUsersService:298</code> throws <code>BusinessRuleViolationException</code> whose message is byte-for-byte the text the old exception built (amounts formatted as before; the formatting moves into a private method of the service); <code>DistributeQuotaToUsersServiceTests</code> (line 268) asserts the new type <em>and</em> that message; the class, the REST handler and <code>WALLET_DRAW_CONFIRMATION_REQUIRED_ERROR</code> are deleted; comment mentions in <code>QuotaUserAllocationPageResponse:46</code> and <code>AllocateQuotaRequest:22</code> are updated; <code>grep -rw WalletDrawConfirmationRequiredException src</code> prints nothing.
+         <strong>Files:</strong> <code>DistributeQuotaToUsersService</code>, <code>DistributeQuotaToUsersServiceTests</code>, <code>GlobalExceptionHandler</code>, the two comment files, the exception file (deleted).
+         <strong>Verify:</strong> <code>./gradlew test --tests '*DistributeQuotaToUsersServiceTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests '*DistributeQuotaToUsersServiceTests' --tests '*PracticePaperDraftServiceTests' --tests '*GlobalExceptionHandlerTests' --tests '*LayeredArchitectureTests' --tests '*LombokUsageConventionTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-5" data-status="todo">
+  <h3><span class="title">Phase 5 &ndash; IllegalStateException to IllegalArgumentException in domain and application services</span>
+    <span class="tag">medium &middot; needs D4, D6</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> the 10 domain sites and 26 application-service sites follow D4, the code that catches them still works, and the import commit handlers behave as before. <strong>Depends on:</strong> D4. The REST handler still answers 400 here, so behaviour is unchanged except the code <code>INVALID_STATE</code> becoming <code>ILLEGAL_ARGUMENT</code>.</p>
+  <ul class="jobs">
+    <li class="job" id="job-5-1" data-status="todo">
+      <span class="title">5.1 Domain sites</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>AssessmentPolicy:157</code>, <code>GradingRoundPolicy:93</code> (and its <code>@throws</code> Javadoc at line 84), <code>AssessmentEditingGuard</code> &times;2 and <code>RubricScoringConsistencyValidator</code> &times;4 throw <code>IllegalArgumentException</code>; <code>NativeQueryValues:50</code> and <code>SubscriptionPlan:123</code> follow D4 (kept with a reason, or converted); the domain tests and the application tests that reach these rules assert the new type.
+         <strong>Files:</strong> the 6 domain files above and the tests that mention <code>IllegalStateException</code> under <code>src/test/.../domain</code> and the use-case tests that exercise these rules.
+         <strong>Verify:</strong> <code>./gradlew test --tests 'com.sep.vox.domain.*'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-5-2" data-status="todo">
+      <span class="title">5.2 Application services (26 sites)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>grep -rn "new IllegalStateException" src/main/java/com/sep/vox/application/port/input/service</code> prints nothing except D4 keep-list sites; the <code>@throws IllegalStateException</code> Javadoc at <code>GradingActionSupport:70</code> says <code>IllegalArgumentException</code>; service tests assert the new type.
+         <strong>Files:</strong> <code>application/port/input/service/*.java</code> (26 sites) and tests under <code>src/test/.../application/service</code> and <code>.../application/port/input/service</code>.
+         <strong>Verify:</strong> <code>./gradlew test --tests 'com.sep.vox.application.service.*' --tests 'com.sep.vox.application.port.input.service.*'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-5-3" data-status="todo">
+      <span class="title">5.3 Fix the <code>catch</code> that guarded a converted service</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>AssessmentStatusAutoTransitionJob:67</code> catches <code>IllegalArgumentException</code>, and a new test in <code>AssessmentStatusAutoTransitionJobTests</code> shows that when <code>requireNoActiveSessionInOngoingSchedule</code> throws <code>IllegalArgumentException</code> the job postpones closing and carries on; the test fails with the old <code>catch</code>.
+         <strong>Files:</strong> <code>infrastructure/worker/AssessmentStatusAutoTransitionJob.java</code>, <code>AssessmentStatusAutoTransitionJobTests.java</code>.
+         <strong>Verify:</strong> <code>./gradlew test --tests '*AssessmentStatusAutoTransitionJobTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-5-4" data-status="todo">
+      <span class="title">5.4 Audit the <code>catch (IllegalArgumentException)</code> sites that sit above services converted here</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the implementation notes hold a table for the import commit handlers (<code>SchoolUserImportCommitHandler</code> 143 and 355, <code>SchoolClassImportCommitHandler</code> 128, <code>AssessmentPolicyImportCommitHandler</code> 187, <code>SchoolRoomImportCommitHandler</code> 111, <code>RubricCriterionImportCommitHandler</code> 255, <code>SchoolGradeImportCommitHandler</code> 123 and 235, <code>QuestionImportCommitHandler</code> 175, 546, 587 and 598, <code>RubricResultBandImportCommitHandler</code> 115 and 137, <code>SchoolClassUserImportCommitHandler</code> 147), <code>RubricCriterionExamplesNormalizer:37</code> and <code>DateMapper:205</code>: for each, whether a site converted in this plan can now reach it, and whether the outcome changes (a row marked FAILED instead of the whole import aborting). Any site whose outcome changes is reported to you and the job is <strong>blocked</strong> until you answer; a regression test is written for every accepted change. It also records, from the Spring Kafka documentation for the version in use, that Kafka retry treats <code>IllegalArgumentException</code> and <code>IllegalStateException</code> alike (no <code>notRetryFor</code> or <code>addNotRetryableExceptions</code> exists in <code>src/main</code>).
+         <strong>Files:</strong> the files listed; edits only if a test or fix is needed.
+         <strong>Verify:</strong> <code>./gradlew test --tests '*ImportCommitHandler*' --tests '*DateMapper*'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests 'com.sep.vox.domain.*' --tests 'com.sep.vox.application.service.*' --tests 'com.sep.vox.application.port.input.service.*' --tests '*AssessmentStatusAutoTransitionJobTests' --tests '*LayeredArchitectureTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-6" data-status="todo">
+  <h3><span class="title">Phase 6 &ndash; IllegalStateException to IllegalArgumentException in assessment use cases</span>
+    <span class="tag">large &middot; mechanical &middot; needs D4, D6</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> the 269 sites in the eleven <code>assessment*</code> use-case folders follow D4 and their tests assert the new type. <strong>Depends on:</strong> phase 5, D4.</p>
+  <ul class="jobs">
+    <li class="job" id="job-6-1" data-status="todo">
+      <span class="title">6.1 <code>usecase/assessment</code> (94 sites)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> no <code>new IllegalStateException</code> remains in the folder except D4 keep-list sites; the folder&rsquo;s tests assert <code>IllegalArgumentException</code>. This includes <code>UpdateAssessmentStatusUseCase</code>, which calls the guard converted in 5.2.
+         <strong>Files:</strong> <code>application/port/input/usecase/assessment/*</code> and <code>src/test/.../application/usecase/assessment/*</code>.
+         <strong>Verify:</strong> <code>./gradlew test --tests 'com.sep.vox.application.usecase.assessment.*'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-6-2" data-status="todo">
+      <span class="title">6.2 <code>assessmentblueprint</code> (56) and <code>assessmentpaper</code> (26)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> same condition as 6.1 for the two folders (82 sites).
+         <strong>Files:</strong> the two use-case folders and their test folders.
+         <strong>Verify:</strong> <code>./gradlew test --tests 'com.sep.vox.application.usecase.assessmentblueprint.*' --tests 'com.sep.vox.application.usecase.assessmentpaper.*'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-6-3" data-status="todo">
+      <span class="title">6.3 <code>assessmentsession</code> (20), <code>assessmentschedule</code> (17), <code>assessmentpolicysystem</code> (14), <code>assessmentpolicyschool</code> (13)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> same condition for the four folders (64 sites); <code>SubmitAssessmentSessionUseCase:282</code> is decided per D4.
+         <strong>Files:</strong> the four use-case folders and their test folders.
+         <strong>Verify:</strong> <code>./gradlew test --tests 'com.sep.vox.application.usecase.assessmentsession.*' --tests 'com.sep.vox.application.usecase.assessmentschedule.*' --tests 'com.sep.vox.application.usecase.assessmentpolicysystem.*' --tests 'com.sep.vox.application.usecase.assessmentpolicyschool.*'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-6-4" data-status="todo">
+      <span class="title">6.4 <code>assessmentcandidate</code> (12), <code>assessmentgrading</code> (10), <code>assessmentappeal</code> (6), <code>assessmentevaluation</code> (1)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> same condition for the four folders (29 sites); the <code>@throws IllegalStateException</code> Javadoc at <code>UpholdResultUseCase:125</code> says <code>IllegalArgumentException</code>.
+         <strong>Files:</strong> the four use-case folders and their test folders.
+         <strong>Verify:</strong> <code>./gradlew test --tests 'com.sep.vox.application.usecase.assessmentcandidate.*' --tests 'com.sep.vox.application.usecase.assessmentgrading.*' --tests 'com.sep.vox.application.usecase.assessmentappeal.*' --tests 'com.sep.vox.application.usecase.assessmentevaluation.*'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-6-5" data-status="todo">
+      <span class="title">6.5 Catch-site audit for this group</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the notes table covers <code>RecordAssessmentAttemptEvaluationUseCase:526</code>, <code>GetAssessmentRecordsUseCase:69</code> and <code>RecordAnswerTurnUseCase:136</code> with the same verdicts and blocking rule as job 5.4.
+         <strong>Files:</strong> those three use cases (edits only if needed).
+         <strong>Verify:</strong> <code>./gradlew test --tests '*RecordAssessmentAttemptEvaluationUseCaseTests' --tests '*GetAssessmentRecordsUseCaseTests' --tests '*RecordAnswerTurnUseCaseTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, the filters of jobs 6.1&ndash;6.5, <code>./gradlew test --tests '*LayeredArchitectureTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-7" data-status="todo">
+  <h3><span class="title">Phase 7 &ndash; IllegalStateException to IllegalArgumentException in rubric, framework and question use cases</span>
+    <span class="tag">medium &middot; mechanical &middot; needs D4, D6</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> the 132 sites in eight folders follow D4 and their tests assert the new type. <strong>Depends on:</strong> phase 5, D4.</p>
+  <ul class="jobs">
+    <li class="job" id="job-7-1" data-status="todo">
+      <span class="title">7.1 <code>framework</code> (34), <code>rubricsystem</code> (24), <code>rubricschool</code> (29)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> no <code>new IllegalStateException</code> remains in the three folders except D4 keep-list sites (87 sites); tests assert the new type. Includes <code>CreateSystemRubricResultBandsUseCase:127</code> and <code>CreateSystemRubricCriteriaUseCase:169</code> (&ldquo;already exists&rdquo; reported as a state error: converted as is, see Out of scope).
+         <strong>Files:</strong> the three use-case folders and their test folders.
+         <strong>Verify:</strong> <code>./gradlew test --tests 'com.sep.vox.application.usecase.framework.*' --tests 'com.sep.vox.application.usecase.rubricsystem.*' --tests 'com.sep.vox.application.usecase.rubricschool.*'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-7-2" data-status="todo">
+      <span class="title">7.2 <code>question</code> (23), <code>questionbank</code> (7), <code>questiontopic</code> (6), <code>scoringrule</code> (8), <code>gradelevel</code> (1)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> same condition for the five folders (45 sites), including the <code>case INVALID_STATE -&gt; throw</code> branch of <code>UpdateQuestionStatusUseCase:62</code> (the domain enum <code>RejectionKind.INVALID_STATE</code> keeps its name).
+         <strong>Files:</strong> the five use-case folders and their test folders.
+         <strong>Verify:</strong> <code>./gradlew test --tests 'com.sep.vox.application.usecase.question.*' --tests 'com.sep.vox.application.usecase.questionbank.*' --tests 'com.sep.vox.application.usecase.questiontopic.*' --tests 'com.sep.vox.application.usecase.scoringrule.*' --tests 'com.sep.vox.application.usecase.gradelevel.*'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-7-3" data-status="todo">
+      <span class="title">7.3 Catch-site audit for this group</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the notes record that no <code>catch (IllegalArgumentException)</code> in <code>application</code> or <code>interfaces/kafka</code> lies above a site converted in 7.1 or 7.2, or list each that does with the verdict and blocking rule of job 5.4.
+         <strong>Files:</strong> none expected.
+         <strong>Verify:</strong> <code>grep -rnE "catch \(.*IllegalArgumentException" src/main</code> compared with the converted files.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, the filters of jobs 7.1 and 7.2, <code>./gradlew test --tests '*LayeredArchitectureTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-8" data-status="todo">
+  <h3><span class="title">Phase 8 &ndash; IllegalStateException to IllegalArgumentException in school and commerce use cases</span>
+    <span class="tag">medium &middot; mechanical &middot; needs D4, D6</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> the last 138 application sites follow D4; after this phase the only <code>new IllegalStateException</code> left in <code>application</code> and <code>domain</code> are the recorded keep-list. <strong>Depends on:</strong> phase 5, D4.</p>
+  <ul class="jobs">
+    <li class="job" id="job-8-1" data-status="todo">
+      <span class="title">8.1 <code>schoolclassuser</code> (30), <code>schoolclass</code> (25), <code>schoolroom</code> (10), <code>schoolgrade</code> (9)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> no <code>new IllegalStateException</code> remains in the four folders except D4 keep-list sites (74 sites); tests assert the new type. This includes the repeated &ldquo;current user belongs to no school&rdquo; <code>orElseThrow</code>.
+         <strong>Files:</strong> the four use-case folders and their test folders.
+         <strong>Verify:</strong> <code>./gradlew test --tests 'com.sep.vox.application.usecase.schoolclassuser.*' --tests 'com.sep.vox.application.usecase.schoolclass.*' --tests 'com.sep.vox.application.usecase.schoolroom.*' --tests 'com.sep.vox.application.usecase.schoolgrade.*'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-8-2" data-status="todo">
+      <span class="title">8.2 <code>subscription</code> (14), <code>importfile</code> (14), <code>order</code> (10), <code>schooluser</code> (8), <code>payment</code> (7), <code>school</code> (5), <code>schooldirectory</code> (4), <code>registration</code> (2)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> same condition for the eight folders (64 sites); <code>CreatePaymentCheckoutUrlUseCase:98</code> is decided per D4. Order and payment use cases are touched only at the thrown type, with no change to amounts or status logic.
+         <strong>Files:</strong> the eight use-case folders and their test folders.
+         <strong>Verify:</strong> <code>./gradlew test --tests 'com.sep.vox.application.usecase.subscription.*' --tests 'com.sep.vox.application.usecase.importfile.*' --tests 'com.sep.vox.application.usecase.order.*' --tests 'com.sep.vox.application.usecase.schooluser.*' --tests 'com.sep.vox.application.usecase.payment.*' --tests 'com.sep.vox.application.usecase.school.*' --tests 'com.sep.vox.application.usecase.schooldirectory.*' --tests 'com.sep.vox.application.usecase.registration.*'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-8-3" data-status="todo">
+      <span class="title">8.3 Catch-site audit for this group, and the leftover list</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the notes cover <code>ViewSchoolBalanceEntriesUseCase:63</code> with the job 5.4 rules, and list every remaining <code>new IllegalStateException</code> in <code>application</code> and <code>domain</code> (<code>grep -rn "new IllegalStateException" src/main/java/com/sep/vox/application src/main/java/com/sep/vox/domain</code>), each with its D4 reason; the list is empty under D4 option B.
+         <strong>Files:</strong> none expected.
+         <strong>Verify:</strong> <code>./gradlew test --tests '*ViewSchoolBalanceEntriesUseCaseTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, the filters of jobs 8.1 and 8.2, <code>./gradlew test --tests '*LayeredArchitectureTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-9" data-status="todo">
+  <h3><span class="title">Phase 9 &ndash; InfrastructureException becomes IllegalStateException; remove the 400 handlers</span>
+    <span class="tag">medium &middot; changes 400 to 500 &middot; needs D5, D7</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> <code>InfrastructureException</code> is gone, <code>IllegalStateException</code> is an internal fault answered 500 (REST) and <code>INTERNAL_ERROR</code> (GraphQL). <strong>Depends on:</strong> phases 5&ndash;8 (otherwise a request error still thrown as <code>IllegalStateException</code> would turn into a 500), D5, D7.</p>
+  <ul class="jobs">
+    <li class="job" id="job-9-1" data-status="todo">
+      <span class="title">9.1 Swap the 17 non-security sites</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>S3BucketInitializer</code> (5), <code>AwsS3StorageService</code> (5), <code>NotificationCategoryMappingValidator</code> (3), <code>OutboxPropertiesConfig</code> (2) and <code>KafkaEventProducerAdapter</code> (2) throw <code>IllegalStateException</code>; <code>S3BucketInitializerTests</code> (4 lines) asserts it; the comment at <code>src/test/resources/application-test.yaml:74</code> names <code>IllegalStateException</code>, in English.
+         <strong>Files:</strong> the five classes, <code>S3BucketInitializerTests</code>, <code>application-test.yaml</code>.
+         <strong>Verify:</strong> <code>./gradlew test --tests '*S3BucketInitializerTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-9-2" data-status="todo">
+      <span class="title">9.2 Swap the 6 security sites (needs D7)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>SecurityConfig</code> (4), <code>SecureTokenProvider</code> (1) and <code>AuthenticationManagerProvider</code> (1) throw <code>IllegalStateException</code> with unchanged messages, and no other line in those files changes. If D7 is B this job is deferred and job 9.3 is deferred with it.
+         <strong>Files:</strong> <code>infrastructure/config/SecurityConfig.java</code>, <code>infrastructure/security/SecureTokenProvider.java</code>, <code>infrastructure/security/AuthenticationManagerProvider.java</code>.
+         <strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*Security*' --tests '*AuthenticationManagerProvider*' --tests '*SecureTokenProvider*'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-9-3" data-status="todo">
+      <span class="title">9.3 Delete <code>InfrastructureException</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>grep -rw InfrastructureException src</code> prints nothing; the class and the then-empty <code>infrastructure/exception</code> package are removed; <code>LayeredArchitectureTests</code> still passes.
+         <strong>Files:</strong> <code>infrastructure/exception/InfrastructureException.java</code> (deleted).
+         <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-9-4" data-status="todo">
+      <span class="title">9.4 Remove the <code>IllegalStateException</code> handlers and branch</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>handleIllegalState</code> and <code>INVALID_STATE_ERROR</code> are gone from the REST handler, the <code>IllegalStateException</code> branch is gone from the GraphQL resolver, and <code>PracticePaperDraftService.readableReason</code> no longer treats <code>IllegalStateException</code> as a message-safe error (an internal fault now gets the generic sentence). Tests: REST <code>IllegalStateException</code> answers 500 <code>INTERNAL_SERVER_ERROR</code>; REST <code>IllegalArgumentException</code> answers 400 <code>ILLEGAL_ARGUMENT</code>; GraphQL <code>IllegalStateException</code> answers <code>INTERNAL_ERROR</code>; the draft test covers the generic message.
+         <strong>Files:</strong> <code>GlobalExceptionHandler</code>, <code>GlobalExceptionResolver</code>, <code>PracticePaperDraftService</code>, <code>GlobalExceptionHandlerTests</code>, <code>GlobalExceptionResolverTests</code>, <code>PracticePaperDraftServiceTests</code>.
+         <strong>Verify:</strong> <code>./gradlew test --tests '*GlobalExceptionHandlerTests' --tests '*GlobalExceptionResolverTests' --tests '*PracticePaperDraftServiceTests'</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, then the whole unit suite <code>./gradlew test</code>.</p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-10" data-status="todo">
+  <h3><span class="title">Phase 10 &ndash; AGENTS.md and final audit</span>
+    <span class="tag">small &middot; needs D8</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> the repository rules match the code and the whole plan is checked with evidence. <strong>Depends on:</strong> phases 1&ndash;9, D8.</p>
+  <ul class="jobs">
+    <li class="job" id="job-10-1" data-status="todo">
+      <span class="title">10.1 Update <code>AGENTS.md</code> (D8)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the Errors bullet names <code>ResourceNotFoundException</code>, <code>ResourceDuplicatedException</code> and <code>BusinessRuleViolationException</code> and, under option A, states which exception means bad request, internal fault and business rule violation. Nothing else in the file changes.
+         <strong>Files:</strong> <code>AGENTS.md</code>.
+         <strong>Verify:</strong> <code>grep -nE "DuplicatedException|NotFoundException|QuotaExceededException" AGENTS.md</code> shows only the new names.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-10-2" data-status="todo">
+      <span class="title">10.2 Final audit</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>grep -rwE "PlanLimitExceededException|QuotaExceededException|WalletDrawConfirmationRequiredException|InfrastructureException" src</code> prints nothing; <code>grep -rwE "NotFoundException|DuplicatedException" src</code> prints only the <code>PayOSService</code> lines; <code>./gradlew clean build --no-daemon</code> (what CI runs) is green or the part that needs Docker is reported as not run; <code>verify-plan</code> has been run and its result is in the notes.
+         <strong>Files:</strong> none.
+         <strong>Verify:</strong> <code>./gradlew test</code>, <code>./gradlew integrationTest</code> (needs Docker)</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> as the jobs above.</p>
+  <ul class="status-log"></ul>
+</div>
+
+<h2 id="risks">4. Risks</h2>
+<ul>
+  <li><strong>R1 &ndash; Wrongly keeping a request error as <code>IllegalStateException</code>.</strong> After phase 9 that is a 500 instead of a 400. D4 option A keeps a site only with a written reason, and job 8.3 lists every leftover so you can review them.</li>
+  <li><strong>R2 &ndash; 78 infrastructure and interface sites go from 400 to 500.</strong> This is intended (&ldquo;<code>IllegalStateException</code> replaces <code>InfrastructureException</code>&rdquo;), but some deserve a more precise answer, for example <code>PracticeAgentAvailabilityClient</code> (AI service not ready, closer to 503). Reported, not fixed (Out of scope).</li>
+  <li><strong>R3 &ndash; A converted exception is now swallowed by an existing <code>catch (IllegalArgumentException)</code>.</strong> 22 such catches exist in <code>application</code>, mostly row-level handling in import commits. Jobs 5.4, 6.5, 7.3 and 8.3 audit them; a changed outcome blocks the job until you decide.</li>
+  <li><strong>R4 &ndash; The rename touches the PayOS library class.</strong> Mitigated by word-exact replacement that skips <code>PayOSService.java</code>, and by the grep in jobs 1.1 and 10.2.</li>
+  <li><strong>R5 &ndash; Clients depend on the old codes.</strong> Frontend, desktop app and AI grading service are not in this repository (not checked). Section 1.3 lists every change; D2 and D3 decide how much of the old contract is kept.</li>
+  <li><strong>R6 &ndash; Kafka retry.</strong> No retry classification by exception type exists in <code>src/main</code>, so consumers should treat both types alike, but Spring Kafka&rsquo;s own default list was not checked (job 5.4 does it).</li>
+  <li><strong>R7 &ndash; Size.</strong> About 570 files change (measured union), 82 of them test files that only follow the converted type. Each phase is checked on its own filter, and phase 1 runs the full unit suite.</li>
+</ul>
+
+<h2 id="scope">5. Out of scope</h2>
+<ul>
+  <li><code>ForbiddenException</code>, <code>UnauthorizedException</code>, <code>ServiceUnavailableException</code> and <code>DataConflictException</code> (which stays deliberately unmapped).</li>
+  <li>Replacing <code>IllegalStateException</code> sites that really mean &ldquo;not found&rdquo; or &ldquo;already exists&rdquo; with <code>ResourceNotFoundException</code> or <code>ResourceDuplicatedException</code>: 27 <code>orElseThrow(() -&gt; new IllegalStateException(...))</code> sites in <code>application</code> (for example the &ldquo;current user belongs to no school&rdquo; check repeated in 10 use cases) and the two &ldquo;already exists&rdquo; sites in <code>CreateSystemRubric*UseCase</code>. They become <code>IllegalArgumentException</code> as they are.</li>
+  <li>Giving infrastructure faults a more precise status (for example 503 for an unavailable AI service).</li>
+  <li>The wire code strings <code>NOT_FOUND</code>, <code>DUPLICATED</code> and <code>ILLEGAL_ARGUMENT</code>, the domain enum <code>RejectionKind.INVALID_STATE</code>, event payloads, Kafka topics, the database.</li>
+  <li>Finished plan files under <code>docs/</code> that mention the old names (<code>application-exemption-migration-plan</code>, <code>base-model-audit-plan</code>, <code>lombok-constructor-and-logger-plan</code>): they are records of what was done. The earlier rename plan left such history the same way.</li>
+  <li>Changing the frontend, desktop app or AI grading service.</li>
+  <li>Translating comments in files this plan does not edit.</li>
+</ul>
+
+<h2 id="verify">6. Verification</h2>
+<p>The plan is finished when all of these hold, with the output kept in the implementation notes:</p>
+<ul>
+  <li><code>./gradlew compileJava compileTestJava</code> exits 0.</li>
+  <li><code>grep -rwE "PlanLimitExceededException|QuotaExceededException|WalletDrawConfirmationRequiredException|InfrastructureException" src</code> prints nothing, and <code>grep -rwE "NotFoundException|DuplicatedException" src</code> prints only the two <code>PayOSService</code> lines.</li>
+  <li>Under D4 option A, <code>grep -rn "new IllegalStateException" src/main/java/com/sep/vox/application src/main/java/com/sep/vox/domain</code> prints only the recorded keep-list; under option B it prints nothing.</li>
+  <li><code>./gradlew test</code> is green, including <code>LayeredArchitectureTests</code>, <code>LombokUsageConventionTests</code> and <code>ModelAndEntityConventionTests</code>. <code>./gradlew integrationTest</code> is run if Docker is available, otherwise reported as not run.</li>
+  <li>The REST, GraphQL and gRPC tests prove each row of the table in 1.3 (D5 option A) and the blocked catch-site audits are answered.</li>
+</ul>
+<p>Run the <code>verify-plan</code> skill after the last phase.</p>
+
+<h2 id="changelog">7. Change log</h2>
+<div class="table-scroll"><table>
+  <thead><tr><th>Date</th><th>Change</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>2026-11-23</td><td>Plan written (Draft)</td><td>First version</td></tr>
+    <tr><td>2026-11-23</td><td>D2&ndash;D8 answered, all with the recommended option; no phase or job changed</td><td>Decisions asked in chat</td></tr>
+    <tr><td>2026-11-23</td><td>Approved</td><td>User approved the plan as written, which also confirms the contract changes in 1.3, D7 and D8</td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="notes">8. Implementation notes</h2>
+<p>Filled in by <code>implement-plan</code>: deviations from the plan, results of <code>verify-plan</code>, and
+problems noticed but not fixed.</p>
+<ul id="notes-list"></ul>
+
+</div>
+<script>
+  (function () {
+    var labels = { todo: "Not started", progress: "In progress", done: "Done", blocked: "Blocked", skipped: "Deferred" };
+    var body = document.getElementById("overview-body");
+    var summary = document.getElementById("overview-summary");
+    var phaseCounts = {};
+    document.querySelectorAll(".phase[data-status], .job[data-status]").forEach(function (element) {
+      var status = element.getAttribute("data-status");
+      if (element.classList.contains("phase")) { phaseCounts[status] = (phaseCounts[status] || 0) + 1; }
+      var row = body.insertRow();
+      var nameCell = row.insertCell();
+      if (element.classList.contains("job")) { nameCell.className = "indent"; }
+      var link = document.createElement("a");
+      link.href = "#" + element.id;
+      link.textContent = element.querySelector(".title").textContent;
+      nameCell.appendChild(link);
+      var pill = document.createElement("span");
+      pill.className = "status " + status;
+      pill.textContent = labels[status] || status;
+      row.insertCell().appendChild(pill);
+    });
+    var parts = Object.keys(labels).filter(function (key) { return phaseCounts[key]; })
+      .map(function (key) { return phaseCounts[key] + " " + labels[key].toLowerCase(); });
+    summary.textContent = parts.length ? "Phases: " + parts.join(" · ") : "";
+  })();
+</script>
+</body>
+</html>

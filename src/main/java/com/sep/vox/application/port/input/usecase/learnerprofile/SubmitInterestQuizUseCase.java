@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.learnerprofile;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,20 +14,12 @@ import com.sep.vox.application.query.repository.LearnerProfileQueryRepository;
 import com.sep.vox.application.response.input.learnerprofile.LearnerProfileResponses.LearnerProfile;
 
 @Service
+@RequiredArgsConstructor
 public class SubmitInterestQuizUseCase implements IUseCase<SubmitInterestQuizCommand, LearnerProfile> {
 
     private final LearnerProfileCommandService commandService;
     private final LearnerProfileQueryRepository queryRepository;
     private final UserContextPort userContextPort;
-
-    public SubmitInterestQuizUseCase(
-            LearnerProfileCommandService commandService,
-            LearnerProfileQueryRepository queryRepository,
-            UserContextPort userContextPort) {
-        this.commandService = commandService;
-        this.queryRepository = queryRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

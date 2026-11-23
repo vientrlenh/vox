@@ -4,8 +4,8 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,9 +43,9 @@ import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
  * kiểm tra school-scoping qua UserContextPort ở đây.
  */
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class ConsumeQuotaService {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(ConsumeQuotaService.class);
 
     private final SchoolSubscriptionQuotaRecordRepository schoolSubscriptionQuotaRecordRepository;
     private final SchoolSubscriptionQuotaUserAllocationRepository schoolSubscriptionQuotaUserAllocationRepository;
@@ -57,29 +57,6 @@ public class ConsumeQuotaService {
     private final SchoolQuotaUsageNotificationService schoolQuotaUsageNotificationService;
     private final QuotaUsageWarningConfigPort quotaUsageWarningConfig;
     private final SchoolAiSpendEntryRepository schoolAiSpendEntryRepository;
-
-    public ConsumeQuotaService(
-            SchoolSubscriptionQuotaRecordRepository schoolSubscriptionQuotaRecordRepository,
-            SchoolSubscriptionQuotaUserAllocationRepository schoolSubscriptionQuotaUserAllocationRepository,
-            SchoolSubscriptionRepository schoolSubscriptionRepository,
-            SchoolBalanceRepository schoolBalanceRepository,
-            SchoolBalanceEntryRepository schoolBalanceEntryRepository,
-            SchoolDebtNotificationService schoolDebtNotificationService,
-            QuotaDebtConfigPort quotaDebtConfig,
-            SchoolQuotaUsageNotificationService schoolQuotaUsageNotificationService,
-            QuotaUsageWarningConfigPort quotaUsageWarningConfig,
-            SchoolAiSpendEntryRepository schoolAiSpendEntryRepository) {
-        this.schoolSubscriptionQuotaRecordRepository = schoolSubscriptionQuotaRecordRepository;
-        this.schoolSubscriptionQuotaUserAllocationRepository = schoolSubscriptionQuotaUserAllocationRepository;
-        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
-        this.schoolBalanceRepository = schoolBalanceRepository;
-        this.schoolBalanceEntryRepository = schoolBalanceEntryRepository;
-        this.schoolDebtNotificationService = schoolDebtNotificationService;
-        this.quotaDebtConfig = quotaDebtConfig;
-        this.schoolQuotaUsageNotificationService = schoolQuotaUsageNotificationService;
-        this.quotaUsageWarningConfig = quotaUsageWarningConfig;
-        this.schoolAiSpendEntryRepository = schoolAiSpendEntryRepository;
-    }
 
     /**
      * Deducts the cost of an ASSESSMENT session. Records the FULL expense even if it exceeds the quota: the real AI cost has already
@@ -301,7 +278,7 @@ public class ConsumeQuotaService {
             return;
         }
 
-        LOGGER.warn(
+        log.warn(
             "Nợ vượt trần cảnh báo: subscriptionId={} quotaType={} assessmentSessionId={} practiceSessionId={} debtVnd={} capVnd={}",
             subscriptionId, quotaType, assessmentSessionId, practiceSessionId, debtAfterVnd, cap
         );
@@ -332,7 +309,7 @@ public class ConsumeQuotaService {
             return;
         }
 
-        LOGGER.info(
+        log.info(
             "Hạn mức vượt ngưỡng cảnh báo sớm: subscriptionId={} quotaType={} usedVnd={} totalVnd={}",
             subscriptionId, quotaType, usedAfterVnd, totalAllocatedVnd
         );

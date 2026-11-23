@@ -9,6 +9,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,9 +43,10 @@ import com.sep.vox.domain.model.assessment.AssessmentSessionStatus;
  * (to count the attempts used) and the assigned papers (to derive the duration).
  */
 @Service
+@RequiredArgsConstructor
 public class ViewMyAssessmentsUseCase implements IUseCase<ViewMyAssessmentsQuery, PageResult<StudentAssessmentSummaryResponse>> {
 
-    /** Thời lượng mặc định khi cả đề lẫn ca thi đều không nói gì. */
+    /** Default duration when neither the paper nor the schedule specifies one. */
     private static final int FALLBACK_DURATION_MINUTES = 30;
 
     private final StudentAssessmentQueryRepository studentAssessmentQueryRepository;
@@ -52,19 +54,6 @@ public class ViewMyAssessmentsUseCase implements IUseCase<ViewMyAssessmentsQuery
     private final AssessmentScheduleRepository assessmentScheduleRepository;
     private final AssessmentCandidateAttemptsQueryRepository assessmentCandidateAttemptsQueryRepository;
     private final UserContextPort userContextPort;
-
-    public ViewMyAssessmentsUseCase(
-            StudentAssessmentQueryRepository studentAssessmentQueryRepository,
-            AssessmentPaperRepository assessmentPaperRepository,
-            AssessmentScheduleRepository assessmentScheduleRepository,
-            AssessmentCandidateAttemptsQueryRepository assessmentCandidateAttemptsQueryRepository,
-            UserContextPort userContextPort) {
-        this.studentAssessmentQueryRepository = studentAssessmentQueryRepository;
-        this.assessmentPaperRepository = assessmentPaperRepository;
-        this.assessmentScheduleRepository = assessmentScheduleRepository;
-        this.assessmentCandidateAttemptsQueryRepository = assessmentCandidateAttemptsQueryRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional(readOnly = true)

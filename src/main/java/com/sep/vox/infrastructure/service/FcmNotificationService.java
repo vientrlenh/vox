@@ -4,8 +4,7 @@ import com.google.firebase.messaging.SendResponse;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
@@ -27,9 +26,8 @@ import com.sep.vox.application.response.output.PushMessage;
 
 @Service
 @ConditionalOnProperty(prefix = "firebase", name = "enabled", havingValue = "true")
+@Slf4j
 public class FcmNotificationService implements PushNotificationPort {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(FcmNotificationService.class);
 
     /**
      * Giới hạn cứng của sendEachForMulticast, kiểm chứng trong bytecode firebase-admin
@@ -87,7 +85,7 @@ public class FcmNotificationService implements PushNotificationPort {
         } catch (FirebaseMessagingException e) {
             // A batch-level failure (network lost, quota exhausted, wrong credentials) says nothing about
             // any single device, so the whole batch goes into the retryable group -- never delete.
-            LOGGER.warn("FCM multicast failed for {} device(s), errorCode={}",
+            log.warn("FCM multicast failed for {} device(s), errorCode={}",
                 batch.size(), e.getMessagingErrorCode(), e);
             return new PushDispatchResult(0, List.of(), batch);
         }
@@ -113,12 +111,12 @@ public class FcmNotificationService implements PushNotificationPort {
             }
 
             if (errorCode == MessagingErrorCode.SENDER_ID_MISMATCH) {
-                LOGGER.error("FCM SENDER_ID_MISMATCH -- installation ID thuộc Firebase project khác, "
+                log.error("FCM SENDER_ID_MISMATCH -- installation ID thuộc Firebase project khác, "
                     + "kiểm tra lại service account đang dùng");
             }
         }
 
-        LOGGER.debug("FCM batch sent: success={}, stale={}, retryable={}",
+        log.debug("FCM batch sent: success={}, stale={}, retryable={}",
             response.getSuccessCount(), stale.size(), retryable.size());
 
         return new PushDispatchResult(response.getSuccessCount(), stale, retryable);
@@ -195,7 +193,7 @@ public class FcmNotificationService implements PushNotificationPort {
         }
 
         if (!notificationUrl.startsWith("https://")) {
-            LOGGER.warn("Bỏ qua link webpush vì app.frontend.notification-url không phải https: {}",
+            log.warn("Bỏ qua link webpush vì app.frontend.notification-url không phải https: {}",
                 notificationUrl);
             return null;
         }

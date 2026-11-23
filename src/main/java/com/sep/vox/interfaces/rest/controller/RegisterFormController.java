@@ -4,6 +4,7 @@ import com.sep.vox.application.port.input.command.ApproveRegisterFormCommand;
 import com.sep.vox.application.port.input.command.RejectRegisterFormCommand;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,16 +25,12 @@ import jakarta.validation.Valid;
 
 @RestController("restRegisterFormController")
 @RequestMapping("/api/v1/register-forms")
+@RequiredArgsConstructor
 public class RegisterFormController {
 
     private final ApproveRegisterFormUseCase approveRegisterFormUseCase;
     private final RejectRegisterFormUseCase rejectRegisterFormUseCase;
 
-    public RegisterFormController(ApproveRegisterFormUseCase approveRegisterFormUseCase, RejectRegisterFormUseCase rejectRegisterFormUseCase) {
-        this.approveRegisterFormUseCase = approveRegisterFormUseCase;
-        this.rejectRegisterFormUseCase = rejectRegisterFormUseCase;
-    }
-    
     @PostMapping("/{id}/approve")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<Object>> approve(@PathVariable("id") UUID id, @Valid @RequestBody ApproveRegisterFormRequest request) {

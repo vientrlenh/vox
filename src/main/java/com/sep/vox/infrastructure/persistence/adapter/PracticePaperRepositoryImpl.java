@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.personalization.PracticePaper;
@@ -12,13 +13,10 @@ import com.sep.vox.infrastructure.persistence.mapper.personalization.PracticePap
 import com.sep.vox.infrastructure.persistence.repository.SpringDataPracticePaperRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class PracticePaperRepositoryImpl implements PracticePaperRepository {
 
     private final SpringDataPracticePaperRepository repository;
-
-    public PracticePaperRepositoryImpl(SpringDataPracticePaperRepository repository) {
-        this.repository = repository;
-    }
 
     @Override
     public Optional<PracticePaper> findReservedPaper(UUID paperId, UUID studentId, Instant now) {

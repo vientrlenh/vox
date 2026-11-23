@@ -8,6 +8,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.event.AssessmentAttemptEvaluationRequestedExternalEvent;
@@ -29,23 +30,13 @@ import com.sep.vox.application.exception.NotFoundException;
  * transaction đóng phiên, hoàn toàn khác ngữ cảnh.
  */
 @Service
+@RequiredArgsConstructor
 public class PracticeEvaluationRequestFactory {
 
     private final PracticeSessionQueryRepository practiceSessionQueryRepository;
     private final PracticeResponseTurnRepository practiceResponseTurnRepository;
     private final PracticeQuestionQueryRepository practiceQuestionQueryRepository;
     private final JsonSerializationPort jsonSerializationPort;
-
-    public PracticeEvaluationRequestFactory(
-            PracticeSessionQueryRepository practiceSessionQueryRepository,
-            PracticeResponseTurnRepository practiceResponseTurnRepository,
-            PracticeQuestionQueryRepository practiceQuestionQueryRepository,
-            JsonSerializationPort jsonSerializationPort) {
-        this.practiceSessionQueryRepository = practiceSessionQueryRepository;
-        this.practiceResponseTurnRepository = practiceResponseTurnRepository;
-        this.practiceQuestionQueryRepository = practiceQuestionQueryRepository;
-        this.jsonSerializationPort = jsonSerializationPort;
-    }
 
     public PracticeAttemptEvaluationRequestedExternalEvent build(
             UUID sessionId,

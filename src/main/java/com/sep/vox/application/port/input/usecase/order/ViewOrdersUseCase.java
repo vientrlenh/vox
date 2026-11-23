@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.order;
 
 import com.sep.vox.domain.model.order.Order;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,13 +20,10 @@ import com.sep.vox.domain.repository.OrderRepository;
  * CreateSubscriptionOrderUseCase).
  */
 @Service
+@RequiredArgsConstructor
 public class ViewOrdersUseCase implements IUseCase<ViewOrdersQuery, PageResult<OrderDto>> {
 
     private final OrderRepository orderRepository;
-
-    public ViewOrdersUseCase(OrderRepository orderRepository) {
-        this.orderRepository = orderRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

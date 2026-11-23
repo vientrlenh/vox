@@ -5,6 +5,7 @@ import com.sep.vox.application.query.dto.UserRoleInfo;
 import com.sep.vox.domain.model.school.SchoolUser;
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -17,17 +18,12 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final SchoolUserRepository schoolUserRepository;
-
-    public CustomUserDetailsService(UserRepository userRepository, UserRoleQueryRepository userRoleQueryRepository, SchoolUserRepository schoolUserRepository) {
-        this.userRepository = userRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-        this.schoolUserRepository = schoolUserRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,11 +59,12 @@ import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 import com.sep.vox.domain.service.assessment.AssessmentScheduleWindowMessages;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateAssessmentStatusUseCase implements IUseCase<UpdateAssessmentStatusCommand, AssessmentDto> {
 
     /**
-     * Huỷ được khi bài chưa chốt kết quả. RESULTS_PUBLISHED không rút lại được (học sinh đã xem điểm),
-     * và CANCELLED thì không huỷ thêm lần nữa.
+     * Cancellable while the results are not yet finalized. RESULTS_PUBLISHED cannot be withdrawn (students have already seen their scores),
+     * and CANCELLED cannot be cancelled again.
      */
     private static final Set<AssessmentStatus> CANCELLABLE_FROM =
         EnumSet.of(AssessmentStatus.DRAFT, AssessmentStatus.SCHEDULED, AssessmentStatus.IN_PROGRESS, AssessmentStatus.CLOSED);
@@ -89,53 +91,6 @@ public class UpdateAssessmentStatusUseCase implements IUseCase<UpdateAssessmentS
     private final AssessmentHumanGradingNotificationService assessmentHumanGradingNotificationService;
     private final ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService;
     private final AssessmentScheduleClosureService assessmentScheduleClosureService;
-
-    public UpdateAssessmentStatusUseCase(
-            AssessmentRepository assessmentRepository,
-            AssessmentMemberRepository assessmentMemberRepository,
-            AssessmentPaperRepository assessmentPaperRepository,
-            AssessmentScheduleRepository assessmentScheduleRepository,
-            AssessmentScheduleProctorRepository assessmentScheduleProctorRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            AssessmentSessionRepository assessmentSessionRepository,
-            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
-            AssessmentPolicyRepository assessmentPolicyRepository,
-            AssessmentCandidateResultFinalizationService assessmentCandidateResultFinalizationService,
-            ZeroScoreAssessmentResultService zeroScoreAssessmentResultService,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
-            AssessmentQuestionSecureLockService assessmentQuestionSecureLockService,
-            SchoolSubscriptionRepository schoolSubscriptionRepository,
-            SubscriptionPlanRepository subscriptionPlanRepository,
-            UserContextPort userContextPort,
-            EventPublisherPort eventPublisherPort,
-            ClassTestGradingAssignmentService classTestGradingAssignmentService,
-            AssessmentHumanGradingNotificationService assessmentHumanGradingNotificationService,
-            ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService,
-            AssessmentScheduleClosureService assessmentScheduleClosureService) {
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentMemberRepository = assessmentMemberRepository;
-        this.assessmentPaperRepository = assessmentPaperRepository;
-        this.assessmentScheduleRepository = assessmentScheduleRepository;
-        this.assessmentScheduleProctorRepository = assessmentScheduleProctorRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.assessmentSessionRepository = assessmentSessionRepository;
-        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
-        this.assessmentPolicyRepository = assessmentPolicyRepository;
-        this.assessmentCandidateResultFinalizationService = assessmentCandidateResultFinalizationService;
-        this.zeroScoreAssessmentResultService = zeroScoreAssessmentResultService;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-        this.assessmentQuestionSecureLockService = assessmentQuestionSecureLockService;
-        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
-        this.subscriptionPlanRepository = subscriptionPlanRepository;
-        this.userContextPort = userContextPort;
-        this.eventPublisherPort = eventPublisherPort;
-        this.classTestGradingAssignmentService = classTestGradingAssignmentService;
-        this.assessmentHumanGradingNotificationService = assessmentHumanGradingNotificationService;
-        this.classTestTokenQuotaGuardService = classTestTokenQuotaGuardService;
-        this.assessmentScheduleClosureService = assessmentScheduleClosureService;
-    }
 
     @Override
     @Transactional

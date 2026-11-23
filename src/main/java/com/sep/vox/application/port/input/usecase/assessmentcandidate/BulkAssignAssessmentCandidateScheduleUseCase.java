@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Set;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +35,7 @@ import com.sep.vox.domain.service.assessment.AssessmentEditingGuard;
  * lần, và hỏng thì rollback toàn bộ.
  */
 @Service
+@RequiredArgsConstructor
 public class BulkAssignAssessmentCandidateScheduleUseCase
         implements IUseCase<BulkAssignAssessmentCandidateScheduleCommand, List<AssessmentCandidateDto>> {
 
@@ -46,21 +48,6 @@ public class BulkAssignAssessmentCandidateScheduleUseCase
     private final AssessmentPaperAutoAssigner assessmentPaperAutoAssigner;
     private final AssessmentScheduleManageAccessService assessmentScheduleManageAccessService;
     private final AssessmentScheduleCandidateConflictValidator assessmentScheduleCandidateConflictValidator;
-
-    public BulkAssignAssessmentCandidateScheduleUseCase(
-            AssessmentRepository assessmentRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            AssessmentScheduleRepository assessmentScheduleRepository,
-            AssessmentPaperAutoAssigner assessmentPaperAutoAssigner,
-            AssessmentScheduleManageAccessService assessmentScheduleManageAccessService,
-            AssessmentScheduleCandidateConflictValidator assessmentScheduleCandidateConflictValidator) {
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.assessmentScheduleRepository = assessmentScheduleRepository;
-        this.assessmentPaperAutoAssigner = assessmentPaperAutoAssigner;
-        this.assessmentScheduleManageAccessService = assessmentScheduleManageAccessService;
-        this.assessmentScheduleCandidateConflictValidator = assessmentScheduleCandidateConflictValidator;
-    }
 
     @Override
     @Transactional

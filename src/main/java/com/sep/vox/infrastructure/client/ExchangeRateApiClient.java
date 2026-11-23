@@ -5,8 +5,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -21,11 +20,10 @@ import com.sep.vox.infrastructure.properties.ExchangeRateApiProperties;
  * phía gọi giữ nguyên snapshot mới nhất / fallback tĩnh hiện có.
  */
 @Component
+@Slf4j
 public class ExchangeRateApiClient {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ExchangeRateApiClient.class);
-
-    // Job chạy nền hằng ngày, không ai chờ trực tiếp -- timeout ngắn chỉ để tránh treo cả lượt chạy.
+    // Daily background job that nobody waits on directly -- the short timeout only keeps a whole run from hanging.
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
     private static final Duration READ_TIMEOUT = Duration.ofSeconds(10);
 
@@ -52,18 +50,18 @@ public class ExchangeRateApiClient {
         try {
             response = restClient.get().retrieve().body(Map.class);
         } catch (RuntimeException ex) {
-            LOGGER.warn("[exchange-rate] Gọi API tỷ giá thất bại, giữ nguyên snapshot/fallback hiện có: {}",
+            log.warn("[exchange-rate] Gọi API tỷ giá thất bại, giữ nguyên snapshot/fallback hiện có: {}",
                 ex.getMessage());
             return Optional.empty();
         }
 
         BigDecimal rate = extractRate(response);
         if (rate == null) {
-            LOGGER.warn("[exchange-rate] Response API tỷ giá thiếu rates.VND hợp lệ: {}", response);
+            log.warn("[exchange-rate] Response API tỷ giá thiếu rates.VND hợp lệ: {}", response);
             return Optional.empty();
         }
         if (rate.compareTo(properties.minRateBound()) < 0 || rate.compareTo(properties.maxRateBound()) > 0) {
-            LOGGER.warn("[exchange-rate] Tỷ giá {} nằm ngoài khoảng an toàn [{}, {}], bỏ qua lần fetch này",
+            log.warn("[exchange-rate] Tỷ giá {} nằm ngoài khoảng an toàn [{}, {}], bỏ qua lần fetch này",
                 rate, properties.minRateBound(), properties.maxRateBound());
             return Optional.empty();
         }

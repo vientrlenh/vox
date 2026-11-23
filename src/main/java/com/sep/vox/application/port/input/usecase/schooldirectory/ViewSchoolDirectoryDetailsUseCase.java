@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.schooldirectory;
 
 import com.sep.vox.domain.model.school.SchoolDirectory;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,13 +13,10 @@ import com.sep.vox.domain.mapper.SchoolDirectoryDtoMapper;
 import com.sep.vox.domain.repository.SchoolDirectoryRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewSchoolDirectoryDetailsUseCase implements IUseCase<ViewSchoolDirectoryDetailsQuery, SchoolDirectoryDto>{
 
     private final SchoolDirectoryRepository schoolDirectoryRepository;
-
-    public ViewSchoolDirectoryDetailsUseCase(SchoolDirectoryRepository schoolDirectoryRepository) {
-        this.schoolDirectoryRepository = schoolDirectoryRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

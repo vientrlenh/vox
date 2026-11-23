@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.personalization.PracticeSession;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +27,7 @@ import com.sep.vox.domain.repository.PracticeTopicRepository;
  * ngắn này khỏi ghi đè từ nơi khác, không còn phải giữ suốt cuộc gọi ngoài.
  */
 @Service
+@RequiredArgsConstructor
 public class ResolveNextPracticeQuestionClaimService {
 
     private final PracticeSessionRepository practiceSessionRepository;
@@ -35,23 +37,6 @@ public class ResolveNextPracticeQuestionClaimService {
     private final PracticeItemResponseRepository practiceItemResponseRepository;
     private final PracticeQuestionSelectionService selectionService;
     private final PracticeTopicOfferEnrichmentService enrichmentService;
-
-    public ResolveNextPracticeQuestionClaimService(
-            PracticeSessionRepository practiceSessionRepository,
-            PracticeTopicRepository topicRepository,
-            PracticeQuestionRepository questionRepository,
-            PracticePaperItemRepository paperItemRepository,
-            PracticeItemResponseRepository practiceItemResponseRepository,
-            PracticeQuestionSelectionService selectionService,
-            PracticeTopicOfferEnrichmentService enrichmentService) {
-        this.enrichmentService = enrichmentService;
-        this.practiceSessionRepository = practiceSessionRepository;
-        this.topicRepository = topicRepository;
-        this.questionRepository = questionRepository;
-        this.paperItemRepository = paperItemRepository;
-        this.practiceItemResponseRepository = practiceItemResponseRepository;
-        this.selectionService = selectionService;
-    }
 
     /**
      * Đúng 1 trong 3 kết quả có ý nghĩa:

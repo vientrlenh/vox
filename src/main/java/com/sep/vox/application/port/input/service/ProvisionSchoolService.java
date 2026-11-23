@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.user.Role;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.event.UserCreatedPayloadV1;
@@ -27,6 +28,7 @@ import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.repository.UserRoleRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ProvisionSchoolService {
     
     private final UserRepository userRepository;
@@ -36,24 +38,6 @@ public class ProvisionSchoolService {
     private final UserRoleRepository userRoleRepository;
     private final OutboxRepository outboxRepository;
     private final JsonSerializationPort jsonSerializationPort;
-
-    public ProvisionSchoolService(
-        UserRepository userRepository,
-        RoleRepository roleRepository,
-        SchoolRepository schoolRepository,
-        SchoolUserRepository schoolUserRepository,
-        UserRoleRepository userRoleRepository,
-        OutboxRepository outboxRepository,
-        JsonSerializationPort jsonSerializationPort
-    ) {
-        this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
-        this.schoolRepository = schoolRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleRepository = userRoleRepository;
-        this.outboxRepository = outboxRepository;
-        this.jsonSerializationPort = jsonSerializationPort;
-    }
 
     /** @return id của trường vừa tạo. */
     public UUID provision(ProvisionSchoolCommand command) {

@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.assessment.AssessmentCandidateResult;
 import java.time.Instant;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,20 +36,12 @@ import com.sep.vox.domain.repository.OutboxRepository;
  * được giao bài nào thì quyết được đúng bài đó.
  */
 @Service
+@RequiredArgsConstructor
 public class InvalidateResultUseCase implements IUseCase<GradingDecisionCommand, GradingActionResponse> {
 
     private final GradingActionSupport gradingActionSupport;
     private final OutboxRepository outboxRepository;
     private final JsonSerializationPort jsonSerializationPort;
-
-    public InvalidateResultUseCase(
-            GradingActionSupport gradingActionSupport,
-            OutboxRepository outboxRepository,
-            JsonSerializationPort jsonSerializationPort) {
-        this.gradingActionSupport = gradingActionSupport;
-        this.outboxRepository = outboxRepository;
-        this.jsonSerializationPort = jsonSerializationPort;
-    }
 
     @Override
     @Transactional

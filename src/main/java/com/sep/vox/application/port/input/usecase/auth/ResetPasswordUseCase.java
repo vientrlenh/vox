@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.auth;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,19 +16,13 @@ import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ResetPasswordUseCase implements IUseCase<ResetPasswordCommand, Void>{
 
     private final CacheManagerPort cacheManagerPort;
     private final UserRepository userRepository;
     private final OneTimePasswordPort oneTimePasswordPort;
     private final PasswordEncoderPort passwordEncoderPort;
-    
-    public ResetPasswordUseCase(CacheManagerPort cacheManagerPort, UserRepository userRepository, OneTimePasswordPort oneTimePasswordPort, PasswordEncoderPort passwordEncoderPort) {
-        this.cacheManagerPort = cacheManagerPort;
-        this.userRepository = userRepository;
-        this.oneTimePasswordPort = oneTimePasswordPort;
-        this.passwordEncoderPort = passwordEncoderPort;
-    }
 
     @Override
     @Transactional

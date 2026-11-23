@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.framework;
 import com.sep.vox.domain.model.framework.FrameworkCriterion;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +18,7 @@ import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
 
 @Service
+@RequiredArgsConstructor
 public class DeleteFrameworkVersionUseCase implements IUseCase<DeleteFrameworkVersionCommand, Void> {
 
     private final FrameworkVersionRepository frameworkVersionRepository;
@@ -24,19 +26,6 @@ public class DeleteFrameworkVersionUseCase implements IUseCase<DeleteFrameworkVe
     private final FrameworkCriterionBandRepository frameworkCriterionBandRepository;
     private final FrameworkResultBandRepository frameworkResultBandRepository;
     private final AssessmentPolicyRepository assessmentPolicyRepository;
-
-    public DeleteFrameworkVersionUseCase(
-            FrameworkVersionRepository frameworkVersionRepository,
-            FrameworkCriterionRepository frameworkCriterionRepository,
-            FrameworkCriterionBandRepository frameworkCriterionBandRepository,
-            FrameworkResultBandRepository frameworkResultBandRepository,
-            AssessmentPolicyRepository assessmentPolicyRepository) {
-        this.frameworkVersionRepository = frameworkVersionRepository;
-        this.frameworkCriterionRepository = frameworkCriterionRepository;
-        this.frameworkCriterionBandRepository = frameworkCriterionBandRepository;
-        this.frameworkResultBandRepository = frameworkResultBandRepository;
-        this.assessmentPolicyRepository = assessmentPolicyRepository;
-    }
 
     @Override
     @Transactional

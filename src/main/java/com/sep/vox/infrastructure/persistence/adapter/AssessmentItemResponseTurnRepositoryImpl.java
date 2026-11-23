@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.assessment.AssessmentItemResponseTurn;
@@ -15,14 +16,10 @@ import com.sep.vox.infrastructure.persistence.mapper.AssessmentItemResponseTurnM
 import com.sep.vox.infrastructure.persistence.repository.SpringDataAssessmentItemResponseTurnRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class AssessmentItemResponseTurnRepositoryImpl implements AssessmentItemResponseTurnRepository {
 
     private final SpringDataAssessmentItemResponseTurnRepository springDataAssessmentItemResponseTurnRepository;
-
-    public AssessmentItemResponseTurnRepositoryImpl(
-            SpringDataAssessmentItemResponseTurnRepository springDataAssessmentItemResponseTurnRepository) {
-        this.springDataAssessmentItemResponseTurnRepository = springDataAssessmentItemResponseTurnRepository;
-    }
 
     @Override
     public AssessmentItemResponseTurn upsert(AssessmentItemResponseTurn turn) {

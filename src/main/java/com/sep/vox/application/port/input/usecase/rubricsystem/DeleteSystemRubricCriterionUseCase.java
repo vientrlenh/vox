@@ -10,12 +10,14 @@ import com.sep.vox.domain.model.rubric.*;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class DeleteSystemRubricCriterionUseCase implements IUseCase<DeleteSystemRubricCriterionCommand, Void> {
 
     private final RubricCriterionRepository rubricCriterionRepository;
@@ -23,19 +25,6 @@ public class DeleteSystemRubricCriterionUseCase implements IUseCase<DeleteSystem
     private final RubricRepository rubricRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
-
-    public DeleteSystemRubricCriterionUseCase(
-            RubricCriterionRepository rubricCriterionRepository,
-            RubricVersionRepository rubricVersionRepository,
-            RubricRepository rubricRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort) {
-        this.rubricCriterionRepository = rubricCriterionRepository;
-        this.rubricVersionRepository = rubricVersionRepository;
-        this.rubricRepository = rubricRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

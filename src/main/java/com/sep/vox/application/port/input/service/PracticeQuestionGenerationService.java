@@ -6,8 +6,8 @@ import java.util.List;
 import java.time.Instant;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.NotFoundException;
@@ -21,22 +21,13 @@ import com.sep.vox.domain.repository.PracticeTopicRepository;
 import com.sep.vox.domain.service.personalization.SubAttributePolicy;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class PracticeQuestionGenerationService {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(PracticeQuestionGenerationService.class);
 
     private final PracticeTopicRepository practiceTopicRepository;
     private final PracticeQuestionRepository practiceQuestionRepository;
     private final PracticeQuestionGenerationPort questionGenerationPort;
-
-    public PracticeQuestionGenerationService(
-            PracticeTopicRepository practiceTopicRepository,
-            PracticeQuestionRepository practiceQuestionRepository,
-            PracticeQuestionGenerationPort questionGenerationPort) {
-        this.practiceTopicRepository = practiceTopicRepository;
-        this.practiceQuestionRepository = practiceQuestionRepository;
-        this.questionGenerationPort = questionGenerationPort;
-    }
 
     // Deliberately NOT @Transactional -- questionGenerationPort.generate() is a slow synchronous
     // HTTP call to the Python agents service (LLM generation, can take 10-20s). Wrapping this
@@ -79,7 +70,7 @@ public class PracticeQuestionGenerationService {
             // phu hop" ma khong ai biet vi sao. Da mat nhieu gio truy nguoc dung ca nay
             // (sub-attribute null bi CandidateFilterNode loai sach). Log ro tai day de lan
             // sau nhin phat ra ngay.
-            LOGGER.warn(
+            log.warn(
                 "Pipeline sinh cau tra ve 0 cau (HTTP 2xx) cho topic={} criterion={} "
                     + "subAttribute={} targetRank={} bandCount={} -- khong co gi de luu.",
                 topicId,
@@ -96,7 +87,7 @@ public class PracticeQuestionGenerationService {
             try {
                 questionGenerationPort.index(question);
             } catch (RuntimeException exception) {
-                LOGGER.warn(
+                log.warn(
                     "Đã lưu câu {} nhưng chưa cập nhật được Chroma.",
                     question.id(),
                     exception

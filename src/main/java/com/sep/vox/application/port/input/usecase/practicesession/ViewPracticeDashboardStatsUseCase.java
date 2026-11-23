@@ -4,6 +4,7 @@ import com.sep.vox.application.query.dto.PracticeDashboardCountsInfo;
 import java.time.LocalDate;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,17 +14,11 @@ import com.sep.vox.application.query.repository.PracticeSessionQueryRepository;
 import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.PracticeDashboardStats;
 
 @Service
+@RequiredArgsConstructor
 public class ViewPracticeDashboardStatsUseCase implements IUseCase<Void, PracticeDashboardStats> {
 
     private final PracticeSessionQueryRepository practiceSessionQueryRepository;
     private final UserContextPort userContextPort;
-
-    public ViewPracticeDashboardStatsUseCase(
-            PracticeSessionQueryRepository practiceSessionQueryRepository,
-            UserContextPort userContextPort) {
-        this.practiceSessionQueryRepository = practiceSessionQueryRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional(readOnly = true)

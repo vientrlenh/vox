@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.practicesession;
 import java.util.List;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,17 +16,11 @@ import com.sep.vox.application.query.repository.PracticeSessionQueryRepository;
 import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.PracticeSession;
 
 @Service
+@RequiredArgsConstructor
 public class ViewMyPracticeHistoryUseCase implements IUseCase<ViewMyPracticeHistoryQuery, List<PracticeSession>> {
 
     private final PracticeSessionQueryRepository practiceSessionQueryRepository;
     private final UserContextPort userContextPort;
-
-    public ViewMyPracticeHistoryUseCase(
-            PracticeSessionQueryRepository practiceSessionQueryRepository,
-            UserContextPort userContextPort) {
-        this.practiceSessionQueryRepository = practiceSessionQueryRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional(readOnly = true)

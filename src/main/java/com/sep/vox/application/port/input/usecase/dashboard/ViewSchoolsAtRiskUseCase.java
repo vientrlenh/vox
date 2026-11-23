@@ -6,6 +6,7 @@ import com.sep.vox.domain.common.PageResult;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,17 +27,11 @@ import com.sep.vox.domain.common.BusinessConstant;
  * và một phép lọc khác sẽ cho ra 9 mà không ai biết số nào đúng.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewSchoolsAtRiskUseCase implements IUseCase<ViewSchoolsAtRiskQuery, SchoolsAtRiskResponse> {
 
     private final PlatformBusinessHealthQueryRepository platformBusinessHealthQueryRepository;
     private final SchoolsAtRiskQueryRepository schoolsAtRiskQueryRepository;
-
-    public ViewSchoolsAtRiskUseCase(
-            PlatformBusinessHealthQueryRepository platformBusinessHealthQueryRepository,
-            SchoolsAtRiskQueryRepository schoolsAtRiskQueryRepository) {
-        this.platformBusinessHealthQueryRepository = platformBusinessHealthQueryRepository;
-        this.schoolsAtRiskQueryRepository = schoolsAtRiskQueryRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

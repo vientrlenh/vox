@@ -20,12 +20,14 @@ import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateSchoolAssessmentPolicyUseCase implements IUseCase<UpdateAssessmentPolicyCommand, UUID> {
 
     private final AssessmentPolicyRepository assessmentPolicyRepository;
@@ -35,23 +37,6 @@ public class UpdateSchoolAssessmentPolicyUseCase implements IUseCase<UpdateAsses
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
     private final GradeLevelBandScopeGuardService gradeLevelBandScopeGuardService;
-
-    public UpdateSchoolAssessmentPolicyUseCase(
-            AssessmentPolicyRepository assessmentPolicyRepository,
-            FrameworkResultBandRepository frameworkResultBandRepository,
-            SchoolRepository schoolRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort,
-            GradeLevelBandScopeGuardService gradeLevelBandScopeGuardService) {
-        this.assessmentPolicyRepository = assessmentPolicyRepository;
-        this.frameworkResultBandRepository = frameworkResultBandRepository;
-        this.schoolRepository = schoolRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-        this.gradeLevelBandScopeGuardService = gradeLevelBandScopeGuardService;
-    }
 
     @Override
     @Transactional

@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.assessmentdirectory;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,18 +21,12 @@ import com.sep.vox.domain.model.user.SchoolRoleCodes;
  * viên liệt kê giáo viên cùng trường; ở đây chỉ để FE khỏi phải tự tra {@code roleId}.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewAssessmentDirectoryProctorsUseCase
         implements IUseCase<ViewAssessmentDirectoryQuery, PageResult<AssessmentDirectoryUserInfo>> {
 
     private final AssessmentDirectoryAccessService assessmentDirectoryAccessService;
     private final AssessmentDirectoryQueryRepository assessmentDirectoryQueryRepository;
-
-    public ViewAssessmentDirectoryProctorsUseCase(
-            AssessmentDirectoryAccessService assessmentDirectoryAccessService,
-            AssessmentDirectoryQueryRepository assessmentDirectoryQueryRepository) {
-        this.assessmentDirectoryAccessService = assessmentDirectoryAccessService;
-        this.assessmentDirectoryQueryRepository = assessmentDirectoryQueryRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

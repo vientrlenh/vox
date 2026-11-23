@@ -3,6 +3,7 @@ package com.sep.vox.infrastructure.persistence.adapter;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.personalization.TopicSuggestion;
@@ -11,14 +12,10 @@ import com.sep.vox.infrastructure.persistence.mapper.personalization.TopicSugges
 import com.sep.vox.infrastructure.persistence.repository.SpringDataTopicSuggestionRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class TopicSuggestionRepositoryImpl implements TopicSuggestionRepository {
 
     private final SpringDataTopicSuggestionRepository repository;
-
-    public TopicSuggestionRepositoryImpl(
-            SpringDataTopicSuggestionRepository repository) {
-        this.repository = repository;
-    }
 
     @Override
     public Optional<TopicSuggestion> findById(UUID id) {

@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.notification;
 import com.sep.vox.domain.model.notification.Notification;
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +16,7 @@ import com.sep.vox.domain.common.CursorPage;
 import com.sep.vox.domain.repository.NotificationRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewMyNotificationsCursorPageUseCase
         implements IUseCase<ViewMyNotificationsCursorPageQuery, CursorPage<NotificationDto>> {
 
@@ -22,13 +24,6 @@ public class ViewMyNotificationsCursorPageUseCase
 
     private final NotificationRepository notificationRepository;
     private final UserContextPort userContextPort;
-
-    public ViewMyNotificationsCursorPageUseCase(
-            NotificationRepository notificationRepository,
-            UserContextPort userContextPort) {
-        this.notificationRepository = notificationRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional(readOnly = true)

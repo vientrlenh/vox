@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,17 +50,18 @@ import com.sep.vox.domain.repository.SubscriptionPlanRepository;
  * "trường đã trả bao nhiêu, cho cái gì" là Order -- xem InvoiceRepository và OrderSettlementService.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdminDashboardSummaryResponse> {
 
-    /** Số tháng vẽ trên biểu đồ chi tiêu, kể cả tháng hiện tại. */
+    /** Number of months drawn on the spending chart, including the current month. */
     private static final int SPENDING_MONTHS = 12;
 
     /**
-     * Trần số kỳ thi vẽ trên thẻ "sắp công bố điểm".
+     * Maximum number of assessments drawn on the "results due soon" card.
      *
-     * <p>Đây là một thẻ CẢNH BÁO, không phải danh sách kỳ thi: một trường có ba kỳ đang chờ công bố
-     * thì đọc hết ba, còn ba mươi kỳ thì vấn đề không nằm ở chỗ nhìn đủ ba mươi cái tên. Cắt ở đây
-     * cũng giữ cho câu truy vấn không bao giờ trả về một trang khổng lồ cho màn tổng quan.
+     * <p>This is a WARNING card, not a list of assessments: a school with three assessments waiting to be published
+     * can read all three, while with thirty the problem is not seeing all thirty names. Cutting here
+     * also keeps the query from ever returning a huge page for the overview screen.
      */
     private static final int AWAITING_PUBLISH_LIMIT = 5;
 
@@ -73,26 +75,6 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
     private final OrderRepository orderRepository;
     private final SchoolBalanceRepository schoolBalanceRepository;
     private final SchoolWorkloadQueryRepository schoolWorkloadQueryRepository;
-
-    public ViewSchoolAdminDashboardUseCase(UserContextPort userContextPort, AssessmentRepository assessmentRepository,
-            AssessmentResultAppealRepository assessmentResultAppealRepository,
-            SchoolSubscriptionRepository schoolSubscriptionRepository,
-            SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository,
-            SchoolSubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository,
-            SubscriptionPlanRepository subscriptionPlanRepository, OrderRepository orderRepository,
-            SchoolBalanceRepository schoolBalanceRepository,
-            SchoolWorkloadQueryRepository schoolWorkloadQueryRepository) {
-        this.userContextPort = userContextPort;
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentResultAppealRepository = assessmentResultAppealRepository;
-        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
-        this.subscriptionQuotaRepository = subscriptionQuotaRepository;
-        this.subscriptionQuotaUserAllocationRepository = subscriptionQuotaUserAllocationRepository;
-        this.subscriptionPlanRepository = subscriptionPlanRepository;
-        this.orderRepository = orderRepository;
-        this.schoolBalanceRepository = schoolBalanceRepository;
-        this.schoolWorkloadQueryRepository = schoolWorkloadQueryRepository;
-    }
 
     /**
      * MỘT mốc {@code now} cho cả trang.

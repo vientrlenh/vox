@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.refreshtoken.RefreshToken;
@@ -14,13 +15,10 @@ import com.sep.vox.infrastructure.persistence.mapper.RefreshTokenMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataRefreshTokenRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class RefreshTokenRepositoryImpl implements RefreshTokenRepository {
 
     private final SpringDataRefreshTokenRepository springDataRefreshTokenRepository;
-
-    public RefreshTokenRepositoryImpl(SpringDataRefreshTokenRepository springDataRefreshTokenRepository) {
-        this.springDataRefreshTokenRepository = springDataRefreshTokenRepository;
-    }
 
     @Override
     public List<RefreshToken> findBySessionId(UUID sessionId) {

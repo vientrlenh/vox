@@ -5,8 +5,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.domain.model.framework.FrameworkResultBand;
@@ -43,28 +43,15 @@ import com.sep.vox.domain.repository.SchoolGradeRepository;
  * nên bảng trần theo khối về bản chất không phủ được luồng đó.
  */
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class GradeLevelBandScopeGuardService {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(GradeLevelBandScopeGuardService.class);
 
     private final GradeLevelBandScopeRepository bandScopeRepository;
     private final FrameworkResultBandRepository frameworkResultBandRepository;
     private final GradeLevelRepository gradeLevelRepository;
     private final SchoolGradeRepository schoolGradeRepository;
     private final SchoolClassRepository schoolClassRepository;
-
-    public GradeLevelBandScopeGuardService(
-            GradeLevelBandScopeRepository bandScopeRepository,
-            FrameworkResultBandRepository frameworkResultBandRepository,
-            GradeLevelRepository gradeLevelRepository,
-            SchoolGradeRepository schoolGradeRepository,
-            SchoolClassRepository schoolClassRepository) {
-        this.bandScopeRepository = bandScopeRepository;
-        this.frameworkResultBandRepository = frameworkResultBandRepository;
-        this.gradeLevelRepository = gradeLevelRepository;
-        this.schoolGradeRepository = schoolGradeRepository;
-        this.schoolClassRepository = schoolClassRepository;
-    }
 
     /**
      * Ném IllegalArgumentException nếu bậc mục tiêu vượt trần của khối tương ứng.
@@ -117,7 +104,7 @@ public class GradeLevelBandScopeGuardService {
                 // Không suy được khối -> không có trần nào để so. Chuỗi Lớp -> Khối năm học -> Khối
                 // bị đứt là bất thường về dữ liệu (lớp trỏ tới năm học đã biến mất), nên kêu to.
                 if (schoolClassId != null || schoolGradeId != null) {
-                    LOGGER.warn(
+                    log.warn(
                         "Không suy được Khối từ phạm vi (schoolClassId={}, schoolGradeId={}) -- bỏ qua"
                             + " kiểm trần bậc mục tiêu. Dữ liệu phân cấp lớp/năm học đang không nhất quán.",
                         schoolClassId, schoolGradeId
@@ -131,7 +118,7 @@ public class GradeLevelBandScopeGuardService {
                 // CHỦ ĐÍCH mở: cặp (khối, phiên bản khung) chưa khai trần thì không chặn gì cả.
                 // Chặn hết sẽ làm đứng mọi luồng tạo policy ngay ngày đầu, vì V42 không seed dòng
                 // trần nào. Đổi sang chặn mặc định chỉ cần sửa đúng nhánh này.
-                LOGGER.debug(
+                log.debug(
                     "Khối {} chưa cấu hình trần bậc cho phiên bản khung {} -- không áp trần.",
                     resolvedGradeLevelId, frameworkVersionId
                 );
@@ -143,7 +130,7 @@ public class GradeLevelBandScopeGuardService {
             if (centralizeCapBand.isEmpty() || classTestCapBand.isEmpty()) {
                 // FK trong V42 lẽ ra không cho phép xảy ra; nếu vẫn xảy ra thì cấu hình hỏng chứ
                 // không phải người dùng sai -- không chặn họ, nhưng phải để lại dấu vết.
-                LOGGER.error(
+                log.error(
                     "Trần bậc của khối {} (phiên bản khung {}) trỏ tới bậc không tồn tại"
                         + " (centralize={}, classTest={}).",
                     resolvedGradeLevelId, frameworkVersionId,

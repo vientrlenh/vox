@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.assessmentgrading;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,18 +19,12 @@ import com.sep.vox.domain.model.assessment.AssessmentKind;
  * assessment, the class test screen would silently return the data of the other screen.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewMyClassTestGradingTasksUseCase
         implements IUseCase<ViewMyClassTestGradingTasksQuery, PageResult<GradingTaskInfo>> {
 
     private final AssessmentGradingQueryRepository assessmentGradingQueryRepository;
     private final AssessmentGradingAccessService assessmentGradingAccessService;
-
-    public ViewMyClassTestGradingTasksUseCase(
-            AssessmentGradingQueryRepository assessmentGradingQueryRepository,
-            AssessmentGradingAccessService assessmentGradingAccessService) {
-        this.assessmentGradingQueryRepository = assessmentGradingQueryRepository;
-        this.assessmentGradingAccessService = assessmentGradingAccessService;
-    }
 
     @Override
     @Transactional(readOnly = true)

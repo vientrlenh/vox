@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,17 +16,11 @@ import com.sep.vox.application.port.output.SessionManagerPort;
 import com.sep.vox.domain.repository.DeviceSessionRepository;
 
 @Component
+@RequiredArgsConstructor
 public class DeviceSessionProvider implements SessionManagerPort {
 
     private final DeviceSessionRepository deviceSessionRepository;
     private final EventPublisherPort eventPublisherPort;
-
-    public DeviceSessionProvider(
-            DeviceSessionRepository deviceSessionRepository,
-            EventPublisherPort eventPublisherPort) {
-        this.deviceSessionRepository = deviceSessionRepository;
-        this.eventPublisherPort = eventPublisherPort;
-    }
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)

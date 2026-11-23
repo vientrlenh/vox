@@ -3,6 +3,7 @@ package com.sep.vox.interfaces.graphql.controller;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
@@ -23,6 +24,7 @@ import com.sep.vox.application.response.input.practicesession.PracticeSessionRes
 import com.sep.vox.interfaces.graphql.dto.request.EndPracticeSessionInput;
 
 @Controller
+@RequiredArgsConstructor
 public class PracticeSessionController {
 
     private final StartPracticeSessionUseCase startPracticeSessionUseCase;
@@ -30,19 +32,6 @@ public class PracticeSessionController {
     private final ViewMyPracticeHistoryUseCase viewMyPracticeHistoryUseCase;
     private final ViewMyPracticeSessionDetailUseCase viewMyPracticeSessionDetailUseCase;
     private final ViewStudentPracticeSessionDetailUseCase viewStudentPracticeSessionDetailUseCase;
-
-    public PracticeSessionController(
-            StartPracticeSessionUseCase startPracticeSessionUseCase,
-            EndPracticeSessionUseCase endPracticeSessionUseCase,
-            ViewMyPracticeHistoryUseCase viewMyPracticeHistoryUseCase,
-            ViewMyPracticeSessionDetailUseCase viewMyPracticeSessionDetailUseCase,
-            ViewStudentPracticeSessionDetailUseCase viewStudentPracticeSessionDetailUseCase) {
-        this.startPracticeSessionUseCase = startPracticeSessionUseCase;
-        this.endPracticeSessionUseCase = endPracticeSessionUseCase;
-        this.viewMyPracticeHistoryUseCase = viewMyPracticeHistoryUseCase;
-        this.viewMyPracticeSessionDetailUseCase = viewMyPracticeSessionDetailUseCase;
-        this.viewStudentPracticeSessionDetailUseCase = viewStudentPracticeSessionDetailUseCase;
-    }
 
     @MutationMapping
     @PreAuthorize("hasRole('STUDENT')")

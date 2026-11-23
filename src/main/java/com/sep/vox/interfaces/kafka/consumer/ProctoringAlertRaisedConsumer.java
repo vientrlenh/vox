@@ -1,8 +1,8 @@
 package com.sep.vox.interfaces.kafka.consumer;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.BackOff;
 import org.springframework.kafka.annotation.DltHandler;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -26,19 +26,12 @@ import tools.jackson.databind.json.JsonMapper;
  * record: replayable for a proctor who joins a session late, and searchable when grading after the assessment.
  */
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class ProctoringAlertRaisedConsumer {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(ProctoringAlertRaisedConsumer.class);
 
     private final RecordProctoringAlertUseCase recordProctoringAlertUseCase;
     private final JsonMapper jsonMapper;
-
-    public ProctoringAlertRaisedConsumer(
-            RecordProctoringAlertUseCase recordProctoringAlertUseCase,
-            JsonMapper jsonMapper) {
-        this.recordProctoringAlertUseCase = recordProctoringAlertUseCase;
-        this.jsonMapper = jsonMapper;
-    }
 
     @RetryableTopic(
         attempts = "4",
@@ -60,16 +53,16 @@ public class ProctoringAlertRaisedConsumer {
             // logging every redelivery would turn the monitoring log into noise exactly when it needs to be
             // read the most -- during an incident.
             if (Boolean.TRUE.equals(stored)) {
-                LOGGER.info(
+                log.info(
                     "Đã lưu cảnh báo giám sát: eventId={} sessionId={} alertType={} capturedAt={}",
                     dto.eventId(), dto.sessionId(), dto.alertType(), dto.capturedAt()
                 );
             } else {
-                LOGGER.debug("Bỏ qua cảnh báo giám sát trùng hoặc không dùng được: eventId={}", dto.eventId());
+                log.debug("Bỏ qua cảnh báo giám sát trùng hoặc không dùng được: eventId={}", dto.eventId());
             }
             ack.acknowledge();
         } catch (Exception ex) {
-            LOGGER.error(
+            log.error(
                 "Xử lý cảnh báo giám sát thất bại, không ack: partition={} offset={} key={} lỗi={}",
                 record.partition(), record.offset(), record.key(), ex.getMessage(), ex
             );
@@ -79,6 +72,6 @@ public class ProctoringAlertRaisedConsumer {
 
     @DltHandler
     public void dltHandler(ConsumerRecord<String, Object> record) {
-        LOGGER.error("Cảnh báo giám sát rơi vào DLT ở topic {}: {}", record.topic(), record.value());
+        log.error("Cảnh báo giám sát rơi vào DLT ở topic {}: {}", record.topic(), record.value());
     }
 }

@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.service;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.common.RoleConstant;
@@ -20,20 +21,12 @@ import com.sep.vox.domain.service.question.QuestionStatusTransition;
  * mà {@link QuestionStatusTransition} được thiết kế để tránh.
  */
 @Service
+@RequiredArgsConstructor
 public class QuestionStatusActorResolver {
 
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
-
-    public QuestionStatusActorResolver(
-            UserContextPort userContextPort,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository) {
-        this.userContextPort = userContextPort;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-    }
 
     public QuestionStatusTransition.Actor resolve() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();

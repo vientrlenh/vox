@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.schooldirectory;
 import com.sep.vox.domain.model.school.SchoolDirectory;
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,13 +15,10 @@ import com.sep.vox.domain.mapper.SchoolDirectoryDtoMapper;
 import com.sep.vox.domain.repository.SchoolDirectoryRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewSchoolDirectoryCursorPageUseCase implements IUseCase<ViewSchoolDirectoryCursorPageQuery, CursorPage<SchoolDirectoryDto>> {
 
     private final SchoolDirectoryRepository schoolDirectoryRepository;
-
-    public ViewSchoolDirectoryCursorPageUseCase(SchoolDirectoryRepository schoolDirectoryRepository) {
-        this.schoolDirectoryRepository = schoolDirectoryRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

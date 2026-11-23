@@ -21,6 +21,7 @@ import com.sep.vox.domain.repository.*;
 import com.sep.vox.domain.valueobject.rubric.RubricCriterionExample;
 import com.sep.vox.domain.valueobject.rubric.RubricCriterionExamples;
 import com.sep.vox.application.exception.DataConflictException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +33,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class CreateSchoolRubricCriterionUseCase implements IUseCase<CreateSchoolRubricCriteriaCommand, List<UUID>> {
 
     private final RubricCriterionRepository rubricCriterionRepository;
@@ -40,22 +42,7 @@ public class CreateSchoolRubricCriterionUseCase implements IUseCase<CreateSchool
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
     private final SchoolRepository schoolRepository;
-    private final SchoolUserRepository schoolUserRepository; // BỔ SUNG
-
-    public CreateSchoolRubricCriterionUseCase(
-            RubricCriterionRepository rubricCriterionRepository,
-            RubricVersionRepository rubricVersionRepository,
-            RubricRepository rubricRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort, SchoolRepository schoolRepository, SchoolUserRepository schoolUserRepository) {
-        this.rubricCriterionRepository = rubricCriterionRepository;
-        this.rubricVersionRepository = rubricVersionRepository;
-        this.rubricRepository = rubricRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-        this.schoolRepository = schoolRepository;
-        this.schoolUserRepository = schoolUserRepository;
-    }
+    private final SchoolUserRepository schoolUserRepository; // Added
 
     @Override
     @Transactional

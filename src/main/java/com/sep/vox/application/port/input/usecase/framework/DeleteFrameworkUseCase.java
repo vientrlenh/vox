@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -10,15 +11,11 @@ import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
 
 @Service
+@RequiredArgsConstructor
 public class DeleteFrameworkUseCase implements IUseCase<DeleteFrameworkCommand, Void> {
 
     private final FrameworkRepository frameworkRepository;
     private final FrameworkVersionRepository frameworkVersionRepository;
-
-    public DeleteFrameworkUseCase(FrameworkRepository frameworkRepository, FrameworkVersionRepository frameworkVersionRepository) {
-        this.frameworkRepository = frameworkRepository;
-        this.frameworkVersionRepository = frameworkVersionRepository;
-    }
 
     @Override
     @Transactional

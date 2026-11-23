@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,6 +48,7 @@ import com.sep.vox.domain.repository.AssessmentRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTestBlueprintCommand, AssessmentDto> {
 
     private static final BigDecimal WEIGHT_TOLERANCE = new BigDecimal("0.01");
@@ -65,37 +67,6 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
     private final AssessmentTimeQuotaGuardService assessmentTimeQuotaGuardService;
     private final RecalculateAssessmentTimeDurationService recalculateAssessmentTimeDurationService;
     private final UserContextPort userContextPort;
-
-    public ChangeClassTestBlueprintUseCase(
-            AssessmentRepository assessmentRepository,
-            AssessmentMemberRepository assessmentMemberRepository,
-            AssessmentBlueprintRepository assessmentBlueprintRepository,
-            AssessmentBlueprintVersionRepository assessmentBlueprintVersionRepository,
-            AssessmentBlueprintSectionRepository assessmentBlueprintSectionRepository,
-            AssessmentBlueprintSlotRepository assessmentBlueprintSlotRepository,
-            AssessmentPaperRepository assessmentPaperRepository,
-            AssessmentPaperSectionRepository assessmentPaperSectionRepository,
-            AssessmentPaperItemRepository assessmentPaperItemRepository,
-            QuestionRepository questionRepository,
-            AssessmentQuestionSecureLockService assessmentQuestionSecureLockService,
-            AssessmentTimeQuotaGuardService assessmentTimeQuotaGuardService,
-            RecalculateAssessmentTimeDurationService recalculateAssessmentTimeDurationService,
-            UserContextPort userContextPort) {
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentMemberRepository = assessmentMemberRepository;
-        this.assessmentBlueprintRepository = assessmentBlueprintRepository;
-        this.assessmentBlueprintVersionRepository = assessmentBlueprintVersionRepository;
-        this.assessmentBlueprintSectionRepository = assessmentBlueprintSectionRepository;
-        this.assessmentBlueprintSlotRepository = assessmentBlueprintSlotRepository;
-        this.assessmentPaperRepository = assessmentPaperRepository;
-        this.assessmentPaperSectionRepository = assessmentPaperSectionRepository;
-        this.assessmentPaperItemRepository = assessmentPaperItemRepository;
-        this.questionRepository = questionRepository;
-        this.assessmentQuestionSecureLockService = assessmentQuestionSecureLockService;
-        this.assessmentTimeQuotaGuardService = assessmentTimeQuotaGuardService;
-        this.recalculateAssessmentTimeDurationService = recalculateAssessmentTimeDurationService;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

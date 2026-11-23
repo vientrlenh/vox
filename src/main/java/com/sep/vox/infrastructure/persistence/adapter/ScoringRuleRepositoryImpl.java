@@ -4,6 +4,7 @@ import com.sep.vox.infrastructure.persistence.entity.scoringrule.ScoringRuleJpaE
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
@@ -17,13 +18,10 @@ import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataScoringRuleRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class ScoringRuleRepositoryImpl implements ScoringRuleRepository {
 
     private final SpringDataScoringRuleRepository springDataScoringRuleRepository;
-
-    public ScoringRuleRepositoryImpl(SpringDataScoringRuleRepository springDataScoringRuleRepository) {
-        this.springDataScoringRuleRepository = springDataScoringRuleRepository;
-    }
 
     @Override
     public Optional<ScoringRule> findById(UUID id) {

@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
@@ -19,13 +20,10 @@ import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataRegisterFormRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class RegisterFormRepositoryImpl implements RegisterFormRepository {
 
     private final SpringDataRegisterFormRepository springDataRegisterFormRepository;
-
-    public RegisterFormRepositoryImpl(SpringDataRegisterFormRepository springDataRegisterFormRepository) {
-        this.springDataRegisterFormRepository = springDataRegisterFormRepository;
-    }
 
     @Override
     public RegisterForm save(RegisterForm rf) {

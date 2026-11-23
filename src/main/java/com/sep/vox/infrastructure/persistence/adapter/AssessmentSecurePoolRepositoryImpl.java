@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.assessment.AssessmentSecurePool;
@@ -14,13 +15,10 @@ import com.sep.vox.infrastructure.persistence.mapper.AssessmentSecurePoolMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataAssessmentSecurePoolRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class AssessmentSecurePoolRepositoryImpl implements AssessmentSecurePoolRepository {
 
     private final SpringDataAssessmentSecurePoolRepository springDataAssessmentSecurePoolRepository;
-
-    public AssessmentSecurePoolRepositoryImpl(SpringDataAssessmentSecurePoolRepository springDataAssessmentSecurePoolRepository) {
-        this.springDataAssessmentSecurePoolRepository = springDataAssessmentSecurePoolRepository;
-    }
 
     @Override
     public AssessmentSecurePool save(AssessmentSecurePool pool) {

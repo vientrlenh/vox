@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Set;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -64,6 +65,7 @@ import com.sep.vox.domain.repository.AssessmentRepository;
  * status would open the way for a violating attempt to come out with a {@code PASSED} result.
  */
 @Service
+@RequiredArgsConstructor
 public class BulkFinalizeAssessmentResultsUseCase
         implements IUseCase<BulkFinalizeAssessmentResultsCommand, Integer> {
 
@@ -72,12 +74,12 @@ public class BulkFinalizeAssessmentResultsUseCase
         "Chốt sổ hàng loạt: công bố theo điểm AI vì chưa có người chấm.";
 
     /**
-     * Tranh chấp điểm đang treo — chặn cả lượt chốt sổ, không cờ nào bỏ qua được.
+     * Pending score dispute: blocks the whole finalize run, and no flag can skip it.
      *
-     * <p>Với dữ liệu nhất quán thì {@code preview.openAppeals()} đã chặn trước rồi (bài chỉ
-     * ở hai trạng thái này khi có đơn đang mở). Kiểm ở đây là lưới cho dữ liệu lệch theo
-     * chiều còn lại — đơn đã đóng mà bài không được kéo về {@code RELEASED} — thứ trước đây
-     * bị {@code FINAL} lấp liếm thay vì để lộ ra.
+     * <p>With consistent data, {@code preview.openAppeals()} already blocks first (a result is
+     * in these two statuses only while an appeal is open). The check here is a safety net for data that
+     * is inconsistent the other way round: an appeal is closed but the result was not moved back to
+     * {@code RELEASED}, which used to be hidden by {@code FINAL} instead of being exposed.
      */
     private static final Set<AssessmentCandidateResultStatus> BLOCKING_STATUSES = EnumSet.of(
         AssessmentCandidateResultStatus.APPEALED,
@@ -89,21 +91,6 @@ public class BulkFinalizeAssessmentResultsUseCase
     private final AssessmentGradingQueryRepository assessmentGradingQueryRepository;
     private final AssessmentGradingAccessService assessmentGradingAccessService;
     private final ResultStatusHistoryRecorder resultStatusHistoryRecorder;
-
-    public BulkFinalizeAssessmentResultsUseCase(
-            AssessmentRepository assessmentRepository,
-            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
-            AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository,
-            AssessmentGradingQueryRepository assessmentGradingQueryRepository,
-            AssessmentGradingAccessService assessmentGradingAccessService,
-            ResultStatusHistoryRecorder resultStatusHistoryRecorder) {
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
-        this.assessmentGradingAssignmentRepository = assessmentGradingAssignmentRepository;
-        this.assessmentGradingQueryRepository = assessmentGradingQueryRepository;
-        this.assessmentGradingAccessService = assessmentGradingAccessService;
-        this.resultStatusHistoryRecorder = resultStatusHistoryRecorder;
-    }
 
     @Override
     @Transactional

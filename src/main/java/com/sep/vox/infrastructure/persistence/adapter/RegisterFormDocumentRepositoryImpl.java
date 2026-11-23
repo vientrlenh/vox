@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.registerform.RegisterFormDocument;
@@ -14,13 +15,10 @@ import com.sep.vox.infrastructure.persistence.mapper.RegisterFormDocumentMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataRegisterFormDocumentRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class RegisterFormDocumentRepositoryImpl implements RegisterFormDocumentRepository {
 
     private final SpringDataRegisterFormDocumentRepository springDataRegisterFormDocumentRepository;
-
-    public RegisterFormDocumentRepositoryImpl(SpringDataRegisterFormDocumentRepository springDataRegisterFormDocumentRepository) {
-        this.springDataRegisterFormDocumentRepository = springDataRegisterFormDocumentRepository;
-    }
 
     @Override
     public Optional<RegisterFormDocument> findById(UUID id) {

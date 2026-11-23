@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.assessmentitemresponse;
 import com.sep.vox.domain.model.assessment.AssessmentItemResponse;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,13 +12,10 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.repository.AssessmentItemResponseRepository;
 
 @Service
+@RequiredArgsConstructor
 public class RecordAnswerTerminationReasonUseCase implements IUseCase<RecordAnswerTerminationReasonUseCase.Command, Void> {
 
     private final AssessmentItemResponseRepository assessmentItemResponseRepository;
-
-    public RecordAnswerTerminationReasonUseCase(AssessmentItemResponseRepository assessmentItemResponseRepository) {
-        this.assessmentItemResponseRepository = assessmentItemResponseRepository;
-    }
 
     @Override
     @Transactional

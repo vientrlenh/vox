@@ -10,8 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -27,9 +26,8 @@ import com.sep.vox.domain.model.personalization.InterestQuizSeedItem;
  * chỉ khác endpoint/payload.
  */
 @Service
+@Slf4j
 public class InterestQuizGenerationClient implements InterestQuizGenerationPort {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(InterestQuizGenerationClient.class);
 
     private final HttpClient httpClient;
     private final JsonMapper jsonMapper;
@@ -70,7 +68,7 @@ public class InterestQuizGenerationClient implements InterestQuizGenerationPort 
                 .build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() / 100 != 2) {
-                LOGGER.warn(
+                log.warn(
                     "Interest quiz generation endpoint returned status {}: {}",
                     response.statusCode(),
                     response.body()
@@ -79,7 +77,7 @@ public class InterestQuizGenerationClient implements InterestQuizGenerationPort 
             }
             return toItems(response.body());
         } catch (Exception exception) {
-            LOGGER.warn(
+            log.warn(
                 "Interest quiz generation endpoint unavailable; no items generated",
                 exception
             );

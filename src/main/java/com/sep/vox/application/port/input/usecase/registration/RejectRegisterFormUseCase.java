@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.registerform.RegisterForm;
 import java.time.Instant;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,21 +22,13 @@ import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.repository.RegisterFormRepository;
 
 @Service
+@RequiredArgsConstructor
 public class RejectRegisterFormUseCase implements IUseCase<RejectRegisterFormCommand, Void>{
 
     private final RegisterFormRepository registerFormRepository;
     private final OutboxRepository outboxRepository;
     private final UserContextPort userContextPort;
     private final JsonSerializationPort jsonSerializationPort;
-
-    public RejectRegisterFormUseCase(RegisterFormRepository registerFormRepository, 
-        OutboxRepository outboxRepository,  
-        UserContextPort userContextPort, JsonSerializationPort jsonSerializationPort) {
-        this.registerFormRepository = registerFormRepository; 
-        this.outboxRepository = outboxRepository;
-        this.userContextPort = userContextPort;
-        this.jsonSerializationPort = jsonSerializationPort;
-    }
 
     @Override
     @Transactional

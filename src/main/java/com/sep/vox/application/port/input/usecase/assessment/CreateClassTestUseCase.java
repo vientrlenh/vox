@@ -8,6 +8,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,6 +55,7 @@ import com.sep.vox.domain.repository.SchoolClassUserRepository;
  * can author several paper variants for the same class test and then assign them to students.
  */
 @Service
+@RequiredArgsConstructor
 public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, CreateClassTestResponse> {
 
     private static final int MAX_CLASS_ROSTER_SIZE = 2000;
@@ -73,39 +75,6 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
     private final SubscriptionPeriodGuardService subscriptionPeriodGuardService;
     private final UserContextPort userContextPort;
     private final SchoolSubscriptionActiveGuardService schoolSubscriptionActiveGuardService;
-
-    public CreateClassTestUseCase(
-            SchoolClassRepository schoolClassRepository,
-            SchoolClassUserRepository schoolClassUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
-            AssessmentRepository assessmentRepository,
-            AssessmentScheduleRepository assessmentScheduleRepository,
-            AssessmentScheduleProctorRepository assessmentScheduleProctorRepository,
-            AssessmentMemberRepository assessmentMemberRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            AssessmentPolicyValidator assessmentPolicyValidator,
-            AssessmentStreamConfigResolver assessmentStreamConfigResolver,
-            AssessmentScheduleRoomValidator assessmentScheduleRoomValidator,
-            AssessmentScheduleProctorConflictValidator assessmentScheduleProctorConflictValidator,
-            SubscriptionPeriodGuardService subscriptionPeriodGuardService,
-            UserContextPort userContextPort,
-            SchoolSubscriptionActiveGuardService schoolSubscriptionActiveGuardService) {
-        this.schoolClassRepository = schoolClassRepository;
-        this.schoolClassUserRepository = schoolClassUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentScheduleRepository = assessmentScheduleRepository;
-        this.assessmentScheduleProctorRepository = assessmentScheduleProctorRepository;
-        this.assessmentMemberRepository = assessmentMemberRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.assessmentPolicyValidator = assessmentPolicyValidator;
-        this.assessmentStreamConfigResolver = assessmentStreamConfigResolver;
-        this.assessmentScheduleRoomValidator = assessmentScheduleRoomValidator;
-        this.assessmentScheduleProctorConflictValidator = assessmentScheduleProctorConflictValidator;
-        this.subscriptionPeriodGuardService = subscriptionPeriodGuardService;
-        this.userContextPort = userContextPort;
-        this.schoolSubscriptionActiveGuardService = schoolSubscriptionActiveGuardService;
-    }
 
     @Override
     @Transactional

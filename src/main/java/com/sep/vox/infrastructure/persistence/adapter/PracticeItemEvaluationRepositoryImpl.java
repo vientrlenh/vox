@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,14 +13,10 @@ import com.sep.vox.infrastructure.persistence.entity.personalization.PracticeIte
 import com.sep.vox.infrastructure.persistence.repository.SpringDataPracticeItemEvaluationRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class PracticeItemEvaluationRepositoryImpl implements PracticeItemEvaluationRepository {
 
     private final SpringDataPracticeItemEvaluationRepository repository;
-
-    public PracticeItemEvaluationRepositoryImpl(
-            SpringDataPracticeItemEvaluationRepository repository) {
-        this.repository = repository;
-    }
 
     @Override
     @Transactional

@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.assessmentappeal;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,18 +15,12 @@ import com.sep.vox.domain.common.PageResult;
 // reviewerName vẫn tồn tại trên type này, nhưng FE (web/mobile) không được hỏi/hiện field đó
 // cho học sinh (xem useStudentAppealQueries.ts / appeal_api.dart).
 @Service
+@RequiredArgsConstructor
 public class ViewMyAppealsUseCase
         implements IUseCase<SearchAssessmentAppealsQuery, PageResult<AppealSummaryInfo>> {
 
     private final AssessmentAppealQueryRepository assessmentAppealQueryRepository;
     private final UserContextPort userContextPort;
-
-    public ViewMyAppealsUseCase(
-            AssessmentAppealQueryRepository assessmentAppealQueryRepository,
-            UserContextPort userContextPort) {
-        this.assessmentAppealQueryRepository = assessmentAppealQueryRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional(readOnly = true)

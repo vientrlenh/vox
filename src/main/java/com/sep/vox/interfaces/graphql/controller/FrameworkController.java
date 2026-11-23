@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+import lombok.RequiredArgsConstructor;
 import org.dataloader.DataLoader;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
@@ -57,6 +58,7 @@ import com.sep.vox.interfaces.graphql.mapper.UpdateFrameworkVersionCommandMapper
 import com.sep.vox.interfaces.shared.PageArguments;
 
 @Controller("graphqlFrameworkController")
+@RequiredArgsConstructor
 public class FrameworkController {
 
     private final ViewFrameworksUseCase viewFrameworksUseCase;
@@ -73,37 +75,6 @@ public class FrameworkController {
     private final ViewActiveFrameworksUseCase viewActiveFrameworksUseCase;
     private final ViewSchoolFrameworkVersionsUseCase viewSchoolFrameworkVersionsUseCase;
     private final ViewSchoolFrameworkVersionDetailsUseCase viewSchoolFrameworkVersionDetailsUseCase;
-
-    public FrameworkController(
-            ViewFrameworksUseCase viewFrameworksUseCase,
-            ViewFrameworkDetailsUseCase viewFrameworkDetailsUseCase,
-            ViewFrameworkVersionsUseCase viewFrameworkVersionsUseCase,
-            ViewFrameworkVersionDetailsUseCase viewFrameworkVersionDetailsUseCase,
-            UpdateFrameworkVersionUseCase updateFrameworkVersionUseCase,
-            UpdateFrameworkCriterionUseCase updateFrameworkCriterionUseCase,
-            UpdateFrameworkCriterionBandUseCase updateFrameworkCriterionBandUseCase,
-            UpdateFrameworkResultBandUseCase updateFrameworkResultBandUseCase,
-            ViewFrameworkCriteriaUseCase viewFrameworkCriteriaUseCase,
-            ViewFrameworkCriterionDetailsUseCase viewFrameworkCriterionDetailsUseCase,
-            ViewSchoolFrameworkCriteriaUseCase viewSchoolFrameworkCriteriaUseCase,
-            ViewActiveFrameworksUseCase viewActiveFrameworksUseCase,
-            ViewSchoolFrameworkVersionsUseCase viewSchoolFrameworkVersionsUseCase,
-            ViewSchoolFrameworkVersionDetailsUseCase viewSchoolFrameworkVersionDetailsUseCase) {
-        this.viewFrameworksUseCase = viewFrameworksUseCase;
-        this.viewFrameworkDetailsUseCase = viewFrameworkDetailsUseCase;
-        this.viewFrameworkVersionsUseCase = viewFrameworkVersionsUseCase;
-        this.viewFrameworkVersionDetailsUseCase = viewFrameworkVersionDetailsUseCase;
-        this.updateFrameworkVersionUseCase = updateFrameworkVersionUseCase;
-        this.updateFrameworkCriterionUseCase = updateFrameworkCriterionUseCase;
-        this.updateFrameworkCriterionBandUseCase = updateFrameworkCriterionBandUseCase;
-        this.updateFrameworkResultBandUseCase = updateFrameworkResultBandUseCase;
-        this.viewFrameworkCriteriaUseCase = viewFrameworkCriteriaUseCase;
-        this.viewFrameworkCriterionDetailsUseCase = viewFrameworkCriterionDetailsUseCase;
-        this.viewSchoolFrameworkCriteriaUseCase = viewSchoolFrameworkCriteriaUseCase;
-        this.viewActiveFrameworksUseCase = viewActiveFrameworksUseCase;
-        this.viewSchoolFrameworkVersionsUseCase = viewSchoolFrameworkVersionsUseCase;
-        this.viewSchoolFrameworkVersionDetailsUseCase = viewSchoolFrameworkVersionDetailsUseCase;
-    }
 
     @QueryMapping(name = "frameworks")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")

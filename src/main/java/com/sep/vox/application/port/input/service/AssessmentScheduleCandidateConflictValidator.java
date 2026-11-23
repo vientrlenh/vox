@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.DuplicatedException;
@@ -42,20 +43,14 @@ import com.sep.vox.domain.repository.UserRepository;
  * replaced when rearranging, the source session when moving, the session itself when changing its time).
  */
 @Service
+@RequiredArgsConstructor
 public class AssessmentScheduleCandidateConflictValidator {
 
-    /** Quá số này thì message nêu tên đại diện rồi tóm tắt phần còn lại, tránh dài vô hạn. */
+    /** Above this count the message names a few representatives and summarizes the rest, so it does not grow without bound. */
     private static final int MAX_NAMES_IN_MESSAGE = 5;
 
     private final AssessmentCandidateRepository assessmentCandidateRepository;
     private final UserRepository userRepository;
-
-    public AssessmentScheduleCandidateConflictValidator(
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            UserRepository userRepository) {
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.userRepository = userRepository;
-    }
 
     /**
      * Mọi thí sinh trong {@code candidates} phải rảnh trong khoảng [start, end). Ca hiện tại của

@@ -3,8 +3,8 @@ package com.sep.vox.infrastructure.worker;
 import java.time.Duration;
 import java.time.Instant;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -28,17 +28,14 @@ import org.springframework.stereotype.Component;
  * vô hạn nếu có dòng cứ quay lại.
  */
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class GradingDeadlineReminderJob {
 
-    private static final Logger log = LoggerFactory.getLogger(GradingDeadlineReminderJob.class);
     private static final int REMIND_BEFORE_HOURS = 24;
     private static final int MAX_PASSES_PER_RUN = 20;
 
     private final GradingDeadlineReminderBatch gradingDeadlineReminderBatch;
-
-    public GradingDeadlineReminderJob(GradingDeadlineReminderBatch gradingDeadlineReminderBatch) {
-        this.gradingDeadlineReminderBatch = gradingDeadlineReminderBatch;
-    }
 
     @Scheduled(fixedDelay = 900000)
     public void remind() {

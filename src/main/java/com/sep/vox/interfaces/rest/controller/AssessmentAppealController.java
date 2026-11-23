@@ -6,6 +6,7 @@ import com.sep.vox.application.port.input.command.CreateAssessmentAppealCommand;
 import com.sep.vox.application.port.input.command.RejectAssessmentAppealCommand;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -41,6 +42,7 @@ import jakarta.validation.Valid;
  */
 @RestController
 @RequestMapping("/api/v1/assessment-appeals")
+@RequiredArgsConstructor
 public class AssessmentAppealController {
 
     private final CreateAssessmentAppealUseCase createAssessmentAppealUseCase;
@@ -49,21 +51,6 @@ public class AssessmentAppealController {
     private final RejectAssessmentAppealUseCase rejectAssessmentAppealUseCase;
     private final AssignAssessmentAppealReviewerUseCase assignAssessmentAppealReviewerUseCase;
     private final WithdrawAssessmentAppealUseCase withdrawAssessmentAppealUseCase;
-
-    public AssessmentAppealController(
-            CreateAssessmentAppealUseCase createAssessmentAppealUseCase,
-            ApproveAssessmentAppealUseCase approveAssessmentAppealUseCase,
-            ApproveAndClaimAssessmentAppealUseCase approveAndClaimAssessmentAppealUseCase,
-            RejectAssessmentAppealUseCase rejectAssessmentAppealUseCase,
-            AssignAssessmentAppealReviewerUseCase assignAssessmentAppealReviewerUseCase,
-            WithdrawAssessmentAppealUseCase withdrawAssessmentAppealUseCase) {
-        this.createAssessmentAppealUseCase = createAssessmentAppealUseCase;
-        this.approveAssessmentAppealUseCase = approveAssessmentAppealUseCase;
-        this.approveAndClaimAssessmentAppealUseCase = approveAndClaimAssessmentAppealUseCase;
-        this.rejectAssessmentAppealUseCase = rejectAssessmentAppealUseCase;
-        this.assignAssessmentAppealReviewerUseCase = assignAssessmentAppealReviewerUseCase;
-        this.withdrawAssessmentAppealUseCase = withdrawAssessmentAppealUseCase;
-    }
 
     @Operation(summary = "Học sinh nộp đơn phúc khảo cho một hoặc nhiều phần thi")
     @PostMapping

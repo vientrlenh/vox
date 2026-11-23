@@ -2,8 +2,8 @@ package com.sep.vox.infrastructure.worker;
 
 import java.time.Instant;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -17,21 +17,17 @@ import com.sep.vox.application.port.input.service.AssessmentScheduleClosureServi
  * centralized assessments, while the session sweep must run for both kinds.
  */
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class AssessmentScheduleAutoCompleteJob {
 
-    private static final Logger log = LoggerFactory.getLogger(AssessmentScheduleAutoCompleteJob.class);
-
     /**
-     * Trần mỗi lượt. Lần chạy đầu sau khi triển khai phải quét cả tồn đọng lịch sử (mọi ca đã hết
-     * giờ từ trước vẫn đang nằm ở PUBLISHED), nên rải dần thay vì nuốt một phát.
+     * Ceiling per run. The first run after deployment has to sweep the historical backlog too (every session whose time
+     * ran out earlier is still in PUBLISHED), so it is spread out gradually instead of swallowed in one go.
      */
     private static final int BATCH_SIZE = 200;
 
     private final AssessmentScheduleClosureService assessmentScheduleClosureService;
-
-    public AssessmentScheduleAutoCompleteJob(AssessmentScheduleClosureService assessmentScheduleClosureService) {
-        this.assessmentScheduleClosureService = assessmentScheduleClosureService;
-    }
 
     @Scheduled(fixedDelay = 60000)
     public void run() {

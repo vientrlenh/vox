@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import com.sep.vox.application.exception.DataConflictException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.common.StringNormalization;
@@ -27,6 +28,7 @@ import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
 
 @Service
+@RequiredArgsConstructor
 public class SchoolClassImportCommitHandler implements ImportCommitHandler {
 
     private static final Set<String> SUPPORTED_FIELDS = Set.of("code", "name", "languageCode", "schoolGradeCode", "description");
@@ -36,19 +38,6 @@ public class SchoolClassImportCommitHandler implements ImportCommitHandler {
     private final SchoolGradeRepository schoolGradeRepository;
     private final JsonSerializationPort jsonSerializationPort;
     private final RequiresNewTransactionPort requiresNewTransactionPort;
-
-    public SchoolClassImportCommitHandler(
-            SchoolClassRepository schoolClassRepository,
-            SupportedLanguageRepository supportedLanguageRepository,
-            SchoolGradeRepository schoolGradeRepository,
-            JsonSerializationPort jsonSerializationPort,
-            RequiresNewTransactionPort requiresNewTransactionPort) {
-        this.schoolClassRepository = schoolClassRepository;
-        this.supportedLanguageRepository = supportedLanguageRepository;
-        this.schoolGradeRepository = schoolGradeRepository;
-        this.jsonSerializationPort = jsonSerializationPort;
-        this.requiresNewTransactionPort = requiresNewTransactionPort;
-    }
 
     @Override
     public ImportType supportedType() {

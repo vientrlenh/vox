@@ -2,8 +2,7 @@ package com.sep.vox.infrastructure.config;
 
 import java.util.List;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -15,9 +14,8 @@ import com.sep.vox.infrastructure.properties.OutboxTopicProperties;
 
 @Configuration
 @EnableConfigurationProperties(OutboxTopicProperties.class)
+@Slf4j
 public class OutboxPropertiesConfig {
-    
-    private static final Logger LOGGER = LoggerFactory.getLogger(OutboxPropertiesConfig.class);
 
     @Bean
     InitializingBean outboxTopicsValidator(OutboxTopicProperties properties) {
@@ -34,7 +32,7 @@ public class OutboxPropertiesConfig {
                 throw new InfrastructureException("Thiếu app.outbox.topics cho eventType: " + missing);
             }
 
-            topics.forEach((eventType, topic) -> LOGGER.info("Outbox routing: {} -> {}", eventType, topic));
+            topics.forEach((eventType, topic) -> log.info("Outbox routing: {} -> {}", eventType, topic));
         };
     }
 }

@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.assessmentschedule;
 import com.sep.vox.domain.model.assessment.AssessmentSchedule;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,7 @@ import com.sep.vox.domain.repository.AssessmentScheduleRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class DeleteAssessmentScheduleUseCase implements IUseCase<DeleteAssessmentScheduleCommand, UUID> {
 
     private final AssessmentRepository assessmentRepository;
@@ -33,25 +35,6 @@ public class DeleteAssessmentScheduleUseCase implements IUseCase<DeleteAssessmen
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
-
-    public DeleteAssessmentScheduleUseCase(
-            AssessmentRepository assessmentRepository,
-            AssessmentScheduleRepository assessmentScheduleRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            AssessmentScheduleProctorRepository assessmentScheduleProctorRepository,
-            AssessmentMemberRepository assessmentMemberRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
-            UserContextPort userContextPort) {
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentScheduleRepository = assessmentScheduleRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.assessmentScheduleProctorRepository = assessmentScheduleProctorRepository;
-        this.assessmentMemberRepository = assessmentMemberRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

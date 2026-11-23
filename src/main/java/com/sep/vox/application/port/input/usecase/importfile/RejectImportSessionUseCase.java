@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class RejectImportSessionUseCase implements IUseCase<RejectImportSessionCommand, RejectImportSessionResponse> {
 
     private final ImportSessionRepository importSessionRepository;
@@ -32,19 +34,6 @@ public class RejectImportSessionUseCase implements IUseCase<RejectImportSessionC
     private final SchoolRepository schoolRepository;
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository;
-
-    public RejectImportSessionUseCase(
-            ImportSessionRepository importSessionRepository,
-            UserRepository userRepository,
-            SchoolRepository schoolRepository,
-            UserContextPort userContextPort,
-            SchoolUserRepository schoolUserRepository) {
-        this.importSessionRepository = importSessionRepository;
-        this.userRepository = userRepository;
-        this.schoolRepository = schoolRepository;
-        this.userContextPort = userContextPort;
-        this.schoolUserRepository = schoolUserRepository;
-    }
 
     @Override
     @Transactional

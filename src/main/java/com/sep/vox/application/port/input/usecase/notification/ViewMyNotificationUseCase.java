@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.notification;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,17 +24,11 @@ import com.sep.vox.domain.repository.NotificationRepository;
  * "id không tồn tại" với "id của người khác" -- kẻ dò id không học được gì từ phản hồi.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewMyNotificationUseCase implements IUseCase<ViewMyNotificationQuery, NotificationDto>{
 
     private final NotificationRepository notificationRepository;
     private final UserContextPort userContextPort;
-
-    public ViewMyNotificationUseCase(
-            NotificationRepository notificationRepository,
-            UserContextPort userContextPort) {
-        this.notificationRepository = notificationRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Transactional(readOnly = true)
     public NotificationDto execute(ViewMyNotificationQuery input) {

@@ -3,8 +3,8 @@ package com.sep.vox.application.port.input.service;
 import java.util.List;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,26 +47,14 @@ import com.sep.vox.domain.repository.StudentQuestionExposureRepository;
  * ghi điểm quan tâm hay đóng phiên: phiên đã đóng là sự thật, còn đây chỉ là trả lại kho.
  */
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class UndeliveredQuestionCleanupService {
-
-    private static final Logger LOGGER =
-        LoggerFactory.getLogger(UndeliveredQuestionCleanupService.class);
 
     private final PracticePaperItemRepository paperItemRepository;
     private final PracticeItemResponseRepository practiceItemResponseRepository;
     private final StudentQuestionExposureRepository studentQuestionExposureRepository;
     private final PracticeQuestionRepository practiceQuestionRepository;
-
-    public UndeliveredQuestionCleanupService(
-            PracticePaperItemRepository paperItemRepository,
-            PracticeItemResponseRepository practiceItemResponseRepository,
-            StudentQuestionExposureRepository studentQuestionExposureRepository,
-            PracticeQuestionRepository practiceQuestionRepository) {
-        this.paperItemRepository = paperItemRepository;
-        this.practiceItemResponseRepository = practiceItemResponseRepository;
-        this.studentQuestionExposureRepository = studentQuestionExposureRepository;
-        this.practiceQuestionRepository = practiceQuestionRepository;
-    }
 
     /**
      * @param paperId đề của phiên vừa đóng; {@code null} thì không có gì để dọn.
@@ -97,7 +85,7 @@ public class UndeliveredQuestionCleanupService {
         }
         studentQuestionExposureRepository.removeExposure(studentId, lastQuestionId);
         practiceQuestionRepository.decrementUsageCount(lastQuestionId);
-        LOGGER.info(
+        log.info(
             "Trả câu {} về kho: đã chọn cho phiên {} nhưng học sinh chưa trả lời.",
             lastQuestionId,
             sessionId

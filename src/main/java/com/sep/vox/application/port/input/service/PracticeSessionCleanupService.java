@@ -4,31 +4,21 @@ import com.sep.vox.domain.model.personalization.PracticeSession;
 import java.time.Instant;
 
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.domain.repository.PracticeSessionRepository;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class PracticeSessionCleanupService {
-
-    private static final Logger LOGGER =
-        LoggerFactory.getLogger(PracticeSessionCleanupService.class);
 
     private final PracticeSessionRepository practiceSessionRepository;
     private final PracticeGradingFlushService gradingFlushService;
     private final PracticeSessionClosedHandler sessionClosedHandler;
-
-    public PracticeSessionCleanupService(
-            PracticeSessionRepository practiceSessionRepository,
-            PracticeGradingFlushService gradingFlushService,
-            PracticeSessionClosedHandler sessionClosedHandler) {
-        this.practiceSessionRepository = practiceSessionRepository;
-        this.gradingFlushService = gradingFlushService;
-        this.sessionClosedHandler = sessionClosedHandler;
-    }
 
     @Transactional
     public int cleanupStaleSessions(Instant staleBefore) {
@@ -79,7 +69,7 @@ public class PracticeSessionCleanupService {
                 // trong thì vô tác dụng: Spring vẫn ném UnexpectedRollbackException lúc commit
                 // vì transaction đã bị đánh dấu rollback-only. Đo được thật -- cả job chết,
                 // không phiên nào được đóng, chúng nằm IN_PROGRESS qua nhiều lượt chạy.
-                LOGGER.warn("Xử lý sau khi đóng phiên {} thất bại.", session.getId(), exception);
+                log.warn("Xử lý sau khi đóng phiên {} thất bại.", session.getId(), exception);
             }
         }
         return stale.size();

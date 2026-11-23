@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +32,7 @@ import com.sep.vox.domain.repository.AssessmentScheduleRepository;
 import com.sep.vox.domain.service.assessment.AssessmentEditingGuard;
 
 @Service
+@RequiredArgsConstructor
 public class AutoFillAssessmentCandidatesUseCase
         implements IUseCase<AutoFillAssessmentCandidatesCommand, List<AssessmentCandidateDto>> {
 
@@ -43,21 +45,6 @@ public class AutoFillAssessmentCandidatesUseCase
     private final AssessmentPaperAutoAssigner assessmentPaperAutoAssigner;
     private final AssessmentScheduleManageAccessService assessmentScheduleManageAccessService;
     private final AssessmentScheduleCandidateConflictValidator assessmentScheduleCandidateConflictValidator;
-
-    public AutoFillAssessmentCandidatesUseCase(
-            AssessmentRepository assessmentRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            AssessmentScheduleRepository assessmentScheduleRepository,
-            AssessmentPaperAutoAssigner assessmentPaperAutoAssigner,
-            AssessmentScheduleManageAccessService assessmentScheduleManageAccessService,
-            AssessmentScheduleCandidateConflictValidator assessmentScheduleCandidateConflictValidator) {
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.assessmentScheduleRepository = assessmentScheduleRepository;
-        this.assessmentPaperAutoAssigner = assessmentPaperAutoAssigner;
-        this.assessmentScheduleManageAccessService = assessmentScheduleManageAccessService;
-        this.assessmentScheduleCandidateConflictValidator = assessmentScheduleCandidateConflictValidator;
-    }
 
     @Override
     @Transactional

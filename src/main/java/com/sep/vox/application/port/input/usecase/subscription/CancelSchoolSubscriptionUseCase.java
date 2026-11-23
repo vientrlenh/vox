@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +34,7 @@ import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
  * làm. Hiện tại cột này chỉ được ghi một lần và không bao giờ xóa, nên bản thân nó đã là lịch sử.
  */
 @Service
+@RequiredArgsConstructor
 public class CancelSchoolSubscriptionUseCase implements IUseCase<Void, UUID> {
 
     private static final DateTimeFormatter DISPLAY_DATE =
@@ -40,13 +42,6 @@ public class CancelSchoolSubscriptionUseCase implements IUseCase<Void, UUID> {
 
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final UserContextPort userContextPort;
-
-    public CancelSchoolSubscriptionUseCase(
-            SchoolSubscriptionRepository schoolSubscriptionRepository,
-            UserContextPort userContextPort) {
-        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

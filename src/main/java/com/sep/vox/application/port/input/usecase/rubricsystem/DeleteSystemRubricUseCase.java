@@ -17,6 +17,7 @@ import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.RubricResultBandRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,29 +25,15 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class DeleteSystemRubricUseCase implements IUseCase<DeleteSystemRubricCommand, Void> {
 
     private final RubricRepository rubricRepository;
     private final RubricVersionRepository rubricVersionRepository;
-    private final RubricCriterionRepository rubricCriterionRepository; // BỔ SUNG
-    private final RubricResultBandRepository rubricResultBandRepository; // BỔ SUNG
+    private final RubricCriterionRepository rubricCriterionRepository; // Added
+    private final RubricResultBandRepository rubricResultBandRepository; // Added
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
-
-    public DeleteSystemRubricUseCase(
-            RubricRepository rubricRepository,
-            RubricVersionRepository rubricVersionRepository,
-            RubricCriterionRepository rubricCriterionRepository,
-            RubricResultBandRepository rubricResultBandRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort) {
-        this.rubricRepository = rubricRepository;
-        this.rubricVersionRepository = rubricVersionRepository;
-        this.rubricCriterionRepository = rubricCriterionRepository;
-        this.rubricResultBandRepository = rubricResultBandRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

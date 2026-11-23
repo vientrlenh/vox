@@ -3,6 +3,7 @@ package com.sep.vox.infrastructure.persistence.adapter;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.assessment.AssessmentItemCriterionScore;
@@ -11,14 +12,10 @@ import com.sep.vox.infrastructure.persistence.mapper.AssessmentItemCriterionScor
 import com.sep.vox.infrastructure.persistence.repository.SpringDataAssessmentItemCriterionScoreRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class AssessmentItemCriterionScoreRepositoryImpl implements AssessmentItemCriterionScoreRepository {
 
     private final SpringDataAssessmentItemCriterionScoreRepository springDataAssessmentItemCriterionScoreRepository;
-
-    public AssessmentItemCriterionScoreRepositoryImpl(
-            SpringDataAssessmentItemCriterionScoreRepository springDataAssessmentItemCriterionScoreRepository) {
-        this.springDataAssessmentItemCriterionScoreRepository = springDataAssessmentItemCriterionScoreRepository;
-    }
 
     @Override
     public List<AssessmentItemCriterionScore> saveAll(List<AssessmentItemCriterionScore> scores) {

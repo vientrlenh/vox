@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 
@@ -17,13 +18,10 @@ import com.sep.vox.infrastructure.persistence.mapper.AssessmentScheduleProctorMa
 import com.sep.vox.infrastructure.persistence.repository.SpringDataAssessmentScheduleProctorRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class AssessmentScheduleProctorRepositoryImpl implements AssessmentScheduleProctorRepository {
 
     private final SpringDataAssessmentScheduleProctorRepository springDataAssessmentScheduleProctorRepository;
-
-    public AssessmentScheduleProctorRepositoryImpl(SpringDataAssessmentScheduleProctorRepository springDataAssessmentScheduleProctorRepository) {
-        this.springDataAssessmentScheduleProctorRepository = springDataAssessmentScheduleProctorRepository;
-    }
 
     @Override
     public AssessmentScheduleProctor save(AssessmentScheduleProctor proctor) {

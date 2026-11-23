@@ -13,29 +13,20 @@ import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.GradeLevelRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class DeleteGradeLevelUseCase implements IUseCase<DeleteGradeLevelCommand, Void> {
 
     private final GradeLevelRepository gradeLevelRepository;
     private final SchoolGradeRepository schoolGradeRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
-
-    public DeleteGradeLevelUseCase(
-            GradeLevelRepository gradeLevelRepository,
-            SchoolGradeRepository schoolGradeRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort) {
-        this.gradeLevelRepository = gradeLevelRepository;
-        this.schoolGradeRepository = schoolGradeRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.Map;
 
 import java.util.concurrent.CompletableFuture;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -25,28 +25,22 @@ import com.sep.vox.domain.repository.OutboxRepository;
  */
 @Component
 @ConditionalOnProperty(name = "app.outbox.scheduler.enabled", havingValue = "true", matchIfMissing = true)
+@RequiredArgsConstructor
+@Slf4j
 public class OutboxEventScheduler {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(OutboxEventScheduler.class);
     private static final int BATCH_SIZE = 100;
 
     private final EventMessagePublisherPort eventMessagePublisherPort;
     private final OutboxRepository outboxRepository;
 
-    public OutboxEventScheduler(
-        EventMessagePublisherPort eventMessagePublisherPort, 
-        OutboxRepository outboxRepository) {
-        this.eventMessagePublisherPort = eventMessagePublisherPort;
-        this.outboxRepository = outboxRepository;
-    }
-    
     @Scheduled(fixedDelay = 1000, scheduler = "outboxTaskScheduler")
     public void publishPendingEvents() {
         List<Outbox> events;
         try {
             events = outboxRepository.claimPendingEvents(BATCH_SIZE);
         } catch (Exception e) {
-            LOGGER.error("Outbox claim failed", e);
+            log.error("Outbox claim failed", e);
             return;
         }
         if (events.isEmpty()) {
@@ -64,7 +58,7 @@ public class OutboxEventScheduler {
                 entry.getValue().join();
                 outboxRepository.markPublished(event.getId(), Instant.now());
             } catch (Exception e) {
-                LOGGER.error("Outbox event publish failed: eventId={}, eventType={}", event.getId(), event.getEventType(), e);
+                log.error("Outbox event publish failed: eventId={}, eventType={}", event.getId(), event.getEventType(), e);
                 outboxRepository.markFailed(event.getId(), describe(e), event.getRetryCount());
             }
         }
@@ -75,10 +69,10 @@ public class OutboxEventScheduler {
         try {
             int released = outboxRepository.releaseExpiredLeases();
             if (released > 0) {
-                LOGGER.warn("Released {} expired outbox events to PENDING", released);
+                log.warn("Released {} expired outbox events to PENDING", released);
             }
         } catch (Exception e) {
-            LOGGER.error("Clean lease outbox failed", e);
+            log.error("Clean lease outbox failed", e);
         }
     }
 

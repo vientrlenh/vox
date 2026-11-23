@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
@@ -18,13 +19,10 @@ import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataAssessmentPolicyRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class AssessmentPolicyRepositoryImpl implements AssessmentPolicyRepository {
 
     private final SpringDataAssessmentPolicyRepository springDataAssessmentPolicyRepository;
-
-    public AssessmentPolicyRepositoryImpl(SpringDataAssessmentPolicyRepository springDataAssessmentPolicyRepository) {
-        this.springDataAssessmentPolicyRepository = springDataAssessmentPolicyRepository;
-    }
 
     @Override
     public Optional<AssessmentPolicy> findById(UUID id) {

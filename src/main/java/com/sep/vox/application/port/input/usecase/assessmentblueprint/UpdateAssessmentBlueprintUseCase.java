@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.assessmentblueprint;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprint;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,23 +22,13 @@ import com.sep.vox.domain.repository.AssessmentRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateAssessmentBlueprintUseCase implements IUseCase<UpdateAssessmentBlueprintCommand, AssessmentBlueprintDto> {
 
     private final AssessmentBlueprintRepository assessmentBlueprintRepository;
     private final AssessmentRepository assessmentRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserContextPort userContextPort;
-
-    public UpdateAssessmentBlueprintUseCase(
-            AssessmentBlueprintRepository assessmentBlueprintRepository,
-            AssessmentRepository assessmentRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserContextPort userContextPort) {
-        this.assessmentBlueprintRepository = assessmentBlueprintRepository;
-        this.assessmentRepository = assessmentRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

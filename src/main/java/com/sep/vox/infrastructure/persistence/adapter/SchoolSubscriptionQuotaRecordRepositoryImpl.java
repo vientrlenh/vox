@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.metering.QuotaType;
@@ -16,13 +17,10 @@ import com.sep.vox.infrastructure.persistence.mapper.SchoolSubscriptionQuotaReco
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolSubscriptionQuotaRecordRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class SchoolSubscriptionQuotaRecordRepositoryImpl implements SchoolSubscriptionQuotaRecordRepository {
 
     private final SpringDataSchoolSubscriptionQuotaRecordRepository springDataSchoolSubscriptionQuotaRecordRepository;
-
-    public SchoolSubscriptionQuotaRecordRepositoryImpl(SpringDataSchoolSubscriptionQuotaRecordRepository springDataSchoolSubscriptionQuotaRecordRepository) {
-        this.springDataSchoolSubscriptionQuotaRecordRepository = springDataSchoolSubscriptionQuotaRecordRepository;
-    }
 
     @Override
     public Optional<SchoolSubscriptionQuotaRecord> findById(UUID id) {

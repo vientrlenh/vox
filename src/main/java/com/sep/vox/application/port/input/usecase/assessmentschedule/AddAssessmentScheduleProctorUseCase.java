@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.assessmentschedule;
 
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentSchedule;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,7 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.service.assessment.AssessmentEditingGuard;
 
 @Service
+@RequiredArgsConstructor
 public class AddAssessmentScheduleProctorUseCase implements IUseCase<AddAssessmentScheduleProctorCommand, AssessmentScheduleProctorDto> {
 
     private final AssessmentRepository assessmentRepository;
@@ -32,23 +34,6 @@ public class AddAssessmentScheduleProctorUseCase implements IUseCase<AddAssessme
     private final AssessmentScheduleManageAccessService assessmentScheduleManageAccessService;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
-
-    public AddAssessmentScheduleProctorUseCase(
-            AssessmentRepository assessmentRepository,
-            AssessmentScheduleRepository assessmentScheduleRepository,
-            AssessmentScheduleProctorRepository assessmentScheduleProctorRepository,
-            AssessmentScheduleProctorConflictValidator assessmentScheduleProctorConflictValidator,
-            AssessmentScheduleManageAccessService assessmentScheduleManageAccessService,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository) {
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentScheduleRepository = assessmentScheduleRepository;
-        this.assessmentScheduleProctorRepository = assessmentScheduleProctorRepository;
-        this.assessmentScheduleProctorConflictValidator = assessmentScheduleProctorConflictValidator;
-        this.assessmentScheduleManageAccessService = assessmentScheduleManageAccessService;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-    }
 
     @Override
     @Transactional

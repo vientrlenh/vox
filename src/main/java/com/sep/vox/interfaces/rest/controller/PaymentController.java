@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.rest.controller;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,13 +19,10 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/payments")
+@RequiredArgsConstructor
 public class PaymentController {
 
     private final CreatePaymentCheckoutUrlUseCase createPaymentCheckoutUrlUseCase;
-
-    public PaymentController(CreatePaymentCheckoutUrlUseCase createPaymentCheckoutUrlUseCase) {
-        this.createPaymentCheckoutUrlUseCase = createPaymentCheckoutUrlUseCase;
-    }
 
     /**
      * POST chứ không phải GET dù tên nghe như một phép đọc: mỗi lần gọi sẽ GHI một dòng

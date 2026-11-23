@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +38,7 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
  * đường nào cho một file tự nâng phạm vi của nó.
  */
 @Service
+@RequiredArgsConstructor
 public class PreviewQuestionBankImportFromFileUseCase
         implements IUseCase<PreviewQuestionBankImportFromFileCommand, PreviewImportResponse> {
 
@@ -48,21 +50,6 @@ public class PreviewQuestionBankImportFromFileUseCase
     private final JsonSerializationPort jsonSerializationPort;
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository;
-
-    public PreviewQuestionBankImportFromFileUseCase(
-            FileProcessingPort fileProcessingPort,
-            ImportSessionRepository importSessionRepository,
-            ImportRowRepository importRowRepository,
-            JsonSerializationPort jsonSerializationPort,
-            UserContextPort userContextPort,
-            SchoolUserRepository schoolUserRepository) {
-        this.fileProcessingPort = fileProcessingPort;
-        this.importSessionRepository = importSessionRepository;
-        this.importRowRepository = importRowRepository;
-        this.jsonSerializationPort = jsonSerializationPort;
-        this.userContextPort = userContextPort;
-        this.schoolUserRepository = schoolUserRepository;
-    }
 
     @Override
     @Transactional

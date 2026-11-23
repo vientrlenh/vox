@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.topicsuggestion;
 import java.util.List;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.input.query.ViewSynchronousTopicOffersQuery;
@@ -12,17 +13,11 @@ import com.sep.vox.application.response.input.practiceplanning.PracticePlanningR
 import com.sep.vox.application.port.input.service.TopicSuggestionService;
 
 @Service
+@RequiredArgsConstructor
 public class ViewSynchronousTopicOffersUseCase implements IUseCase<ViewSynchronousTopicOffersQuery, List<PracticeTopicOffer>> {
 
     private final TopicSuggestionService topicSuggestionRepository;
     private final UserContextPort userContextPort;
-
-    public ViewSynchronousTopicOffersUseCase(
-            TopicSuggestionService topicSuggestionRepository,
-            UserContextPort userContextPort) {
-        this.topicSuggestionRepository = topicSuggestionRepository;
-        this.userContextPort = userContextPort;
-    }
 
     /**
      * KHÔNG @Transactional -- và đây là điểm mấu chốt, không phải chuyện bỏ sót.

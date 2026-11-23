@@ -98,8 +98,11 @@ Look at an existing feature end to end before writing a new one (e.g. `CreateAss
   not by  editing `V1`. Outgoing events are written to an outbox table and relayed to Kafka by `OutboxEventScheduler`
   (disabled in tests via `app.outbox.scheduler.enabled=false`). The topic is set with the `@ExternalEventTopic` annotation
   on the event class. Kafka consumers live in `interfaces/kafka/consumer`.
-- **Dependency injection**: constructor injection with explicit constructors (in `application`, `@RequiredArgsConstructor`
-  is also allowed); fields are `private final`.
+- **Dependency injection**: constructor injection with `private final` fields. A constructor that only assigns its
+  parameters is written as `@RequiredArgsConstructor` in `application`, `infrastructure` and `interfaces` (never in
+  `domain`). An explicit constructor stays only when it does more than assign, when a parameter carries `@Value` or
+  `@Qualifier`, or when the class has several constructors. Parameter order is field declaration order.
+- **Logging**: loggers use `@Slf4j` and are named `log`; never write `LoggerFactory.getLogger` (domain has no logger).
 - **Types**: prefer explicit types over `var` in new code.
 - **Models and builders.** Every concrete class in `domain/model` has a nested `Builder` and
   `public static Builder builder()`, and is built with it. There are no all-args constructors; the public no-argument
@@ -174,7 +177,9 @@ Look at an existing feature end to end before writing a new one (e.g. `CreateAss
   `application/` and `infrastructure/worker/`). Its exemption lists name the classes that do not own the full audit set; an
   exemption that stops applying fails the test.
 - `LombokUsageConventionTests` guards the Lombok rule above by scanning source text, because Lombok annotations leave no
-  trace in the bytecode that `LayeredArchitectureTests` reads.
+  trace in the bytecode that `LayeredArchitectureTests` reads. It also fails on any `LoggerFactory.getLogger` under
+  `src/main/java` and on any assignment-only constructor in `application`, `infrastructure` and `interfaces`; the
+  constructor exemption set may only shrink.
 - Tests marked as architecture rules (`src/test/.../architecture`) are guardrails: fix the code, never loosen the rule to get green.
 
 ## Scope

@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.question.QuestionBank;
 import com.sep.vox.domain.model.question.QuestionTopic;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,21 +23,13 @@ import com.sep.vox.domain.repository.QuestionTopicRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateQuestionTopicUseCase implements IUseCase<UpdateQuestionTopicCommand, QuestionTopicDto> {
 
     private final QuestionTopicRepository questionTopicRepository;
     private final QuestionBankRepository questionBankRepository;
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository;
-
-    public UpdateQuestionTopicUseCase(QuestionTopicRepository questionTopicRepository,
-            QuestionBankRepository questionBankRepository, UserContextPort userContextPort,
-            SchoolUserRepository schoolUserRepository) {
-        this.questionTopicRepository = questionTopicRepository;
-        this.questionBankRepository = questionBankRepository;
-        this.userContextPort = userContextPort;
-        this.schoolUserRepository = schoolUserRepository;
-    }
 
     @Override
     @Transactional

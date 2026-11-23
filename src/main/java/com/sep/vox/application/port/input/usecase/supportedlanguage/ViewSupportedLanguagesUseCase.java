@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.supportedlanguage;
 
 import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.common.StringNormalization;
@@ -14,15 +15,11 @@ import com.sep.vox.domain.repository.SupportedLanguageRepository;
 
 
 @Service
+@RequiredArgsConstructor
 public class ViewSupportedLanguagesUseCase implements IUseCase<ViewSupportedLanguagesQuery, PageResult<SupportedLanguageDto>> {
 
     private final SupportedLanguageRepository supportedLanguageRepository;
     private final UserContextPort userContextPort;
-
-    public ViewSupportedLanguagesUseCase(SupportedLanguageRepository supportedLanguageRepository, UserContextPort userContextPort) {
-        this.supportedLanguageRepository = supportedLanguageRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     public PageResult<SupportedLanguageDto> execute(ViewSupportedLanguagesQuery input) {

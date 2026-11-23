@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.domain.model.subscription.SubscriptionPlan;
@@ -25,13 +26,10 @@ import com.sep.vox.domain.repository.SubscriptionPlanQuotaRepository;
  * Để mỗi bên tự kiểm là kiểu hôm nào đó sửa một bên quên bên kia.
  */
 @Service
+@RequiredArgsConstructor
 public class SubscriptionPlanReplacementValidator {
 
     private final SubscriptionPlanQuotaRepository subscriptionPlanQuotaRepository;
-
-    public SubscriptionPlanReplacementValidator(SubscriptionPlanQuotaRepository subscriptionPlanQuotaRepository) {
-        this.subscriptionPlanQuotaRepository = subscriptionPlanQuotaRepository;
-    }
 
     public void requireValidReplacement(SubscriptionPlan replacement, SubscriptionPlan replaced) {
         if (replacement.getId().equals(replaced.getId())) {

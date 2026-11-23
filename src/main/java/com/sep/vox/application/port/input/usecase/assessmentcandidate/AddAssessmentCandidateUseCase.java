@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +29,7 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.service.assessment.AssessmentEditingGuard;
 
 @Service
+@RequiredArgsConstructor
 public class AddAssessmentCandidateUseCase implements IUseCase<AddAssessmentCandidateCommand, AssessmentCandidateDto> {
 
     private final AssessmentRepository assessmentRepository;
@@ -37,23 +39,6 @@ public class AddAssessmentCandidateUseCase implements IUseCase<AddAssessmentCand
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final AssessmentDirectoryAccessService assessmentDirectoryAccessService;
     private final ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService;
-
-    public AddAssessmentCandidateUseCase(
-            AssessmentRepository assessmentRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            SchoolUserRepository schoolUserRepository,
-            SchoolClassUserRepository schoolClassUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
-            AssessmentDirectoryAccessService assessmentDirectoryAccessService,
-            ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService) {
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.schoolClassUserRepository = schoolClassUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-        this.assessmentDirectoryAccessService = assessmentDirectoryAccessService;
-        this.classTestTokenQuotaGuardService = classTestTokenQuotaGuardService;
-    }
 
     @Override
     @Transactional

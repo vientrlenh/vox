@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
 import com.sep.vox.domain.model.framework.FrameworkCriterion;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,14 +14,10 @@ import com.sep.vox.domain.repository.FrameworkCriterionRepository;
 
 // Query gốc cho System Admin: xem chi tiết 1 FrameworkCriterion theo ID, không giới hạn trạng thái Version.
 @Service
+@RequiredArgsConstructor
 public class ViewFrameworkCriterionDetailsUseCase implements IUseCase<ViewFrameworkCriterionDetailsQuery, FrameworkCriterionDto> {
 
     private final FrameworkCriterionRepository frameworkCriterionRepository;
-
-    public ViewFrameworkCriterionDetailsUseCase(
-            FrameworkCriterionRepository frameworkCriterionRepository) {
-        this.frameworkCriterionRepository = frameworkCriterionRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

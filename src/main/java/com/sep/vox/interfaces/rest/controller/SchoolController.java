@@ -25,6 +25,7 @@ import com.sep.vox.application.port.input.command.UpdateSchoolStatusCommand;
 import java.io.IOException;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -136,6 +137,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/api/v1/schools")
+@RequiredArgsConstructor
 public class SchoolController {
 
     private final CreateSchoolClassUseCase createSchoolClassUseCase;
@@ -181,68 +183,6 @@ public class SchoolController {
     private final AcceptSchoolDirectoryImportUseCase acceptSchoolDirectoryImportUseCase;
     private final CreateSchoolDirectoryUseCase createSchoolDirectoryUseCase;
     private final VerifySchoolDirectoryUseCase verifySchoolDirectoryUseCase;
-
-    public SchoolController(CreateSchoolClassUseCase createSchoolClassUseCase, 
-                        CreateSchoolClassUserUseCase createSchoolClassUserUseCase,
-                        BulkCreateSchoolClassUsersUseCase bulkCreateSchoolClassUsersUseCase,
-                        DeleteSchoolClassUseCase deleteSchoolClassUseCase,
-                        DeleteSchoolClassUserUseCase deleteSchoolClassUserUseCase, 
-                        UpdateSchoolClassUserStatusUseCase updateSchoolClassUserStatusUseCase, 
-                        PreviewSchoolClassImportFromFileUseCase previewSchoolClassImportFromFileUseCase, 
-                        AcceptSchoolClassImportUseCase acceptSchoolClassImportUseCase, 
-                        CreateSchoolUserUseCase createSchoolUserUseCase, 
-                        DeleteSchoolUserUseCase deleteSchoolUserUseCase, PreviewSchoolUserImportFromFileUseCase previewSchoolUserImportFromFileUseCase, AcceptSchoolUserImportUseCase acceptSchoolUserImportUseCase, PreviewSchoolClassUserImportFromFileUseCase previewSchoolClassUserImportFromFileUseCase, 
-                        AcceptSchoolClassUserImportUseCase acceptSchoolClassUserImportUseCase, 
-                        CreateSchoolUseCase createSchoolUseCase,
-                        DeleteSchoolUseCase deleteSchoolUseCase,
-                        UpdateSchoolStatusUseCase updateSchoolStatusUseCase,
-                        AddSchoolRoomUseCase addSchoolRoomUseCase,
-                        DeleteSchoolRoomUseCase deleteSchoolRoomUseCase,
-                        PreviewSchoolRoomImportFromFileUseCase previewSchoolRoomImportFromFileUseCase,
-                        AcceptSchoolRoomImportUseCase acceptSchoolRoomImportUseCase,
-                        CreateSchoolGradeUseCase createSchoolGradeUseCase,
-                        DeleteSchoolGradeUseCase deleteSchoolGradeUseCase,
-                        PreviewSchoolGradeImportFromFileUseCase previewSchoolGradeImportFromFileUseCase,
-                        AcceptSchoolGradeImportUseCase acceptSchoolGradeImportUseCase,
-                        CreateGradeLevelUseCase createGradeLevelUseCase,
-                        DeleteGradeLevelUseCase deleteGradeLevelUseCase,
-                        PreviewSchoolDirectoryImportFromFileUseCase previewSchoolDirectoryImportFromFileUseCase,
-                        AcceptSchoolDirectoryImportUseCase acceptSchoolDirectoryImportUseCase, 
-                        CreateSchoolDirectoryUseCase createSchoolDirectoryUseCase,
-                        VerifySchoolDirectoryUseCase verifySchoolDirectoryUseCase
-                    ) {
-        this.createSchoolClassUseCase = createSchoolClassUseCase;
-        this.createSchoolClassUserUseCase = createSchoolClassUserUseCase;
-        this.bulkCreateSchoolClassUsersUseCase = bulkCreateSchoolClassUsersUseCase;
-        this.deleteSchoolClassUseCase = deleteSchoolClassUseCase;
-        this.deleteSchoolClassUserUseCase = deleteSchoolClassUserUseCase;
-        this.updateSchoolClassUserStatusUseCase = updateSchoolClassUserStatusUseCase;
-        this.previewSchoolClassImportFromFileUseCase = previewSchoolClassImportFromFileUseCase;
-        this.acceptSchoolClassImportUseCase = acceptSchoolClassImportUseCase;
-        this.createSchoolUserUseCase = createSchoolUserUseCase;
-        this.deleteSchoolUserUseCase = deleteSchoolUserUseCase;
-        this.previewSchoolUserImportFromFileUseCase = previewSchoolUserImportFromFileUseCase;
-        this.acceptSchoolUserImportUseCase = acceptSchoolUserImportUseCase;
-        this.previewSchoolClassUserImportFromFileUseCase = previewSchoolClassUserImportFromFileUseCase;
-        this.acceptSchoolClassUserImportUseCase = acceptSchoolClassUserImportUseCase;
-        this.createSchoolUseCase = createSchoolUseCase;
-        this.deleteSchoolUseCase = deleteSchoolUseCase;
-        this.updateSchoolStatusUseCase = updateSchoolStatusUseCase;
-        this.addSchoolRoomUseCase = addSchoolRoomUseCase;
-        this.deleteSchoolRoomUseCase = deleteSchoolRoomUseCase;
-        this.previewSchoolRoomImportFromFileUseCase = previewSchoolRoomImportFromFileUseCase;
-        this.acceptSchoolRoomImportUseCase = acceptSchoolRoomImportUseCase;
-        this.createSchoolGradeUseCase = createSchoolGradeUseCase;
-        this.deleteSchoolGradeUseCase = deleteSchoolGradeUseCase;
-        this.previewSchoolGradeImportFromFileUseCase = previewSchoolGradeImportFromFileUseCase;
-        this.acceptSchoolGradeImportUseCase = acceptSchoolGradeImportUseCase;
-        this.createGradeLevelUseCase = createGradeLevelUseCase;
-        this.deleteGradeLevelUseCase = deleteGradeLevelUseCase;
-        this.previewSchoolDirectoryImportFromFileUseCase = previewSchoolDirectoryImportFromFileUseCase;
-        this.acceptSchoolDirectoryImportUseCase = acceptSchoolDirectoryImportUseCase;
-        this.createSchoolDirectoryUseCase = createSchoolDirectoryUseCase;
-        this.verifySchoolDirectoryUseCase = verifySchoolDirectoryUseCase;
-    }
 
     @PostMapping(value = "/directories/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")

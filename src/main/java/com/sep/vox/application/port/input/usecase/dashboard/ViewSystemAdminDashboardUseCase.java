@@ -8,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,13 +36,14 @@ import com.sep.vox.domain.repository.UserRoleRepository;
  * nên "lọc hóa đơn PAID" trước đây là lọc một điều kiện luôn đúng.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewSystemAdminDashboardUseCase implements IUseCase<Void, SystemAdminDashboardSummaryResponse> {
 
     private static final String STUDENT_CODE = "STUDENT";
     private static final String TEACHER_CODE = "TEACHER";
     private static final String SCHOOL_ADMIN_CODE = "SCHOOL_ADMIN";
 
-    /** Số tháng vẽ trên biểu đồ doanh thu, kể cả tháng hiện tại. */
+    /** Number of months drawn on the revenue chart, including the current month. */
     private static final int REVENUE_MONTHS = 24;
 
     private final SchoolRepository schoolRepository;
@@ -51,19 +53,6 @@ public class ViewSystemAdminDashboardUseCase implements IUseCase<Void, SystemAdm
     private final UserRoleRepository userRoleRepository;
     private final FrameworkRepository frameworkRepository;
     private final RubricRepository rubricRepository;
-
-    public ViewSystemAdminDashboardUseCase(SchoolRepository schoolRepository,
-            RegisterFormRepository registerFormRepository, OrderRepository orderRepository,
-            RoleRepository roleRepository, UserRoleRepository userRoleRepository,
-            FrameworkRepository frameworkRepository, RubricRepository rubricRepository) {
-        this.schoolRepository = schoolRepository;
-        this.registerFormRepository = registerFormRepository;
-        this.orderRepository = orderRepository;
-        this.roleRepository = roleRepository;
-        this.userRoleRepository = userRoleRepository;
-        this.frameworkRepository = frameworkRepository;
-        this.rubricRepository = rubricRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

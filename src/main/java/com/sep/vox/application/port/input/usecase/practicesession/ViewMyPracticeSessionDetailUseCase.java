@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.practicesession;
 import com.sep.vox.domain.model.personalization.PracticeSession;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,20 +24,12 @@ import com.sep.vox.domain.repository.PracticeSessionRepository;
  * là hai đường riêng.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewMyPracticeSessionDetailUseCase {
 
     private final PracticeSessionRepository practiceSessionRepository;
     private final PracticeSessionDetailAssemblyService detailAssemblyService;
     private final UserContextPort userContextPort;
-
-    public ViewMyPracticeSessionDetailUseCase(
-            PracticeSessionRepository practiceSessionRepository,
-            PracticeSessionDetailAssemblyService detailAssemblyService,
-            UserContextPort userContextPort) {
-        this.practiceSessionRepository = practiceSessionRepository;
-        this.detailAssemblyService = detailAssemblyService;
-        this.userContextPort = userContextPort;
-    }
 
     @Transactional(readOnly = true)
     public TeacherPracticeSessionDetail execute(UUID sessionId) {

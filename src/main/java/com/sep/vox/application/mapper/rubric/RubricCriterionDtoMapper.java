@@ -2,6 +2,7 @@ package com.sep.vox.application.mapper.rubric;
 
 import java.util.List;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.output.JsonSerializationPort;
@@ -11,13 +12,10 @@ import com.sep.vox.domain.model.rubric.RubricCriterion;
 import com.sep.vox.domain.valueobject.rubric.RubricCriterionExamples;
 
 @Service
+@RequiredArgsConstructor
 public class RubricCriterionDtoMapper {
 
     private final JsonSerializationPort jsonSerializationPort;
-
-    public RubricCriterionDtoMapper(JsonSerializationPort jsonSerializationPort) {
-        this.jsonSerializationPort = jsonSerializationPort;
-    }
 
     public RubricCriterionDto toDto(RubricCriterion criterion) {
         if (criterion == null) {

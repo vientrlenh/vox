@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.service;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.NotFoundException;
@@ -8,15 +9,12 @@ import com.sep.vox.domain.model.subscription.SubscriptionPlan;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 
 @Service
+@RequiredArgsConstructor
 public class SubscriptionPlanResolver {
 
     private static final int MAX_PLAN_REPLACEMENT_HOPS = 10;
     
     private final SubscriptionPlanRepository subscriptionPlanRepository;
-
-    public SubscriptionPlanResolver(SubscriptionPlanRepository subscriptionPlanRepository) {
-        this.subscriptionPlanRepository = subscriptionPlanRepository;
-    }
 
     public SubscriptionPlan resolveActivePlan(SubscriptionPlan plan) {
         SubscriptionPlan current = plan;

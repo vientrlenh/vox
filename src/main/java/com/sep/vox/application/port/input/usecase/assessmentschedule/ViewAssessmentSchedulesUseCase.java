@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.assessmentschedule;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +23,7 @@ import com.sep.vox.domain.repository.AssessmentScheduleProctorRepository;
 import com.sep.vox.domain.repository.AssessmentScheduleRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewAssessmentSchedulesUseCase implements IUseCase<ViewAssessmentSchedulesQuery, List<AssessmentScheduleDto>> {
 
     private final AssessmentRepository assessmentRepository;
@@ -29,19 +31,6 @@ public class ViewAssessmentSchedulesUseCase implements IUseCase<ViewAssessmentSc
     private final AssessmentMemberRepository assessmentMemberRepository;
     private final AssessmentScheduleProctorRepository assessmentScheduleProctorRepository;
     private final UserContextPort userContextPort;
-
-    public ViewAssessmentSchedulesUseCase(
-            AssessmentRepository assessmentRepository,
-            AssessmentScheduleRepository assessmentScheduleRepository,
-            AssessmentMemberRepository assessmentMemberRepository,
-            AssessmentScheduleProctorRepository assessmentScheduleProctorRepository,
-            UserContextPort userContextPort) {
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentScheduleRepository = assessmentScheduleRepository;
-        this.assessmentMemberRepository = assessmentMemberRepository;
-        this.assessmentScheduleProctorRepository = assessmentScheduleProctorRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional(readOnly = true)

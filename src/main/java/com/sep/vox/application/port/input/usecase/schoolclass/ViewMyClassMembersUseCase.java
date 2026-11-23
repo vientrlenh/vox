@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.schoolclass;
 
 import com.sep.vox.domain.model.school.SchoolClassUser;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,17 +14,11 @@ import com.sep.vox.domain.mapper.SchoolClassUserDtoMapper;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewMyClassMembersUseCase implements IUseCase<ViewMyClassMembersQuery, PageResult<SchoolClassUserDto>> {
 
     private final MyClassAccessGuard myClassAccessGuard;
     private final SchoolClassUserRepository schoolClassUserRepository;
-
-    public ViewMyClassMembersUseCase(
-            MyClassAccessGuard myClassAccessGuard,
-            SchoolClassUserRepository schoolClassUserRepository) {
-        this.myClassAccessGuard = myClassAccessGuard;
-        this.schoolClassUserRepository = schoolClassUserRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

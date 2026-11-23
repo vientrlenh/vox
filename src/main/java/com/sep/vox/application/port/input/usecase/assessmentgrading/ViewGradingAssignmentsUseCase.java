@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.assessmentgrading;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,18 +23,12 @@ import com.sep.vox.domain.service.assessment.GradingScopeKind;
  * would break that screen; leaving it empty would mix the two kinds together again like the bug being fixed.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewGradingAssignmentsUseCase
         implements IUseCase<SearchGradingAssignmentsQuery, PageResult<GradingAssignmentRowInfo>> {
 
     private final AssessmentGradingQueryRepository assessmentGradingQueryRepository;
     private final AssessmentGradingAccessService assessmentGradingAccessService;
-
-    public ViewGradingAssignmentsUseCase(
-            AssessmentGradingQueryRepository assessmentGradingQueryRepository,
-            AssessmentGradingAccessService assessmentGradingAccessService) {
-        this.assessmentGradingQueryRepository = assessmentGradingQueryRepository;
-        this.assessmentGradingAccessService = assessmentGradingAccessService;
-    }
 
     @Override
     @Transactional(readOnly = true)

@@ -15,12 +15,14 @@ import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class DeleteSchoolRubricVersionUseCase implements IUseCase<DeleteSchoolRubricVersionCommand, Void> {
 
     private final AssessmentPolicyRepository assessmentPolicyRepository;
@@ -32,26 +34,6 @@ public class DeleteSchoolRubricVersionUseCase implements IUseCase<DeleteSchoolRu
     private final UserContextPort userContextPort;
     private final SchoolRepository schoolRepository;
     private final SchoolUserRepository schoolUserRepository;
-
-    public DeleteSchoolRubricVersionUseCase(AssessmentPolicyRepository assessmentPolicyRepository, 
-            RubricVersionRepository rubricVersionRepository,
-            RubricRepository rubricRepository,
-            RubricCriterionRepository rubricCriterionRepository,
-            RubricResultBandRepository rubricResultBandRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort,
-            SchoolRepository schoolRepository,
-            SchoolUserRepository schoolUserRepository) {
-        this.assessmentPolicyRepository = assessmentPolicyRepository;
-        this.rubricVersionRepository = rubricVersionRepository;
-        this.rubricRepository = rubricRepository;
-        this.rubricCriterionRepository = rubricCriterionRepository;
-        this.rubricResultBandRepository = rubricResultBandRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-        this.schoolRepository = schoolRepository;
-        this.schoolUserRepository = schoolUserRepository;
-    }
 
     @Override
     @Transactional

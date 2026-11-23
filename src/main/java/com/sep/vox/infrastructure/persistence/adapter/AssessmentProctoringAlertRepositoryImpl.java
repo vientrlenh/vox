@@ -3,6 +3,7 @@ package com.sep.vox.infrastructure.persistence.adapter;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 
@@ -12,14 +13,10 @@ import com.sep.vox.infrastructure.persistence.mapper.AssessmentProctoringAlertMa
 import com.sep.vox.infrastructure.persistence.repository.SpringDataAssessmentProctoringAlertRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class AssessmentProctoringAlertRepositoryImpl implements AssessmentProctoringAlertRepository {
 
     private final SpringDataAssessmentProctoringAlertRepository springDataAssessmentProctoringAlertRepository;
-
-    public AssessmentProctoringAlertRepositoryImpl(
-            SpringDataAssessmentProctoringAlertRepository springDataAssessmentProctoringAlertRepository) {
-        this.springDataAssessmentProctoringAlertRepository = springDataAssessmentProctoringAlertRepository;
-    }
 
     /**
      * Chống trùng hai lớp, và lớp thứ hai mới là lớp thật.

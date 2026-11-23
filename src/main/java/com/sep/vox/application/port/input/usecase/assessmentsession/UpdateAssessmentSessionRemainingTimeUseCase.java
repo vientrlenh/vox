@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.assessmentsession;
 
 import com.sep.vox.domain.model.assessment.AssessmentCandidate;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +35,7 @@ import com.sep.vox.domain.repository.AssessmentSessionRepository;
  * was rejected instead of having to guess.
  */
 @Service
+@RequiredArgsConstructor
 public class UpdateAssessmentSessionRemainingTimeUseCase
         implements IUseCase<UpdateAssessmentSessionRemainingTimeCommand, Integer> {
 
@@ -41,17 +43,6 @@ public class UpdateAssessmentSessionRemainingTimeUseCase
     private final AssessmentSessionRepository assessmentSessionRepository;
     private final AssessmentCandidateRepository assessmentCandidateRepository;
     private final AssessmentPaperRepository assessmentPaperRepository;
-
-    public UpdateAssessmentSessionRemainingTimeUseCase(
-            UserContextPort userContextPort,
-            AssessmentSessionRepository assessmentSessionRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            AssessmentPaperRepository assessmentPaperRepository) {
-        this.userContextPort = userContextPort;
-        this.assessmentSessionRepository = assessmentSessionRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.assessmentPaperRepository = assessmentPaperRepository;
-    }
 
     @Override
     @Transactional

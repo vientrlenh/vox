@@ -2,6 +2,7 @@ package com.sep.vox.interfaces.graphql.controller;
 
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.stereotype.Controller;
@@ -16,17 +17,11 @@ import com.sep.vox.domain.model.question.QuestionTopicStatus;
 import com.sep.vox.interfaces.shared.PageArguments;
 
 @Controller("graphqlQuestionTopicController")
+@RequiredArgsConstructor
 public class QuestionTopicController {
 
     private final ViewQuestionTopicsUseCase viewQuestionTopicsUseCase;
     private final ViewQuestionTopicDetailsUseCase viewQuestionTopicDetailsUseCase;
-
-    public QuestionTopicController(
-            ViewQuestionTopicsUseCase viewQuestionTopicsUseCase,
-            ViewQuestionTopicDetailsUseCase viewQuestionTopicDetailsUseCase) {
-        this.viewQuestionTopicsUseCase = viewQuestionTopicsUseCase;
-        this.viewQuestionTopicDetailsUseCase = viewQuestionTopicDetailsUseCase;
-    }
 
     @QueryMapping(name = "questionTopics")
     public PageResult<QuestionTopicDto> questionTopics(

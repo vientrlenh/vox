@@ -7,8 +7,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,9 +32,9 @@ import com.sep.vox.domain.repository.AssessmentRepository;
 import com.sep.vox.domain.repository.AssessmentSessionRepository;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class UnblockAssessmentCandidateUseCase implements IUseCase<UnblockAssessmentCandidateCommand, AssessmentCandidateDto> {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(UnblockAssessmentCandidateUseCase.class);
 
     private final AssessmentCandidateRepository assessmentCandidateRepository;
     private final AssessmentRepository assessmentRepository;
@@ -45,27 +45,6 @@ public class UnblockAssessmentCandidateUseCase implements IUseCase<UnblockAssess
     private final UpsertAssessmentCandidateResultUseCase upsertAssessmentCandidateResultUseCase;
     private final AssessmentSessionModerationAccessService moderationAccessService;
     private final ClassTestGradingAssignmentService classTestGradingAssignmentService;
-
-    public UnblockAssessmentCandidateUseCase(
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            AssessmentRepository assessmentRepository,
-            AssessmentSessionRepository assessmentSessionRepository,
-            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
-            AssessmentItemResponseRepository assessmentItemResponseRepository,
-            AssessmentItemEvaluationRepository assessmentItemEvaluationRepository,
-            UpsertAssessmentCandidateResultUseCase upsertAssessmentCandidateResultUseCase,
-            AssessmentSessionModerationAccessService moderationAccessService,
-            ClassTestGradingAssignmentService classTestGradingAssignmentService) {
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentSessionRepository = assessmentSessionRepository;
-        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
-        this.assessmentItemResponseRepository = assessmentItemResponseRepository;
-        this.assessmentItemEvaluationRepository = assessmentItemEvaluationRepository;
-        this.upsertAssessmentCandidateResultUseCase = upsertAssessmentCandidateResultUseCase;
-        this.moderationAccessService = moderationAccessService;
-        this.classTestGradingAssignmentService = classTestGradingAssignmentService;
-    }
 
     @Override
     @Transactional
@@ -146,7 +125,7 @@ public class UnblockAssessmentCandidateUseCase implements IUseCase<UnblockAssess
             AssessmentCandidateResult result, UUID sessionId) {
         result.setStatus(AssessmentCandidateResultStatus.PENDING_REVIEW);
         assessmentCandidateResultRepository.save(result);
-        LOGGER.info(
+        log.info(
             "Gỡ chặn phiên {}: chưa có evaluation nào, chuyển PENDING_REVIEW cho giáo viên chấm tay (không gọi AI).",
             sessionId
         );

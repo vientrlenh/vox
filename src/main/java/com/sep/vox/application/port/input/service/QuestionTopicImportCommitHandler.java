@@ -9,6 +9,7 @@ import java.util.Map;
 
 import java.util.Set;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.common.StringNormalization;
@@ -36,20 +37,12 @@ import com.sep.vox.domain.repository.QuestionTopicRepository;
  * và làm hỏng các đề thi đang trỏ vào nó.
  */
 @Service
+@RequiredArgsConstructor
 public class QuestionTopicImportCommitHandler implements ImportCommitHandler {
 
     private final QuestionTopicRepository questionTopicRepository;
     private final QuestionBankRepository questionBankRepository;
     private final JsonSerializationPort jsonSerializationPort;
-
-    public QuestionTopicImportCommitHandler(
-            QuestionTopicRepository questionTopicRepository,
-            QuestionBankRepository questionBankRepository,
-            JsonSerializationPort jsonSerializationPort) {
-        this.questionTopicRepository = questionTopicRepository;
-        this.questionBankRepository = questionBankRepository;
-        this.jsonSerializationPort = jsonSerializationPort;
-    }
 
     @Override
     public ImportType supportedType() {

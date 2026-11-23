@@ -8,6 +8,7 @@ import java.time.Instant;
 import java.util.EnumSet;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.DuplicatedException;
@@ -36,6 +37,7 @@ import com.sep.vox.domain.repository.AssessmentSessionRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
 @Service
+@RequiredArgsConstructor
 public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSessionCommand, AssessmentEntryTicketResponse> {
 
     private static final Duration ENTRY_TICKET_TTL = Duration.ofHours(2);
@@ -51,31 +53,6 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
     private final HealthCheckPort healthCheckPort;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService;
-
-    public StartClassTestSessionUseCase(
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
-            AssessmentRepository assessmentRepository,
-            AssessmentScheduleRepository assessmentScheduleRepository,
-            AssessmentSessionRepository assessmentSessionRepository,
-            UserContextPort userContextPort,
-            CreateAssessmentSessionUseCase createAssessmentSessionUseCase,
-            UpdateAssessmentSessionStatusUseCase updateAssessmentSessionStatusUseCase,
-            HealthCheckPort healthCheckPort,
-            SchoolSubscriptionRepository schoolSubscriptionRepository,
-            SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService) {
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentScheduleRepository = assessmentScheduleRepository;
-        this.assessmentSessionRepository = assessmentSessionRepository;
-        this.userContextPort = userContextPort;
-        this.createAssessmentSessionUseCase = createAssessmentSessionUseCase;
-        this.updateAssessmentSessionStatusUseCase = updateAssessmentSessionStatusUseCase;
-        this.healthCheckPort = healthCheckPort;
-        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
-        this.schoolSubscriptionDebtGuardService = schoolSubscriptionDebtGuardService;
-    }
 
     @Override
     public AssessmentEntryTicketResponse execute(StartClassTestSessionCommand input) {

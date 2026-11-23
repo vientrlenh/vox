@@ -14,8 +14,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -73,9 +73,9 @@ import java.math.RoundingMode;
  * CONCURRENTLY on the same order, so every entry here must go through {@code findByIdForUpdate}.
  */
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class OrderSettlementService {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(OrderSettlementService.class);
 
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
@@ -95,46 +95,11 @@ public class OrderSettlementService {
     private final JsonSerializationPort jsonSerializationPort;
 
     /**
-     * Cùng con số với {@code DistributeQuotaToUsersService.MAX_ELIGIBLE_USERS_PAGE_SIZE}: hai bên phải
-     * nhìn thấy cùng một tập người, nếu không thì người ở rìa giới hạn được chia trần ở màn hình rồi
-     * mất nó ở lần gia hạn kế tiếp.
+     * Same number as {@code DistributeQuotaToUsersService.MAX_ELIGIBLE_USERS_PAGE_SIZE}: both sides must
+     * see the same set of people, otherwise a person at the edge of the limit is given a cap on the screen and
+     * then loses it at the next renewal.
      */
     private static final int MAX_CARRY_FORWARD_USERS = 10_000;
-
-    public OrderSettlementService(
-            OrderRepository orderRepository,
-            OrderItemRepository orderItemRepository,
-            PaymentRecordRepository paymentRecordRepository,
-            InvoiceRepository invoiceRepository,
-            SchoolBalanceRepository schoolBalanceRepository,
-            SchoolBalanceEntryRepository schoolBalanceEntryRepository,
-            SchoolSubscriptionRepository schoolSubscriptionRepository,
-            SchoolSubscriptionQuotaRecordRepository quotaRecordRepository,
-            SchoolSubscriptionQuotaUserAllocationRepository quotaUserAllocationRepository,
-            SubscriptionPlanRepository subscriptionPlanRepository,
-            SubscriptionPlanQuotaRepository subscriptionPlanQuotaRepository,
-            SchoolDebtNotificationService schoolDebtNotificationService,
-            SchoolUserRepository schoolUserRepository,
-            RoleRepository roleRepository,
-            OutboxRepository outboxRepository,
-            JsonSerializationPort jsonSerializationPort) {
-        this.orderRepository = orderRepository;
-        this.orderItemRepository = orderItemRepository;
-        this.paymentRecordRepository = paymentRecordRepository;
-        this.invoiceRepository = invoiceRepository;
-        this.schoolBalanceRepository = schoolBalanceRepository;
-        this.schoolBalanceEntryRepository = schoolBalanceEntryRepository;
-        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
-        this.quotaRecordRepository = quotaRecordRepository;
-        this.quotaUserAllocationRepository = quotaUserAllocationRepository;
-        this.subscriptionPlanRepository = subscriptionPlanRepository;
-        this.subscriptionPlanQuotaRepository = subscriptionPlanQuotaRepository;
-        this.schoolDebtNotificationService = schoolDebtNotificationService;
-        this.schoolUserRepository = schoolUserRepository;
-        this.roleRepository = roleRepository;
-        this.outboxRepository = outboxRepository;
-        this.jsonSerializationPort = jsonSerializationPort;
-    }
 
     /**
      * Tiền ĐÃ VỀ: đóng lần thử, đóng đơn, giao hàng, phát hóa đơn.
@@ -152,7 +117,7 @@ public class OrderSettlementService {
             .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn hàng của lần thanh toán"));
 
         if (order.getStatus() == OrderStatus.SUCCESS) {
-            LOGGER.info("Đơn {} đã SUCCESS -- bỏ qua lần chốt lặp cho payment {}",
+            log.info("Đơn {} đã SUCCESS -- bỏ qua lần chốt lặp cho payment {}",
                 order.getId(), payment.getId());
             return;
         }
@@ -164,7 +129,7 @@ public class OrderSettlementService {
             // How this case is reached: the school cancels the order while a SePay session is still alive (the gateway does not allow
             // early cancellation, so CancelOrderUseCase blocks it, but if that block is loosened this is the consequence), or the order
             // expires exactly while the school is paying.
-            LOGGER.error(
+            log.error(
                 "TIỀN VỀ CHO ĐƠN ĐÃ ĐÓNG -- cần hoàn tiền thủ công: orderId={} orderStatus={} paymentId={} amountVnd={}",
                 order.getId(), order.getStatus(), payment.getId(), payment.getAmountVnd());
             return;
@@ -226,14 +191,14 @@ public class OrderSettlementService {
             return false;
         }
         if (paymentRecordRepository.findPendingByOrderId(orderId).isPresent()) {
-            LOGGER.warn("Đơn {} đã quá hạn nhưng còn lần thử đang treo -- chưa đóng, đợi đối soát xong",
+            log.warn("Đơn {} đã quá hạn nhưng còn lần thử đang treo -- chưa đóng, đợi đối soát xong",
                 orderId);
             return false;
         }
 
         order.setStatus(OrderStatus.EXPIRED);
         orderRepository.save(order);
-        LOGGER.info("Đóng đơn {} do quá hạn thanh toán ({})", orderId, order.getExpiresAt());
+        log.info("Đóng đơn {} do quá hạn thanh toán ({})", orderId, order.getExpiresAt());
         return true;
     }
 
@@ -272,7 +237,7 @@ public class OrderSettlementService {
         schoolBalanceEntryRepository.save(SchoolBalanceEntry.forTopUp(
             order.getSchoolId(), activeSubscriptionId, order.getId(), credited, balanceAfter, now));
 
-        LOGGER.info("Nạp {} VND vào ví trường {} từ đơn {} -- số dư mới {}",
+        log.info("Nạp {} VND vào ví trường {} từ đơn {} -- số dư mới {}",
             credited, order.getSchoolId(), order.getId(), balanceAfter);
 
         reportDebtClearedIfCrossedBack(order.getSchoolId(), activeSubscriptionId, balanceBefore, balanceAfter, now);
@@ -305,13 +270,13 @@ public class OrderSettlementService {
         // kỳ đăng ký nào -- một trường trả hết nợ đúng lúc gói vừa hết hạn thì không có id nào để
         // ghi. Bỏ qua dòng sự kiện thay vì để INSERT nổ và cuốn theo cả lần nạp tiền đã thành công.
         if (subscriptionId == null) {
-            LOGGER.warn(
+            log.warn(
                 "Trường {} vừa hết nợ (số dư {} -> {}) nhưng không có gói nào đang hoạt động để gắn sự kiện -- bỏ qua dòng CLEARED.",
                 schoolId, balanceBefore, balanceAfter);
             return;
         }
 
-        LOGGER.info("Trường {} đã hết nợ: số dư {} -> {}", schoolId, balanceBefore, balanceAfter);
+        log.info("Trường {} đã hết nợ: số dư {} -> {}", schoolId, balanceBefore, balanceAfter);
         schoolDebtNotificationService.publishSchoolDebtCleared(subscriptionId, schoolId, now);
     }
 
@@ -364,10 +329,10 @@ public class OrderSettlementService {
             previousSubscriptionId, subscription.getId(), order.getSchoolId(), seededPoolTotals);
 
         if (startsAt.isAfter(now)) {
-            LOGGER.info("Gia hạn sớm gói {} cho trường {} từ đơn {} -- kỳ mới chạy {} tới {}",
+            log.info("Gia hạn sớm gói {} cho trường {} từ đơn {} -- kỳ mới chạy {} tới {}",
                 planId, order.getSchoolId(), order.getId(), startsAt, subscription.getEndDate());
         } else {
-            LOGGER.info("Kích hoạt gói {} cho trường {} từ đơn {} -- hạn tới {}",
+            log.info("Kích hoạt gói {} cho trường {} từ đơn {} -- hạn tới {}",
                 planId, order.getSchoolId(), order.getId(), subscription.getEndDate());
         }
 
@@ -414,7 +379,7 @@ public class OrderSettlementService {
             schoolSubscriptionRepository.save(previous);
         }
         if (!unfinished.isEmpty()) {
-            LOGGER.info("Nâng cấp trường {}: đóng {} kỳ chưa kết thúc tại {}", schoolId, unfinished.size(), now);
+            log.info("Nâng cấp trường {}: đóng {} kỳ chưa kết thúc tại {}", schoolId, unfinished.size(), now);
         }
         return now;
     }
@@ -471,7 +436,7 @@ public class OrderSettlementService {
 
         records.stream()
             .filter(record -> record.getFundedFromBalanceVnd().signum() > 0)
-            .forEach(record -> LOGGER.info("Chuyển {}đ tiền tự nạp chưa tiêu của ví {} sang kỳ {}",
+            .forEach(record -> log.info("Chuyển {}đ tiền tự nạp chưa tiêu của ví {} sang kỳ {}",
                 record.getFundedFromBalanceVnd(), record.getQuotaType(), subscriptionId));
 
         Map<QuotaType, BigDecimal> seededPoolTotals = new EnumMap<QuotaType, BigDecimal>(QuotaType.class);
@@ -480,7 +445,7 @@ public class OrderSettlementService {
 
         carriedByType.forEach((quotaType, amountVnd) -> {
             if (!seededPoolTotals.containsKey(quotaType)) {
-                LOGGER.warn(
+                log.warn(
                     "Kỳ {} không có ví {} nên {}đ tiền tự nạp chưa tiêu của kỳ {} không mang sang được"
                         + " -- gói mới không còn loại hạn mức này.",
                     subscriptionId, quotaType, amountVnd, previousSubscriptionId);
@@ -583,7 +548,7 @@ public class OrderSettlementService {
                     .toList())
                 .orElse(carried);
             if (kept.size() < carried.size()) {
-                LOGGER.info("Bỏ {} dòng trần {} của người không còn đủ điều kiện -- không mang sang kỳ {}",
+                log.info("Bỏ {} dòng trần {} của người không còn đủ điều kiện -- không mang sang kỳ {}",
                     carried.size() - kept.size(), quotaType, newSubscriptionId);
             }
 
@@ -594,7 +559,7 @@ public class OrderSettlementService {
             }
 
             if (!kept.isEmpty()) {
-                LOGGER.info("Chuyển {} trần chi cá nhân {} từ kỳ {} sang kỳ {}",
+                log.info("Chuyển {} trần chi cá nhân {} từ kỳ {} sang kỳ {}",
                     kept.size(), quotaType, previousSubscriptionId, newSubscriptionId);
             }
         }
@@ -615,7 +580,7 @@ public class OrderSettlementService {
         String roleCode = quotaType.allocationRoleCode();
         Optional<Role> role = roleRepository.findByCode(roleCode);
         if (role.isEmpty()) {
-            LOGGER.error("Không tìm thấy vai trò {} -- chép TOÀN BỘ trần {} sang kỳ mới thay vì lọc,"
+            log.error("Không tìm thấy vai trò {} -- chép TOÀN BỘ trần {} sang kỳ mới thay vì lọc,"
                 + " để không lấy mất trần của người còn đang dạy/học.", roleCode, quotaType);
             return Optional.empty();
         }
@@ -623,7 +588,7 @@ public class OrderSettlementService {
         PageResult<SchoolUser> page = schoolUserRepository.findBySchoolId(schoolId, null, role.get().getId(),
             UserStatus.ACTIVE.name(), null, false, 1, MAX_CARRY_FORWARD_USERS);
         if (page.totalElements() > page.content().size()) {
-            LOGGER.error("Trường {} có {} người đủ điều kiện nhận trần {} nhưng chỉ đọc được {} --"
+            log.error("Trường {} có {} người đủ điều kiện nhận trần {} nhưng chỉ đọc được {} --"
                 + " chép TOÀN BỘ thay vì lọc, vì lọc theo một tập thiếu sẽ xoá trần của phần dôi ra.",
                 schoolId, page.totalElements(), quotaType, page.content().size());
             return Optional.empty();
@@ -650,7 +615,7 @@ public class OrderSettlementService {
             return null;
         }
 
-        LOGGER.warn("Trần cá nhân {} của kỳ {} cộng lại {}đ, lớn hơn ví {}đ của kỳ {} -- thu nhỏ theo"
+        log.warn("Trần cá nhân {} của kỳ {} cộng lại {}đ, lớn hơn ví {}đ của kỳ {} -- thu nhỏ theo"
             + " tỉ lệ để kỳ mới không mở ra trong trạng thái đã vượt trần.",
             quotaType, previousSubscriptionId, totalCarriedVnd, poolTotalVnd, newSubscriptionId);
         return poolTotalVnd.divide(totalCarriedVnd, 10, RoundingMode.DOWN);
@@ -680,7 +645,7 @@ public class OrderSettlementService {
             return Optional.empty();
         }
         Invoice invoice = invoiceRepository.save(Invoice.issueFor(order.getId(), payment.getId(), now));
-        LOGGER.info("Phát hành hóa đơn {} cho đơn {}", invoice.getInvoiceNumber(), order.getId());
+        log.info("Phát hành hóa đơn {} cho đơn {}", invoice.getInvoiceNumber(), order.getId());
 
         return Optional.of(invoice);
     }

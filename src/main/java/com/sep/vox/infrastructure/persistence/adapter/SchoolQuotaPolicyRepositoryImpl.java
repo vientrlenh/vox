@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.metering.QuotaType;
@@ -16,14 +17,10 @@ import com.sep.vox.infrastructure.persistence.mapper.SchoolQuotaPolicyMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolQuotaPolicyRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class SchoolQuotaPolicyRepositoryImpl implements SchoolQuotaPolicyRepository {
 
     private final SpringDataSchoolQuotaPolicyRepository springDataSchoolQuotaPolicyRepository;
-
-    public SchoolQuotaPolicyRepositoryImpl(
-            SpringDataSchoolQuotaPolicyRepository springDataSchoolQuotaPolicyRepository) {
-        this.springDataSchoolQuotaPolicyRepository = springDataSchoolQuotaPolicyRepository;
-    }
 
     @Override
     public SchoolQuotaPolicy findBySchoolIdAndQuotaType(UUID schoolId, QuotaType quotaType) {

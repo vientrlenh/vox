@@ -4,9 +4,9 @@ import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.BackOff;
 import org.springframework.kafka.annotation.DltHandler;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -25,17 +25,12 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class AiUsageRecordedConsumer {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(AiUsageRecordedConsumer.class);
 
     private final RecordAiUsageUseCase recordAiUsageUseCase;
     private final JsonMapper jsonMapper;
-
-    public AiUsageRecordedConsumer(RecordAiUsageUseCase recordAiUsageUseCase, JsonMapper jsonMapper) {
-        this.recordAiUsageUseCase = recordAiUsageUseCase;
-        this.jsonMapper = jsonMapper;
-    }
 
     @RetryableTopic(
         attempts = "4",
@@ -52,7 +47,7 @@ public class AiUsageRecordedConsumer {
             JsonNode payload = jsonMapper.valueToTree(record.value());
             AiUsageRecordedEventDto event = jsonMapper.treeToValue(payload, AiUsageRecordedEventDto.class);
 
-            LOGGER.info("Receive AI usage event topic={} partition={} offset={} turnId={}",
+            log.info("Receive AI usage event topic={} partition={} offset={} turnId={}",
                 record.topic(), record.partition(), record.offset(), event == null ? null : event.turnId());
 
             if (event == null || event.usageEvents() == null || event.usageEvents().isEmpty()) {
@@ -89,7 +84,7 @@ public class AiUsageRecordedConsumer {
 
             ack.acknowledge();
         } catch (Exception e) {
-            LOGGER.error("AI usage event processing failed, no ack: {}", e.getMessage(), e);
+            log.error("AI usage event processing failed, no ack: {}", e.getMessage(), e);
             throw e instanceof RuntimeException runtimeException
                 ? runtimeException
                 : new IllegalStateException("Failed to process AI usage event", e);
@@ -98,7 +93,7 @@ public class AiUsageRecordedConsumer {
 
     @DltHandler
     public void dltHandler(ConsumerRecord<String, Object> record) {
-        LOGGER.error("AI usage DLT message at topic {}: {}", record.topic(), record.value());
+        log.error("AI usage DLT message at topic {}: {}", record.topic(), record.value());
     }
 
     private UUID parseUuid(String value, String fieldName) {

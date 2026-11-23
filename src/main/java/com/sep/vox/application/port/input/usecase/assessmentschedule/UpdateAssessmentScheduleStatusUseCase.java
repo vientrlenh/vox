@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +33,7 @@ import com.sep.vox.domain.repository.AssessmentScheduleRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateAssessmentScheduleStatusUseCase implements IUseCase<UpdateAssessmentScheduleStatusCommand, AssessmentScheduleDto> {
 
     private final AssessmentRepository assessmentRepository;
@@ -44,29 +46,6 @@ public class UpdateAssessmentScheduleStatusUseCase implements IUseCase<UpdateAss
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
-
-    public UpdateAssessmentScheduleStatusUseCase(
-            AssessmentRepository assessmentRepository,
-            AssessmentScheduleRepository assessmentScheduleRepository,
-            AssessmentScheduleProctorRepository assessmentScheduleProctorRepository,
-            AssessmentScheduleProctorConflictValidator assessmentScheduleProctorConflictValidator,
-            AssessmentScheduleCandidateConflictValidator assessmentScheduleCandidateConflictValidator,
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            AssessmentMemberRepository assessmentMemberRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
-            UserContextPort userContextPort) {
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentScheduleRepository = assessmentScheduleRepository;
-        this.assessmentScheduleProctorRepository = assessmentScheduleProctorRepository;
-        this.assessmentScheduleProctorConflictValidator = assessmentScheduleProctorConflictValidator;
-        this.assessmentScheduleCandidateConflictValidator = assessmentScheduleCandidateConflictValidator;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.assessmentMemberRepository = assessmentMemberRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

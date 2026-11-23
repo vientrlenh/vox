@@ -3,6 +3,7 @@ package com.sep.vox.interfaces.rest.controller;
 import com.sep.vox.application.port.input.command.CreateNotificationDeviceCommand;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -26,21 +27,13 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/notifications")
+@RequiredArgsConstructor
 public class NotificationController {
     
     private final CreateNotificationDeviceUseCase createNotificationDeviceUseCase;
     private final DeleteNotificationDeviceUseCase deleteNotificationDeviceUseCase;
     private final MarkNotificationAsReadUseCase markNotificationAsReadUseCase;
     private final MarkAllNotificationsAsReadUseCase markAllNotificationsAsReadUseCase;
-
-    public NotificationController(
-            CreateNotificationDeviceUseCase createNotificationDeviceUseCase,
-            DeleteNotificationDeviceUseCase deleteNotificationDeviceUseCase, MarkNotificationAsReadUseCase markNotificationAsReadUseCase, MarkAllNotificationsAsReadUseCase markAllNotificationsAsReadUseCase) {
-        this.createNotificationDeviceUseCase = createNotificationDeviceUseCase;
-        this.deleteNotificationDeviceUseCase = deleteNotificationDeviceUseCase;
-        this.markNotificationAsReadUseCase = markNotificationAsReadUseCase;
-        this.markAllNotificationsAsReadUseCase = markAllNotificationsAsReadUseCase;
-    }
 
     @PostMapping("/devices")
     @PreAuthorize("isAuthenticated()")

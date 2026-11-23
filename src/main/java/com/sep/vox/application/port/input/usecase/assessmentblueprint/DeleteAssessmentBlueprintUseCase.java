@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.assessmentblueprint;
 
 import com.sep.vox.domain.model.assessment.AssessmentBlueprint;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,20 +15,12 @@ import com.sep.vox.domain.repository.AssessmentBlueprintRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class DeleteAssessmentBlueprintUseCase implements IUseCase<DeleteAssessmentBlueprintCommand, Void> {
 
     private final AssessmentBlueprintRepository assessmentBlueprintRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserContextPort userContextPort;
-
-    public DeleteAssessmentBlueprintUseCase(
-            AssessmentBlueprintRepository assessmentBlueprintRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserContextPort userContextPort) {
-        this.assessmentBlueprintRepository = assessmentBlueprintRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

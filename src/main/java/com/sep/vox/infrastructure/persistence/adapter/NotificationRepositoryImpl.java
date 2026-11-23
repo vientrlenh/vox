@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
@@ -16,13 +17,10 @@ import com.sep.vox.infrastructure.persistence.mapper.NotificationMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataNotificationRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class NotificationRepositoryImpl implements NotificationRepository {
 
     private final SpringDataNotificationRepository springDataNotificationRepository;
-
-    public NotificationRepositoryImpl(SpringDataNotificationRepository springDataNotificationRepository) {
-        this.springDataNotificationRepository = springDataNotificationRepository;
-    }
 
     @Override
     public Optional<Notification> findById(UUID id) {

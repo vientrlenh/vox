@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.registration;
 import java.time.Instant;
 
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,17 +19,12 @@ import com.sep.vox.domain.repository.RegisterFormRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class RegisterBySelfDeclaredUseCase implements IUseCase<RegisterBySelfDeclaredCommand, Void> {
 
     private final RegisterFormRepository registerFormRepository;
     private final UserRepository userRepository;
     private final RegisterFormDocumentRepository registerFormDocumentRepository;
-
-    public RegisterBySelfDeclaredUseCase(RegisterFormRepository registerFormRepository, UserRepository userRepository, RegisterFormDocumentRepository registerFormDocumentRepository) {
-        this.registerFormRepository = registerFormRepository;
-        this.userRepository = userRepository;
-        this.registerFormDocumentRepository = registerFormDocumentRepository;
-    }
 
     @Override
     @Transactional

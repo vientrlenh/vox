@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.assessmentappeal;
 import java.util.List;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,21 +22,13 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
  * — xem {@link AppealReviewerLiteInfo} để biết vì sao không lọc bỏ.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewAssignableReviewersUseCase
         implements IUseCase<ViewAssignableReviewersQuery, List<AppealReviewerLiteInfo>> {
 
     private final AssessmentAppealQueryRepository assessmentAppealQueryRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final AssessmentAppealAccessService assessmentAppealAccessService;
-
-    public ViewAssignableReviewersUseCase(
-            AssessmentAppealQueryRepository assessmentAppealQueryRepository,
-            SchoolUserRepository schoolUserRepository,
-            AssessmentAppealAccessService assessmentAppealAccessService) {
-        this.assessmentAppealQueryRepository = assessmentAppealQueryRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.assessmentAppealAccessService = assessmentAppealAccessService;
-    }
 
     @Override
     @Transactional(readOnly = true)

@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +17,7 @@ import com.sep.vox.infrastructure.persistence.mapper.OutboxMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataOutboxRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class OutboxRepositoryImpl implements OutboxRepository {
 
     private static final int MAX_RETRIES = 5;
@@ -23,10 +25,6 @@ public class OutboxRepositoryImpl implements OutboxRepository {
     private static final Duration LEASE = Duration.ofMinutes(5);
 
     private final SpringDataOutboxRepository springDataOutboxRepository;
-
-    public OutboxRepositoryImpl(SpringDataOutboxRepository springDataOutboxRepository) {
-        this.springDataOutboxRepository = springDataOutboxRepository;
-    }
 
     @Override
     public Outbox save(Outbox outbox) {

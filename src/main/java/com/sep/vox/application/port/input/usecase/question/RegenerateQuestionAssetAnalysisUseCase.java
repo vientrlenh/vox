@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionBank;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,7 @@ import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 
 @Service
+@RequiredArgsConstructor
 public class RegenerateQuestionAssetAnalysisUseCase implements IUseCase<RegenerateQuestionAssetAnalysisUseCase.Command, QuestionAssetDto> {
 
     private final QuestionRepository questionRepository;
@@ -32,23 +34,6 @@ public class RegenerateQuestionAssetAnalysisUseCase implements IUseCase<Regenera
     private final QuestionCloneService questionCloneService;
     private final QuestionAssetAnalysisRequestPublisher questionAssetAnalysisRequestPublisher;
     private final UserContextPort userContextPort;
-
-    public RegenerateQuestionAssetAnalysisUseCase(
-            QuestionRepository questionRepository,
-            QuestionBankRepository questionBankRepository,
-            QuestionCollaboratorRepository questionCollaboratorRepository,
-            QuestionAssetRepository questionAssetRepository,
-            QuestionCloneService questionCloneService,
-            QuestionAssetAnalysisRequestPublisher questionAssetAnalysisRequestPublisher,
-            UserContextPort userContextPort) {
-        this.questionRepository = questionRepository;
-        this.questionBankRepository = questionBankRepository;
-        this.questionCollaboratorRepository = questionCollaboratorRepository;
-        this.questionAssetRepository = questionAssetRepository;
-        this.questionCloneService = questionCloneService;
-        this.questionAssetAnalysisRequestPublisher = questionAssetAnalysisRequestPublisher;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +37,7 @@ import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateClassTestSectionUseCase implements IUseCase<UpdateClassTestSectionCommand, AssessmentDto> {
 
     private final AssessmentRepository assessmentRepository;
@@ -47,27 +49,6 @@ public class UpdateClassTestSectionUseCase implements IUseCase<UpdateClassTestSe
     private final AssessmentQuestionSecureLockService assessmentQuestionSecureLockService;
     private final RecalculateAssessmentTimeDurationService recalculateAssessmentTimeDurationService;
     private final UserContextPort userContextPort;
-
-    public UpdateClassTestSectionUseCase(
-            AssessmentRepository assessmentRepository,
-            AssessmentMemberRepository assessmentMemberRepository,
-            AssessmentPaperSectionRepository assessmentPaperSectionRepository,
-            AssessmentPaperItemRepository assessmentPaperItemRepository,
-            QuestionRepository questionRepository,
-            QuestionCollaboratorRepository questionCollaboratorRepository,
-            AssessmentQuestionSecureLockService assessmentQuestionSecureLockService,
-            RecalculateAssessmentTimeDurationService recalculateAssessmentTimeDurationService,
-            UserContextPort userContextPort) {
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentMemberRepository = assessmentMemberRepository;
-        this.assessmentPaperSectionRepository = assessmentPaperSectionRepository;
-        this.assessmentPaperItemRepository = assessmentPaperItemRepository;
-        this.questionRepository = questionRepository;
-        this.questionCollaboratorRepository = questionCollaboratorRepository;
-        this.assessmentQuestionSecureLockService = assessmentQuestionSecureLockService;
-        this.recalculateAssessmentTimeDurationService = recalculateAssessmentTimeDurationService;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

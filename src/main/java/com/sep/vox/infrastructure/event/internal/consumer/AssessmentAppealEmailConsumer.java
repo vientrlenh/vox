@@ -7,9 +7,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 import java.util.function.Supplier;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.kafka.annotation.BackOff;
 import org.springframework.kafka.annotation.DltHandler;
@@ -41,9 +41,9 @@ import tools.jackson.databind.json.JsonMapper;
  * được record riêng không có field thừa.
  */
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class AssessmentAppealEmailConsumer {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(AssessmentAppealEmailConsumer.class);
 
     private static final String CONSUMER_GROUP = "assessment-appeal-email";
 
@@ -51,7 +51,7 @@ public class AssessmentAppealEmailConsumer {
     private static final String SUBJECT_REJECTED = "Đơn phúc khảo không được chấp nhận";
     private static final String SUBJECT_APPROVED = "Đơn phúc khảo của bạn đã được duyệt";
 
-    /** {@code withZone} là phần bắt buộc: thiếu nó thì mail ghi giờ UTC của container. */
+    /** {@code withZone} is mandatory: without it the email prints the container's UTC time. */
     private static final DateTimeFormatter DEADLINE_FORMAT =
         DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy").withZone(DateMapper.DEFAULT_INPUT_ZONE);
 
@@ -60,19 +60,6 @@ public class AssessmentAppealEmailConsumer {
     private final MailTemplatePort mailTemplatePort;
     private final ProcessedEventRepository processedEventRepository;
     private final JsonMapper jsonMapper;
-
-    public AssessmentAppealEmailConsumer(
-            UserRepository userRepository,
-            MailSendingPort mailSendingPort,
-            MailTemplatePort mailTemplatePort,
-            ProcessedEventRepository processedEventRepository,
-            JsonMapper jsonMapper) {
-        this.userRepository = userRepository;
-        this.mailSendingPort = mailSendingPort;
-        this.mailTemplatePort = mailTemplatePort;
-        this.processedEventRepository = processedEventRepository;
-        this.jsonMapper = jsonMapper;
-    }
 
     @RetryableTopic(
         attempts = "4",
@@ -89,11 +76,11 @@ public class AssessmentAppealEmailConsumer {
     public void consume(ConsumerRecord<String, String> record, Acknowledgment ack) {
         UUID eventId = KafkaEventHeaders.readEventId(record);
 
-        LOGGER.info("Receive event assessment-appeal: eventId={}, partition={}, offset={}",
+        log.info("Receive event assessment-appeal: eventId={}, partition={}, offset={}",
             eventId, record.partition(), record.offset());
 
         if (processedEventRepository.existsByEventIdAndConsumerGroup(eventId, CONSUMER_GROUP)) {
-            LOGGER.info("Skip processed event: eventId={}, consumer={}", eventId, CONSUMER_GROUP);
+            log.info("Skip processed event: eventId={}, consumer={}", eventId, CONSUMER_GROUP);
             ack.acknowledge();
             return;
         }
@@ -105,7 +92,7 @@ public class AssessmentAppealEmailConsumer {
         // it processed and skip, do not let the message run the whole retry cycle and end up in the DLT.
         if (mail == null) {
             markProcessed(eventId);
-            LOGGER.warn("Skip mail, recipient not found: eventId={}, eventType={}", eventId, eventType);
+            log.warn("Skip mail, recipient not found: eventId={}, eventType={}", eventId, eventType);
             ack.acknowledge();
             return;
         }
@@ -113,13 +100,13 @@ public class AssessmentAppealEmailConsumer {
         try {
             mailSendingPort.sendHtml(mail.to(), mail.subject(), mail.html());
         } catch (Exception e) {
-            LOGGER.error("Send mail error: eventId={}, to={}", eventId, mail.to(), e);
+            log.error("Send mail error: eventId={}, to={}", eventId, mail.to(), e);
             throw new IllegalStateException("Gửi mail phúc khảo thất bại: eventId=" + eventId, e);
         }
 
         markProcessed(eventId);
 
-        LOGGER.info("Assessment appeal mail sent: eventId={}, eventType={}, to={}", eventId, eventType, mail.to());
+        log.info("Assessment appeal mail sent: eventId={}, eventType={}, to={}", eventId, eventType, mail.to());
         ack.acknowledge();
     }
 
@@ -162,7 +149,7 @@ public class AssessmentAppealEmailConsumer {
         try {
             return jsonMapper.readValue(value, type);
         } catch (Exception e) {
-            LOGGER.error("Invalid payload: eventId={}, eventType={}, value={}", eventId, eventType, value, e);
+            log.error("Invalid payload: eventId={}, eventType={}, value={}", eventId, eventType, value, e);
             throw new IllegalStateException(
                 "Payload " + eventType + " không hợp lệ, eventId=" + eventId, e);
         }
@@ -179,7 +166,7 @@ public class AssessmentAppealEmailConsumer {
     @DltHandler
     public void handleDlt(ConsumerRecord<String, String> record) {
         UUID eventId = KafkaEventHeaders.readEventIdOrNull(record);
-        LOGGER.error("assessment-appeal event sent to DLT: eventId={}, topic={}, partition={}, offset={}, payload={}",
+        log.error("assessment-appeal event sent to DLT: eventId={}, topic={}, partition={}, offset={}, payload={}",
             eventId, record.topic(), record.partition(), record.offset(), record.value());
     }
 
@@ -191,7 +178,7 @@ public class AssessmentAppealEmailConsumer {
                     .processedAt(Instant.now())
                     .build());
         } catch (DataIntegrityViolationException e) {
-            LOGGER.warn("This event was already marked by another instance: eventId={}", eventId);
+            log.warn("This event was already marked by another instance: eventId={}", eventId);
         }
     }
 

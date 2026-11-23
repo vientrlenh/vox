@@ -10,8 +10,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
@@ -95,40 +95,40 @@ import com.sep.vox.domain.repository.SupportedLanguageRepository;
  */
 @Component
 @Order(9)
+@RequiredArgsConstructor
+@Slf4j
 public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(SystemAssessmentPolicyInitializer.class);
 
     private static final String LANGUAGE_CODE = "ENG";
     private static final String FRAMEWORK_CODE = "KNLNNVN";
 
-    /** Bậc 3 = CEFR B1 = chuẩn đầu ra THPT. Phải trùng mã bậc của {@link FrameworkInitializer}. */
+    /** Level 3 = CEFR B1 = the high-school output standard. Must match the band code of {@link FrameworkInitializer}. */
     private static final String TARGET_BAND_CODE = "BAC_3";
 
     /**
-     * Bậc 4 = CEFR B2 = thông lệ của lớp chuyên Anh.
+     * Level 4 = CEFR B2 = the usual practice for specialized English classes.
      *
-     * <p>Đúng bằng TRẦN CỨNG mà {@link GradeLevelBandScopeInitializer} đặt cho cả ba khối THPT, nên
-     * bản sao của bản mẫu này luôn lọt {@code GradeLevelBandScopeGuardService}. Lưu ý B2 KHÔNG nằm
-     * trong quy chế trường chuyên (Thông tư 05/2023/TT-BGDĐT không quy định chuẩn đầu ra ngoại ngữ
-     * nào cho lớp chuyên) -- đây là bản mẫu để trường tuỳ chọn, không phải quy định.
+     * <p>Exactly equal to the HARD CEILING that {@link GradeLevelBandScopeInitializer} sets for all three high-school grades, so
+     * a copy of this template always passes {@code GradeLevelBandScopeGuardService}. Note that B2 is NOT part of
+     * the specialized-school regulation (Circular 05/2023/TT-BGDĐT sets no foreign-language output standard
+     * for specialized classes) -- this is a template a school may opt into, not a regulation.
      */
     private static final String SPECIALISED_TARGET_BAND_CODE = "BAC_4";
 
     /**
-     * Mỗi phiên bản bộ tiêu chí mẫu có HAI chính sách: một bản chuẩn (Bậc 3) và một bản cho lớp
-     * chuyên (Bậc 4). Cùng bộ tiêu chí, chỉ khác bậc mục tiêu -- khác biệt giữa lớp thường và lớp
-     * chuyên nằm ở đích cần đạt, không ở tiêu chí chấm.
+     * Each version of a sample criteria set has TWO policies: a standard one (Level 3) and one for specialized
+     * classes (Level 4). Same criteria set, only the target level differs -- the difference between regular and specialized
+     * classes lies in the goal to reach, not in the grading criteria.
      *
-     * <p><b>Vì sao bản chuyên KHÔNG khai Khối:</b> bản mẫu đã khai Khối thì bản sao BẮT BUỘC giữ đúng
-     * khối đó ({@code CloneSystemRubricToSchoolUseCase#resolveScope}), tức là trường không thể áp nó
-     * cho riêng lớp chuyên. Mà "mỗi phạm vi chỉ một chính sách còn hiệu lực" nghĩa là bản chuẩn và
-     * bản chuyên KHÔNG cùng tồn tại ở phạm vi Khối được. Để trống phạm vi là cách duy nhất để trường
-     * sao bản chuẩn cho Khối/Niên khóa và bản chuyên cho đúng lớp chuyên trong cùng một lần.
+     * <p><b>Why the specialized version does NOT declare a Grade:</b> once a template declares a Grade, the copy MUST keep exactly
+     * that grade ({@code CloneSystemRubricToSchoolUseCase#resolveScope}), which means the school cannot apply it
+     * to the specialized class alone. And "each scope has only one effective policy" means the standard and
+     * specialized versions can NOT coexist at the Grade scope. Leaving the scope empty is the only way for a school to
+     * copy the standard version for Grade/School year and the specialized version for the specialized class only, in a single pass.
      *
-     * <p>Mã phiên bản theo quy ước của {@link SystemRubricTemplateInitializer}: mã bản mẫu + "-V1".
-     * Đổi mã bên đó mà quên đổi ở đây thì initializer này không tìm thấy rubric và bỏ qua bản tương
-     * ứng -- có log cảnh báo chứ không âm thầm.
+     * <p>The version code follows the convention of {@link SystemRubricTemplateInitializer}: template code + "-V1".
+     * If the code there is changed and this one is forgotten, this initializer cannot find the rubric and skips the matching
+     * version -- with a warning log, not silently.
      */
     private static final List<PolicySeed> POLICIES = List.of(
         new PolicySeed(GradeLevelInitializer.GRADE_10, "SYS-ENG-K10-V1", TARGET_BAND_CODE),
@@ -148,25 +148,6 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
     private final RubricRepository rubricRepository;
     private final RubricVersionRepository rubricVersionRepository;
 
-    public SystemAssessmentPolicyInitializer(
-            AssessmentPolicyRepository assessmentPolicyRepository,
-            GradeLevelRepository gradeLevelRepository,
-            SupportedLanguageRepository supportedLanguageRepository,
-            FrameworkRepository frameworkRepository,
-            FrameworkVersionRepository frameworkVersionRepository,
-            FrameworkResultBandRepository frameworkResultBandRepository,
-            RubricRepository rubricRepository,
-            RubricVersionRepository rubricVersionRepository) {
-        this.assessmentPolicyRepository = assessmentPolicyRepository;
-        this.gradeLevelRepository = gradeLevelRepository;
-        this.supportedLanguageRepository = supportedLanguageRepository;
-        this.frameworkRepository = frameworkRepository;
-        this.frameworkVersionRepository = frameworkVersionRepository;
-        this.frameworkResultBandRepository = frameworkResultBandRepository;
-        this.rubricRepository = rubricRepository;
-        this.rubricVersionRepository = rubricVersionRepository;
-    }
-
     /**
      * Idempotent per TEMPLATE, keyed by the pair (rubric version, target band) -- see
      * {@link #createPolicy}. That means a template that already exists is skipped, the remaining ones are still built, and
@@ -177,19 +158,19 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) throws Exception {
         SupportedLanguage language = supportedLanguageRepository.findByCode(LANGUAGE_CODE).orElse(null);
         if (language == null) {
-            LOGGER.warn("Chưa có ngôn ngữ {}. Bỏ qua khởi tạo chính sách chấm mẫu của hệ thống", LANGUAGE_CODE);
+            log.warn("Chưa có ngôn ngữ {}. Bỏ qua khởi tạo chính sách chấm mẫu của hệ thống", LANGUAGE_CODE);
             return;
         }
 
         Framework framework = frameworkRepository.findByCode(FRAMEWORK_CODE).orElse(null);
         if (framework == null || !framework.isActive()) {
-            LOGGER.warn("Chưa có khung {} đang hoạt động. Bỏ qua khởi tạo chính sách chấm mẫu", FRAMEWORK_CODE);
+            log.warn("Chưa có khung {} đang hoạt động. Bỏ qua khởi tạo chính sách chấm mẫu", FRAMEWORK_CODE);
             return;
         }
 
         FrameworkVersion frameworkVersion = latestPublishedVersion(framework.getId());
         if (frameworkVersion == null) {
-            LOGGER.warn("Khung {} chưa có phiên bản nào được ban hành. Bỏ qua khởi tạo chính sách chấm mẫu",
+            log.warn("Khung {} chưa có phiên bản nào được ban hành. Bỏ qua khởi tạo chính sách chấm mẫu",
                 FRAMEWORK_CODE);
             return;
         }
@@ -203,10 +184,10 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
         }
 
         if (created == 0) {
-            LOGGER.info("Chính sách chấm mẫu của hệ thống đã đầy đủ. Bỏ qua khởi tạo");
+            log.info("Chính sách chấm mẫu của hệ thống đã đầy đủ. Bỏ qua khởi tạo");
             return;
         }
-        LOGGER.info("Đã khởi tạo {} chính sách chấm mẫu của hệ thống (ngôn ngữ {}, khung {})",
+        log.info("Đã khởi tạo {} chính sách chấm mẫu của hệ thống (ngôn ngữ {}, khung {})",
             created, LANGUAGE_CODE, frameworkVersion.getCode());
     }
 
@@ -221,7 +202,7 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
         FrameworkResultBand targetBand = frameworkResultBandRepository
             .findByVersionIdAndCode(frameworkVersion.getId(), seed.targetBandCode()).orElse(null);
         if (targetBand == null) {
-            LOGGER.warn("Phiên bản khung {} thiếu bậc {}. Bỏ qua chính sách chấm mẫu tương ứng",
+            log.warn("Phiên bản khung {} thiếu bậc {}. Bỏ qua chính sách chấm mẫu tương ứng",
                 frameworkVersion.getCode(), seed.targetBandCode());
             return false;
         }
@@ -231,7 +212,7 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
         if (seed.gradeLevelCode() != null) {
             gradeLevel = gradeLevelRepository.findByCode(seed.gradeLevelCode()).orElse(null);
             if (gradeLevel == null) {
-                LOGGER.warn("Không tìm thấy khối {}. Bỏ qua chính sách chấm mẫu cho khối này",
+                log.warn("Không tìm thấy khối {}. Bỏ qua chính sách chấm mẫu cho khối này",
                     seed.gradeLevelCode());
                 return false;
             }
@@ -240,20 +221,20 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
 
         RubricVersion rubricVersion = rubricVersionRepository.findByCode(seed.rubricVersionCode()).orElse(null);
         if (rubricVersion == null) {
-            LOGGER.warn("Không tìm thấy phiên bản bộ tiêu chí mẫu {}. Bỏ qua chính sách chấm mẫu bậc {}",
+            log.warn("Không tìm thấy phiên bản bộ tiêu chí mẫu {}. Bỏ qua chính sách chấm mẫu bậc {}",
                 seed.rubricVersionCode(), seed.targetBandCode());
             return false;
         }
         Rubric rubric = rubricRepository.findById(rubricVersion.getRubricId()).orElse(null);
         if (rubric == null || rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
-            LOGGER.warn("Bộ tiêu chí của phiên bản {} không thuộc sở hữu SYSTEM. Bỏ qua chính sách chấm mẫu"
+            log.warn("Bộ tiêu chí của phiên bản {} không thuộc sở hữu SYSTEM. Bỏ qua chính sách chấm mẫu"
                 + " bậc {}", seed.rubricVersionCode(), seed.targetBandCode());
             return false;
         }
         // The same check CreateSystemAssessmentPolicyUseCase applies: the rubric is tied to the FRAMEWORK (not
         // the framework version), so compare against getFrameworkId of the version in use.
         if (!rubric.getFrameworkId().equals(frameworkId)) {
-            LOGGER.warn("Bộ tiêu chí {} không cùng khung với chính sách. Bỏ qua chính sách chấm mẫu bậc {}",
+            log.warn("Bộ tiêu chí {} không cùng khung với chính sách. Bỏ qua chính sách chấm mẫu bậc {}",
                 seed.rubricVersionCode(), seed.targetBandCode());
             return false;
         }

@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.question;
 import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionBank;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +21,7 @@ import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 
 @Service
+@RequiredArgsConstructor
 public class CloneQuestionUseCase implements IUseCase<CloneQuestionCommand, QuestionDto> {
 
     private final QuestionRepository questionRepository;
@@ -27,19 +29,6 @@ public class CloneQuestionUseCase implements IUseCase<CloneQuestionCommand, Ques
     private final QuestionCollaboratorRepository questionCollaboratorRepository;
     private final QuestionCloneService questionCloneService;
     private final UserContextPort userContextPort;
-
-    public CloneQuestionUseCase(
-            QuestionRepository questionRepository,
-            QuestionBankRepository questionBankRepository,
-            QuestionCollaboratorRepository questionCollaboratorRepository,
-            QuestionCloneService questionCloneService,
-            UserContextPort userContextPort) {
-        this.questionRepository = questionRepository;
-        this.questionBankRepository = questionBankRepository;
-        this.questionCollaboratorRepository = questionCollaboratorRepository;
-        this.questionCloneService = questionCloneService;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

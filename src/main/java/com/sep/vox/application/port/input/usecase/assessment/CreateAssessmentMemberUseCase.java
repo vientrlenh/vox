@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.assessment;
 import com.sep.vox.domain.model.assessment.Assessment;
 import java.time.Instant;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,23 +20,13 @@ import com.sep.vox.domain.repository.AssessmentRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class CreateAssessmentMemberUseCase implements IUseCase<CreateAssessmentMemberCommand, AssessmentMemberDto> {
 
     private final AssessmentRepository assessmentRepository;
     private final AssessmentMemberRepository assessmentMemberRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final AssessmentMemberManageAccessService assessmentMemberManageAccessService;
-
-    public CreateAssessmentMemberUseCase(
-            AssessmentRepository assessmentRepository,
-            AssessmentMemberRepository assessmentMemberRepository,
-            SchoolUserRepository schoolUserRepository,
-            AssessmentMemberManageAccessService assessmentMemberManageAccessService) {
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentMemberRepository = assessmentMemberRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.assessmentMemberManageAccessService = assessmentMemberManageAccessService;
-    }
 
     @Override
     @Transactional

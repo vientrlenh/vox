@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.common.RoleConstant;
@@ -38,6 +39,7 @@ import com.sep.vox.domain.repository.UserRoleRepository;
  * was charged, the quota snapshot) at any time, independent of the outbox/notification lifecycle.
  */
 @Service
+@RequiredArgsConstructor
 public class SchoolDebtNotificationService {
 
     private final OutboxRepository outboxRepository;
@@ -45,19 +47,6 @@ public class SchoolDebtNotificationService {
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleRepository userRoleRepository;
     private final SchoolDebtEventRepository schoolDebtEventRepository;
-
-    public SchoolDebtNotificationService(
-            OutboxRepository outboxRepository,
-            JsonSerializationPort jsonSerializationPort,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleRepository userRoleRepository,
-            SchoolDebtEventRepository schoolDebtEventRepository) {
-        this.outboxRepository = outboxRepository;
-        this.jsonSerializationPort = jsonSerializationPort;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleRepository = userRoleRepository;
-        this.schoolDebtEventRepository = schoolDebtEventRepository;
-    }
 
     /**
      * @param triggerAssessmentSessionId the ASSESSMENT session that caused the deduction over the ceiling -- null when the source is speaking practice

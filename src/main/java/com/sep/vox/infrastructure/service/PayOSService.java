@@ -17,8 +17,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -46,9 +45,8 @@ import vn.payos.model.v2.paymentRequests.PaymentLinkStatus;
 // sang WebhookData (có field Instant) bằng ObjectMapper nội bộ không có JavaTimeModule,
 // luôn ném InvalidDefinitionException với mọi webhook thật (có transactionDateTime).
 @Service
+@Slf4j
 public class PayOSService implements PaymentProcessPort {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(PayOSService.class);
 
     private static final String HMAC_ALGORITHM = "HmacSHA256";
     private static final String SUCCESS_CODE = "00";
@@ -130,7 +128,7 @@ public class PayOSService implements PaymentProcessPort {
         // Without qrCode we fall back to REDIRECT instead of building an empty QR page -- the FE does not have to guess, and
         // an SDK version without this field does not break the payment flow either.
         if (!hasText(response.getQrCode())) {
-            LOGGER.warn("PayOS không trả về qrCode cho orderCode={} -- lùi về điều hướng sang trang checkout",
+            log.warn("PayOS không trả về qrCode cho orderCode={} -- lùi về điều hướng sang trang checkout",
                 command.orderRef());
             return PaymentCheckoutResult.redirect(response.getCheckoutUrl(), response.getPaymentLinkId());
         }
@@ -158,7 +156,7 @@ public class PayOSService implements PaymentProcessPort {
             // caller must be able to tell "the gateway says there is no session" from "could not ask the gateway" -- mapping
             // the latter to NOT_FOUND would allow us to fail an attempt that may still be alive and about to
             // bring in money.
-            LOGGER.warn("PayOS không có phiên thanh toán nào mang mã {} -- coi như lần thử đã chết",
+            log.warn("PayOS không có phiên thanh toán nào mang mã {} -- coi như lần thử đã chết",
                 providerOrderRef, e);
             return new PaymentLinkStatusResult(PaymentLinkRemoteStatus.NOT_FOUND);
         }
@@ -173,7 +171,7 @@ public class PayOSService implements PaymentProcessPort {
             // is waiting for a definitive answer before daring to close the order.
             boolean confirmed = toRemoteStatus(cancelled.getStatus()) == PaymentLinkRemoteStatus.CANCELLED;
             if (!confirmed) {
-                LOGGER.warn("PayOS nhận lệnh hủy link {} nhưng trạng thái trả về là {}",
+                log.warn("PayOS nhận lệnh hủy link {} nhưng trạng thái trả về là {}",
                     providerOrderRef, cancelled.getStatus());
             }
             return confirmed;
@@ -181,7 +179,7 @@ public class PayOSService implements PaymentProcessPort {
             // Do not throw: to the caller "cancel failed" and "the gateway does not support cancel" lead to the same
             // decision -- do not close the order. Throwing here would only turn a case that can be handled
             // into a 500 error for the user.
-            LOGGER.warn("Không hủy được link thanh toán PayOS {}", providerOrderRef, e);
+            log.warn("Không hủy được link thanh toán PayOS {}", providerOrderRef, e);
             return false;
         }
     }
@@ -210,7 +208,7 @@ public class PayOSService implements PaymentProcessPort {
         }
 
         if (!(data.get("orderCode") instanceof Number orderCode)) {
-            LOGGER.warn("Webhook PayOS có chữ ký hợp lệ nhưng thiếu orderCode");
+            log.warn("Webhook PayOS có chữ ký hợp lệ nhưng thiếu orderCode");
             return CallbackVerificationResult.invalid();
         }
 
@@ -238,7 +236,7 @@ public class PayOSService implements PaymentProcessPort {
             String json = decoder.decode(ByteBuffer.wrap(rawBody)).toString();
             return jsonMapper.readValue(json, new TypeReference<Map<String, Object>>() {});
         } catch (CharacterCodingException | RuntimeException e) {
-            LOGGER.warn("Không đọc được payload webhook PayOS", e);
+            log.warn("Không đọc được payload webhook PayOS", e);
             return null;
         }
     }

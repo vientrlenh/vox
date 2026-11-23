@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
+import com.tngtech.archunit.core.domain.properties.HasName;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
@@ -56,7 +57,8 @@ class LayeredArchitectureTests {
     private static final DescribedPredicate<JavaClass> APPLICATION_ALLOWED_DEPENDENCY = JavaClass.Predicates
         .resideInAnyPackage("java..", DOMAIN, APPLICATION, "org.slf4j..", "org.springframework.transaction.annotation..")
         .or(JavaClass.Predicates.belongToAnyOf(Service.class))
-        .as("are plain Java, domain, application, slf4j, @Service or @Transactional");
+        .or(HasName.Predicates.name("lombok.Generated"))
+        .as("are plain Java, domain, application, slf4j, @Service, @Transactional or the lombok.Generated marker");
 
     /**
      * Application classes that still depend on something outside the allowed set, by top-level class name. This is

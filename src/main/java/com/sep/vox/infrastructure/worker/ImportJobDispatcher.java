@@ -3,8 +3,7 @@ package com.sep.vox.infrastructure.worker;
 import java.time.Duration;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -14,9 +13,9 @@ import com.sep.vox.application.port.input.service.ImportCommitService;
 import com.sep.vox.application.port.input.service.ImportQueueService;
 
 @Component
+@Slf4j
 public class ImportJobDispatcher {
 
-    private static final Logger log = LoggerFactory.getLogger(ImportJobDispatcher.class);
     private static final Duration LEASE = Duration.ofMinutes(5);
     private static final int MAX_ATTEMPTS = 3;
 

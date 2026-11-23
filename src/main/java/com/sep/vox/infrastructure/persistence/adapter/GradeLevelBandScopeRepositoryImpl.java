@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.gradelevel.GradeLevelBandScope;
@@ -14,13 +15,10 @@ import com.sep.vox.infrastructure.persistence.mapper.GradeLevelBandScopeMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataGradeLevelBandScopeRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class GradeLevelBandScopeRepositoryImpl implements GradeLevelBandScopeRepository {
 
     private final SpringDataGradeLevelBandScopeRepository bandScopeRepository;
-
-    public GradeLevelBandScopeRepositoryImpl(SpringDataGradeLevelBandScopeRepository bandScopeRepository) {
-        this.bandScopeRepository = bandScopeRepository;
-    }
 
     @Override
     public Optional<GradeLevelBandScope> findByGradeLevelIdAndFrameworkVersionId(

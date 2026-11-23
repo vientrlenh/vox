@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.service;
 
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
@@ -24,6 +25,7 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
  * {@code existsByAssessmentIdAndUserIdAndRole} as before.
  */
 @Service
+@RequiredArgsConstructor
 public class AssessmentPaperAuthoringAccessService {
 
     private static final String SCHOOL_ADMIN = "SCHOOL_ADMIN";
@@ -31,15 +33,6 @@ public class AssessmentPaperAuthoringAccessService {
     private final AssessmentMemberRepository assessmentMemberRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
-
-    public AssessmentPaperAuthoringAccessService(
-            AssessmentMemberRepository assessmentMemberRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository) {
-        this.assessmentMemberRepository = assessmentMemberRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-    }
 
     /**
      * @param schoolAdmin người gọi là quản trị trường <b>của chính trường kỳ thi</b> — quản trị trường

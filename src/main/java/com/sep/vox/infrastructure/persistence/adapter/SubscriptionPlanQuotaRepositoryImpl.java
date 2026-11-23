@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.subscription.SubscriptionPlanQuota;
@@ -14,13 +15,10 @@ import com.sep.vox.infrastructure.persistence.mapper.SubscriptionPlanQuotaMapper
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSubscriptionPlanQuotaRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class SubscriptionPlanQuotaRepositoryImpl implements SubscriptionPlanQuotaRepository {
 
     private final SpringDataSubscriptionPlanQuotaRepository springDataSubscriptionPlanQuotaRepository;
-
-    public SubscriptionPlanQuotaRepositoryImpl(SpringDataSubscriptionPlanQuotaRepository springDataSubscriptionPlanQuotaRepository) {
-        this.springDataSubscriptionPlanQuotaRepository = springDataSubscriptionPlanQuotaRepository;
-    }
 
     @Override
     public Optional<SubscriptionPlanQuota> findById(UUID id) {

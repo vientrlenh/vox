@@ -2,6 +2,7 @@ package com.sep.vox.application.mapper.scoringrule;
 
 import java.util.Map;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.output.JsonSerializationPort;
@@ -19,13 +20,10 @@ import com.sep.vox.domain.valueobject.scoringrulecondition.ScoringRuleConditionP
  * to, so the client does not need to know the Java structure in advance.
  */
 @Service
+@RequiredArgsConstructor
 public class ScoringRuleParamsMapper {
 
     private final JsonSerializationPort jsonSerializationPort;
-
-    public ScoringRuleParamsMapper(JsonSerializationPort jsonSerializationPort) {
-        this.jsonSerializationPort = jsonSerializationPort;
-    }
 
     // Raw JSON map -> concrete condition Value Object (e.g. DURATION_LESS_THAN -> DurationThresholdParams)
     public ScoringRuleConditionParams toConditionParams(ScoringRuleConditionType conditionType, Map<String, Object> raw) {

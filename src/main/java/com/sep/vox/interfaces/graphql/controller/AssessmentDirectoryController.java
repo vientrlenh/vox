@@ -3,6 +3,7 @@ package com.sep.vox.interfaces.graphql.controller;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -30,23 +31,13 @@ import com.sep.vox.interfaces.shared.PageArguments;
  * {@code assessment_members}, not a global role.
  */
 @Controller
+@RequiredArgsConstructor
 public class AssessmentDirectoryController {
 
     private final ViewAssessmentDirectoryClassesUseCase viewAssessmentDirectoryClassesUseCase;
     private final ViewAssessmentDirectoryGradesUseCase viewAssessmentDirectoryGradesUseCase;
     private final ViewAssessmentDirectoryStudentsUseCase viewAssessmentDirectoryStudentsUseCase;
     private final ViewAssessmentDirectoryProctorsUseCase viewAssessmentDirectoryProctorsUseCase;
-
-    public AssessmentDirectoryController(
-            ViewAssessmentDirectoryClassesUseCase viewAssessmentDirectoryClassesUseCase,
-            ViewAssessmentDirectoryGradesUseCase viewAssessmentDirectoryGradesUseCase,
-            ViewAssessmentDirectoryStudentsUseCase viewAssessmentDirectoryStudentsUseCase,
-            ViewAssessmentDirectoryProctorsUseCase viewAssessmentDirectoryProctorsUseCase) {
-        this.viewAssessmentDirectoryClassesUseCase = viewAssessmentDirectoryClassesUseCase;
-        this.viewAssessmentDirectoryGradesUseCase = viewAssessmentDirectoryGradesUseCase;
-        this.viewAssessmentDirectoryStudentsUseCase = viewAssessmentDirectoryStudentsUseCase;
-        this.viewAssessmentDirectoryProctorsUseCase = viewAssessmentDirectoryProctorsUseCase;
-    }
 
     @QueryMapping(name = "assessmentDirectoryClasses")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")

@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,6 +47,7 @@ import com.sep.vox.domain.repository.OutboxRepository;
  * on the appeal.
  */
 @Service
+@RequiredArgsConstructor
 public class AssignAssessmentAppealReviewerUseCase implements IUseCase<AssignAssessmentAppealReviewerCommand, UUID> {
 
     private final AssessmentResultAppealRepository assessmentResultAppealRepository;
@@ -56,25 +58,6 @@ public class AssignAssessmentAppealReviewerUseCase implements IUseCase<AssignAss
     private final ResultStatusHistoryRecorder resultStatusHistoryRecorder;
     private final OutboxRepository outboxRepository;
     private final JsonSerializationPort jsonSerializationPort;
-
-    public AssignAssessmentAppealReviewerUseCase(
-            AssessmentResultAppealRepository assessmentResultAppealRepository,
-            AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository,
-            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
-            AssessmentGradingQueryRepository assessmentGradingQueryRepository,
-            AssessmentAppealAccessService assessmentAppealAccessService,
-            ResultStatusHistoryRecorder resultStatusHistoryRecorder,
-            OutboxRepository outboxRepository,
-            JsonSerializationPort jsonSerializationPort) {
-        this.assessmentResultAppealRepository = assessmentResultAppealRepository;
-        this.assessmentGradingAssignmentRepository = assessmentGradingAssignmentRepository;
-        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
-        this.assessmentGradingQueryRepository = assessmentGradingQueryRepository;
-        this.assessmentAppealAccessService = assessmentAppealAccessService;
-        this.resultStatusHistoryRecorder = resultStatusHistoryRecorder;
-        this.outboxRepository = outboxRepository;
-        this.jsonSerializationPort = jsonSerializationPort;
-    }
 
     @Override
     @Transactional

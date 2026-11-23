@@ -5,6 +5,7 @@ import com.sep.vox.domain.model.question.Question;
 import java.time.Instant;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,23 +26,13 @@ import com.sep.vox.domain.repository.AssessmentSecurePoolRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateAssessmentSecurePoolStatusUseCase implements IUseCase<UpdateAssessmentSecurePoolStatusCommand, AssessmentSecurePoolDto> {
 
     private final AssessmentSecurePoolRepository assessmentSecurePoolRepository;
     private final AssessmentMemberRepository assessmentMemberRepository;
     private final QuestionRepository questionRepository;
     private final UserContextPort userContextPort;
-
-    public UpdateAssessmentSecurePoolStatusUseCase(
-            AssessmentSecurePoolRepository assessmentSecurePoolRepository,
-            AssessmentMemberRepository assessmentMemberRepository,
-            QuestionRepository questionRepository,
-            UserContextPort userContextPort) {
-        this.assessmentSecurePoolRepository = assessmentSecurePoolRepository;
-        this.assessmentMemberRepository = assessmentMemberRepository;
-        this.questionRepository = questionRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

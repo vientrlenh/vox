@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.assessment.AssessmentResultStatusHistory;
@@ -13,14 +14,10 @@ import com.sep.vox.infrastructure.persistence.mapper.AssessmentResultStatusHisto
 import com.sep.vox.infrastructure.persistence.repository.SpringDataAssessmentResultStatusHistoryRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class AssessmentResultStatusHistoryRepositoryImpl implements AssessmentResultStatusHistoryRepository {
 
     private final SpringDataAssessmentResultStatusHistoryRepository springDataAssessmentResultStatusHistoryRepository;
-
-    public AssessmentResultStatusHistoryRepositoryImpl(
-            SpringDataAssessmentResultStatusHistoryRepository springDataAssessmentResultStatusHistoryRepository) {
-        this.springDataAssessmentResultStatusHistoryRepository = springDataAssessmentResultStatusHistoryRepository;
-    }
 
     @Override
     public AssessmentResultStatusHistory save(AssessmentResultStatusHistory history) {

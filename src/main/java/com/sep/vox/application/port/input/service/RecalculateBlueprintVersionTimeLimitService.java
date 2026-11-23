@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +23,7 @@ import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.service.assessment.PaperTimeCalculator;
 
 @Service
+@RequiredArgsConstructor
 public class RecalculateBlueprintVersionTimeLimitService {
 
     private final AssessmentBlueprintVersionRepository assessmentBlueprintVersionRepository;
@@ -29,19 +31,6 @@ public class RecalculateBlueprintVersionTimeLimitService {
     private final AssessmentBlueprintSlotRepository assessmentBlueprintSlotRepository;
     private final QuestionRepository questionRepository;
     private final QuestionAssetRepository questionAssetRepository;
-
-    public RecalculateBlueprintVersionTimeLimitService(
-            AssessmentBlueprintVersionRepository assessmentBlueprintVersionRepository,
-            AssessmentBlueprintSectionRepository assessmentBlueprintSectionRepository,
-            AssessmentBlueprintSlotRepository assessmentBlueprintSlotRepository,
-            QuestionRepository questionRepository,
-            QuestionAssetRepository questionAssetRepository) {
-        this.assessmentBlueprintVersionRepository = assessmentBlueprintVersionRepository;
-        this.assessmentBlueprintSectionRepository = assessmentBlueprintSectionRepository;
-        this.assessmentBlueprintSlotRepository = assessmentBlueprintSlotRepository;
-        this.questionRepository = questionRepository;
-        this.questionAssetRepository = questionAssetRepository;
-    }
 
     @Transactional
     public AssessmentBlueprintVersion recalculate(UUID blueprintVersionId) {

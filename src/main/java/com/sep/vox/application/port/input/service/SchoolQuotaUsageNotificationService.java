@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.common.RoleConstant;
@@ -27,20 +28,12 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
  * {@code SchoolDebtNotificationService} writes the outbox inside the main business transaction.
  */
 @Service
+@RequiredArgsConstructor
 public class SchoolQuotaUsageNotificationService {
 
     private final OutboxRepository outboxRepository;
     private final JsonSerializationPort jsonSerializationPort;
     private final SchoolUserRepository schoolUserRepository;
-
-    public SchoolQuotaUsageNotificationService(
-            OutboxRepository outboxRepository,
-            JsonSerializationPort jsonSerializationPort,
-            SchoolUserRepository schoolUserRepository) {
-        this.outboxRepository = outboxRepository;
-        this.jsonSerializationPort = jsonSerializationPort;
-        this.schoolUserRepository = schoolUserRepository;
-    }
 
     public void publishQuotaUsageWarning(
             UUID subscriptionId, UUID schoolId, QuotaType quotaType,

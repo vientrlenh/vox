@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.assessment.AssessmentSession;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,17 +31,11 @@ import com.sep.vox.domain.repository.AssessmentProctoringAlertRepository;
  * blast radius that deserves to go on its own.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewAssessmentSessionProctoringAlertsUseCase implements IUseCase<UUID, List<AssessmentProctoringAlertDto>> {
 
     private final AssessmentRecordingAccessService accessService;
     private final AssessmentProctoringAlertRepository assessmentProctoringAlertRepository;
-
-    public ViewAssessmentSessionProctoringAlertsUseCase(
-            AssessmentRecordingAccessService accessService,
-            AssessmentProctoringAlertRepository assessmentProctoringAlertRepository) {
-        this.accessService = accessService;
-        this.assessmentProctoringAlertRepository = assessmentProctoringAlertRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

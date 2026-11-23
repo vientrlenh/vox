@@ -24,6 +24,7 @@ import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +37,7 @@ import java.util.Set;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<CreateAssessmentPolicyCommand>, List<UUID>> {
 
     private final AssessmentPolicyRepository assessmentPolicyRepository;
@@ -52,43 +54,14 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
     private final UserContextPort userContextPort;
     private final GradeLevelBandScopeGuardService gradeLevelBandScopeGuardService;
 
-    // Dùng để phát số "version" kế tiếp theo scope, xuyên suốt toàn bộ batch
+    // Used to issue the next "version" number per scope across the whole batch
     private record VersionScopeKey(UUID languageId, UUID frameworkVersionId,
                                     UUID gradeLevelId, UUID schoolGradeId, UUID schoolClassId) {}
 
-    // Chặn hai Policy trùng PHẠM VI ngay trong cùng 1 lần gọi API. KHÔNG gồm rubricVersionId:
-    // một phạm vi chỉ được đúng một chính sách, bất kể trỏ vào phiên bản Rubric nào.
+    // Rejects two Policies with the same SCOPE within a single API call. Does NOT include rubricVersionId:
+    // a scope may have exactly one policy, whichever Rubric version it points to.
     private record ScopeClaimKey(UUID languageId, UUID frameworkVersionId,
                                   UUID gradeLevelId, UUID schoolGradeId, UUID schoolClassId) {}
-
-    public CreateSchoolAssessmentPolicyUseCase(
-            AssessmentPolicyRepository assessmentPolicyRepository,
-            FrameworkVersionRepository frameworkVersionRepository,
-            FrameworkResultBandRepository frameworkResultBandRepository,
-            RubricVersionRepository rubricVersionRepository,
-            RubricRepository rubricRepository,
-            SupportedLanguageRepository languageRepository,
-            GradeLevelRepository gradeLevelRepository,
-            SchoolGradeRepository schoolGradeRepository,
-            SchoolClassRepository schoolClassRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort,
-            GradeLevelBandScopeGuardService gradeLevelBandScopeGuardService) {
-        this.assessmentPolicyRepository = assessmentPolicyRepository;
-        this.frameworkVersionRepository = frameworkVersionRepository;
-        this.frameworkResultBandRepository = frameworkResultBandRepository;
-        this.rubricVersionRepository = rubricVersionRepository;
-        this.rubricRepository = rubricRepository;
-        this.languageRepository = languageRepository;
-        this.gradeLevelRepository = gradeLevelRepository;
-        this.schoolGradeRepository = schoolGradeRepository;
-        this.schoolClassRepository = schoolClassRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-        this.gradeLevelBandScopeGuardService = gradeLevelBandScopeGuardService;
-    }
 
     @Override
     @Transactional

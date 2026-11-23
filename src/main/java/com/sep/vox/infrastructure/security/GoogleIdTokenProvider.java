@@ -2,8 +2,7 @@ package com.sep.vox.infrastructure.security;
 
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
@@ -36,9 +35,8 @@ import com.sep.vox.infrastructure.properties.GoogleIdTokenProperties;
  * vòng mạng ra ngoài internet.
  */
 @Component
+@Slf4j
 public class GoogleIdTokenProvider implements GoogleIdTokenVerifierPort {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(GoogleIdTokenProvider.class);
 
     private static final String CLAIM_EMAIL = "email";
     private static final String CLAIM_EMAIL_VERIFIED = "email_verified";
@@ -56,7 +54,7 @@ public class GoogleIdTokenProvider implements GoogleIdTokenVerifierPort {
         // used yet -- unlike CORS or the admin account, which are always required so fail-fast is right.
         // The real rejection lives in verify(), where a real person is trying to log in and can be told about the error.
         if (allowedAudiences.isEmpty()) {
-            LOGGER.warn(
+            log.warn(
                 "app.oauth2.google.allowed-audiences đang trống -- đăng nhập Google từ ứng dụng "
                     + "native (Flutter/WPF) sẽ bị từ chối toàn bộ. Đặt biến môi trường "
                     + "GOOGLE_ALLOWED_AUDIENCES gồm client ID WEB (Flutter gửi cái này qua "
@@ -88,7 +86,7 @@ public class GoogleIdTokenProvider implements GoogleIdTokenVerifierPort {
         }
 
         if (allowedAudiences.isEmpty()) {
-            LOGGER.error(
+            log.error(
                 "Từ chối đăng nhập Google: app.oauth2.google.allowed-audiences chưa được cấu hình.");
             throw new UnauthorizedException("Đăng nhập Google chưa được cấu hình trên hệ thống");
         }
@@ -97,14 +95,14 @@ public class GoogleIdTokenProvider implements GoogleIdTokenVerifierPort {
         try {
             jwt = jwtDecoder.decode(idToken);
         } catch (JwtException e) {
-            LOGGER.warn("ID token Google không hợp lệ: {}", e.getMessage());
+            log.warn("ID token Google không hợp lệ: {}", e.getMessage());
             throw new UnauthorizedException("Đăng nhập Google thất bại");
         }
 
         String email = jwt.getClaimAsString(CLAIM_EMAIL);
         if (email == null || email.isBlank()) {
             // The token is valid but carries no email scope, so there is nothing to look the user up with.
-            LOGGER.warn("ID token Google hợp lệ nhưng thiếu claim email -- client thiếu scope?");
+            log.warn("ID token Google hợp lệ nhưng thiếu claim email -- client thiếu scope?");
             throw new UnauthorizedException("Đăng nhập Google thất bại");
         }
 

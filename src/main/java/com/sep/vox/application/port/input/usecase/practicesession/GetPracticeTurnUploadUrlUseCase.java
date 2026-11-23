@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.practicesession;
 import java.time.Duration;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.output.StoragePort;
@@ -14,15 +15,12 @@ import com.sep.vox.application.response.input.assessmentturn.TurnUploadUrlRespon
  * audio buffer of the turn, see PracticeAttemptConnection._write_turn_wav.
  */
 @Service
+@RequiredArgsConstructor
 public class GetPracticeTurnUploadUrlUseCase {
 
     private static final Duration TTL = Duration.ofMinutes(5);
 
     private final StoragePort storagePort;
-
-    public GetPracticeTurnUploadUrlUseCase(StoragePort storagePort) {
-        this.storagePort = storagePort;
-    }
 
     public TurnUploadUrlResponse execute(UUID practiceSessionId, int turnOrder) {
         String key = "practice/%s/turn-%d.wav".formatted(practiceSessionId, turnOrder);

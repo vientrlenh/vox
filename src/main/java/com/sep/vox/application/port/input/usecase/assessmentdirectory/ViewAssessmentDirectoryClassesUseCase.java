@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.assessmentdirectory;
 
 import com.sep.vox.domain.model.school.SchoolClass;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,18 +22,12 @@ import com.sep.vox.domain.repository.SchoolClassRepository;
  * classes for the chair of a class test -- see {@link AssessmentDirectoryAccessService}.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewAssessmentDirectoryClassesUseCase
         implements IUseCase<ViewAssessmentDirectoryQuery, PageResult<SchoolClassDto>> {
 
     private final AssessmentDirectoryAccessService assessmentDirectoryAccessService;
     private final SchoolClassRepository schoolClassRepository;
-
-    public ViewAssessmentDirectoryClassesUseCase(
-            AssessmentDirectoryAccessService assessmentDirectoryAccessService,
-            SchoolClassRepository schoolClassRepository) {
-        this.assessmentDirectoryAccessService = assessmentDirectoryAccessService;
-        this.schoolClassRepository = schoolClassRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+import lombok.RequiredArgsConstructor;
 import org.dataloader.DataLoader;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
@@ -38,6 +39,7 @@ import com.sep.vox.interfaces.graphql.dto.request.UpdateAssessmentScheduleInput;
 import com.sep.vox.interfaces.graphql.mapper.UpdateAssessmentScheduleCommandMapper;
 
 @Controller("graphqlAssessmentScheduleController")
+@RequiredArgsConstructor
 public class AssessmentScheduleController {
 
     private final ViewAssessmentSchedulesUseCase viewAssessmentSchedulesUseCase;
@@ -47,23 +49,6 @@ public class AssessmentScheduleController {
     private final ViewStudentBusySlotsUseCase viewStudentBusySlotsUseCase;
     private final AssessmentScheduleProctorRepository assessmentScheduleProctorRepository;
     private final AssessmentCandidateRepository assessmentCandidateRepository;
-
-    public AssessmentScheduleController(
-            ViewAssessmentSchedulesUseCase viewAssessmentSchedulesUseCase,
-            ViewMyAssessmentSchedulesUseCase viewMyAssessmentSchedulesUseCase,
-            UpdateAssessmentScheduleUseCase updateAssessmentScheduleUseCase,
-            ViewProctorBusySlotsUseCase viewProctorBusySlotsUseCase,
-            ViewStudentBusySlotsUseCase viewStudentBusySlotsUseCase,
-            AssessmentScheduleProctorRepository assessmentScheduleProctorRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository) {
-        this.viewAssessmentSchedulesUseCase = viewAssessmentSchedulesUseCase;
-        this.viewMyAssessmentSchedulesUseCase = viewMyAssessmentSchedulesUseCase;
-        this.updateAssessmentScheduleUseCase = updateAssessmentScheduleUseCase;
-        this.viewProctorBusySlotsUseCase = viewProctorBusySlotsUseCase;
-        this.viewStudentBusySlotsUseCase = viewStudentBusySlotsUseCase;
-        this.assessmentScheduleProctorRepository = assessmentScheduleProctorRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-    }
 
     @QueryMapping(name = "myAssessmentSchedules")
     @PreAuthorize("hasRole('STUDENT')")

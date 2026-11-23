@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,15 +38,16 @@ import com.sep.vox.domain.repository.AssessmentResultAppealRepository;
  * chưa kịp nhả chỗ.
  */
 @Service
+@RequiredArgsConstructor
 public class ReclaimOverdueAssignmentsUseCase
         implements IUseCase<ReclaimOverdueAssignmentsCommand, ReclaimOverdueResponse> {
 
     private static final String RECLAIM_REASON = "Thu hồi do quá hạn chấm.";
 
     /**
-     * Trần một lượt thu hồi. Nhánh "không chỉ định" chạy trong một transaction GHI, nên
-     * không có trần thì một trường tồn đọng lớn giữ connection và khoá rất lâu. Lấy dư
-     * đúng một dòng để biết còn nữa hay không mà không cần thêm câu COUNT.
+     * Cap on one reclaim run. The "unassigned" branch runs inside a WRITE transaction, so without
+     * a cap a school with a large backlog holds a connection and locks for a very long time. Fetching
+     * exactly one extra row tells whether more remain, without an additional COUNT query.
      */
     private static final int MAX_RECLAIM_BATCH = 500;
 
@@ -54,19 +56,6 @@ public class ReclaimOverdueAssignmentsUseCase
     private final AssessmentGradingQueryRepository assessmentGradingQueryRepository;
     private final AssessmentGradingAccessService assessmentGradingAccessService;
     private final RoundRobinLoadBalancer roundRobinLoadBalancer;
-
-    public ReclaimOverdueAssignmentsUseCase(
-            AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository,
-            AssessmentResultAppealRepository assessmentResultAppealRepository,
-            AssessmentGradingQueryRepository assessmentGradingQueryRepository,
-            AssessmentGradingAccessService assessmentGradingAccessService,
-            RoundRobinLoadBalancer roundRobinLoadBalancer) {
-        this.assessmentGradingAssignmentRepository = assessmentGradingAssignmentRepository;
-        this.assessmentResultAppealRepository = assessmentResultAppealRepository;
-        this.assessmentGradingQueryRepository = assessmentGradingQueryRepository;
-        this.assessmentGradingAccessService = assessmentGradingAccessService;
-        this.roundRobinLoadBalancer = roundRobinLoadBalancer;
-    }
 
     @Override
     @Transactional

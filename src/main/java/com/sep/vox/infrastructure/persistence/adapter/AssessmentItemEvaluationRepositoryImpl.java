@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.assessment.AssessmentItemEvaluation;
@@ -14,14 +15,10 @@ import com.sep.vox.infrastructure.persistence.mapper.AssessmentItemEvaluationMap
 import com.sep.vox.infrastructure.persistence.repository.SpringDataAssessmentItemEvaluationRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class AssessmentItemEvaluationRepositoryImpl implements AssessmentItemEvaluationRepository {
 
     private final SpringDataAssessmentItemEvaluationRepository springDataAssessmentItemEvaluationRepository;
-
-    public AssessmentItemEvaluationRepositoryImpl(
-            SpringDataAssessmentItemEvaluationRepository springDataAssessmentItemEvaluationRepository) {
-        this.springDataAssessmentItemEvaluationRepository = springDataAssessmentItemEvaluationRepository;
-    }
 
     @Override
     public AssessmentItemEvaluation save(AssessmentItemEvaluation evaluation) {

@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.subscription;
 import com.sep.vox.domain.model.subscription.SubscriptionPlan;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,18 +35,12 @@ import com.sep.vox.domain.repository.SubscriptionPlanRepository;
  * and one side's guard would get in the way of the other.
  */
 @Service
+@RequiredArgsConstructor
 public class UpdateSubscriptionPlanReplacementUseCase
         implements IUseCase<UpdateSubscriptionPlanReplacementCommand, UUID> {
 
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final SubscriptionPlanReplacementValidator replacementValidator;
-
-    public UpdateSubscriptionPlanReplacementUseCase(
-            SubscriptionPlanRepository subscriptionPlanRepository,
-            SubscriptionPlanReplacementValidator replacementValidator) {
-        this.subscriptionPlanRepository = subscriptionPlanRepository;
-        this.replacementValidator = replacementValidator;
-    }
 
     @Override
     @Transactional

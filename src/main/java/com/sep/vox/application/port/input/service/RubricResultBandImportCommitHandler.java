@@ -11,6 +11,7 @@ import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.domain.repository.RubricResultBandRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.application.exception.DataConflictException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -18,20 +19,12 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class RubricResultBandImportCommitHandler implements ImportCommitHandler {
 
     private final RubricResultBandRepository rubricResultBandRepository;
     private final RubricVersionRepository rubricVersionRepository;
     private final JsonSerializationPort jsonSerializationPort;
-
-    public RubricResultBandImportCommitHandler(
-            RubricResultBandRepository rubricResultBandRepository,
-            RubricVersionRepository rubricVersionRepository,
-            JsonSerializationPort jsonSerializationPort) {
-        this.rubricResultBandRepository = rubricResultBandRepository;
-        this.rubricVersionRepository = rubricVersionRepository;
-        this.jsonSerializationPort = jsonSerializationPort;
-    }
 
     @Override
     public ImportType supportedType() {

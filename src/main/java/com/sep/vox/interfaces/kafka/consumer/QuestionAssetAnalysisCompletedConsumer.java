@@ -2,9 +2,9 @@ package com.sep.vox.interfaces.kafka.consumer;
 
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.BackOff;
 import org.springframework.kafka.annotation.DltHandler;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -20,19 +20,12 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class QuestionAssetAnalysisCompletedConsumer {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(QuestionAssetAnalysisCompletedConsumer.class);
 
     private final RecordQuestionAssetAnalysisResultUseCase recordQuestionAssetAnalysisResultUseCase;
     private final JsonMapper jsonMapper;
-
-    public QuestionAssetAnalysisCompletedConsumer(
-            RecordQuestionAssetAnalysisResultUseCase recordQuestionAssetAnalysisResultUseCase,
-            JsonMapper jsonMapper) {
-        this.recordQuestionAssetAnalysisResultUseCase = recordQuestionAssetAnalysisResultUseCase;
-        this.jsonMapper = jsonMapper;
-    }
 
     @RetryableTopic(
         attempts = "4",
@@ -49,7 +42,7 @@ public class QuestionAssetAnalysisCompletedConsumer {
             JsonNode payload = jsonMapper.valueToTree(record.value());
             QuestionAssetAnalysisCompletedEventDto event = jsonMapper.treeToValue(payload, QuestionAssetAnalysisCompletedEventDto.class);
 
-            LOGGER.info("Receive question asset analysis event topic={} partition={} offset={} assetId={}",
+            log.info("Receive question asset analysis event topic={} partition={} offset={} assetId={}",
                 record.topic(), record.partition(), record.offset(), event == null ? null : event.assetId());
 
             if (event == null || event.assetId() == null || event.assetId().isBlank()) {
@@ -70,7 +63,7 @@ public class QuestionAssetAnalysisCompletedConsumer {
 
             ack.acknowledge();
         } catch (Exception e) {
-            LOGGER.error("Question asset analysis event processed failed, no ack: {}", e.getMessage(), e);
+            log.error("Question asset analysis event processed failed, no ack: {}", e.getMessage(), e);
             throw e instanceof RuntimeException runtimeException
                 ? runtimeException
                 : new IllegalStateException("Failed to process question asset analysis event", e);
@@ -79,6 +72,6 @@ public class QuestionAssetAnalysisCompletedConsumer {
 
     @DltHandler
     public void dltHandler(ConsumerRecord<String, Object> record) {
-        LOGGER.error("Question asset analysis DLT message at topic {}: {}", record.topic(), record.value());
+        log.error("Question asset analysis DLT message at topic {}: {}", record.topic(), record.value());
     }
 }

@@ -5,6 +5,7 @@ import com.sep.vox.domain.model.assessment.AssessmentSession;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,23 +17,13 @@ import com.sep.vox.domain.repository.AssessmentCandidateResultRepository;
 import com.sep.vox.domain.repository.AssessmentSessionRepository;
 
 @Service
+@RequiredArgsConstructor
 public class UpsertAssessmentCandidateResultUseCase {
 
     private final AssessmentCandidateResultRepository assessmentCandidateResultRepository;
     private final AssessmentCandidateRepository assessmentCandidateRepository;
     private final AssessmentSessionRepository assessmentSessionRepository;
     private final AssessmentSessionResultCalculator assessmentSessionResultCalculator;
-
-    public UpsertAssessmentCandidateResultUseCase(
-            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            AssessmentSessionRepository assessmentSessionRepository,
-            AssessmentSessionResultCalculator assessmentSessionResultCalculator) {
-        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.assessmentSessionRepository = assessmentSessionRepository;
-        this.assessmentSessionResultCalculator = assessmentSessionResultCalculator;
-    }
 
     /**
      * G.2: blockedAt (not yet lifted) -> INVALID; session.flagged (suspicious, waiting for ReviewFlaggedAssessmentResultUseCase)

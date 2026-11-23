@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,15 +15,11 @@ import com.sep.vox.infrastructure.persistence.entity.personalization.DimensionIn
 import com.sep.vox.infrastructure.persistence.repository.SpringDataDimensionInterestScoreRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class DimensionInterestScoreRepositoryImpl
         implements DimensionInterestScoreRepository {
 
     private final SpringDataDimensionInterestScoreRepository repository;
-
-    public DimensionInterestScoreRepositoryImpl(
-            SpringDataDimensionInterestScoreRepository repository) {
-        this.repository = repository;
-    }
 
     @Override
     @Transactional

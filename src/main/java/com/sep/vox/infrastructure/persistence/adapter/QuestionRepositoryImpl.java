@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
@@ -24,15 +24,11 @@ import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataQuestionRepository;
 
 @Repository
+@RequiredArgsConstructor
+@Slf4j
 public class QuestionRepositoryImpl implements QuestionRepository {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(QuestionRepositoryImpl.class);
-
     private final SpringDataQuestionRepository springDataQuestionRepository;
-
-    public QuestionRepositoryImpl(SpringDataQuestionRepository springDataQuestionRepository) {
-        this.springDataQuestionRepository = springDataQuestionRepository;
-    }
 
     @Override
     public Question save(Question question) {
@@ -69,7 +65,7 @@ public class QuestionRepositoryImpl implements QuestionRepository {
         List<Question> result = springDataQuestionRepository.findAllById(ids).stream()
             .map(QuestionMapper::toDomain)
             .toList();
-        LOGGER.info("[blueprint-perf] repo QuestionRepositoryImpl.findByIdIn ids={} tookMs={}",
+        log.info("[blueprint-perf] repo QuestionRepositoryImpl.findByIdIn ids={} tookMs={}",
             ids.size(), (System.nanoTime() - startedAt) / 1_000_000);
         return result;
     }
@@ -229,7 +225,7 @@ public class QuestionRepositoryImpl implements QuestionRepository {
             systemAdmin,
             schoolAdmin
         ).stream().map(QuestionMapper::toDomain).toList();
-        LOGGER.info("[blueprint-perf] repo QuestionRepositoryImpl.findAccessibleByIdIn ids={} tookMs={}",
+        log.info("[blueprint-perf] repo QuestionRepositoryImpl.findAccessibleByIdIn ids={} tookMs={}",
             ids.size(), (System.nanoTime() - startedAt) / 1_000_000);
         return result;
     }

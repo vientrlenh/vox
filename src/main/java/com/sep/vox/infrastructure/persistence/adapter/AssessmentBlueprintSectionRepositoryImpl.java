@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSection;
@@ -16,15 +16,11 @@ import com.sep.vox.infrastructure.persistence.mapper.AssessmentBlueprintSectionM
 import com.sep.vox.infrastructure.persistence.repository.SpringDataAssessmentBlueprintSectionRepository;
 
 @Repository
+@RequiredArgsConstructor
+@Slf4j
 public class AssessmentBlueprintSectionRepositoryImpl implements AssessmentBlueprintSectionRepository {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AssessmentBlueprintSectionRepositoryImpl.class);
-
     private final SpringDataAssessmentBlueprintSectionRepository springDataAssessmentBlueprintSectionRepository;
-
-    public AssessmentBlueprintSectionRepositoryImpl(SpringDataAssessmentBlueprintSectionRepository springDataAssessmentBlueprintSectionRepository) {
-        this.springDataAssessmentBlueprintSectionRepository = springDataAssessmentBlueprintSectionRepository;
-    }
 
     @Override
     public AssessmentBlueprintSection save(AssessmentBlueprintSection section) {
@@ -54,7 +50,7 @@ public class AssessmentBlueprintSectionRepositoryImpl implements AssessmentBluep
         List<AssessmentBlueprintSection> result = springDataAssessmentBlueprintSectionRepository.findByBlueprintVersionIdInOrderByOrderAsc(blueprintVersionIds).stream()
             .map(AssessmentBlueprintSectionMapper::toDomain)
             .toList();
-        LOGGER.info("[blueprint-perf] repo AssessmentBlueprintSectionRepositoryImpl.findByBlueprintVersionIdIn versionIds={} tookMs={}",
+        log.info("[blueprint-perf] repo AssessmentBlueprintSectionRepositoryImpl.findByBlueprintVersionIdIn versionIds={} tookMs={}",
             blueprintVersionIds.size(), (System.nanoTime() - startedAt) / 1_000_000);
         return result;
     }

@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.framework.FrameworkCriterionBand;
@@ -15,13 +16,10 @@ import com.sep.vox.infrastructure.persistence.repository.SpringDataFrameworkCrit
 import com.sep.vox.infrastructure.persistence.DataConflictTranslation;
 
 @Repository
+@RequiredArgsConstructor
 public class FrameworkCriterionBandRepositoryImpl implements FrameworkCriterionBandRepository {
 
     private final SpringDataFrameworkCriterionBandRepository springDataFrameworkCriterionBandRepository;
-
-    public FrameworkCriterionBandRepositoryImpl(SpringDataFrameworkCriterionBandRepository springDataFrameworkCriterionBandRepository) {
-        this.springDataFrameworkCriterionBandRepository = springDataFrameworkCriterionBandRepository;
-    }
 
     @Override
     public Optional<FrameworkCriterionBand> findById(UUID id) {

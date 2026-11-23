@@ -2,8 +2,8 @@ package com.sep.vox.infrastructure.worker;
 
 import java.time.Instant;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,19 +18,12 @@ import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 // job này tự chuyển EXPIRED khi ngày đó tới — không cần biết subscription có bị hủy hay không, cứ
 // hết hạn là hết hạn.
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class SubscriptionExpiryJob {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(SubscriptionExpiryJob.class);
 
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final CarryQuotaFundingAtPeriodStartService carryQuotaFundingAtPeriodStartService;
-
-    public SubscriptionExpiryJob(
-            SchoolSubscriptionRepository schoolSubscriptionRepository,
-            CarryQuotaFundingAtPeriodStartService carryQuotaFundingAtPeriodStartService) {
-        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
-        this.carryQuotaFundingAtPeriodStartService = carryQuotaFundingAtPeriodStartService;
-    }
 
     @Scheduled(fixedDelay = 3_600_000, initialDelay = 60_000)
     @Transactional
@@ -38,7 +31,7 @@ public class SubscriptionExpiryJob {
         Instant today = Instant.now();
         int expiredCount = schoolSubscriptionRepository.expireOverdue(today);
         if (expiredCount > 0) {
-            LOGGER.info("Đã chuyển {} subscription quá hạn sang EXPIRED", expiredCount);
+            log.info("Đã chuyển {} subscription quá hạn sang EXPIRED", expiredCount);
         }
 
         // The boundary between two periods is the ONLY place where the self-funded amount to carry over can be fixed, and this job is already
@@ -47,7 +40,7 @@ public class SubscriptionExpiryJob {
         // of the old one, precisely because the new period can be spent right when its date arrives while the other sweep may lag by an hour.
         int carriedCount = carryQuotaFundingAtPeriodStartService.carryDueFunding(today);
         if (carriedCount > 0) {
-            LOGGER.info("Đã mang tiền tự nạp chưa tiêu sang {} ví hạn mức của kỳ vừa bắt đầu", carriedCount);
+            log.info("Đã mang tiền tự nạp chưa tiêu sang {} ví hạn mức của kỳ vừa bắt đầu", carriedCount);
         }
     }
 }

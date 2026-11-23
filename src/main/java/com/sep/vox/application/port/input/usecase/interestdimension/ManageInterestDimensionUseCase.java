@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,21 +23,15 @@ import com.sep.vox.domain.repository.InterestDimensionRepository;
  * cứng trong code.
  */
 @Service
+@RequiredArgsConstructor
 public class ManageInterestDimensionUseCase {
 
-    /** Mã dùng làm khoá chính và gửi thẳng cho LLM làm giá trị enum -- giữ dạng
-     * UPPER_SNAKE để khớp với các mã đã có và tránh ký tự lạ trong JSON schema. */
+    /** The code is used as the primary key and sent straight to the LLM as an enum value -- keep it in
+     * UPPER_SNAKE form to match the existing codes and to avoid odd characters in the JSON schema. */
     private static final Pattern CODE_PATTERN = Pattern.compile("^[A-Z][A-Z0-9_]{2,31}$");
 
     private final InterestDimensionRepository repository;
     private final InterestQuizBankTopUpService quizBankTopUpService;
-
-    public ManageInterestDimensionUseCase(
-            InterestDimensionRepository repository,
-            InterestQuizBankTopUpService quizBankTopUpService) {
-        this.repository = repository;
-        this.quizBankTopUpService = quizBankTopUpService;
-    }
 
     public List<InterestDimensionResponse> findAll() {
         return repository.findAll().stream()

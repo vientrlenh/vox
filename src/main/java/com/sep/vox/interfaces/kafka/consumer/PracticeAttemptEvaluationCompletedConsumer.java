@@ -1,8 +1,8 @@
 package com.sep.vox.interfaces.kafka.consumer;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.BackOff;
 import org.springframework.kafka.annotation.DltHandler;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -23,24 +23,13 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class PracticeAttemptEvaluationCompletedConsumer {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(
-        PracticeAttemptEvaluationCompletedConsumer.class
-    );
 
     private final RecordPracticeAttemptEvaluationUseCase recordPracticeAttemptEvaluationUseCase;
     private final PracticeItemResponseRepository practiceItemResponseRepository;
     private final JsonMapper jsonMapper;
-
-    public PracticeAttemptEvaluationCompletedConsumer(
-            RecordPracticeAttemptEvaluationUseCase recordPracticeAttemptEvaluationUseCase,
-            PracticeItemResponseRepository practiceItemResponseRepository,
-            JsonMapper jsonMapper) {
-        this.recordPracticeAttemptEvaluationUseCase = recordPracticeAttemptEvaluationUseCase;
-        this.practiceItemResponseRepository = practiceItemResponseRepository;
-        this.jsonMapper = jsonMapper;
-    }
 
     @RetryableTopic(
         attempts = "4",
@@ -53,7 +42,7 @@ public class PracticeAttemptEvaluationCompletedConsumer {
         groupId = "${app.external-event.kafka.consumer-groups.practice-evaluation.group-id}"
     )
     public void consume(ConsumerRecord<String, Object> record, Acknowledgment ack) {
-        LOGGER.info(
+        log.info(
             "Received practice evaluation event partition={} offset={} key={}",
             record.partition(), record.offset(), record.key()
         );
@@ -66,7 +55,7 @@ public class PracticeAttemptEvaluationCompletedConsumer {
                 recordPracticeAttemptEvaluationUseCase.execute(
                     RecordPracticeAttemptEvaluationCommandMapper.toCommand(dto)
                 );
-                LOGGER.info("Recorded practice evaluation for practiceResponseId={}", dto.practiceResponseId());
+                log.info("Recorded practice evaluation for practiceResponseId={}", dto.practiceResponseId());
             } else if ("PracticeAttemptEvaluationFailed".equals(eventType)) {
                 // Before 2026-08-12 this branch did not exist: a failed event fell into "Skip unknown", so Java
                 // never learned that grading had failed. That question stayed "no grading result" forever, the
@@ -76,18 +65,18 @@ public class PracticeAttemptEvaluationCompletedConsumer {
                 practiceItemResponseRepository.markGradingFailed(
                     UUID.fromString(failed.practiceResponseId())
                 );
-                LOGGER.warn(
+                log.warn(
                     "Chấm luyện tập hỏng practiceResponseId={} lỗi={}",
                     failed.practiceResponseId(),
                     failed.payload() == null ? null : failed.payload().error()
                 );
             } else {
-                LOGGER.info("Skip unknown practice evaluation event type={}", eventType);
+                log.info("Skip unknown practice evaluation event type={}", eventType);
             }
 
             ack.acknowledge();
         } catch (Exception ex) {
-            LOGGER.error("Practice evaluation event processed failed, no ack: {}", ex.getMessage(), ex);
+            log.error("Practice evaluation event processed failed, no ack: {}", ex.getMessage(), ex);
             throw ex instanceof RuntimeException runtimeException
                 ? runtimeException
                 : new IllegalStateException("Failed to process practice evaluation event", ex);
@@ -96,6 +85,6 @@ public class PracticeAttemptEvaluationCompletedConsumer {
 
     @DltHandler
     public void dltHandler(ConsumerRecord<String, Object> record) {
-        LOGGER.error("Practice evaluation DLT message at topic {}: {}", record.topic(), record.value());
+        log.error("Practice evaluation DLT message at topic {}: {}", record.topic(), record.value());
     }
 }

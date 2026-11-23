@@ -9,6 +9,7 @@ import java.util.ArrayList;
 
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,6 +44,7 @@ import com.sep.vox.domain.repository.AssessmentSessionRepository;
  * the student's already published score for a technical reason.
  */
 @Service
+@RequiredArgsConstructor
 public class RegradeResultUseCase implements IUseCase<SubmitGradingCommand, GradingActionResponse> {
 
     /**
@@ -58,21 +60,6 @@ public class RegradeResultUseCase implements IUseCase<SubmitGradingCommand, Grad
     private final AssessmentItemCriterionScoreRepository assessmentItemCriterionScoreRepository;
     private final AssessmentSessionRepository assessmentSessionRepository;
     private final UpsertAssessmentCandidateResultUseCase upsertAssessmentCandidateResultUseCase;
-
-    public RegradeResultUseCase(
-            GradingActionSupport gradingActionSupport,
-            GradingItemScoreResolver gradingItemScoreResolver,
-            AssessmentItemEvaluationRepository assessmentItemEvaluationRepository,
-            AssessmentItemCriterionScoreRepository assessmentItemCriterionScoreRepository,
-            AssessmentSessionRepository assessmentSessionRepository,
-            UpsertAssessmentCandidateResultUseCase upsertAssessmentCandidateResultUseCase) {
-        this.gradingActionSupport = gradingActionSupport;
-        this.gradingItemScoreResolver = gradingItemScoreResolver;
-        this.assessmentItemEvaluationRepository = assessmentItemEvaluationRepository;
-        this.assessmentItemCriterionScoreRepository = assessmentItemCriterionScoreRepository;
-        this.assessmentSessionRepository = assessmentSessionRepository;
-        this.upsertAssessmentCandidateResultUseCase = upsertAssessmentCandidateResultUseCase;
-    }
 
     @Override
     @Transactional

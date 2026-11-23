@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +33,7 @@ import com.sep.vox.domain.model.assessment.AssessmentKind;
  * {@code Content-Disposition} header, the use case layer needs to know nothing about HTTP.
  */
 @Service
+@RequiredArgsConstructor
 public class ExportAssessmentScoresExcelUseCase implements IUseCase<ExportAssessmentScoresQuery, byte[]> {
 
     private static final String SHEET_NAME = "Bảng điểm";
@@ -54,13 +56,6 @@ public class ExportAssessmentScoresExcelUseCase implements IUseCase<ExportAssess
 
     private final AssessmentScoreExportSupport assessmentScoreExportSupport;
     private final SpreadsheetWriterPort spreadsheetWriterPort;
-
-    public ExportAssessmentScoresExcelUseCase(
-            AssessmentScoreExportSupport assessmentScoreExportSupport,
-            SpreadsheetWriterPort spreadsheetWriterPort) {
-        this.assessmentScoreExportSupport = assessmentScoreExportSupport;
-        this.spreadsheetWriterPort = spreadsheetWriterPort;
-    }
 
     @Override
     @Transactional(readOnly = true)

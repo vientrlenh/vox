@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
@@ -40,14 +41,15 @@ import com.sep.vox.domain.repository.SchoolQuotaPolicyRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionQuotaUserAllocationRepository;
 
 @Service
+@RequiredArgsConstructor
 public class DistributeQuotaToUsersService {
 
     private static final int MAX_ELIGIBLE_USERS_PAGE_SIZE = 10_000;
 
-    // Đơn vị nhỏ nhất theo đúng scale numeric(18,6) của cột quota (xem V22__quota_unit_to_usd.sql,
-    // precision nới lên ở V27__widen_quota_columns_precision.sql, scale 6 giữ nguyên).
-    // Dùng để rải phần dư sau khi chia đều -- tương đương "1 giây" ở logic chia số nguyên cũ, giờ là
-    // "1 phần triệu đô" để chia hết totalAllocated mà không làm tròn mất tiền.
+    // Smallest unit at the exact numeric(18,6) scale of the quota column (see V22__quota_unit_to_usd.sql,
+    // precision widened in V27__widen_quota_columns_precision.sql, scale 6 unchanged).
+    // Used to spread the remainder after an even split -- the equivalent of "1 second" in the old integer split logic, now
+    // "one millionth of a dollar", so totalAllocated divides fully without rounding money away.
     private static final BigDecimal SMALLEST_UNIT = new BigDecimal("0.000001");
 
     private final UserContextPort userContextPort;
@@ -58,25 +60,6 @@ public class DistributeQuotaToUsersService {
     private final SchoolUserRepository schoolUserRepository;
     private final SchoolQuotaPolicyRepository schoolQuotaPolicyRepository;
     private final SchoolBalanceRepository schoolBalanceRepository;
-
-    public DistributeQuotaToUsersService(
-            UserContextPort userContextPort,
-            SchoolSubscriptionRepository schoolSubscriptionRepository,
-            SchoolSubscriptionQuotaRecordRepository subscriptionQuotaRepository,
-            SchoolSubscriptionQuotaUserAllocationRepository subscriptionQuotaUserAllocationRepository,
-            RoleRepository roleRepository,
-            SchoolUserRepository schoolUserRepository,
-            SchoolQuotaPolicyRepository schoolQuotaPolicyRepository,
-            SchoolBalanceRepository schoolBalanceRepository) {
-        this.userContextPort = userContextPort;
-        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
-        this.subscriptionQuotaRepository = subscriptionQuotaRepository;
-        this.subscriptionQuotaUserAllocationRepository = subscriptionQuotaUserAllocationRepository;
-        this.roleRepository = roleRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.schoolQuotaPolicyRepository = schoolQuotaPolicyRepository;
-        this.schoolBalanceRepository = schoolBalanceRepository;
-    }
 
     public QuotaUserAllocationSummaryResponse distribute(UUID schoolId, QuotaType quotaType, String roleCode,
             DistributionMode mode, List<AllocateUserQuotaAmountCommand> allocations, boolean confirmWalletDraw) {

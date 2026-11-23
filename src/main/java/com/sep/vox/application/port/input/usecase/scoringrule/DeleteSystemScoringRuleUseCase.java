@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.scoringrule;
 import com.sep.vox.domain.model.user.User;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,23 +22,13 @@ import com.sep.vox.domain.repository.ScoringRuleRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class DeleteSystemScoringRuleUseCase implements IUseCase<DeleteScoringRuleCommand, Void> {
 
     private final ScoringRuleRepository scoringRuleRepository;
     private final AssessmentPolicyRepository assessmentPolicyRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
-
-    public DeleteSystemScoringRuleUseCase(
-            ScoringRuleRepository scoringRuleRepository,
-            AssessmentPolicyRepository assessmentPolicyRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort) {
-        this.scoringRuleRepository = scoringRuleRepository;
-        this.assessmentPolicyRepository = assessmentPolicyRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

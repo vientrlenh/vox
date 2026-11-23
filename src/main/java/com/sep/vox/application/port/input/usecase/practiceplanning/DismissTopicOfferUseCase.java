@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.practiceplanning;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,24 +14,16 @@ import com.sep.vox.domain.repository.PracticeTopicRepository;
 
 
 @Service
+@RequiredArgsConstructor
 public class DismissTopicOfferUseCase implements IUseCase<DismissTopicOfferCommand, Boolean> {
 
-    /** Cùng giá trị với "bỏ dở vì chán, origin mặc định" trong InterestVectorService. */
+    /** Same value as "abandoned out of boredom, default origin" in InterestVectorService. */
     private static final double BORED_SIGNAL = 0.15;
     private static final String EVENT_TYPE = "TOPIC_DISMISSED";
 
     private final PracticeTopicRepository practiceTopicRepository;
     private final InterestVectorService interestVectorService;
     private final UserContextPort userContextPort;
-
-    public DismissTopicOfferUseCase(
-            PracticeTopicRepository practiceTopicRepository,
-            InterestVectorService interestVectorService,
-            UserContextPort userContextPort) {
-        this.practiceTopicRepository = practiceTopicRepository;
-        this.interestVectorService = interestVectorService;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

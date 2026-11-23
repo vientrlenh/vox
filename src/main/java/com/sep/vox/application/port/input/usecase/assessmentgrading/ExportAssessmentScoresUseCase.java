@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,12 +28,13 @@ import com.sep.vox.application.query.dto.AssessmentScoreRowInfo;
  * with the Excel export, so the two formats cannot diverge on what gets exported.
  */
 @Service
+@RequiredArgsConstructor
 public class ExportAssessmentScoresUseCase implements IUseCase<ExportAssessmentScoresQuery, String> {
 
     private static final String UTF8_BOM = "﻿";
-    /** RFC 4180 quy định CRLF, và Excel bản Windows là nơi file này thực sự được mở. */
+    /** RFC 4180 specifies CRLF, and Excel on Windows is where this file is actually opened. */
     private static final String LINE_BREAK = "\r\n";
-    /** Ký tự mở đầu ô mà Excel/LibreOffice diễn giải thành công thức. */
+    /** Leading cell characters that Excel/LibreOffice interpret as a formula. */
     private static final String FORMULA_TRIGGERS = "=+-@\t\r";
     private static final DateTimeFormatter LOCAL_TIME_FORMAT =
         DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy").withZone(DateMapper.DEFAULT_INPUT_ZONE);
@@ -41,10 +43,6 @@ public class ExportAssessmentScoresUseCase implements IUseCase<ExportAssessmentS
         "Trạng thái", "Vòng chấm cuối", "Kết luận", "Người chấm", "Thời điểm công bố");
 
     private final AssessmentScoreExportSupport assessmentScoreExportSupport;
-
-    public ExportAssessmentScoresUseCase(AssessmentScoreExportSupport assessmentScoreExportSupport) {
-        this.assessmentScoreExportSupport = assessmentScoreExportSupport;
-    }
 
     @Override
     @Transactional(readOnly = true)

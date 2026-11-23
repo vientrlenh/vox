@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
@@ -17,14 +18,10 @@ import com.sep.vox.infrastructure.persistence.mapper.AssessmentGradingAssignment
 import com.sep.vox.infrastructure.persistence.repository.SpringDataAssessmentGradingAssignmentRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class AssessmentGradingAssignmentRepositoryImpl implements AssessmentGradingAssignmentRepository {
 
     private final SpringDataAssessmentGradingAssignmentRepository springDataAssessmentGradingAssignmentRepository;
-
-    public AssessmentGradingAssignmentRepositoryImpl(
-            SpringDataAssessmentGradingAssignmentRepository springDataAssessmentGradingAssignmentRepository) {
-        this.springDataAssessmentGradingAssignmentRepository = springDataAssessmentGradingAssignmentRepository;
-    }
 
     @Override
     public Optional<AssessmentGradingAssignment> findById(UUID id) {

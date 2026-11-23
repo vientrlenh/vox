@@ -8,6 +8,7 @@ import java.util.UUID;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.infrastructure.persistence.entity.rubric.RubricJpaEntity;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
@@ -19,13 +20,10 @@ import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataRubricRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class RubricRepositoryImpl implements RubricRepository {
 
     private final SpringDataRubricRepository springDataRubricRepository;
-
-    public RubricRepositoryImpl(SpringDataRubricRepository springDataRubricRepository) {
-        this.springDataRubricRepository = springDataRubricRepository;
-    }
 
     @Override
     public Optional<Rubric> findById(UUID id) {

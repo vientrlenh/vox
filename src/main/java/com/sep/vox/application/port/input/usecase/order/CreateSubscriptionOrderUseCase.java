@@ -5,6 +5,7 @@ import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +37,7 @@ import com.sep.vox.domain.repository.SubscriptionPlanRepository;
  * been collected.
  */
 @Service
+@RequiredArgsConstructor
 public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscriptionOrderCommand, UUID> {
 
     private final OrderRepository orderRepository;
@@ -45,23 +47,6 @@ public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscripti
     private final SubscriptionUpgradePolicyService upgradePolicyService;
     private final ServiceFeePort serviceFeePort;
     private final UserContextPort userContextPort;
-
-    public CreateSubscriptionOrderUseCase(
-            OrderRepository orderRepository,
-            OrderItemRepository orderItemRepository,
-            SubscriptionPlanRepository subscriptionPlanRepository,
-            SchoolSubscriptionRepository schoolSubscriptionRepository,
-            SubscriptionUpgradePolicyService upgradePolicyService, 
-            ServiceFeePort serviceFeePort, 
-            UserContextPort userContextPort) {
-        this.orderRepository = orderRepository;
-        this.orderItemRepository = orderItemRepository;
-        this.subscriptionPlanRepository = subscriptionPlanRepository;
-        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
-        this.upgradePolicyService = upgradePolicyService;
-        this.serviceFeePort = serviceFeePort;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

@@ -1,8 +1,7 @@
 package com.sep.vox.interfaces.graphql.exception;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.graphql.execution.DataFetcherExceptionResolverAdapter;
 import org.springframework.graphql.execution.ErrorType;
 import org.springframework.security.access.AccessDeniedException;
@@ -24,16 +23,15 @@ import graphql.GraphQLError;
 import graphql.schema.DataFetchingEnvironment;
 
 @Component
+@Slf4j
 public class GlobalExceptionResolver extends DataFetcherExceptionResolverAdapter {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(GlobalExceptionResolver.class);
 
     @Override
     protected GraphQLError resolveToSingleError(Throwable ex, DataFetchingEnvironment env) {
 
         // The old printStackTrace() only wrote to stderr and bypassed Logback, so it never reached logs/vox.log
         // -- switched to a real logger so INTERNAL_ERROR (the last branch) can be traced after it happens.
-        LOGGER.error("Unhandled exception resolving field {}", env.getExecutionStepInfo().getPath(), ex);
+        log.error("Unhandled exception resolving field {}", env.getExecutionStepInfo().getPath(), ex);
 
         if (ex instanceof NotFoundException) {
             return GraphQLError.newError()

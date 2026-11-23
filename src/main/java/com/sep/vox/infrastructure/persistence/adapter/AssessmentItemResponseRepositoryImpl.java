@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.assessment.AssessmentItemResponse;
@@ -15,13 +16,10 @@ import com.sep.vox.infrastructure.persistence.mapper.AssessmentItemResponseMappe
 import com.sep.vox.infrastructure.persistence.repository.SpringDataAssessmentItemResponseRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class AssessmentItemResponseRepositoryImpl implements AssessmentItemResponseRepository {
 
     private final SpringDataAssessmentItemResponseRepository springDataAssessmentItemResponseRepository;
-
-    public AssessmentItemResponseRepositoryImpl(SpringDataAssessmentItemResponseRepository springDataAssessmentItemResponseRepository) {
-        this.springDataAssessmentItemResponseRepository = springDataAssessmentItemResponseRepository;
-    }
 
     @Override
     public int sumDurationSecondsBySessionId(UUID sessionId) {

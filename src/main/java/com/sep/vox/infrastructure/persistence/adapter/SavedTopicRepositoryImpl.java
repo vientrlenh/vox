@@ -3,6 +3,7 @@ package com.sep.vox.infrastructure.persistence.adapter;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,13 +12,10 @@ import com.sep.vox.infrastructure.persistence.entity.personalization.SavedTopicJ
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSavedTopicRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class SavedTopicRepositoryImpl implements SavedTopicRepository {
 
     private final SpringDataSavedTopicRepository repository;
-
-    public SavedTopicRepositoryImpl(SpringDataSavedTopicRepository repository) {
-        this.repository = repository;
-    }
 
     @Override
     public boolean existsForStudent(UUID studentId, UUID topicId) {

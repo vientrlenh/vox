@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +36,7 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class PreviewSchoolRoomImportFromFileUseCase
         implements IUseCase<PreviewSchoolRoomImportFromFileCommand, PreviewSchoolRoomImportResponse> {
 
@@ -48,25 +50,6 @@ public class PreviewSchoolRoomImportFromFileUseCase
     private final SchoolRepository schoolRepository;
     private final JsonSerializationPort jsonSerializationPort;
     private final SchoolUserRepository schoolUserRepository;
-
-    public PreviewSchoolRoomImportFromFileUseCase(
-            FileProcessingPort fileProcessingPort,
-            ImportSessionRepository importSessionRepository,
-            ImportRowRepository importRowRepository,
-            UserContextPort userContextPort,
-            UserRepository userRepository,
-            SchoolRepository schoolRepository,
-            JsonSerializationPort jsonSerializationPort,
-            SchoolUserRepository schoolUserRepository) {
-        this.fileProcessingPort = fileProcessingPort;
-        this.importSessionRepository = importSessionRepository;
-        this.importRowRepository = importRowRepository;
-        this.userContextPort = userContextPort;
-        this.userRepository = userRepository;
-        this.schoolRepository = schoolRepository;
-        this.jsonSerializationPort = jsonSerializationPort;
-        this.schoolUserRepository = schoolUserRepository;
-    }
 
     @Override
     @Transactional

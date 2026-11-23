@@ -3,8 +3,7 @@ package com.sep.vox.infrastructure.service;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.stereotype.Service;
@@ -12,9 +11,8 @@ import org.springframework.stereotype.Service;
 import com.sep.vox.application.port.output.PracticeGenerationExecutorPort;
 
 @Service
+@Slf4j
 public class SpringPracticeGenerationExecutorService implements PracticeGenerationExecutorPort {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(SpringPracticeGenerationExecutorService.class);
 
     private final AsyncTaskExecutor practiceGenerationExecutor;
 
@@ -37,7 +35,7 @@ public class SpringPracticeGenerationExecutorService implements PracticeGenerati
         try {
             work.run();
         } catch (RuntimeException exception) {
-            LOGGER.error("Uncaught exception in practice generation background work", exception);
+            log.error("Uncaught exception in practice generation background work", exception);
         }
     }
 }

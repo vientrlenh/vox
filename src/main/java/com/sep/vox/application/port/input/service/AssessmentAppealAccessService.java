@@ -5,6 +5,7 @@ import com.sep.vox.domain.model.assessment.AssessmentCandidate;
 import com.sep.vox.domain.model.user.User;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +36,7 @@ import com.sep.vox.domain.repository.UserRepository;
  * not a member of the assessment, so they would be rejected there.
  */
 @Service
+@RequiredArgsConstructor
 public class AssessmentAppealAccessService {
 
     private final AssessmentResultAppealRepository assessmentResultAppealRepository;
@@ -47,29 +49,6 @@ public class AssessmentAppealAccessService {
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
     private final AssessmentGradingAccessService assessmentGradingAccessService;
-
-    public AssessmentAppealAccessService(
-            AssessmentResultAppealRepository assessmentResultAppealRepository,
-            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
-            AssessmentSessionRepository assessmentSessionRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            AssessmentRepository assessmentRepository,
-            UserRepository userRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
-            UserContextPort userContextPort,
-            AssessmentGradingAccessService assessmentGradingAccessService) {
-        this.assessmentResultAppealRepository = assessmentResultAppealRepository;
-        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
-        this.assessmentSessionRepository = assessmentSessionRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.assessmentRepository = assessmentRepository;
-        this.userRepository = userRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-        this.userContextPort = userContextPort;
-        this.assessmentGradingAccessService = assessmentGradingAccessService;
-    }
 
     /** Ngữ cảnh đã giải xong của một đơn phúc khảo — tránh mỗi use case tự nối lại chuỗi. */
     public record AppealContext(

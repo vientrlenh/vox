@@ -7,6 +7,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.common.CacheKey;
@@ -38,6 +39,7 @@ import com.sep.vox.domain.repository.AssessmentSessionRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
 @Service
+@RequiredArgsConstructor
 public class VerifyAssessmentScheduleOtpUseCase implements IUseCase<VerifyAssessmentScheduleOtpCommand, AssessmentEntryTicketResponse> {
 
     private static final Duration ENTRY_TICKET_TTL = Duration.ofHours(2);
@@ -54,32 +56,6 @@ public class VerifyAssessmentScheduleOtpUseCase implements IUseCase<VerifyAssess
     private final HealthCheckPort healthCheckPort;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService;
-
-    public VerifyAssessmentScheduleOtpUseCase(
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
-            AssessmentRepository assessmentRepository,
-            AssessmentScheduleRepository assessmentScheduleRepository,
-            AssessmentSessionRepository assessmentSessionRepository,
-            CacheManagerPort cacheManagerPort,
-            UserContextPort userContextPort,
-            CreateAssessmentSessionUseCase createAssessmentSessionUseCase,
-            UpdateAssessmentSessionStatusUseCase updateAssessmentSessionStatusUseCase, HealthCheckPort healthCheckPort,
-            SchoolSubscriptionRepository schoolSubscriptionRepository,
-            SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService) {
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentScheduleRepository = assessmentScheduleRepository;
-        this.assessmentSessionRepository = assessmentSessionRepository;
-        this.cacheManagerPort = cacheManagerPort;
-        this.userContextPort = userContextPort;
-        this.createAssessmentSessionUseCase = createAssessmentSessionUseCase;
-        this.updateAssessmentSessionStatusUseCase = updateAssessmentSessionStatusUseCase;
-        this.healthCheckPort = healthCheckPort;
-        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
-        this.schoolSubscriptionDebtGuardService = schoolSubscriptionDebtGuardService;
-    }
 
     @Override
     public AssessmentEntryTicketResponse execute(VerifyAssessmentScheduleOtpCommand input) {

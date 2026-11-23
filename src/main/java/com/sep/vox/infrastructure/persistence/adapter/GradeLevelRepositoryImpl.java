@@ -10,6 +10,7 @@ import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataGradeLevelRepository;
 import com.sep.vox.infrastructure.persistence.DataConflictTranslation;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
@@ -23,13 +24,10 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Repository
+@RequiredArgsConstructor
 public class GradeLevelRepositoryImpl implements GradeLevelRepository {
 
     private final SpringDataGradeLevelRepository gradeLevelRepository;
-
-    public GradeLevelRepositoryImpl(SpringDataGradeLevelRepository gradeLevelRepository) {
-        this.gradeLevelRepository = gradeLevelRepository;
-    }
 
     @Override
     public Optional<GradeLevel> findById(UUID id) {

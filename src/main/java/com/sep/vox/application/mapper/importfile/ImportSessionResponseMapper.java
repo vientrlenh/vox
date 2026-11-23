@@ -3,6 +3,7 @@ package com.sep.vox.application.mapper.importfile;
 import java.util.List;
 import java.util.Map;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.output.JsonSerializationPort;
@@ -13,13 +14,10 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.importfile.ImportSession;
 
 @Service
+@RequiredArgsConstructor
 public class ImportSessionResponseMapper {
 
     private final JsonSerializationPort jsonSerializationPort;
-
-    public ImportSessionResponseMapper(JsonSerializationPort jsonSerializationPort) {
-        this.jsonSerializationPort = jsonSerializationPort;
-    }
 
     public ImportSessionDetailsResponse toDetails(ImportSession session) {
         return new ImportSessionDetailsResponse(

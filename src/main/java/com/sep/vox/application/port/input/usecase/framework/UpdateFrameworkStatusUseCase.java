@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.framework;
 
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,17 +15,11 @@ import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateFrameworkStatusUseCase implements IUseCase<UpdateFrameworkActiveStatusCommand, UUID> {
 
     private final FrameworkRepository frameworkRepository;
     private final FrameworkVersionRepository frameworkVersionRepository;
-
-    public UpdateFrameworkStatusUseCase(
-            FrameworkRepository frameworkRepository,
-            FrameworkVersionRepository frameworkVersionRepository) {
-        this.frameworkRepository = frameworkRepository;
-        this.frameworkVersionRepository = frameworkVersionRepository;
-    }
 
     @Override
     @Transactional

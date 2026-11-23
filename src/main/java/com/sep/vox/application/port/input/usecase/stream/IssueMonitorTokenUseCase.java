@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
@@ -28,6 +29,7 @@ import com.sep.vox.domain.repository.AssessmentScheduleRepository;
 
 
 @Service
+@RequiredArgsConstructor
 public class IssueMonitorTokenUseCase implements IUseCase<IssueMonitorTokenCommand, String>{
 
     private static final Duration MONITOR_TOKEN_TTL = Duration.ofMinutes(5);
@@ -43,22 +45,6 @@ public class IssueMonitorTokenUseCase implements IUseCase<IssueMonitorTokenComma
     private final AssessmentMemberRepository assessmentMemberRepository;
     private final UserContextPort userContextPort;
     private final StreamTokenProvider streamTokenProvider;
-
-    public IssueMonitorTokenUseCase(
-        AssessmentRepository assessmentRepository,  
-        AssessmentScheduleRepository assessmentScheduleRepository, 
-        AssessmentScheduleProctorRepository assessmentScheduleProctorRepository, 
-        AssessmentMemberRepository assessmentMemberRepository, 
-        UserContextPort userContextPort, 
-        StreamTokenProvider streamTokenProvider 
-    ) {
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentScheduleRepository = assessmentScheduleRepository;
-        this.assessmentScheduleProctorRepository = assessmentScheduleProctorRepository; 
-        this.assessmentMemberRepository = assessmentMemberRepository;
-        this.userContextPort = userContextPort; 
-        this.streamTokenProvider = streamTokenProvider;
-    }
 
     @Override
     public String execute(IssueMonitorTokenCommand input) {

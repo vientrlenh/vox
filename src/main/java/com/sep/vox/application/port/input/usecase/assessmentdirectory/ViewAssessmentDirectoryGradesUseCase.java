@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.assessmentdirectory;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +21,7 @@ import com.sep.vox.domain.common.PageResult;
  * {@code ImportAssessmentCandidatesFromGradeUseCase}.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewAssessmentDirectoryGradesUseCase
         implements IUseCase<ViewAssessmentDirectoryQuery, PageResult<AssessmentDirectoryGradeInfo>> {
 
@@ -27,13 +29,6 @@ public class ViewAssessmentDirectoryGradesUseCase
 
     private final AssessmentDirectoryAccessService assessmentDirectoryAccessService;
     private final AssessmentDirectoryQueryRepository assessmentDirectoryQueryRepository;
-
-    public ViewAssessmentDirectoryGradesUseCase(
-            AssessmentDirectoryAccessService assessmentDirectoryAccessService,
-            AssessmentDirectoryQueryRepository assessmentDirectoryQueryRepository) {
-        this.assessmentDirectoryAccessService = assessmentDirectoryAccessService;
-        this.assessmentDirectoryQueryRepository = assessmentDirectoryQueryRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

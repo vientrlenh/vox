@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,13 +28,10 @@ import com.sep.vox.domain.repository.AssessmentResultStatusHistoryRepository;
  * call {@link #record} once the new result exists.
  */
 @Service
+@RequiredArgsConstructor
 public class ResultStatusHistoryRecorder {
 
     private final AssessmentResultStatusHistoryRepository assessmentResultStatusHistoryRepository;
-
-    public ResultStatusHistoryRecorder(AssessmentResultStatusHistoryRepository assessmentResultStatusHistoryRepository) {
-        this.assessmentResultStatusHistoryRepository = assessmentResultStatusHistoryRepository;
-    }
 
     /** Ảnh chụp trạng thái + điểm trước khi thao tác. */
     public record Snapshot(UUID candidateResultId, AssessmentCandidateResultStatus status, BigDecimal totalScore) {

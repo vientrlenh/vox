@@ -7,6 +7,7 @@ import java.util.List;
 
 import java.util.UUID;
 import com.sep.vox.application.exception.DataConflictException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +37,7 @@ import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.repository.UserRoleRepository;
 
 @Service
+@RequiredArgsConstructor
 public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand, CreateSchoolUserResponse> {
 
     private static final List<String> ALLOWED_ROLE_CODES = List.of("STUDENT", "TEACHER");
@@ -48,25 +50,6 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
     private final SchoolRepository schoolRepository;
     private final OutboxRepository outboxRepository;
     private final JsonSerializationPort jsonSerializationPort;
-
-    public CreateSchoolUserUseCase(
-            UserContextPort userContextPort,
-            UserRepository userRepository,
-            RoleRepository roleRepository,
-            UserRoleRepository userRoleRepository,
-            SchoolUserRepository schoolUserRepository,
-            SchoolRepository schoolRepository,
-            OutboxRepository outboxRepository,
-            JsonSerializationPort jsonSerializationPort) {
-        this.userContextPort = userContextPort;
-        this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
-        this.userRoleRepository = userRoleRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.schoolRepository = schoolRepository;
-        this.outboxRepository = outboxRepository;
-        this.jsonSerializationPort = jsonSerializationPort;
-    }
 
     @Override
     @Transactional

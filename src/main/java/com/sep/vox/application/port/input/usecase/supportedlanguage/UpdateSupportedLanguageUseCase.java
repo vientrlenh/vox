@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.supportedlanguage;
 import java.time.Instant;
 
 import com.sep.vox.application.exception.DataConflictException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +18,7 @@ import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.domain.valueobject.LanguageCode;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateSupportedLanguageUseCase implements IUseCase<UpdateSupportedLanguageCommand, UpdateSupportedLanguageResponse> {
 
     private static final int MAX_CODE_LENGTH = 10;
@@ -25,13 +27,6 @@ public class UpdateSupportedLanguageUseCase implements IUseCase<UpdateSupportedL
 
     private final SupportedLanguageRepository supportedLanguageRepository;
     private final UserContextPort userContextPort;
-
-    public UpdateSupportedLanguageUseCase(
-            SupportedLanguageRepository supportedLanguageRepository,
-            UserContextPort userContextPort) {
-        this.supportedLanguageRepository = supportedLanguageRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

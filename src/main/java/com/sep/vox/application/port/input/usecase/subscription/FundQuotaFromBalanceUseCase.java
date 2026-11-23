@@ -7,8 +7,8 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -57,9 +57,9 @@ import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
  * lúc cùng thấy 2tr và cùng tiêu nó.
  */
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class FundQuotaFromBalanceUseCase implements IUseCase<FundQuotaFromBalanceCommand, QuotaFundingResponse> {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(FundQuotaFromBalanceUseCase.class);
 
     private final UserContextPort userContextPort;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
@@ -67,21 +67,6 @@ public class FundQuotaFromBalanceUseCase implements IUseCase<FundQuotaFromBalanc
     private final SchoolBalanceRepository schoolBalanceRepository;
     private final SchoolBalanceEntryRepository schoolBalanceEntryRepository;
     private final SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService;
-
-    public FundQuotaFromBalanceUseCase(
-            UserContextPort userContextPort,
-            SchoolSubscriptionRepository schoolSubscriptionRepository,
-            SchoolSubscriptionQuotaRecordRepository quotaRecordRepository,
-            SchoolBalanceRepository schoolBalanceRepository,
-            SchoolBalanceEntryRepository schoolBalanceEntryRepository,
-            SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService) {
-        this.userContextPort = userContextPort;
-        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
-        this.quotaRecordRepository = quotaRecordRepository;
-        this.schoolBalanceRepository = schoolBalanceRepository;
-        this.schoolBalanceEntryRepository = schoolBalanceEntryRepository;
-        this.schoolSubscriptionDebtGuardService = schoolSubscriptionDebtGuardService;
-    }
 
     @Override
     @Transactional
@@ -127,7 +112,7 @@ public class FundQuotaFromBalanceUseCase implements IUseCase<FundQuotaFromBalanc
         // cùng chết. Một câu lệnh cộng cả total lẫn funded -- xem addFundingFromBalance.
         quotaRecordRepository.addFundingFromBalance(pool.getId(), amountVnd);
 
-        LOGGER.info("Trường {} nạp {}đ từ ví tự nạp vào hạn mức {} (kỳ {}), số dư còn {}đ, người thực hiện {}",
+        log.info("Trường {} nạp {}đ từ ví tự nạp vào hạn mức {} (kỳ {}), số dư còn {}đ, người thực hiện {}",
             input.schoolId(), amountVnd, quotaType, subscription.getId(), balanceAfterVnd, actorId);
 
         SchoolSubscriptionQuotaRecord funded = quotaRecordRepository.findById(pool.getId())

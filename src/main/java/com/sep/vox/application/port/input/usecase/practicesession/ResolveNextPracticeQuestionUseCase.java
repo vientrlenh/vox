@@ -7,8 +7,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.input.service.PracticeQuestionSelectionService;
@@ -38,6 +38,8 @@ import com.sep.vox.domain.model.personalization.PracticeQuestion;
  * cuộc gọi LLM chậm nằm GIỮA, ngoài mọi transaction.
  */
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class ResolveNextPracticeQuestionUseCase {
 
     public record QuestionPayload(
@@ -51,17 +53,17 @@ public class ResolveNextPracticeQuestionUseCase {
         int minResponseSeconds,
         List<String> suggestedIdeas,
         /**
-         * Câu CUỐI của phiên: ngân sách còn lại không đủ cho một câu cỡ bình thường, nên
-         * câu này đã được may đo vừa đúng phần còn lại. Trả lời xong là đóng phiên, không
-         * hỏi câu tiếp -- xem cách tính ở {@link #toPayload}.
+         * The LAST question of the session: the remaining budget is not enough for a normal-sized question, so
+         * this question is tailored to fit exactly what is left. Once it is answered the session closes and no
+         * further question is asked -- see {@link #toPayload} for how it is computed.
          */
         boolean lastQuestion) {
     }
 
     /**
-     * {@code sessionSpokenSeconds}/{@code sessionBudgetSeconds}: cặp số cho thanh tiến độ trên
-     * máy học sinh. Đi kèm câu hỏi vì đây là thứ Python gửi xuống client NGAY khi phiên mở --
-     * lượt đầu chưa nộp nên chưa có SubmitTurnResult nào để lấy ngân sách từ đó.
+     * {@code sessionSpokenSeconds}/{@code sessionBudgetSeconds}: the pair of numbers for the progress bar on the
+     * student's machine. They travel with the question because Python sends them to the client RIGHT when the
+     * session opens -- the first turn is not submitted yet, so there is no SubmitTurnResult to take the budget from.
      */
     public record Result(
         String status,
@@ -79,26 +81,23 @@ public class ResolveNextPracticeQuestionUseCase {
         }
     }
 
-    // Không dọn dẹp entry cũ: ở quy mô hiện tại (demo, vài chục phiên đồng thời) số sessionId
-    // phân biệt trong suốt vòng đời app là nhỏ, không đáng để thêm logic dọn có nguy cơ race
-    // (xoá đúng lúc 1 luồng khác vừa lấy lock cũ từ map).
+    // Old entries are not cleaned up: at the current scale (demo, a few dozen concurrent sessions) the number of
+    // distinct sessionIds over the whole app lifetime is small, not worth adding cleanup logic that risks a race
+    // (removing an entry just when another thread has taken the old lock from the map).
     private final ConcurrentHashMap<UUID, ReentrantLock> sessionLocks = new ConcurrentHashMap<>();
-
-    private static final Logger LOGGER =
-        LoggerFactory.getLogger(ResolveNextPracticeQuestionUseCase.class);
 
     private static final String CLUSTER_LOCK_KEY_PREFIX = "practice:next-question:";
 
     /**
-     * Biên an toàn cộng vào ngân sách sinh câu để ra TTL của khoá.
+     * Safety margin added to the question-generation budget to get the lock TTL.
      *
-     * <p>TTL BẮT BUỘC dài hơn thời gian chạy tối đa. Ngắn hơn thì khoá hết hạn trong lúc chủ khoá
-     * vẫn đang sinh câu, người thứ hai vào được, và ta quay lại đúng lỗi đang đi sửa -- lần này im
-     * lặng hơn, vì nhìn vào thì thấy "đã có khoá rồi".
+     * <p>The TTL MUST be longer than the maximum run time. If it is shorter, the lock expires while its owner
+     * is still generating, a second caller gets in, and we are back to the very bug being fixed -- only quieter
+     * this time, because a look at it shows "there is already a lock".
      */
     private static final Duration CLUSTER_LOCK_MARGIN = Duration.ofSeconds(30);
 
-    /** Nhịp hỏi lại khoá. Người chờ là đường hiếm, không cần backoff cho phức tạp. */
+    /** Interval for asking for the lock again. Waiting is a rare path, so no backoff is needed. */
     private static final Duration LOCK_POLL_INTERVAL = Duration.ofMillis(200);
 
     private final ResolveNextPracticeQuestionClaimService claimService;
@@ -107,21 +106,6 @@ public class ResolveNextPracticeQuestionUseCase {
     private final CacheManagerPort cacheManagerPort;
     private final PracticeGenerationConfigPort generationConfig;
     private final JsonSerializationPort jsonSerializationPort;
-
-    public ResolveNextPracticeQuestionUseCase(
-            ResolveNextPracticeQuestionClaimService claimService,
-            PracticeQuestionSelectionService selectionService,
-            ResolveNextPracticeQuestionPersistenceService persistenceService,
-            CacheManagerPort cacheManagerPort,
-            PracticeGenerationConfigPort generationConfig,
-            JsonSerializationPort jsonSerializationPort) {
-        this.claimService = claimService;
-        this.selectionService = selectionService;
-        this.persistenceService = persistenceService;
-        this.cacheManagerPort = cacheManagerPort;
-        this.generationConfig = generationConfig;
-        this.jsonSerializationPort = jsonSerializationPort;
-    }
 
     public Result execute(UUID sessionId) {
         // Cổng TRONG: khoá JVM. Giữ lại dù đã có khoá Redis vì hai lời gọi trùng CÙNG pod chặn
@@ -167,7 +151,7 @@ public class ResolveNextPracticeQuestionUseCase {
                 // Quá cả TTL mà vẫn không lấy được nghĩa là chủ khoá coi như đã chết (khoá không
                 // sống lâu hơn TTL được). Chạy tiếp không khoá thay vì ném lỗi: tới nước này ném
                 // lỗi là kết thúc phiên luyện của học sinh, còn nguy cơ sinh trùng thì đã rất nhỏ.
-                LOGGER.warn(
+                log.warn(
                     "Chờ quá {} mà không lấy được khoá {} -- chạy tiếp không khoá.", ttl, key
                 );
                 return doExecute(sessionId);

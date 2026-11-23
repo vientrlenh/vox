@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
@@ -21,15 +21,11 @@ import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataAssessmentBlueprintRepository;
 
 @Repository
+@RequiredArgsConstructor
+@Slf4j
 public class AssessmentBlueprintRepositoryImpl implements AssessmentBlueprintRepository {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AssessmentBlueprintRepositoryImpl.class);
-
     private final SpringDataAssessmentBlueprintRepository springDataAssessmentBlueprintRepository;
-
-    public AssessmentBlueprintRepositoryImpl(SpringDataAssessmentBlueprintRepository springDataAssessmentBlueprintRepository) {
-        this.springDataAssessmentBlueprintRepository = springDataAssessmentBlueprintRepository;
-    }
 
     @Override
     public AssessmentBlueprint save(AssessmentBlueprint blueprint) {
@@ -42,7 +38,7 @@ public class AssessmentBlueprintRepositoryImpl implements AssessmentBlueprintRep
         long startedAt = System.nanoTime();
         Optional<AssessmentBlueprint> result = springDataAssessmentBlueprintRepository.findById(id)
             .map(AssessmentBlueprintMapper::toDomain);
-        LOGGER.info("[blueprint-perf] repo AssessmentBlueprintRepositoryImpl.findById id={} tookMs={}",
+        log.info("[blueprint-perf] repo AssessmentBlueprintRepositoryImpl.findById id={} tookMs={}",
             id, (System.nanoTime() - startedAt) / 1_000_000);
         return result;
     }

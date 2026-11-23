@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.school.School;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,7 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewImportSessionsUseCase implements IUseCase<ViewImportSessionsQuery, PageResult<ImportSessionSummaryResponse>> {
 
     private final ImportSessionRepository importSessionRepository;
@@ -31,21 +33,6 @@ public class ViewImportSessionsUseCase implements IUseCase<ViewImportSessionsQue
     private final UserContextPort userContextPort;
     private final ImportSessionResponseMapper importSessionResponseMapper;
     private final SchoolUserRepository schoolUserRepository;
-
-    public ViewImportSessionsUseCase(
-            ImportSessionRepository importSessionRepository,
-            UserRepository userRepository,
-            SchoolRepository schoolRepository,
-            UserContextPort userContextPort,
-            ImportSessionResponseMapper importSessionResponseMapper,
-            SchoolUserRepository schoolUserRepository) {
-        this.importSessionRepository = importSessionRepository;
-        this.userRepository = userRepository;
-        this.schoolRepository = schoolRepository;
-        this.userContextPort = userContextPort;
-        this.importSessionResponseMapper = importSessionResponseMapper;
-        this.schoolUserRepository = schoolUserRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

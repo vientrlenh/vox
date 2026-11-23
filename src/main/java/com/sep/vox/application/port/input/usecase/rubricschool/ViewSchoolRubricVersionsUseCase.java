@@ -21,11 +21,13 @@ import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 
 @Service
+@RequiredArgsConstructor
 public class ViewSchoolRubricVersionsUseCase implements IUseCase<ViewSchoolRubricVersionsQuery, PageResult<RubricVersionDto>> {
 
     private final RubricVersionRepository rubricVersionRepository;
@@ -34,21 +36,6 @@ public class ViewSchoolRubricVersionsUseCase implements IUseCase<ViewSchoolRubri
     private final UserContextPort userContextPort;
     private final SchoolRepository schoolRepository;
     private final SchoolUserRepository schoolUserRepository;
-
-    public ViewSchoolRubricVersionsUseCase(
-            RubricVersionRepository rubricVersionRepository,
-            RubricRepository rubricRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort,
-            SchoolRepository schoolRepository,
-            SchoolUserRepository schoolUserRepository) {
-        this.rubricVersionRepository = rubricVersionRepository;
-        this.rubricRepository = rubricRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-        this.schoolRepository = schoolRepository;
-        this.schoolUserRepository = schoolUserRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

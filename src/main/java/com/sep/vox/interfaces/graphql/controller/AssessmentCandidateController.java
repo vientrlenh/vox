@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+import lombok.RequiredArgsConstructor;
 import org.dataloader.DataLoader;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
@@ -30,20 +31,12 @@ import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.domain.model.assessment.AssessmentCandidateStatus;
 
 @Controller("graphqlAssessmentCandidateController")
+@RequiredArgsConstructor
 public class AssessmentCandidateController {
 
     private final ViewAssessmentCandidatesUseCase viewAssessmentCandidatesUseCase;
     private final UpdateAssessmentCandidateStatusUseCase updateAssessmentCandidateStatusUseCase;
     private final UpdateAssessmentCandidatesAttendanceUseCase updateAssessmentCandidatesAttendanceUseCase;
-
-    public AssessmentCandidateController(
-            ViewAssessmentCandidatesUseCase viewAssessmentCandidatesUseCase,
-            UpdateAssessmentCandidateStatusUseCase updateAssessmentCandidateStatusUseCase,
-            UpdateAssessmentCandidatesAttendanceUseCase updateAssessmentCandidatesAttendanceUseCase) {
-        this.viewAssessmentCandidatesUseCase = viewAssessmentCandidatesUseCase;
-        this.updateAssessmentCandidateStatusUseCase = updateAssessmentCandidateStatusUseCase;
-        this.updateAssessmentCandidatesAttendanceUseCase = updateAssessmentCandidatesAttendanceUseCase;
-    }
 
     @QueryMapping(name = "assessmentCandidates")
     public List<AssessmentCandidateDto> assessmentCandidates(

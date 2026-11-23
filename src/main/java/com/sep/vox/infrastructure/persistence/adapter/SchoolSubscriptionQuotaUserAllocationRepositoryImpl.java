@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.metering.QuotaType;
@@ -15,13 +16,10 @@ import com.sep.vox.infrastructure.persistence.mapper.SchoolSubscriptionQuotaUser
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolSubscriptionQuotaUserAllocationRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class SchoolSubscriptionQuotaUserAllocationRepositoryImpl implements SchoolSubscriptionQuotaUserAllocationRepository {
 
     private final SpringDataSchoolSubscriptionQuotaUserAllocationRepository springDataRepository;
-
-    public SchoolSubscriptionQuotaUserAllocationRepositoryImpl(SpringDataSchoolSubscriptionQuotaUserAllocationRepository springDataRepository) {
-        this.springDataRepository = springDataRepository;
-    }
 
     @Override
     public List<SchoolSubscriptionQuotaUserAllocation> findBySchoolSubscriptionIdAndQuotaType(UUID schoolSubscriptionId, QuotaType quotaType) {

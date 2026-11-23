@@ -4,8 +4,8 @@ import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentPaper;
 import java.time.Instant;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -21,9 +21,9 @@ import com.sep.vox.domain.repository.AssessmentPaperRepository;
 import com.sep.vox.domain.repository.AssessmentRepository;
 
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class AssessmentStatusAutoTransitionJob {
-
-    private static final Logger log = LoggerFactory.getLogger(AssessmentStatusAutoTransitionJob.class);
 
     private final AssessmentRepository assessmentRepository;
     private final AssessmentPaperRepository assessmentPaperRepository;
@@ -32,23 +32,6 @@ public class AssessmentStatusAutoTransitionJob {
     private final ClassTestGradingAssignmentService classTestGradingAssignmentService;
     private final AssessmentHumanGradingNotificationService assessmentHumanGradingNotificationService;
     private final AssessmentScheduleClosureService assessmentScheduleClosureService;
-
-    public AssessmentStatusAutoTransitionJob(
-            AssessmentRepository assessmentRepository,
-            AssessmentPaperRepository assessmentPaperRepository,
-            AssessmentQuestionSecureLockService assessmentQuestionSecureLockService,
-            ZeroScoreAssessmentResultService zeroScoreAssessmentResultService,
-            ClassTestGradingAssignmentService classTestGradingAssignmentService,
-            AssessmentHumanGradingNotificationService assessmentHumanGradingNotificationService,
-            AssessmentScheduleClosureService assessmentScheduleClosureService) {
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentPaperRepository = assessmentPaperRepository;
-        this.assessmentQuestionSecureLockService = assessmentQuestionSecureLockService;
-        this.zeroScoreAssessmentResultService = zeroScoreAssessmentResultService;
-        this.classTestGradingAssignmentService = classTestGradingAssignmentService;
-        this.assessmentHumanGradingNotificationService = assessmentHumanGradingNotificationService;
-        this.assessmentScheduleClosureService = assessmentScheduleClosureService;
-    }
 
     @Scheduled(fixedDelay = 60000)
     public void run() {

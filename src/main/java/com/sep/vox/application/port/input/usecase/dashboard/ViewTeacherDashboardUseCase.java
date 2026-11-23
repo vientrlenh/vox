@@ -13,6 +13,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +40,7 @@ import com.sep.vox.domain.repository.SchoolClassUserRepository;
 
 @Service
 @Transactional(readOnly = true)
+@RequiredArgsConstructor
 public class ViewTeacherDashboardUseCase implements IUseCase<Void, TeacherDashboardSummaryResponse> {
 
     private static final int MAX_CLASS_TESTS_FOR_DASHBOARD = 500;
@@ -52,23 +54,6 @@ public class ViewTeacherDashboardUseCase implements IUseCase<Void, TeacherDashbo
     private final SchoolClassRepository schoolClassRepository;
     private final SchoolClassUserRepository schoolClassUserRepository;
     private final ResolveAssessmentCandidateAttemptsUseCase resolveAssessmentCandidateAttemptsUseCase;
-
-    public ViewTeacherDashboardUseCase(UserContextPort userContextPort, AssessmentRepository assessmentRepository,
-            AssessmentMemberRepository assessmentMemberRepository,
-            AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            SchoolClassRepository schoolClassRepository,
-            SchoolClassUserRepository schoolClassUserRepository,
-            ResolveAssessmentCandidateAttemptsUseCase resolveAssessmentCandidateAttemptsUseCase) {
-        this.userContextPort = userContextPort;
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentMemberRepository = assessmentMemberRepository;
-        this.assessmentGradingAssignmentRepository = assessmentGradingAssignmentRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.schoolClassRepository = schoolClassRepository;
-        this.schoolClassUserRepository = schoolClassUserRepository;
-        this.resolveAssessmentCandidateAttemptsUseCase = resolveAssessmentCandidateAttemptsUseCase;
-    }
 
     @Override
     public TeacherDashboardSummaryResponse execute(Void input) {

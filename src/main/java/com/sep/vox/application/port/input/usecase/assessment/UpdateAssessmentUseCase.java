@@ -6,6 +6,7 @@ import java.time.Instant;
 
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +38,7 @@ import com.sep.vox.domain.service.assessment.AssessmentEditingGuard;
 import com.sep.vox.domain.service.assessment.AssessmentScheduleWindowMessages;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateAssessmentUseCase implements IUseCase<UpdateAssessmentCommand, AssessmentDto> {
 
     private final AssessmentRepository assessmentRepository;
@@ -52,35 +54,6 @@ public class UpdateAssessmentUseCase implements IUseCase<UpdateAssessmentCommand
     private final AssessmentScheduleProctorConflictValidator assessmentScheduleProctorConflictValidator;
     private final AssessmentScheduleCandidateConflictValidator assessmentScheduleCandidateConflictValidator;
     private final SubscriptionPeriodGuardService subscriptionPeriodGuardService;
-
-    public UpdateAssessmentUseCase(
-            AssessmentRepository assessmentRepository,
-            AssessmentMemberRepository assessmentMemberRepository,
-            AssessmentScheduleRepository assessmentScheduleRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
-            AssessmentPolicyValidator assessmentPolicyValidator,
-            AssessmentStreamConfigResolver assessmentStreamConfigResolver,
-            UserContextPort userContextPort,
-            ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService,
-            AssessmentScheduleRoomValidator assessmentScheduleRoomValidator,
-            AssessmentScheduleProctorConflictValidator assessmentScheduleProctorConflictValidator,
-            AssessmentScheduleCandidateConflictValidator assessmentScheduleCandidateConflictValidator,
-            SubscriptionPeriodGuardService subscriptionPeriodGuardService) {
-        this.subscriptionPeriodGuardService = subscriptionPeriodGuardService;
-        this.assessmentPolicyValidator = assessmentPolicyValidator;
-        this.assessmentStreamConfigResolver = assessmentStreamConfigResolver;
-        this.assessmentScheduleRoomValidator = assessmentScheduleRoomValidator;
-        this.assessmentScheduleProctorConflictValidator = assessmentScheduleProctorConflictValidator;
-        this.assessmentScheduleCandidateConflictValidator = assessmentScheduleCandidateConflictValidator;
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentMemberRepository = assessmentMemberRepository;
-        this.assessmentScheduleRepository = assessmentScheduleRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-        this.userContextPort = userContextPort;
-        this.classTestTokenQuotaGuardService = classTestTokenQuotaGuardService;
-    }
 
     @Override
     @Transactional

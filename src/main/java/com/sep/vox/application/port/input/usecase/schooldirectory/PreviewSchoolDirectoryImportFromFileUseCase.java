@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +27,7 @@ import com.sep.vox.domain.repository.ImportRowRepository;
 import com.sep.vox.domain.repository.ImportSessionRepository;
 
 @Service
+@RequiredArgsConstructor
 public class PreviewSchoolDirectoryImportFromFileUseCase
         implements IUseCase<PreviewSchoolDirectoryImportFromFileCommand, PreviewSchoolDirectoryImportResponse> {
 
@@ -36,19 +38,6 @@ public class PreviewSchoolDirectoryImportFromFileUseCase
     private final ImportRowRepository importRowRepository;
     private final UserContextPort userContextPort;
     private final JsonSerializationPort jsonSerializationPort;
-
-    public PreviewSchoolDirectoryImportFromFileUseCase(
-            FileProcessingPort fileProcessingPort,
-            ImportSessionRepository importSessionRepository,
-            ImportRowRepository importRowRepository,
-            UserContextPort userContextPort,
-            JsonSerializationPort jsonSerializationPort) {
-        this.fileProcessingPort = fileProcessingPort;
-        this.importSessionRepository = importSessionRepository;
-        this.importRowRepository = importRowRepository;
-        this.userContextPort = userContextPort;
-        this.jsonSerializationPort = jsonSerializationPort;
-    }
 
     @Override
     @Transactional

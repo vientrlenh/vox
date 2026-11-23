@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.subscription;
 import com.sep.vox.domain.model.subscription.SubscriptionPlan;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,20 +16,12 @@ import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ArchiveSubscriptionPlanUseCase implements IUseCase<ArchiveSubscriptionPlanCommand, UUID> {
 
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final SubscriptionPlanReplacementValidator replacementValidator;
-
-    public ArchiveSubscriptionPlanUseCase(
-            SubscriptionPlanRepository subscriptionPlanRepository,
-            SchoolSubscriptionRepository schoolSubscriptionRepository,
-            SubscriptionPlanReplacementValidator replacementValidator) {
-        this.subscriptionPlanRepository = subscriptionPlanRepository;
-        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
-        this.replacementValidator = replacementValidator;
-    }
 
     @Override
     @Transactional

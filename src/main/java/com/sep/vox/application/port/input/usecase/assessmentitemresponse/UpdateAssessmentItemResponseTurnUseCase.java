@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.assessmentitemresponse;
 
 import com.sep.vox.domain.model.assessment.AssessmentItemResponseTurn;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,18 +15,12 @@ import com.sep.vox.domain.repository.AssessmentItemResponseRepository;
 import com.sep.vox.domain.repository.AssessmentItemResponseTurnRepository;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateAssessmentItemResponseTurnUseCase
         implements IUseCase<UpdateAssessmentItemResponseTurnCommand, AssessmentItemResponseTurnResponse> {
 
     private final AssessmentItemResponseRepository assessmentItemResponseRepository;
     private final AssessmentItemResponseTurnRepository assessmentItemResponseTurnRepository;
-
-    public UpdateAssessmentItemResponseTurnUseCase(
-            AssessmentItemResponseRepository assessmentItemResponseRepository,
-            AssessmentItemResponseTurnRepository assessmentItemResponseTurnRepository) {
-        this.assessmentItemResponseRepository = assessmentItemResponseRepository;
-        this.assessmentItemResponseTurnRepository = assessmentItemResponseTurnRepository;
-    }
 
     @Override
     @Transactional

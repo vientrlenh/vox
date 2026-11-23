@@ -18,10 +18,12 @@ import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class ViewSchoolRubricCriteriaUseCase implements IUseCase<ViewSchoolRubricCriteriaQuery, PageResult<RubricCriterionDto>> {
 
     private final RubricCriterionRepository rubricCriterionRepository;
@@ -32,25 +34,6 @@ public class ViewSchoolRubricCriteriaUseCase implements IUseCase<ViewSchoolRubri
     private final SchoolRepository schoolRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final RubricCriterionDtoMapper rubricCriterionDtoMapper;
-
-    public ViewSchoolRubricCriteriaUseCase(
-            RubricCriterionRepository rubricCriterionRepository,
-            RubricVersionRepository rubricVersionRepository,
-            RubricRepository rubricRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort,
-            SchoolRepository schoolRepository,
-            SchoolUserRepository schoolUserRepository,
-            RubricCriterionDtoMapper rubricCriterionDtoMapper) {
-        this.rubricCriterionRepository = rubricCriterionRepository;
-        this.rubricVersionRepository = rubricVersionRepository;
-        this.rubricRepository = rubricRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-        this.schoolRepository = schoolRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.rubricCriterionDtoMapper = rubricCriterionDtoMapper;
-    }
 
     @Override
     @Transactional(readOnly = true)

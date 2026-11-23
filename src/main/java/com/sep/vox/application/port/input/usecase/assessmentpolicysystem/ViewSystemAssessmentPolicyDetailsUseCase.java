@@ -15,24 +15,17 @@ import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class ViewSystemAssessmentPolicyDetailsUseCase implements IUseCase<ViewSystemAssessmentPolicyDetailsQuery, AssessmentPolicyDto> {
 
     private final AssessmentPolicyRepository assessmentPolicyRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
-
-    public ViewSystemAssessmentPolicyDetailsUseCase(
-            AssessmentPolicyRepository assessmentPolicyRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort) {
-        this.assessmentPolicyRepository = assessmentPolicyRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional(readOnly = true)

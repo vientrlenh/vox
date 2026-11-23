@@ -6,6 +6,7 @@ import java.util.UUID;
 import com.sep.vox.application.port.input.usecase.recording.GetAssessmentRecordingPlaybackUseCase;
 import com.sep.vox.application.port.input.usecase.recording.GetAssessmentRecordsUseCase;
 import com.sep.vox.application.response.input.recording.AssessmentRecordingPlaybackResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
@@ -53,6 +54,7 @@ import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
 
 
 @Controller("graphqlAssessmentSessionController")
+@RequiredArgsConstructor
 public class AssessmentSessionController {
 
     private final ViewAssessmentSessionUseCase viewAssessmentSessionUseCase;
@@ -72,42 +74,6 @@ public class AssessmentSessionController {
     private final GetAssessmentRecordingPlaybackUseCase getAssessmentRecordingPlaybackUseCase;
     private final ViewAssessmentSessionProctoringAlertsUseCase viewAssessmentSessionProctoringAlertsUseCase;
 
-
-    public AssessmentSessionController(
-            ViewAssessmentSessionUseCase viewAssessmentSessionUseCase,
-            ViewAssessmentSessionResultUseCase viewAssessmentSessionResultUseCase,
-            ViewAssessmentSessionFollowupsUseCase viewAssessmentSessionFollowupsUseCase,
-            ViewMyAssessmentResultsUseCase viewMyAssessmentResultsUseCase,
-            ViewAssessmentItemResponseUseCase viewAssessmentItemResponseUseCase,
-            ViewAssessmentItemResponseTurnsUseCase viewAssessmentItemResponseTurnsUseCase,
-            ViewAssessmentItemResponseEvaluationUseCase viewAssessmentItemResponseEvaluationUseCase,
-            FlagAssessmentSessionUseCase flagAssessmentSessionUseCase,
-            ForceEndAssessmentSessionUseCase forceEndAssessmentSessionUseCase,
-            UnblockAssessmentCandidateUseCase unblockAssessmentCandidateUseCase,
-            DecideAssessmentCandidateResultOutcomeUseCase decideAssessmentCandidateResultOutcomeUseCase,
-            RetryGradingAssessmentSessionUseCase retryGradingAssessmentSessionUseCase,
-            SubmitAssessmentSessionUseCase submitAssessmentSessionUseCase,
-            GetAssessmentRecordsUseCase getAssessmentRecordsUseCase,
-            GetAssessmentRecordingPlaybackUseCase getAssessmentRecordingPlaybackUseCase,
-            ViewAssessmentSessionProctoringAlertsUseCase viewAssessmentSessionProctoringAlertsUseCase) {
-        this.getAssessmentRecordingPlaybackUseCase = getAssessmentRecordingPlaybackUseCase;
-        this.viewAssessmentSessionProctoringAlertsUseCase = viewAssessmentSessionProctoringAlertsUseCase;
-        this.viewAssessmentSessionUseCase = viewAssessmentSessionUseCase;
-        this.viewAssessmentSessionResultUseCase = viewAssessmentSessionResultUseCase;
-        this.viewAssessmentSessionFollowupsUseCase = viewAssessmentSessionFollowupsUseCase;
-        this.viewMyAssessmentResultsUseCase = viewMyAssessmentResultsUseCase;
-        this.viewAssessmentItemResponseUseCase = viewAssessmentItemResponseUseCase;
-        this.viewAssessmentItemResponseTurnsUseCase = viewAssessmentItemResponseTurnsUseCase;
-        this.viewAssessmentItemResponseEvaluationUseCase = viewAssessmentItemResponseEvaluationUseCase;
-        this.flagAssessmentSessionUseCase = flagAssessmentSessionUseCase;
-        this.forceEndAssessmentSessionUseCase = forceEndAssessmentSessionUseCase;
-        this.unblockAssessmentCandidateUseCase = unblockAssessmentCandidateUseCase;
-        this.decideAssessmentCandidateResultOutcomeUseCase = decideAssessmentCandidateResultOutcomeUseCase;
-        this.retryGradingAssessmentSessionUseCase = retryGradingAssessmentSessionUseCase;
-        this.submitAssessmentSessionUseCase = submitAssessmentSessionUseCase;
-        this.getAssessmentRecordsUseCase = getAssessmentRecordsUseCase;
-
-    }
 
     @QueryMapping
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")

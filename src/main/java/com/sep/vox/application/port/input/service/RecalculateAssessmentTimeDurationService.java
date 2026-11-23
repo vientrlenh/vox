@@ -9,6 +9,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +37,7 @@ import com.sep.vox.domain.service.assessment.PaperTimeCalculator;
  * and recomputes the billable part itself, because media playback seconds produce no AI cost.
  */
 @Service
+@RequiredArgsConstructor
 public class RecalculateAssessmentTimeDurationService {
 
     private final AssessmentRepository assessmentRepository;
@@ -44,21 +46,6 @@ public class RecalculateAssessmentTimeDurationService {
     private final QuestionRepository questionRepository;
     private final QuestionAssetRepository questionAssetRepository;
     private final AssessmentScheduleRepository assessmentScheduleRepository;
-
-    public RecalculateAssessmentTimeDurationService(
-            AssessmentRepository assessmentRepository,
-            AssessmentPaperRepository assessmentPaperRepository,
-            AssessmentPaperItemRepository assessmentPaperItemRepository,
-            QuestionRepository questionRepository,
-            QuestionAssetRepository questionAssetRepository,
-            AssessmentScheduleRepository assessmentScheduleRepository) {
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentPaperRepository = assessmentPaperRepository;
-        this.assessmentPaperItemRepository = assessmentPaperItemRepository;
-        this.questionRepository = questionRepository;
-        this.questionAssetRepository = questionAssetRepository;
-        this.assessmentScheduleRepository = assessmentScheduleRepository;
-    }
 
     @Transactional
     public void recalculate(UUID assessmentId) {

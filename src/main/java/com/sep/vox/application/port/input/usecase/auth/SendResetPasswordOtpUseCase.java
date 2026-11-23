@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.auth;
 import com.sep.vox.domain.model.user.User;
 import java.time.Instant;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,20 +20,12 @@ import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class SendResetPasswordOtpUseCase implements IUseCase<SendResetPasswordOtpCommand, Void> {
 
     private final UserRepository userRepository;
     private final OutboxRepository outboxRepository;
     private final JsonSerializationPort jsonSerializationPort;
-
-    public SendResetPasswordOtpUseCase(
-            UserRepository userRepository,
-            OutboxRepository outboxRepository,
-            JsonSerializationPort jsonSerializationPort) {
-        this.userRepository = userRepository;
-        this.outboxRepository = outboxRepository;
-        this.jsonSerializationPort = jsonSerializationPort;
-    }
 
     /**
      * Use case này KHÔNG còn sinh OTP. Mã được sinh ở

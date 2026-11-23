@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
@@ -42,18 +42,18 @@ import com.sep.vox.domain.repository.SubscriptionPlanRepository;
  */
 @Component
 @Order(10)
+@RequiredArgsConstructor
+@Slf4j
 public class SubscriptionPlanInitializer implements ApplicationRunner {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SubscriptionPlanInitializer.class);
-
     /**
-     * Tỷ giá quy đổi PHẲNG, không cộng thêm gì.
+     * FLAT conversion rate, nothing added on top.
      *
-     * <p>Đúng bằng {@code DEFAULT_USD_TO_VND_RATE} của {@code QuotaSellingPriceProperties}: tỷ giá
-     * thị trường, KHÔNG nhân với {@code (1 + serviceFeeRatio)}. Nhân sẵn biên lãi vào tỷ giá chính là
-     * thứ V2 đã dẹp -- nó tạo ra một "đơn giá" mà trường không đối chiếu được với bất kỳ tỷ giá nào
-     * bên ngoài. Phí dịch vụ chỉ được xuất hiện dưới dạng một dòng phí riêng trên đơn hàng, do
-     * {@code ServiceFeePort} quyết định lúc đặt đơn.
+     * <p>Equal to {@code DEFAULT_USD_TO_VND_RATE} of {@code QuotaSellingPriceProperties}: the market
+     * rate, NOT multiplied by {@code (1 + serviceFeeRatio)}. Baking the margin into the rate is exactly
+     * what V2 got rid of -- it produces a "unit price" that a school cannot check against any external
+     * rate. The service fee may only appear as a separate fee line on the order, decided by
+     * {@code ServiceFeePort} when the order is placed.
      */
     private static final BigDecimal USD_TO_VND = new BigDecimal("26000");
 
@@ -61,28 +61,29 @@ public class SubscriptionPlanInitializer implements ApplicationRunner {
     private static final List<QuotaType> QUOTA_TYPES = List.of(QuotaType.ASSESSMENT, QuotaType.PRACTICE);
 
     /**
-     * Trần độ dài MỘT lượt thi, dùng chung cho cả thang gói. Đây là cái thước, không phải túi tiền --
-     * nó không cạn đi khi thi nhiều, chỉ chặn mã đề dài quá mức. Để 60 phút cho rộng hơn hẳn mã đề
-     * demo (khoảng 20-25 phút, đã gồm thời lượng audio/video) để không chặn nhầm lúc soạn đề.
+     * Length cap of ONE attempt, shared by the whole plan ladder. It is a ruler, not a wallet --
+     * it does not run out when many attempts are taken, it only blocks paper versions that are too long. 60 minutes is
+     * well above the demo paper (about 20-25 minutes, audio/video duration included) so a paper is not blocked by mistake
+     * while it is being authored.
      */
     private static final int MAX_TIME_PER_ATTEMPT_MIN = 60;
 
-    /** Đủ lớn để gom hết danh mục gói trong một lượt đọc -- danh mục này đếm bằng chục, không phải nghìn. */
+    /** Large enough to load the whole plan catalogue in one read -- the catalogue is counted in tens, not thousands. */
     private static final int LOOKUP_PAGE_SIZE = 500;
 
     /**
-     * THỨ TỰ TRONG DANH SÁCH NÀY LÀ CÓ CHỦ ĐÍCH: xếp từ ĐẮT xuống RẺ.
+     * THE ORDER OF THIS LIST IS DELIBERATE: from MOST EXPENSIVE down to CHEAPEST.
      *
-     * <p>Danh sách gói trả về cho trường sắp theo {@code id DESC} (xem
-     * {@code SubscriptionPlanRepositoryImpl.NEWEST_FIRST}), mà id là uuidv7 nên tăng dần theo thứ tự
-     * chèn. Chèn từ đắt xuống rẻ vì thế cho ra màn chọn gói đọc từ rẻ lên đắt -- đúng cách một bảng
-     * giá được đọc.
+     * <p>The plan list returned to a school is sorted by {@code id DESC} (see
+     * {@code SubscriptionPlanRepositoryImpl.NEWEST_FIRST}), and the id is a uuidv7 that grows in
+     * insertion order. Inserting from expensive to cheap therefore gives a plan picker that reads from cheap to
+     * expensive -- the way a price table is read.
      *
-     * <p>Đây là ràng buộc MỀM, không phải bảo đảm: hai gói chèn trong cùng một mili giây có thể đảo
-     * chỗ. Muốn chắc chắn thì phải cho đường đọc sắp theo giá, và đó là một thay đổi hành vi riêng.
+     * <p>This is a SOFT constraint, not a guarantee: two plans inserted in the same millisecond may swap
+     * places. To be certain, the read path would have to sort by price, and that is a separate behavior change.
      *
-     * <p>Giá đi kèm là thang DEMO (10k → 280k), cố ý rẻ hơn hẳn chi phí AI mà gói cấp -- xem
-     * {@link PlanSeed}. Hạn mức thì vẫn là con số thật, quy từ ngân sách USD theo tỷ giá phẳng.
+     * <p>The prices here are the DEMO ladder (10k → 280k), deliberately far cheaper than the AI cost the plan grants -- see
+     * {@link PlanSeed}. The quotas are still real numbers, converted from a USD budget at the flat rate.
      */
     private static final List<PlanSeed> PLANS = List.of(
         new PlanSeed(
@@ -132,13 +133,6 @@ public class SubscriptionPlanInitializer implements ApplicationRunner {
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final SubscriptionPlanQuotaRepository subscriptionPlanQuotaRepository;
 
-    public SubscriptionPlanInitializer(
-            SubscriptionPlanRepository subscriptionPlanRepository,
-            SubscriptionPlanQuotaRepository subscriptionPlanQuotaRepository) {
-        this.subscriptionPlanRepository = subscriptionPlanRepository;
-        this.subscriptionPlanQuotaRepository = subscriptionPlanQuotaRepository;
-    }
-
     @Override
     public void run(ApplicationArguments args) throws Exception {
         Set<String> existingNames = subscriptionPlanRepository.findAll(1, LOOKUP_PAGE_SIZE).content().stream()
@@ -155,11 +149,11 @@ public class SubscriptionPlanInitializer implements ApplicationRunner {
         }
 
         if (created == 0) {
-            LOGGER.info("Subscription plan catalogue already complete ({} plans). Skip initialize", PLANS.size());
+            log.info("Subscription plan catalogue already complete ({} plans). Skip initialize", PLANS.size());
             return;
         }
 
-        LOGGER.info("Subscription plan catalogue initialized: {} of {} plans created", created, PLANS.size());
+        log.info("Subscription plan catalogue initialized: {} of {} plans created", created, PLANS.size());
     }
 
     private void createPlan(PlanSeed seed) {
@@ -190,7 +184,7 @@ public class SubscriptionPlanInitializer implements ApplicationRunner {
                 .build());
         }
 
-        LOGGER.info(
+        log.info(
             "Subscription plan created: {} ({} {}, gia {}d, han muc {}d moi loai)",
             seed.name(),
             seed.periodCount(),

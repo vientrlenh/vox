@@ -5,6 +5,7 @@ import com.sep.vox.application.response.input.assessment.StudentAssessmentSummar
 import com.sep.vox.domain.common.PageResult;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -69,6 +70,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/assessments")
+@RequiredArgsConstructor
 public class AssessmentController {
 
     private final CreateAssessmentUseCase createAssessmentUseCase;
@@ -85,37 +87,6 @@ public class AssessmentController {
     private final ViewMyAssessmentsUseCase viewMyAssessmentsUseCase;
     private final VerifyAssessmentScheduleOtpUseCase verifyAssessmentScheduleOtpUseCase;
     private final StartClassTestSessionUseCase startClassTestSessionUseCase;
-
-    public AssessmentController(
-            CreateAssessmentUseCase createAssessmentUseCase,
-            UpdateAssessmentUseCase updateAssessmentUseCase,
-            UpdateAssessmentStatusUseCase updateAssessmentStatusUseCase,
-            DeleteAssessmentUseCase deleteAssessmentUseCase,
-            CreateAssessmentMemberUseCase createAssessmentMemberUseCase,
-            UpdateAssessmentMemberUseCase updateAssessmentMemberUseCase,
-            DeleteAssessmentMemberUseCase deleteAssessmentMemberUseCase,
-            UpdateAssessmentSecurePoolStatusUseCase updateAssessmentSecurePoolStatusUseCase,
-            AttachAssessmentBlueprintUseCase attachAssessmentBlueprintUseCase,
-            UpdateAssessmentDeliveryModeUseCase updateAssessmentDeliveryModeUseCase,
-            GetAssessmentScheduleOtpUseCase getAssessmentScheduleOtpUseCase,
-            ViewMyAssessmentsUseCase viewMyAssessmentsUseCase,
-            VerifyAssessmentScheduleOtpUseCase verifyAssessmentScheduleOtpUseCase,
-            StartClassTestSessionUseCase startClassTestSessionUseCase) {
-        this.createAssessmentUseCase = createAssessmentUseCase;
-        this.updateAssessmentUseCase = updateAssessmentUseCase;
-        this.updateAssessmentStatusUseCase = updateAssessmentStatusUseCase;
-        this.deleteAssessmentUseCase = deleteAssessmentUseCase;
-        this.createAssessmentMemberUseCase = createAssessmentMemberUseCase;
-        this.updateAssessmentMemberUseCase = updateAssessmentMemberUseCase;
-        this.deleteAssessmentMemberUseCase = deleteAssessmentMemberUseCase;
-        this.updateAssessmentSecurePoolStatusUseCase = updateAssessmentSecurePoolStatusUseCase;
-        this.attachAssessmentBlueprintUseCase = attachAssessmentBlueprintUseCase;
-        this.updateAssessmentDeliveryModeUseCase = updateAssessmentDeliveryModeUseCase;
-        this.getAssessmentScheduleOtpUseCase = getAssessmentScheduleOtpUseCase;
-        this.viewMyAssessmentsUseCase = viewMyAssessmentsUseCase;
-        this.verifyAssessmentScheduleOtpUseCase = verifyAssessmentScheduleOtpUseCase;
-        this.startClassTestSessionUseCase = startClassTestSessionUseCase;
-    }
 
     @GetMapping
     @PreAuthorize("hasRole('STUDENT')")

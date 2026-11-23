@@ -5,6 +5,7 @@ import com.sep.vox.domain.model.assessment.AssessmentCandidateResult;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +32,7 @@ import com.sep.vox.domain.repository.AssessmentRepository;
  * xem được bài mình từng cầm, kể cả khi phân công đó đã đóng.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewResultStatusHistoryUseCase implements IUseCase<UUID, List<ResultStatusHistoryInfo>> {
 
     private final AssessmentResultAuditQueryRepository assessmentResultAuditQueryRepository;
@@ -40,23 +42,6 @@ public class ViewResultStatusHistoryUseCase implements IUseCase<UUID, List<Resul
     private final AssessmentRepository assessmentRepository;
     private final AssessmentGradingAccessService assessmentGradingAccessService;
     private final UserContextPort userContextPort;
-
-    public ViewResultStatusHistoryUseCase(
-            AssessmentResultAuditQueryRepository assessmentResultAuditQueryRepository,
-            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository,
-            AssessmentRepository assessmentRepository,
-            AssessmentGradingAccessService assessmentGradingAccessService,
-            UserContextPort userContextPort) {
-        this.assessmentResultAuditQueryRepository = assessmentResultAuditQueryRepository;
-        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.assessmentGradingAssignmentRepository = assessmentGradingAssignmentRepository;
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentGradingAccessService = assessmentGradingAccessService;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional(readOnly = true)

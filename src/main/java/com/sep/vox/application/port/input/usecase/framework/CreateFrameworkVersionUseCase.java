@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.framework;
 
 
 import com.sep.vox.application.exception.DataConflictException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,17 +19,11 @@ import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
 
 @Service
+@RequiredArgsConstructor
 public class CreateFrameworkVersionUseCase implements IUseCase<CreateFrameworkVersionCommand, CreateFrameworkVersionResponse> {
 
     private final FrameworkRepository frameworkRepository;
     private final FrameworkVersionRepository frameworkVersionRepository;
-
-    public CreateFrameworkVersionUseCase(
-            FrameworkRepository frameworkRepository,
-            FrameworkVersionRepository frameworkVersionRepository) {
-        this.frameworkRepository = frameworkRepository;
-        this.frameworkVersionRepository = frameworkVersionRepository;
-    }
 
     @Override
     @Transactional

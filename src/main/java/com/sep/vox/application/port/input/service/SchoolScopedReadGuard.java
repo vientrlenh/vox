@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.service;
 
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
@@ -17,13 +18,10 @@ import com.sep.vox.application.port.output.UserContextPort;
  * phải nằm ở use case, nơi biết cả hai vế -- và vì thế nó bị chép lại ở mọi use case đọc theo trường.
  */
 @Service
+@RequiredArgsConstructor
 public class SchoolScopedReadGuard {
 
     private final UserContextPort userContextPort;
-
-    public SchoolScopedReadGuard(UserContextPort userContextPort) {
-        this.userContextPort = userContextPort;
-    }
 
     public void requireCanRead(UUID schoolId) {
         if (!userContextPort.isSystemAdmin() && !schoolId.equals(userContextPort.getCurrentSchoolId())) {

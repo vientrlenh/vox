@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.assessmentschedule;
 
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ import com.sep.vox.domain.service.assessment.AssessmentEditingGuard;
 import com.sep.vox.domain.service.assessment.AssessmentScheduleWindowMessages;
 
 @Service
+@RequiredArgsConstructor
 public class CreateAssessmentScheduleUseCase implements IUseCase<CreateAssessmentScheduleCommand, AssessmentScheduleDto> {
 
     private final AssessmentRepository assessmentRepository;
@@ -34,23 +36,6 @@ public class CreateAssessmentScheduleUseCase implements IUseCase<CreateAssessmen
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
-
-    public CreateAssessmentScheduleUseCase(
-            AssessmentRepository assessmentRepository,
-            AssessmentScheduleRepository assessmentScheduleRepository,
-            AssessmentScheduleRoomValidator assessmentScheduleRoomValidator,
-            AssessmentMemberRepository assessmentMemberRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
-            UserContextPort userContextPort) {
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentScheduleRepository = assessmentScheduleRepository;
-        this.assessmentScheduleRoomValidator = assessmentScheduleRoomValidator;
-        this.assessmentMemberRepository = assessmentMemberRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

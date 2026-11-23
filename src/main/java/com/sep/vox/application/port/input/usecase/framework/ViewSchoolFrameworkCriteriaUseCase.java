@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.framework.FrameworkCriterion;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
 import java.util.List;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,17 +21,11 @@ import com.sep.vox.domain.repository.FrameworkVersionRepository;
 // (Framework là tài nguyên toàn hệ thống, School không sở hữu nên không cần chốt chặn theo schoolId,
 // chỉ cần chặn không cho lộ Version còn DRAFT/ARCHIVED chưa sẵn sàng dùng).
 @Service
+@RequiredArgsConstructor
 public class ViewSchoolFrameworkCriteriaUseCase implements IUseCase<ViewFrameworkCriteriaQuery, List<FrameworkCriterionDto>> {
 
     private final FrameworkVersionRepository frameworkVersionRepository;
     private final FrameworkCriterionRepository frameworkCriterionRepository;
-
-    public ViewSchoolFrameworkCriteriaUseCase(
-            FrameworkVersionRepository frameworkVersionRepository,
-            FrameworkCriterionRepository frameworkCriterionRepository) {
-        this.frameworkVersionRepository = frameworkVersionRepository;
-        this.frameworkCriterionRepository = frameworkCriterionRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

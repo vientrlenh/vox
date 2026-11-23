@@ -2,6 +2,7 @@ package com.sep.vox.interfaces.rest.controller;
 
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -56,6 +57,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/subscriptions")
+@RequiredArgsConstructor
 public class SubscriptionController {
 
     private final CreateSubscriptionPlanUseCase createSubscriptionPlanUseCase;
@@ -71,35 +73,6 @@ public class SubscriptionController {
     private final AllocatePracticeQuotaToStudentsUseCase allocatePracticeQuotaToStudentsUseCase;
     private final SetQuotaDistributionPolicyUseCase setQuotaDistributionPolicyUseCase;
     private final FundQuotaFromBalanceUseCase fundQuotaFromBalanceUseCase;
-
-    public SubscriptionController(
-            CreateSubscriptionPlanUseCase createSubscriptionPlanUseCase,
-            CreateSubscriptionPlanReplacementUseCase createSubscriptionPlanReplacementUseCase,
-            ArchiveSubscriptionPlanUseCase archiveSubscriptionPlanUseCase,
-            UpdateSubscriptionPlanReplacementUseCase updateSubscriptionPlanReplacementUseCase,
-            PublishSubscriptionPlanUseCase publishSubscriptionPlanUseCase,
-            DeleteDraftSubscriptionPlanUseCase deleteDraftSubscriptionPlanUseCase,
-            CancelSchoolSubscriptionUseCase cancelSchoolSubscriptionUseCase,
-            ForceSuspendSubscriptionUseCase forceSuspendSubscriptionUseCase,
-            UnsuspendSubscriptionUseCase unsuspendSubscriptionUseCase,
-            AllocateAssessmentQuotaToTeachersUseCase allocateAssessmentQuotaToTeachersUseCase,
-            AllocatePracticeQuotaToStudentsUseCase allocatePracticeQuotaToStudentsUseCase,
-            SetQuotaDistributionPolicyUseCase setQuotaDistributionPolicyUseCase,
-            FundQuotaFromBalanceUseCase fundQuotaFromBalanceUseCase) {
-        this.createSubscriptionPlanUseCase = createSubscriptionPlanUseCase;
-        this.createSubscriptionPlanReplacementUseCase = createSubscriptionPlanReplacementUseCase;
-        this.archiveSubscriptionPlanUseCase = archiveSubscriptionPlanUseCase;
-        this.updateSubscriptionPlanReplacementUseCase = updateSubscriptionPlanReplacementUseCase;
-        this.publishSubscriptionPlanUseCase = publishSubscriptionPlanUseCase;
-        this.deleteDraftSubscriptionPlanUseCase = deleteDraftSubscriptionPlanUseCase;
-        this.cancelSchoolSubscriptionUseCase = cancelSchoolSubscriptionUseCase;
-        this.forceSuspendSubscriptionUseCase = forceSuspendSubscriptionUseCase;
-        this.unsuspendSubscriptionUseCase = unsuspendSubscriptionUseCase;
-        this.allocateAssessmentQuotaToTeachersUseCase = allocateAssessmentQuotaToTeachersUseCase;
-        this.allocatePracticeQuotaToStudentsUseCase = allocatePracticeQuotaToStudentsUseCase;
-        this.setQuotaDistributionPolicyUseCase = setQuotaDistributionPolicyUseCase;
-        this.fundQuotaFromBalanceUseCase = fundQuotaFromBalanceUseCase;
-    }
 
     @PostMapping
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")

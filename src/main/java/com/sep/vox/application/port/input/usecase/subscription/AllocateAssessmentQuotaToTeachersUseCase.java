@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,13 +22,10 @@ import com.sep.vox.domain.model.user.SchoolRoleCodes;
  * {@code kind = CLASS_TEST}), not by quotaType.
  */
 @Service
+@RequiredArgsConstructor
 public class AllocateAssessmentQuotaToTeachersUseCase implements IUseCase<AllocateAssessmentQuotaCommand, QuotaUserAllocationSummaryResponse> {
 
     private final DistributeQuotaToUsersService distributeQuotaToUsersService;
-
-    public AllocateAssessmentQuotaToTeachersUseCase(DistributeQuotaToUsersService distributeQuotaToUsersService) {
-        this.distributeQuotaToUsersService = distributeQuotaToUsersService;
-    }
 
     @Override
     @Transactional

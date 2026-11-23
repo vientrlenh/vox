@@ -11,9 +11,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.kafka.annotation.BackOff;
 import org.springframework.kafka.annotation.DltHandler;
@@ -45,14 +45,14 @@ import tools.jackson.databind.json.JsonMapper;
  * và lỗi ở đây không còn dội ngược thành 500 cho webhook cổng thanh toán.
  */
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class InvoiceEmailConsumer {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(InvoiceEmailConsumer.class);
 
     private static final String CONSUMER_GROUP = "invoice-email";
 
-    // DateTimeFormatter an toàn dùng chung giữa các thread; DecimalFormat thì không, nên nó
-    // được tạo mới trong mỗi lần gọi consume() thay vì giữ làm field static.
+    // DateTimeFormatter is safe to share between threads; DecimalFormat is not, so it is
+    // created anew on each consume() call instead of being kept as a static field.
     private static final DateTimeFormatter PAID_AT_FORMATTER =
         DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy").withZone(DateMapper.DEFAULT_INPUT_ZONE);
     private static final DateTimeFormatter VALID_UNTIL_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
@@ -65,25 +65,6 @@ public class InvoiceEmailConsumer {
     private final MailTemplatePort mailTemplatePort;
     private final ProcessedEventRepository processedEventRepository;
     private final JsonMapper jsonMapper;
-
-    public InvoiceEmailConsumer(
-            SchoolRepository schoolRepository,
-            SchoolSubscriptionRepository schoolSubscriptionRepository,
-            SubscriptionPlanRepository subscriptionPlanRepository,
-            UserRepository userRepository,
-            MailSendingPort mailSendingPort,
-            MailTemplatePort mailTemplatePort,
-            ProcessedEventRepository processedEventRepository,
-            JsonMapper jsonMapper) {
-        this.schoolRepository = schoolRepository;
-        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
-        this.subscriptionPlanRepository = subscriptionPlanRepository;
-        this.userRepository = userRepository;
-        this.mailSendingPort = mailSendingPort;
-        this.mailTemplatePort = mailTemplatePort;
-        this.processedEventRepository = processedEventRepository;
-        this.jsonMapper = jsonMapper;
-    }
 
     @RetryableTopic(
         attempts = "4",
@@ -100,11 +81,11 @@ public class InvoiceEmailConsumer {
     public void consume(ConsumerRecord<String, String> record, Acknowledgment ack) {
         UUID eventId = KafkaEventHeaders.readEventId(record);
 
-        LOGGER.info("Receive event invoice: eventId={}, partition={}, offset={}",
+        log.info("Receive event invoice: eventId={}, partition={}, offset={}",
             eventId, record.partition(), record.offset());
 
         if (processedEventRepository.existsByEventIdAndConsumerGroup(eventId, CONSUMER_GROUP)) {
-            LOGGER.info("Skip processed event: eventId={}, consumer={}", eventId, CONSUMER_GROUP);
+            log.info("Skip processed event: eventId={}, consumer={}", eventId, CONSUMER_GROUP);
             ack.acknowledge();
             return;
         }
@@ -112,7 +93,7 @@ public class InvoiceEmailConsumer {
         InvoicePaidPayloadV1 payload = parse(record.value(), eventId);
 
         if (payload.schoolAdminIds() == null || payload.schoolAdminIds().isEmpty()) {
-            LOGGER.warn("Skip mail, trường không còn admin nào: eventId={}, schoolId={}",
+            log.warn("Skip mail, trường không còn admin nào: eventId={}, schoolId={}",
                 eventId, payload.schoolId());
             markProcessed(eventId);
             ack.acknowledge();
@@ -128,14 +109,14 @@ public class InvoiceEmailConsumer {
         for (UUID recipientId : payload.schoolAdminIds()) {
             User recipient = userRepository.findById(recipientId).orElse(null);
             if (recipient == null) {
-                LOGGER.warn("Bỏ qua người nhận không còn tồn tại: eventId={}, userId={}", eventId, recipientId);
+                log.warn("Bỏ qua người nhận không còn tồn tại: eventId={}, userId={}", eventId, recipientId);
                 continue;
             }
             try {
                 mailSendingPort.sendHtml(recipient.getEmail().value(), subject, html);
             } catch (Exception e) {
                 failed++;
-                LOGGER.error("Send mail error: eventId={}, to={}", eventId, recipient.getEmail().value(), e);
+                log.error("Send mail error: eventId={}, to={}", eventId, recipient.getEmail().value(), e);
             }
         }
 
@@ -146,7 +127,7 @@ public class InvoiceEmailConsumer {
 
         markProcessed(eventId);
 
-        LOGGER.info("Invoice mail sent: eventId={}, invoiceNumber={}, recipients={}",
+        log.info("Invoice mail sent: eventId={}, invoiceNumber={}, recipients={}",
             eventId, payload.invoiceNumber(), payload.schoolAdminIds().size());
         ack.acknowledge();
     }
@@ -199,7 +180,7 @@ public class InvoiceEmailConsumer {
         try {
             return jsonMapper.readValue(value, InvoicePaidPayloadV1.class);
         } catch (Exception e) {
-            LOGGER.error("Invalid payload: eventId={}, value={}", eventId, value, e);
+            log.error("Invalid payload: eventId={}, value={}", eventId, value, e);
             throw new IllegalStateException("Payload invoice không hợp lệ, eventId=" + eventId, e);
         }
     }
@@ -207,7 +188,7 @@ public class InvoiceEmailConsumer {
     @DltHandler
     public void handleDlt(ConsumerRecord<String, String> record) {
         UUID eventId = KafkaEventHeaders.readEventIdOrNull(record);
-        LOGGER.error("invoice event sent to DLT: eventId={}, topic={}, partition={}, offset={}, payload={}",
+        log.error("invoice event sent to DLT: eventId={}, topic={}, partition={}, offset={}, payload={}",
             eventId, record.topic(), record.partition(), record.offset(), record.value());
     }
 
@@ -219,7 +200,7 @@ public class InvoiceEmailConsumer {
                     .processedAt(Instant.now())
                     .build());
         } catch (DataIntegrityViolationException e) {
-            LOGGER.warn("This event was already marked by another instance: eventId={}", eventId);
+            log.warn("This event was already marked by another instance: eventId={}", eventId);
         }
     }
 }

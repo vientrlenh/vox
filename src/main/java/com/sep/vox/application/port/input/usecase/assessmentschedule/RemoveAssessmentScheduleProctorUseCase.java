@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.assessment.AssessmentSchedule;
 import com.sep.vox.domain.model.assessment.AssessmentScheduleProctor;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,7 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.service.assessment.AssessmentEditingGuard;
 
 @Service
+@RequiredArgsConstructor
 public class RemoveAssessmentScheduleProctorUseCase implements IUseCase<DeleteAssessmentScheduleProctorCommand, UUID> {
 
     private final AssessmentRepository assessmentRepository;
@@ -32,23 +34,6 @@ public class RemoveAssessmentScheduleProctorUseCase implements IUseCase<DeleteAs
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
-
-    public RemoveAssessmentScheduleProctorUseCase(
-            AssessmentRepository assessmentRepository,
-            AssessmentScheduleRepository assessmentScheduleRepository,
-            AssessmentScheduleProctorRepository assessmentScheduleProctorRepository,
-            AssessmentMemberRepository assessmentMemberRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
-            UserContextPort userContextPort) {
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentScheduleRepository = assessmentScheduleRepository;
-        this.assessmentScheduleProctorRepository = assessmentScheduleProctorRepository;
-        this.assessmentMemberRepository = assessmentMemberRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

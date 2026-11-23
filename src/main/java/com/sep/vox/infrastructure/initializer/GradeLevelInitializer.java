@@ -3,8 +3,8 @@ package com.sep.vox.infrastructure.initializer;
 import com.sep.vox.domain.common.PageResult;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
@@ -52,14 +52,14 @@ import com.sep.vox.domain.repository.GradeLevelRepository;
  */
 @Component
 @Order(7)
+@RequiredArgsConstructor
+@Slf4j
 public class GradeLevelInitializer implements ApplicationRunner {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(GradeLevelInitializer.class);
-
     /**
-     * Mã khối là khoá đối chiếu đi ra ngoài: {@link GradeLevelBandScopeInitializer} và
-     * {@link SystemAssessmentPolicyInitializer} đều tra theo đúng ba chuỗi này, và luồng import
-     * Excel chuẩn hoá bằng {@code toUpperCase} trước khi so. Đổi mã ở đây là đổi ở cả ba chỗ.
+     * A grade code is a matching key that leaves the system: {@link GradeLevelBandScopeInitializer} and
+     * {@link SystemAssessmentPolicyInitializer} both look up exactly these three strings, and the Excel
+     * import flow normalizes with {@code toUpperCase} before comparing. Changing a code here means changing it in all three places.
      */
     static final String GRADE_10 = "GRADE_10";
     static final String GRADE_11 = "GRADE_11";
@@ -73,10 +73,6 @@ public class GradeLevelInitializer implements ApplicationRunner {
 
     private final GradeLevelRepository gradeLevelRepository;
 
-    public GradeLevelInitializer(GradeLevelRepository gradeLevelRepository) {
-        this.gradeLevelRepository = gradeLevelRepository;
-    }
-
     @Override
     @Transactional
     public void run(ApplicationArguments args) throws Exception {
@@ -84,7 +80,7 @@ public class GradeLevelInitializer implements ApplicationRunner {
         // size)), so the first page is 1, not 0. Size 1 is used because only totalElements is needed.
         PageResult<GradeLevel> existing = gradeLevelRepository.findAll(null, null, 1, 1);
         if (existing.totalElements() > 0) {
-            LOGGER.info("Catalog khối lớp đã có {} bản ghi. Bỏ qua khởi tạo khối lớp mặc định",
+            log.info("Catalog khối lớp đã có {} bản ghi. Bỏ qua khởi tạo khối lớp mặc định",
                 existing.totalElements());
             return;
         }
@@ -99,7 +95,7 @@ public class GradeLevelInitializer implements ApplicationRunner {
                 .build());
         }
 
-        LOGGER.info("Đã khởi tạo {} khối lớp mặc định bậc THPT", GRADE_LEVELS.size());
+        log.info("Đã khởi tạo {} khối lớp mặc định bậc THPT", GRADE_LEVELS.size());
     }
 
     private record GradeLevelSeed(String code, String name, String description, int order) {}

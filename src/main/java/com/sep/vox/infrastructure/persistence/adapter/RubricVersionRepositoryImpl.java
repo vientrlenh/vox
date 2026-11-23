@@ -12,6 +12,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.sep.vox.domain.common.PageResult;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -26,13 +27,10 @@ import com.sep.vox.infrastructure.persistence.repository.SpringDataRubricVersion
 import com.sep.vox.infrastructure.persistence.DataConflictTranslation;
 
 @Repository
+@RequiredArgsConstructor
 public class RubricVersionRepositoryImpl implements RubricVersionRepository {
 
     private final SpringDataRubricVersionRepository springDataRubricVersionRepository;
-
-    public RubricVersionRepositoryImpl(SpringDataRubricVersionRepository springDataRubricVersionRepository) {
-        this.springDataRubricVersionRepository = springDataRubricVersionRepository;
-    }
 
     @Override
     public Optional<RubricVersion> findById(UUID id) {

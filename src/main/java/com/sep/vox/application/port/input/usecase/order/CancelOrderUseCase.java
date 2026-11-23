@@ -5,8 +5,8 @@ import com.sep.vox.domain.model.payment.PaymentRecord;
 import java.time.Instant;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,9 +38,9 @@ import com.sep.vox.domain.repository.PaymentRecordRepository;
  * path for money remains.
  */
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class CancelOrderUseCase implements IUseCase<CancelOrderCommand, UUID> {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(CancelOrderUseCase.class);
 
     private static final String CANCELLATION_REASON = "Trường chủ động hủy đơn";
 
@@ -48,17 +48,6 @@ public class CancelOrderUseCase implements IUseCase<CancelOrderCommand, UUID> {
     private final PaymentRecordRepository paymentRecordRepository;
     private final PaymentProcessResolver paymentProcessResolver;
     private final UserContextPort userContextPort;
-
-    public CancelOrderUseCase(
-            OrderRepository orderRepository,
-            PaymentRecordRepository paymentRecordRepository,
-            PaymentProcessResolver paymentProcessResolver,
-            UserContextPort userContextPort) {
-        this.orderRepository = orderRepository;
-        this.paymentRecordRepository = paymentRecordRepository;
-        this.paymentProcessResolver = paymentProcessResolver;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional
@@ -81,7 +70,7 @@ public class CancelOrderUseCase implements IUseCase<CancelOrderCommand, UUID> {
         order.setStatus(OrderStatus.CANCELLED);
         orderRepository.save(order);
 
-        LOGGER.info("Trường {} hủy đơn {}", order.getSchoolId(), order.getId());
+        log.info("Trường {} hủy đơn {}", order.getSchoolId(), order.getId());
         return order.getId();
     }
 
@@ -167,7 +156,7 @@ public class CancelOrderUseCase implements IUseCase<CancelOrderCommand, UUID> {
 
         current.setStatus(PaymentStatus.FAILED);
         paymentRecordRepository.save(current);
-        LOGGER.info("Đóng lần thanh toán {} của đơn {} do trường hủy đơn", attemptId, order.getId());
+        log.info("Đóng lần thanh toán {} của đơn {} do trường hủy đơn", attemptId, order.getId());
     }
 
     /**

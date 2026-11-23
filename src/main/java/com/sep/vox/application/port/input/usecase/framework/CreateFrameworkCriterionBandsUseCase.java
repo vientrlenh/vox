@@ -7,6 +7,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.sep.vox.application.exception.DataConflictException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ import com.sep.vox.domain.repository.FrameworkResultBandRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
 
 @Service
+@RequiredArgsConstructor
 public class CreateFrameworkCriterionBandsUseCase
         implements IUseCase<CreateFrameworkCriterionBandsCommand, List<UUID>> {
 
@@ -32,17 +34,6 @@ public class CreateFrameworkCriterionBandsUseCase
     private final FrameworkCriterionRepository frameworkCriterionRepository;
     private final FrameworkCriterionBandRepository frameworkCriterionBandRepository;
     private final FrameworkResultBandRepository frameworkResultBandRepository;
-
-    public CreateFrameworkCriterionBandsUseCase(
-            FrameworkVersionRepository frameworkVersionRepository,
-            FrameworkCriterionRepository frameworkCriterionRepository,
-            FrameworkCriterionBandRepository frameworkCriterionBandRepository,
-            FrameworkResultBandRepository frameworkResultBandRepository) {
-        this.frameworkVersionRepository = frameworkVersionRepository;
-        this.frameworkCriterionRepository = frameworkCriterionRepository;
-        this.frameworkCriterionBandRepository = frameworkCriterionBandRepository;
-        this.frameworkResultBandRepository = frameworkResultBandRepository;
-    }
 
     @Override
     @Transactional

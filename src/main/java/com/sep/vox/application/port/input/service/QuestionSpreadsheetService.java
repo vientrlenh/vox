@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.common.DateMapper;
@@ -36,6 +37,7 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class QuestionSpreadsheetService {
 
     private static final int EXPORT_PAGE_SIZE = 500;
@@ -74,27 +76,6 @@ public class QuestionSpreadsheetService {
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final SpreadsheetWriterPort spreadsheetWriterPort;
-
-    public QuestionSpreadsheetService(
-            QuestionRepository questionRepository,
-            QuestionEvaluationGuideRepository questionEvaluationGuideRepository,
-            QuestionBankRepository questionBankRepository,
-            QuestionTopicRepository questionTopicRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
-            SpreadsheetWriterPort spreadsheetWriterPort) {
-        this.questionRepository = questionRepository;
-        this.questionEvaluationGuideRepository = questionEvaluationGuideRepository;
-        this.questionBankRepository = questionBankRepository;
-        this.questionTopicRepository = questionTopicRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-        this.spreadsheetWriterPort = spreadsheetWriterPort;
-    }
 
     public byte[] exportQuestions(
             UUID questionBankId,

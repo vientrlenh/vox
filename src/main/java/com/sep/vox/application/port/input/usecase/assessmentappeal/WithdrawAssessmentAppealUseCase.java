@@ -5,6 +5,7 @@ import com.sep.vox.domain.model.assessment.AssessmentResultAppeal;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,23 +29,13 @@ import com.sep.vox.domain.repository.AssessmentResultAppealRepository;
  * đi đường admin từ chối, có ghi lý do.
  */
 @Service
+@RequiredArgsConstructor
 public class WithdrawAssessmentAppealUseCase implements IUseCase<UUID, UUID> {
 
     private final AssessmentResultAppealRepository assessmentResultAppealRepository;
     private final AssessmentCandidateResultRepository assessmentCandidateResultRepository;
     private final AssessmentAppealAccessService assessmentAppealAccessService;
     private final ResultStatusHistoryRecorder resultStatusHistoryRecorder;
-
-    public WithdrawAssessmentAppealUseCase(
-            AssessmentResultAppealRepository assessmentResultAppealRepository,
-            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
-            AssessmentAppealAccessService assessmentAppealAccessService,
-            ResultStatusHistoryRecorder resultStatusHistoryRecorder) {
-        this.assessmentResultAppealRepository = assessmentResultAppealRepository;
-        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
-        this.assessmentAppealAccessService = assessmentAppealAccessService;
-        this.resultStatusHistoryRecorder = resultStatusHistoryRecorder;
-    }
 
     @Override
     @Transactional

@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,23 +28,13 @@ import com.sep.vox.domain.repository.AssessmentGradingAssignmentRepository;
  * go through the appeal screen, the only place where the reason for the exception can be written onto the appeal.
  */
 @Service
+@RequiredArgsConstructor
 public class ReassignGradingUseCase implements IUseCase<ReassignGradingCommand, UUID> {
 
     private final AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository;
     private final AssessmentGradingQueryRepository assessmentGradingQueryRepository;
     private final AssessmentGradingAccessService assessmentGradingAccessService;
     private final GradingAssignmentNotificationService gradingAssignmentNotificationService;
-
-    public ReassignGradingUseCase(
-            AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository,
-            AssessmentGradingQueryRepository assessmentGradingQueryRepository,
-            AssessmentGradingAccessService assessmentGradingAccessService,
-            GradingAssignmentNotificationService gradingAssignmentNotificationService) {
-        this.assessmentGradingAssignmentRepository = assessmentGradingAssignmentRepository;
-        this.assessmentGradingQueryRepository = assessmentGradingQueryRepository;
-        this.assessmentGradingAccessService = assessmentGradingAccessService;
-        this.gradingAssignmentNotificationService = gradingAssignmentNotificationService;
-    }
 
     @Override
     @Transactional

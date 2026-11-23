@@ -2,6 +2,7 @@ package com.sep.vox.infrastructure.persistence.adapter;
 
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.repository.AssessmentPolicyRepository;
@@ -9,17 +10,11 @@ import com.sep.vox.domain.repository.SchoolClassDependencyRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class SchoolClassDependencyRepositoryImpl implements SchoolClassDependencyRepository {
 
     private final SchoolClassUserRepository schoolClassUserRepository;
     private final AssessmentPolicyRepository assessmentPolicyRepository;
-
-    public SchoolClassDependencyRepositoryImpl(
-            SchoolClassUserRepository schoolClassUserRepository,
-            AssessmentPolicyRepository assessmentPolicyRepository) {
-        this.schoolClassUserRepository = schoolClassUserRepository;
-        this.assessmentPolicyRepository = assessmentPolicyRepository;
-    }
 
     @Override
     public boolean existsDependencyBySchoolClassId(UUID schoolClassId) {

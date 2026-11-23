@@ -4,8 +4,8 @@ import java.util.HashMap;
 import java.util.List;
 
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.output.InterestQuizGenerationPort;
@@ -25,12 +25,12 @@ import com.sep.vox.domain.repository.InterestQuizItemRepository;
  * have to wait after clicking to create a new dimension.
  */
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class InterestQuizBankTopUpService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(InterestQuizBankTopUpService.class);
-
-    /** Số lượt xuất hiện tối thiểu cho mỗi chiều trong kho dùng chung. Dưới ngưỡng này thì
-     * bộ chọn cân bằng không có gì để chọn, chiều mới sẽ hiếm khi lọt vào 7 câu được hỏi. */
+    /** Minimum number of appearances for each dimension in the shared bank. Below this threshold
+     * the balancing selector has nothing to choose from, and a new dimension rarely makes it into the 7 questions asked. */
     private static final int MIN_COVERAGE_PER_DIMENSION = 3;
     private static final int MAX_ITEMS_PER_RUN = 7;
 
@@ -38,17 +38,6 @@ public class InterestQuizBankTopUpService {
     private final InterestQuizGenerationPort quizGenerationPort;
     private final InterestQuizScorer interestQuizScorer;
     private final PracticeGenerationExecutorPort practiceGenerationExecutorPort;
-
-    public InterestQuizBankTopUpService(
-            InterestQuizItemRepository quizItemRepository,
-            InterestQuizGenerationPort quizGenerationPort,
-            InterestQuizScorer interestQuizScorer,
-            PracticeGenerationExecutorPort practiceGenerationExecutorPort) {
-        this.quizItemRepository = quizItemRepository;
-        this.quizGenerationPort = quizGenerationPort;
-        this.interestQuizScorer = interestQuizScorer;
-        this.practiceGenerationExecutorPort = practiceGenerationExecutorPort;
-    }
 
     public void topUpAsync() {
         practiceGenerationExecutorPort.runAsync(this::topUpSwallowingFailure);
@@ -60,7 +49,7 @@ public class InterestQuizBankTopUpService {
         } catch (RuntimeException exception) {
             // Nuốt lỗi có chủ đích: đây là việc nền làm giàu kho, hỏng thì quiz vẫn chạy
             // bằng item cũ. Không được để nó làm hỏng luồng tạo chiều của admin.
-            LOGGER.warn("Bổ sung kho quiz sở thích thất bại", exception);
+            log.warn("Bổ sung kho quiz sở thích thất bại", exception);
         }
     }
 
@@ -83,7 +72,7 @@ public class InterestQuizBankTopUpService {
             return 0;
         }
 
-        LOGGER.info(
+        log.info(
             "Kho quiz sở thích thiếu phủ cho {} -- sinh bổ sung",
             underCovered
         );

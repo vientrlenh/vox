@@ -3,8 +3,8 @@ package com.sep.vox.application.port.input.usecase.question;
 import com.sep.vox.domain.model.question.QuestionAsset;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,16 +12,12 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.repository.QuestionAssetRepository;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class RecordQuestionAssetAnalysisResultUseCase
         implements IUseCase<RecordQuestionAssetAnalysisResultUseCase.Command, Void> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(RecordQuestionAssetAnalysisResultUseCase.class);
-
     private final QuestionAssetRepository questionAssetRepository;
-
-    public RecordQuestionAssetAnalysisResultUseCase(QuestionAssetRepository questionAssetRepository) {
-        this.questionAssetRepository = questionAssetRepository;
-    }
 
     @Override
     @Transactional
@@ -30,7 +26,7 @@ public class RecordQuestionAssetAnalysisResultUseCase
         if (asset == null) {
             // Race hợp lệ: asset có thể đã bị xoá hoặc question đã bị đổi (clone sang draft khác)
             // giữa lúc publish yêu cầu và lúc Python trả kết quả về -- không phải lỗi đáng retry/DLT.
-            LOGGER.warn("Bỏ qua kết quả phân tích asset -- không còn tìm thấy assetId={}", input.assetId());
+            log.warn("Bỏ qua kết quả phân tích asset -- không còn tìm thấy assetId={}", input.assetId());
             return null;
         }
 

@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.assessment;
 
 import com.sep.vox.domain.model.assessment.Assessment;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,20 +20,12 @@ import com.sep.vox.domain.repository.AssessmentRepository;
  * gọi lúc publish/sửa/thêm thí sinh.
  */
 @Service
+@RequiredArgsConstructor
 public class EstimateAssessmentTokenQuotaUseCase implements IUseCase<EstimateAssessmentTokenQuotaQuery, AssessmentTokenEstimateResponse> {
 
     private final AssessmentRepository assessmentRepository;
     private final ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService;
     private final UserContextPort userContextPort;
-
-    public EstimateAssessmentTokenQuotaUseCase(
-            AssessmentRepository assessmentRepository,
-            ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService,
-            UserContextPort userContextPort) {
-        this.assessmentRepository = assessmentRepository;
-        this.classTestTokenQuotaGuardService = classTestTokenQuotaGuardService;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional(readOnly = true)

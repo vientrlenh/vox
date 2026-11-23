@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import com.sep.vox.domain.model.user.User;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +23,7 @@ import com.sep.vox.domain.repository.ScoringRuleRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewSystemScoringRuleDetailUseCase implements IUseCase<ViewScoringRuleDetailQuery, ScoringRuleDto> {
 
     private final ScoringRuleRepository scoringRuleRepository;
@@ -29,19 +31,6 @@ public class ViewSystemScoringRuleDetailUseCase implements IUseCase<ViewScoringR
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
     private final ScoringRuleDtoMapper scoringRuleDtoMapper;
-
-    public ViewSystemScoringRuleDetailUseCase(
-            ScoringRuleRepository scoringRuleRepository,
-            AssessmentPolicyRepository assessmentPolicyRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort,
-            ScoringRuleDtoMapper scoringRuleDtoMapper) {
-        this.scoringRuleRepository = scoringRuleRepository;
-        this.assessmentPolicyRepository = assessmentPolicyRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-        this.scoringRuleDtoMapper = scoringRuleDtoMapper;
-    }
 
     @Override
     @Transactional(readOnly = true)

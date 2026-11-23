@@ -9,6 +9,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +30,7 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class AcceptSchoolGradeImportUseCase implements IUseCase<AcceptSchoolGradeImportCommand, Void> {
 
     private static final Set<String> REQUIRED_FIELDS = Set.of("schoolGradeLevelCode", "code", "name", "startDate", "endDate");
@@ -40,21 +42,6 @@ public class AcceptSchoolGradeImportUseCase implements IUseCase<AcceptSchoolGrad
     private final UserContextPort userContextPort;
     private final JsonSerializationPort jsonSerializationPort;
     private final SchoolUserRepository schoolUserRepository;
-
-    public AcceptSchoolGradeImportUseCase(
-            ImportSessionRepository importSessionRepository,
-            UserRepository userRepository,
-            SchoolRepository schoolRepository,
-            UserContextPort userContextPort,
-            JsonSerializationPort jsonSerializationPort,
-            SchoolUserRepository schoolUserRepository) {
-        this.importSessionRepository = importSessionRepository;
-        this.userRepository = userRepository;
-        this.schoolRepository = schoolRepository;
-        this.userContextPort = userContextPort;
-        this.jsonSerializationPort = jsonSerializationPort;
-        this.schoolUserRepository = schoolUserRepository;
-    }
 
     @Override
     @Transactional

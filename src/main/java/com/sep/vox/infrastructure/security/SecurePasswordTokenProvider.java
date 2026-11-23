@@ -1,19 +1,17 @@
 package com.sep.vox.infrastructure.security;
 
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import com.sep.vox.application.port.output.PasswordSetUpTokenPort;
 import com.sep.vox.application.response.output.GeneratedPasswordSetUpToken;
 
 @Component
+@RequiredArgsConstructor
 public class SecurePasswordTokenProvider implements PasswordSetUpTokenPort {
 
     private final SecureTokenProvider secureTokenProvider;
-
-    public SecurePasswordTokenProvider(SecureTokenProvider secureTokenProvider) {
-        this.secureTokenProvider = secureTokenProvider;
-    }
 
     private static final int TOKEN_LENGTH = 32;
 

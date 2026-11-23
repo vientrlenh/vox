@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.assessment;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersion;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +28,7 @@ import com.sep.vox.domain.repository.AssessmentRepository;
 import com.sep.vox.domain.repository.GradeLevelRepository;
 
 @Service
+@RequiredArgsConstructor
 public class AttachAssessmentBlueprintUseCase implements IUseCase<AttachAssessmentBlueprintCommand, AssessmentDto> {
 
     private final AssessmentRepository assessmentRepository;
@@ -37,25 +39,6 @@ public class AttachAssessmentBlueprintUseCase implements IUseCase<AttachAssessme
     private final GradeLevelRepository gradeLevelRepository;
     private final AssessmentTimeQuotaGuardService assessmentTimeQuotaGuardService;
     private final UserContextPort userContextPort;
-
-    public AttachAssessmentBlueprintUseCase(
-            AssessmentRepository assessmentRepository,
-            AssessmentBlueprintRepository assessmentBlueprintRepository,
-            AssessmentBlueprintVersionRepository assessmentBlueprintVersionRepository,
-            AssessmentMemberRepository assessmentMemberRepository,
-            AssessmentPaperRepository assessmentPaperRepository,
-            GradeLevelRepository gradeLevelRepository,
-            AssessmentTimeQuotaGuardService assessmentTimeQuotaGuardService,
-            UserContextPort userContextPort) {
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentBlueprintRepository = assessmentBlueprintRepository;
-        this.assessmentBlueprintVersionRepository = assessmentBlueprintVersionRepository;
-        this.assessmentMemberRepository = assessmentMemberRepository;
-        this.assessmentPaperRepository = assessmentPaperRepository;
-        this.gradeLevelRepository = gradeLevelRepository;
-        this.assessmentTimeQuotaGuardService = assessmentTimeQuotaGuardService;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

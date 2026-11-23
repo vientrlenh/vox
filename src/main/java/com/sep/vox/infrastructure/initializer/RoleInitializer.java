@@ -1,8 +1,8 @@
 package com.sep.vox.infrastructure.initializer;
 
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
@@ -14,6 +14,8 @@ import com.sep.vox.domain.valueobject.RoleCode;
 
 @Component
 @Order(value = 1)
+@RequiredArgsConstructor
+@Slf4j
 public class RoleInitializer implements ApplicationRunner {
 
     private static final String STUDENT_CODE = "STUDENT";
@@ -23,23 +25,17 @@ public class RoleInitializer implements ApplicationRunner {
 
     private final RoleRepository roleRepository;
 
-    public RoleInitializer(RoleRepository roleRepository) {
-        this.roleRepository = roleRepository;
-    }
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(RoleInitializer.class);
-
     @Override
     public void run(ApplicationArguments args) throws Exception {
         if (roleRepository.count() > 0) {
-            LOGGER.info("Role already exists in database. Skip initialize roles");
+            log.info("Role already exists in database. Skip initialize roles");
             return;
         }
         roleRepository.save(studentRole());
         roleRepository.save(teacherRole());
         roleRepository.save(schoolAdminRole());
         roleRepository.save(systemAdminRole());
-        LOGGER.info("Roles initialized successfully");
+        log.info("Roles initialized successfully");
     }
 
     private Role studentRole() {

@@ -3,8 +3,8 @@ package com.sep.vox.infrastructure.worker;
 import com.sep.vox.domain.model.assessment.AssessmentSession;
 import java.time.Instant;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -16,22 +16,13 @@ import com.sep.vox.domain.model.assessment.AssessmentSessionStatus;
 import com.sep.vox.domain.repository.AssessmentSessionRepository;
 
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class DeferredAssessmentSessionGradingJob {
-
-    private static final Logger log = LoggerFactory.getLogger(DeferredAssessmentSessionGradingJob.class);
 
     private final AssessmentSessionRepository assessmentSessionRepository;
     private final UpdateAssessmentSessionStatusUseCase updateAssessmentSessionStatusUseCase;
     private final SubmitAssessmentSessionUseCase submitAssessmentSessionUseCase;
-
-    public DeferredAssessmentSessionGradingJob(
-            AssessmentSessionRepository assessmentSessionRepository,
-            UpdateAssessmentSessionStatusUseCase updateAssessmentSessionStatusUseCase,
-            SubmitAssessmentSessionUseCase submitAssessmentSessionUseCase) {
-        this.assessmentSessionRepository = assessmentSessionRepository;
-        this.updateAssessmentSessionStatusUseCase = updateAssessmentSessionStatusUseCase;
-        this.submitAssessmentSessionUseCase = submitAssessmentSessionUseCase;
-    }
 
     @Scheduled(fixedDelay = 60000)
     public void run() {

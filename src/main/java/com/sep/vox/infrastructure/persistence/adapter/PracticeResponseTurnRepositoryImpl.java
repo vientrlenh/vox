@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.repository.PracticeResponseTurnRepository;
@@ -14,13 +15,10 @@ import com.sep.vox.infrastructure.persistence.entity.personalization.PracticeRes
 import com.sep.vox.infrastructure.persistence.repository.SpringDataPracticeResponseTurnRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class PracticeResponseTurnRepositoryImpl implements PracticeResponseTurnRepository {
 
     private final SpringDataPracticeResponseTurnRepository repository;
-
-    public PracticeResponseTurnRepositoryImpl(SpringDataPracticeResponseTurnRepository repository) {
-        this.repository = repository;
-    }
 
     @Override
     public TurnWrite save(

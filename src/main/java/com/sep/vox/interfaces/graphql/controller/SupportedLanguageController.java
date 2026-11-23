@@ -4,6 +4,7 @@ import com.sep.vox.application.port.input.command.UpdateSupportedLanguageCommand
 import java.util.UUID;
 import java.util.Map;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
@@ -22,20 +23,12 @@ import com.sep.vox.interfaces.graphql.mapper.UpdateSupportedLanguageCommandMappe
 import com.sep.vox.interfaces.shared.PageArguments;
 
 @Controller("graphqlSupportedLanguageController")
+@RequiredArgsConstructor
 public class SupportedLanguageController {
 
     private final ViewSupportedLanguagesUseCase viewSupportedLanguagesUseCase;
     private final ViewSupportedLanguageDetailsUseCase viewSupportedLanguageDetailsUseCase;
     private final UpdateSupportedLanguageUseCase updateSupportedLanguageUseCase;
-
-    public SupportedLanguageController(
-            ViewSupportedLanguagesUseCase viewSupportedLanguagesUseCase,
-            ViewSupportedLanguageDetailsUseCase viewSupportedLanguageDetailsUseCase,
-            UpdateSupportedLanguageUseCase updateSupportedLanguageUseCase) {
-        this.viewSupportedLanguagesUseCase = viewSupportedLanguagesUseCase;
-        this.viewSupportedLanguageDetailsUseCase = viewSupportedLanguageDetailsUseCase;
-        this.updateSupportedLanguageUseCase = updateSupportedLanguageUseCase;
-    }
 
     @QueryMapping(name = "supportedLanguages")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER')")

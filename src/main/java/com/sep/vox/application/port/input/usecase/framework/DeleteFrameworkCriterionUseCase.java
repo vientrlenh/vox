@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.framework;
 
 import java.util.List;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,21 +17,13 @@ import com.sep.vox.domain.repository.FrameworkCriterionRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
 
 @Service
+@RequiredArgsConstructor
 public class DeleteFrameworkCriterionUseCase
         implements IUseCase<DeleteFrameworkCriterionCommand, Void> {
 
     private final FrameworkVersionRepository frameworkVersionRepository;
     private final FrameworkCriterionRepository frameworkCriterionRepository;
     private final FrameworkCriterionBandRepository frameworkCriterionBandRepository;
-
-    public DeleteFrameworkCriterionUseCase(
-            FrameworkVersionRepository frameworkVersionRepository,
-            FrameworkCriterionRepository frameworkCriterionRepository,
-            FrameworkCriterionBandRepository frameworkCriterionBandRepository) {
-        this.frameworkVersionRepository = frameworkVersionRepository;
-        this.frameworkCriterionRepository = frameworkCriterionRepository;
-        this.frameworkCriterionBandRepository = frameworkCriterionBandRepository;
-    }
 
     @Override
     @Transactional

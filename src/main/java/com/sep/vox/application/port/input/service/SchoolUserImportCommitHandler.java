@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import com.sep.vox.application.exception.DataConflictException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.common.DateMapper;
@@ -46,6 +47,7 @@ import com.sep.vox.domain.valueobject.FullName;
 import com.sep.vox.domain.valueobject.Phone;
 
 @Service
+@RequiredArgsConstructor
 public class SchoolUserImportCommitHandler implements ImportCommitHandler {
 
     private static final Set<String> SUPPORTED_FIELDS = Set.of("email", "fullName", "roleCode", "phone",
@@ -59,25 +61,6 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
     private final OutboxRepository outboxRepository;
     private final JsonSerializationPort jsonSerializationPort;
     private final RequiresNewTransactionPort requiresNewTransactionPort;
-
-    public SchoolUserImportCommitHandler(
-            UserRepository userRepository,
-            UserRoleRepository userRoleRepository,
-            RoleRepository roleRepository,
-            SchoolUserRepository schoolUserRepository,
-            SchoolRepository schoolRepository,
-            OutboxRepository outboxRepository,
-            JsonSerializationPort jsonSerializationPort,
-            RequiresNewTransactionPort requiresNewTransactionPort) {
-        this.userRepository = userRepository;
-        this.userRoleRepository = userRoleRepository;
-        this.roleRepository = roleRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.schoolRepository = schoolRepository;
-        this.outboxRepository = outboxRepository;
-        this.jsonSerializationPort = jsonSerializationPort;
-        this.requiresNewTransactionPort = requiresNewTransactionPort;
-    }
 
     @Override
     public ImportType supportedType() {

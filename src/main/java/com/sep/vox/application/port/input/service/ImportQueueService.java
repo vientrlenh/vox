@@ -5,18 +5,16 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.domain.repository.ImportSessionRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ImportQueueService {
     private final ImportSessionRepository importSessionRepository;
-
-    public ImportQueueService(ImportSessionRepository importSessionRepository) {
-        this.importSessionRepository = importSessionRepository;
-    }
 
     @Transactional
     public List<UUID> claimQueued(UUID worker, int limit, Duration lease) {

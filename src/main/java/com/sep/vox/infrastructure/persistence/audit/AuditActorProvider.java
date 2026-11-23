@@ -2,6 +2,7 @@ package com.sep.vox.infrastructure.persistence.audit;
 
 import java.util.Optional;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.stereotype.Component;
 
@@ -13,15 +14,11 @@ import com.sep.vox.domain.common.ActorConstant;
  * the authenticated user's id, else {@link ActorConstant#SYSTEM}. It never returns an empty result.
  */
 @Component
+@RequiredArgsConstructor
 public class AuditActorProvider implements AuditorAware<String> {
 
     private final ThreadLocalAuditActorScope actorScope;
     private final UserContextPort userContextPort;
-
-    public AuditActorProvider(ThreadLocalAuditActorScope actorScope, UserContextPort userContextPort) {
-        this.actorScope = actorScope;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     public Optional<String> getCurrentAuditor() {

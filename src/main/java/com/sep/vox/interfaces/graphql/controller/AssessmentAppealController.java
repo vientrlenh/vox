@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+import lombok.RequiredArgsConstructor;
 import org.dataloader.DataLoader;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
@@ -40,6 +41,7 @@ import graphql.schema.DataFetchingEnvironment;
  * grades it in {@code gradingTaskDetail} — exactly the "one single queue" goal.
  */
 @Controller("graphqlAssessmentAppealController")
+@RequiredArgsConstructor
 public class AssessmentAppealController {
 
     private final ViewAssessmentAppealsUseCase viewAssessmentAppealsUseCase;
@@ -49,23 +51,6 @@ public class AssessmentAppealController {
     private final ViewMyAppealsUseCase viewMyAppealsUseCase;
     private final ViewMyAppealDetailUseCase viewMyAppealDetailUseCase;
     private final ViewAssessmentAppealsByAssessmentUseCase viewAssessmentAppealsByAssessmentUseCase;
-
-    public AssessmentAppealController(
-            ViewAssessmentAppealsUseCase viewAssessmentAppealsUseCase,
-            ViewAssessmentAppealStatsUseCase viewAssessmentAppealStatsUseCase,
-            ViewAssessmentAppealDetailUseCase viewAssessmentAppealDetailUseCase,
-            ViewAssignableReviewersUseCase viewAssignableReviewersUseCase,
-            ViewMyAppealsUseCase viewMyAppealsUseCase,
-            ViewMyAppealDetailUseCase viewMyAppealDetailUseCase,
-            ViewAssessmentAppealsByAssessmentUseCase viewAssessmentAppealsByAssessmentUseCase) {
-        this.viewAssessmentAppealsUseCase = viewAssessmentAppealsUseCase;
-        this.viewAssessmentAppealStatsUseCase = viewAssessmentAppealStatsUseCase;
-        this.viewAssessmentAppealDetailUseCase = viewAssessmentAppealDetailUseCase;
-        this.viewAssignableReviewersUseCase = viewAssignableReviewersUseCase;
-        this.viewMyAppealsUseCase = viewMyAppealsUseCase;
-        this.viewMyAppealDetailUseCase = viewMyAppealDetailUseCase;
-        this.viewAssessmentAppealsByAssessmentUseCase = viewAssessmentAppealsByAssessmentUseCase;
-    }
 
     @QueryMapping(name = "appeals")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")

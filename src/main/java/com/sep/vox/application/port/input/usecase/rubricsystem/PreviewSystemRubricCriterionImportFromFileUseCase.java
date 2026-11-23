@@ -22,6 +22,7 @@ import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +33,7 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 
 @Service
+@RequiredArgsConstructor
 public class PreviewSystemRubricCriterionImportFromFileUseCase implements IUseCase<PreviewRubricCriterionImportCommand, PreviewRubricCriterionImportResponse> {
 
     private final RubricVersionRepository rubricVersionRepository;
@@ -43,27 +45,6 @@ public class PreviewSystemRubricCriterionImportFromFileUseCase implements IUseCa
     private final UserRepository userRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserContextPort userContextPort;
-
-    public PreviewSystemRubricCriterionImportFromFileUseCase(
-            RubricVersionRepository rubricVersionRepository,
-            RubricRepository rubricRepository,
-            ImportSessionRepository importSessionRepository,
-            ImportRowRepository importRowRepository,
-            FileProcessingPort fileProcessingPort,
-            JsonSerializationPort jsonSerializationPort,
-            UserRepository userRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserContextPort userContextPort) {
-        this.rubricVersionRepository = rubricVersionRepository;
-        this.rubricRepository = rubricRepository;
-        this.importSessionRepository = importSessionRepository;
-        this.importRowRepository = importRowRepository;
-        this.fileProcessingPort = fileProcessingPort;
-        this.jsonSerializationPort = jsonSerializationPort;
-        this.userRepository = userRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

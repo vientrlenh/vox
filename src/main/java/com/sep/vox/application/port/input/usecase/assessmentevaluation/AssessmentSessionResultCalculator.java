@@ -12,6 +12,8 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.NotFoundException;
@@ -35,10 +37,9 @@ import com.sep.vox.domain.repository.RubricResultBandRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class AssessmentSessionResultCalculator {
-
-    private static final org.slf4j.Logger LOGGER =
-        org.slf4j.LoggerFactory.getLogger(AssessmentSessionResultCalculator.class);
 
     private final AssessmentSessionRepository assessmentSessionRepository;
     private final AssessmentRepository assessmentRepository;
@@ -50,29 +51,6 @@ public class AssessmentSessionResultCalculator {
     private final RubricResultBandRepository rubricResultBandRepository;
     private final FrameworkResultBandRepository frameworkResultBandRepository;
     private final RubricVersionRepository rubricVersionRepository;
-
-    public AssessmentSessionResultCalculator(
-            AssessmentSessionRepository assessmentSessionRepository,
-            AssessmentRepository assessmentRepository,
-            AssessmentPolicyRepository assessmentPolicyRepository,
-            AssessmentItemResponseRepository assessmentItemResponseRepository,
-            AssessmentItemEvaluationRepository assessmentItemEvaluationRepository,
-            AssessmentPaperItemRepository assessmentPaperItemRepository,
-            AssessmentPaperSectionRepository assessmentPaperSectionRepository,
-            RubricResultBandRepository rubricResultBandRepository,
-            FrameworkResultBandRepository frameworkResultBandRepository,
-            RubricVersionRepository rubricVersionRepository) {
-        this.assessmentSessionRepository = assessmentSessionRepository;
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentPolicyRepository = assessmentPolicyRepository;
-        this.assessmentItemResponseRepository = assessmentItemResponseRepository;
-        this.assessmentItemEvaluationRepository = assessmentItemEvaluationRepository;
-        this.assessmentPaperItemRepository = assessmentPaperItemRepository;
-        this.assessmentPaperSectionRepository = assessmentPaperSectionRepository;
-        this.rubricResultBandRepository = rubricResultBandRepository;
-        this.frameworkResultBandRepository = frameworkResultBandRepository;
-        this.rubricVersionRepository = rubricVersionRepository;
-    }
 
     public CalculatedAssessmentSessionResult calculate(UUID sessionId) {
         LoadedSession loaded = load(sessionId);
@@ -296,14 +274,14 @@ public class AssessmentSessionResultCalculator {
             .filter(band -> within(totalScore, band.getScoreMin(), band.getScoreMax()))
             .toList();
         if (matchingBands.isEmpty()) {
-            LOGGER.info(
+            log.info(
                 "Không có dải điểm kết quả nào khớp tổng điểm {} (rubricVersionId={}) -- lưu kết quả không kèm xếp loại.",
                 totalScore, policy.getRubricVersionId()
             );
             return null;
         }
         if (matchingBands.size() > 1) {
-            LOGGER.error(
+            log.error(
                 "Cấu hình dải điểm CHỒNG LẤN: tổng điểm {} khớp {} dải của rubricVersionId={}."
                     + " Lấy dải order nhỏ nhất ({}). Quản trị cần sửa lại dải.",
                 totalScore, matchingBands.size(), policy.getRubricVersionId(),

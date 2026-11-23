@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.rubric.RubricCriterion;
 import java.util.List;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.input.query.ViewAssessmentItemResponseEvaluationQuery;
@@ -23,6 +24,7 @@ import com.sep.vox.domain.repository.AssessmentItemResponseTurnRepository;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewAssessmentItemResponseEvaluationUseCase
         implements IUseCase<ViewAssessmentItemResponseEvaluationQuery, AssessmentItemEvaluationDetailsResponse> {
 
@@ -33,23 +35,6 @@ public class ViewAssessmentItemResponseEvaluationUseCase
     private final RubricCriterionRepository rubricCriterionRepository;
     private final AssessmentResultAccessService assessmentResultAccessService;
     private final JsonSerializationPort jsonSerializationPort;
-
-    public ViewAssessmentItemResponseEvaluationUseCase(
-            AssessmentItemEvaluationRepository assessmentItemEvaluationRepository,
-            AssessmentItemCriterionScoreRepository assessmentItemCriterionScoreRepository,
-            AssessmentItemEvaluationTurnRepository assessmentItemEvaluationTurnRepository,
-            AssessmentItemResponseTurnRepository assessmentItemResponseTurnRepository,
-            RubricCriterionRepository rubricCriterionRepository,
-            AssessmentResultAccessService assessmentResultAccessService,
-            JsonSerializationPort jsonSerializationPort) {
-        this.assessmentItemEvaluationRepository = assessmentItemEvaluationRepository;
-        this.assessmentItemCriterionScoreRepository = assessmentItemCriterionScoreRepository;
-        this.assessmentItemEvaluationTurnRepository = assessmentItemEvaluationTurnRepository;
-        this.assessmentItemResponseTurnRepository = assessmentItemResponseTurnRepository;
-        this.rubricCriterionRepository = rubricCriterionRepository;
-        this.assessmentResultAccessService = assessmentResultAccessService;
-        this.jsonSerializationPort = jsonSerializationPort;
-    }
 
     @Override
     public AssessmentItemEvaluationDetailsResponse execute(ViewAssessmentItemResponseEvaluationQuery input) {

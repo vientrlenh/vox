@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.assessmentpaper;
 
 import com.sep.vox.domain.model.assessment.AssessmentPaper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,17 +15,11 @@ import com.sep.vox.domain.mapper.AssessmentPaperDtoMapper;
 import com.sep.vox.domain.repository.AssessmentPaperRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewAssessmentPaperDetailsUseCase implements IUseCase<ViewAssessmentPaperDetailsQuery, AssessmentPaperDto> {
 
     private final AssessmentPaperRepository assessmentPaperRepository;
     private final ViewAssessmentDetailsUseCase viewAssessmentDetailsUseCase;
-
-    public ViewAssessmentPaperDetailsUseCase(
-            AssessmentPaperRepository assessmentPaperRepository,
-            ViewAssessmentDetailsUseCase viewAssessmentDetailsUseCase) {
-        this.assessmentPaperRepository = assessmentPaperRepository;
-        this.viewAssessmentDetailsUseCase = viewAssessmentDetailsUseCase;
-    }
 
     @Override
     @Transactional(readOnly = true)

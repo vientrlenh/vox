@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.gradelevel;
 import com.sep.vox.domain.model.gradelevel.GradeLevel;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,20 +24,12 @@ import com.sep.vox.domain.repository.UserRepository;
  * because the data is shared). Only write operations are limited to the system admin.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewGradeLevelsUseCase implements IUseCase<ViewGradeLevelsQuery, PageResult<GradeLevelDto>> {
 
     private final GradeLevelRepository gradeLevelRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
-
-    public ViewGradeLevelsUseCase(
-            GradeLevelRepository gradeLevelRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort) {
-        this.gradeLevelRepository = gradeLevelRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional(readOnly = true)

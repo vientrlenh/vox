@@ -6,8 +6,8 @@ import com.sep.vox.domain.model.assessment.AssessmentCandidate;
 import com.sep.vox.domain.model.assessment.AssessmentSession;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,9 +51,9 @@ import com.sep.vox.domain.repository.AssessmentSessionRepository;
  * the human grader queue.
  */
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class HandOffGradingToHumanUseCase implements IUseCase<HandOffGradingToHumanCommand, UUID> {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(HandOffGradingToHumanUseCase.class);
 
     private final AssessmentSessionRepository assessmentSessionRepository;
     private final AssessmentCandidateRepository assessmentCandidateRepository;
@@ -62,23 +62,6 @@ public class HandOffGradingToHumanUseCase implements IUseCase<HandOffGradingToHu
     private final AssessmentItemResponseRepository assessmentItemResponseRepository;
     private final AssessmentPolicyRepository assessmentPolicyRepository;
     private final AssessmentSessionModerationAccessService moderationAccessService;
-
-    public HandOffGradingToHumanUseCase(
-            AssessmentSessionRepository assessmentSessionRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            AssessmentRepository assessmentRepository,
-            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
-            AssessmentItemResponseRepository assessmentItemResponseRepository,
-            AssessmentPolicyRepository assessmentPolicyRepository,
-            AssessmentSessionModerationAccessService moderationAccessService) {
-        this.assessmentSessionRepository = assessmentSessionRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
-        this.assessmentItemResponseRepository = assessmentItemResponseRepository;
-        this.assessmentPolicyRepository = assessmentPolicyRepository;
-        this.moderationAccessService = moderationAccessService;
-    }
 
     @Override
     @Transactional
@@ -111,7 +94,7 @@ public class HandOffGradingToHumanUseCase implements IUseCase<HandOffGradingToHu
             // Đã có kết quả nghĩa là bài đã ở trong vòng đời chấm rồi -- vào hàng đợi hoặc đang
             // được giao. Tạo thêm là sinh bài trùng; đổi trạng thái của nó là ghi đè quyết định
             // của người khác.
-            LOGGER.info(
+            log.info(
                 "Phiên {} đã có kết quả {} ({}), không tạo lại.",
                 session.getId(), existing.getId(), existing.getStatus());
             return existing.getId();
@@ -141,7 +124,7 @@ public class HandOffGradingToHumanUseCase implements IUseCase<HandOffGradingToHu
         result.setStatus(AssessmentCandidateResultStatus.PENDING_REVIEW);
 
         AssessmentCandidateResult saved = assessmentCandidateResultRepository.save(result);
-        LOGGER.info(
+        log.info(
             "Phiên {} (AI chấm lỗi) chuyển sang chấm tay: tạo kết quả {} ở PENDING_REVIEW, "
                 + "chờ nhà trường phân công.",
             session.getId(), saved.getId());

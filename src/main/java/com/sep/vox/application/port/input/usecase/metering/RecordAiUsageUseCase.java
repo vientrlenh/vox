@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.metering;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,21 +16,15 @@ import com.sep.vox.domain.repository.AiUsageRecordRepository;
 // Internal service-to-service use case (a Kafka consumer receiving the usage report from the Agentic AI after every turn,
 // and the REST path ReportAiUsageUseCase for sources that cannot reach Kafka), not end-user-facing.
 @Service
+@RequiredArgsConstructor
 public class RecordAiUsageUseCase implements IUseCase<RecordAiUsageCommand, Void> {
 
-    // Trùng scale của ai_usage_records.cost_vnd numeric(18,6): rộng hơn thì Postgres cắt tiếp lúc ghi
-    // (Java và DB nói hai số khác nhau), hẹp hơn thì mất tiền ngay từ đây.
+    // Matches the scale of ai_usage_records.cost_vnd numeric(18,6): if wider, Postgres truncates further on write
+    // (Java and the DB report two different numbers); if narrower, money is lost right here.
     private static final int COST_VND_SCALE = 6;
 
     private final AiUsageRecordRepository aiUsageRecordRepository;
     private final QuotaPricingPort quotaPricingPort;
-
-    public RecordAiUsageUseCase(
-            AiUsageRecordRepository aiUsageRecordRepository,
-            QuotaPricingPort quotaPricingPort) {
-        this.aiUsageRecordRepository = aiUsageRecordRepository;
-        this.quotaPricingPort = quotaPricingPort;
-    }
 
     @Override
     @Transactional

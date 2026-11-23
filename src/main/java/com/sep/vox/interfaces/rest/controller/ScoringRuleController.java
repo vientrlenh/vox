@@ -4,6 +4,7 @@ import com.sep.vox.application.port.input.command.CreateSchoolScoringRuleCommand
 import com.sep.vox.application.port.input.command.CreateScoringRuleCommand;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -35,23 +36,13 @@ import jakarta.validation.Valid;
 //   - mutation updateSystemScoringRule / updateSchoolScoringRule
 @RestController
 @RequestMapping("/api/v1/assessment-policies")
+@RequiredArgsConstructor
 public class ScoringRuleController {
 
     private final CreateSystemScoringRuleUseCase createSystemScoringRuleUseCase;
     private final CreateSchoolScoringRuleUseCase createSchoolScoringRuleUseCase;
     private final DeleteSystemScoringRuleUseCase deleteSystemScoringRuleUseCase;
     private final DeleteSchoolScoringRuleUseCase deleteSchoolScoringRuleUseCase;
-
-    public ScoringRuleController(
-            CreateSystemScoringRuleUseCase createSystemScoringRuleUseCase,
-            CreateSchoolScoringRuleUseCase createSchoolScoringRuleUseCase,
-            DeleteSystemScoringRuleUseCase deleteSystemScoringRuleUseCase,
-            DeleteSchoolScoringRuleUseCase deleteSchoolScoringRuleUseCase) {
-        this.createSystemScoringRuleUseCase = createSystemScoringRuleUseCase;
-        this.createSchoolScoringRuleUseCase = createSchoolScoringRuleUseCase;
-        this.deleteSystemScoringRuleUseCase = deleteSystemScoringRuleUseCase;
-        this.deleteSchoolScoringRuleUseCase = deleteSchoolScoringRuleUseCase;
-    }
 
     // Tạo mới 1 Scoring Rule cho Assessment Policy hệ thống.
     // Chỉ tạo được khi Policy đang DRAFT (tránh thay đổi luật chấm điểm ngầm khi Policy đã PUBLISHED đang chấm bài thi thật).

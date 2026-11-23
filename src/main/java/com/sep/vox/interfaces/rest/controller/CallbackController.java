@@ -3,6 +3,7 @@ package com.sep.vox.interfaces.rest.controller;
 import com.sep.vox.application.response.input.payment.PaymentCallbackResponse;
 import java.util.Map;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.LinkedCaseInsensitiveMap;
@@ -27,13 +28,10 @@ import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 // phần mở đường /api/v1/callback/**.
 @RestController
 @RequestMapping("/api/v1/callback")
+@RequiredArgsConstructor
 public class CallbackController {
 
     private final ProcessPaymentCallbackUseCase processPaymentCallbackUseCase;
-
-    public CallbackController(ProcessPaymentCallbackUseCase processPaymentCallbackUseCase) {
-        this.processPaymentCallbackUseCase = processPaymentCallbackUseCase;
-    }
 
     @PostMapping("/payos/webhook")
     public ResponseEntity<ApiResponse<Void>> handlePayOsCallback(

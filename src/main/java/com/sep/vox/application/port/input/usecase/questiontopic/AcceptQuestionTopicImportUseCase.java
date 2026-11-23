@@ -9,6 +9,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +29,7 @@ import com.sep.vox.domain.repository.ImportSessionRepository;
  * handler tương ứng, nên một file lớn không giữ request HTTP của người dùng.
  */
 @Service
+@RequiredArgsConstructor
 public class AcceptQuestionTopicImportUseCase implements IUseCase<AcceptQuestionTopicImportCommand, Void> {
 
     private static final Set<String> REQUIRED_FIELDS = Set.of(
@@ -38,15 +40,6 @@ public class AcceptQuestionTopicImportUseCase implements IUseCase<AcceptQuestion
     private final ImportSessionRepository importSessionRepository;
     private final UserContextPort userContextPort;
     private final JsonSerializationPort jsonSerializationPort;
-
-    public AcceptQuestionTopicImportUseCase(
-            ImportSessionRepository importSessionRepository,
-            UserContextPort userContextPort,
-            JsonSerializationPort jsonSerializationPort) {
-        this.importSessionRepository = importSessionRepository;
-        this.userContextPort = userContextPort;
-        this.jsonSerializationPort = jsonSerializationPort;
-    }
 
     @Override
     @Transactional

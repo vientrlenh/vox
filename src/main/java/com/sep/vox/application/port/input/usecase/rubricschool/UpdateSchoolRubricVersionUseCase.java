@@ -23,6 +23,7 @@ import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.application.exception.DataConflictException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +32,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateSchoolRubricVersionUseCase
         implements IUseCase<UpdateSchoolRubricVersionCommand, UUID> {
 
@@ -42,26 +44,6 @@ public class UpdateSchoolRubricVersionUseCase
     private final SchoolUserRepository schoolUserRepository;
     private final RubricResultBandRepository rubricResultBandRepository;
     private final RubricCriterionRepository rubricCriterionRepository;
-
-    public UpdateSchoolRubricVersionUseCase(
-            RubricVersionRepository rubricVersionRepository,
-            RubricRepository rubricRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort,
-            SchoolRepository schoolRepository,
-            SchoolUserRepository schoolUserRepository,
-            RubricResultBandRepository rubricResultBandRepository,
-            RubricCriterionRepository rubricCriterionRepository
-    ) {
-        this.rubricVersionRepository = rubricVersionRepository;
-        this.rubricRepository = rubricRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-        this.schoolRepository = schoolRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.rubricResultBandRepository = rubricResultBandRepository;
-        this.rubricCriterionRepository = rubricCriterionRepository;
-    }
 
     @Override
     @Transactional

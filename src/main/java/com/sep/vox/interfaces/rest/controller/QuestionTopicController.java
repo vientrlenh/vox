@@ -6,6 +6,7 @@ import com.sep.vox.application.port.input.command.UpdateQuestionTopicStatusComma
 import java.io.IOException;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -52,6 +53,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/question-topics")
+@RequiredArgsConstructor
 public class QuestionTopicController {
 
     private final CreateQuestionTopicUseCase createQuestionTopicUseCase;
@@ -61,23 +63,6 @@ public class QuestionTopicController {
     private final DeleteQuestionTopicUseCase deleteQuestionTopicUseCase;
     private final PreviewQuestionTopicImportFromFileUseCase previewQuestionTopicImportFromFileUseCase;
     private final AcceptQuestionTopicImportUseCase acceptQuestionTopicImportUseCase;
-
-    public QuestionTopicController(
-            CreateQuestionTopicUseCase createQuestionTopicUseCase,
-            UpdateQuestionTopicUseCase updateQuestionTopicUseCase,
-            UpdateQuestionTopicStatusUseCase updateQuestionTopicStatusUseCase,
-            BulkUpdateQuestionTopicStatusUseCase bulkUpdateQuestionTopicStatusUseCase,
-            DeleteQuestionTopicUseCase deleteQuestionTopicUseCase,
-            PreviewQuestionTopicImportFromFileUseCase previewQuestionTopicImportFromFileUseCase,
-            AcceptQuestionTopicImportUseCase acceptQuestionTopicImportUseCase) {
-        this.createQuestionTopicUseCase = createQuestionTopicUseCase;
-        this.updateQuestionTopicUseCase = updateQuestionTopicUseCase;
-        this.updateQuestionTopicStatusUseCase = updateQuestionTopicStatusUseCase;
-        this.bulkUpdateQuestionTopicStatusUseCase = bulkUpdateQuestionTopicStatusUseCase;
-        this.deleteQuestionTopicUseCase = deleteQuestionTopicUseCase;
-        this.previewQuestionTopicImportFromFileUseCase = previewQuestionTopicImportFromFileUseCase;
-        this.acceptQuestionTopicImportUseCase = acceptQuestionTopicImportUseCase;
-    }
 
     @PostMapping(value = "/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")

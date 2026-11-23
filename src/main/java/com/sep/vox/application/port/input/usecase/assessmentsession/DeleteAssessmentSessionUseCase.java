@@ -6,6 +6,7 @@ import com.sep.vox.domain.model.assessment.AssessmentSession;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -56,6 +57,7 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
  * soft delete, a reason is required, and it closes once the assessment has been finalized.
  */
 @Service
+@RequiredArgsConstructor
 public class DeleteAssessmentSessionUseCase implements IUseCase<DeleteAssessmentSessionCommand, Void> {
 
     private final AssessmentSessionRepository assessmentSessionRepository;
@@ -66,25 +68,6 @@ public class DeleteAssessmentSessionUseCase implements IUseCase<DeleteAssessment
     private final UserContextPort userContextPort;
     private final AssessmentCandidateResultRepository assessmentCandidateResultRepository;
     private final AssessmentResultAppealRepository assessmentResultAppealRepository;
-
-    public DeleteAssessmentSessionUseCase(
-            AssessmentSessionRepository assessmentSessionRepository,
-            AssessmentRepository assessmentRepository,
-            AssessmentMemberRepository assessmentMemberRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
-            UserContextPort userContextPort,
-            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
-            AssessmentResultAppealRepository assessmentResultAppealRepository) {
-        this.assessmentSessionRepository = assessmentSessionRepository;
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentMemberRepository = assessmentMemberRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-        this.userContextPort = userContextPort;
-        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
-        this.assessmentResultAppealRepository = assessmentResultAppealRepository;
-    }
 
     @Override
     @Transactional

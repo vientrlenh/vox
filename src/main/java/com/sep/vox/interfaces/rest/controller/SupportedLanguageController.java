@@ -3,6 +3,7 @@ package com.sep.vox.interfaces.rest.controller;
 import com.sep.vox.application.port.input.command.CreateSupportedLanguageCommand;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,17 +26,11 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/supported-languages")
+@RequiredArgsConstructor
 public class SupportedLanguageController {
 
     private final CreateSupportedLanguageUseCase createSupportedLanguageUseCase;
     private final DeleteSupportedLanguageUseCase deleteSupportedLanguageUseCase;
-
-    public SupportedLanguageController(
-            CreateSupportedLanguageUseCase createSupportedLanguageUseCase,
-            DeleteSupportedLanguageUseCase deleteSupportedLanguageUseCase) {
-        this.createSupportedLanguageUseCase = createSupportedLanguageUseCase;
-        this.deleteSupportedLanguageUseCase = deleteSupportedLanguageUseCase;
-    }
 
     @PostMapping
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")

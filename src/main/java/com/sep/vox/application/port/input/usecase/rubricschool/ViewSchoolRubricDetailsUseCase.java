@@ -19,10 +19,12 @@ import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class ViewSchoolRubricDetailsUseCase implements IUseCase<ViewSchoolRubricDetailsQuery, RubricDto> {
 
     private final RubricRepository rubricRepository;
@@ -30,19 +32,6 @@ public class ViewSchoolRubricDetailsUseCase implements IUseCase<ViewSchoolRubric
     private final UserContextPort userContextPort;
     private final SchoolRepository schoolRepository;
     private final SchoolUserRepository schoolUserRepository;
-
-    public ViewSchoolRubricDetailsUseCase(
-            RubricRepository rubricRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort,
-            SchoolRepository schoolRepository,
-            SchoolUserRepository schoolUserRepository) {
-        this.rubricRepository = rubricRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-        this.schoolRepository = schoolRepository;
-        this.schoolUserRepository = schoolUserRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

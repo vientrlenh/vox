@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.assessmentcandidate;
 import java.util.List;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,23 +16,13 @@ import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewMyProctorSchedulesUseCase implements IUseCase<Void, List<ProctorScheduleSummary>> {
 
     private final ProctorScheduleQueryRepository proctorScheduleQueryRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
-
-    public ViewMyProctorSchedulesUseCase(
-            ProctorScheduleQueryRepository proctorScheduleQueryRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
-            UserContextPort userContextPort) {
-        this.proctorScheduleQueryRepository = proctorScheduleQueryRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional(readOnly = true)

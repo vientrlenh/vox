@@ -5,8 +5,8 @@ import com.sep.vox.domain.model.payment.PaymentRecord;
 import java.time.Instant;
 
 import java.util.Optional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,22 +33,13 @@ import com.sep.vox.domain.repository.PaymentRecordRepository;
  * hành vi retry của cổng. Xem CallbackController.
  */
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class ProcessPaymentCallbackUseCase implements IUseCase<ProcessPaymentCallbackCommand, PaymentCallbackResponse> {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(ProcessPaymentCallbackUseCase.class);
 
     private final PaymentProcessResolver paymentProcessResolver;
     private final PaymentRecordRepository paymentRecordRepository;
     private final OrderSettlementService orderSettlementService;
-
-    public ProcessPaymentCallbackUseCase(
-            PaymentProcessResolver paymentProcessResolver,
-            PaymentRecordRepository paymentRecordRepository,
-            OrderSettlementService orderSettlementService) {
-        this.paymentProcessResolver = paymentProcessResolver;
-        this.paymentRecordRepository = paymentRecordRepository;
-        this.orderSettlementService = orderSettlementService;
-    }
 
     @Transactional
     public PaymentCallbackResponse execute(ProcessPaymentCallbackCommand input) {
@@ -62,7 +53,7 @@ public class ProcessPaymentCallbackUseCase implements IUseCase<ProcessPaymentCal
         Optional<PaymentRecord> paymentOpt = paymentRecordRepository.findByProviderAndProviderOrderRef(
             input.provider(), verification.providerOrderRef());
         if (paymentOpt.isEmpty()) {
-            LOGGER.warn("Nhận callback {} hợp lệ nhưng không tìm thấy lần thanh toán cho orderRef={}",
+            log.warn("Nhận callback {} hợp lệ nhưng không tìm thấy lần thanh toán cho orderRef={}",
                 input.provider(), verification.providerOrderRef());
             return PaymentCallbackResponse.toResponse(CallbackOutcome.UNKNOWN_PAYMENT);
         }
@@ -84,14 +75,14 @@ public class ProcessPaymentCallbackUseCase implements IUseCase<ProcessPaymentCal
             // lý do: hệ thống chưa có luồng hoàn tiền nào, nên phải kêu to để có người đối soát tay.
             if (verification.status() == PaymentLinkRemoteStatus.PAID
                     && payment.getStatus() != PaymentStatus.PAID) {
-                LOGGER.error(
+                log.error(
                     "TIỀN VỀ CHO LẦN THỬ ĐÃ XÓA SỔ -- cần đối soát thủ công: provider={} orderRef={} paymentId={} orderId={} trạngTháiĐangLưu={} amountVnd={}",
                     input.provider(), verification.providerOrderRef(), payment.getId(),
                     payment.getOrderId(), payment.getStatus(), payment.getAmountVnd());
                 return PaymentCallbackResponse.toResponse(CallbackOutcome.PAID_AFTER_WRITE_OFF);
             }
 
-            LOGGER.info("Callback {} lặp cho orderRef={} -- lần thử đã ở trạng thái {}",
+            log.info("Callback {} lặp cho orderRef={} -- lần thử đã ở trạng thái {}",
                 input.provider(), verification.providerOrderRef(), payment.getStatus());
             return PaymentCallbackResponse.toResponse(CallbackOutcome.ALREADY_SETTLED);
         }
@@ -101,14 +92,14 @@ public class ProcessPaymentCallbackUseCase implements IUseCase<ProcessPaymentCal
         // của LẦN THỬ chứ không phải của đơn: đó chính là con số đã gửi sang cổng.
         if (verification.amount() != null
                 && verification.amount().compareTo(payment.getAmountVnd()) != 0) {
-            LOGGER.error("Callback {} lệch số tiền cho orderRef={}: nhận {} nhưng lần thử là {}",
+            log.error("Callback {} lệch số tiền cho orderRef={}: nhận {} nhưng lần thử là {}",
                 input.provider(), verification.providerOrderRef(), verification.amount(), payment.getAmountVnd());
             return PaymentCallbackResponse.toResponse(CallbackOutcome.AMOUNT_MISMATCH);
         }
 
         PaymentLinkRemoteStatus status = verification.status();
         if (status == PaymentLinkRemoteStatus.PAID) {
-            LOGGER.info("[WEBHOOK] Chốt lần thanh toán {} (orderRef={}) thành PAID qua callback {}",
+            log.info("[WEBHOOK] Chốt lần thanh toán {} (orderRef={}) thành PAID qua callback {}",
                 payment.getId(), verification.providerOrderRef(), input.provider());
             orderSettlementService.settlePaid(payment, Instant.now());
             return PaymentCallbackResponse.toResponse(CallbackOutcome.SETTLED);
@@ -119,7 +110,7 @@ public class ProcessPaymentCallbackUseCase implements IUseCase<ProcessPaymentCal
         // đóng một lần thử còn sống nghĩa là lần báo "đã trả" sau đó không còn dòng nào để chốt.
         PaymentStatus failureStatus = toFailureStatus(status);
         if (failureStatus == null) {
-            LOGGER.info("Callback {} cho orderRef={} ở trạng thái {} -- chưa chốt gì",
+            log.info("Callback {} cho orderRef={} ở trạng thái {} -- chưa chốt gì",
                 input.provider(), verification.providerOrderRef(), status);
             return PaymentCallbackResponse.toResponse(CallbackOutcome.NOT_FINAL);
         }

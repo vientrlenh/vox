@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,13 +14,10 @@ import com.sep.vox.infrastructure.persistence.mapper.personalization.PracticeQue
 import com.sep.vox.infrastructure.persistence.repository.SpringDataPracticeQuestionRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class PracticeQuestionRepositoryImpl implements PracticeQuestionRepository {
 
     private final SpringDataPracticeQuestionRepository repository;
-
-    public PracticeQuestionRepositoryImpl(SpringDataPracticeQuestionRepository repository) {
-        this.repository = repository;
-    }
 
     @Override
     public Optional<PracticeQuestion> findById(UUID id) {

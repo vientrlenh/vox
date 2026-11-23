@@ -6,6 +6,7 @@ import com.sep.vox.domain.model.user.User;
 import java.util.Optional;
 import java.util.UUID;
 import com.sep.vox.application.exception.DataConflictException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,21 +28,13 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateSchoolUserUseCase implements IUseCase<UpdateSchoolUserCommand, UpdateSchoolUserResponse> {
 
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final AvatarConfigPort avatarConfigPort;
-
-    public UpdateSchoolUserUseCase(UserContextPort userContextPort, UserRepository userRepository,
-            SchoolUserRepository schoolUserRepository,
-            AvatarConfigPort avatarConfigPort) {
-        this.userContextPort = userContextPort;
-        this.userRepository = userRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.avatarConfigPort = avatarConfigPort;
-    }
 
     @Override
     @Transactional

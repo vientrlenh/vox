@@ -5,6 +5,7 @@ import com.sep.vox.domain.model.assessment.AssessmentBlueprintSection;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlot;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersion;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +22,7 @@ import com.sep.vox.domain.repository.AssessmentBlueprintVersionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class DeleteAssessmentBlueprintVersionUseCase implements IUseCase<DeleteAssessmentBlueprintVersionCommand, Void> {
 
     private final AssessmentBlueprintVersionRepository assessmentBlueprintVersionRepository;
@@ -29,21 +31,6 @@ public class DeleteAssessmentBlueprintVersionUseCase implements IUseCase<DeleteA
     private final AssessmentBlueprintRepository assessmentBlueprintRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserContextPort userContextPort;
-
-    public DeleteAssessmentBlueprintVersionUseCase(
-            AssessmentBlueprintVersionRepository assessmentBlueprintVersionRepository,
-            AssessmentBlueprintSectionRepository assessmentBlueprintSectionRepository,
-            AssessmentBlueprintSlotRepository assessmentBlueprintSlotRepository,
-            AssessmentBlueprintRepository assessmentBlueprintRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserContextPort userContextPort) {
-        this.assessmentBlueprintVersionRepository = assessmentBlueprintVersionRepository;
-        this.assessmentBlueprintSectionRepository = assessmentBlueprintSectionRepository;
-        this.assessmentBlueprintSlotRepository = assessmentBlueprintSlotRepository;
-        this.assessmentBlueprintRepository = assessmentBlueprintRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

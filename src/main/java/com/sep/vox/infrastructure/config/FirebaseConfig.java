@@ -7,8 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.regex.Pattern;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -34,9 +33,8 @@ import com.sep.vox.infrastructure.properties.FirebaseProperties;
 @Configuration
 @EnableConfigurationProperties(FirebaseProperties.class)
 @ConditionalOnProperty(prefix = "firebase", name = "enabled", havingValue = "true")
+@Slf4j
 public class FirebaseConfig {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(FirebaseConfig.class);
 
     private static final Pattern URL_SCHEME = Pattern.compile("^[a-zA-Z][a-zA-Z0-9+.-]+:");
 
@@ -54,7 +52,7 @@ public class FirebaseConfig {
             // rebuilt in tests would throw IllegalStateException if initializeApp were called
             // directly a second time.
             if (FirebaseApp.getApps().isEmpty()) {
-                LOGGER.info("Initializing FirebaseApp for push notifications");
+                log.info("Initializing FirebaseApp for push notifications");
                 return FirebaseApp.initializeApp(options);
             }
             return FirebaseApp.getInstance();

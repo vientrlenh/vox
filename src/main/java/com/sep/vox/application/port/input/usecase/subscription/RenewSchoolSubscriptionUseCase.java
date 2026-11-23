@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.model.subscription.SubscriptionPlan;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +34,7 @@ import com.sep.vox.domain.repository.SubscriptionPlanRepository;
  * nằm ở ví cấp trường nên không kỳ nào đụng tới được.
  */
 @Service
+@RequiredArgsConstructor
 public class RenewSchoolSubscriptionUseCase implements IUseCase<RenewSchoolSubscriptionCommand, UUID> {
 
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
@@ -40,19 +42,6 @@ public class RenewSchoolSubscriptionUseCase implements IUseCase<RenewSchoolSubsc
     private final SubscriptionPlanResolver subscriptionPlanResolver;
     private final CreateSubscriptionOrderUseCase createSubscriptionOrderUseCase;
     private final UserContextPort userContextPort;
-
-    public RenewSchoolSubscriptionUseCase(
-            SchoolSubscriptionRepository schoolSubscriptionRepository,
-            SubscriptionPlanRepository subscriptionPlanRepository,
-            SubscriptionPlanResolver subscriptionPlanResolver,
-            CreateSubscriptionOrderUseCase createSubscriptionOrderUseCase,
-            UserContextPort userContextPort) {
-        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
-        this.subscriptionPlanRepository = subscriptionPlanRepository;
-        this.subscriptionPlanResolver = subscriptionPlanResolver;
-        this.createSubscriptionOrderUseCase = createSubscriptionOrderUseCase;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

@@ -7,21 +7,19 @@ import io.grpc.ClientInterceptor;
 import io.grpc.ForwardingClientCall;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
+import lombok.RequiredArgsConstructor;
 
 
+@RequiredArgsConstructor
 public class StreamingServiceTokenInterceptor implements ClientInterceptor {
 
     private static final Metadata.Key<String> AUTHORIZATION_KEY =
             Metadata.Key.of("authorization", Metadata.ASCII_STRING_MARSHALLER);
 
-    /** Tiền tố vox-streaming cắt bỏ trước khi so token ({@code strings.TrimPrefix "Bearer "}). */
+    /** Prefix that vox-streaming strips before comparing the token ({@code strings.TrimPrefix "Bearer "}). */
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final String token;
-
-    public StreamingServiceTokenInterceptor(String token) {
-        this.token = token;
-    }
 
     @Override
     public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(

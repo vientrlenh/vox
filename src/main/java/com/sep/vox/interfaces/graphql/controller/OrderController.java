@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+import lombok.RequiredArgsConstructor;
 import org.dataloader.DataLoader;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
@@ -29,19 +30,12 @@ import com.sep.vox.interfaces.shared.PageArguments;
 import graphql.schema.DataFetchingEnvironment;
 
 @Controller("graphqlOrderController")
+@RequiredArgsConstructor
 public class OrderController {
 
     private final ViewMySchoolOrdersUseCase viewMySchoolOrdersUseCase;
     private final ViewOrdersUseCase viewOrdersUseCase;
     private final ViewOrderDetailsUseCase viewOrderDetailsUseCase;
-
-    public OrderController(
-            ViewMySchoolOrdersUseCase viewMySchoolOrdersUseCase,
-            ViewOrdersUseCase viewOrdersUseCase, ViewOrderDetailsUseCase viewOrderDetailsUseCase) {
-        this.viewMySchoolOrdersUseCase = viewMySchoolOrdersUseCase;
-        this.viewOrdersUseCase = viewOrdersUseCase;
-        this.viewOrderDetailsUseCase = viewOrderDetailsUseCase;
-    }
 
     @QueryMapping(name = "myOrders")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")

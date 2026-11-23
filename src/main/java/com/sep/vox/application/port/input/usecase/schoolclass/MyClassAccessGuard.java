@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.schoolclass;
 import com.sep.vox.domain.model.school.SchoolClassUser;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
@@ -19,23 +20,13 @@ import com.sep.vox.domain.repository.UserRepository;
  * Gom về một chỗ vì cả ba use case cần đúng một luật, tách ra thì dễ lệch.
  */
 @Service
+@RequiredArgsConstructor
 public class MyClassAccessGuard {
 
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final SchoolClassUserRepository schoolClassUserRepository;
-
-    public MyClassAccessGuard(
-            UserContextPort userContextPort,
-            UserRepository userRepository,
-            SchoolUserRepository schoolUserRepository,
-            SchoolClassUserRepository schoolClassUserRepository) {
-        this.userContextPort = userContextPort;
-        this.userRepository = userRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.schoolClassUserRepository = schoolClassUserRepository;
-    }
 
     /** Trả về id người gọi sau khi chắc chắn tài khoản còn hoạt động. */
     public UUID requireActiveCaller() {

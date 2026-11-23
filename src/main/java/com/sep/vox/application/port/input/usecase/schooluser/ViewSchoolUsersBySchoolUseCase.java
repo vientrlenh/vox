@@ -5,6 +5,7 @@ import com.sep.vox.domain.model.school.SchoolUser;
 import java.util.Set;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewSchoolUsersBySchoolUseCase implements IUseCase<ViewSchoolUsersBySchoolQuery, PageResult<SchoolUserDto>> {
 
     private static final Set<String> ADMIN_ROLE_CODES =
@@ -34,17 +36,6 @@ public class ViewSchoolUsersBySchoolUseCase implements IUseCase<ViewSchoolUsersB
     private final UserRepository userRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final RoleRepository roleRepository;
-
-    public ViewSchoolUsersBySchoolUseCase(
-            UserContextPort userContextPort,
-            UserRepository userRepository,
-            SchoolUserRepository schoolUserRepository,
-            RoleRepository roleRepository) {
-        this.userContextPort = userContextPort;
-        this.userRepository = userRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.roleRepository = roleRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

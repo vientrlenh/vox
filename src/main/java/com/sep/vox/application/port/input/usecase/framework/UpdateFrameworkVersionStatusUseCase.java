@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ import com.sep.vox.domain.repository.FrameworkVersionRepository;
 import com.sep.vox.domain.valueobject.framework.FrameworkCriterionCode;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateFrameworkVersionStatusUseCase implements IUseCase<UpdateFrameworkVersionStatusCommand, UUID> {
 
     private final FrameworkRepository frameworkRepository;
@@ -32,19 +34,6 @@ public class UpdateFrameworkVersionStatusUseCase implements IUseCase<UpdateFrame
     private final FrameworkCriterionRepository frameworkCriterionRepository;
     private final FrameworkResultBandRepository frameworkResultBandRepository;
     private final FrameworkCriterionBandRepository frameworkCriterionBandRepository;
-
-    public UpdateFrameworkVersionStatusUseCase(
-            FrameworkRepository frameworkRepository,
-            FrameworkVersionRepository frameworkVersionRepository,
-            FrameworkCriterionRepository frameworkCriterionRepository,
-            FrameworkResultBandRepository frameworkResultBandRepository,
-            FrameworkCriterionBandRepository frameworkCriterionBandRepository) {
-        this.frameworkRepository = frameworkRepository;
-        this.frameworkVersionRepository = frameworkVersionRepository;
-        this.frameworkCriterionRepository = frameworkCriterionRepository;
-        this.frameworkResultBandRepository = frameworkResultBandRepository;
-        this.frameworkCriterionBandRepository = frameworkCriterionBandRepository;
-    }
 
     @Override
     @Transactional

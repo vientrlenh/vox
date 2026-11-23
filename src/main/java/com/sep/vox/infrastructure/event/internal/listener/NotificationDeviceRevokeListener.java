@@ -1,7 +1,7 @@
 package com.sep.vox.infrastructure.event.internal.listener;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,15 +22,11 @@ import com.sep.vox.domain.repository.NotificationDeviceRepository;
  * the session revocation -- a completely wrong trade-off in terms of security.
  */
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class NotificationDeviceRevokeListener {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(NotificationDeviceRevokeListener.class);
-
     private final NotificationDeviceRepository notificationDeviceRepository;
-
-    public NotificationDeviceRevokeListener(NotificationDeviceRepository notificationDeviceRepository) {
-        this.notificationDeviceRepository = notificationDeviceRepository;
-    }
 
     /**
      * {@code REQUIRES_NEW}, NOT the default {@code REQUIRED} -- and this is the condition for the DELETE statement below
@@ -56,7 +52,7 @@ public class NotificationDeviceRevokeListener {
     public void handle(DeviceSessionRevokedEvent event) {
         int removed = notificationDeviceRepository.deleteByUserIdAndDeviceId(event.userId(), event.deviceId());
         if (removed > 0) {
-            LOGGER.info("Đã gỡ {} thiết bị nhận thông báo theo phiên bị thu hồi: sessionId={}, userId={}",
+            log.info("Đã gỡ {} thiết bị nhận thông báo theo phiên bị thu hồi: sessionId={}, userId={}",
                 removed, event.sessionId(), event.userId());
         }
     }

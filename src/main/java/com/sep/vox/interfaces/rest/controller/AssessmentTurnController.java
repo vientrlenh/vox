@@ -3,6 +3,7 @@ package com.sep.vox.interfaces.rest.controller;
 import com.sep.vox.application.response.input.assessmentturn.TurnUploadUrlResponse;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,13 +17,10 @@ import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
 
 @RestController
 @RequestMapping("/api/v1/assessment-turns")
+@RequiredArgsConstructor
 public class AssessmentTurnController {
 
     private final GetTurnUploadUrlUseCase getTurnUploadUrlUseCase;
-
-    public AssessmentTurnController(GetTurnUploadUrlUseCase getTurnUploadUrlUseCase) {
-        this.getTurnUploadUrlUseCase = getTurnUploadUrlUseCase;
-    }
 
     @GetMapping("/upload-url")
     @PreAuthorize("hasRole('STUDENT')")

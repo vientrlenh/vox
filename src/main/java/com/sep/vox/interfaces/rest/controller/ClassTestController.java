@@ -3,6 +3,7 @@ package com.sep.vox.interfaces.rest.controller;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -52,6 +53,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/class-tests")
+@RequiredArgsConstructor
 public class ClassTestController {
 
     private final CreateClassTestUseCase createClassTestUseCase;
@@ -64,29 +66,6 @@ public class ClassTestController {
     private final DeleteClassTestSectionUseCase deleteClassTestSectionUseCase;
     private final ChangeClassTestBlueprintUseCase changeClassTestBlueprintUseCase;
     private final ClaimClassTestGradingUseCase claimClassTestGradingUseCase;
-
-    public ClassTestController(
-            CreateClassTestUseCase createClassTestUseCase,
-            UpdateAssessmentUseCase updateAssessmentUseCase,
-            UpdateAssessmentStatusUseCase updateAssessmentStatusUseCase,
-            DeleteAssessmentUseCase deleteAssessmentUseCase,
-            UpdateClassTestQuestionsUseCase updateClassTestQuestionsUseCase,
-            CreateClassTestSectionUseCase createClassTestSectionUseCase,
-            UpdateClassTestSectionUseCase updateClassTestSectionUseCase,
-            DeleteClassTestSectionUseCase deleteClassTestSectionUseCase,
-            ChangeClassTestBlueprintUseCase changeClassTestBlueprintUseCase,
-            ClaimClassTestGradingUseCase claimClassTestGradingUseCase) {
-        this.createClassTestUseCase = createClassTestUseCase;
-        this.updateAssessmentUseCase = updateAssessmentUseCase;
-        this.updateAssessmentStatusUseCase = updateAssessmentStatusUseCase;
-        this.deleteAssessmentUseCase = deleteAssessmentUseCase;
-        this.updateClassTestQuestionsUseCase = updateClassTestQuestionsUseCase;
-        this.createClassTestSectionUseCase = createClassTestSectionUseCase;
-        this.updateClassTestSectionUseCase = updateClassTestSectionUseCase;
-        this.deleteClassTestSectionUseCase = deleteClassTestSectionUseCase;
-        this.changeClassTestBlueprintUseCase = changeClassTestBlueprintUseCase;
-        this.claimClassTestGradingUseCase = claimClassTestGradingUseCase;
-    }
 
     @PostMapping
     @PreAuthorize("hasRole('TEACHER')")

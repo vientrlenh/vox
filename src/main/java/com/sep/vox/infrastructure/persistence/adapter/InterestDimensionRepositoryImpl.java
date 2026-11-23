@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,13 +14,10 @@ import com.sep.vox.infrastructure.persistence.entity.personalization.InterestDim
 import com.sep.vox.infrastructure.persistence.repository.SpringDataInterestDimensionRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class InterestDimensionRepositoryImpl implements InterestDimensionRepository {
 
     private final SpringDataInterestDimensionRepository repository;
-
-    public InterestDimensionRepositoryImpl(SpringDataInterestDimensionRepository repository) {
-        this.repository = repository;
-    }
 
     @Override
     public List<InterestDimension> findAll() {

@@ -12,12 +12,14 @@ import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
 import com.sep.vox.domain.service.rubric.RubricScoringConsistencyValidator;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSystemRubricVersionStatusCommand, UUID> {
 
     private final RubricVersionRepository rubricVersionRepository;
@@ -26,21 +28,6 @@ public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSy
     private final FrameworkRepository frameworkRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
-
-    public ChangeSystemRubricVersionStatusUseCase(
-            RubricVersionRepository rubricVersionRepository,
-            RubricRepository rubricRepository,
-            RubricCriterionRepository rubricCriterionRepository,
-            FrameworkRepository frameworkRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort) {
-        this.rubricVersionRepository = rubricVersionRepository;
-        this.rubricRepository = rubricRepository;
-        this.rubricCriterionRepository = rubricCriterionRepository;
-        this.frameworkRepository = frameworkRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

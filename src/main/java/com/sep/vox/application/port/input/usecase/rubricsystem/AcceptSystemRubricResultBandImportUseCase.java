@@ -20,12 +20,14 @@ import com.sep.vox.domain.repository.ImportSessionRepository;
 import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class AcceptSystemRubricResultBandImportUseCase implements IUseCase<AcceptRubricResultBandImportCommand, AcceptRubricResultBandImportResponse> {
 
     private final ImportSessionRepository importSessionRepository;
@@ -34,20 +36,6 @@ public class AcceptSystemRubricResultBandImportUseCase implements IUseCase<Accep
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
     private final JsonSerializationPort jsonSerializationPort;
-
-    public AcceptSystemRubricResultBandImportUseCase(
-            ImportSessionRepository importSessionRepository,
-            RubricVersionRepository rubricVersionRepository,
-            RubricRepository rubricRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort, JsonSerializationPort jsonSerializationPort) {
-        this.importSessionRepository = importSessionRepository;
-        this.rubricVersionRepository = rubricVersionRepository;
-        this.rubricRepository = rubricRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-        this.jsonSerializationPort = jsonSerializationPort;
-    }
 
     @Override
     @Transactional

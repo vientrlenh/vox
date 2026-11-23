@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
@@ -19,13 +20,10 @@ import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolDirectoryRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class SchoolDirectoryRepositoryImpl implements SchoolDirectoryRepository {
 
     private final SpringDataSchoolDirectoryRepository springDataSchoolDirectoryRepository;
-
-    public SchoolDirectoryRepositoryImpl(SpringDataSchoolDirectoryRepository springDataSchoolDirectoryRepository) {
-        this.springDataSchoolDirectoryRepository = springDataSchoolDirectoryRepository;
-    }
 
     @Override
     public Optional<SchoolDirectory> findById(UUID id) {

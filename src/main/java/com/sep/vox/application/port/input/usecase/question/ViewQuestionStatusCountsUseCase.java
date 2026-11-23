@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +29,7 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
  * truy cập, lệch một biến là con số đếm không còn khớp danh sách.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewQuestionStatusCountsUseCase
         implements IUseCase<ViewQuestionStatusCountsQuery, List<QuestionStatusCountInfo>> {
 
@@ -35,17 +37,6 @@ public class ViewQuestionStatusCountsUseCase
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
-
-    public ViewQuestionStatusCountsUseCase(
-            QuestionQueryRepository questionQueryRepository,
-            UserContextPort userContextPort,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository) {
-        this.questionQueryRepository = questionQueryRepository;
-        this.userContextPort = userContextPort;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

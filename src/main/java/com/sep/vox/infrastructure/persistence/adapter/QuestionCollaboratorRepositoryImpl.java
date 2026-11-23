@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.question.QuestionCollaborator;
@@ -14,13 +15,10 @@ import com.sep.vox.infrastructure.persistence.mapper.QuestionCollaboratorMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataQuestionCollaboratorRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class QuestionCollaboratorRepositoryImpl implements QuestionCollaboratorRepository {
 
     private final SpringDataQuestionCollaboratorRepository springDataQuestionCollaboratorRepository;
-
-    public QuestionCollaboratorRepositoryImpl(SpringDataQuestionCollaboratorRepository springDataQuestionCollaboratorRepository) {
-        this.springDataQuestionCollaboratorRepository = springDataQuestionCollaboratorRepository;
-    }
 
     @Override
     public QuestionCollaborator save(QuestionCollaborator collaborator) {

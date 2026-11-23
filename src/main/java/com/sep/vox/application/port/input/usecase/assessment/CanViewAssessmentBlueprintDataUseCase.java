@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.assessment;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,20 +20,12 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
  * stays in the controller.
  */
 @Service
+@RequiredArgsConstructor
 public class CanViewAssessmentBlueprintDataUseCase implements IUseCase<CanViewAssessmentBlueprintDataQuery, Boolean> {
 
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
-
-    public CanViewAssessmentBlueprintDataUseCase(
-            UserContextPort userContextPort,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository) {
-        this.userContextPort = userContextPort;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

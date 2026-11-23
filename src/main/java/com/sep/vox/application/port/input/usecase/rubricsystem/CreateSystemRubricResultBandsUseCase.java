@@ -19,6 +19,7 @@ import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
 import com.sep.vox.application.exception.DataConflictException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +27,7 @@ import java.math.BigDecimal;
 import java.util.*;
 
 @Service
+@RequiredArgsConstructor
 public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSystemRubricResultBandsCommand, List<UUID>> {
 
     private final RubricResultBandRepository rubricResultBandRepository;
@@ -33,19 +35,6 @@ public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSyst
     private final RubricRepository rubricRepository;
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
-
-    public CreateSystemRubricResultBandsUseCase(
-            RubricResultBandRepository rubricResultBandRepository,
-            RubricVersionRepository rubricVersionRepository,
-            RubricRepository rubricRepository,
-            UserContextPort userContextPort,
-            UserRepository userRepository) {
-        this.rubricResultBandRepository = rubricResultBandRepository;
-        this.rubricVersionRepository = rubricVersionRepository;
-        this.rubricRepository = rubricRepository;
-        this.userContextPort = userContextPort;
-        this.userRepository = userRepository;
-    }
 
     @Override
     @Transactional

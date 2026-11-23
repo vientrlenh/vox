@@ -21,6 +21,7 @@ import com.sep.vox.domain.model.school.SchoolGrade;
 import com.sep.vox.domain.model.gradelevel.GradeLevel;
 import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 import com.sep.vox.domain.repository.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -30,6 +31,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler {
 
     private final AssessmentPolicyRepository assessmentPolicyRepository;
@@ -43,31 +45,6 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
     private final SchoolClassRepository schoolClassRepository;
     private final JsonSerializationPort jsonSerializationPort;
     private final GradeLevelBandScopeGuardService gradeLevelBandScopeGuardService;
-
-    public AssessmentPolicyImportCommitHandler(
-            AssessmentPolicyRepository assessmentPolicyRepository,
-            FrameworkVersionRepository frameworkVersionRepository,
-            FrameworkResultBandRepository frameworkResultBandRepository,
-            RubricVersionRepository rubricVersionRepository,
-            RubricRepository rubricRepository,
-            SupportedLanguageRepository languageRepository,
-            GradeLevelRepository gradeLevelRepository,
-            SchoolGradeRepository schoolGradeRepository,
-            SchoolClassRepository schoolClassRepository,
-            JsonSerializationPort jsonSerializationPort,
-            GradeLevelBandScopeGuardService gradeLevelBandScopeGuardService) {
-        this.assessmentPolicyRepository = assessmentPolicyRepository;
-        this.frameworkVersionRepository = frameworkVersionRepository;
-        this.frameworkResultBandRepository = frameworkResultBandRepository;
-        this.rubricVersionRepository = rubricVersionRepository;
-        this.rubricRepository = rubricRepository;
-        this.languageRepository = languageRepository;
-        this.gradeLevelRepository = gradeLevelRepository;
-        this.schoolGradeRepository = schoolGradeRepository;
-        this.schoolClassRepository = schoolClassRepository;
-        this.jsonSerializationPort = jsonSerializationPort;
-        this.gradeLevelBandScopeGuardService = gradeLevelBandScopeGuardService;
-    }
 
     @Override
     public ImportType supportedType() {

@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.service;
 
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
@@ -28,6 +29,7 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
  * {@code CreateClassTestUseCase} tự gán nên không đi qua đây.
  */
 @Service
+@RequiredArgsConstructor
 public class AssessmentMemberManageAccessService {
 
     private static final String SCHOOL_ADMIN = "SCHOOL_ADMIN";
@@ -36,17 +38,6 @@ public class AssessmentMemberManageAccessService {
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
-
-    public AssessmentMemberManageAccessService(
-            AssessmentMemberRepository assessmentMemberRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
-            UserContextPort userContextPort) {
-        this.assessmentMemberRepository = assessmentMemberRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-        this.userContextPort = userContextPort;
-    }
 
     /**
      * @param schoolAdmin true khi người gọi là quản trị trường của chính trường kỳ thi; false nghĩa là

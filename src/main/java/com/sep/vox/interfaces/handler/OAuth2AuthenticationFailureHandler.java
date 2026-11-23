@@ -5,8 +5,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -20,9 +19,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 @Component
+@Slf4j
 public class OAuth2AuthenticationFailureHandler implements AuthenticationFailureHandler {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(OAuth2AuthenticationFailureHandler.class);
     private static final Set<String> KNOWN_CODES = Set.of("email_not_verified", "user_not_found", "unsupported_platform");
 
     @Value("${app.frontend.oauth2-url}")
@@ -34,7 +33,7 @@ public class OAuth2AuthenticationFailureHandler implements AuthenticationFailure
         clearSession(request);
 
         String message = resolveMessage(exception);
-        LOGGER.warn("OAuth2 login failed: {}", exception.getMessage());
+        log.warn("OAuth2 login failed: {}", exception.getMessage());
 
         String url = UriComponentsBuilder.fromUriString(returnUrl)
                 .queryParam("error", message)

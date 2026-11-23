@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.question.QuestionBank;
 import com.sep.vox.domain.model.question.QuestionBankGrade;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,23 +19,13 @@ import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class DeleteQuestionBankGradeUseCase implements IUseCase<DeleteQuestionBankGradeCommand, Void> {
 
     private final QuestionBankRepository questionBankRepository;
     private final QuestionBankGradeRepository questionBankGradeRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserContextPort userContextPort;
-
-    public DeleteQuestionBankGradeUseCase(
-            QuestionBankRepository questionBankRepository,
-            QuestionBankGradeRepository questionBankGradeRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserContextPort userContextPort) {
-        this.questionBankRepository = questionBankRepository;
-        this.questionBankGradeRepository = questionBankGradeRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

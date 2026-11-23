@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.notification.Notification;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,15 +15,11 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.repository.NotificationRepository;
 
 @Service
+@RequiredArgsConstructor
 public class MarkNotificationAsReadUseCase implements IUseCase<MarkNotificationAsReadCommand, UUID> {
 
     private final NotificationRepository notificationRepository;
     private final UserContextPort userContextPort;
-
-    public MarkNotificationAsReadUseCase(NotificationRepository notificationRepository, UserContextPort userContextPort) {
-        this.notificationRepository = notificationRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

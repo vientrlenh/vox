@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.subscription;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
@@ -21,17 +22,11 @@ import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
  * trường, còn lại chỉ xem được trường của chính mình.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewSchoolSubscriptionUseCase implements IUseCase<ViewSchoolSubscriptionQuery, SchoolSubscriptionDto> {
 
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
     private final UserContextPort userContextPort;
-
-    public ViewSchoolSubscriptionUseCase(
-            SchoolSubscriptionRepository schoolSubscriptionRepository,
-            UserContextPort userContextPort) {
-        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     public SchoolSubscriptionDto execute(ViewSchoolSubscriptionQuery input) {

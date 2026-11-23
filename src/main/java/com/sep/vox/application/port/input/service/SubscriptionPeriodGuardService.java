@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.PlanLimitExceededException;
@@ -23,19 +24,16 @@ import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
  * nên ngay sau khi gói hết hạn vẫn còn một khoảng repository trả về gói cũ.
  */
 @Service
+@RequiredArgsConstructor
 public class SubscriptionPeriodGuardService {
 
-    // Instant.toString() in ra UTC kèm hậu tố Z, nên hạn gói bắt đầu 01/01 hiện thành
-    // "2025-12-31T17:00:00Z" -- lệch một ngày so với chính con số trên màn quản lý thuê bao, đúng
-    // vào lúc người đọc đang cố đối chiếu hai chỗ với nhau.
+    // Instant.toString() prints UTC with a trailing Z, so a plan period starting 01/01 shows as
+    // "2025-12-31T17:00:00Z" -- one day off from the number on the subscription management screen, exactly
+    // when the reader is trying to compare the two places.
     private static final DateTimeFormatter DISPLAY_DATE =
         DateTimeFormatter.ofPattern("dd/MM/yyyy").withZone(ZoneConstant.BUSINESS_ZONE);
 
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
-
-    public SubscriptionPeriodGuardService(SchoolSubscriptionRepository schoolSubscriptionRepository) {
-        this.schoolSubscriptionRepository = schoolSubscriptionRepository;
-    }
 
     /**
      * @param openAt  bỏ qua nếu null -- việc bắt buộc nhập thuộc về use case, không phải guard này

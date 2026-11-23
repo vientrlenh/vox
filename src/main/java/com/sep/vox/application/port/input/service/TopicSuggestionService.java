@@ -12,6 +12,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.output.TopicGenerationPort;
@@ -33,10 +35,9 @@ import com.sep.vox.domain.service.personalization.TensePolicy;
  * (TopicSuggestion, PracticeTopic, LearnerProfile), không phải việc của 1 adapter CRUD.
  */
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class TopicSuggestionService {
-
-    private static final org.slf4j.Logger LOGGER =
-        org.slf4j.LoggerFactory.getLogger(TopicSuggestionService.class);
 
     private static final Set<String> UNSUITABLE = Set.of(
         "porn", "sex", "drugs", "weapon", "gambling", "hate", "suicide"
@@ -50,25 +51,6 @@ public class TopicSuggestionService {
     private final PracticeTopicOfferEnrichmentService enrichmentService;
     private final KeywordTopicPersistenceService keywordTopicPersistenceService;
     private final InterestDimensionRepository interestDimensionRepository;
-
-    public TopicSuggestionService(
-            TopicSuggestionRepository topicSuggestionRepository,
-            PracticeTopicRepository practiceTopicRepository,
-            PracticeTopicQueryRepository practiceTopicQueryRepository,
-            LearnerProfileRepository learnerProfileRepository,
-            TopicGenerationPort topicGenerationPort,
-            PracticeTopicOfferEnrichmentService enrichmentService,
-            KeywordTopicPersistenceService keywordTopicPersistenceService,
-            InterestDimensionRepository interestDimensionRepository) {
-        this.interestDimensionRepository = interestDimensionRepository;
-        this.topicSuggestionRepository = topicSuggestionRepository;
-        this.practiceTopicRepository = practiceTopicRepository;
-        this.practiceTopicQueryRepository = practiceTopicQueryRepository;
-        this.learnerProfileRepository = learnerProfileRepository;
-        this.topicGenerationPort = topicGenerationPort;
-        this.enrichmentService = enrichmentService;
-        this.keywordTopicPersistenceService = keywordTopicPersistenceService;
-    }
 
     // GỠ 2026-08-06: respond(studentId, suggestionId, accept) -- nhận/bỏ một gợi ý chủ đề.
     // Không còn nguồn nào tạo dòng PENDING sau khi bỏ đường suy chủ đề từ lời học sinh nói,
@@ -264,7 +246,7 @@ public class TopicSuggestionService {
         //
         // `proposals.size()` đã là số CÒN LẠI sau khi TopicDedupeNode bên Python lọc bằng Chroma
         // (ngưỡng cosine 0.90), nên chênh lệch so với số xin chính là phần Python đã cắt.
-        LOGGER.info(
+        log.info(
             "[topic-gen] học sinh={} xin={} python_trả={} java_chặn_trùng={} vượt_hạn_mức={} tạo_được={}{}",
             studentId, requestedCount, proposals.size(), collidedWith.size(),
             skippedOverQuota, result.size(),

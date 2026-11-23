@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.question;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,20 +16,12 @@ import com.sep.vox.domain.repository.QuestionEvaluationGuideRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 
 @Service
+@RequiredArgsConstructor
 public class QuestionCloneService {
 
     private final QuestionRepository questionRepository;
     private final QuestionAssetRepository questionAssetRepository;
     private final QuestionEvaluationGuideRepository questionEvaluationGuideRepository;
-
-    public QuestionCloneService(
-            QuestionRepository questionRepository,
-            QuestionAssetRepository questionAssetRepository,
-            QuestionEvaluationGuideRepository questionEvaluationGuideRepository) {
-        this.questionRepository = questionRepository;
-        this.questionAssetRepository = questionAssetRepository;
-        this.questionEvaluationGuideRepository = questionEvaluationGuideRepository;
-    }
 
     @Transactional
     public Question cloneAsDraftWithDetails(Question source, UUID currentUserId) {

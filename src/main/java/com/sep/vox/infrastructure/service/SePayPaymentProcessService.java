@@ -16,8 +16,7 @@ import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -45,9 +44,8 @@ import tools.jackson.databind.json.JsonMapper;
  * {@code createPaymentLink} ở đây không hề gọi mạng, và cũng không có paymentLinkId để trả về.
  */
 @Service
+@Slf4j
 public class SePayPaymentProcessService implements PaymentProcessPort {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(SePayPaymentProcessService.class);
 
     // SePay xác thực IPN bằng secret key gửi kèm ở header, không ký HMAC trên body — đây chính là
     // lý do verifyCallback phải nhận headers chứ không chỉ nhận body.
@@ -185,7 +183,7 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
         if (value.indexOf(SIGNATURE_SEPARATOR) < 0) {
             return value;
         }
-        LOGGER.warn("Mô tả đơn SePay chứa dấu phẩy — đã thay bằng khoảng trắng để không phá chữ ký");
+        log.warn("Mô tả đơn SePay chứa dấu phẩy — đã thay bằng khoảng trắng để không phá chữ ký");
         return value.replace(SIGNATURE_SEPARATOR, ' ');
     }
 
@@ -204,7 +202,7 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
             // Catch ONLY 404. The other errors -- 429 too fast, 5xx, network lost -- are still thrown: the
             // caller must tell "SePay says no order carries this code" from "could not ask SePay",
             // because mapping the latter to NOT_FOUND would allow failing an attempt that is still alive.
-            LOGGER.warn("SePay không có đơn nào mang mã {} -- coi như lần thử đã chết", providerOrderRef, e);
+            log.warn("SePay không có đơn nào mang mã {} -- coi như lần thử đã chết", providerOrderRef, e);
             return new PaymentLinkStatusResult(PaymentLinkRemoteStatus.NOT_FOUND);
         }
 
@@ -213,7 +211,7 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
         if (status == null) {
             // Do not guess: mapping an unknown status to FAILED could mark an already-paid invoice as
             // failed, and mapping it to PAID would grant quota for free. Keep PENDING so the next sweep asks again.
-            LOGGER.warn("Trạng thái đơn SePay chưa được ánh xạ, giữ nguyên PENDING: orderRef={} order_status={}",
+            log.warn("Trạng thái đơn SePay chưa được ánh xạ, giữ nguyên PENDING: orderRef={} order_status={}",
                 providerOrderRef, orderStatus);
             return new PaymentLinkStatusResult(PaymentLinkRemoteStatus.PENDING);
         }
@@ -233,7 +231,7 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
      */
     @Override
     public boolean cancelPaymentLink(String providerOrderRef, String reason) {
-        LOGGER.info("SePay không hỗ trợ hủy phiên thanh toán chưa trả, bỏ qua lệnh hủy cho orderRef={}",
+        log.info("SePay không hỗ trợ hủy phiên thanh toán chưa trả, bỏ qua lệnh hủy cho orderRef={}",
             providerOrderRef);
         return false;
     }
@@ -258,13 +256,13 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
 
         SePayIpnPayload payload = parseBody(rawBody);
         if (payload == null || payload.order() == null) {
-            LOGGER.warn("IPN SePay có secret key hợp lệ nhưng payload thiếu phần order");
+            log.warn("IPN SePay có secret key hợp lệ nhưng payload thiếu phần order");
             return CallbackVerificationResult.invalid();
         }
 
         String orderRef = payload.order().orderInvoiceNumber();
         if (orderRef == null || orderRef.isBlank()) {
-            LOGGER.warn("IPN SePay thiếu order_invoice_number, không tra được hóa đơn nào");
+            log.warn("IPN SePay thiếu order_invoice_number, không tra được hóa đơn nào");
             return CallbackVerificationResult.invalid();
         }
 
@@ -291,7 +289,7 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
         }
         PaymentLinkRemoteStatus status = toRemoteStatus(payload.order().orderStatus());
         if (status == null) {
-            LOGGER.warn("IPN SePay có notification_type lạ ({}) và order_status chưa ánh xạ ({}) — bỏ qua",
+            log.warn("IPN SePay có notification_type lạ ({}) và order_status chưa ánh xạ ({}) — bỏ qua",
                 notificationType, payload.order().orderStatus());
         }
         return status;
@@ -326,7 +324,7 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
         try {
             return new BigDecimal(rawAmount.trim());
         } catch (NumberFormatException e) {
-            LOGGER.warn("IPN SePay có order_amount không đọc được: {}", rawAmount);
+            log.warn("IPN SePay có order_amount không đọc được: {}", rawAmount);
             return null;
         }
     }
@@ -335,13 +333,13 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
     private boolean hasValidSecretKey(Map<String, String> headers) {
         String provided = headers.get(SECRET_KEY_HEADER);
         if (provided == null) {
-            LOGGER.warn("IPN SePay thiếu header {}", SECRET_KEY_HEADER);
+            log.warn("IPN SePay thiếu header {}", SECRET_KEY_HEADER);
             return false;
         }
         String expected = properties.ipnSecretKey();
         // If it is not configured and still accepted, the IPN endpoint becomes an open door for anyone to settle an invoice.
         if (expected == null || expected.isBlank()) {
-            LOGGER.error("Chưa cấu hình sepay.pg.ipn-secret-key — từ chối mọi IPN SePay");
+            log.error("Chưa cấu hình sepay.pg.ipn-secret-key — từ chối mọi IPN SePay");
             return false;
         }
         return MessageDigest.isEqual(
@@ -367,7 +365,7 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
             return Base64.getEncoder()
                 .encodeToString(mac.doFinal(data.toString().getBytes(StandardCharsets.UTF_8)));
         } catch (GeneralSecurityException e) {
-            LOGGER.error("Lỗi khi ký form thanh toán SePay", e);
+            log.error("Lỗi khi ký form thanh toán SePay", e);
             throw new IllegalStateException("Lỗi ký chữ ký cho SePay");
         }
     }
@@ -395,7 +393,7 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
         try {
             return jsonMapper.readValue(rawBody, SePayIpnPayload.class);
         } catch (Exception e) {
-            LOGGER.warn("Không đọc được payload IPN SePay", e);
+            log.warn("Không đọc được payload IPN SePay", e);
             return null;
         }
     }

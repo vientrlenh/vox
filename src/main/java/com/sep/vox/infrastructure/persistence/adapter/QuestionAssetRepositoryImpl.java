@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.question.QuestionAsset;
@@ -14,13 +15,10 @@ import com.sep.vox.infrastructure.persistence.mapper.QuestionAssetMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataQuestionAssetRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class QuestionAssetRepositoryImpl implements QuestionAssetRepository {
 
     private final SpringDataQuestionAssetRepository springDataQuestionAssetRepository;
-
-    public QuestionAssetRepositoryImpl(SpringDataQuestionAssetRepository springDataQuestionAssetRepository) {
-        this.springDataQuestionAssetRepository = springDataQuestionAssetRepository;
-    }
 
     @Override
     public QuestionAsset save(QuestionAsset questionAsset) {

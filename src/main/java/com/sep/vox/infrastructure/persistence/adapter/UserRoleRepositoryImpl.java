@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.user.UserRole;
@@ -15,13 +16,10 @@ import com.sep.vox.infrastructure.persistence.mapper.UserRoleMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataUserRoleRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class UserRoleRepositoryImpl implements UserRoleRepository {
 
     private final SpringDataUserRoleRepository springDataUserRoleRepository;
-
-    public UserRoleRepositoryImpl(SpringDataUserRoleRepository springDataUserRoleRepository) {
-        this.springDataUserRoleRepository = springDataUserRoleRepository;
-    }
 
     @Override
     public List<UserRole> findByRoleId(UUID roleId) {

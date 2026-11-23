@@ -18,9 +18,8 @@ import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.kafka.annotation.BackOff;
@@ -86,9 +85,8 @@ import tools.jackson.databind.json.JsonMapper;
  * the payload and is not queried again here -- see {@link #fanOut}.
  */
 @Component
+@Slf4j
 public class NotificationPushedEventConsumer {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(NotificationPushedEventConsumer.class);
 
     private static final String CONSUMER_GROUP = "notification";
 
@@ -162,11 +160,11 @@ public class NotificationPushedEventConsumer {
     public void consume(ConsumerRecord<String, String> record, Acknowledgment ack) {
         UUID eventId = KafkaEventHeaders.readEventId(record);
 
-        LOGGER.info("Receive event notification: eventId={}, partition={}, offset={}",
+        log.info("Receive event notification: eventId={}, partition={}, offset={}",
             eventId, record.partition(), record.offset());
 
         if (processedEventRepository.existsByEventIdAndConsumerGroup(eventId, CONSUMER_GROUP)) {
-            LOGGER.info("Skip processed event: eventId={}, consumer={}", eventId, CONSUMER_GROUP);
+            log.info("Skip processed event: eventId={}, consumer={}", eventId, CONSUMER_GROUP);
             ack.acknowledge();
             return;
         }
@@ -178,7 +176,7 @@ public class NotificationPushedEventConsumer {
         // only creates noise. The real safety net is NotificationCategoryMappingValidator,
         // which blocks at startup.
         if (!NotificationCategory.isMapped(eventType)) {
-            LOGGER.warn("Skip notification, eventType chưa ánh xạ category: eventId={}, eventType={}",
+            log.warn("Skip notification, eventType chưa ánh xạ category: eventId={}, eventType={}",
                 eventId, eventType);
             markProcessed(eventId);
             ack.acknowledge();
@@ -191,7 +189,7 @@ public class NotificationPushedEventConsumer {
             // The payload names no recipient. For a fan-out event that means no active
             // admin is left; for a single-recipient event the payload is missing an id. Neither
             // can be fixed by running it again.
-            LOGGER.warn("Skip notification, không có người nhận: eventId={}, eventType={}",
+            log.warn("Skip notification, không có người nhận: eventId={}, eventType={}",
                 eventId, eventType);
             markProcessed(eventId);
             ack.acknowledge();
@@ -227,7 +225,7 @@ public class NotificationPushedEventConsumer {
         if (pushable.isEmpty()) {
             // uk_notifications_user_event blocked everything: the message was fully processed before but
             // markProcessed had not run yet (crash between the two steps). Do not push a second time.
-            LOGGER.info("Notification đã tồn tại cho cả {} người nhận, bỏ qua push: eventId={}",
+            log.info("Notification đã tồn tại cho cả {} người nhận, bỏ qua push: eventId={}",
                 drafts.size(), eventId);
             markProcessed(eventId);
             ack.acknowledge();
@@ -250,26 +248,26 @@ public class NotificationPushedEventConsumer {
                         // Runs on a pool thread: without logging here the exception falls into the thread's uncaught
                         // handler and never reaches the log file. Caught inside the loop so that one failing
                         // recipient does not cut off the pushes of the remaining ones.
-                        LOGGER.error("Push failed outside consumer thread: eventId={}, userId={}",
+                        log.error("Push failed outside consumer thread: eventId={}, userId={}",
                             eventId, entry.draft().userId(), e);
                     }
                 }
             });
         } catch (RejectedExecutionException e) {
-            LOGGER.warn("Push queue is full, skipping push: eventId={}, recipients={}",
+            log.warn("Push queue is full, skipping push: eventId={}, recipients={}",
                 eventId, pushable.size());
         }
 
         markProcessed(eventId);
 
-        LOGGER.info("Notification created: eventId={}, eventType={}, recipients={}, pushable={}",
+        log.info("Notification created: eventId={}, eventType={}, recipients={}, pushable={}",
             eventId, eventType, drafts.size(), pushable.size());
         ack.acknowledge();
     }
 
     @DltHandler
     public void handleDlt(ConsumerRecord<String, String> record) {
-        LOGGER.error("Notification event vào DLT: topic={}, partition={}, offset={}, payload={}",
+        log.error("Notification event vào DLT: topic={}, partition={}, offset={}, payload={}",
             record.topic(), record.partition(), record.offset(), record.value());
     }
 
@@ -285,7 +283,7 @@ public class NotificationPushedEventConsumer {
         }
 
         if (!pushEnabled(draft.userId(), draft.category())) {
-            LOGGER.debug("Người dùng đã tắt push nhóm {}: userId={}", draft.category(), draft.userId());
+            log.debug("Người dùng đã tắt push nhóm {}: userId={}", draft.category(), draft.userId());
             return;
         }
 
@@ -294,7 +292,7 @@ public class NotificationPushedEventConsumer {
             .toList();
 
         if (installationIds.isEmpty()) {
-            LOGGER.debug("Không có thiết bị nào đăng ký: userId={}", draft.userId());
+            log.debug("Không có thiết bị nào đăng ký: userId={}", draft.userId());
             return;
         }
 
@@ -305,10 +303,10 @@ public class NotificationPushedEventConsumer {
         // would mean wiping the whole device table after a single FCM downtime.
         if (!result.staleInstallationIds().isEmpty()) {
             int removed = notificationDeviceRepository.deleteByInstallationIdIn(result.staleInstallationIds());
-            LOGGER.info("Dọn {} thiết bị không còn dùng được: eventId={}", removed, eventId);
+            log.info("Dọn {} thiết bị không còn dùng được: eventId={}", removed, eventId);
         }
 
-        LOGGER.debug("Push xong: eventId={}, success={}, stale={}, retryable={}",
+        log.debug("Push xong: eventId={}, success={}, stale={}, retryable={}",
             eventId, result.successCount(),
             result.staleInstallationIds().size(), result.retryableInstallationIds().size());
     }
@@ -651,7 +649,7 @@ public class NotificationPushedEventConsumer {
         Map<String, String> data = new LinkedHashMap<>(pushable.draft().data());
 
         if (pushable.notificationId() == null) {
-            LOGGER.warn("Thiếu notificationId sau khi ghi, push sẽ chỉ mở được danh sách: userId={}",
+            log.warn("Thiếu notificationId sau khi ghi, push sẽ chỉ mở được danh sách: userId={}",
                 pushable.draft().userId());
             return data;
         }
@@ -682,7 +680,7 @@ public class NotificationPushedEventConsumer {
                     .build());
         } catch (DataIntegrityViolationException e) {
             // Luồng khác đã ghi trước: kết quả mong muốn đã đạt được, không có gì phải làm.
-            LOGGER.debug("Event đã được đánh dấu bởi luồng khác: eventId={}", eventId);
+            log.debug("Event đã được đánh dấu bởi luồng khác: eventId={}", eventId);
         }
     }
 

@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.practiceplanning;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,20 +13,12 @@ import com.sep.vox.domain.repository.PracticeTopicRepository;
 import com.sep.vox.domain.repository.SavedTopicRepository;
 
 @Service
+@RequiredArgsConstructor
 public class SaveTopicUseCase implements IUseCase<SaveTopicCommand, Boolean> {
 
     private final PracticeTopicRepository practiceTopicRepository;
     private final SavedTopicRepository savedTopicRepository;
     private final UserContextPort userContextPort;
-
-    public SaveTopicUseCase(
-            PracticeTopicRepository practiceTopicRepository,
-            SavedTopicRepository savedTopicRepository,
-            UserContextPort userContextPort) {
-        this.practiceTopicRepository = practiceTopicRepository;
-        this.savedTopicRepository = savedTopicRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

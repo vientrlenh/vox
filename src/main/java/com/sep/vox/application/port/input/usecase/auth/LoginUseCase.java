@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +29,7 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
 
     private final AuthenticationManagerPort authenticationManagerPort;
@@ -38,24 +40,6 @@ public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
     private final DeviceSessionRepository deviceSessionRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final SchoolUserRepository schoolUserRepository;
-
-    public LoginUseCase(AuthenticationManagerPort authenticationManagerPort, 
-                        UserRepository userRepository, 
-                        UserRoleQueryRepository userRoleQueryRepository,
-                        AuthTokenPort authTokenPort, 
-                        SessionTokenManagerPort sessionTokenManagerPort, 
-                        DeviceSessionRepository deviceSessionRepository, 
-                        RefreshTokenRepository refreshTokenRepository,
-                        SchoolUserRepository schoolUserRepository) {
-        this.authenticationManagerPort = authenticationManagerPort;
-        this.userRepository = userRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-        this.authTokenPort = authTokenPort;
-        this.sessionTokenManagerPort = sessionTokenManagerPort;
-        this.deviceSessionRepository = deviceSessionRepository;
-        this.refreshTokenRepository = refreshTokenRepository;
-        this.schoolUserRepository = schoolUserRepository;
-    }
 
     @Override
     @Transactional

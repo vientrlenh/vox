@@ -5,6 +5,7 @@ import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class DeleteSchoolScoringRuleUseCase implements IUseCase<DeleteSchoolScoringRuleCommand, Void> {
 
     private final ScoringRuleRepository scoringRuleRepository;
@@ -33,21 +35,6 @@ public class DeleteSchoolScoringRuleUseCase implements IUseCase<DeleteSchoolScor
     private final SchoolUserRepository schoolUserRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
-
-    public DeleteSchoolScoringRuleUseCase(
-            ScoringRuleRepository scoringRuleRepository,
-            AssessmentPolicyRepository assessmentPolicyRepository,
-            SchoolRepository schoolRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort) {
-        this.scoringRuleRepository = scoringRuleRepository;
-        this.assessmentPolicyRepository = assessmentPolicyRepository;
-        this.schoolRepository = schoolRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

@@ -15,6 +15,7 @@ import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +23,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class DeleteSchoolGradeUseCase implements IUseCase<DeleteSchoolGradeCommand, Void> {
 
     private final SchoolGradeRepository schoolGradeRepository;
@@ -30,22 +32,6 @@ public class DeleteSchoolGradeUseCase implements IUseCase<DeleteSchoolGradeComma
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
     private final SchoolUserRepository schoolUserRepository;
-
-    public DeleteSchoolGradeUseCase(
-            SchoolGradeRepository schoolGradeRepository,
-            SchoolClassRepository schoolClassRepository,
-            SchoolClassUserRepository schoolClassUserRepository,
-            UserContextPort userContextPort,
-            UserRepository userRepository,
-            SchoolUserRepository schoolUserRepository
-    ) {
-        this.schoolGradeRepository = schoolGradeRepository;
-        this.schoolClassRepository = schoolClassRepository;
-        this.schoolClassUserRepository = schoolClassUserRepository;
-        this.userContextPort = userContextPort;
-        this.userRepository = userRepository;
-        this.schoolUserRepository = schoolUserRepository;
-    }
 
     @Override
     @Transactional

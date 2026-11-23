@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.dashboard;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,17 +12,11 @@ import com.sep.vox.application.query.repository.QuestionBankStatsQueryRepository
 
 /** Thống kê câu hỏi & ngân hàng câu hỏi của trường hiện tại — dùng cho dashboard school admin. */
 @Service
+@RequiredArgsConstructor
 public class ViewQuestionBankStatsUseCase implements IUseCase<Void, QuestionBankStatsDto> {
 
     private final QuestionBankStatsQueryRepository questionBankStatsQueryRepository;
     private final UserContextPort userContextPort;
-
-    public ViewQuestionBankStatsUseCase(
-            QuestionBankStatsQueryRepository questionBankStatsQueryRepository,
-            UserContextPort userContextPort) {
-        this.questionBankStatsQueryRepository = questionBankStatsQueryRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional(readOnly = true)

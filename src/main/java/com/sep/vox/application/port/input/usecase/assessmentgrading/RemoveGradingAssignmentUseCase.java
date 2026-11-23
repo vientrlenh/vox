@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.assessmentgrading;
 import com.sep.vox.domain.model.assessment.AssessmentGradingAssignment;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,20 +23,12 @@ import com.sep.vox.domain.repository.AssessmentResultAppealRepository;
  * {@code GradingActionSupport.finish()}, nên phần nhả đơn phúc khảo phải tự làm ở đây.
  */
 @Service
+@RequiredArgsConstructor
 public class RemoveGradingAssignmentUseCase implements IUseCase<RemoveGradingAssignmentCommand, UUID> {
 
     private final AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository;
     private final AssessmentResultAppealRepository assessmentResultAppealRepository;
     private final AssessmentGradingAccessService assessmentGradingAccessService;
-
-    public RemoveGradingAssignmentUseCase(
-            AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository,
-            AssessmentResultAppealRepository assessmentResultAppealRepository,
-            AssessmentGradingAccessService assessmentGradingAccessService) {
-        this.assessmentGradingAssignmentRepository = assessmentGradingAssignmentRepository;
-        this.assessmentResultAppealRepository = assessmentResultAppealRepository;
-        this.assessmentGradingAccessService = assessmentGradingAccessService;
-    }
 
     @Override
     @Transactional

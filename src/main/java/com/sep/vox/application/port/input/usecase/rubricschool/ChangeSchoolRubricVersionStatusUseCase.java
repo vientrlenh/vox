@@ -12,6 +12,7 @@ import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,7 @@ import com.sep.vox.domain.service.rubric.RubricScoringConsistencyValidator;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class ChangeSchoolRubricVersionStatusUseCase implements IUseCase<ChangeSchoolRubricVersionStatusCommand, UUID> {
 
     private final RubricVersionRepository rubricVersionRepository;
@@ -28,26 +30,7 @@ public class ChangeSchoolRubricVersionStatusUseCase implements IUseCase<ChangeSc
     private final AssessmentPolicyRepository assessmentPolicyRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
-    private final SchoolUserRepository schoolUserRepository; // Dùng Repo mới
-
-    public ChangeSchoolRubricVersionStatusUseCase(
-            RubricVersionRepository rubricVersionRepository,
-            RubricRepository rubricRepository,
-            RubricCriterionRepository rubricCriterionRepository,
-            FrameworkRepository frameworkRepository,
-            AssessmentPolicyRepository assessmentPolicyRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort,
-            SchoolUserRepository schoolUserRepository) {
-        this.rubricVersionRepository = rubricVersionRepository;
-        this.rubricRepository = rubricRepository;
-        this.rubricCriterionRepository = rubricCriterionRepository;
-        this.frameworkRepository = frameworkRepository;
-        this.assessmentPolicyRepository = assessmentPolicyRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-        this.schoolUserRepository = schoolUserRepository;
-    }
+    private final SchoolUserRepository schoolUserRepository; // Uses the new repository
 
     @Override
     @Transactional

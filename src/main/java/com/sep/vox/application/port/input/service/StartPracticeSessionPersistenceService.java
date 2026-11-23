@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.personalization.PracticePaper;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,20 +20,12 @@ import com.sep.vox.domain.repository.PracticeSessionRepository;
  * StartPracticeSessionUseCase -- tách riêng để @Transactional không bọc luôn
  * agentAvailabilityClient.requireReady() (health-check ra ngoài, timeout tới 12s). */
 @Service
+@RequiredArgsConstructor
 public class StartPracticeSessionPersistenceService {
 
     private final PracticeSessionRepository practiceSessionRepository;
     private final PracticePaperRepository practicePaperRepository;
     private final PracticeSessionQueryRepository practiceSessionQueryRepository;
-
-    public StartPracticeSessionPersistenceService(
-            PracticeSessionRepository practiceSessionRepository,
-            PracticePaperRepository practicePaperRepository,
-            PracticeSessionQueryRepository practiceSessionQueryRepository) {
-        this.practiceSessionRepository = practiceSessionRepository;
-        this.practicePaperRepository = practicePaperRepository;
-        this.practiceSessionQueryRepository = practiceSessionQueryRepository;
-    }
 
     @Transactional
     public PracticeSession persist(UUID studentId, UUID paperId) {

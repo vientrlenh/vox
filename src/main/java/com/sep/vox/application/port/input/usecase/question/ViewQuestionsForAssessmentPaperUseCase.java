@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.question;
 
 import com.sep.vox.domain.model.question.Question;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,20 +18,13 @@ import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewQuestionsForAssessmentPaperUseCase implements IUseCase<ViewQuestionsQuery, PageResult<QuestionDto>> {
 
     private final QuestionRepository questionRepository;
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
-
-    public ViewQuestionsForAssessmentPaperUseCase(QuestionRepository questionRepository, UserContextPort userContextPort,
-            SchoolUserRepository schoolUserRepository, UserRoleQueryRepository userRoleQueryRepository) {
-        this.questionRepository = questionRepository;
-        this.userContextPort = userContextPort;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

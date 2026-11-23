@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.dashboard;
 import com.sep.vox.application.query.dto.SchoolGradingFailureDto;
 import com.sep.vox.domain.common.PageResult;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,17 +26,12 @@ import com.sep.vox.application.response.input.dashboard.SchoolGradingFailureResp
  * đó. Hai mutation lẻ đã có sẵn và màn này chỉ dẫn tới chúng.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewSchoolGradingFailuresUseCase
         implements IUseCase<SearchSchoolGradingFailuresQuery, SchoolGradingFailurePageResponse> {
 
     private final UserContextPort userContextPort;
     private final SchoolWorkloadQueryRepository schoolWorkloadQueryRepository;
-
-    public ViewSchoolGradingFailuresUseCase(UserContextPort userContextPort,
-            SchoolWorkloadQueryRepository schoolWorkloadQueryRepository) {
-        this.userContextPort = userContextPort;
-        this.schoolWorkloadQueryRepository = schoolWorkloadQueryRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.topicsuggestion;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.input.command.GenerateTopicFromKeywordCommand;
@@ -10,17 +11,11 @@ import com.sep.vox.application.response.input.topicsuggestion.TopicSuggestionRes
 import com.sep.vox.application.port.input.service.TopicSuggestionService;
 
 @Service
+@RequiredArgsConstructor
 public class GenerateTopicFromKeywordUseCase implements IUseCase<GenerateTopicFromKeywordCommand, TopicFromKeywordResult> {
 
     private final TopicSuggestionService topicSuggestionRepository;
     private final UserContextPort userContextPort;
-
-    public GenerateTopicFromKeywordUseCase(
-            TopicSuggestionService topicSuggestionRepository,
-            UserContextPort userContextPort) {
-        this.topicSuggestionRepository = topicSuggestionRepository;
-        this.userContextPort = userContextPort;
-    }
 
     /**
      * KHÔNG @Transactional -- cùng lý do đã ghi ở {@link ViewSynchronousTopicOffersUseCase},

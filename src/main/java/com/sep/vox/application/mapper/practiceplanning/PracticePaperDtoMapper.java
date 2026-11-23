@@ -2,6 +2,7 @@ package com.sep.vox.application.mapper.practiceplanning;
 
 import java.util.List;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.output.JsonSerializationPort;
@@ -11,13 +12,10 @@ import com.sep.vox.domain.model.personalization.PracticePaper;
 import com.sep.vox.domain.model.personalization.PracticeQuestion;
 
 @Service
+@RequiredArgsConstructor
 public class PracticePaperDtoMapper {
 
     private final JsonSerializationPort jsonSerializationPort;
-
-    public PracticePaperDtoMapper(JsonSerializationPort jsonSerializationPort) {
-        this.jsonSerializationPort = jsonSerializationPort;
-    }
 
     public PracticePaperDto toDto(
             PracticePaper paper,

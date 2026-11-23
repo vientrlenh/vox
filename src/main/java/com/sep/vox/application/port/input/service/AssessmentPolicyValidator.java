@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.service;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
@@ -21,13 +22,10 @@ import com.sep.vox.domain.repository.AssessmentPolicyRepository;
  * <p>A system policy ({@code schoolId = null}) can be used by every school.
  */
 @Service
+@RequiredArgsConstructor
 public class AssessmentPolicyValidator {
 
     private final AssessmentPolicyRepository assessmentPolicyRepository;
-
-    public AssessmentPolicyValidator(AssessmentPolicyRepository assessmentPolicyRepository) {
-        this.assessmentPolicyRepository = assessmentPolicyRepository;
-    }
 
     /**
      * Bắt buộc phải có policy hợp lệ. Bài trên lớp chốt policy ngay lúc tạo, không để trôi sang bước

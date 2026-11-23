@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.questionbank;
 import com.sep.vox.domain.model.school.SchoolUser;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,17 +20,12 @@ import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class CreateSchoolQuestionBankUseCase implements IUseCase<CreateSchoolQuestionBankCommand, CreateQuestionBankResponse> {
 
     private final QuestionBankRepository questionBankRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserContextPort userContextPort;
-
-    public CreateSchoolQuestionBankUseCase(QuestionBankRepository questionBankRepository, SchoolUserRepository schoolUserRepository, UserContextPort userContextPort) {
-        this.questionBankRepository = questionBankRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

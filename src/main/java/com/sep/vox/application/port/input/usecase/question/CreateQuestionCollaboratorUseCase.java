@@ -5,6 +5,7 @@ import com.sep.vox.domain.model.question.QuestionBank;
 import java.time.Instant;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class CreateQuestionCollaboratorUseCase implements IUseCase<CreateQuestionCollaboratorCommand, QuestionCollaboratorDto> {
 
     private final QuestionRepository questionRepository;
@@ -33,21 +35,6 @@ public class CreateQuestionCollaboratorUseCase implements IUseCase<CreateQuestio
     private final SchoolUserRepository schoolUserRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
-
-    public CreateQuestionCollaboratorUseCase(
-            QuestionRepository questionRepository,
-            QuestionBankRepository questionBankRepository,
-            QuestionCollaboratorRepository questionCollaboratorRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
-            UserContextPort userContextPort) {
-        this.questionRepository = questionRepository;
-        this.questionBankRepository = questionBankRepository;
-        this.questionCollaboratorRepository = questionCollaboratorRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

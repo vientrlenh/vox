@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +16,7 @@ import com.sep.vox.domain.repository.FrameworkVersionRepository;
 import com.sep.vox.domain.repository.GradeLevelBandScopeRepository;
 
 @Service
+@RequiredArgsConstructor
 public class DeleteFrameworkResultBandUseCase
         implements IUseCase<DeleteFrameworkResultBandCommand, Void> {
 
@@ -22,17 +24,6 @@ public class DeleteFrameworkResultBandUseCase
     private final FrameworkResultBandRepository frameworkResultBandRepository;
     private final FrameworkCriterionBandRepository frameworkCriterionBandRepository;
     private final GradeLevelBandScopeRepository gradeLevelBandScopeRepository;
-
-    public DeleteFrameworkResultBandUseCase(
-            FrameworkVersionRepository frameworkVersionRepository,
-            FrameworkResultBandRepository frameworkResultBandRepository,
-            FrameworkCriterionBandRepository frameworkCriterionBandRepository,
-            GradeLevelBandScopeRepository gradeLevelBandScopeRepository) {
-        this.frameworkVersionRepository = frameworkVersionRepository;
-        this.frameworkResultBandRepository = frameworkResultBandRepository;
-        this.frameworkCriterionBandRepository = frameworkCriterionBandRepository;
-        this.gradeLevelBandScopeRepository = gradeLevelBandScopeRepository;
-    }
 
     @Override
     @Transactional

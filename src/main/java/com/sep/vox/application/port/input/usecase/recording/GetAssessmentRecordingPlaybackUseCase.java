@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.input.query.GetAssessmentRecordsQuery;
@@ -30,30 +31,22 @@ import com.sep.vox.domain.service.recording.RecordingPrecedence;
  * <p>The two paths share {@link AssessmentRecordingAccessService} so the rule "who may view" is still one.
  */
 @Service
+@RequiredArgsConstructor
 public class GetAssessmentRecordingPlaybackUseCase
         implements IUseCase<GetAssessmentRecordsQuery, List<AssessmentRecordingPlaybackResponse>> {
 
     /**
-     * Hạn của link phát.
+     * Expiry of the playback link.
      *
-     * <p>Đủ dài để người chấm mở một buổi thi dài rồi tua tới lui mà không bị đứt giữa chừng, đủ
-     * ngắn để link lỡ lọt ra ngoài thì cũng chết sớm. Trình duyệt chỉ cần link còn sống lúc BẮT
-     * ĐẦU phát và mỗi lần tua, không phải suốt thời lượng video.
+     * <p>Long enough for a grader to open a long exam and seek back and forth without being cut off midway, short
+     * enough that a leaked link dies early. The browser only needs the link to be alive when playback STARTS
+     * and on each seek, not for the whole video duration.
      */
     private static final Duration PLAYBACK_URL_TTL = Duration.ofHours(2);
 
     private final AssessmentRecordingAccessService accessService;
     private final AssessmentRecordingRepository assessmentRecordingRepository;
     private final StoragePort storagePort;
-
-    public GetAssessmentRecordingPlaybackUseCase(
-            AssessmentRecordingAccessService accessService,
-            AssessmentRecordingRepository assessmentRecordingRepository,
-            StoragePort storagePort) {
-        this.accessService = accessService;
-        this.assessmentRecordingRepository = assessmentRecordingRepository;
-        this.storagePort = storagePort;
-    }
 
     @Override
     public List<AssessmentRecordingPlaybackResponse> execute(GetAssessmentRecordsQuery input) {

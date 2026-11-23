@@ -19,10 +19,12 @@ import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class ViewSystemRubricCriteriaUseCase implements IUseCase<ViewSystemRubricCriteriaQuery, PageResult<RubricCriterionDto>> {
 
     private final RubricCriterionRepository rubricCriterionRepository;
@@ -31,21 +33,6 @@ public class ViewSystemRubricCriteriaUseCase implements IUseCase<ViewSystemRubri
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
     private final RubricCriterionDtoMapper rubricCriterionDtoMapper;
-
-    public ViewSystemRubricCriteriaUseCase(
-            RubricCriterionRepository rubricCriterionRepository,
-            RubricVersionRepository rubricVersionRepository,
-            RubricRepository rubricRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort,
-            RubricCriterionDtoMapper rubricCriterionDtoMapper) {
-        this.rubricCriterionRepository = rubricCriterionRepository;
-        this.rubricVersionRepository = rubricVersionRepository;
-        this.rubricRepository = rubricRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-        this.rubricCriterionDtoMapper = rubricCriterionDtoMapper;
-    }
 
     @Override
     @Transactional(readOnly = true)

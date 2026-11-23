@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.registration;
 
 import com.sep.vox.domain.model.registerform.RegisterForm;
 import com.sep.vox.domain.model.school.SchoolDirectory;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,15 +15,11 @@ import com.sep.vox.domain.repository.RegisterFormRepository;
 import com.sep.vox.domain.repository.SchoolDirectoryRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewRegisterFormDetailsUseCase implements IUseCase<ViewRegisterFormDetailsQuery, RegisterFormDto> {
 
     private final RegisterFormRepository registerFormRepository;
     private final SchoolDirectoryRepository schoolDirectoryRepository;
-
-    public ViewRegisterFormDetailsUseCase(RegisterFormRepository registerFormRepository, SchoolDirectoryRepository schoolDirectoryRepository) {
-        this.registerFormRepository = registerFormRepository;
-        this.schoolDirectoryRepository = schoolDirectoryRepository;
-    }
 
     @Override
     @Transactional(readOnly = true)

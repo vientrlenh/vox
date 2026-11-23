@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+import lombok.RequiredArgsConstructor;
 import org.dataloader.DataLoader;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
@@ -24,16 +25,12 @@ import com.sep.vox.interfaces.shared.PageArguments;
 import graphql.schema.DataFetchingEnvironment;
 
 @Controller("graphqlRegisterFormController")
+@RequiredArgsConstructor
 public class RegisterFormController {
 
     private final ViewRegisterFormsUseCase viewRegisterFormsUseCase;
     private final ViewRegisterFormDetailsUseCase viewRegisterFormDetailsUseCase;
 
-    public RegisterFormController(ViewRegisterFormsUseCase viewRegisterFormsUseCase, ViewRegisterFormDetailsUseCase viewRegisterFormDetailsUseCase) {
-        this.viewRegisterFormsUseCase = viewRegisterFormsUseCase;
-        this.viewRegisterFormDetailsUseCase = viewRegisterFormDetailsUseCase;
-    }
-    
     @QueryMapping(name = "registerForms")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<RegisterFormDto> registerForms(@Argument(name = "page") int page, @Argument(name = "size") int size) {

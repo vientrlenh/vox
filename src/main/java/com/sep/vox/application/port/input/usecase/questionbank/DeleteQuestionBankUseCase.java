@@ -6,6 +6,7 @@ import com.sep.vox.domain.model.question.QuestionTopic;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +28,7 @@ import com.sep.vox.domain.repository.QuestionTopicRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class DeleteQuestionBankUseCase implements IUseCase<DeleteQuestionBankCommand, DeleteQuestionBankResponse> {
 
     private final QuestionBankRepository questionBankRepository;
@@ -38,27 +40,6 @@ public class DeleteQuestionBankUseCase implements IUseCase<DeleteQuestionBankCom
     private final QuestionBankGradeRepository questionBankGradeRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final UserContextPort userContextPort;
-
-    public DeleteQuestionBankUseCase(
-            QuestionBankRepository questionBankRepository,
-            QuestionTopicRepository questionTopicRepository,
-            QuestionRepository questionRepository,
-            QuestionAssetRepository questionAssetRepository,
-            QuestionEvaluationGuideRepository questionEvaluationGuideRepository,
-            QuestionCollaboratorRepository questionCollaboratorRepository,
-            QuestionBankGradeRepository questionBankGradeRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserContextPort userContextPort) {
-        this.questionBankRepository = questionBankRepository;
-        this.questionTopicRepository = questionTopicRepository;
-        this.questionRepository = questionRepository;
-        this.questionAssetRepository = questionAssetRepository;
-        this.questionEvaluationGuideRepository = questionEvaluationGuideRepository;
-        this.questionCollaboratorRepository = questionCollaboratorRepository;
-        this.questionBankGradeRepository = questionBankGradeRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

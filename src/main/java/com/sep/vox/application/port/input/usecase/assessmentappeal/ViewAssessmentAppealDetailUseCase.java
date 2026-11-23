@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.assessmentappeal;
 
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,20 +14,12 @@ import com.sep.vox.application.query.repository.AssessmentAppealQueryRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class ViewAssessmentAppealDetailUseCase implements IUseCase<UUID, AppealDetailInfo> {
 
     private final AssessmentAppealQueryRepository assessmentAppealQueryRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final AssessmentAppealAccessService assessmentAppealAccessService;
-
-    public ViewAssessmentAppealDetailUseCase(
-            AssessmentAppealQueryRepository assessmentAppealQueryRepository,
-            SchoolUserRepository schoolUserRepository,
-            AssessmentAppealAccessService assessmentAppealAccessService) {
-        this.assessmentAppealQueryRepository = assessmentAppealQueryRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.assessmentAppealAccessService = assessmentAppealAccessService;
-    }
 
     /**
      * ⚠️ Chốt quyền nằm Ở ĐÂY, không ở {@code @PreAuthorize} của controller. Bề mặt

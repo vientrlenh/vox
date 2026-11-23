@@ -2,6 +2,7 @@ package com.sep.vox.interfaces.rest.controller;
 
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -34,6 +35,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/assessments/{assessmentId}/schedules")
+@RequiredArgsConstructor
 public class AssessmentScheduleController {
 
     private final CreateAssessmentScheduleUseCase createAssessmentScheduleUseCase;
@@ -41,19 +43,6 @@ public class AssessmentScheduleController {
     private final DeleteAssessmentScheduleUseCase deleteAssessmentScheduleUseCase;
     private final AddAssessmentScheduleProctorUseCase addAssessmentScheduleProctorUseCase;
     private final RemoveAssessmentScheduleProctorUseCase removeAssessmentScheduleProctorUseCase;
-
-    public AssessmentScheduleController(
-            CreateAssessmentScheduleUseCase createAssessmentScheduleUseCase,
-            UpdateAssessmentScheduleStatusUseCase updateAssessmentScheduleStatusUseCase,
-            DeleteAssessmentScheduleUseCase deleteAssessmentScheduleUseCase,
-            AddAssessmentScheduleProctorUseCase addAssessmentScheduleProctorUseCase,
-            RemoveAssessmentScheduleProctorUseCase removeAssessmentScheduleProctorUseCase) {
-        this.createAssessmentScheduleUseCase = createAssessmentScheduleUseCase;
-        this.updateAssessmentScheduleStatusUseCase = updateAssessmentScheduleStatusUseCase;
-        this.deleteAssessmentScheduleUseCase = deleteAssessmentScheduleUseCase;
-        this.addAssessmentScheduleProctorUseCase = addAssessmentScheduleProctorUseCase;
-        this.removeAssessmentScheduleProctorUseCase = removeAssessmentScheduleProctorUseCase;
-    }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")

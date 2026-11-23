@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 
@@ -21,13 +22,10 @@ import com.sep.vox.infrastructure.persistence.mapper.AssessmentCandidateMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataAssessmentCandidateRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class AssessmentCandidateRepositoryImpl implements AssessmentCandidateRepository {
 
     private final SpringDataAssessmentCandidateRepository springDataAssessmentCandidateRepository;
-
-    public AssessmentCandidateRepositoryImpl(SpringDataAssessmentCandidateRepository springDataAssessmentCandidateRepository) {
-        this.springDataAssessmentCandidateRepository = springDataAssessmentCandidateRepository;
-    }
 
     @Override
     public AssessmentCandidate save(AssessmentCandidate candidate) {

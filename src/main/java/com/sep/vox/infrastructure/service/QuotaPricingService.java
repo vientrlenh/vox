@@ -2,6 +2,7 @@ package com.sep.vox.infrastructure.service;
 
 import java.math.BigDecimal;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.port.output.QuotaPricingPort;
@@ -25,23 +26,13 @@ import com.sep.vox.infrastructure.properties.QuotaSellingPriceProperties;
  * through QuotaPricingPort so it does not depend back up on this layer.
  */
 @Service
+@RequiredArgsConstructor
 public class QuotaPricingService implements QuotaPricingPort, ServiceFeePort {
 
     private final QuotaPricingCalibrationRepository quotaPricingCalibrationRepository;
     private final ExchangeRateSnapshotRepository exchangeRateSnapshotRepository;
     private final QuotaPricingProperties quotaPricingProperties;
     private final QuotaSellingPriceProperties quotaSellingPriceProperties;
-
-    public QuotaPricingService(
-            QuotaPricingCalibrationRepository quotaPricingCalibrationRepository,
-            ExchangeRateSnapshotRepository exchangeRateSnapshotRepository,
-            QuotaPricingProperties quotaPricingProperties,
-            QuotaSellingPriceProperties quotaSellingPriceProperties) {
-        this.quotaPricingCalibrationRepository = quotaPricingCalibrationRepository;
-        this.exchangeRateSnapshotRepository = exchangeRateSnapshotRepository;
-        this.quotaPricingProperties = quotaPricingProperties;
-        this.quotaSellingPriceProperties = quotaSellingPriceProperties;
-    }
 
     @Override
     public BigDecimal currentEstimatedCostPerAssessmentSecondUsd() {

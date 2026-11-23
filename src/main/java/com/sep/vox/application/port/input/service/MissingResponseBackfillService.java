@@ -6,8 +6,8 @@ import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.domain.model.assessment.AssessmentEvaluationEngineType;
@@ -21,23 +21,23 @@ import com.sep.vox.domain.repository.AssessmentPaperItemRepository;
 
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class MissingResponseBackfillService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(MissingResponseBackfillService.class);
-
     /**
-     * Nhãn ghi vào {@code termination_reason} -- phân biệt với câu thí sinh có làm nhưng bị cắt
-     * giữa chừng ({@code redirect_offtopic}, {@code timeout}...). Đây là câu chưa từng bắt đầu.
+     * Label written to {@code termination_reason} -- it tells this case apart from a question the candidate did attempt but that was cut
+     * off midway ({@code redirect_offtopic}, {@code timeout}...). This question never started.
      */
     public static final String NO_RECORDING = "no_recording";
 
     /**
-     * {@code engine_type} mượn AI_SINGLE vì cột có CHECK chỉ nhận AI_SINGLE/AI_ENSEMBLE/HUMAN,
-     * mà {@code ddl-auto} không alter được CHECK nên thêm giá trị mới đòi một migration riêng.
-     * Giá trị thật nằm ở {@code graded_by_model} bên dưới.
+     * {@code engine_type} borrows AI_SINGLE because the column has a CHECK that only accepts AI_SINGLE/AI_ENSEMBLE/HUMAN,
+     * and {@code ddl-auto} cannot alter a CHECK, so a new value would need its own migration.
+     * The real value is in {@code graded_by_model} below.
      *
-     * <p>Ghi HUMAN sẽ tệ hơn: màn chi tiết rẽ nhánh theo {@code engineType == HUMAN} nên câu này
-     * sẽ hiện như "giáo viên đã chấm" trong khi chưa ai chấm cả.
+     * <p>Writing HUMAN would be worse: the detail screen branches on {@code engineType == HUMAN}, so this question
+     * would show as "graded by a teacher" although nobody graded it.
      */
     private static final String GRADED_BY = "SYSTEM_NO_RECORDING";
 
@@ -45,17 +45,6 @@ public class MissingResponseBackfillService {
     private final AssessmentItemResponseRepository assessmentItemResponseRepository;
     private final AssessmentItemResponseTurnRepository assessmentItemResponseTurnRepository;
     private final AssessmentItemEvaluationRepository assessmentItemEvaluationRepository;
-
-    public MissingResponseBackfillService(
-            AssessmentPaperItemRepository assessmentPaperItemRepository,
-            AssessmentItemResponseRepository assessmentItemResponseRepository,
-            AssessmentItemResponseTurnRepository assessmentItemResponseTurnRepository,
-            AssessmentItemEvaluationRepository assessmentItemEvaluationRepository) {
-        this.assessmentPaperItemRepository = assessmentPaperItemRepository;
-        this.assessmentItemResponseRepository = assessmentItemResponseRepository;
-        this.assessmentItemResponseTurnRepository = assessmentItemResponseTurnRepository;
-        this.assessmentItemEvaluationRepository = assessmentItemEvaluationRepository;
-    }
 
     /**
      * Câu này có thật sự KHÔNG có nội dung nào không.
@@ -98,7 +87,7 @@ public class MissingResponseBackfillService {
     public boolean recordSilentAnswer(UUID responseId, UUID paperItemId) {
         AssessmentItemResponse response = assessmentItemResponseRepository.findById(responseId).orElse(null);
         if (response != null && !isSilentAnswer(response)) {
-            LOGGER.warn(
+            log.warn(
                 "Từ chối ghi 0 điểm cho câu {}: câu này CÓ nội dung trả lời, phải để người chấm xử lý.",
                 responseId
             );
@@ -126,7 +115,7 @@ public class MissingResponseBackfillService {
                 .status(AssessmentItemEvaluationStatus.FINALIZED)
                 .evaluatedAt(Instant.now())
                 .build());
-        LOGGER.info("Câu {} không có nội dung trả lời -- ghi 0 điểm, không gọi LLM.", responseId);
+        log.info("Câu {} không có nội dung trả lời -- ghi 0 điểm, không gọi LLM.", responseId);
         return true;
     }
 
@@ -208,7 +197,7 @@ public class MissingResponseBackfillService {
             created++;
         }
         if (created > 0) {
-            LOGGER.info("Phiên {}: lấp {} câu không có bản ghi (0 điểm, chờ giáo viên xem lại).",
+            log.info("Phiên {}: lấp {} câu không có bản ghi (0 điểm, chờ giáo viên xem lại).",
                 sessionId, created);
         }
         return created;

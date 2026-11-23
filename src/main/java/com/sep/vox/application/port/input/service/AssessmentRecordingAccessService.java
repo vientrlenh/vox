@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentCandidate;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
@@ -28,6 +29,7 @@ import com.sep.vox.domain.repository.AssessmentSessionRepository;
  * không ai nhìn thấy cho tới lúc đã muộn.
  */
 @Service
+@RequiredArgsConstructor
 public class AssessmentRecordingAccessService {
 
     private final AssessmentSessionRepository assessmentSessionRepository;
@@ -38,25 +40,6 @@ public class AssessmentRecordingAccessService {
     private final AssessmentCandidateResultRepository assessmentCandidateResultRepository;
     private final AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository;
     private final UserContextPort userContextPort;
-
-    public AssessmentRecordingAccessService(
-            AssessmentSessionRepository assessmentSessionRepository,
-            AssessmentRepository assessmentRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            AssessmentMemberRepository assessmentMemberRepository,
-            AssessmentScheduleProctorRepository assessmentScheduleProctorRepository,
-            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
-            AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository,
-            UserContextPort userContextPort) {
-        this.assessmentSessionRepository = assessmentSessionRepository;
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.assessmentMemberRepository = assessmentMemberRepository;
-        this.assessmentScheduleProctorRepository = assessmentScheduleProctorRepository;
-        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
-        this.assessmentGradingAssignmentRepository = assessmentGradingAssignmentRepository;
-        this.userContextPort = userContextPort;
-    }
 
     /**
      * Ném nếu người gọi không được xem; trả về phiên thi nếu được.

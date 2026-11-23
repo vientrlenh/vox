@@ -9,6 +9,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,11 +29,12 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class AcceptSchoolUserImportUseCase
         implements IUseCase<AcceptSchoolUserImportCommand, Void> {
 
-    // startDate/endDate chỉ bắt buộc với học sinh nên được kiểm tra ở mức từng dòng
-    // (SchoolUserImportCommitHandler), không ép buộc trong mapping cấp file.
+    // startDate/endDate are required only for students, so they are checked per row
+    // (SchoolUserImportCommitHandler) and not enforced in the file-level mapping.
     private static final Set<String> REQUIRED_FIELDS = Set.of("email", "fullName", "roleCode", "phone",
             "dateOfBirth", "address");
     private static final String USER_TYPE = "USER";
@@ -43,21 +45,6 @@ public class AcceptSchoolUserImportUseCase
     private final UserRepository userRepository;
     private final SchoolUserRepository schoolUserRepository;
     private final SchoolRepository schoolRepository;
-
-    public AcceptSchoolUserImportUseCase(
-            ImportSessionRepository importSessionRepository,
-            UserContextPort userContextPort,
-            JsonSerializationPort jsonSerializationPort,
-            UserRepository userRepository,
-            SchoolUserRepository schoolUserRepository,
-            SchoolRepository schoolRepository) {
-        this.importSessionRepository = importSessionRepository;
-        this.userContextPort = userContextPort;
-        this.jsonSerializationPort = jsonSerializationPort;
-        this.userRepository = userRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.schoolRepository = schoolRepository;
-    }
 
     @Override
     @Transactional

@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.service;
 
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
@@ -15,6 +16,7 @@ import com.sep.vox.domain.repository.AssessmentScheduleProctorRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class AssessmentSessionModerationAccessService {
 
     private final UserContextPort userContextPort;
@@ -22,19 +24,6 @@ public class AssessmentSessionModerationAccessService {
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final AssessmentMemberRepository assessmentMemberRepository;
     private final AssessmentScheduleProctorRepository assessmentScheduleProctorRepository;
-
-    public AssessmentSessionModerationAccessService(
-            UserContextPort userContextPort,
-            SchoolUserRepository schoolUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
-            AssessmentMemberRepository assessmentMemberRepository,
-            AssessmentScheduleProctorRepository assessmentScheduleProctorRepository) {
-        this.userContextPort = userContextPort;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-        this.assessmentMemberRepository = assessmentMemberRepository;
-        this.assessmentScheduleProctorRepository = assessmentScheduleProctorRepository;
-    }
 
     public UUID getCurrentUserId() {
         return userContextPort.getCurrentAuthenticatedUserId();

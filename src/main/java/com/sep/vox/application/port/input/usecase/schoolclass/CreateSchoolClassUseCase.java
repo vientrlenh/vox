@@ -6,6 +6,7 @@ import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 import java.util.Objects;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +31,7 @@ import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassCommand, CreateSchoolClassResponse> {
 
     private final SchoolClassRepository schoolClassRepository;
@@ -39,23 +41,6 @@ public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassComma
     private final SchoolGradeRepository schoolGradeRepository;
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository;
-
-    public CreateSchoolClassUseCase(
-            SchoolClassRepository schoolClassRepository,
-            SchoolRepository schoolRepository,
-            UserRepository userRepository,
-            SupportedLanguageRepository supportedLanguageRepository,
-            SchoolGradeRepository schoolGradeRepository,
-            UserContextPort userContextPort,
-            SchoolUserRepository schoolUserRepository) {
-        this.schoolClassRepository = schoolClassRepository;
-        this.schoolRepository = schoolRepository;
-        this.userRepository = userRepository;
-        this.supportedLanguageRepository = supportedLanguageRepository;
-        this.schoolGradeRepository = schoolGradeRepository;
-        this.userContextPort = userContextPort;
-        this.schoolUserRepository = schoolUserRepository;
-    }
 
     @Override
     @Transactional

@@ -19,6 +19,7 @@ import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +32,7 @@ import java.util.Set;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class CreateSystemAssessmentPolicyUseCase implements IUseCase<List<CreateAssessmentPolicyCommand>, List<UUID>> {
 
     private final AssessmentPolicyRepository assessmentPolicyRepository;
@@ -43,34 +45,13 @@ public class CreateSystemAssessmentPolicyUseCase implements IUseCase<List<Create
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
 
-    // Dùng để phát số "version" kế tiếp theo scope, xuyên suốt toàn bộ batch.
+    // Used to issue the next "version" number per scope across the whole batch.
     //
-    // Từ 2026-08-22 có thêm gradeLevelId: policy hệ thống giờ khai được theo KHỐI. Khối lớp
-    // đã là catalog dùng chung toàn hệ thống (V41) và không gắn với niên khóa nào, nên một chính
-    // sách mẫu cho "Khối 10" vẫn đúng khi trường mở niên khóa năm sau -- không phải khai lại.
-    // Vẫn cho phép null = mẫu áp cho mọi khối, giữ nguyên hành vi cũ.
+    // Since 2026-08-22 gradeLevelId is also part of the key: a system policy can now be declared per GRADE LEVEL. A grade level
+    // is already a catalog shared across the whole system and is not tied to any school year, so a
+    // template policy for "Grade 10" stays valid when a school opens next year's school year -- no need to declare it again.
+    // null is still allowed = the template applies to every grade level, keeping the old behavior.
     private record VersionScopeKey(UUID languageId, UUID frameworkVersionId, UUID gradeLevelId) {}
-
-    public CreateSystemAssessmentPolicyUseCase(
-            AssessmentPolicyRepository assessmentPolicyRepository,
-            FrameworkVersionRepository frameworkVersionRepository,
-            FrameworkResultBandRepository frameworkResultBandRepository,
-            RubricVersionRepository rubricVersionRepository,
-            RubricRepository rubricRepository,
-            SupportedLanguageRepository languageRepository,
-            GradeLevelRepository gradeLevelRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort) {
-        this.assessmentPolicyRepository = assessmentPolicyRepository;
-        this.frameworkVersionRepository = frameworkVersionRepository;
-        this.frameworkResultBandRepository = frameworkResultBandRepository;
-        this.rubricVersionRepository = rubricVersionRepository;
-        this.rubricRepository = rubricRepository;
-        this.languageRepository = languageRepository;
-        this.gradeLevelRepository = gradeLevelRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

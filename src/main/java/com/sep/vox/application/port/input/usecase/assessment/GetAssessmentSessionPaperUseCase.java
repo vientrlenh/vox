@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
@@ -41,6 +42,7 @@ import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.service.assessment.PaperTimeCalculator;
 
 @Service
+@RequiredArgsConstructor
 public class GetAssessmentSessionPaperUseCase implements IUseCase<ViewAssessmentSessionPaperQuery, StudentAssessmentPaperResponse> {
 
     private final AssessmentSessionRepository assessmentSessionRepository;
@@ -54,31 +56,6 @@ public class GetAssessmentSessionPaperUseCase implements IUseCase<ViewAssessment
     private final AssessmentScheduleRepository assessmentScheduleRepository;
     private final UserContextPort userContextPort;
     private final QuestionAssetRepository questionAssetRepository;
-
-    public GetAssessmentSessionPaperUseCase(
-            AssessmentSessionRepository assessmentSessionRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            AssessmentRepository assessmentRepository,
-            AssessmentPaperRepository assessmentPaperRepository,
-            AssessmentPaperSectionRepository assessmentPaperSectionRepository,
-            AssessmentPaperItemRepository assessmentPaperItemRepository,
-            QuestionRepository questionRepository,
-            QuestionEvaluationGuideRepository questionEvaluationGuideRepository,
-            AssessmentScheduleRepository assessmentScheduleRepository,
-            UserContextPort userContextPort,
-            QuestionAssetRepository questionAssetRepository) {
-        this.assessmentSessionRepository = assessmentSessionRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentPaperRepository = assessmentPaperRepository;
-        this.assessmentPaperSectionRepository = assessmentPaperSectionRepository;
-        this.assessmentPaperItemRepository = assessmentPaperItemRepository;
-        this.questionRepository = questionRepository;
-        this.questionEvaluationGuideRepository = questionEvaluationGuideRepository;
-        this.assessmentScheduleRepository = assessmentScheduleRepository;
-        this.userContextPort = userContextPort;
-        this.questionAssetRepository = questionAssetRepository;
-    }
 
     @Override
     public StudentAssessmentPaperResponse execute(ViewAssessmentSessionPaperQuery input) {

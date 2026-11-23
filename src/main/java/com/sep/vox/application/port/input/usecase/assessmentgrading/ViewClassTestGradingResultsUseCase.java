@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.assessmentgrading;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,18 +28,12 @@ import com.sep.vox.domain.model.assessment.AssessmentKind;
  * được hỏi. Phạm vi ở đây đóng đúng bằng bài mà người gọi làm CHAIR.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewClassTestGradingResultsUseCase
         implements IUseCase<ViewClassTestGradingResultsQuery, PageResult<GradingAssignmentRowInfo>> {
 
     private final AssessmentGradingQueryRepository assessmentGradingQueryRepository;
     private final AssessmentGradingAccessService assessmentGradingAccessService;
-
-    public ViewClassTestGradingResultsUseCase(
-            AssessmentGradingQueryRepository assessmentGradingQueryRepository,
-            AssessmentGradingAccessService assessmentGradingAccessService) {
-        this.assessmentGradingQueryRepository = assessmentGradingQueryRepository;
-        this.assessmentGradingAccessService = assessmentGradingAccessService;
-    }
 
     @Override
     @Transactional(readOnly = true)

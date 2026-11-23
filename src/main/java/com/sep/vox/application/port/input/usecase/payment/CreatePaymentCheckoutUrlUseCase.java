@@ -5,8 +5,8 @@ import java.time.Instant;
 import java.util.UUID;
 import java.util.function.Supplier;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
@@ -40,10 +40,10 @@ import com.sep.vox.domain.repository.PaymentRecordRepository;
  * <p>Hiện chỉ nhận thanh toán qua cổng thứ ba (E_BANKING) -- xem PaymentRecord.forEBankingCheckout.
  */
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class CreatePaymentCheckoutUrlUseCase
         implements IUseCase<CreatePaymentCheckoutUrlCommand, PaymentCheckoutResponse> {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(CreatePaymentCheckoutUrlUseCase.class);
 
     private final OrderRepository orderRepository;
     private final PaymentRecordRepository paymentRecordRepository;
@@ -51,21 +51,6 @@ public class CreatePaymentCheckoutUrlUseCase
     private final UserContextPort userContextPort;
     private final JsonSerializationPort jsonSerializationPort;
     private final RequiresNewTransactionPort requiresNewTransactionPort;
-
-    public CreatePaymentCheckoutUrlUseCase(
-            OrderRepository orderRepository,
-            PaymentRecordRepository paymentRecordRepository,
-            PaymentProcessResolver paymentProcessResolver,
-            UserContextPort userContextPort,
-            JsonSerializationPort jsonSerializationPort,
-            RequiresNewTransactionPort requiresNewTransactionPort) {
-        this.orderRepository = orderRepository;
-        this.paymentRecordRepository = paymentRecordRepository;
-        this.paymentProcessResolver = paymentProcessResolver;
-        this.userContextPort = userContextPort;
-        this.jsonSerializationPort = jsonSerializationPort;
-        this.requiresNewTransactionPort = requiresNewTransactionPort;
-    }
 
     /**
      * KHÔNG có {@code @Transactional} ở đây, và đó là điểm chính của cả class.
@@ -300,7 +285,7 @@ public class CreatePaymentCheckoutUrlUseCase
             // Không làm hỏng cả lần thanh toán chỉ vì không ghi được payload: mã vẫn hiện được ở
             // lượt này, chỉ mất khả năng dựng lại khi trường quay lại đơn. Lúc đó nhánh checkout_url
             // ở resolvePendingAttempt vẫn đưa họ sang trang của cổng.
-            LOGGER.warn("Không ghi được payload QR cho lần thanh toán {} -- lần sau sẽ phải mở trang của cổng",
+            log.warn("Không ghi được payload QR cho lần thanh toán {} -- lần sau sẽ phải mở trang của cổng",
                 result.paymentLinkId(), e);
             return null;
         }
@@ -316,7 +301,7 @@ public class CreatePaymentCheckoutUrlUseCase
             StoredQrPayload payload = jsonSerializationPort.fromJson(json, StoredQrPayload.class);
             return payload.qrCode() == null ? null : payload;
         } catch (RuntimeException e) {
-            LOGGER.warn("Payload QR của lần thanh toán {} không đọc được -- bỏ qua, dùng đường checkout_url",
+            log.warn("Payload QR của lần thanh toán {} không đọc được -- bỏ qua, dùng đường checkout_url",
                 pending.getId(), e);
             return null;
         }

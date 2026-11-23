@@ -2,8 +2,7 @@ package com.sep.vox.infrastructure.filter;
 
 import java.io.IOException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -20,9 +19,9 @@ import jakarta.servlet.http.HttpServletResponse;
  * này bảo vệ -- chỉ áp cho path mới, không đổi hành vi hai đường cũ.
  */
 @Component
+@Slf4j
 public class PracticeInternalSecretFilter extends OncePerRequestFilter {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(PracticeInternalSecretFilter.class);
     private static final String SECRET_HEADER = "X-Internal-Secret";
     private static final String[] PROTECTED_PREFIXES = {
         "/internal/practice-sessions/",
@@ -56,7 +55,7 @@ public class PracticeInternalSecretFilter extends OncePerRequestFilter {
         }
         String provided = request.getHeader(SECRET_HEADER);
         if (expectedSecret.isBlank() || provided == null || !expectedSecret.equals(provided)) {
-            LOGGER.warn("Từ chối gọi endpoint nội bộ luyện tập: {}", request.getRequestURI());
+            log.warn("Từ chối gọi endpoint nội bộ luyện tập: {}", request.getRequestURI());
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }

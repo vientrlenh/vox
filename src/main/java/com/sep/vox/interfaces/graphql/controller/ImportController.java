@@ -2,6 +2,7 @@ package com.sep.vox.interfaces.graphql.controller;
 
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,20 +24,12 @@ import com.sep.vox.domain.model.importfile.ImportType;
 import com.sep.vox.interfaces.shared.PageArguments;
 
 @Controller("graphqlImportController")
+@RequiredArgsConstructor
 public class ImportController {
 
     private final ViewImportSessionUseCase viewImportSessionUseCase;
     private final ViewImportSessionsUseCase viewImportSessionsUseCase;
     private final ViewImportRowsUseCase viewImportRowsUseCase;
-
-    public ImportController(
-            ViewImportSessionUseCase viewImportSessionUseCase,
-            ViewImportSessionsUseCase viewImportSessionsUseCase,
-            ViewImportRowsUseCase viewImportRowsUseCase) {
-        this.viewImportSessionUseCase = viewImportSessionUseCase;
-        this.viewImportSessionsUseCase = viewImportSessionsUseCase;
-        this.viewImportRowsUseCase = viewImportRowsUseCase;
-    }
 
     @QueryMapping(name = "importSession")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER', 'SYSTEM_ADMIN')")

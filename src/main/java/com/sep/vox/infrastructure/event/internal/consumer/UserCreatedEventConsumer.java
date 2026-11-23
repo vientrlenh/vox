@@ -6,9 +6,9 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.kafka.annotation.BackOff;
@@ -32,9 +32,9 @@ import com.sep.vox.domain.repository.ProcessedEventRepository;
 import tools.jackson.databind.json.JsonMapper;
 
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class UserCreatedEventConsumer {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(UserCreatedEventConsumer.class);
 
     private static final String CONSUMER_GROUP = "user-created-email";
     private static final String SUBJECT = "Thiết lập mật khẩu tài khoản VOX";
@@ -49,21 +49,6 @@ public class UserCreatedEventConsumer {
 
     @Value("${app.frontend.password-setup-url}")
     private String passwordSetupBaseUrl;
-
-    public UserCreatedEventConsumer(
-            MailSendingPort mailSendingPort,
-            MailTemplatePort mailTemplatePort,
-            PasswordSetUpTokenPort passwordSetUpTokenPort,
-            PasswordSetUpTokenRepository passwordSetUpTokenRepository,
-            ProcessedEventRepository processedEventRepository,
-            JsonMapper jsonMapper) {
-        this.mailSendingPort = mailSendingPort;
-        this.mailTemplatePort = mailTemplatePort;
-        this.passwordSetUpTokenPort = passwordSetUpTokenPort;
-        this.passwordSetUpTokenRepository = passwordSetUpTokenRepository;
-        this.processedEventRepository = processedEventRepository;
-        this.jsonMapper = jsonMapper;
-    }
 
     @RetryableTopic(
         attempts = "4",
@@ -80,11 +65,11 @@ public class UserCreatedEventConsumer {
     public void consume(ConsumerRecord<String, String> record, Acknowledgment ack) {
         UUID eventId = KafkaEventHeaders.readEventId(record);
 
-        LOGGER.info("Receive event user-created: eventId={}, partition={}, offset={}",
+        log.info("Receive event user-created: eventId={}, partition={}, offset={}",
             eventId, record.partition(), record.offset());
 
         if (processedEventRepository.existsByEventIdAndConsumerGroup(eventId, CONSUMER_GROUP)) {
-            LOGGER.info("Skip processed event: eventId={}, consumer={}", eventId, CONSUMER_GROUP);
+            log.info("Skip processed event: eventId={}, consumer={}", eventId, CONSUMER_GROUP);
             ack.acknowledge();
             return;
         }
@@ -93,7 +78,7 @@ public class UserCreatedEventConsumer {
         try {
             payload = jsonMapper.readValue(record.value(), UserCreatedPayloadV1.class);
         } catch (Exception e) {
-            LOGGER.error("Invalid payload: eventId={}, value={}", eventId, record.value(), e);
+            log.error("Invalid payload: eventId={}, value={}", eventId, record.value(), e);
             throw new IllegalStateException("Payload user-created không hợp lệ, eventId=" + eventId, e);
         }
 
@@ -110,7 +95,7 @@ public class UserCreatedEventConsumer {
                 PasswordSetUpToken.create(payload.userId(), generatedToken.hashedToken()));
             rawToken = generatedToken.rawToken();
         } catch (Exception e) {
-            LOGGER.error("Generate password set up token failed: eventId={}, userId={}",
+            log.error("Generate password set up token failed: eventId={}, userId={}",
                 eventId, payload.userId(), e);
             throw new IllegalStateException(
                 "Sinh token đặt mật khẩu thất bại: eventId=" + eventId, e);
@@ -121,13 +106,13 @@ public class UserCreatedEventConsumer {
             String html = renderEmail(payload, setupUrl);
             mailSendingPort.sendHtml(payload.to(), SUBJECT, html);
         } catch (Exception e) {
-            LOGGER.error("Send mail error: eventId={}, to={}", eventId, payload.to(), e);
+            log.error("Send mail error: eventId={}, to={}", eventId, payload.to(), e);
             throw new IllegalStateException("Gửi mail thiết lập mật khẩu thất bại: eventId=" + eventId, e);
         }
 
         markProcessed(eventId);
 
-        LOGGER.info("Password set up mail sent: eventId={}, to={}, userType={}",
+        log.info("Password set up mail sent: eventId={}, to={}, userType={}",
             eventId, payload.to(), payload.userType());
         ack.acknowledge();
     }
@@ -157,7 +142,7 @@ public class UserCreatedEventConsumer {
     @DltHandler
     public void handleDlt(ConsumerRecord<String, String> record) {
         UUID eventId = KafkaEventHeaders.readEventIdOrNull(record);
-        LOGGER.error("user-created event sent to DLT: eventId={}, topic={}, partition={}, offset={}, payload={}",
+        log.error("user-created event sent to DLT: eventId={}, topic={}, partition={}, offset={}, payload={}",
             eventId, record.topic(), record.partition(), record.offset(), record.value());
     }
 
@@ -169,7 +154,7 @@ public class UserCreatedEventConsumer {
                     .processedAt(Instant.now())
                     .build());
         } catch (DataIntegrityViolationException e) {
-            LOGGER.warn("This event was already marked by another instance: eventId={}", eventId);
+            log.warn("This event was already marked by another instance: eventId={}", eventId);
         }
     }
 }

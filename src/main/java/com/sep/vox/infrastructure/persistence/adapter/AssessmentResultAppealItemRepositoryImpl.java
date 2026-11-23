@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.assessment.AssessmentResultAppealItem;
@@ -13,14 +14,10 @@ import com.sep.vox.infrastructure.persistence.mapper.AssessmentResultAppealItemM
 import com.sep.vox.infrastructure.persistence.repository.SpringDataAssessmentResultAppealItemRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class AssessmentResultAppealItemRepositoryImpl implements AssessmentResultAppealItemRepository {
 
     private final SpringDataAssessmentResultAppealItemRepository springDataAssessmentResultAppealItemRepository;
-
-    public AssessmentResultAppealItemRepositoryImpl(
-            SpringDataAssessmentResultAppealItemRepository springDataAssessmentResultAppealItemRepository) {
-        this.springDataAssessmentResultAppealItemRepository = springDataAssessmentResultAppealItemRepository;
-    }
 
     @Override
     public List<AssessmentResultAppealItem> saveAll(List<AssessmentResultAppealItem> items) {

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+import lombok.RequiredArgsConstructor;
 import org.dataloader.DataLoader;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
@@ -51,6 +52,7 @@ import com.sep.vox.domain.model.assessment.AssessmentStatus;
 import com.sep.vox.interfaces.shared.PageArguments;
 
 @Controller("graphqlAssessmentController")
+@RequiredArgsConstructor
 public class AssessmentController {
 
     private final ViewAssessmentsUseCase viewAssessmentsUseCase;
@@ -61,25 +63,6 @@ public class AssessmentController {
     private final CanViewAssessmentBlueprintDataUseCase canViewAssessmentBlueprintDataUseCase;
     private final EstimateAssessmentTokenQuotaUseCase estimateAssessmentTokenQuotaUseCase;
     private final UserContextPort userContextPort;
-
-    public AssessmentController(
-            ViewAssessmentsUseCase viewAssessmentsUseCase,
-            ViewAssessmentDetailsUseCase viewAssessmentDetailsUseCase,
-            ViewAssessmentPaperDetailsUseCase viewAssessmentPaperDetailsUseCase,
-            ViewAssessmentStatusCountsUseCase viewAssessmentStatusCountsUseCase,
-            ViewMyAssessmentRoleUseCase viewMyAssessmentRoleUseCase,
-            CanViewAssessmentBlueprintDataUseCase canViewAssessmentBlueprintDataUseCase,
-            EstimateAssessmentTokenQuotaUseCase estimateAssessmentTokenQuotaUseCase,
-            UserContextPort userContextPort) {
-        this.viewAssessmentsUseCase = viewAssessmentsUseCase;
-        this.viewAssessmentDetailsUseCase = viewAssessmentDetailsUseCase;
-        this.viewAssessmentPaperDetailsUseCase = viewAssessmentPaperDetailsUseCase;
-        this.viewAssessmentStatusCountsUseCase = viewAssessmentStatusCountsUseCase;
-        this.viewMyAssessmentRoleUseCase = viewMyAssessmentRoleUseCase;
-        this.canViewAssessmentBlueprintDataUseCase = canViewAssessmentBlueprintDataUseCase;
-        this.estimateAssessmentTokenQuotaUseCase = estimateAssessmentTokenQuotaUseCase;
-        this.userContextPort = userContextPort;
-    }
 
     @QueryMapping(name = "assessments")
     public PageResult<AssessmentDto> assessments(

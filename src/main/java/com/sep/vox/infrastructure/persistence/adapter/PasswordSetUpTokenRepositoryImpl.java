@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.passwordsetuptoken.PasswordSetUpToken;
@@ -13,13 +14,10 @@ import com.sep.vox.infrastructure.persistence.mapper.PasswordSetUpTokenMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataPasswordSetUpTokenRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class PasswordSetUpTokenRepositoryImpl implements PasswordSetUpTokenRepository {
 
     private final SpringDataPasswordSetUpTokenRepository springDataPasswordSetUpTokenRepository;
-
-    public PasswordSetUpTokenRepositoryImpl(SpringDataPasswordSetUpTokenRepository springDataPasswordSetUpTokenRepository) {
-        this.springDataPasswordSetUpTokenRepository = springDataPasswordSetUpTokenRepository;
-    }
 
     @Override
     public Optional<PasswordSetUpToken> findById(UUID id) {

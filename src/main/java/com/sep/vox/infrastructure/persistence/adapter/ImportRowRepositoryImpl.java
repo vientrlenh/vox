@@ -4,6 +4,7 @@ import com.sep.vox.infrastructure.persistence.entity.importfile.ImportRowJpaEnti
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -18,13 +19,10 @@ import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataImportRowRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class ImportRowRepositoryImpl implements ImportRowRepository {
 
     private final SpringDataImportRowRepository springDataImportRowRepository;
-
-    public ImportRowRepositoryImpl(SpringDataImportRowRepository springDataImportRowRepository) {
-        this.springDataImportRowRepository = springDataImportRowRepository;
-    }
 
     @Override
     public List<ImportRow> findBySessionIdOrderByRowNumber(UUID sessionId) {

@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.service;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
@@ -33,9 +34,10 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
  * school directory to every teacher.
  */
 @Service
+@RequiredArgsConstructor
 public class AssessmentDirectoryAccessService {
 
-    /** Trần số lớp gom được khi giải phạm vi "lớp của tôi" — khớp các use case nhập thí sinh. */
+    /** Maximum number of classes collected when resolving the "my classes" scope; matches the candidate-entry use cases. */
     private static final int MAX_CLASSES = 200;
 
     private final AssessmentRepository assessmentRepository;
@@ -44,21 +46,6 @@ public class AssessmentDirectoryAccessService {
     private final AssessmentMemberRepository assessmentMemberRepository;
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
-
-    public AssessmentDirectoryAccessService(
-            AssessmentRepository assessmentRepository,
-            SchoolUserRepository schoolUserRepository,
-            SchoolClassRepository schoolClassRepository,
-            AssessmentMemberRepository assessmentMemberRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
-            UserContextPort userContextPort) {
-        this.assessmentRepository = assessmentRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.schoolClassRepository = schoolClassRepository;
-        this.assessmentMemberRepository = assessmentMemberRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-        this.userContextPort = userContextPort;
-    }
 
     /**
      * @param schoolWide true = toàn bộ trường của kỳ thi; false = chỉ những lớp mà

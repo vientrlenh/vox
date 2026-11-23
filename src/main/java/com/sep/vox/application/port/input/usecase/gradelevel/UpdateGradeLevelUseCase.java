@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 import com.sep.vox.application.exception.DataConflictException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +21,7 @@ import com.sep.vox.domain.repository.GradeLevelRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateGradeLevelUseCase implements IUseCase<UpdateGradeLevelCommand, UUID> {
 
     private static final int MAX_NAME_LENGTH = 255;
@@ -28,15 +30,6 @@ public class UpdateGradeLevelUseCase implements IUseCase<UpdateGradeLevelCommand
     private final GradeLevelRepository gradeLevelRepository;
     private final UserContextPort userContextPort;
     private final UserRepository userRepository;
-
-    public UpdateGradeLevelUseCase(
-            GradeLevelRepository gradeLevelRepository,
-            UserContextPort userContextPort,
-            UserRepository userRepository) {
-        this.gradeLevelRepository = gradeLevelRepository;
-        this.userContextPort = userContextPort;
-        this.userRepository = userRepository;
-    }
 
     @Override
     @Transactional

@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +35,7 @@ import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.domain.service.assessment.AssessmentEditingGuard;
 
 @Service
+@RequiredArgsConstructor
 public class ImportAssessmentCandidatesFromGradeUseCase
         implements IUseCase<ImportAssessmentCandidatesFromGradeCommand, List<AssessmentCandidateDto>> {
 
@@ -48,25 +50,6 @@ public class ImportAssessmentCandidatesFromGradeUseCase
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final AssessmentDirectoryAccessService assessmentDirectoryAccessService;
     private final ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService;
-
-    public ImportAssessmentCandidatesFromGradeUseCase(
-            AssessmentRepository assessmentRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            SchoolGradeRepository schoolGradeRepository,
-            SchoolClassRepository schoolClassRepository,
-            SchoolClassUserRepository schoolClassUserRepository,
-            UserRoleQueryRepository userRoleQueryRepository,
-            AssessmentDirectoryAccessService assessmentDirectoryAccessService,
-            ClassTestTokenQuotaGuardService classTestTokenQuotaGuardService) {
-        this.assessmentRepository = assessmentRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.schoolGradeRepository = schoolGradeRepository;
-        this.schoolClassRepository = schoolClassRepository;
-        this.schoolClassUserRepository = schoolClassUserRepository;
-        this.userRoleQueryRepository = userRoleQueryRepository;
-        this.assessmentDirectoryAccessService = assessmentDirectoryAccessService;
-        this.classTestTokenQuotaGuardService = classTestTokenQuotaGuardService;
-    }
 
     @Override
     @Transactional

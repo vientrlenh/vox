@@ -13,6 +13,7 @@ import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
 import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -21,20 +22,12 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class RubricVersionImportCommitHandler implements ImportCommitHandler {
 
     private final RubricVersionRepository rubricVersionRepository;
     private final RubricRepository rubricRepository;
     private final JsonSerializationPort jsonSerializationPort;
-
-    public RubricVersionImportCommitHandler(
-            RubricVersionRepository rubricVersionRepository,
-            RubricRepository rubricRepository,
-            JsonSerializationPort jsonSerializationPort) {
-        this.rubricVersionRepository = rubricVersionRepository;
-        this.rubricRepository = rubricRepository;
-        this.jsonSerializationPort = jsonSerializationPort;
-    }
 
     @Override
     public ImportType supportedType() {

@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Repository;
 
@@ -20,13 +21,10 @@ import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolSubscriptionRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class SchoolSubscriptionRepositoryImpl implements SchoolSubscriptionRepository {
 
     private final SpringDataSchoolSubscriptionRepository springDataSchoolSubscriptionRepository;
-
-    public SchoolSubscriptionRepositoryImpl(SpringDataSchoolSubscriptionRepository springDataSchoolSubscriptionRepository) {
-        this.springDataSchoolSubscriptionRepository = springDataSchoolSubscriptionRepository;
-    }
 
     @Override
     public Optional<SchoolSubscription> findById(UUID id) {

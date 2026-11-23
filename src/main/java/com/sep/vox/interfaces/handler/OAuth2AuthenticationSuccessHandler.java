@@ -4,8 +4,8 @@ import com.sep.vox.application.response.input.auth.LoginResponse;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -27,19 +27,15 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
     private final OAuth2LoginUseCase oAuth2LoginUseCase;
     private final HttpCookieProvider httpCookieProvider;
 
-    public OAuth2AuthenticationSuccessHandler(OAuth2LoginUseCase oAuth2LoginUseCase, HttpCookieProvider httpCookieProvider) {
-        this.oAuth2LoginUseCase = oAuth2LoginUseCase;
-        this.httpCookieProvider = httpCookieProvider;
-    }
-
     private static final long REFRESH_TOKEN_COOKIE_TTL_SECONDS = 259200L;
     private static final String REFRESH_TOKEN_KEY_NAME = "refresh_token";
-    private static final Logger LOGGER = LoggerFactory.getLogger(OAuth2AuthenticationSuccessHandler.class);
 
     @Value("${app.frontend.oauth2-url}")
     private String returnUrl;
@@ -84,7 +80,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         } catch (IllegalArgumentException e) {
             redirect(response, returnUrl, "error", "unsupported_platform");
         } catch (Exception e) {
-            LOGGER.error("OAuth2 login failed: ", e);
+            log.error("OAuth2 login failed: ", e);
             redirect(response, returnUrl, "error", "login_failed");
         }
         

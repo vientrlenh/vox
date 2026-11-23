@@ -6,6 +6,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +36,7 @@ import com.sep.vox.domain.repository.TurnCorrectionRepository;
  * đường vào thứ ba.
  */
 @Service
+@RequiredArgsConstructor
 public class PracticeSessionDetailAssemblyService {
 
     private final PracticeSessionQueryRepository practiceSessionQueryRepository;
@@ -43,21 +45,6 @@ public class PracticeSessionDetailAssemblyService {
     private final PracticeCriterionScoreRepository practiceCriterionScoreRepository;
     private final PracticeItemEvaluationRepository practiceItemEvaluationRepository;
     private final PracticeItemResponseRepository practiceItemResponseRepository;
-
-    public PracticeSessionDetailAssemblyService(
-            PracticeSessionQueryRepository practiceSessionQueryRepository,
-            PracticeResponseTurnRepository practiceResponseTurnRepository,
-            TurnCorrectionRepository turnCorrectionRepository,
-            PracticeCriterionScoreRepository practiceCriterionScoreRepository,
-            PracticeItemEvaluationRepository practiceItemEvaluationRepository,
-            PracticeItemResponseRepository practiceItemResponseRepository) {
-        this.practiceSessionQueryRepository = practiceSessionQueryRepository;
-        this.practiceResponseTurnRepository = practiceResponseTurnRepository;
-        this.turnCorrectionRepository = turnCorrectionRepository;
-        this.practiceCriterionScoreRepository = practiceCriterionScoreRepository;
-        this.practiceItemEvaluationRepository = practiceItemEvaluationRepository;
-        this.practiceItemResponseRepository = practiceItemResponseRepository;
-    }
 
     @Transactional(readOnly = true)
     public TeacherPracticeSessionDetail assemble(UUID sessionId) {

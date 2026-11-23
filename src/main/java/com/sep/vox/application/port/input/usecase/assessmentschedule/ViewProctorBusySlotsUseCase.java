@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.assessmentschedule;
 import com.sep.vox.domain.model.assessment.AssessmentSchedule;
 import java.util.List;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,21 +23,13 @@ import com.sep.vox.domain.repository.AssessmentScheduleRepository;
  * inside the transaction at write time. This is not a protection layer.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewProctorBusySlotsUseCase
         implements IUseCase<ViewProctorBusySlotsQuery, List<ProctorBusySlotResponse>> {
 
     private final AssessmentScheduleRepository assessmentScheduleRepository;
     private final AssessmentScheduleProctorRepository assessmentScheduleProctorRepository;
     private final AssessmentDirectoryAccessService assessmentDirectoryAccessService;
-
-    public ViewProctorBusySlotsUseCase(
-            AssessmentScheduleRepository assessmentScheduleRepository,
-            AssessmentScheduleProctorRepository assessmentScheduleProctorRepository,
-            AssessmentDirectoryAccessService assessmentDirectoryAccessService) {
-        this.assessmentScheduleRepository = assessmentScheduleRepository;
-        this.assessmentScheduleProctorRepository = assessmentScheduleProctorRepository;
-        this.assessmentDirectoryAccessService = assessmentDirectoryAccessService;
-    }
 
     @Override
     @Transactional(readOnly = true)

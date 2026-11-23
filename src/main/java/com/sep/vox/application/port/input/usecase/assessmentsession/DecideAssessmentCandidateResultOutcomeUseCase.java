@@ -7,6 +7,7 @@ import com.sep.vox.domain.model.assessment.AssessmentSession;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +38,7 @@ import com.sep.vox.domain.repository.OutboxRepository;
  * hay thủ công), tránh việc chốt đi chốt lại nhiều lần.
  */
 @Service
+@RequiredArgsConstructor
 public class DecideAssessmentCandidateResultOutcomeUseCase
         implements IUseCase<DecideAssessmentCandidateResultOutcomeCommand, UUID> {
 
@@ -48,25 +50,6 @@ public class DecideAssessmentCandidateResultOutcomeUseCase
     private final ResultStatusHistoryRecorder resultStatusHistoryRecorder;
     private final OutboxRepository outboxRepository;
     private final JsonSerializationPort jsonSerializationPort;
-
-    public DecideAssessmentCandidateResultOutcomeUseCase(
-            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
-            AssessmentSessionRepository assessmentSessionRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            AssessmentRepository assessmentRepository,
-            AssessmentSessionModerationAccessService moderationAccessService,
-            ResultStatusHistoryRecorder resultStatusHistoryRecorder,
-            OutboxRepository outboxRepository,
-            JsonSerializationPort jsonSerializationPort) {
-        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
-        this.assessmentSessionRepository = assessmentSessionRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.assessmentRepository = assessmentRepository;
-        this.moderationAccessService = moderationAccessService;
-        this.resultStatusHistoryRecorder = resultStatusHistoryRecorder;
-        this.outboxRepository = outboxRepository;
-        this.jsonSerializationPort = jsonSerializationPort;
-    }
 
     @Override
     @Transactional

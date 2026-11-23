@@ -12,6 +12,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.sep.vox.application.exception.DataConflictException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,6 +44,7 @@ import com.sep.vox.domain.repository.UserRepository;
  * những người hợp lệ vẫn được thêm.
  */
 @Service
+@RequiredArgsConstructor
 public class BulkCreateSchoolClassUsersUseCase
         implements IUseCase<BulkCreateSchoolClassUsersCommand, BulkCreateSchoolClassUsersResponse> {
 
@@ -52,21 +54,6 @@ public class BulkCreateSchoolClassUsersUseCase
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
     private final SchoolUserRepository schoolUserRepository;
-
-    public BulkCreateSchoolClassUsersUseCase(
-            SchoolClassUserRepository schoolClassUserRepository,
-            SchoolClassRepository schoolClassRepository,
-            SchoolRepository schoolRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort,
-            SchoolUserRepository schoolUserRepository) {
-        this.schoolClassUserRepository = schoolClassUserRepository;
-        this.schoolClassRepository = schoolClassRepository;
-        this.schoolRepository = schoolRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-        this.schoolUserRepository = schoolUserRepository;
-    }
 
     @Override
     @Transactional

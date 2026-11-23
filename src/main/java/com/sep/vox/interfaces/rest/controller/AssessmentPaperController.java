@@ -2,6 +2,7 @@ package com.sep.vox.interfaces.rest.controller;
 
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -37,6 +38,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1")
+@RequiredArgsConstructor
 public class AssessmentPaperController {
 
     private final CreateAssessmentPaperUseCase createAssessmentPaperUseCase;
@@ -44,19 +46,6 @@ public class AssessmentPaperController {
     private final UpdateAssessmentPaperSectionUseCase updateAssessmentPaperSectionUseCase;
     private final UpdateAssessmentPaperStatusUseCase updateAssessmentPaperStatusUseCase;
     private final DeleteAssessmentPaperUseCase deleteAssessmentPaperUseCase;
-
-    public AssessmentPaperController(
-            CreateAssessmentPaperUseCase createAssessmentPaperUseCase,
-            UpdateAssessmentPaperItemUseCase updateAssessmentPaperItemUseCase,
-            UpdateAssessmentPaperSectionUseCase updateAssessmentPaperSectionUseCase,
-            UpdateAssessmentPaperStatusUseCase updateAssessmentPaperStatusUseCase,
-            DeleteAssessmentPaperUseCase deleteAssessmentPaperUseCase) {
-        this.createAssessmentPaperUseCase = createAssessmentPaperUseCase;
-        this.updateAssessmentPaperItemUseCase = updateAssessmentPaperItemUseCase;
-        this.updateAssessmentPaperSectionUseCase = updateAssessmentPaperSectionUseCase;
-        this.updateAssessmentPaperStatusUseCase = updateAssessmentPaperStatusUseCase;
-        this.deleteAssessmentPaperUseCase = deleteAssessmentPaperUseCase;
-    }
 
     @PostMapping("/assessments/{assessmentId}/papers")
     @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")

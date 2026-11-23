@@ -5,6 +5,7 @@ import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +38,7 @@ import com.sep.vox.domain.valueobject.scoringrulecondition.CriterionScoreThresho
 import com.sep.vox.domain.valueobject.scoringrulecondition.ScoringRuleConditionParams;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateSchoolScoringRuleUseCase implements IUseCase<UpdateSchoolScoringRuleCommand, UUID> {
 
     private final ScoringRuleRepository scoringRuleRepository;
@@ -48,27 +50,6 @@ public class UpdateSchoolScoringRuleUseCase implements IUseCase<UpdateSchoolScor
     private final RubricCriterionRepository rubricCriterionRepository;
     private final FrameworkResultBandRepository frameworkResultBandRepository;
     private final ScoringRuleParamsMapper scoringRuleParamsMapper;
-
-    public UpdateSchoolScoringRuleUseCase(
-            ScoringRuleRepository scoringRuleRepository,
-            AssessmentPolicyRepository assessmentPolicyRepository,
-            SchoolRepository schoolRepository,
-            SchoolUserRepository schoolUserRepository,
-            UserRepository userRepository,
-            UserContextPort userContextPort,
-            RubricCriterionRepository rubricCriterionRepository,
-            FrameworkResultBandRepository frameworkResultBandRepository,
-            ScoringRuleParamsMapper scoringRuleParamsMapper) {
-        this.scoringRuleRepository = scoringRuleRepository;
-        this.assessmentPolicyRepository = assessmentPolicyRepository;
-        this.schoolRepository = schoolRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.userRepository = userRepository;
-        this.userContextPort = userContextPort;
-        this.rubricCriterionRepository = rubricCriterionRepository;
-        this.frameworkResultBandRepository = frameworkResultBandRepository;
-        this.scoringRuleParamsMapper = scoringRuleParamsMapper;
-    }
 
     @Override
     @Transactional

@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import com.sep.vox.domain.common.PageResult;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -24,13 +25,10 @@ import com.sep.vox.infrastructure.persistence.repository.SpringDataRubricResultB
 import com.sep.vox.infrastructure.persistence.DataConflictTranslation;
 
 @Repository
+@RequiredArgsConstructor
 public class RubricResultBandRepositoryImpl implements RubricResultBandRepository {
 
     private final SpringDataRubricResultBandRepository springDataRubricResultBandRepository;
-
-    public RubricResultBandRepositoryImpl(SpringDataRubricResultBandRepository springDataRubricResultBandRepository) {
-        this.springDataRubricResultBandRepository = springDataRubricResultBandRepository;
-    }
 
     @Override
     public Optional<RubricResultBand> findById(UUID id) {

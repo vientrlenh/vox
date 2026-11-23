@@ -5,6 +5,7 @@ import com.sep.vox.domain.model.assessment.AssessmentResultAppeal;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +41,7 @@ import com.sep.vox.domain.repository.OutboxRepository;
  * nhất sẽ là cái quên ghi audit.
  */
 @Service
+@RequiredArgsConstructor
 public class GradingActionSupport {
 
     private final AssessmentGradingAccessService assessmentGradingAccessService;
@@ -50,25 +52,6 @@ public class GradingActionSupport {
     private final ResultStatusHistoryRecorder resultStatusHistoryRecorder;
     private final OutboxRepository outboxRepository;
     private final JsonSerializationPort jsonSerializationPort;
-
-    public GradingActionSupport(
-            AssessmentGradingAccessService assessmentGradingAccessService,
-            AssessmentCandidateResultRepository assessmentCandidateResultRepository,
-            AssessmentCandidateRepository assessmentCandidateRepository,
-            AssessmentGradingAssignmentRepository assessmentGradingAssignmentRepository,
-            AssessmentResultAppealRepository assessmentResultAppealRepository,
-            ResultStatusHistoryRecorder resultStatusHistoryRecorder,
-            OutboxRepository outboxRepository,
-            JsonSerializationPort jsonSerializationPort) {
-        this.assessmentGradingAccessService = assessmentGradingAccessService;
-        this.assessmentCandidateResultRepository = assessmentCandidateResultRepository;
-        this.assessmentCandidateRepository = assessmentCandidateRepository;
-        this.assessmentGradingAssignmentRepository = assessmentGradingAssignmentRepository;
-        this.assessmentResultAppealRepository = assessmentResultAppealRepository;
-        this.resultStatusHistoryRecorder = resultStatusHistoryRecorder;
-        this.outboxRepository = outboxRepository;
-        this.jsonSerializationPort = jsonSerializationPort;
-    }
 
     /** Ngữ cảnh đã qua mọi kiểm tra, kèm ảnh chụp trạng thái trước khi thao tác. */
     public record PreparedAction(

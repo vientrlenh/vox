@@ -81,7 +81,7 @@
 <h1>Migrate hand-written constructors and loggers to <code>@RequiredArgsConstructor</code> and <code>@Slf4j</code></h1>
 <div class="meta">
   Repository: <code>vox</code> &middot; Branch: <code>default</code> &middot; Written 2026-11-22 &middot;
-  Plan status: <span class="status approved" id="plan-status" data-plan-status="approved">Approved</span>
+  Plan status: <span class="status done" id="plan-status" data-plan-status="done">Done</span>
 </div>
 
 <p>Replace the constructors that only assign their parameters to fields, and the hand-written
@@ -463,6 +463,16 @@ grep (comments inside its constructor), so its job checks it by name.</p>
   <div class="answer"><strong>Answer (2026-11-22):</strong> A &ndash; Update AGENTS.md and add two guard tests to LombokUsageConventionTests (logger test, constructor test with the two-name exemption set). Also confirms the AGENTS.md edit in Phase 14.</div>
 </div>
 
+<div class="decision" id="a1" data-decision-state="answered" data-scope="plan" data-topic="archunit-lombok-generated">
+  <h3>A1. Allow <code>lombok.Generated</code> in the application ArchUnit rule? <span class="status answered">Answered</span></h3>
+  <p class="meta">Asked while implementing job 1.2. Scope: whole plan. Reused by: none yet.</p>
+  <p>The pilot showed that Lombok marks every generated constructor and <code>log</code> field with <code>lombok.Generated</code>, and
+     <code>LayeredArchitectureTests.applicationOnlyDependsOnAllowedPackages</code> rejects it. Options: allow the marker in the rule (recommended),
+     add a <code>lombok.config</code>, or revert the pilot.</p>
+  <div class="answer"><strong>Answer (2026-11-23):</strong> Allow lombok.Generated in the rule (Recommended) &ndash; edit <code>APPLICATION_ALLOWED_DEPENDENCY</code> in <code>LayeredArchitectureTests</code> only.</div>
+</div>
+
+
 <h2 id="phases">3. Phases</h2>
 <p>Each phase is independently reviewable and leaves the build green. Phases 2 to 13 are each a mechanical script run followed by a
 review of <code>git diff --stat</code> and a sample of diffs; they never change a line of logic.</p>
@@ -494,23 +504,27 @@ review of <code>git diff --stat</code> and a sample of diffs; they never change 
 </div>
 
 <!-- ============================================================ PHASE 1 -->
-<div class="phase" id="phase-1" data-status="todo">
+<div class="phase" id="phase-1" data-status="done">
   <h3><span class="title">Phase 1 &ndash; Baseline, script and pilot</span>
     <span class="tag">small &middot; mechanical</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> prove the approach on two classes and fix the checks before any wide edit. <strong>Depends on:</strong> nothing.</p>
   <ul class="jobs">
-    <li class="job" id="job-1-1" data-status="todo">
-      <span class="title">1.1 Record the baseline and write the migration script</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-1-1" data-status="done">
+      <span class="title">1.1 Record the baseline and write the migration script</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>snapshot constructors-before.txt</code> (1.10) holds 3356 lines, and a dry run of the script
          (R1 to R4, nothing written) reports 864 files, 840 constructors and 111 loggers with the per-phase split of 1.9;
          <code>git status --short</code> is unchanged (only the existing <code>build.gradle</code> change and the plan folder).
          <strong>Files:</strong> none in the repository.<br>
          <strong>Verify:</strong> <code>wc -l constructors-before.txt</code>; the dry-run summary; <code>git status --short</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; Phase 1 started.</li>
+      <li>2026-11-23 &middot; In progress &middot; Started: baseline snapshot and migration script.</li>
+      <li>2026-11-23 &middot; Done &middot; Snapshot constructors-before.txt = 3356 lines. Dry run of migrate.py (scratchpad, nothing written): 862 files, 838 constructors, 111 loggers, plus 2 manual classes (RubricController renamed parameter, DeleteSchoolRubricResultBandUseCase comments in constructor) = 864 / 840 / 111 as planned; RefreshTokenSessionProvider correctly not matched. 82 files flagged for Vietnamese comments in the edit range (plan: 79, counted with a slightly different range), handled by hand per R5. git status: only the plan file changed.</li>
+      <li>2026-11-23 &middot; Done &middot; V1 compileJava compileTestJava pass; V2 snapshot identical; V3 2551 tests, 0 failures; grep counts: 2 @RequiredArgsConstructor, 2 @Slf4j.</li>
+      </ul>
     </li>
-    <li class="job" id="job-1-2" data-status="todo">
-      <span class="title">1.2 Pilot on two classes</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-1-2" data-status="done">
+      <span class="title">1.2 Pilot on two classes</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>EndPracticeSessionUseCase</code> (constructor and logger) and <code>PracticePaperDraftService</code>
          (parameter order differs from field order; Vietnamese comments near its fields) use the annotations and have no explicit constructor
          or logger field; the snapshot diff is empty; <code>javap -p</code> on the compiled <code>EndPracticeSessionUseCase</code> shows a
@@ -520,7 +534,10 @@ review of <code>git diff --stat</code> and a sample of diffs; they never change 
          <code>application/port/input/service/PracticePaperDraftService.java</code>.<br>
          <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>;
          <code>./gradlew test --tests '*LayeredArchitectureTests' --tests '*LombokUsageConventionTests'</code>; snapshot diff.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; Started pilot.</li>
+      <li>2026-11-23 &middot; Blocked &middot; Pilot edited and compiles; snapshot diff empty; javap shows public constructor and private static final Logger log (1.3 default access settled). But LayeredArchitectureTests.applicationOnlyDependsOnAllowedPackages fails (4 violations): Lombok marks the generated constructor and log field with lombok.Generated, which the rule does not allow in application. This contradicts 1.2 (&ldquo;neither test needs loosening&rdquo;). Waiting for a decision.</li>
+      <li>2026-11-23 &middot; Done &middot; Applies A1. EndPracticeSessionUseCase and PracticePaperDraftService migrated (fields reordered for PracticePaperDraftService, Vietnamese comment on nested record Entry translated). Snapshot diff empty; javap: public constructor, private static final org.slf4j.Logger log. LayeredArchitectureTests + LombokUsageConventionTests + pilot tests pass; ./gradlew test: 2551 tests, 0 failures. CHANGED: LayeredArchitectureTests.java edited per A1 (lombok.Generated allowed).</li>
+      </ul>
     </li>
   </ul>
   <p><strong>Verify (phase):</strong> V1, V2, V3; <code>grep -rl '@RequiredArgsConstructor' src/main/java | wc -l</code> prints 2 and
@@ -529,28 +546,33 @@ review of <code>git diff --stat</code> and a sample of diffs; they never change 
 </div>
 
 <!-- ============================================================ PHASE 2 -->
-<div class="phase" id="phase-2" data-status="todo">
+<div class="phase" id="phase-2" data-status="done">
   <h3><span class="title">Phase 2 &ndash; Application: services and mappers</span>
     <span class="tag">medium &middot; mechanical</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> migrate the 78 non-sensitive classes of <code>application/mapper</code> and <code>application/port/input/service</code>.
      <strong>Depends on:</strong> Phase 1, D3.</p>
   <ul class="jobs">
-    <li class="job" id="job-2-1" data-status="todo">
-      <span class="title">2.1 Mappers (6 files)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-2-1" data-status="done">
+      <span class="title">2.1 Mappers (6 files)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>check_ctor $R/application/mapper</code> prints nothing and the 6 classes carry
          <code>@RequiredArgsConstructor</code>. <strong>Files:</strong> <code>application/mapper/**</code>.<br>
          <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; <code>check_ctor $R/application/mapper</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; Phase 2 started.</li>
+      <li>2026-11-23 &middot; In progress &middot; Started mappers and services via script (money services excluded).</li>
+      <li>2026-11-23 &middot; Done &middot; 6 mapper files migrated. check_ctor on application/mapper prints nothing; compileJava compileTestJava pass.</li>
+      <li>2026-11-23 &middot; Done &middot; V1 compileJava compileTestJava pass, git diff --stat -- src/test shows only LayeredArchitectureTests (A1). V2 snapshot identical (3356 lines). V3 ./gradlew test: 2551 tests, 0 failures. V4 grep counts: 78 @RequiredArgsConstructor, 17 @Slf4j (plan 77 and 16, plus the EndPracticeSessionUseCase pilot of Phase 6).</li>
+      </ul>
     </li>
-    <li class="job" id="job-2-2" data-status="todo">
-      <span class="title">2.2 Services (72 files, without the 15 money services)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-2-2" data-status="done">
+      <span class="title">2.2 Services (72 files, without the 15 money services)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>check_ctor</code> and <code>check_logger</code> on <code>$R/application/port/input/service</code> print only the
          15 money services of 1.8 (they are Phase 8) and <code>GradingSampleSelector</code>; <code>ImportCommitService</code> has
          <code>@Slf4j</code> and keeps its constructor; <code>PaymentProcessResolver</code> and <code>PracticeTopicOfferEnrichmentService</code>
          keep theirs. <strong>Files:</strong> <code>application/port/input/service/**</code>.<br>
          <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; the two greps above.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; Done &middot; 71 service files migrated (15 with @Slf4j; ImportCommitService already had @Slf4j and keeps its constructor). check_ctor on the service folder prints only the 15 money services and GradingSampleSelector; check_logger prints only 4 money services (ConsumeQuota, CarryQuotaFundingAtPeriodStart, QuotaPricingCalibration, OrderSettlement). 11 files had Vietnamese comments in the edit range (D3 = A); the user-facing string literals in QuestionSpreadsheetService and RubricCriterionExamplesNormalizer were left as they are. Applies D3.</li>
+      </ul>
     </li>
   </ul>
   <p><strong>Verify (phase):</strong> V1 to V4 (cumulative 77 and 16).</p>
@@ -558,28 +580,33 @@ review of <code>git diff --stat</code> and a sample of diffs; they never change 
 </div>
 
 <!-- ============================================================ PHASE 3 -->
-<div class="phase" id="phase-3" data-status="todo">
+<div class="phase" id="phase-3" data-status="done">
   <h3><span class="title">Phase 3 &ndash; Application use cases: assessment setup</span>
     <span class="tag">medium &middot; mechanical</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> migrate 89 use cases under <code>application/port/input/usecase</code>. <strong>Depends on:</strong> Phase 1, D3.</p>
   <ul class="jobs">
-    <li class="job" id="job-3-1" data-status="todo">
+    <li class="job" id="job-3-1" data-status="done">
       <span class="title">3.1 <code>assessment</code>, <code>assessmentblueprint</code>, <code>assessmentcandidate</code>, <code>assessmentdirectory</code>, <code>assessmentpaper</code> (68 files)</span>
-      <span class="status todo">Not started</span>
+      <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>check_ctor</code> and <code>check_logger</code> on those five directories print only
          <code>assessment/EstimateAssessmentTokenQuotaUseCase.java</code> (Phase 8). <strong>Files:</strong> the five directories under
          <code>usecase/</code>.<br>
          <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; the two greps.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; Phase 3 started.</li>
+      <li>2026-11-23 &middot; In progress &middot; Started via script on the five directories (EstimateAssessmentTokenQuotaUseCase excluded, Phase 8).</li>
+      <li>2026-11-23 &middot; Done &middot; 5 directories migrated by script; check_ctor prints only EstimateAssessmentTokenQuotaUseCase (Phase 8), check_logger prints nothing; compileJava compileTestJava pass. Script covered 3.1 and 3.2 in one run (89 files).</li>
+      <li>2026-11-23 &middot; Done &middot; V1 compile pass, src/test diff only LayeredArchitectureTests (A1). V2 snapshot identical (3356 lines). V3 ./gradlew test BUILD SUCCESSFUL. V4 167 @RequiredArgsConstructor, 18 @Slf4j (plan 166 and 17, plus the EndPracticeSessionUseCase pilot).</li>
+      </ul>
     </li>
-    <li class="job" id="job-3-2" data-status="todo">
+    <li class="job" id="job-3-2" data-status="done">
       <span class="title">3.2 <code>assessmentpolicyschool</code>, <code>assessmentpolicysystem</code>, <code>assessmentpolicyteacher</code> (21 files)</span>
-      <span class="status todo">Not started</span>
+      <span class="status done">Done</span>
       <p><strong>Done when:</strong> both greps print nothing for those three directories. <strong>Files:</strong> the three directories under
          <code>usecase/</code>.<br>
          <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; the two greps.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; Done &middot; 3 policy directories migrated; both greps print nothing; compileJava compileTestJava pass. 5 files had Vietnamese in the edit range: comments translated in ViewMyAssessmentsUseCase, UpdateAssessmentStatusUseCase, CreateSchoolAssessmentPolicyUseCase, CreateSystemAssessmentPolicyUseCase; user-facing string literals left. Applies D3.</li>
+      </ul>
     </li>
   </ul>
   <p><strong>Verify (phase):</strong> V1 to V4 (cumulative 166 and 17).</p>
@@ -587,28 +614,33 @@ review of <code>git diff --stat</code> and a sample of diffs; they never change 
 </div>
 
 <!-- ============================================================ PHASE 4 -->
-<div class="phase" id="phase-4" data-status="todo">
+<div class="phase" id="phase-4" data-status="done">
   <h3><span class="title">Phase 4 &ndash; Application use cases: assessment run</span>
     <span class="tag">medium &middot; mechanical</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> migrate 80 use cases about appeals, evaluation, grading, schedules and sessions. <strong>Depends on:</strong> Phase 1, D3.</p>
   <ul class="jobs">
-    <li class="job" id="job-4-1" data-status="todo">
+    <li class="job" id="job-4-1" data-status="done">
       <span class="title">4.1 <code>assessmentappeal</code>, <code>assessmentevaluation</code>, <code>assessmentgrading</code>, <code>assessmentitemresponse</code> (53 files)</span>
-      <span class="status todo">Not started</span>
+      <span class="status done">Done</span>
       <p><strong>Done when:</strong> both greps print nothing for those four directories; <code>RecordAssessmentAttemptEvaluationUseCase</code>
          (order differs, built in a test) has its fields in constructor order and the snapshot diff is empty. <strong>Files:</strong> the four
          directories under <code>usecase/</code>.<br>
          <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; the two greps; snapshot diff.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; Phase 4 started.</li>
+      <li>2026-11-23 &middot; In progress &middot; Started via script on the four directories.</li>
+      <li>2026-11-23 &middot; Done &middot; 4 directories migrated by script; check_ctor and check_logger print nothing for them. RecordAssessmentAttemptEvaluationUseCase: fields jsonSerializationPort and requiresNewTransactionPort swapped to constructor order (R3), snapshot diff empty. Vietnamese comments translated in ApproveAndClaimAssessmentAppealUseCase, CreateAssessmentAppealUseCase, RecordAssessmentAttemptEvaluationUseCase, ExportAssessmentScoresUseCase, ReclaimOverdueAssignmentsUseCase, BulkFinalizeAssessmentResultsUseCase; string literals left. Applies D3.</li>
+      <li>2026-11-23 &middot; Done &middot; V1 compileJava compileTestJava pass, src/test diff only LayeredArchitectureTests (A1). V2 snapshot identical (3356 lines). V3 ./gradlew test BUILD SUCCESSFUL. V4 247 @RequiredArgsConstructor, 22 @Slf4j (plan 246 and 21, plus the EndPracticeSessionUseCase pilot).</li>
+      </ul>
     </li>
-    <li class="job" id="job-4-2" data-status="todo">
+    <li class="job" id="job-4-2" data-status="done">
       <span class="title">4.2 <code>assessmentschedule</code>, <code>assessmentsession</code>, <code>assessmentturn</code> (27 files)</span>
-      <span class="status todo">Not started</span>
+      <span class="status done">Done</span>
       <p><strong>Done when:</strong> both greps print nothing for those three directories. <strong>Files:</strong> the three directories under
          <code>usecase/</code>.<br>
          <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; the two greps.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; Done &middot; assessmentschedule, assessmentsession, assessmentturn migrated in the same script run; both greps print nothing. CompleteAssessmentSessionGradingUseCase comment translated. Applies D3.</li>
+      </ul>
     </li>
   </ul>
   <p><strong>Verify (phase):</strong> V1 to V4 (cumulative 246 and 21).</p>
@@ -616,28 +648,34 @@ review of <code>git diff --stat</code> and a sample of diffs; they never change 
 </div>
 
 <!-- ============================================================ PHASE 5 -->
-<div class="phase" id="phase-5" data-status="todo">
+<div class="phase" id="phase-5" data-status="done">
   <h3><span class="title">Phase 5 &ndash; Application use cases: rubric, framework, scoring rule</span>
     <span class="tag">medium &middot; mechanical</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> migrate 108 use cases, none of which has a logger. <strong>Depends on:</strong> Phase 1, D3.</p>
   <ul class="jobs">
-    <li class="job" id="job-5-1" data-status="todo">
-      <span class="title">5.1 <code>framework</code>, <code>scoringrule</code> (41 files)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-5-1" data-status="done">
+      <span class="title">5.1 <code>framework</code>, <code>scoringrule</code> (41 files)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>check_ctor</code> prints nothing for those two directories. <strong>Files:</strong> the two directories
          under <code>usecase/</code>.<br>
          <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; <code>check_ctor</code> on both directories.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; Phase 5 started.</li>
+      <li>2026-11-23 &middot; In progress &middot; Started via script on framework and scoringrule.</li>
+      <li>2026-11-23 &middot; Done &middot; framework and scoringrule (41 files) migrated by script; check_ctor prints nothing for them. Applies D3 (no Vietnamese comment in the edit range of these two directories).</li>
+      <li>2026-11-23 &middot; Done &middot; V1 compileJava compileTestJava pass, src/test diff only LayeredArchitectureTests (A1). V2 snapshot identical (3356 lines). V3 ./gradlew test BUILD SUCCESSFUL. V4 355 @RequiredArgsConstructor, 22 @Slf4j (plan 354 and 21, plus the EndPracticeSessionUseCase pilot).</li>
+      </ul>
     </li>
-    <li class="job" id="job-5-2" data-status="todo">
-      <span class="title">5.2 <code>rubricschool</code>, <code>rubricsystem</code>, <code>rubricteacher</code> (67 files)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-5-2" data-status="done">
+      <span class="title">5.2 <code>rubricschool</code>, <code>rubricsystem</code>, <code>rubricteacher</code> (67 files)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>check_ctor</code> prints nothing for those three directories, and
          <code>DeleteSchoolRubricResultBandUseCase</code> has <code>@RequiredArgsConstructor</code> and no explicit constructor, with its two
          <code>// BỔ SUNG</code> comments translated and kept (D3). The other 5 use cases with a comment above the constructor keep that
          comment in English on the class. <strong>Files:</strong> the three directories under <code>usecase/</code>.<br>
          <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; <code>check_ctor</code> on the three directories;
          <code>grep -c 'public DeleteSchoolRubricResultBandUseCase(' $R/application/port/input/usecase/rubricschool/DeleteSchoolRubricResultBandUseCase.java</code> prints 0.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; Started via script on rubricschool, rubricsystem, rubricteacher.</li>
+      <li>2026-11-23 &middot; Done &middot; rubricschool, rubricsystem, rubricteacher (67 files) migrated; check_ctor prints nothing. DeleteSchoolRubricResultBandUseCase migrated by hand (comments inside its constructor hid it from the script): grep for its public constructor prints 0, the field comment BỔ SUNG is now "Added" and the parameter comment of the same text went away with the constructor. Also translated field and class-line comments in ChangeSchoolRubricVersionStatusUseCase, CreateSchoolRubricCriterionUseCase, DeleteSchoolRubricCriterionUseCase, DeleteSystemRubricUseCase, CreateSystemRubricCriteriaUseCase, PreviewSystemRubricVersionImportFromFileUseCase. Applies D3.</li>
+      </ul>
     </li>
   </ul>
   <p><strong>Verify (phase):</strong> V1 to V4 (cumulative 354 and 21).</p>
@@ -645,56 +683,65 @@ review of <code>git diff --stat</code> and a sample of diffs; they never change 
 </div>
 
 <!-- ============================================================ PHASE 6 -->
-<div class="phase" id="phase-6" data-status="todo">
+<div class="phase" id="phase-6" data-status="done">
   <h3><span class="title">Phase 6 &ndash; Application use cases: question, practice, learner profile</span>
     <span class="tag">medium &middot; mechanical</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> migrate 78 use cases. <strong>Depends on:</strong> Phase 1, D3.</p>
   <ul class="jobs">
-    <li class="job" id="job-6-1" data-status="todo">
+    <li class="job" id="job-6-1" data-status="done">
       <span class="title">6.1 <code>question</code>, <code>questionbank</code>, <code>questiontopic</code>, <code>topicsuggestion</code> (47 files)</span>
-      <span class="status todo">Not started</span>
+      <span class="status done">Done</span>
       <p><strong>Done when:</strong> both greps print nothing for those four directories. <strong>Files:</strong> the four directories under
          <code>usecase/</code>.<br>
          <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; the two greps.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; Job 6.1 started via script.</li><li>2026-11-23 &middot; Done &middot; question, questionbank, questiontopic, topicsuggestion migrated by script (Phase 6 script run covered both jobs); check_ctor and check_logger print nothing for them. Applies D3.</li>
+      </ul>
     </li>
-    <li class="job" id="job-6-2" data-status="todo">
+    <li class="job" id="job-6-2" data-status="done">
       <span class="title">6.2 <code>interestdimension</code>, <code>learnerprofile</code>, <code>practiceevaluation</code>, <code>practiceplanning</code>, <code>practicesession</code>, <code>supportedlanguage</code> (31 files)</span>
-      <span class="status todo">Not started</span>
+      <span class="status done">Done</span>
       <p><strong>Done when:</strong> both greps print nothing for those six directories; <code>ViewInterestQuizItemsUseCase</code> (order
          differs) has its fields in constructor order and the snapshot diff is empty. <strong>Files:</strong> the six directories under
          <code>usecase/</code>.<br>
          <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; the two greps; snapshot diff.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; Started via the same script run.</li>
+      <li>2026-11-23 &middot; Done &middot; interestdimension, learnerprofile, practiceevaluation, practiceplanning, practicesession, supportedlanguage migrated; check_ctor and check_logger print nothing. ViewInterestQuizItemsUseCase fields reordered to constructor order, snapshot diff empty. Translated Vietnamese comments in the edit range of ManageInterestDimensionUseCase, BuildPracticePaperUseCase, DismissTopicOfferUseCase, SubmitPracticeTurnUseCase, ResolveNextPracticeQuestionUseCase (D3). V1 compileJava compileTestJava pass, src/test diff only LayeredArchitectureTests (A1). V2 snapshot identical (3356 lines). V3 ./gradlew test BUILD SUCCESSFUL. V4 432 @RequiredArgsConstructor, 27 @Slf4j (matches plan).</li>
+      </ul>
     </li>
   </ul>
   <p><strong>Verify (phase):</strong> V1 to V4 (cumulative 432 and 27).</p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-23 &middot; Done &middot; V1 compileJava compileTestJava pass, src/test diff only LayeredArchitectureTests (A1). V2 snapshot identical (3356 lines). V3 ./gradlew test BUILD SUCCESSFUL. V4 432 @RequiredArgsConstructor, 27 @Slf4j (matches plan).</li></ul>
 </div>
 
 <!-- ============================================================ PHASE 7 -->
-<div class="phase" id="phase-7" data-status="todo">
+<div class="phase" id="phase-7" data-status="done">
   <h3><span class="title">Phase 7 &ndash; Application use cases: school, user and the rest</span>
     <span class="tag">medium &middot; mechanical</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> migrate the last 109 non-sensitive use cases. <strong>Depends on:</strong> Phase 1, D3.</p>
   <ul class="jobs">
-    <li class="job" id="job-7-1" data-status="todo">
+    <li class="job" id="job-7-1" data-status="done">
       <span class="title">7.1 <code>school</code>, <code>schoolclass</code>, <code>schoolclassuser</code>, <code>schooldirectory</code>, <code>schoolgrade</code>, <code>schoolroom</code>, <code>schooluser</code> (57 files)</span>
-      <span class="status todo">Not started</span>
+      <span class="status done">Done</span>
       <p><strong>Done when:</strong> both greps print nothing for those seven directories. School-scoped checks in these use cases are untouched.
          <strong>Files:</strong> the seven directories under <code>usecase/</code>.<br>
          <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; the two greps.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; Phase 7 started via script.</li>
+      <li>2026-11-23 &middot; In progress &middot; Job 7.1 started via script.</li>
+      <li>2026-11-23 &middot; Done &middot; school, schoolclass, schoolclassuser, schooldirectory, schoolgrade, schoolroom, schooluser migrated by script; check_ctor and check_logger print nothing for them. Applies D3.</li>
+      <li>2026-11-23 &middot; Done &middot; V1 compileJava compileTestJava pass, src/test diff only LayeredArchitectureTests (A1). V2 snapshot identical (3356 lines). V3 ./gradlew test BUILD SUCCESSFUL. V4 541 @RequiredArgsConstructor, 29 @Slf4j (matches plan). Remaining check_ctor hits in application are only the Phase 8 sensitive classes.</li>
+      </ul>
     </li>
-    <li class="job" id="job-7-2" data-status="todo">
+    <li class="job" id="job-7-2" data-status="done">
       <span class="title">7.2 <code>registration</code>, <code>role</code>, <code>user</code>, <code>gradelevel</code>, <code>dashboard</code>, <code>importfile</code>, <code>notification</code>, <code>proctoring</code>, <code>recording</code>, <code>stream</code> (52 files)</span>
-      <span class="status todo">Not started</span>
+      <span class="status done">Done</span>
       <p><strong>Done when:</strong> both greps print nothing for those ten directories. <strong>Files:</strong> the ten directories under
          <code>usecase/</code>.<br>
          <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; the two greps.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; Started via the same script run.</li>
+      <li>2026-11-23 &middot; Done &middot; registration, role, user, gradelevel, dashboard, importfile, notification, proctoring, recording, stream migrated; check_ctor and check_logger print nothing. Translated Vietnamese comments in the edit range of the dashboard use cases, ViewMonitorableAssessmentsUseCase, GetAssessmentRecordingPlaybackUseCase, DeleteSchoolUseCase, UpdateSchoolStatusUseCase, UpdateSchoolUseCase, UpdateSchoolGradeUseCase, AcceptSchoolUserImportUseCase (D3).</li>
+      </ul>
     </li>
   </ul>
   <p><strong>Verify (phase):</strong> V1 to V4 (cumulative 541 and 29). After this phase
@@ -704,39 +751,47 @@ review of <code>git diff --stat</code> and a sample of diffs; they never change 
 </div>
 
 <!-- ============================================================ PHASE 8 -->
-<div class="phase" id="phase-8" data-status="todo">
+<div class="phase" id="phase-8" data-status="done">
   <h3><span class="title">Phase 8 &ndash; Application: money and auth classes</span>
     <span class="tag">medium &middot; needs D2</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> migrate the 63 application classes on the money and security lists (1.8). Constructors and loggers only; no
      quota, order, payment, balance, login or token logic is edited. <strong>Depends on:</strong> Phase 7, D2, D3.</p>
   <ul class="jobs">
-    <li class="job" id="job-8-1" data-status="todo">
-      <span class="title">8.1 Money services and the quota estimate use case (16 files)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-8-1" data-status="done">
+      <span class="title">8.1 Money services and the quota estimate use case (16 files)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> the 15 money services under <code>application/port/input/service</code> and
          <code>EstimateAssessmentTokenQuotaUseCase</code> carry the annotations; <code>git diff</code> of these files shows only
          annotation, import, constructor and logger lines. <strong>Files:</strong> the money list entries under <code>application/port/input/service</code>
          and <code>usecase/assessment</code>.<br>
          <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; <code>check_ctor</code> and <code>check_logger</code> on
          <code>$R/application/port/input/service</code> print only <code>GradingSampleSelector</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; Phase 8 started. applies D2, D3, A1.</li>
+      <li>2026-11-23 &middot; In progress &middot; Started; script run over the 63 files of the 1.8 application list. applies D2, D3.</li>
+      <li>2026-11-23 &middot; Done &middot; 16 money files migrated. V1 compileJava compileTestJava pass; V2 snapshot diff empty (3356 lines); V4 604 @RequiredArgsConstructor and 37 @Slf4j; check_ctor on application prints only GradingSampleSelector, check_logger prints nothing; ./gradlew test 2551 tests, 0 failures.</li>
+      <li>2026-11-23 &middot; Done &middot; 63 files, 63 constructors, 8 loggers. Vietnamese comments in the edited range translated in 9 files (log message literals left as they are). V1 compileJava compileTestJava pass; V2 snapshot diff empty (3356 lines); V4 604 @RequiredArgsConstructor and 37 @Slf4j; check_ctor on application prints only GradingSampleSelector, check_logger prints nothing; ./gradlew test 2551 tests, 0 failures. The application layer is finished.</li>
+      </ul>
     </li>
-    <li class="job" id="job-8-2" data-status="todo">
+    <li class="job" id="job-8-2" data-status="done">
       <span class="title">8.2 Money use cases: <code>order</code>, <code>payment</code>, <code>balance</code>, <code>metering</code>, <code>subscription</code> (39 files)</span>
-      <span class="status todo">Not started</span>
+      <span class="status done">Done</span>
       <p><strong>Done when:</strong> both greps print nothing for those five directories. <strong>Files:</strong> the five directories under
          <code>usecase/</code>.<br>
          <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; the two greps.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; Started; script run over the 63 files of the 1.8 application list. applies D2, D3.</li>
+      <li>2026-11-23 &middot; Done &middot; 39 money use cases migrated; both greps print nothing for the five directories. V1 compileJava compileTestJava pass; V2 snapshot diff empty (3356 lines); V4 604 @RequiredArgsConstructor and 37 @Slf4j; check_ctor on application prints only GradingSampleSelector, check_logger prints nothing; ./gradlew test 2551 tests, 0 failures.</li>
+      </ul>
     </li>
-    <li class="job" id="job-8-3" data-status="todo">
-      <span class="title">8.3 Auth use cases: <code>auth</code> (8 files)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-8-3" data-status="done">
+      <span class="title">8.3 Auth use cases: <code>auth</code> (8 files)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> both greps print nothing for <code>usecase/auth</code>; <code>RefreshUseCase</code> (order differs) has its
          fields in constructor order and the snapshot diff is empty; no token, claim or password line appears in the diff.
          <strong>Files:</strong> <code>application/port/input/usecase/auth/**</code>.<br>
          <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; the two greps; snapshot diff;
          <code>./gradlew test --tests '*auth*'</code> only if that filter matches tests (Gradle fails on no match), otherwise V3.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; Started; script run over the 63 files of the 1.8 application list. applies D2, D3.</li>
+      <li>2026-11-23 &middot; Done &middot; 8 auth use cases migrated; RefreshUseCase fields reordered to constructor order (R3), snapshot diff empty; diff holds no token, claim or password line. V1 compileJava compileTestJava pass; V2 snapshot diff empty (3356 lines); V4 604 @RequiredArgsConstructor and 37 @Slf4j; check_ctor on application prints only GradingSampleSelector, check_logger prints nothing; ./gradlew test 2551 tests, 0 failures.</li>
+      </ul>
     </li>
   </ul>
   <p><strong>Verify (phase):</strong> V1 to V4 (cumulative 604 and 37). <code>check_ctor $R/application</code> prints only
@@ -745,30 +800,35 @@ review of <code>git diff --stat</code> and a sample of diffs; they never change 
 </div>
 
 <!-- ============================================================ PHASE 9 -->
-<div class="phase" id="phase-9" data-status="todo">
+<div class="phase" id="phase-9" data-status="done">
   <h3><span class="title">Phase 9 &ndash; Infrastructure: persistence</span>
     <span class="tag">large &middot; needs D1 for constructors</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> migrate 97 files under <code>infrastructure/persistence</code> (repository adapters, audit, query). With D1 = A both
      annotations are applied; with D1 = B only the 5 adapters that have a logger change. <strong>Depends on:</strong> Phase 8, D1, D3.</p>
   <ul class="jobs">
-    <li class="job" id="job-9-1" data-status="todo">
-      <span class="title">9.1 Adapters: <code>persistence/adapter</code> without the 15 money adapters (93 files)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-9-1" data-status="done">
+      <span class="title">9.1 Adapters: <code>persistence/adapter</code> without the 15 money adapters (93 files)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>check_logger</code> on <code>$R/infrastructure/persistence/adapter</code> prints only money adapters; with D1 = A
          <code>check_ctor</code> there prints only the same 15 money adapters. Paging code (<code>OneBasedPaging</code>) is untouched, so
          <code>PagingConventionTests</code> still passes. <strong>Files:</strong> <code>infrastructure/persistence/adapter/**</code>.<br>
          <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; the two greps;
          <code>./gradlew test --tests '*PagingConventionTests'</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; Phase 9 started; script run over persistence files (433 scanned, 97 qualify). applies D1, D2, D3, A1.</li>
+      <li>2026-11-23 &middot; Done &middot; 93 adapters migrated. V1 compileJava compileTestJava pass; V2 snapshot diff empty (3356 lines); V4 701 @RequiredArgsConstructor and 42 @Slf4j; check_ctor and check_logger on persistence print only the 15 money adapters; ./gradlew test 2551 tests, 0 failures.</li>
+      <li>2026-11-23 &middot; Done &middot; 97 files, 97 constructors, 5 loggers; no Vietnamese comments in the edited range. V1 compileJava compileTestJava pass; V2 snapshot diff empty (3356 lines); V4 701 @RequiredArgsConstructor and 42 @Slf4j; check_ctor and check_logger on persistence print only the 15 money adapters; ./gradlew test 2551 tests, 0 failures.</li>
+      </ul>
     </li>
-    <li class="job" id="job-9-2" data-status="todo">
-      <span class="title">9.2 <code>persistence/audit</code> and <code>persistence/query</code> (4 files)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-9-2" data-status="done">
+      <span class="title">9.2 <code>persistence/audit</code> and <code>persistence/query</code> (4 files)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> with D1 = A <code>check_ctor</code> prints nothing for those two directories (with D1 = B this job is
          only the logger check and has nothing to edit). <strong>Files:</strong> <code>infrastructure/persistence/audit/**</code>,
          <code>infrastructure/persistence/query/**</code>.<br>
          <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; <code>check_ctor</code> and <code>check_logger</code> on both
          directories.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; Started with 9.1 script run. applies D1, D3.</li>
+      <li>2026-11-23 &middot; Done &middot; 4 audit/query files migrated. V1 compileJava compileTestJava pass; V2 snapshot diff empty (3356 lines); V4 701 @RequiredArgsConstructor and 42 @Slf4j; check_ctor and check_logger on persistence print only the 15 money adapters; ./gradlew test 2551 tests, 0 failures.</li>
+      </ul>
     </li>
   </ul>
   <p><strong>Verify (phase):</strong> V1 to V4 (D1 = A: cumulative 701 and 42; D1 = B: 604 and 42).</p>
@@ -776,26 +836,30 @@ review of <code>git diff --stat</code> and a sample of diffs; they never change 
 </div>
 
 <!-- ============================================================ PHASE 10 -->
-<div class="phase" id="phase-10" data-status="todo">
+<div class="phase" id="phase-10" data-status="done">
   <h3><span class="title">Phase 10 &ndash; Infrastructure: events, initializers, services, workers, config</span>
     <span class="tag">medium &middot; needs D1 for constructors</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> migrate 53 non-sensitive files; 45 of them have a logger (15 of those get <code>@Slf4j</code> only). Classes with
      <code>@Value</code> or <code>@Qualifier</code> constructor parameters keep their constructor and only get <code>@Slf4j</code>.
      <strong>Depends on:</strong> Phase 8, D1, D3.</p>
   <ul class="jobs">
-    <li class="job" id="job-10-1" data-status="todo">
-      <span class="title">10.1 <code>event</code>, <code>initializer</code>, <code>repository</code> (26 files)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-10-1" data-status="done">
+      <span class="title">10.1 <code>event</code>, <code>initializer</code>, <code>repository</code> (26 files)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>check_logger</code> on those three directories prints only
          <code>initializer/SubscriptionPlanInitializer.java</code>, <code>event/internal/consumer/InvoiceEmailConsumer.java</code> and
          <code>event/internal/consumer/SchoolDebtEmailConsumer.java</code> (all three are money classes, Phase 11); with D1 = A
          <code>check_ctor</code> prints only those same three. Event payload and topic classes are untouched. <strong>Files:</strong>
          <code>infrastructure/event/**</code>, <code>infrastructure/initializer/**</code>, <code>infrastructure/repository/**</code>.<br>
          <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; the two greps.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; Phase 10 started. applies D1, D2, D3, A1.</li>
+      <li>2026-11-23 &middot; In progress &middot; Started with script run over event/initializer/repository. applies D1, D3.</li>
+      <li>2026-11-23 &middot; Done &middot; event/initializer/repository migrated; Vietnamese comments in the edit range translated (3 consumers, 4 initializers, RedisCacheManagerRepository). V1 compileJava compileTestJava pass; V2 snapshot diff empty (3356 lines); V4 739 @RequiredArgsConstructor and 87 @Slf4j; check_logger and check_ctor on the eight directories print only the 8 money/JWT classes of Phase 11; ./gradlew test 2551 tests, 0 failures.</li>
+      <li>2026-11-23 &middot; Done &middot; 53 files (38 constructors, 45 loggers). V1 compileJava compileTestJava pass; V2 snapshot diff empty (3356 lines); V4 739 @RequiredArgsConstructor and 87 @Slf4j; check_logger and check_ctor on the eight directories print only the 8 money/JWT classes of Phase 11; ./gradlew test 2551 tests, 0 failures.</li>
+      </ul>
     </li>
-    <li class="job" id="job-10-2" data-status="todo">
-      <span class="title">10.2 <code>service</code>, <code>worker</code>, <code>config</code>, <code>client</code>, <code>filter</code> (27 files)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-10-2" data-status="done">
+      <span class="title">10.2 <code>service</code>, <code>worker</code>, <code>config</code>, <code>client</code>, <code>filter</code> (27 files)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>check_logger</code> on those five directories prints only the sensitive classes of Phase 11
          (<code>PayOSService</code>, <code>SePayPaymentProcessService</code>, <code>QuotaPricingService</code>, the three money jobs,
          <code>JwtAuthenticationFilter</code>); with D1 = A <code>check_ctor</code> prints only those and
@@ -803,7 +867,9 @@ review of <code>git diff --stat</code> and a sample of diffs; they never change 
          <code>@Scheduled</code> and <code>@ConditionalOnProperty</code> annotations. <strong>Files:</strong>
          <code>infrastructure/{service,worker,config,client,filter}/**</code>.<br>
          <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; the two greps.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; Started with script run over service/worker/config/client/filter. applies D1, D3.</li>
+      <li>2026-11-23 &middot; Done &middot; service/worker/config/client/filter migrated; ExchangeRateApiClient, 2 workers translated; @Scheduled and @ConditionalOnProperty untouched. V1 compileJava compileTestJava pass; V2 snapshot diff empty (3356 lines); V4 739 @RequiredArgsConstructor and 87 @Slf4j; check_logger and check_ctor on the eight directories print only the 8 money/JWT classes of Phase 11; ./gradlew test 2551 tests, 0 failures.</li>
+      </ul>
     </li>
   </ul>
   <p><strong>Verify (phase):</strong> V1 to V4 (D1 = A: cumulative 739 and 87; D1 = B: 604 and 87).</p>
@@ -811,16 +877,16 @@ review of <code>git diff --stat</code> and a sample of diffs; they never change 
 </div>
 
 <!-- ============================================================ PHASE 11 -->
-<div class="phase" id="phase-11" data-status="todo">
+<div class="phase" id="phase-11" data-status="done">
   <h3><span class="title">Phase 11 &ndash; Infrastructure: money and security classes</span>
     <span class="tag">medium &middot; needs D1 and D2</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> migrate the 34 infrastructure classes on the money and security lists. No payment, pricing, token or authentication
      line is edited. <strong>Depends on:</strong> Phase 10, D1, D2, D3.</p>
   <ul class="jobs">
-    <li class="job" id="job-11-1" data-status="todo">
+    <li class="job" id="job-11-1" data-status="done">
       <span class="title">11.1 Money: adapters, consumers, workers, <code>PayOSService</code>, <code>SePayPaymentProcessService</code>, <code>QuotaPricingService</code> (24 files)</span>
-      <span class="status todo">Not started</span>
+      <span class="status done">Done</span>
       <p><strong>Done when:</strong> the 24 money-list files under <code>infrastructure</code> carry <code>@Slf4j</code> where they had a logger and (D1 = A)
          <code>@RequiredArgsConstructor</code> where R1 applies; <code>PayOSService</code> and <code>SePayPaymentProcessService</code> keep their
          constructors and get only <code>@Slf4j</code>; the diff shows no change to a payment URL, key or amount line.
@@ -828,17 +894,23 @@ review of <code>git diff --stat</code> and a sample of diffs; they never change 
          <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; <code>check_ctor $R/infrastructure</code> and
          <code>check_logger $R/infrastructure</code> print only security-list files and <code>RefreshTokenSessionProvider</code> (with D1 = B,
          <code>check_ctor</code> still lists every infrastructure constructor, so compare against the 165 of 1.5 instead).</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; Phase 11 started. applies D1, D2, D3, A1.</li>
+      <li>2026-11-23 &middot; In progress &middot; Script run over the infrastructure money classes. applies D1, D2, D3.</li>
+      <li>2026-11-23 &middot; Done &middot; Money adapters, consumers, workers, initializer and services migrated; PayOSService and SePayPaymentProcessService keep constructors and get @Slf4j only; Vietnamese comments in the edit range translated (2 consumers, SubscriptionPlanInitializer, SubscriptionPlanRepositoryImpl, PendingOrderReconciler). V1 compileJava compileTestJava pass; V2 snapshot diff empty (3356 lines); check_logger on infrastructure prints nothing.</li>
+      <li>2026-11-23 &middot; Done &middot; 34 files (30 constructors, 10 loggers). V1 pass; V2 snapshot diff empty (3356 lines); V4 769 @RequiredArgsConstructor and 97 @Slf4j; ./gradlew test 2551 tests, 0 failures.</li>
+      </ul>
     </li>
-    <li class="job" id="job-11-2" data-status="todo">
-      <span class="title">11.2 Security: <code>infrastructure/security</code> and <code>JwtAuthenticationFilter</code> (10 files)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-11-2" data-status="done">
+      <span class="title">11.2 Security: <code>infrastructure/security</code> and <code>JwtAuthenticationFilter</code> (10 files)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> the 10 security-list files under <code>infrastructure</code> carry the annotations R1 and R4 allow;
          <code>RefreshTokenSessionProvider</code> and <code>GoogleIdTokenProvider</code> keep their constructors (<code>GoogleIdTokenProvider</code>
          gets <code>@Slf4j</code> only); <code>JwtAuthenticationFilter</code> still extends <code>OncePerRequestFilter</code>; the diff
          contains no claim, secret or token-handling line. <strong>Files:</strong> the infrastructure security list entries (1.8).<br>
          <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; with D1 = A <code>check_ctor $R/infrastructure</code> prints only
          <code>RefreshTokenSessionProvider</code>, and <code>check_logger $R/infrastructure</code> prints nothing; snapshot diff.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; Script run over infrastructure/security and JwtAuthenticationFilter. applies D1, D2, D3.</li>
+      <li>2026-11-23 &middot; Done &middot; infrastructure/security and JwtAuthenticationFilter migrated; RefreshTokenSessionProvider keeps its constructor, GoogleIdTokenProvider gets @Slf4j only; JwtAuthenticationFilter still extends OncePerRequestFilter; no claim, secret or token line in the diff. check_ctor on infrastructure prints only RefreshTokenSessionProvider; V2 snapshot diff empty.</li>
+      </ul>
     </li>
   </ul>
   <p><strong>Verify (phase):</strong> V1 to V4 (D1 = A: cumulative 769 and 97; D1 = B: 604 and 97). <code>check_logger $R/infrastructure</code> prints nothing.</p>
@@ -846,32 +918,38 @@ review of <code>git diff --stat</code> and a sample of diffs; they never change 
 </div>
 
 <!-- ============================================================ PHASE 12 -->
-<div class="phase" id="phase-12" data-status="todo">
+<div class="phase" id="phase-12" data-status="done">
   <h3><span class="title">Phase 12 &ndash; Interfaces: controllers, consumers, exception handlers</span>
     <span class="tag">medium &middot; needs D1 for constructors</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> migrate 65 non-sensitive files in <code>interfaces/graphql</code>, <code>interfaces/rest</code> and
      <code>interfaces/kafka</code>. <code>@PreAuthorize</code> and route annotations stay exactly where they are. <strong>Depends on:</strong>
      Phase 8, D1, D3.</p>
   <ul class="jobs">
-    <li class="job" id="job-12-1" data-status="todo">
-      <span class="title">12.1 GraphQL: controllers, config, exception resolver (29 files)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-12-1" data-status="done">
+      <span class="title">12.1 GraphQL: controllers, config, exception resolver (29 files)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>check_logger $R/interfaces/graphql</code> prints only money controllers (Phase 13); with D1 = A
          <code>check_ctor $R/interfaces/graphql</code> prints only those. The 13 <code>*GraphQlDataLoaderConfig</code> classes keep their
          constructors. <strong>Files:</strong> <code>interfaces/graphql/**</code>.<br>
          <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; the two greps;
          <code>./gradlew test --tests '*GraphQl*'</code> only if it matches tests, otherwise V3.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; Phase 12 started. applies D1, D3, A1.</li>
+      <li>2026-11-23 &middot; In progress &middot; Started GraphQL files. applies D1, D3.</li>
+      <li>2026-11-23 &middot; Done &middot; 29 GraphQL files migrated (money controllers left for 13.1); 13 *GraphQlDataLoaderConfig keep constructors. V1 compileJava compileTestJava pass; V2 snapshot diff empty (3356 lines); check_logger interfaces/graphql prints nothing.</li>
+      <li>2026-11-23 &middot; Done &middot; 64 files, 61 constructors by script plus RubricController by hand (65 files, 62 constructors), 11 loggers. V1 pass; V2 snapshot diff empty; V3 ./gradlew test 2551 tests, 0 failures; V4 831 @RequiredArgsConstructor and 108 @Slf4j.</li>
+      </ul>
     </li>
-    <li class="job" id="job-12-2" data-status="todo">
-      <span class="title">12.2 REST controllers, Kafka consumers, REST exception handler (36 files)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-12-2" data-status="done">
+      <span class="title">12.2 REST controllers, Kafka consumers, REST exception handler (36 files)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>check_logger</code> on <code>$R/interfaces/rest</code> and <code>$R/interfaces/kafka</code> prints nothing; with
          D1 = A <code>check_ctor</code> prints only money controllers; <code>RubricController</code> (33 parameters) and
          <code>AssessmentSessionController</code> (order differs) are migrated with an empty snapshot diff.
          <strong>Files:</strong> <code>interfaces/rest/**</code>, <code>interfaces/kafka/**</code>.<br>
          <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; the two greps; snapshot diff. The
          <code>@RestControllerTest</code> slices in V3 exercise controller construction.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; Started REST and Kafka files. applies D1, D3.</li>
+      <li>2026-11-23 &middot; Done &middot; 36 REST and Kafka files migrated. RubricController (33 parameters, renamed parameter dropped) and AssessmentSessionController (fields reordered to parameter order, R3) have an empty snapshot diff; AssessmentResultController XLSX comment translated (D3). check_logger on rest and kafka prints nothing.</li>
+      </ul>
     </li>
   </ul>
   <p><strong>Verify (phase):</strong> V1 to V4 (D1 = A: cumulative 831 and 108; D1 = B: 604 and 108).</p>
@@ -879,51 +957,54 @@ review of <code>git diff --stat</code> and a sample of diffs; they never change 
 </div>
 
 <!-- ============================================================ PHASE 13 -->
-<div class="phase" id="phase-13" data-status="todo">
+<div class="phase" id="phase-13" data-status="done">
   <h3><span class="title">Phase 13 &ndash; Interfaces: money and security classes</span>
     <span class="tag">small &middot; needs D1 and D2</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> migrate the last 10 files: money controllers and the gRPC and OAuth2 security classes. <strong>Depends on:</strong>
      Phase 12, D1, D2, D3.</p>
   <ul class="jobs">
-    <li class="job" id="job-13-1" data-status="todo">
+    <li class="job" id="job-13-1" data-status="done">
       <span class="title">13.1 Money controllers: GraphQL and REST <code>Order</code>, <code>Subscription</code>, <code>SchoolBalance</code>, <code>Payment</code> (6 files)</span>
-      <span class="status todo">Not started</span>
+      <span class="status done">Done</span>
       <p><strong>Done when:</strong> the 6 controllers carry the annotations R1 and R4 allow, and their <code>@PreAuthorize</code> lines are unchanged
          (compare with <code>git diff</code>); the controller authorization tests in V3 pass. <strong>Files:</strong> the interfaces money list
          entries (1.8).<br>
          <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; <code>check_ctor</code> and <code>check_logger</code> on
          <code>$R/interfaces/rest/controller</code> and <code>$R/interfaces/graphql/controller</code> print nothing.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log">
+        <li>2026-11-23 &middot; Done &middot; 6 money controllers migrated by script; @PreAuthorize and mapping lines untouched (diff holds only constructor, import and annotation lines). check_ctor and check_logger on rest/graphql controllers print nothing. Applies D1, D2, D3.</li></ul>
     </li>
-    <li class="job" id="job-13-2" data-status="todo">
+    <li class="job" id="job-13-2" data-status="done">
       <span class="title">13.2 Security: <code>JwtGrpcServerInterceptor</code>, <code>StreamingServiceTokenInterceptor</code>, <code>OAuth2AuthenticationSuccessHandler</code>, <code>OAuth2AuthenticationFailureHandler</code> (4 files)</span>
-      <span class="status todo">Not started</span>
+      <span class="status done">Done</span>
       <p><strong>Done when:</strong> the 4 classes carry the annotations R1 and R4 allow (<code>OAuth2AuthenticationFailureHandler</code> has no
          explicit constructor and only gets <code>@Slf4j</code>); <code>@GlobalServerInterceptor</code> and <code>@Order</code> annotations on the
          gRPC classes are unchanged. <strong>Files:</strong> <code>interfaces/grpc/security/**</code>, <code>interfaces/handler/**</code>.<br>
          <strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>; <code>check_logger $R/interfaces</code> prints nothing, and with
          D1 = A <code>check_ctor $R/interfaces</code> prints nothing (the 13 data-loader configs and the <code>@Qualifier</code> controllers do
          not match the pattern).</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log">
+        <li>2026-11-23 &middot; Done &middot; 4 security classes migrated; OAuth2AuthenticationFailureHandler only got @Slf4j; @GlobalServerInterceptor unchanged; no token, claim or secret line in the diff. Translated the Vietnamese BEARER_PREFIX Javadoc in StreamingServiceTokenInterceptor (D3). check_logger and check_ctor on interfaces print nothing.</li></ul>
     </li>
   </ul>
   <p><strong>Verify (phase):</strong> V1 to V4 (D1 = A: cumulative 840 and 111; D1 = B: 604 and 111). <code>check_logger $R</code> prints nothing
      (D2 = A). If Docker is available also run <code>./gradlew integrationTest --tests '*VoxApplicationTests'</code> to prove the Spring context
      still wires.</p>
-  <ul class="status-log"></ul>
+  <ul class="status-log">
+        <li>2026-11-23 &middot; Done &middot; V1 compileJava compileTestJava pass, src/test diff only LayeredArchitectureTests (A1). V2 snapshot identical (3356 lines). V3 ./gradlew test 2551 tests, 0 failures. V4 840 @RequiredArgsConstructor and 111 @Slf4j (matches plan). check_logger on src/main prints nothing; check_ctor prints only GradingSampleSelector and RefreshTokenSessionProvider. ./gradlew integrationTest --tests *VoxApplicationTests BUILD SUCCESSFUL.</li></ul>
 </div>
 
 <!-- ============================================================ PHASE 14 -->
-<div class="phase" id="phase-14" data-status="todo">
+<div class="phase" id="phase-14" data-status="done">
   <h3><span class="title">Phase 14 &ndash; Record the convention and guard it</span>
     <span class="tag">small &middot; needs D4</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> write the new rule into the file agents read and, per D4, make the build fail on a regression.
      <strong>Depends on:</strong> Phases 1 to 13 (the guards must pass on the migrated code), D1, D2, D4.</p>
   <ul class="jobs">
-    <li class="job" id="job-14-1" data-status="todo">
-      <span class="title">14.1 Update <code>AGENTS.md</code></span> <span class="status todo">Not started</span>
+    <li class="job" id="job-14-1" data-status="done">
+      <span class="title">14.1 Update <code>AGENTS.md</code></span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> the &ldquo;Dependency injection&rdquo; bullet says: constructor injection with <code>private final</code> fields; a
          constructor that only assigns its parameters is written as <code>@RequiredArgsConstructor</code> in the layers D1 allows (never in
          domain); an explicit constructor stays only when it does more than assign, when parameters carry <code>@Value</code> or
@@ -931,10 +1012,11 @@ review of <code>git diff --stat</code> and a sample of diffs; they never change 
          <code>@Slf4j</code> and are named <code>log</code>, and never <code>LoggerFactory.getLogger</code> (domain has none). The Testing paragraph about
          <code>LombokUsageConventionTests</code> names the new tests when D4 = A or B. <strong>Files:</strong> <code>AGENTS.md</code>.<br>
          <strong>Verify:</strong> read the two edited bullets back; <code>git diff --stat</code> shows only <code>AGENTS.md</code> for this job.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; Phase 14 and job 14.1 started. Applies D1, D4.</li>
+        <li>2026-11-23 &middot; Done &middot; AGENTS.md: &ldquo;Dependency injection&rdquo; bullet rewritten, new &ldquo;Logging&rdquo; bullet, LombokUsageConventionTests paragraph names the two new guards (AGENTS.md:101-106, 178-181). Diff for the job is AGENTS.md only.</li></ul>
     </li>
-    <li class="job" id="job-14-2" data-status="todo">
-      <span class="title">14.2 Add the guardrail tests (D4 = A or B)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-14-2" data-status="done">
+      <span class="title">14.2 Add the guardrail tests (D4 = A or B)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>LombokUsageConventionTests</code> has a logger test (no <code>LoggerFactory.getLogger</code> anywhere under
          <code>src/main/java</code>; with D2 = B a named exemption set for the 107 files that may only shrink) and, for D4 = A, a constructor test
          (the <code>G1</code> pattern, scoped to the layers D1 allows) with an exemption set of exactly <code>GradingSampleSelector.java</code> and
@@ -942,12 +1024,12 @@ review of <code>git diff --stat</code> and a sample of diffs; they never change 
          temporary violation (a manual logger in one class, then an assignment-only constructor in another, both reverted) makes the matching test
          fail. <strong>Files:</strong> <code>src/test/java/com/sep/vox/architecture/LombokUsageConventionTests.java</code>.<br>
          <strong>Verify:</strong> <code>./gradlew test --tests '*LombokUsageConventionTests' --tests '*LayeredArchitectureTests'</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; Done &middot; Added no_manual_logger_under_main, no_assignment_only_constructor and assignment_only_constructor_exemptions_still_apply to LombokUsageConventionTests (exemption set: GradingSampleSelector.java, RefreshTokenSessionProvider.java). Both targeted tests pass on the migrated code; temporary probe classes (a LoggerFactory.getLogger field, an assignment-only constructor) made the matching tests fail and were deleted. Applies D4.</li></ul>
     </li>
   </ul>
   <p><strong>Verify (phase):</strong> V1 and V3; <code>git diff --stat</code> for the phase lists only <code>AGENTS.md</code> and
      <code>LombokUsageConventionTests.java</code>.</p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-23 &middot; Done &middot; V1 compileJava compileTestJava pass. V3 ./gradlew test: 2554 tests (2551 + 3 new), 0 failures. src/test diff: LayeredArchitectureTests (A1, Phase 1) and LombokUsageConventionTests.</li></ul>
 </div>
 
 <h2 id="risks">4. Risks</h2>
@@ -1009,7 +1091,12 @@ review of <code>git diff --stat</code> and a sample of diffs; they never change 
 <h2 id="notes">8. Implementation notes</h2>
 <p>Filled in by <code>implement-plan</code>: deviations from the plan, results of <code>verify-plan</code>, and
 problems noticed but not fixed.</p>
-<ul id="notes-list"></ul>
+<ul id="notes-list">
+<li>2026-11-23 &middot; Phase 2 &middot; The 77 files edited are the 78 of 1.9 minus the already migrated pilot PracticePaperDraftService. Cumulative counts after the phase are 78 and 17 because the Phase 6 pilot EndPracticeSessionUseCase is already counted.</li>
+<li>2026-11-23 &middot; Phase 1 &middot; Deviation: 1.2 claimed no architecture test needs loosening, but Lombok adds <code>lombok.Generated</code> to generated constructors and the <code>log</code> field and the application rule rejected it. With the user&rsquo;s answer A1, <code>LayeredArchitectureTests.APPLICATION_ALLOWED_DEPENDENCY</code> now also allows <code>lombok.Generated</code> (<code>git diff --stat -- src/test</code> is therefore not empty: it shows this file, so later phases must expect exactly that one file until Phase 14).</li>
+<li>2026-11-23 &middot; Phase 1 &middot; The migration script and snapshots live in the executor scratchpad (<code>migrate.py</code>, <code>constructors-before.txt</code>); the script is not in the repository.</li>
+<li>2026-11-23 &middot; verify-plan &middot; PASS. 864 main files changed (840 @RequiredArgsConstructor, 111 @Slf4j), check_ctor prints only GradingSampleSelector and RefreshTokenSessionProvider, no LoggerFactory left, constructor snapshot identical to baseline (3356 lines), diff holds no logic or @PreAuthorize line, ./gradlew test 2554 tests 0 failures. integrationTest VoxApplicationTests passed in Phase 13 and was not re-run after Phase 14 (test-only change). Noticed, not fixed: RefreshTokenSessionProvider has an unused DeviceSessionRepository parameter; A1 block still says &ldquo;Reused by: none yet&rdquo;.</li>
+</ul>
 
 </div>
 <script>

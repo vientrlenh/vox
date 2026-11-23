@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.practicesession;
 
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,21 +18,13 @@ import com.sep.vox.application.response.input.practicesession.PracticeSessionRes
  * đường khác: {@link ViewMyPracticeSessionDetailUseCase}.
  */
 @Service
+@RequiredArgsConstructor
 public class ViewStudentPracticeSessionDetailUseCase
         implements IUseCase<ViewStudentPracticeSessionDetailQuery, TeacherPracticeSessionDetail> {
 
     private final PracticeSessionQueryRepository practiceSessionQueryRepository;
     private final PracticeSessionDetailAssemblyService detailAssemblyService;
     private final UserContextPort userContextPort;
-
-    public ViewStudentPracticeSessionDetailUseCase(
-            PracticeSessionQueryRepository practiceSessionQueryRepository,
-            PracticeSessionDetailAssemblyService detailAssemblyService,
-            UserContextPort userContextPort) {
-        this.practiceSessionQueryRepository = practiceSessionQueryRepository;
-        this.detailAssemblyService = detailAssemblyService;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional(readOnly = true)

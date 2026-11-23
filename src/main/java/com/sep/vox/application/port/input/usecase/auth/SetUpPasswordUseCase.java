@@ -3,6 +3,7 @@ package com.sep.vox.application.port.input.usecase.auth;
 import com.sep.vox.domain.model.user.User;
 import java.time.Instant;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,19 +16,13 @@ import com.sep.vox.domain.repository.PasswordSetUpTokenRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 @Service
+@RequiredArgsConstructor
 public class SetUpPasswordUseCase implements IUseCase<SetUpPasswordCommand, Void>{
 
     private final PasswordSetUpTokenRepository passwordSetUpTokenRepository;
     private final PasswordSetUpTokenPort passwordSetUpTokenPort;
     private final UserRepository userRepository;
     private final PasswordEncoderPort passwordEncoderPort;
-
-    public SetUpPasswordUseCase(PasswordSetUpTokenRepository passwordSetUpTokenRepository, PasswordSetUpTokenPort passwordSetUpTokenPort, UserRepository userRepository, PasswordEncoderPort passwordEncoderPort) {
-        this.passwordSetUpTokenRepository = passwordSetUpTokenRepository;
-        this.passwordSetUpTokenPort = passwordSetUpTokenPort;
-        this.userRepository = userRepository;
-        this.passwordEncoderPort = passwordEncoderPort;
-    }
 
     @Override
     @Transactional

@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
@@ -23,13 +24,10 @@ import com.sep.vox.infrastructure.persistence.repository.SpringDataFrameworkVers
 import com.sep.vox.infrastructure.persistence.DataConflictTranslation;
 
 @Repository
+@RequiredArgsConstructor
 public class FrameworkVersionRepositoryImpl implements FrameworkVersionRepository {
 
     private final SpringDataFrameworkVersionRepository springDataFrameworkVersionRepository;
-
-    public FrameworkVersionRepositoryImpl(SpringDataFrameworkVersionRepository springDataFrameworkVersionRepository) {
-        this.springDataFrameworkVersionRepository = springDataFrameworkVersionRepository;
-    }
 
     @Override
     public Optional<FrameworkVersion> findById(UUID id) {

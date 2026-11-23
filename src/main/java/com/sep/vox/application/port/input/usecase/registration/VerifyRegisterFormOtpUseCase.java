@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.registration;
 
 import com.sep.vox.domain.model.school.SchoolDirectory;
 import java.time.Instant;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,7 @@ import com.sep.vox.domain.repository.RegisterFormRepository;
 import com.sep.vox.domain.repository.SchoolDirectoryRepository;
 
 @Service
+@RequiredArgsConstructor
 public class VerifyRegisterFormOtpUseCase implements IUseCase<VerifyRegisterFormOtpCommand, Void> {
 
     private final CacheManagerPort cacheManagerPort;
@@ -32,20 +34,6 @@ public class VerifyRegisterFormOtpUseCase implements IUseCase<VerifyRegisterForm
     private final RegisterFormRepository registerFormRepository;
     private final ProvisionSchoolService provisionSchoolService;
     private final EventPublisherPort eventPublisherPort;
-
-    public VerifyRegisterFormOtpUseCase(
-        CacheManagerPort cacheManagerPort, 
-        OneTimePasswordPort oneTimePasswordPort, 
-        SchoolDirectoryRepository schoolDirectoryRepository, 
-        RegisterFormRepository registerFormRepository, 
-        ProvisionSchoolService provisionSchoolService, EventPublisherPort eventPublisherPort) {
-        this.cacheManagerPort = cacheManagerPort;
-        this.schoolDirectoryRepository = schoolDirectoryRepository;
-        this.registerFormRepository = registerFormRepository;
-        this.oneTimePasswordPort = oneTimePasswordPort;
-        this.provisionSchoolService = provisionSchoolService;
-        this.eventPublisherPort = eventPublisherPort;
-    }
 
     @Override
     @Transactional

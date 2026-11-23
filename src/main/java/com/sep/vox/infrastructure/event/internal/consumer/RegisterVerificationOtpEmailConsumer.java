@@ -4,9 +4,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.kafka.annotation.BackOff;
 import org.springframework.kafka.annotation.DltHandler;
@@ -39,9 +39,9 @@ import tools.jackson.databind.json.JsonMapper;
  * lại. Nếu dòng cache đã hết hạn thì người dùng đã bỏ cuộc từ lâu: bỏ qua chứ không retry.
  */
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class RegisterVerificationOtpEmailConsumer {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(RegisterVerificationOtpEmailConsumer.class);
 
     private static final String CONSUMER_GROUP = "register-verification-otp-email";
     private static final String SUBJECT = "Mã xác thực đăng ký VOX";
@@ -49,7 +49,7 @@ public class RegisterVerificationOtpEmailConsumer {
 
     private static final int OTP_SIZE = 6;
 
-    /** Đếm lại từ lúc gửi mail, không phải từ lúc nộp đơn -- đó mới là mốc người dùng thấy. */
+    /** Counted again from the moment the email is sent, not from when the form was submitted -- that is the moment the user sees. */
     private static final Duration TTL = Duration.ofMinutes(10);
 
     private final CacheManagerPort cacheManagerPort;
@@ -58,21 +58,6 @@ public class RegisterVerificationOtpEmailConsumer {
     private final MailTemplatePort mailTemplatePort;
     private final ProcessedEventRepository processedEventRepository;
     private final JsonMapper jsonMapper;
-
-    public RegisterVerificationOtpEmailConsumer(
-            CacheManagerPort cacheManagerPort,
-            OneTimePasswordPort oneTimePasswordPort,
-            MailSendingPort mailSendingPort,
-            MailTemplatePort mailTemplatePort,
-            ProcessedEventRepository processedEventRepository,
-            JsonMapper jsonMapper) {
-        this.cacheManagerPort = cacheManagerPort;
-        this.oneTimePasswordPort = oneTimePasswordPort;
-        this.mailSendingPort = mailSendingPort;
-        this.mailTemplatePort = mailTemplatePort;
-        this.processedEventRepository = processedEventRepository;
-        this.jsonMapper = jsonMapper;
-    }
 
     @RetryableTopic(
         attempts = "4",
@@ -89,11 +74,11 @@ public class RegisterVerificationOtpEmailConsumer {
     public void consume(ConsumerRecord<String, String> record, Acknowledgment ack) {
         UUID eventId = KafkaEventHeaders.readEventId(record);
 
-        LOGGER.info("Receive event register-verification-otp: eventId={}, partition={}, offset={}",
+        log.info("Receive event register-verification-otp: eventId={}, partition={}, offset={}",
             eventId, record.partition(), record.offset());
 
         if (processedEventRepository.existsByEventIdAndConsumerGroup(eventId, CONSUMER_GROUP)) {
-            LOGGER.info("Skip processed event: eventId={}, consumer={}", eventId, CONSUMER_GROUP);
+            log.info("Skip processed event: eventId={}, consumer={}", eventId, CONSUMER_GROUP);
             ack.acknowledge();
             return;
         }
@@ -102,7 +87,7 @@ public class RegisterVerificationOtpEmailConsumer {
         try {
             payload = jsonMapper.readValue(record.value(), RegisterVerificationOtpRequestedPayloadV1.class);
         } catch (Exception e) {
-            LOGGER.error("Invalid payload: eventId={}", eventId, e);
+            log.error("Invalid payload: eventId={}", eventId, e);
             throw new IllegalStateException(
                 "Payload register-verification-otp không hợp lệ, eventId=" + eventId, e);
         }
@@ -110,7 +95,7 @@ public class RegisterVerificationOtpEmailConsumer {
         String key = CacheKey.registerVerificationKey(payload.to());
         CachePayload.RegisterVerificationPayload cached = cacheManagerPort.get(key, CachePayload.RegisterVerificationPayload.class);
         if (cached == null) {
-            LOGGER.warn("Bỏ qua OTP đăng ký, hồ sơ trong cache đã hết hạn: eventId={}", eventId);
+            log.warn("Bỏ qua OTP đăng ký, hồ sơ trong cache đã hết hạn: eventId={}", eventId);
             markProcessed(eventId);
             ack.acknowledge();
             return;
@@ -123,13 +108,13 @@ public class RegisterVerificationOtpEmailConsumer {
             String html = mailTemplatePort.renderRegisterVerificationOtpEmail(otp, EXPIRES_IN);
             mailSendingPort.sendHtml(payload.to(), SUBJECT, html);
         } catch (Exception e) {
-            LOGGER.error("Send mail error: eventId={}", eventId, e);
+            log.error("Send mail error: eventId={}", eventId, e);
             throw new IllegalStateException("Gửi mail OTP đăng ký thất bại: eventId=" + eventId, e);
         }
 
         markProcessed(eventId);
 
-        LOGGER.info("Register verification OTP mail sent: eventId={}", eventId);
+        log.info("Register verification OTP mail sent: eventId={}", eventId);
         ack.acknowledge();
     }
 
@@ -153,7 +138,7 @@ public class RegisterVerificationOtpEmailConsumer {
     @DltHandler
     public void handleDlt(ConsumerRecord<String, String> record) {
         UUID eventId = KafkaEventHeaders.readEventIdOrNull(record);
-        LOGGER.error("register-verification-otp event sent to DLT: eventId={}, topic={}, partition={}, offset={}",
+        log.error("register-verification-otp event sent to DLT: eventId={}, topic={}, partition={}, offset={}",
             eventId, record.topic(), record.partition(), record.offset());
     }
 
@@ -165,7 +150,7 @@ public class RegisterVerificationOtpEmailConsumer {
                     .processedAt(Instant.now())
                     .build());
         } catch (DataIntegrityViolationException e) {
-            LOGGER.warn("This event was already marked by another instance: eventId={}", eventId);
+            log.warn("This event was already marked by another instance: eventId={}", eventId);
         }
     }
 }

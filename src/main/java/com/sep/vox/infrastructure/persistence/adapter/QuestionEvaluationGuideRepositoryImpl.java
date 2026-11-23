@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import com.sep.vox.domain.model.question.QuestionEvaluationGuide;
@@ -14,13 +15,10 @@ import com.sep.vox.infrastructure.persistence.mapper.QuestionEvaluationGuideMapp
 import com.sep.vox.infrastructure.persistence.repository.SpringDataQuestionEvaluationGuideRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class QuestionEvaluationGuideRepositoryImpl implements QuestionEvaluationGuideRepository {
 
     private final SpringDataQuestionEvaluationGuideRepository springDataQuestionEvaluationGuideRepository;
-
-    public QuestionEvaluationGuideRepositoryImpl(SpringDataQuestionEvaluationGuideRepository springDataQuestionEvaluationGuideRepository) {
-        this.springDataQuestionEvaluationGuideRepository = springDataQuestionEvaluationGuideRepository;
-    }
 
     @Override
     public QuestionEvaluationGuide save(QuestionEvaluationGuide questionEvaluationGuide) {

@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,14 +14,10 @@ import com.sep.vox.infrastructure.persistence.entity.personalization.PracticeIte
 import com.sep.vox.infrastructure.persistence.repository.SpringDataPracticeItemResponseRepository;
 
 @Repository
+@RequiredArgsConstructor
 public class PracticeItemResponseRepositoryImpl implements PracticeItemResponseRepository {
 
     private final SpringDataPracticeItemResponseRepository repository;
-
-    public PracticeItemResponseRepositoryImpl(
-            SpringDataPracticeItemResponseRepository repository) {
-        this.repository = repository;
-    }
 
     @Override
     public UUID findRubricVersionIdByResponseId(UUID practiceResponseId) {

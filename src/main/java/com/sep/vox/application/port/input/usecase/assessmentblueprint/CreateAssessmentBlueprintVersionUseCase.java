@@ -8,6 +8,7 @@ import java.util.HashSet;
 
 import java.util.Set;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +40,7 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.valueobject.QuestionSelectionSpec;
 
 @Service
+@RequiredArgsConstructor
 public class CreateAssessmentBlueprintVersionUseCase implements IUseCase<CreateAssessmentBlueprintVersionCommand, AssessmentBlueprintVersionDto> {
 
     private final AssessmentBlueprintRepository assessmentBlueprintRepository;
@@ -50,27 +52,6 @@ public class CreateAssessmentBlueprintVersionUseCase implements IUseCase<CreateA
     private final AssessmentTimeQuotaGuardService assessmentTimeQuotaGuardService;
     private final RecalculateBlueprintVersionTimeLimitService recalculateBlueprintVersionTimeLimitService;
     private final UserContextPort userContextPort;
-
-    public CreateAssessmentBlueprintVersionUseCase(
-            AssessmentBlueprintRepository assessmentBlueprintRepository,
-            AssessmentBlueprintVersionRepository assessmentBlueprintVersionRepository,
-            AssessmentBlueprintSectionRepository assessmentBlueprintSectionRepository,
-            AssessmentBlueprintSlotRepository assessmentBlueprintSlotRepository,
-            QuestionRepository questionRepository,
-            SchoolUserRepository schoolUserRepository,
-            AssessmentTimeQuotaGuardService assessmentTimeQuotaGuardService,
-            RecalculateBlueprintVersionTimeLimitService recalculateBlueprintVersionTimeLimitService,
-            UserContextPort userContextPort) {
-        this.assessmentBlueprintRepository = assessmentBlueprintRepository;
-        this.assessmentBlueprintVersionRepository = assessmentBlueprintVersionRepository;
-        this.assessmentBlueprintSectionRepository = assessmentBlueprintSectionRepository;
-        this.assessmentBlueprintSlotRepository = assessmentBlueprintSlotRepository;
-        this.questionRepository = questionRepository;
-        this.schoolUserRepository = schoolUserRepository;
-        this.assessmentTimeQuotaGuardService = assessmentTimeQuotaGuardService;
-        this.recalculateBlueprintVersionTimeLimitService = recalculateBlueprintVersionTimeLimitService;
-        this.userContextPort = userContextPort;
-    }
 
     @Override
     @Transactional

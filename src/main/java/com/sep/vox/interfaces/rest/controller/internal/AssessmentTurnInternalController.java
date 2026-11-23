@@ -2,6 +2,7 @@ package com.sep.vox.interfaces.rest.controller.internal;
 
 import java.util.UUID;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,13 +31,10 @@ import com.sep.vox.interfaces.rest.dto.response.ApiResponse;
  */
 @RestController
 @RequestMapping("/internal/assessment-turns")
+@RequiredArgsConstructor
 public class AssessmentTurnInternalController {
 
     private final GetTurnUploadUrlUseCase getTurnUploadUrlUseCase;
-
-    public AssessmentTurnInternalController(GetTurnUploadUrlUseCase getTurnUploadUrlUseCase) {
-        this.getTurnUploadUrlUseCase = getTurnUploadUrlUseCase;
-    }
 
     @GetMapping("/{attemptAnswerId}/turns/{turnOrder}/upload-url")
     public ApiResponse<TurnUploadUrlResponse> turnUploadUrl(

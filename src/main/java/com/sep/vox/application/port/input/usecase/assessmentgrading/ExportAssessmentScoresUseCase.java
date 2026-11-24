@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.DateMapper;
-import com.sep.vox.application.port.input.query.ExportAssessmentScoresQuery;
+import com.sep.vox.application.port.input.query.assessmentgrading.ExportAssessmentScoresQuery;
 import com.sep.vox.application.port.input.service.AssessmentScoreExportSupport;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.query.dto.AssessmentScoreRowInfo;

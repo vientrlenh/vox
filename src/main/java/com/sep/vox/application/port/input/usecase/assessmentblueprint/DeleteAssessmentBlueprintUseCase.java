@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.DeleteAssessmentBlueprintCommand;
+import com.sep.vox.application.port.input.command.assessmentblueprint.DeleteAssessmentBlueprintCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.repository.AssessmentBlueprintRepository;

@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.BusinessRuleViolationException;
-import com.sep.vox.application.port.input.command.CreateClassTestCommand;
+import com.sep.vox.application.port.input.command.assessment.CreateClassTestCommand;
 import com.sep.vox.application.port.input.service.AssessmentPolicyValidator;
 import com.sep.vox.application.port.input.service.AssessmentScheduleProctorConflictValidator;
 import com.sep.vox.application.port.input.service.AssessmentScheduleRoomValidator;

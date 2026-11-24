@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.mapper.assessmentitemresponse.AssessmentItemResponseResponseMapper;
-import com.sep.vox.application.port.input.query.ViewAssessmentItemResponseQuery;
+import com.sep.vox.application.port.input.query.assessmentitemresponse.ViewAssessmentItemResponseQuery;
 import com.sep.vox.application.port.input.service.AssessmentResultAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.assessmentitemresponse.AssessmentItemResponseDetailsResponse;

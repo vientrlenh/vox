@@ -4,7 +4,7 @@ import com.sep.vox.domain.model.framework.Framework;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.port.input.query.ViewFrameworksQuery;
+import com.sep.vox.application.port.input.query.framework.ViewFrameworksQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.FrameworkDto;

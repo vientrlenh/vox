@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
-import com.sep.vox.application.port.input.query.ViewMyClassDetailsQuery;
+import com.sep.vox.application.port.input.query.schoolclass.ViewMyClassDetailsQuery;
 import com.sep.vox.application.port.input.usecase.schoolclass.MyClassAccessGuard;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewMyClassDetailsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;

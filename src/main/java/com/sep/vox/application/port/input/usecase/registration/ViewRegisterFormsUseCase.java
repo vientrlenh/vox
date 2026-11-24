@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.port.input.query.ViewRegisterFormsQuery;
+import com.sep.vox.application.port.input.query.registration.ViewRegisterFormsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.RegisterFormDto;

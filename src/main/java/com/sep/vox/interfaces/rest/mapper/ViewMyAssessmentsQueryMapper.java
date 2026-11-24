@@ -3,7 +3,7 @@ package com.sep.vox.interfaces.rest.mapper;
 import java.util.Locale;
 import java.util.Set;
 
-import com.sep.vox.application.port.input.query.ViewMyAssessmentsQuery;
+import com.sep.vox.application.port.input.query.assessment.ViewMyAssessmentsQuery;
 import com.sep.vox.domain.model.assessment.AssessmentKind;
 
 public final class ViewMyAssessmentsQueryMapper {

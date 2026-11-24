@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.ServiceUnavailableException;
-import com.sep.vox.application.port.input.command.StartClassTestSessionCommand;
+import com.sep.vox.application.port.input.command.assessment.StartClassTestSessionCommand;
 import com.sep.vox.application.port.input.usecase.assessment.StartClassTestSessionUseCase;
 import com.sep.vox.application.port.input.service.SchoolSubscriptionDebtGuardService;
 import com.sep.vox.application.port.input.usecase.assessmentsession.CreateAssessmentSessionUseCase;

@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.query.ViewQuestionTopicDetailsQuery;
+import com.sep.vox.application.port.input.query.questiontopic.ViewQuestionTopicDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.QuestionTopicDto;
 import com.sep.vox.domain.mapper.QuestionTopicDtoMapper;

@@ -23,7 +23,7 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.mapper.assessmentevaluation.AssessmentEvaluationSignalMapper;
-import com.sep.vox.application.port.input.command.CompleteAssessmentSessionGradingCommand;
+import com.sep.vox.application.port.input.command.assessmentsession.CompleteAssessmentSessionGradingCommand;
 import com.sep.vox.application.port.input.command.assessmentevaluation.CriterionScoreInput;
 import com.sep.vox.application.port.input.command.assessmentevaluation.RecordAssessmentAttemptEvaluationCommand;
 import com.sep.vox.application.port.input.command.assessmentevaluation.ValidityResultInput;

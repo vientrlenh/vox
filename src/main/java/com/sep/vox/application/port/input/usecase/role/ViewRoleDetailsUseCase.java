@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.query.ViewRoleDetailsQuery;
+import com.sep.vox.application.port.input.query.role.ViewRoleDetailsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.RoleDto;
 import com.sep.vox.domain.mapper.RoleDtoMapper;

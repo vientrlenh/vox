@@ -20,7 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.ForceSuspendSubscriptionCommand;
+import com.sep.vox.application.port.input.command.subscription.ForceSuspendSubscriptionCommand;
 import com.sep.vox.application.port.input.service.SchoolSubscriptionSuspensionNotificationService;
 import com.sep.vox.application.port.input.usecase.subscription.ForceSuspendSubscriptionUseCase;
 import com.sep.vox.application.port.output.UserContextPort;

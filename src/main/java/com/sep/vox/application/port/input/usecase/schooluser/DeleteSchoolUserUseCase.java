@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.DeleteSchoolUserCommand;
+import com.sep.vox.application.port.input.command.schooluser.DeleteSchoolUserCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.user.UserStatus;

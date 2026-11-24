@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.UnsuspendSubscriptionCommand;
+import com.sep.vox.application.port.input.command.subscription.UnsuspendSubscriptionCommand;
 import com.sep.vox.application.port.input.service.SchoolSubscriptionSuspensionNotificationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;

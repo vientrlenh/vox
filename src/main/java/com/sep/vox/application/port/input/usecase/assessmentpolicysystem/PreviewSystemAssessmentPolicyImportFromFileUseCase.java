@@ -1,7 +1,7 @@
 package com.sep.vox.application.port.input.usecase.assessmentpolicysystem;
 
 import com.sep.vox.application.exception.UnauthorizedException;
-import com.sep.vox.application.port.input.command.PreviewSystemAssessmentPolicyImportFromFileCommand;
+import com.sep.vox.application.port.input.command.assessmentpolicysystem.PreviewSystemAssessmentPolicyImportFromFileCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.FileProcessingPort;
 import com.sep.vox.application.port.output.JsonSerializationPort;

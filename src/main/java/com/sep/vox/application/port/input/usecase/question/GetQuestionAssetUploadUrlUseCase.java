@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.query.GetQuestionAssetUploadUrlQuery;
+import com.sep.vox.application.port.input.query.question.GetQuestionAssetUploadUrlQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.StoragePort;
 import com.sep.vox.application.port.output.UserContextPort;

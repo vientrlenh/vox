@@ -1,0 +1,15 @@
+package com.sep.vox.application.port.input.command.assessment;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.UUID;
+
+public record UpdateClassTestSectionCommand(
+    UUID assessmentId,
+    UUID sectionId,
+    String title,
+    String instruction,
+    BigDecimal weight,
+    List<ClassTestQuestionCommand> questions
+) {
+}

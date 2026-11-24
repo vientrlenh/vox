@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.port.input.query.ViewSchoolBalanceSummaryQuery;
+import com.sep.vox.application.port.input.query.balance.ViewSchoolBalanceSummaryQuery;
 import com.sep.vox.application.port.input.service.SchoolScopedReadGuard;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.balance.SchoolBalanceSummaryResponse;

@@ -10,8 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import com.sep.vox.application.port.input.command.SubmitAssessmentSessionCommand;
-import com.sep.vox.application.port.input.command.UpdateAssessmentSessionStatusCommand;
+import com.sep.vox.application.port.input.command.assessmentsession.SubmitAssessmentSessionCommand;
+import com.sep.vox.application.port.input.command.assessmentsession.UpdateAssessmentSessionStatusCommand;
 import com.sep.vox.application.port.input.usecase.assessmentsession.SubmitAssessmentSessionUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentsession.UpdateAssessmentSessionStatusUseCase;
 import com.sep.vox.domain.model.assessment.AssessmentSessionStatus;

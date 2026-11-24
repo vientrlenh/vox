@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.FlagAssessmentSessionCommand;
+import com.sep.vox.application.port.input.command.assessmentsession.FlagAssessmentSessionCommand;
 import com.sep.vox.application.port.input.service.AssessmentSessionModerationAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.repository.AssessmentCandidateRepository;

@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.UpdateAssessmentSessionRemainingTimeCommand;
+import com.sep.vox.application.port.input.command.assessmentsession.UpdateAssessmentSessionRemainingTimeCommand;
 import com.sep.vox.application.port.input.usecase.assessmentsession.UpdateAssessmentSessionRemainingTimeUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.assessment.AssessmentCandidate;

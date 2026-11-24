@@ -20,8 +20,8 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.DataConflictException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.CreateFrameworkCriterionBandsCommand;
-import com.sep.vox.application.port.input.command.CreateFrameworkCriterionBandsCommand.CriterionBandItemCommand;
+import com.sep.vox.application.port.input.command.framework.CreateFrameworkCriterionBandsCommand;
+import com.sep.vox.application.port.input.command.framework.CreateFrameworkCriterionBandsCommand.CriterionBandItemCommand;
 import com.sep.vox.application.port.input.usecase.framework.CreateFrameworkCriterionBandsUseCase;
 import com.sep.vox.domain.model.framework.FrameworkCriterion;
 import com.sep.vox.domain.model.framework.FrameworkCriterionBand;

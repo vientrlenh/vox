@@ -7,11 +7,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.CreateAssessmentBlueprintSectionCommand;
-import com.sep.vox.application.port.input.command.CreateAssessmentBlueprintSlotCommand;
-import com.sep.vox.application.port.input.command.CreateAssessmentBlueprintVersionCommand;
-import com.sep.vox.application.port.input.command.CreateQuestionSelectionSpecCommand;
-import com.sep.vox.application.port.input.command.DuplicateAssessmentBlueprintVersionCommand;
+import com.sep.vox.application.port.input.command.assessmentblueprint.CreateAssessmentBlueprintSectionCommand;
+import com.sep.vox.application.port.input.command.assessmentblueprint.CreateAssessmentBlueprintSlotCommand;
+import com.sep.vox.application.port.input.command.assessmentblueprint.CreateAssessmentBlueprintVersionCommand;
+import com.sep.vox.application.port.input.command.assessmentblueprint.CreateQuestionSelectionSpecCommand;
+import com.sep.vox.application.port.input.command.assessmentblueprint.DuplicateAssessmentBlueprintVersionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.AssessmentBlueprintVersionDto;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlot;

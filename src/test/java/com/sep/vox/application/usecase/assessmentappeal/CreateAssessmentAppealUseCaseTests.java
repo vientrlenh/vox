@@ -20,7 +20,7 @@ import org.mockito.ArgumentCaptor;
 import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.CreateAssessmentAppealCommand;
+import com.sep.vox.application.port.input.command.assessmentappeal.CreateAssessmentAppealCommand;
 import com.sep.vox.application.port.input.service.AssessmentAppealAccessService;
 import com.sep.vox.application.port.input.service.ResultStatusHistoryRecorder;
 import com.sep.vox.application.port.input.service.AssessmentAppealAccessService.AppealContext;

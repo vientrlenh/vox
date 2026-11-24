@@ -21,7 +21,7 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.BusinessRuleViolationException;
 import com.sep.vox.application.event.AssessmentResultsPublishedEvent;
-import com.sep.vox.application.port.input.command.UpdateAssessmentStatusCommand;
+import com.sep.vox.application.port.input.command.assessment.UpdateAssessmentStatusCommand;
 import com.sep.vox.application.port.input.service.AssessmentCandidateResultFinalizationService;
 import com.sep.vox.application.port.input.service.AssessmentScheduleClosureService;
 import com.sep.vox.application.port.input.service.ClassTestGradingAssignmentService;

@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.BulkDeleteAssessmentCandidatesCommand;
+import com.sep.vox.application.port.input.command.assessmentcandidate.BulkDeleteAssessmentCandidatesCommand;
 import com.sep.vox.application.port.input.usecase.assessmentcandidate.BulkDeleteAssessmentCandidatesUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.UserRoleInfo;

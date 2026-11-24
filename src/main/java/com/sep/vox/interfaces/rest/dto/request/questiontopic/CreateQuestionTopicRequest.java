@@ -1,0 +1,34 @@
+package com.sep.vox.interfaces.rest.dto.request.questiontopic;
+
+import com.sep.vox.application.port.input.command.questiontopic.CreateQuestionTopicCommand;
+import java.util.UUID;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+public record CreateQuestionTopicRequest(
+    @NotNull(message = "ID ngân hàng câu hỏi không được để trống")
+    UUID questionBankId,
+
+    @NotBlank(message = "Mã chủ đề không được để trống")
+    @Size(max = 100, message = "Mã chủ đề không được vượt quá 100 ký tự")
+    String code,
+
+    @NotBlank(message = "Tên chủ đề không được để trống")
+    @Size(max = 255, message = "Tên chủ đề không được vượt quá 255 ký tự")
+    String name,
+
+    @Size(max = 2048, message = "Mô tả không được vượt quá 2048 ký tự")
+    String description
+) {
+
+    public static CreateQuestionTopicCommand toCommand(CreateQuestionTopicRequest request) {
+        return new CreateQuestionTopicCommand(
+            request.questionBankId(),
+            request.code(),
+            request.name(),
+            request.description()
+        );
+    }
+}

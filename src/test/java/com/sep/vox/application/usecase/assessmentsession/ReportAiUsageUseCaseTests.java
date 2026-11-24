@@ -19,8 +19,8 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.RecordAiUsageCommand;
-import com.sep.vox.application.port.input.command.ReportAiUsageCommand;
+import com.sep.vox.application.port.input.command.metering.RecordAiUsageCommand;
+import com.sep.vox.application.port.input.command.assessmentsession.ReportAiUsageCommand;
 import com.sep.vox.application.port.input.usecase.assessmentsession.ReportAiUsageUseCase;
 import com.sep.vox.application.port.input.usecase.metering.RecordAiUsageUseCase;
 import com.sep.vox.application.port.output.UserContextPort;

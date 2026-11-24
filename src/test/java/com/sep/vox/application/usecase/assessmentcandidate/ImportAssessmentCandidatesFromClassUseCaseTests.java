@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.BusinessRuleViolationException;
-import com.sep.vox.application.port.input.command.ImportAssessmentCandidatesFromClassCommand;
+import com.sep.vox.application.port.input.command.assessmentcandidate.ImportAssessmentCandidatesFromClassCommand;
 import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
 import com.sep.vox.application.port.input.service.AssessmentDirectoryAccessService;
 import com.sep.vox.application.port.input.service.AssessmentDirectoryAccessService.AssessmentDirectoryScope;

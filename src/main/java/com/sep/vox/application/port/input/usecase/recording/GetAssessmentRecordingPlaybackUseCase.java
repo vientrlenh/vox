@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.port.input.query.GetAssessmentRecordsQuery;
+import com.sep.vox.application.port.input.query.recording.GetAssessmentRecordsQuery;
 import com.sep.vox.application.port.input.service.AssessmentRecordingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.StoragePort;

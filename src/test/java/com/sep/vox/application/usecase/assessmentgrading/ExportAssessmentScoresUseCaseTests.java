@@ -22,7 +22,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.sep.vox.application.port.input.query.ExportAssessmentScoresQuery;
+import com.sep.vox.application.port.input.query.assessmentgrading.ExportAssessmentScoresQuery;
 import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
 import com.sep.vox.application.port.input.service.AssessmentScoreExportSupport;
 import com.sep.vox.application.port.input.usecase.assessmentgrading.ExportAssessmentScoresUseCase;

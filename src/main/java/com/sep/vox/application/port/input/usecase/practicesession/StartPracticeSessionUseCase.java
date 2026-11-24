@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.practicesession;
 
-import com.sep.vox.application.port.input.command.StartPracticeSessionCommand;
+import com.sep.vox.application.port.input.command.practicesession.StartPracticeSessionCommand;
 import com.sep.vox.application.port.input.service.StartPracticeSessionPersistenceService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.PracticeAgentAvailabilityPort;

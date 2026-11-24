@@ -3,7 +3,7 @@ package com.sep.vox.application.response.input.dashboard;
 import java.time.Instant;
 import java.util.List;
 
-import com.sep.vox.application.port.input.query.ViewSchoolAiCostQuery.AiCostGranularity;
+import com.sep.vox.application.port.input.query.dashboard.ViewSchoolAiCostQuery.AiCostGranularity;
 
 /**
  * AI cost of the school over time.

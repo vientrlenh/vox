@@ -9,7 +9,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.port.input.command.UpdateSchoolUserCommand;
+import com.sep.vox.application.port.input.command.schooluser.UpdateSchoolUserCommand;
 
 class UpdateSchoolUserCommandMapperTests {
 

@@ -19,7 +19,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.port.input.query.ViewStudentBusySlotsQuery;
+import com.sep.vox.application.port.input.query.assessmentschedule.ViewStudentBusySlotsQuery;
 import com.sep.vox.application.port.input.service.AssessmentDirectoryAccessService;
 import com.sep.vox.application.port.input.usecase.assessmentschedule.ViewStudentBusySlotsUseCase;
 import com.sep.vox.application.response.input.assessmentschedule.StudentBusySlotResponse;

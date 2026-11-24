@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.ImportAssessmentCandidatesFromClassCommand;
+import com.sep.vox.application.port.input.command.assessmentcandidate.ImportAssessmentCandidatesFromClassCommand;
 import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
 import com.sep.vox.application.port.input.service.AssessmentDirectoryAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;

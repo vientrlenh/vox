@@ -17,9 +17,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sep.vox.application.exception.UnauthorizedException;
-import com.sep.vox.application.port.input.command.ClientDeviceCommand;
-import com.sep.vox.application.port.input.command.GoogleTokenLoginCommand;
-import com.sep.vox.application.port.input.command.OAuth2LoginCommand;
+import com.sep.vox.application.port.input.command.auth.ClientDeviceCommand;
+import com.sep.vox.application.port.input.command.auth.GoogleTokenLoginCommand;
+import com.sep.vox.application.port.input.command.auth.OAuth2LoginCommand;
 import com.sep.vox.application.port.input.usecase.auth.GoogleTokenLoginUseCase;
 import com.sep.vox.application.port.input.usecase.auth.OAuth2LoginUseCase;
 import com.sep.vox.application.port.output.GoogleIdTokenVerifierPort;

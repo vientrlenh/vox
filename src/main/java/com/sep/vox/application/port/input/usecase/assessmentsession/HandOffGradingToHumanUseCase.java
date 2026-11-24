@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.HandOffGradingToHumanCommand;
+import com.sep.vox.application.port.input.command.assessmentsession.HandOffGradingToHumanCommand;
 import com.sep.vox.application.port.input.service.AssessmentSessionModerationAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.model.assessment.AssessmentCandidateResult;

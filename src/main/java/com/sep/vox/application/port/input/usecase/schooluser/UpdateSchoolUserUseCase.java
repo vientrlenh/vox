@@ -15,7 +15,7 @@ import com.sep.vox.application.common.StringNormalization;
 
 import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.UpdateSchoolUserCommand;
+import com.sep.vox.application.port.input.command.schooluser.UpdateSchoolUserCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.AvatarConfigPort;
 import com.sep.vox.application.port.output.UserContextPort;

@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.IssueMonitorTokenCommand;
+import com.sep.vox.application.port.input.command.stream.IssueMonitorTokenCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.StreamTokenProvider;
 import com.sep.vox.application.port.output.UserContextPort;

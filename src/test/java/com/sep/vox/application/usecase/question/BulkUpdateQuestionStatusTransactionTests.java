@@ -16,7 +16,7 @@ import org.springframework.boot.grpc.test.autoconfigure.AutoConfigureTestGrpcTra
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import com.sep.vox.application.port.input.command.BulkUpdateQuestionStatusCommand;
+import com.sep.vox.application.port.input.command.question.BulkUpdateQuestionStatusCommand;
 import com.sep.vox.application.port.input.usecase.question.BulkUpdateQuestionStatusUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.question.BulkUpdateQuestionStatusResponse;

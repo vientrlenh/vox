@@ -59,9 +59,9 @@ class RestRequestTypesTests {
         "QuestionSelectionSpecRequest.targetBandLevel",
         "ImportFieldMappingRequest.dateFormat",
         "AiUsageEventItemRequest.provider",
-        "AssessmentController.status",
-        "QuestionController.scope",
-        "QuestionController.contentType");
+        "RestAssessmentController.status",
+        "RestQuestionController.scope",
+        "RestQuestionController.contentType");
 
     private static final JavaClasses REST_CLASSES = new ClassFileImporter()
         .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)

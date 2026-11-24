@@ -20,8 +20,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.sep.vox.application.exception.UnauthorizedException;
-import com.sep.vox.application.port.input.command.ClientDeviceCommand;
-import com.sep.vox.application.port.input.command.OAuth2LoginCommand;
+import com.sep.vox.application.port.input.command.auth.ClientDeviceCommand;
+import com.sep.vox.application.port.input.command.auth.OAuth2LoginCommand;
 import com.sep.vox.application.port.input.usecase.auth.OAuth2LoginUseCase;
 import com.sep.vox.application.port.output.AuthTokenPort;
 import com.sep.vox.application.port.output.SessionTokenManagerPort;

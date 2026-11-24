@@ -15,7 +15,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.sep.vox.application.port.input.command.RecordRecordingPartChangedCommand;
+import com.sep.vox.application.port.input.command.recording.RecordRecordingPartChangedCommand;
 import com.sep.vox.application.port.input.usecase.recording.RecordRecordingPartChangedUseCase;
 import com.sep.vox.application.port.output.RecordingStorageConfigPort;
 import com.sep.vox.domain.model.assessment.AssessmentRecording;

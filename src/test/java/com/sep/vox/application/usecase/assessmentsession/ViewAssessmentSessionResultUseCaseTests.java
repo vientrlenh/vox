@@ -16,7 +16,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.port.input.query.ViewAssessmentSessionResultQuery;
+import com.sep.vox.application.port.input.query.assessmentsession.ViewAssessmentSessionResultQuery;
 import com.sep.vox.application.port.input.service.AssessmentResultAccessService;
 import com.sep.vox.application.port.input.service.AssessmentResultAccessService.SessionAccess;
 import com.sep.vox.application.port.input.usecase.assessmentevaluation.AssessmentSessionResultCalculator;

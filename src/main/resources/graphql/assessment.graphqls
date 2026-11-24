@@ -899,7 +899,7 @@ extend type Query {
 
     assessmentItemResponseEvaluation(answerId: ID!): AssessmentItemEvaluationDetails
     # Renamed `records` -> `recordings` (2026-08-07). The resolver has always been named `recordings`
-    # (AssessmentSessionController#recordings), so the `records` field had NOBODY serving it -- the schema
+    # (GraphQLAssessmentSessionController#recordings), so the `records` field had NOBODY serving it -- the schema
     # inspection report at startup lists it under "Unmapped fields", and calling it would fail because of the
     # non-null return type. No client was calling it so renaming the field is safe.
     recordings(assessmentSessionId: ID!, streamType: AssessmentRecordingStreamType): [AssessmentRecording!]!

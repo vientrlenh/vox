@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.ClaimClassTestGradingCommand;
+import com.sep.vox.application.port.input.command.assessmentgrading.ClaimClassTestGradingCommand;
 import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.model.assessment.AssessmentGradingAssignment;
@@ -29,7 +29,7 @@ import com.sep.vox.domain.repository.AssessmentGradingAssignmentRepository;
  * The teacher who created a class test claims the grading themself -- without going through the school.
  *
  * <p>Placed in the class test facade instead of loosening the {@code @PreAuthorize} of
- * {@code GradingAssignmentController}: loosening that would open the door to <em>every</em> teacher
+ * {@code RestGradingAssignmentController}: loosening that would open the door to <em>every</em> teacher
  * on <em>every</em> assessment, while here the scope is closed to exactly the tests where the caller is the CHAIR.
  *
  * <p>The {@code APPEAL} round is NOT claimed through here: it is tied to a specific appeal so it

@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.CreatePaymentCheckoutUrlCommand;
+import com.sep.vox.application.port.input.command.payment.CreatePaymentCheckoutUrlCommand;
 import com.sep.vox.application.port.input.service.PaymentProcessResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
@@ -339,7 +339,7 @@ public class CreatePaymentCheckoutUrlUseCase
      * original bug -- the order lock held across the network call, and the PENDING row rolled back
      * with it. This flag makes every phase close itself regardless of the calling context.
      *
-     * <p>It is safe because the current caller is PaymentController (REST, no transaction), so no
+     * <p>It is safe because the current caller is RestPaymentController (REST, no transaction), so no
      * order row is locked outside that could end up waiting on each other.
      */
     private <T> T inTransaction(Supplier<T> work) {

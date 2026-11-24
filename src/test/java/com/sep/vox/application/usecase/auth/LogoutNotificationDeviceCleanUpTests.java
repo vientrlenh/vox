@@ -15,7 +15,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import com.sep.vox.application.port.input.command.LogoutCommand;
+import com.sep.vox.application.port.input.command.auth.LogoutCommand;
 import com.sep.vox.application.port.input.usecase.auth.LogoutUseCase;
 import com.sep.vox.application.port.output.SessionTokenManagerPort;
 import com.sep.vox.application.port.output.UserContextPort;

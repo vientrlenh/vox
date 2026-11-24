@@ -40,9 +40,9 @@ public class ViewPracticeBandOptionsUseCase implements IUseCase<Void, List<Pract
      */
     @Transactional(readOnly = true)
     public List<PracticeBandOption> execute(UUID frameworkVersionId) {
-        // Danh sách bậc là khái niệm TOÀN HỆ, không phụ thuộc học sinh nào -- nên không cần
-        // studentId ở đây. Việc chặn người lạ do @PreAuthorize("hasRole('STUDENT')") ở
-        // PracticeController lo, không phải bằng cách gọi UserContextPort rồi vứt kết quả.
+        // The band ladder is a SYSTEM-WIDE concept, independent of any student -- so no
+        // studentId is needed here. Keeping strangers out is the job of @PreAuthorize("hasRole('STUDENT')") on
+        // GraphQLPracticeController, not of calling UserContextPort and throwing the result away.
         List<FrameworkResultBand> ladder = frameworkVersionId == null
             ? enrichmentService.frameworkBandLadder()
             : enrichmentService.frameworkBandLadder(frameworkVersionId);

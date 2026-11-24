@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.UpdateAssessmentPaperStatusCommand;
+import com.sep.vox.application.port.input.command.assessmentpaper.UpdateAssessmentPaperStatusCommand;
 import com.sep.vox.application.port.input.service.AssessmentPaperAuthoringAccessService;
 import com.sep.vox.application.port.input.service.AssessmentPaperAuthoringAccessService.PaperActor;
 import com.sep.vox.application.port.input.service.AssessmentPaperAutoAssigner;

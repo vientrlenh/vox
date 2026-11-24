@@ -1,0 +1,153 @@
+package com.sep.vox.interfaces.graphql.controller;
+
+import com.sep.vox.application.mapper.scoringrule.ScoringRuleParamsMapper;
+import com.sep.vox.application.port.input.command.scoringrule.UpdateSchoolScoringRuleCommand;
+import com.sep.vox.application.port.input.command.scoringrule.UpdateScoringRuleCommand;
+import java.util.UUID;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.graphql.data.method.annotation.Argument;
+import org.springframework.graphql.data.method.annotation.MutationMapping;
+import org.springframework.graphql.data.method.annotation.QueryMapping;
+import org.springframework.graphql.data.method.annotation.SchemaMapping;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Controller;
+
+import com.sep.vox.application.port.input.query.scoringrule.SearchSchoolScoringRuleQuery;
+import com.sep.vox.application.port.input.query.scoringrule.SearchScoringRuleQuery;
+import com.sep.vox.application.port.input.query.scoringrule.ViewAllSchoolScoringRuleQuery;
+import com.sep.vox.application.port.input.query.scoringrule.ViewAllScoringRuleQuery;
+import com.sep.vox.application.port.input.query.scoringrule.ViewSchoolScoringRuleDetailQuery;
+import com.sep.vox.application.port.input.query.scoringrule.ViewScoringRuleDetailQuery;
+import com.sep.vox.application.port.input.usecase.scoringrule.SearchSchoolScoringRuleUseCase;
+import com.sep.vox.application.port.input.usecase.scoringrule.SearchSystemScoringRuleUseCase;
+import com.sep.vox.application.port.input.usecase.scoringrule.UpdateSchoolScoringRuleUseCase;
+import com.sep.vox.application.port.input.usecase.scoringrule.UpdateSystemScoringRuleUseCase;
+import com.sep.vox.application.port.input.usecase.scoringrule.ViewAllSchoolScoringRuleUseCase;
+import com.sep.vox.application.port.input.usecase.scoringrule.ViewAllSystemScoringRuleUseCase;
+import com.sep.vox.application.port.input.usecase.scoringrule.ViewSchoolScoringRuleDetailUseCase;
+import com.sep.vox.application.port.input.usecase.scoringrule.ViewSystemScoringRuleDetailUseCase;
+import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.dto.ScoringRuleDto;
+import com.sep.vox.interfaces.graphql.dto.request.scoringrule.UpdateScoringRuleInput;
+import com.sep.vox.interfaces.shared.PageArguments;
+
+
+@Controller
+@RequiredArgsConstructor
+public class GraphQLScoringRuleController {
+
+    private final SearchSystemScoringRuleUseCase searchSystemScoringRuleUseCase;
+    private final SearchSchoolScoringRuleUseCase searchSchoolScoringRuleUseCase;
+    private final ViewAllSystemScoringRuleUseCase viewAllSystemScoringRuleUseCase;
+    private final ViewAllSchoolScoringRuleUseCase viewAllSchoolScoringRuleUseCase;
+    private final ViewSystemScoringRuleDetailUseCase viewSystemScoringRuleDetailUseCase;
+    private final ViewSchoolScoringRuleDetailUseCase viewSchoolScoringRuleDetailUseCase;
+    private final UpdateSystemScoringRuleUseCase updateSystemScoringRuleUseCase;
+    private final UpdateSchoolScoringRuleUseCase updateSchoolScoringRuleUseCase;
+    private final ScoringRuleParamsMapper scoringRuleParamsMapper;
+
+    @QueryMapping(name = "searchSystemScoringRules")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public PageResult<ScoringRuleDto> searchSystemScoringRules(
+            @Argument(name = "policyId") UUID policyId,
+            @Argument(name = "keyword") String keyword,
+            @Argument(name = "isActive") Boolean isActive,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
+        PageArguments.validate(page, size);
+        return searchSystemScoringRuleUseCase.execute(
+                new SearchScoringRuleQuery(policyId, keyword, isActive, page, size));
+    }
+
+    @QueryMapping(name = "searchSchoolScoringRules")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public PageResult<ScoringRuleDto> searchSchoolScoringRules(
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "policyId") UUID policyId,
+            @Argument(name = "keyword") String keyword,
+            @Argument(name = "isActive") Boolean isActive,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
+        PageArguments.validate(page, size);
+        return searchSchoolScoringRuleUseCase.execute(
+                new SearchSchoolScoringRuleQuery(schoolId, policyId, keyword, isActive, page, size));
+    }
+
+    // Xem toàn bộ (phân trang) danh sách Scoring Rule thuộc 1 Assessment Policy hệ thống.
+    @QueryMapping(name = "viewAllSystemScoringRules")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public PageResult<ScoringRuleDto> viewAllSystemScoringRules(
+            @Argument(name = "policyId") UUID policyId,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
+        PageArguments.validate(page, size);
+        return viewAllSystemScoringRuleUseCase.execute(new ViewAllScoringRuleQuery(policyId, page, size));
+    }
+
+    // Xem toàn bộ (phân trang) danh sách Scoring Rule thuộc 1 Assessment Policy của trường học.
+    @QueryMapping(name = "viewAllSchoolScoringRules")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public PageResult<ScoringRuleDto> viewAllSchoolScoringRules(
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "policyId") UUID policyId,
+            @Argument(name = "page") Integer page,
+            @Argument(name = "size") Integer size) {
+        PageArguments.validate(page, size);
+        return viewAllSchoolScoringRuleUseCase.execute(
+                new ViewAllSchoolScoringRuleQuery(schoolId, policyId, page, size));
+    }
+
+    // Xem chi tiết 1 Scoring Rule của Assessment Policy hệ thống.
+    @QueryMapping(name = "viewSystemScoringRuleDetails")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public ScoringRuleDto viewSystemScoringRuleDetails(
+            @Argument(name = "policyId") UUID policyId,
+            @Argument(name = "ruleId") UUID ruleId) {
+        return viewSystemScoringRuleDetailUseCase.execute(new ViewScoringRuleDetailQuery(policyId, ruleId));
+    }
+
+    // Xem chi tiết 1 Scoring Rule của Assessment Policy của trường học.
+    @QueryMapping(name = "viewSchoolScoringRuleDetails")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public ScoringRuleDto viewSchoolScoringRuleDetails(
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "policyId") UUID policyId,
+            @Argument(name = "ruleId") UUID ruleId) {
+        return viewSchoolScoringRuleDetailUseCase.execute(new ViewSchoolScoringRuleDetailQuery(schoolId, policyId, ruleId));
+    }
+
+    // Cập nhật Scoring Rule (chỉ khi Policy đang DRAFT - business rule được kiểm tra trong UseCase)
+    @MutationMapping(name = "updateSystemScoringRule")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public UUID updateSystemScoringRule(
+            @Argument(name = "policyId") UUID policyId,
+            @Argument(name = "ruleId") UUID ruleId,
+            @Argument(name = "input") UpdateScoringRuleInput input) {
+        UpdateScoringRuleCommand command = UpdateScoringRuleInput.toUpdateScoringRuleCommand(scoringRuleParamsMapper, policyId, ruleId, input);
+        return updateSystemScoringRuleUseCase.execute(command);
+    }
+
+    @MutationMapping(name = "updateSchoolScoringRule")
+    @PreAuthorize("hasRole('SCHOOL_ADMIN')")
+    public UUID updateSchoolScoringRule(
+            @Argument(name = "schoolId") UUID schoolId,
+            @Argument(name = "policyId") UUID policyId,
+            @Argument(name = "ruleId") UUID ruleId,
+            @Argument(name = "input") UpdateScoringRuleInput input) {
+        UpdateSchoolScoringRuleCommand command = UpdateScoringRuleInput.toUpdateSchoolScoringRuleCommand(scoringRuleParamsMapper, schoolId, policyId, ruleId, input);
+        return updateSchoolScoringRuleUseCase.execute(command);
+    }
+
+    // conditionParams/actionParams in ScoringRuleDto are Map<String,Object> (used by REST), but the GraphQL
+    // schema has no Map/JSON scalar, so they have to be converted to a JSON string here.
+    @SchemaMapping(typeName = "ScoringRule", field = "conditionParamsJson")
+    public String getConditionParamsJson(ScoringRuleDto rule) {
+        return scoringRuleParamsMapper.toJsonString(rule.conditionParams());
+    }
+
+    @SchemaMapping(typeName = "ScoringRule", field = "actionParamsJson")
+    public String getActionParamsJson(ScoringRuleDto rule) {
+        return scoringRuleParamsMapper.toJsonString(rule.actionParams());
+    }
+}

@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.port.input.command.CreateTopUpOrderCommand;
+import com.sep.vox.application.port.input.command.order.CreateTopUpOrderCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.ServiceFeePort;
 import com.sep.vox.application.port.output.UserContextPort;

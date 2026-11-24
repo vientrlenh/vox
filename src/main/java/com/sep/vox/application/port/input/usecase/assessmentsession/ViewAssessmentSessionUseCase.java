@@ -4,7 +4,7 @@ import com.sep.vox.domain.model.assessment.AssessmentSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import com.sep.vox.application.port.input.query.ViewAssessmentSessionQuery;
+import com.sep.vox.application.port.input.query.assessmentsession.ViewAssessmentSessionQuery;
 import com.sep.vox.application.port.input.service.AssessmentResultAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.assessmentsession.AssessmentSessionResponse;

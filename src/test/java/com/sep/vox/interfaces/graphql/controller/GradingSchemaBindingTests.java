@@ -69,12 +69,13 @@ class GradingSchemaBindingTests {
     }
 
     /**
-     * Field lấy dữ liệu qua {@code @SchemaMapping} + DataLoader chứ không phải property của DTO,
-     * nên cố tình KHÔNG có record component cùng tên -- xem GradingController.
+     * Fields that get their data through {@code @SchemaMapping} + DataLoader rather than a DTO property,
+     * so they deliberately have NO record component of the same name -- see GraphQLGradingController.
      *
-     * <p>Liệt kê tường minh thay vì nới lỏng phép kiểm: mọi field còn lại vẫn phải khớp tên, vì
-     * lệch tên là trả {@code null} âm thầm, đúng thứ test này sinh ra để bắt. Thêm resolver mới thì
-     * thêm một dòng ở đây, và việc phải sửa test là chủ ý -- nó buộc người thêm phải nhìn lại.
+     * <p>Listed explicitly instead of loosening the check: every other field must still match by name,
+     * because a name mismatch silently returns {@code null}, exactly what this test exists to catch.
+     * Adding a new resolver means adding one line here, and having to edit the test is intentional -- it
+     * forces whoever adds it to take another look.
      */
     private static final Set<String> RESOLVER_BACKED_FIELDS = Set.of(
         "AssignableTeacher.user",

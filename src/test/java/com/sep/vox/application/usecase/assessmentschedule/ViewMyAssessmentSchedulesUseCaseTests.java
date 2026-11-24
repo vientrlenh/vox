@@ -14,7 +14,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.port.input.query.ViewAssessmentSchedulesQuery;
+import com.sep.vox.application.port.input.query.assessmentschedule.ViewAssessmentSchedulesQuery;
 import com.sep.vox.application.port.input.usecase.assessmentschedule.ViewMyAssessmentSchedulesUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.AssessmentScheduleDto;

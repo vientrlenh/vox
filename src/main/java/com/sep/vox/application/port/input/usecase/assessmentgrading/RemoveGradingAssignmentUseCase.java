@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.port.input.command.RemoveGradingAssignmentCommand;
+import com.sep.vox.application.port.input.command.assessmentgrading.RemoveGradingAssignmentCommand;
 import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.model.assessment.AssessmentAppealStatus;

@@ -1,0 +1,25 @@
+package com.sep.vox.application.port.input.command.metering;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.UUID;
+
+import com.sep.vox.domain.model.metering.AiUsageType;
+
+public record RecordAiUsageCommand(
+    UUID assessmentSessionId,
+    UUID turnId,
+    UUID usageEventId,
+    AiUsageType usageType,
+    String provider,
+    String modelName,
+    Integer inputTokens,
+    Integer outputTokens,
+    Integer cacheCreationInputTokens,
+    Integer cacheReadInputTokens,
+    Long durationMs,
+    String unitPriceJson,
+    BigDecimal costUsd,
+    Instant occurredAt
+) {
+}

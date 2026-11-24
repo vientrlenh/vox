@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.UpdateQuestionStatusCommand;
+import com.sep.vox.application.port.input.command.question.UpdateQuestionStatusCommand;
 import com.sep.vox.application.port.input.service.QuestionStatusActorResolver;
 import com.sep.vox.application.port.input.usecase.question.UpdateQuestionStatusUseCase;
 import com.sep.vox.application.port.output.UserContextPort;

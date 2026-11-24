@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.port.input.query.ViewSupportedLanguagesQuery;
+import com.sep.vox.application.port.input.query.supportedlanguage.ViewSupportedLanguagesQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.common.PageResult;

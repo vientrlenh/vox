@@ -11,8 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.port.input.command.ApproveAssessmentAppealCommand;
-import com.sep.vox.application.port.input.command.AssignAssessmentAppealReviewerCommand;
+import com.sep.vox.application.port.input.command.assessmentappeal.ApproveAssessmentAppealCommand;
+import com.sep.vox.application.port.input.command.assessmentappeal.AssignAssessmentAppealReviewerCommand;
 import com.sep.vox.application.port.input.service.AssessmentAppealAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 

@@ -5,8 +5,8 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.sep.vox.application.port.input.command.ClassTestQuestionCommand;
-import com.sep.vox.application.port.input.command.ClassTestSectionCommand;
+import com.sep.vox.application.port.input.command.assessment.ClassTestQuestionCommand;
+import com.sep.vox.application.port.input.command.assessment.ClassTestSectionCommand;
 import com.sep.vox.domain.model.assessment.AssessmentPaperSection;
 
 /**

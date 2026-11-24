@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.port.input.command.BulkUpdateQuestionScopeStatusCommand;
+import com.sep.vox.application.port.input.command.questionbank.BulkUpdateQuestionScopeStatusCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.question.BulkUpdateQuestionScopeStatusFailure;

@@ -16,7 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.port.input.query.ViewQuestionStatusCountsQuery;
+import com.sep.vox.application.port.input.query.question.ViewQuestionStatusCountsQuery;
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionStatusCountsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.QuestionStatusCountInfo;

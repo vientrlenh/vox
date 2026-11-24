@@ -12,7 +12,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sep.vox.application.exception.DataConflictException;
 import com.sep.vox.application.exception.ResourceDuplicatedException;
-import com.sep.vox.application.port.input.command.CreateFrameworkCommand;
+import com.sep.vox.application.port.input.command.framework.CreateFrameworkCommand;
 import com.sep.vox.application.port.input.usecase.framework.CreateFrameworkUseCase;
 import com.sep.vox.domain.model.framework.Framework;
 import com.sep.vox.domain.repository.FrameworkRepository;

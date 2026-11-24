@@ -11,7 +11,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.port.input.query.ViewFrameworksQuery;
+import com.sep.vox.application.port.input.query.framework.ViewFrameworksQuery;
 import com.sep.vox.application.port.input.usecase.framework.ViewFrameworksUseCase;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.FrameworkDto;

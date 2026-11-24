@@ -15,8 +15,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sep.vox.application.exception.DataConflictException;
-import com.sep.vox.application.port.input.command.CreateFrameworkResultBandsCommand;
-import com.sep.vox.application.port.input.command.CreateFrameworkResultBandsCommand.ResultBandItemCommand;
+import com.sep.vox.application.port.input.command.framework.CreateFrameworkResultBandsCommand;
+import com.sep.vox.application.port.input.command.framework.CreateFrameworkResultBandsCommand.ResultBandItemCommand;
 import com.sep.vox.application.port.input.usecase.framework.CreateFrameworkResultBandsUseCase;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;

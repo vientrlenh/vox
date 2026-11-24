@@ -252,7 +252,7 @@ Write the tests in the same slice as the code they cover, not at the end.
   context. Strict stubs are on: remove an unused stub, never hide it with `lenient()`.
 - REST controllers: `@RestControllerTest`. Every role-protected endpoint group needs 401 (`@WithAnonymousUser`),
   403 with a wrong role (send a valid body, because `@Valid` runs first) and success with the right role.
-- GraphQL where authorization matters: `@GraphQlControllerTest`.
+- GraphQL where authorization matters: `@GraphQLControllerTest`.
 - Repository or query code: `@RepositoryTest`. Full context: `@IntegrationTest`. Never raw `@DataJpaTest` or
   `@SpringBootTest`. Keep `application-test.yaml` as it is.
 - Name classes `XxxTests` in the mirrored package. Assert the behavior in the done-condition, not only that the code

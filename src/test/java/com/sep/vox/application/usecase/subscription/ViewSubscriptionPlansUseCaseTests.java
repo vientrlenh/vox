@@ -14,7 +14,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.sep.vox.application.port.input.query.ViewSubscriptionPlansQuery;
+import com.sep.vox.application.port.input.query.subscription.ViewSubscriptionPlansQuery;
 import com.sep.vox.application.port.input.usecase.subscription.ViewSubscriptionPlansUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.SubscriptionPlanQueryRepository;

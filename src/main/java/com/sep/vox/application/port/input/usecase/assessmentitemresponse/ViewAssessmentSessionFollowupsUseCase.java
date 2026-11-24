@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.port.input.query.ViewAssessmentSessionFollowupsQuery;
+import com.sep.vox.application.port.input.query.assessmentitemresponse.ViewAssessmentSessionFollowupsQuery;
 import com.sep.vox.application.port.input.service.AssessmentResultAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.assessmentitemresponse.AssessmentSessionFollowupResponse;

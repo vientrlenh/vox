@@ -28,13 +28,13 @@ class MyClassAuthorizationBoundaryTests {
 
     @Test
     void every_my_class_resolver_should_require_teacher_role() {
-        List<Method> resolvers = Arrays.stream(MyClassController.class.getDeclaredMethods())
+        List<Method> resolvers = Arrays.stream(GraphQLMyClassController.class.getDeclaredMethods())
             .filter(method -> method.isAnnotationPresent(QueryMapping.class)
                 || method.isAnnotationPresent(SchemaMapping.class))
             .toList();
 
         assertThat(resolvers)
-            .as("MyClassController phải có 3 query + 5 field resolver")
+            .as("GraphQLMyClassController phải có 3 query + 5 field resolver")
             .hasSize(8);
 
         assertThat(resolvers)
@@ -46,12 +46,12 @@ class MyClassAuthorizationBoundaryTests {
     @Test
     void admin_class_surface_should_stay_school_admin_only() throws NoSuchMethodException {
         Method[] adminOnly = new Method[] {
-            SchoolController.class.getDeclaredMethod("schoolClass", UUID.class),
-            SchoolController.class.getDeclaredMethod("schoolClassUsers", UUID.class, Integer.class, Integer.class),
-            SchoolController.class.getDeclaredMethod("user", SchoolClassUserDto.class, DataFetchingEnvironment.class),
-            SchoolController.class.getDeclaredMethod("schoolGrade", SchoolClassDto.class, DataFetchingEnvironment.class),
-            SchoolController.class.getDeclaredMethod("language", SchoolClassDto.class, DataFetchingEnvironment.class),
-            SchoolController.class.getDeclaredMethod("school", SchoolClassDto.class, DataFetchingEnvironment.class),
+            GraphQLSchoolController.class.getDeclaredMethod("schoolClass", UUID.class),
+            GraphQLSchoolController.class.getDeclaredMethod("schoolClassUsers", UUID.class, Integer.class, Integer.class),
+            GraphQLSchoolController.class.getDeclaredMethod("user", SchoolClassUserDto.class, DataFetchingEnvironment.class),
+            GraphQLSchoolController.class.getDeclaredMethod("schoolGrade", SchoolClassDto.class, DataFetchingEnvironment.class),
+            GraphQLSchoolController.class.getDeclaredMethod("language", SchoolClassDto.class, DataFetchingEnvironment.class),
+            GraphQLSchoolController.class.getDeclaredMethod("school", SchoolClassDto.class, DataFetchingEnvironment.class),
         };
 
         assertThat(adminOnly)

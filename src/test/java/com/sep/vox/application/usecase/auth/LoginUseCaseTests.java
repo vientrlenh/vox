@@ -21,8 +21,8 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.ClientDeviceCommand;
-import com.sep.vox.application.port.input.command.LoginCommand;
+import com.sep.vox.application.port.input.command.auth.ClientDeviceCommand;
+import com.sep.vox.application.port.input.command.auth.LoginCommand;
 import com.sep.vox.application.port.input.usecase.auth.LoginUseCase;
 import com.sep.vox.application.port.output.AuthTokenPort;
 import com.sep.vox.application.port.output.AuthenticationManagerPort;

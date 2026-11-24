@@ -16,7 +16,7 @@ import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.port.input.command.RecordAiUsageCommand;
+import com.sep.vox.application.port.input.command.metering.RecordAiUsageCommand;
 import com.sep.vox.application.port.input.usecase.metering.RecordAiUsageUseCase;
 import com.sep.vox.domain.model.metering.AiUsageType;
 import com.sep.vox.interfaces.kafka.dto.AiUsageRecordedEventDto;

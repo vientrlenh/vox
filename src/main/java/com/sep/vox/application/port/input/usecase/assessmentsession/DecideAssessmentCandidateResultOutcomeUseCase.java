@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.event.AssessmentResultOutcomeDecidedPayloadV1;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.DecideAssessmentCandidateResultOutcomeCommand;
+import com.sep.vox.application.port.input.command.assessmentsession.DecideAssessmentCandidateResultOutcomeCommand;
 import com.sep.vox.application.port.input.service.AssessmentSessionModerationAccessService;
 import com.sep.vox.application.port.input.service.ResultStatusHistoryRecorder;
 import com.sep.vox.application.port.input.usecase.IUseCase;

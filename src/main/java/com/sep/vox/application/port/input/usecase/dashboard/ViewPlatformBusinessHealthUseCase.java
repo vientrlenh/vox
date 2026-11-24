@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.port.input.query.ViewPlatformBusinessHealthQuery;
+import com.sep.vox.application.port.input.query.dashboard.ViewPlatformBusinessHealthQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.query.repository.PlatformBusinessHealthQueryRepository;
 import com.sep.vox.application.response.input.dashboard.PlatformBusinessHealthResponse;

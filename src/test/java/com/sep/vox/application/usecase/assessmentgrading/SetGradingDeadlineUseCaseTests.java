@@ -20,7 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.port.input.command.SetGradingDeadlineCommand;
+import com.sep.vox.application.port.input.command.assessmentgrading.SetGradingDeadlineCommand;
 import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
 import com.sep.vox.application.port.input.service.AssessmentGradingAccessService.GradingContext;
 import com.sep.vox.application.port.input.usecase.assessmentgrading.SetGradingDeadlineUseCase;

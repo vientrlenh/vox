@@ -4,7 +4,7 @@ import java.util.Locale;
 import java.util.UUID;
 
 import com.sep.vox.application.common.DateMapper;
-import com.sep.vox.application.port.input.command.RecordRecordingPartChangedCommand;
+import com.sep.vox.application.port.input.command.recording.RecordRecordingPartChangedCommand;
 import com.sep.vox.domain.model.assessment.AssessmentRecordingAssemblyStatus;
 import com.sep.vox.domain.model.assessment.AssessmentRequiredStreamType;
 import com.sep.vox.interfaces.kafka.dto.RecordingPartChangedEventDto;

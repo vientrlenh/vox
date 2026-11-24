@@ -22,7 +22,7 @@ import org.mockito.ArgumentCaptor;
 import com.sep.vox.application.exception.DataConflictException;
 import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.CreateSchoolClassUserCommand;
+import com.sep.vox.application.port.input.command.schoolclassuser.CreateSchoolClassUserCommand;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.CreateSchoolClassUserUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.schoolclassuser.CreateSchoolClassUserResponse;

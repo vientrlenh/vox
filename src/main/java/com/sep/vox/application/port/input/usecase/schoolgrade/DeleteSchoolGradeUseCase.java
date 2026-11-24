@@ -3,7 +3,7 @@ package com.sep.vox.application.port.input.usecase.schoolgrade;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
-import com.sep.vox.application.port.input.command.DeleteSchoolGradeCommand;
+import com.sep.vox.application.port.input.command.schoolgrade.DeleteSchoolGradeCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.school.SchoolGrade;

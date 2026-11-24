@@ -26,16 +26,16 @@ import com.sep.vox.application.port.input.usecase.scoringrule.CreateSchoolScorin
 import com.sep.vox.application.port.input.usecase.scoringrule.CreateSystemScoringRuleUseCase;
 import com.sep.vox.application.port.input.usecase.scoringrule.DeleteSchoolScoringRuleUseCase;
 import com.sep.vox.application.port.input.usecase.scoringrule.DeleteSystemScoringRuleUseCase;
-import com.sep.vox.interfaces.rest.controller.ScoringRuleController;
+import com.sep.vox.interfaces.rest.controller.RestScoringRuleController;
 import com.sep.vox.interfaces.rest.dto.response.ErrorResponse;
 import com.sep.vox.interfaces.rest.dto.response.ValidationErrorResponse;
 import com.sep.vox.support.RestControllerTest;
 
 /**
  * Malformed-request answers of {@link GlobalExceptionHandler}, driven through
- * {@code ScoringRuleController} because its request already uses enums and a primitive.
+ * {@code RestScoringRuleController} because its request already uses enums and a primitive.
  */
-@RestControllerTest(ScoringRuleController.class)
+@RestControllerTest(RestScoringRuleController.class)
 @WithMockUser(roles = "SYSTEM_ADMIN")
 class GlobalExceptionHandlerTests {
 

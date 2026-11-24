@@ -16,8 +16,8 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.port.input.command.AssignAssessmentPapersCommand;
-import com.sep.vox.application.port.input.command.AssessmentPaperAssignmentItem;
+import com.sep.vox.application.port.input.command.assessmentcandidate.AssignAssessmentPapersCommand;
+import com.sep.vox.application.port.input.command.assessmentcandidate.AssessmentPaperAssignmentItem;
 import com.sep.vox.application.port.input.usecase.assessmentcandidate.AssignAssessmentPapersUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;

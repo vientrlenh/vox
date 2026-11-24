@@ -17,7 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.UpdateFrameworkVersionStatusCommand;
+import com.sep.vox.application.port.input.command.framework.UpdateFrameworkVersionStatusCommand;
 import com.sep.vox.application.port.input.usecase.framework.UpdateFrameworkVersionStatusUseCase;
 import com.sep.vox.domain.model.framework.Framework;
 import com.sep.vox.domain.model.framework.FrameworkCriterion;

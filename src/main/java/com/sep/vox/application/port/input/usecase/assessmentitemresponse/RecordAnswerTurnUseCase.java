@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.RecordAnswerTurnCommand;
+import com.sep.vox.application.port.input.command.assessmentitemresponse.RecordAnswerTurnCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.model.assessment.AssessmentItemResponse;
 import com.sep.vox.domain.model.assessment.AssessmentItemResponseTurn;

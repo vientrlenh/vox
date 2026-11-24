@@ -3,7 +3,7 @@ package com.sep.vox.application.port.input.usecase.rubricsystem;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
-import com.sep.vox.application.port.input.command.AcceptRubricCriterionImportCommand;
+import com.sep.vox.application.port.input.command.rubricsystem.AcceptRubricCriterionImportCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.UserContextPort;

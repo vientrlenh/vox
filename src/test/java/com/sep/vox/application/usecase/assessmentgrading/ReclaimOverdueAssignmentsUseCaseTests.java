@@ -24,7 +24,7 @@ import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.port.input.command.ReclaimOverdueAssignmentsCommand;
+import com.sep.vox.application.port.input.command.assessmentgrading.ReclaimOverdueAssignmentsCommand;
 import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
 import com.sep.vox.application.port.input.service.RoundRobinLoadBalancer;
 import com.sep.vox.application.port.input.usecase.assessmentgrading.ReclaimOverdueAssignmentsUseCase;

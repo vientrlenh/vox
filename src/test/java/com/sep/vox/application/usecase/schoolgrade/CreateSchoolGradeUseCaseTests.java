@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import com.sep.vox.application.exception.DataConflictException;
-import com.sep.vox.application.port.input.command.CreateSchoolGradeCommand;
+import com.sep.vox.application.port.input.command.schoolgrade.CreateSchoolGradeCommand;
 import com.sep.vox.application.port.input.usecase.schoolgrade.CreateSchoolGradeUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.school.SchoolGrade;

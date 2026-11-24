@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.mapper.practicesession.PracticeSessionResponseMapper;
-import com.sep.vox.application.port.input.command.SubmitPracticeTurnCommand;
+import com.sep.vox.application.port.input.command.practicesession.SubmitPracticeTurnCommand;
 import com.sep.vox.application.port.input.service.ConsumeQuotaService;
 import com.sep.vox.application.port.input.service.PracticeEvaluationRequestFactory;
 import com.sep.vox.application.port.input.service.PracticeTopicOfferEnrichmentService;

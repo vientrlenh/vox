@@ -2,7 +2,7 @@ package com.sep.vox.application.port.input.usecase.assessmentpolicysystem;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
-import com.sep.vox.application.port.input.command.PublishSystemAssessmentPoliciesByRubricVersionCommand;
+import com.sep.vox.application.port.input.command.assessmentpolicysystem.PublishSystemAssessmentPoliciesByRubricVersionCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;

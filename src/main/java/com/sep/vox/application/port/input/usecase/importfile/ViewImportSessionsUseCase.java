@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.mapper.importfile.ImportSessionResponseMapper;
-import com.sep.vox.application.port.input.query.ViewImportSessionsQuery;
+import com.sep.vox.application.port.input.query.importfile.ViewImportSessionsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.importfile.ImportSessionSummaryResponse;

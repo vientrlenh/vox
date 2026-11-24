@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.DateMapper;
 import com.sep.vox.application.mapper.assessmentgrading.GradingResultCode;
-import com.sep.vox.application.port.input.query.ExportAssessmentScoresQuery;
+import com.sep.vox.application.port.input.query.assessmentgrading.ExportAssessmentScoresQuery;
 import com.sep.vox.application.port.input.service.AssessmentScoreExportSupport;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.SpreadsheetWriterPort;

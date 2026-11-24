@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.port.input.query.ViewGradingFailureSessionsQuery;
+import com.sep.vox.application.port.input.query.dashboard.ViewGradingFailureSessionsQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewGradingFailureOverviewUseCase.GradingFailureWindow;
 import com.sep.vox.application.query.dto.GradingFailureSessionDto;

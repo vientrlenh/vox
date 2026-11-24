@@ -15,8 +15,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.query.ViewSchoolTeachersBySchoolQuery;
-import com.sep.vox.application.port.input.query.ViewSchoolUsersBySchoolQuery;
+import com.sep.vox.application.port.input.query.schooluser.ViewSchoolTeachersBySchoolQuery;
+import com.sep.vox.application.port.input.query.schooluser.ViewSchoolUsersBySchoolQuery;
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolTeachersBySchoolUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUsersBySchoolUseCase;
 import com.sep.vox.domain.common.PageResult;

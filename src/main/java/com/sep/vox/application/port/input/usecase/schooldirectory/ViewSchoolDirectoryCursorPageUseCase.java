@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.port.input.query.ViewSchoolDirectoryCursorPageQuery;
+import com.sep.vox.application.port.input.query.schooldirectory.ViewSchoolDirectoryCursorPageQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.common.CursorPage;
 import com.sep.vox.domain.dto.SchoolDirectoryDto;

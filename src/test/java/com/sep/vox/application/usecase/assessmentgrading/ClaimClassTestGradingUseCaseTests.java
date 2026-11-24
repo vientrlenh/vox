@@ -24,7 +24,7 @@ import org.mockito.ArgumentCaptor;
 import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.ClaimClassTestGradingCommand;
+import com.sep.vox.application.port.input.command.assessmentgrading.ClaimClassTestGradingCommand;
 import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
 import com.sep.vox.application.port.input.usecase.assessmentgrading.ClaimClassTestGradingUseCase;
 import com.sep.vox.domain.model.assessment.AssessmentCandidateResult;

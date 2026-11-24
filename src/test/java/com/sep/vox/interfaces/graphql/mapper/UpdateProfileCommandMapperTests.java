@@ -8,7 +8,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.port.input.command.UpdateProfileCommand;
+import com.sep.vox.application.port.input.command.user.UpdateProfileCommand;
 
 class UpdateProfileCommandMapperTests {
 

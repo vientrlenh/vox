@@ -79,7 +79,7 @@
 <h1>Interfaces naming and packaging plan</h1>
 <div class="meta">
   Repository: <code>vox</code> &middot; Branch: <code>default</code> &middot; Written 2026-11-23 &middot;
-  Plan status: <span class="status approved" id="plan-status" data-plan-status="approved">Approved</span>
+  Plan status: <span class="status done" id="plan-status" data-plan-status="done">Done</span>
 </div>
 
 <p>Make the interfaces layer easier to navigate and consistent with the use-case layout. Four changes, none of which
@@ -345,6 +345,18 @@ GitHub API).</p>
   <div class="answer"><strong>Answer (2026-11-23):</strong> A &ndash; add <code>architecture/InterfacesStructureConventionTests</code> (job 8.1).</div>
 </div>
 
+<div class="decision" id="a1" data-decision-state="answered" data-scope="plan" data-topic="unused-request-record-package">
+  <h3>A1. Package for the 3 REST request records that no controller or mapper uses <span class="status answered">Answered</span></h3>
+  <p class="meta">Asked while implementing job 5.1. Scope: whole plan. Reused by: job 5.1.</p>
+  <div class="answer"><strong>Answer (2026-11-23):</strong> Match by name (recommended) &ndash; CreateSystemQuestionBankQuestionRequest to question, ImportFieldMappingRequest to importfile, PaymentMethodRequest to payment; moved, not deleted.</div>
+</div>
+
+<div class="decision" id="a2" data-decision-state="answered" data-scope="plan" data-topic="shared-request-record-package">
+  <h3>A2. Package for SessionReasonRequest (used by assessmentsession and assessmentcandidate endpoints) <span class="status answered">Answered</span></h3>
+  <p class="meta">Asked while implementing job 5.1. Scope: whole plan. Reused by: none yet.</p>
+  <div class="answer"><strong>Answer (2026-11-23):</strong> assessmentsession (recommended) &ndash; majority of its users. Rule for later jobs: a record used by several features with no D6 row goes to the feature with most users.</div>
+</div>
+
 <h2 id="phases">3. Phases</h2>
 <p>Each phase is independently reviewable and leaves the build green. They run in the order written: the small renames first, the large moves in the middle,
 the conversion of mappers once records and commands already sit in their final packages, the guards and the documents last.</p>
@@ -354,66 +366,66 @@ writes bytes so the CRLF working tree is not rewritten. (2) Moves use <code>git 
 job edits or moves is translated to English, faithfully; string literals stay as they are. (5) After each job <code>./gradlew compileJava compileTestJava</code> is green.</p></div>
 
 <!-- ===================== PHASE 1 ===================== -->
-<div class="phase" id="phase-1" data-status="todo">
+<div class="phase" id="phase-1" data-status="done">
   <h3><span class="title">Phase 1 &ndash; GraphQl becomes GraphQL in class names</span>
     <span class="tag">small &middot; mechanical</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> no class in the repository spells the word with a lowercase <code>l</code>, except Spring's own types. <strong>Depends on:</strong> nothing.</p>
   <ul class="jobs">
-    <li class="job" id="job-1-1" data-status="todo">
-      <span class="title">1.1 Rename the 14 main classes</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-1-1" data-status="done">
+      <span class="title">1.1 Rename the 14 main classes</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>git ls-files src/main | grep -E 'Graphql|GraphQl'</code> prints nothing and <code>./gradlew compileJava compileTestJava</code> is green.
          The 13 <code>XxxGraphQlDataLoaderConfig</code> and <code>DateScalarsGraphQlConfig</code> carry the new spelling in file name, class name and every reference
          (identifier references in test sources included, so the test code still compiles).
          <strong>Files:</strong> 14 files in <code>src/main/java/com/sep/vox/interfaces/graphql/config/</code> and the test files that name them.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; Done &middot; 14 main classes renamed with git mv; <code>git ls-files src | grep -E 'Graphql|GraphQl'</code> prints nothing; <code>./gradlew compileJava compileTestJava</code> green.</li></ul>
     </li>
-    <li class="job" id="job-1-2" data-status="todo">
-      <span class="title">1.2 Rename the 40 test classes</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-1-2" data-status="done">
+      <span class="title">1.2 Rename the 40 test classes</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>git ls-files src | grep -E 'Graphql|GraphQl'</code> prints nothing, and
          <code>grep -rhoE '\w*(Graphql|GraphQl)\w*' src --include=*.java | sort -u</code> prints only <code>GraphQlTester</code>, <code>GraphQlSource</code>, <code>GraphQlTest</code> and
          <code>buildGraphQlWithTheConfiguredScalars</code>. The annotation <code>GraphQLControllerTest</code> replaces its 72 occurrences.
          <strong>Files:</strong> the 35 <code>XxxGraphQlTests</code>, <code>GraphQlEnumParityTests</code>, <code>GraphQlSchemaTypingTests</code>, <code>DateScalarsGraphQlConfigTests</code>,
          <code>config/GraphQlTestSecurityConfiguration</code>, <code>support/GraphQlControllerTest</code> under <code>src/test/java/com/sep/vox/</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; Done &middot; 40 test classes renamed; remaining tokens are only GraphQlTester, GraphQlSource, GraphQlTest, buildGraphQlWithTheConfiguredScalars; <code>GraphQLControllerTest</code> in use.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests '*GraphQL*'</code>, <code>./gradlew test --tests '*LayeredArchitectureTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-23 &middot; Done &middot; compileJava, compileTestJava and <code>test --tests '*GraphQL*' --tests '*LayeredArchitectureTests'</code> BUILD SUCCESSFUL; phase-1 jobs 1.1 and 1.2 done.</li></ul>
 </div>
 
 <!-- ===================== PHASE 2 ===================== -->
-<div class="phase" id="phase-2" data-status="todo">
+<div class="phase" id="phase-2" data-status="done">
   <h3><span class="title">Phase 2 &ndash; REST controllers get the Rest prefix</span>
     <span class="tag">medium &middot; mechanical &middot; job 2.3 needs D3</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> all 33 REST controllers and their 26 test classes use the new names, and the OpenAPI tags follow D3. <strong>Depends on:</strong> phase 1, D3.</p>
   <ul class="jobs">
-    <li class="job" id="job-2-1" data-status="todo">
-      <span class="title">2.1 Rename the 33 REST controllers</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-2-1" data-status="done">
+      <span class="title">2.1 Rename the 33 REST controllers</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>git ls-files 'src/main/java/**/interfaces/rest/controller/**' | grep -v '/Rest[A-Z]'</code> prints nothing, the explicit name in
          <code>@RestController("restRegisterFormController")</code> is removed (the default bean name is identical), and <code>./gradlew compileJava compileTestJava</code> is green
          (identifier references in test sources are updated, test classes are renamed in 2.2). The class-level comment of each renamed controller is in English.
          <strong>Files:</strong> 31 files in <code>rest/controller/</code>, 2 in <code>rest/controller/internal/</code>, and the test sources that name them.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; Done &middot; 33 controllers renamed with git mv (31 + 2 internal), references in tests and GlobalExceptionHandlerTests updated, explicit bean name of RegisterFormController removed, 8 class-level comments translated to English. The script scoped the rename to REST files because 33 GraphQL controllers share the same simple names. <code>./gradlew compileJava compileTestJava</code> green.</li></ul>
     </li>
-    <li class="job" id="job-2-2" data-status="todo">
-      <span class="title">2.2 Rename the 26 REST controller tests</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-2-2" data-status="done">
+      <span class="title">2.2 Rename the 26 REST controller tests</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> every file in <code>src/test/java/com/sep/vox/interfaces/rest/controller/</code> starts with <code>Rest</code>, the 3 allow-list entries in
          <code>RestRequestTypesTests</code> read <code>RestAssessmentController.status</code>, <code>RestQuestionController.scope</code>, <code>RestQuestionController.contentType</code>, and
          <code>./gradlew test --tests '*Rest*'</code> is green. <strong>Files:</strong> 26 <code>XxxControllerTests</code>, <code>architecture/RestRequestTypesTests.java</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; Done &middot; 26 test classes renamed, 3 allow-list entries in <code>RestRequestTypesTests</code> updated (lines 62-64). <code>./gradlew test --tests '*Rest*'</code> green.</li></ul>
     </li>
-    <li class="job" id="job-2-3" data-status="todo">
-      <span class="title">2.3 Keep the OpenAPI tags unchanged (D3)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-2-3" data-status="done">
+      <span class="title">2.3 Keep the OpenAPI tags unchanged (D3)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> an <code>OperationCustomizer</code> bean in <code>OpenApiConfig</code> (written after reading the springdoc 3.0.3 documentation for that interface) removes the
          <code>rest-</code> prefix from the generated tag, and <code>OpenApiConfigTests</code> shows that <code>RestAssessmentController</code> yields the tag <code>assessment-controller</code> and
          <code>RestAssessmentTurnInternalController</code> yields <code>assessment-turn-internal-controller</code>; the test passes.
          <strong>Files:</strong> <code>interfaces/rest/config/OpenApiConfig.java</code> and a new <code>src/test/java/com/sep/vox/interfaces/rest/config/OpenApiConfigTests.java</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; Done &middot; <code>OpenApiConfig.unprefixedRestTagCustomizer</code> (read springdoc 3.0.3 sources: tags are built before OperationCustomizers run, generated tag = <code>splitCamelCase(simpleName)</code>); <code>OpenApiConfigTests</code> 3 tests pass.</li></ul>
     </li>
-    <li class="job" id="job-2-4" data-status="todo">
-      <span class="title">2.4 Update comment references to REST controllers</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-2-4" data-status="done">
+      <span class="title">2.4 Update comment references to REST controllers</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> the 5 mentions of <code>AuthController</code>, <code>CallbackController</code> (2 lines), <code>PaymentController</code> and
          <code>GradingAssignmentController</code> read <code>RestAuthController</code>, <code>RestCallbackController</code>, <code>RestPaymentController</code> and
          <code>RestGradingAssignmentController</code>, and
@@ -421,190 +433,190 @@ job edits or moves is translated to English, faithfully; string literals stay as
          (<code>SecurityConfig</code>, <code>ProcessPaymentCallbackUseCase</code>) are translated to English.
          <strong>Files:</strong> <code>SecurityConfig.java</code>, <code>ProcessPaymentCallbackUseCase.java</code>, <code>CreatePaymentCheckoutUrlUseCase.java</code>,
          <code>ClaimClassTestGradingUseCase.java</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; Done &middot; CHANGED: the grep also matched a 6th mention in <code>interfaces/graphql/controller/AssessmentSessionController.java:186</code> (not in the Files list); updated it too, comment text only. <code>grep -rnE '\b(Auth|Callback|Payment|GradingAssignment)Controller\b' src/main</code> prints nothing. Vietnamese comments in <code>SecurityConfig</code> and <code>ProcessPaymentCallbackUseCase</code> translated.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests '*Rest*'</code>, <code>./gradlew test --tests '*LayeredArchitectureTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-23 &middot; Done &middot; <code>./gradlew compileJava compileTestJava</code>, <code>test --tests '*Rest*' --tests '*OpenApiConfigTests' --tests '*LayeredArchitectureTests'</code> all green.</li></ul>
 </div>
 
 <!-- ===================== PHASE 3 ===================== -->
-<div class="phase" id="phase-3" data-status="todo">
+<div class="phase" id="phase-3" data-status="done">
   <h3><span class="title">Phase 3 &ndash; GraphQL controllers get the GraphQL prefix</span>
     <span class="tag">medium &middot; mechanical</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> all 33 GraphQL controllers and their 13 controller tests use the new names, and the hand-written bean names that only existed to avoid a clash are gone.
   <strong>Depends on:</strong> phase 2 (so the two packages never hold the same simple name).</p>
   <ul class="jobs">
-    <li class="job" id="job-3-1" data-status="todo">
-      <span class="title">3.1 Rename the 33 GraphQL controllers and drop the 25 bean names</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-3-1" data-status="done">
+      <span class="title">3.1 Rename the 33 GraphQL controllers and drop the 25 bean names</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> every file in <code>interfaces/graphql/controller/</code> starts with <code>GraphQL</code>, <code>grep -rn '@Controller("graphql' src</code> prints nothing (the 8 controllers
          without a name keep plain <code>@Controller</code>), and <code>./gradlew compileJava compileTestJava</code> is green. The class-level comment of each renamed controller is in English.
          <strong>Files:</strong> 33 files in <code>interfaces/graphql/controller/</code> and the test sources that name them.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; Done &middot; 33 controllers renamed with git mv to <code>GraphQLXxxController</code>; 25 <code>@Controller("graphql...")</code> names removed (<code>grep -rn '@Controller("graphql' src</code> prints nothing); references in tests and the controller-package tests updated. Class-level comments were already English. <code>./gradlew compileJava compileTestJava</code> green.</li></ul>
     </li>
-    <li class="job" id="job-3-2" data-status="todo">
-      <span class="title">3.2 Rename the 13 GraphQL controller tests</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-3-2" data-status="done">
+      <span class="title">3.2 Rename the 13 GraphQL controller tests</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> the 13 <code>XxxControllerTests</code> in <code>src/test/.../interfaces/graphql/controller/</code> read <code>GraphQLXxxControllerTests</code>, the 35 uses of
          <code>@GraphQLControllerTest(...)</code> name the new controller classes, and <code>./gradlew test --tests '*GraphQL*'</code> is green. The 4 tests named after something else keep their names.
          <strong>Files:</strong> 13 test files and the ones that pass a controller class to <code>@GraphQLControllerTest</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; Done &middot; 13 <code>XxxControllerTests</code> renamed to <code>GraphQLXxxControllerTests</code> (class, file, 6 Javadoc links); 35 <code>@GraphQLControllerTest(...)</code> uses name the new classes. <code>./gradlew test --tests '*GraphQL*'</code> green.</li></ul>
     </li>
-    <li class="job" id="job-3-3" data-status="todo">
-      <span class="title">3.3 Update comment references to GraphQL controllers</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-3-3" data-status="done">
+      <span class="title">3.3 Update comment references to GraphQL controllers</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> the 5 mentions in <code>QuotaPricingService</code> (<code>SubscriptionController</code>, the quotaPricing query), <code>TopicOfferBackfillService</code>
          (<code>PracticePlanningController</code>), <code>ViewPracticeBandOptionsUseCase</code> (<code>PracticeController</code>), <code>InterestDimensionInitializer</code>
          (<code>InterestDimensionController</code>) and <code>assessment.graphqls:902</code> (<code>AssessmentSessionController#recordings</code>) name the <code>GraphQL...</code> classes; the 3 Vietnamese
          comments on those lines are translated to English; and <code>grep -rnP '\b(?!Rest|GraphQL)[A-Z]\w*Controller\b' src</code> prints only names of classes that are not in the two controller packages
          (for example <code>UiController</code>, <code>InstancesProxyController</code>, <code>SampleController</code> in <code>RestRequestTypesTests</code>). The <code>.graphqls</code> edit is a comment, not a schema change.
          <strong>Files:</strong> the 4 Java files above and <code>src/main/resources/graphql/assessment.graphqls</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; Done &middot; CHANGED: 5 mentions updated (<code>QuotaPricingService</code>, <code>TopicOfferBackfillService</code>, <code>ViewPracticeBandOptionsUseCase</code>, <code>InterestDimensionInitializer</code>, <code>assessment.graphqls:902</code>) plus a 6th found by grep, <code>RestScoringRuleController</code> line 36 (a fully-qualified name to the GraphQL controller; comment only). Three Vietnamese comment blocks translated to English. The grep prints only <code>UiController</code>, <code>InstancesProxyController</code>, <code>@AdminController</code> and <code>GradeLevelController</code> (no such class exists), none in the two controller packages.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests '*GraphQL*'</code>, <code>./gradlew test --tests '*LayeredArchitectureTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-23 &middot; Done &middot; <code>./gradlew compileJava compileTestJava</code> and <code>test --tests '*GraphQL*' --tests '*Rest*' --tests '*LayeredArchitectureTests'</code> BUILD SUCCESSFUL; jobs 3.1-3.3 done.</li></ul>
 </div>
 
 <!-- ===================== PHASE 4 ===================== -->
-<div class="phase" id="phase-4" data-status="todo">
+<div class="phase" id="phase-4" data-status="done">
   <h3><span class="title">Phase 4 &ndash; Commands and queries into feature packages</span>
     <span class="tag">large &middot; mechanical &middot; needs D6</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> nothing sits directly in <code>port/input/command</code> or <code>port/input/query</code>; every type is in the package that has its use case's name.
   <strong>Depends on:</strong> D1, D6.</p>
   <ul class="jobs">
-    <li class="job" id="job-4-1" data-status="todo">
-      <span class="title">4.1 Placement dry run</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-4-1" data-status="done">
+      <span class="title">4.1 Placement dry run</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> a scratchpad script that applies the D1 rules and the D6 table prints, for the 304 flat commands and 150 flat queries, one target package each with
          0 unresolved, 0 simple-name collisions inside a package, and every target equal to one of the 53 use-case package names (or <code>assessmentevaluation</code>,
          <code>practiceevaluation</code>, <code>key</code> for the types already there). The counts per package go into the implementation notes. No repository file changes.
          <strong>Files:</strong> none in the repository.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; Done &middot; dry run: 304 commands + 150 queries placed, 0 unresolved, 0 collisions, every target is a use-case package name. Counts in Implementation notes. Applies D6.</li></ul>
     </li>
-    <li class="job" id="job-4-2" data-status="todo">
-      <span class="title">4.2 Move the 304 flat commands</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-4-2" data-status="done">
+      <span class="title">4.2 Move the 304 flat commands</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>git ls-files 'src/main/java/**/port/input/command/*.java'</code> prints nothing; <code>package</code> lines and imports are rewritten in main and test files; the
          30 commands that used a sibling without an import now import it; the wildcard <code>command.*</code> imports of <code>rest/AssessmentSessionController</code> (now
          <code>RestAssessmentSessionController</code>) and <code>DeleteSystemRubricCommandMapper</code> are explicit imports; the 3 Javadoc links with a fully-qualified name point to the new packages; and
          <code>./gradlew compileJava compileTestJava</code> is green. <strong>Files:</strong> 304 command files, about 700 main and 200 test files that import them.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; Done &middot; 304 commands moved with git mv into 43 feature packages by a scratchpad script (package lines, explicit imports, wildcard and Javadoc FQNs rewritten); <code>git ls-files</code> flat command list is empty; <code>./gradlew compileJava compileTestJava</code> green. Applies D6.</li></ul>
     </li>
-    <li class="job" id="job-4-3" data-status="todo">
-      <span class="title">4.3 Move the 150 flat queries</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-4-3" data-status="done">
+      <span class="title">4.3 Move the 150 flat queries</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>git ls-files 'src/main/java/**/port/input/query/*.java'</code> prints nothing (only <code>query/key/</code> and the new feature folders remain); the 4 queries that
          used a sibling without an import import it; the wildcard <code>query.*</code> import of <code>GraphQLRubricController</code> is explicit; the Javadoc link in
          <code>ViewMySchoolOrdersQuery</code> still resolves; and <code>./gradlew compileJava compileTestJava</code> is green. <strong>Files:</strong> 150 query files and the files that import them.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; Done &middot; 150 queries moved into feature packages; flat query list empty, no wildcard or flat FQN left; Javadoc link in ViewMySchoolOrdersQuery points to <code>command.order</code>; <code>compileJava compileTestJava</code> green. Applies D6.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test</code> (the whole unit suite, because 914 files changed an import), <code>./gradlew test --tests '*LayeredArchitectureTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-23 &middot; Done &middot; <code>./gradlew test</code> (whole unit suite, includes LayeredArchitectureTests) BUILD SUCCESSFUL; jobs 4.1-4.3 done.</li></ul>
 </div>
 
 <!-- ===================== PHASE 5 ===================== -->
-<div class="phase" id="phase-5" data-status="todo">
+<div class="phase" id="phase-5" data-status="done">
   <h3><span class="title">Phase 5 &ndash; Request records into feature packages</span>
     <span class="tag">large &middot; mechanical &middot; needs D6</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> nothing sits directly in a <code>dto/request</code> folder. <strong>Depends on:</strong> phase 4 (a record follows its command's package), D6.</p>
   <ul class="jobs">
-    <li class="job" id="job-5-1" data-status="todo">
-      <span class="title">5.1 Move the 154 REST request records</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-5-1" data-status="done">
+      <span class="title">5.1 Move the 154 REST request records</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>git ls-files 'src/main/java/**/interfaces/rest/dto/request/*.java'</code> prints nothing; the 21 records that used a sibling without an import import it; imports in the
          145 main files are rewritten; and <code>./gradlew compileJava compileTestJava</code> and <code>./gradlew test --tests '*RestRequestTypesTests'</code> are green (the guard still scans the sub-packages).
          The target of every record is written in the implementation notes. <strong>Files:</strong> 154 files in <code>rest/dto/request/</code> and their importers.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; placement dry run done; applies D6; A1, A2 recorded for the 4 records the rules did not place.</li><li>2026-11-23 &middot; Done &middot; 154 records moved with git mv into 34 packages; find rest/dto/request -maxdepth 1 -type f prints nothing; ./gradlew compileJava compileTestJava green; RestRequestTypesTests and LayeredArchitectureTests green. Applies D6, A1, A2.</li></ul>
     </li>
-    <li class="job" id="job-5-2" data-status="todo">
-      <span class="title">5.2 Move the 27 GraphQL input records</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-5-2" data-status="done">
+      <span class="title">5.2 Move the 27 GraphQL input records</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>git ls-files 'src/main/java/**/interfaces/graphql/dto/request/*.java'</code> prints nothing; the 3 records that used a sibling import it; the wildcard
          <code>dto.request.*</code> import of <code>GraphQLRubricController</code> is explicit; and <code>./gradlew test --tests '*GraphQL*'</code> is green (the real schema still binds every input).
          <strong>Files:</strong> 27 files in <code>graphql/dto/request/</code> and their 27 importers.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; Done &middot; 27 inputs moved into 14 packages; graphql/dto/request has no flat file; GraphQLRubricController wildcard import now 8 explicit imports; ./gradlew test --tests *Rest* --tests *GraphQL* green.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests '*Rest*' --tests '*GraphQL*'</code>, <code>./gradlew test --tests '*LayeredArchitectureTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-23 &middot; Done &middot; jobs 5.1-5.2 done; ./gradlew compileJava compileTestJava green; test --tests *Rest* *GraphQL* *LayeredArchitectureTests *LombokUsageConventionTests BUILD SUCCESSFUL.</li></ul>
 </div>
 
 <!-- ===================== PHASE 6 ===================== -->
-<div class="phase" id="phase-6" data-status="todo">
+<div class="phase" id="phase-6" data-status="done">
   <h3><span class="title">Phase 6 &ndash; REST mappers become static methods on the request records</span>
     <span class="tag">large &middot; medium risk &middot; needs D1, D4</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> a REST controller turns a request into a command with <code>XxxRequest.toCommand(...)</code>. The jobs split the 24 controllers that call a mapper (164 call
   sites) into slices of at most 31 call sites. In each job, for every controller of the slice: add the static method (body moved unchanged, Vietnamese comments translated) to the record, replace the call
   in the controller, convert nested calls (7 mapper-to-mapper) to the nested record's method, apply D4 to the wrappers, delete the mapper file once nothing calls it. A scratchpad check confirms that every
   moved body equals the old one apart from its signature. <strong>Depends on:</strong> phases 2 and 5, D1, D4.</p>
   <ul class="jobs">
-    <li class="job" id="job-6-1" data-status="todo">
-      <span class="title">6.1 Auth, stream, notification, register form, supported language, scoring rule, import (19 call sites)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-6-1" data-status="done">
+      <span class="title">6.1 Auth, stream, notification, register form, supported language, scoring rule, import (19 call sites)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>RestAuthController</code> (10), <code>RestStreamController</code> (2), <code>RestNotificationController</code> (1), <code>RestRegisterFormController</code> (2),
          <code>RestSupportedLanguageController</code> (1), <code>RestScoringRuleController</code> (2) and <code>RestImportController</code> (1) no longer call any <code>*Mapper</code>; the login/refresh/logout
          conversions, including <code>ClientDeviceRequest</code> and the two methods on <code>DeviceIdRequest</code>, and the two on <code>CreateScoringRuleRequest</code> exist as static methods; the matching mapper files
          are deleted; <code>./gradlew test --tests '*RestAuthControllerTests' --tests '*RestRegisterFormControllerTests' --tests '*RestStreamControllerTests' --tests '*RestImportControllerTests' --tests '*RestNotificationControllerTests' --tests '*RestSupportedLanguageControllerTests'</code> is green.
          <strong>Files:</strong> 7 controllers, the mapper files they call, the records they convert.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; applies D1, D4. Baseline compileJava compileTestJava green.</li><li>2026-11-23 &middot; Done &middot; 7 controllers no longer call a mapper; 19 mapper files deleted, 18 records gained static methods (DeviceIdRequest toLogoutCommand/toRefreshCommand, CreateScoringRuleRequest 2); bodies checked equal by scratchpad script (20 methods, 0 mismatches); compileJava compileTestJava green; test --tests *RestAuth/RegisterForm/Stream/Import/Notification/SupportedLanguage/ScoringRule ControllerTests BUILD SUCCESSFUL. Applies D1, D4.</li><li>2026-11-23 &middot; Done &middot; jobs 6.1-6.8 done; ./gradlew test --tests *Rest* *RestRequestTypesTests *LayeredArchitectureTests *LombokUsageConventionTests *ModelAndEntityConventionTests BUILD SUCCESSFUL; scratchpad body check 172 methods, 27 differ only as listed in the implementation notes.</li></ul>
     </li>
-    <li class="job" id="job-6-2" data-status="todo">
-      <span class="title">6.2 Assessment, session, schedule, candidate (20 call sites)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-6-2" data-status="done">
+      <span class="title">6.2 Assessment, session, schedule, candidate (20 call sites)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>RestAssessmentController</code> (9), <code>RestAssessmentSessionController</code> (1), <code>RestAssessmentScheduleController</code> (3) and
          <code>RestAssessmentCandidateController</code> (7) no longer call any <code>*Mapper</code> except <code>ViewMyAssessmentsQueryMapper</code> (kept under D4 = A); their mapper files are deleted;
          <code>./gradlew test --tests '*RestAssessmentControllerTests' --tests '*RestAssessmentSessionControllerTests' --tests '*RestAssessmentScheduleControllerTests' --tests '*RestAssessmentCandidateControllerTests'</code> is green.
          <strong>Files:</strong> 4 controllers, their mappers and records.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; applies D1, D4.</li><li>2026-11-23 &middot; Done &middot; 4 controllers call only ViewMyAssessmentsQueryMapper (kept, D4=A); 19 mapper files deleted; bodies equal (scratchpad check 41 methods cumulative, 0 mismatches); compileJava compileTestJava green; test --tests *RestAssessment/Session/Schedule/Candidate ControllerTests BUILD SUCCESSFUL. RestClassTestController call sites were also rewritten here because it shares a mapper. Applies D1, D4.</li></ul>
     </li>
-    <li class="job" id="job-6-3" data-status="todo">
-      <span class="title">6.3 Appeal, grading assignment, paper, class test (28 call sites)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-6-3" data-status="done">
+      <span class="title">6.3 Appeal, grading assignment, paper, class test (28 call sites)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>RestAssessmentAppealController</code> (4), <code>RestGradingAssignmentController</code> (12), <code>RestAssessmentPaperController</code> (4) and
          <code>RestClassTestController</code> (8) no longer call any <code>*Mapper</code>; the 4 appeal and 7 grading conversions that are spread over one mapper each now live on their own records;
          <code>toRemoveCommand(UUID)</code> becomes <code>new RemoveGradingAssignmentCommand(...)</code> in the controller (D4 = A); the list helper of <code>ClassTestQuestionCommandMapper</code> becomes
          <code>ClassTestQuestionRequest.toCommands(List)</code>; the matching test filters
          (<code>*RestAssessmentAppealControllerTests</code>, <code>*RestGradingAssignmentControllerTests</code>, <code>*RestAssessmentPaperControllerTests</code>, <code>*RestClassTestControllerTests</code>) are green.
          <strong>Files:</strong> 4 controllers, their mappers and records.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; applies D1, D4.</li><li>2026-11-23 &middot; Done &middot; 4 controllers no longer call a mapper; 13 mapper files deleted; toRemoveCommand inlined as new RemoveGradingAssignmentCommand(assignmentId) (RestGradingAssignmentController:115); ClassTestQuestionRequest.toCommands(List) added; script mis-assigned 7 same-named grading and 2 appeal call sites and dropped one private helper, fixed by hand and the script now disambiguates by declared type (CHANGED: tooling only, no plan change); Vietnamese Javadocs of SubmitGradingRequest and GradingDecisionRequest translated; compileJava compileTestJava green; bodies equal (65 methods, only the inlined wrapper differs); tests *RestAssessmentAppeal/GradingAssignment/AssessmentPaper/ClassTest ControllerTests BUILD SUCCESSFUL. Applies D1, D4.</li></ul>
     </li>
-    <li class="job" id="job-6-4" data-status="todo">
-      <span class="title">6.4 Blueprint, policy, framework (22 call sites)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-6-4" data-status="done">
+      <span class="title">6.4 Blueprint, policy, framework (22 call sites)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>RestAssessmentBlueprintController</code> (9), <code>RestAssessmentPolicyController</code> (6) and <code>RestFrameworkController</code> (7) no longer call any
          <code>*Mapper</code> except the <code>PreviewAssessmentPolicyImportFromFile</code> multipart mapper (kept under D4 = A); the four methods of <code>CreateAssessmentPolicyCommandMapper</code> (two of them
          list conversions) sit on <code>CreateSystemAssessmentPolicyRequest</code> and <code>CreateSchoolAssessmentPolicyRequest</code>, and the two policy conversions of <code>AcceptImportRequest</code> sit on that
          record; <code>*RestAssessmentBlueprintControllerTests</code>, <code>*RestAssessmentPolicyControllerTests</code>, <code>*RestFrameworkControllerTests</code> are green.
          <strong>Files:</strong> 3 controllers, their mappers and records.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; applies D1, D4.</li><li>2026-11-23 &middot; Done &middot; 3 controllers call only the kept PreviewAssessmentPolicyImportFromFileCommandMapper; 18 mapper files deleted; CreateAssessmentPolicy list conversions on CreateSystem/SchoolAssessmentPolicyRequest (toCommand, toCommands); AcceptImportRequest has toAcceptSystem/SchoolAssessmentPolicyImportCommand; 7 moved methods differ from the old bodies only where the old body called its own mapper (Mapper::helper references and unqualified calls rewritten to record methods, fixed by hand; script now handles them); 3 Vietnamese comments translated; compileJava compileTestJava green; tests *RestAssessmentBlueprint/AssessmentPolicy/Framework ControllerTests BUILD SUCCESSFUL. Applies D1, D4.</li></ul>
     </li>
-    <li class="job" id="job-6-5" data-status="todo">
-      <span class="title">6.5 Question, question bank, topic, subscription (22 call sites)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-6-5" data-status="done">
+      <span class="title">6.5 Question, question bank, topic, subscription (22 call sites)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>RestQuestionController</code> (10), <code>RestQuestionBankController</code> (5), <code>RestQuestionTopicController</code> (3) and
          <code>RestSubscriptionController</code> (4) no longer call any <code>*Mapper</code>; <code>AllocateQuotaRequest</code> carries <code>toAllocateAssessmentQuotaCommand</code> and
          <code>toAllocatePracticeQuotaCommand</code>; the system and school question-bank conversions sit on their own records; <code>*RestQuestionControllerTests</code>, <code>*RestQuestionBankControllerTests</code>,
          <code>*RestQuestionTopicControllerTests</code> and <code>*RestSubscriptionControllerTests</code> are green.
          <strong>Files:</strong> 4 controllers, their mappers and records.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; applies D1, D4.</li><li>2026-11-23 &middot; Done &middot; 4 controllers no longer call a mapper; 19 mapper files deleted; AllocateQuotaRequest.toAllocateAssessmentQuotaCommand and toAllocatePracticeQuotaCommand (AllocateQuotaRequest.java:30,35); compileJava compileTestJava green; scratchpad body check: only CreateQuestionCommandMapper.toAssetCommands differs (its own-mapper method reference rewritten to the record); tests *RestQuestion/QuestionBank/QuestionTopic/Subscription ControllerTests BUILD SUCCESSFUL. Applies D1, D4.</li></ul>
     </li>
-    <li class="job" id="job-6-6" data-status="todo">
-      <span class="title">6.6 Rubric (31 call sites, 17 mappers)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-6-6" data-status="done">
+      <span class="title">6.6 Rubric (31 call sites, 17 mappers)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>RestRubricController</code> no longer calls any <code>*Mapper</code> except the 3 rubric <code>Preview*</code> multipart mappers (kept under D4 = A); the 10 wrappers
          (<code>DeleteSystemRubric</code> 4, <code>DeleteSchoolRubric</code> 4, <code>ChangeRubricVersionStatus</code> 2) are constructor calls in the controller; the 6 rubric conversions of
          <code>AcceptImportRequest</code> (criterion, result band and version, each for system and school) and the 2 of <code>AddRubricVersionsRequest</code> sit on those records, named per D1; the two 29-line criteria
          conversions are moved unchanged; <code>*RestRubricControllerTests</code> is green.
          <strong>Files:</strong> <code>RestRubricController</code>, its mapper files and records.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; applies D1, D4.</li><li>2026-11-23 &middot; Done &middot; RestRubricController calls only the 3 kept Preview* multipart mappers (RestRubricController.java:169,246,423,453,580,613); 14 mapper files deleted; the 10 wrappers (Delete System/School Rubric 4+4, ChangeRubricVersionStatus 2) are constructor calls; AcceptImportRequest (6 rubric conversions) and AddRubricVersionsRequest (2) carry to<CommandClassName> methods; 12 Vietnamese comments translated (the two criteria conversions differ from the old bodies only in those comments); compileJava compileTestJava green; test --tests *RestRubricControllerTests BUILD SUCCESSFUL. Applies D1, D4.</li></ul>
     </li>
-    <li class="job" id="job-6-7" data-status="todo">
-      <span class="title">6.7 School (22 call sites, 22 mappers)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-6-7" data-status="done">
+      <span class="title">6.7 School (22 call sites, 22 mappers)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>RestSchoolController</code> no longer calls any <code>*Mapper</code>; the 6 wrappers (<code>DeleteSchool</code>, <code>DeleteSchoolGrade</code>, <code>DeleteSchoolRoom</code>,
          <code>DeleteSchoolUser</code>, <code>DeleteSchoolClassUser</code>, <code>UpdateSchoolStatus</code>) are constructor calls in the controller; the rest sit on their request records;
          <code>*RestSchoolControllerTests</code> is green. <strong>Files:</strong> <code>RestSchoolController</code>, 22 mapper files, their records.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; applies D1, D4.</li><li>2026-11-23 &middot; Done &middot; RestSchoolController no longer calls any mapper; 22 mapper files deleted; the 6 wrappers (DeleteSchool, DeleteSchoolGrade, DeleteSchoolRoom, DeleteSchoolUser, DeleteSchoolClassUser, UpdateSchoolStatus) are constructor calls (RestSchoolController.java:237,359,391,407,473,508; DeleteSchoolRoom argument order swapped back to the command's order); compileJava compileTestJava green; test --tests *RestSchoolControllerTests BUILD SUCCESSFUL. Applies D1, D4.</li></ul>
     </li>
-    <li class="job" id="job-6-8" data-status="todo">
-      <span class="title">6.8 Close out the REST mapper package</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-6-8" data-status="done">
+      <span class="title">6.8 Close out the REST mapper package</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>git ls-files 'src/main/java/**/interfaces/rest/mapper/*'</code> lists exactly <code>PreviewAssessmentPolicyImportFromFileCommandMapper</code>,
          <code>PreviewRubricCriterionImportCommandMapper</code>, <code>PreviewRubricResultBandImportCommandMapper</code>, <code>PreviewRubricVersionImportFromFileCommandMapper</code>,
          <code>ViewMyAssessmentsQueryMapper</code>; <code>grep -rnE '(Command|Query)Mapper\.' src/main/java/com/sep/vox/interfaces/rest</code> shows only calls to those;
          every file under <code>src/main</code> that referenced a deleted mapper compiles. <strong>Files:</strong> none beyond jobs 6.1-6.7.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; BuyTokensCommandMapper and UpdateSystemRubricCommandMapper have no caller anywhere; moved onto BuyTokensRequest and UpdateSystemRubricRequest by the same rules instead of deleting the code (CHANGED: not in the plan's call-site count). Applies D1.</li><li>2026-11-23 &middot; Done &middot; ls interfaces/rest/mapper lists exactly the 4 Preview* multipart mappers and ViewMyAssessmentsQueryMapper; grep for (Command|Query)Mapper. in interfaces/rest shows only calls to those; compileJava compileTestJava green.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests '*Rest*'</code>, <code>./gradlew test --tests '*RestRequestTypesTests'</code>, <code>./gradlew test --tests '*LayeredArchitectureTests'</code></p>
@@ -612,53 +624,53 @@ job edits or moves is translated to English, faithfully; string literals stay as
 </div>
 
 <!-- ===================== PHASE 7 ===================== -->
-<div class="phase" id="phase-7" data-status="todo">
+<div class="phase" id="phase-7" data-status="done">
   <h3><span class="title">Phase 7 &ndash; GraphQL mappers become static methods on the input records</span>
     <span class="tag">medium &middot; mechanical &middot; needs D1, D4</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> a GraphQL controller turns an input record into a command with a static method on that record. <strong>Depends on:</strong> phases 3 and 5, D1, D4.</p>
   <ul class="jobs">
-    <li class="job" id="job-7-1" data-status="todo">
-      <span class="title">7.1 Move the 22 hosted methods and delete 16 mapper files</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-7-1" data-status="done">
+      <span class="title">7.1 Move the 22 hosted methods and delete 16 mapper files</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> the 9 GraphQL controllers that call a mapper (26 call sites) call the static methods on the 16 input records instead, except for the 4 <code>Map</code> mappers (kept under D4);
          the 6 inputs with two conversions name them per D1 (<code>to</code> plus the command class name); <code>git ls-files 'src/main/java/**/interfaces/graphql/mapper/*'</code>
          lists exactly <code>UpdateProfileCommandMapper</code>, <code>UpdateSchoolClassCommandMapper</code>, <code>UpdateSchoolUserCommandMapper</code>, <code>UpdateSupportedLanguageCommandMapper</code>; and
          <code>./gradlew test --tests '*GraphQL*'</code> plus <code>*UpdateProfileCommandMapperTests</code> and <code>*UpdateSchoolUserCommandMapperTests</code> are green.
          <strong>Files:</strong> 9 controllers, 16 mapper files (deleted), 16 input records, 2 Vietnamese-commented mappers translated while moved.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; baseline compileJava compileTestJava green; no open decisions (applies D1, D4, A2).</li><li>2026-11-23 &middot; Done &middot; 22 methods moved unchanged (copied by script) onto 16 input records, 26 call sites updated in 9 controllers, 16 mapper files deleted; git ls-files graphql/mapper lists the 4 Map mappers; 2 Vietnamese comments translated (UpdateRubricCriterionInput, UpdateSubscriptionPlanInput). compileJava compileTestJava, test --tests *GraphQL* *UpdateProfileCommandMapperTests *UpdateSchoolUserCommandMapperTests *LayeredArchitectureTests *LombokUsageConventionTests *ModelAndEntityConventionTests *RestRequestTypesTests BUILD SUCCESSFUL.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests '*GraphQL*'</code>, <code>./gradlew test --tests '*LayeredArchitectureTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-23 &middot; Done &middot; job 7.1 done; verify commands for phase 7 pass (BUILD SUCCESSFUL).</li></ul>
 </div>
 
 <!-- ===================== PHASE 8 ===================== -->
-<div class="phase" id="phase-8" data-status="todo">
+<div class="phase" id="phase-8" data-status="done">
   <h3><span class="title">Phase 8 &ndash; Guard test and documents</span>
     <span class="tag">small &middot; needs D2, D7</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> the new layout is enforced by a test and written in AGENTS.md. <strong>Depends on:</strong> phases 1-7, D2, D7.</p>
   <ul class="jobs">
-    <li class="job" id="job-8-1" data-status="todo">
-      <span class="title">8.1 Add InterfacesStructureConventionTests (D7)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-8-1" data-status="done">
+      <span class="title">8.1 Add InterfacesStructureConventionTests (D7)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> the test passes on the final tree and each rule has a sample class that makes it fail (controller names, <code>Graphql</code> or <code>GraphQl</code> spelling,
          flat command, query or request package, mapper not on the allow-list of 5 + 4 + 4 classes, a wrongly typed <code>toCommand</code>). <strong>Files:</strong>
          <code>src/test/java/com/sep/vox/architecture/InterfacesStructureConventionTests.java</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; no open decisions (applies D7).</li><li>2026-11-23 &middot; Done &middot; InterfacesStructureConventionTests added (5 rules + 5 sample-based guard tests); <code>./gradlew test --tests *InterfacesStructureConventionTests</code> 10 tests, 0 failures.</li></ul>
     </li>
-    <li class="job" id="job-8-2" data-status="todo">
-      <span class="title">8.2 Update AGENTS.md and the skill reference (D2)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-8-2" data-status="done">
+      <span class="title">8.2 Update AGENTS.md and the skill reference (D2)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> AGENTS.md says that commands and queries live in <code>.../command/&lt;feature&gt;/</code> and <code>.../query/&lt;feature&gt;/</code>, request records in
          <code>dto/request/&lt;feature&gt;/</code>, controllers are <code>RestXxxController</code> and <code>GraphQLXxxController</code>, a request becomes a command through a static <code>toCommand</code> or
          <code>toQuery</code> on the record (mapper classes only for logic, listed), the Testing section uses <code>@GraphQLControllerTest(GraphQLXxxController.class)</code>, <code>RestAuthControllerTests</code>,
          <code>MyClassAuthorizationGraphQLTests</code>; <code>.claude/skills/implement-plan/SKILL.md</code> line 255 reads <code>@GraphQLControllerTest</code>;
          <code>grep -nE 'GraphQl|XxxController' AGENTS.md .claude/skills/implement-plan/SKILL.md</code> prints nothing that is stale.
          <strong>Files:</strong> <code>AGENTS.md</code>, <code>.claude/skills/implement-plan/SKILL.md</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-23 &middot; In progress &middot; no open decisions (applies D2).</li><li>2026-11-23 &middot; Done &middot; AGENTS.md (layer table, steps 2 and 5, example, Testing names, new guard line) and implement-plan SKILL.md line 255 updated; grep for GraphQl|XxxController prints only the new RestXxxController/GraphQLXxxController names.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests '*InterfacesStructureConventionTests'</code>, <code>./gradlew test --tests '*LayeredArchitectureTests' --tests '*LombokUsageConventionTests' --tests '*ModelAndEntityConventionTests' --tests '*PagingConventionTests' --tests '*RestRequestTypesTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-23 &middot; Done &middot; both jobs done; compileJava compileTestJava and the six guard tests BUILD SUCCESSFUL.</li></ul>
 </div>
 
 <h2 id="risks">4. Risks</h2>
@@ -712,7 +724,9 @@ job edits or moves is translated to English, faithfully; string literals stay as
 <h2 id="notes">8. Implementation notes</h2>
 <p>Filled in by <code>implement-plan</code>: deviations from the plan, results of <code>verify-plan</code>, and
 problems noticed but not fixed.</p>
-<ul id="notes-list"></ul>
+<ul id="notes-list"><li>verify-plan (2026-11-23): PASS. clean compileJava compileTestJava test BUILD SUCCESSFUL (unit suite incl. the six guard tests); no Graphql/GraphQl in git ls-files src; all controllers prefixed Rest/GraphQL; no flat command, query or request class; mapper packages hold 13 allowed files. integrationTest not run (Docker not checked).</li><li>Job 4.1 (2026-11-23): dry run, 304 commands and 150 queries each got one target, 0 unresolved, 0 collisions (command and query trees are separate packages). Commands per package: assessment 21, assessmentappeal 4, assessmentblueprint 18, assessmentcandidate 13, assessmentgrading 10, assessmentitemresponse 2, assessmentpaper 5, assessmentpolicyschool 6, assessmentpolicysystem 8, assessmentschedule 6, assessmentsession 12, auth 9, framework 17, gradelevel 3, importfile 1, interestdimension 1, learnerprofile 2, metering 1, notification 2, order 5, payment 4, practiceplanning 4, practicesession 3, proctoring 1, question 17, questionbank 10, questiontopic 6, recording 1, registration 7, rubricschool 18, rubricsystem 20, school 5, schoolclass 7, schoolclassuser 6, schooldirectory 4, schoolgrade 5, schoolroom 5, schooluser 5, scoringrule 6, stream 2, subscription 17, supportedlanguage 3, topicsuggestion 1, user 1. Queries per package: assessment 8, assessmentappeal 3, assessmentblueprint 2, assessmentcandidate 1, assessmentdirectory 1, assessmentevaluation 1, assessmentgrading 8, assessmentitemresponse 3, assessmentpaper 1, assessmentpolicyschool 2, assessmentpolicysystem 2, assessmentpolicyteacher 1, assessmentschedule 4, assessmentsession 2, assessmentturn 1, balance 3, dashboard 8, framework 6, gradelevel 2, importfile 3, notification 2, order 4, practiceplanning 2, practicesession 2, question 4, questionbank 2, questiontopic 2, recording 1, registration 2, role 2, rubricschool 12, rubricsystem 12, rubricteacher 2, school 1, schoolclass 7, schoolclassuser 1, schooldirectory 3, schoolgrade 2, schoolroom 2, schooluser 4, scoringrule 6, subscription 8, supportedlanguage 2, topicsuggestion 1, user 2. Script: scratchpad <code>place.py</code>, output <code>placement.json</code>.</li>
+<li>Jobs 5.1 and 5.2 (2026-11-23): REST target packages &ndash; assessment (15): AttachAssessmentBlueprintRequest, ChangeClassTestBlueprintRequest, ClassTestQuestionRequest, CreateAssessmentMemberRequest, CreateAssessmentRequest, CreateClassTestRequest, CreateClassTestSectionRequest, UpdateAssessmentDeliveryModeRequest, UpdateAssessmentMemberRequest, UpdateAssessmentRequest, UpdateAssessmentSecurePoolStatusRequest, UpdateAssessmentStatusRequest, UpdateClassTestQuestionsRequest, UpdateClassTestSectionRequest, VerifyAssessmentOtpRequest; assessmentappeal (4): ApproveAssessmentAppealRequest, AssignAssessmentAppealReviewerRequest, CreateAssessmentAppealRequest, RejectAssessmentAppealRequest; assessmentblueprint (13): AssessmentBlueprintSectionRequest, AssessmentBlueprintSlotRequest, CreateAssessmentBlueprintRequest, CreateAssessmentBlueprintSectionItemRequest, CreateAssessmentBlueprintSlotItemRequest, CreateAssessmentBlueprintVersionRequest, QuestionSelectionSpecRequest, UpdateAssessmentBlueprintActiveStatusRequest, UpdateAssessmentBlueprintRequest, UpdateAssessmentBlueprintSectionRequest, UpdateAssessmentBlueprintSlotRequest, UpdateAssessmentBlueprintVersionRequest, UpdateAssessmentBlueprintVersionStatusRequest; assessmentcandidate (10): AddAssessmentCandidateRequest, AssessmentPaperAssignmentRequestItem, AssignAssessmentCandidateScheduleRequest, AssignAssessmentPapersRequest, AutoFillAssessmentCandidatesRequest, BulkAssignAssessmentCandidateScheduleRequest, BulkDeleteAssessmentCandidatesRequest, ImportAssessmentCandidatesFromClassRequest, ImportAssessmentCandidatesFromGradeRequest, UpdateAssessmentCandidateStatusRequest; assessmentgrading (9): AssignGradingRequest, AutoAssignGradingRequest, BulkFinalizeAssessmentResultsRequest, ClaimClassTestGradingRequest, GradingDecisionRequest, ReassignGradingRequest, ReclaimOverdueAssignmentsRequest, SetGradingDeadlineRequest, SubmitGradingRequest; assessmentitemresponse (1): UpdateAssessmentItemResponseTurnRequest; assessmentpaper (5): ClassTestSectionRequest, CreateAssessmentPaperRequest, UpdateAssessmentPaperItemRequest, UpdateAssessmentPaperSectionRequest, UpdateAssessmentPaperStatusRequest; assessmentpolicysystem (3): AcceptImportRequest, CreateSchoolAssessmentPolicyRequest, CreateSystemAssessmentPolicyRequest; assessmentschedule (3): AddAssessmentScheduleProctorRequest, CreateAssessmentScheduleRequest, UpdateAssessmentScheduleStatusRequest; assessmentsession (5): CreateAssessmentSessionRequest, ReportAiUsageRequest, SessionReasonRequest, UpdateAssessmentSessionRequest, UpdateRemainingTimeRequest; auth (7): ClientDeviceRequest, DeviceIdRequest, GoogleTokenLoginRequest, LoginRequest, ResetPasswordRequest, SendResetPasswordOtpRequest, SetUpPasswordRequest; framework (7): CreateFrameworkCriteriaRequest, CreateFrameworkCriterionBandsRequest, CreateFrameworkRequest, CreateFrameworkResultBandsRequest, CreateFrameworkVersionRequest, UpdateFrameworkRequest, UpdateFrameworkVersionStatusRequest; gradelevel (1): CreateGradeLevelRequest; importfile (2): ImportFieldMappingRequest, RejectImportSessionRequest; notification (1): CreateNotificationDeviceRequest; order (4): BuyTokensRequest, CreateSubscriptionOrderRequest, CreateTopUpOrderRequest, TokenPurchaseItemRequestItem; payment (2): CreatePaymentCheckoutUrlRequest, PaymentMethodRequest; question (11): AcceptQuestionImportRequest, BulkUpdateQuestionStatusRequest, CreateQuestionAssetRequest, CreateQuestionCollaboratorRequest, CreateQuestionRequest, CreateSystemQuestionBankQuestionRequest, QuestionEvaluationGuideRequest, UpdateQuestionAssetRequest, UpdateQuestionCollaboratorRequest, UpdateQuestionRequest, UpdateQuestionStatusRequest; questionbank (6): BulkUpdateQuestionScopeStatusRequest, CreateQuestionBankGradeRequest, CreateSchoolQuestionBankRequest, CreateSystemQuestionBankRequest, UpdateQuestionBankRequest, UpdateQuestionBankStatusRequest; questiontopic (3): CreateQuestionTopicRequest, UpdateQuestionTopicRequest, UpdateQuestionTopicStatusRequest; registration (5): ApproveRegisterFormRequest, RegisterBySelfDeclaredRequest, RegisterFromSchoolDirectoryRequest, RejectRegisterFormRequest, VerifyRegisterFormOtpRequest; rubricschool (4): CloneSystemRubricRequest, CreateSchoolRubricCriteriaRequest, CreateSchoolRubricRequest, CreateSchoolRubricResultBandsRequest; rubricsystem (5): AddRubricVersionsRequest, CreateSystemRubricCriteriaRequest, CreateSystemRubricRequest, CreateSystemRubricResultBandsRequest, UpdateSystemRubricRequest; school (1): CreateSchoolRequest; schoolclass (2): AcceptSchoolClassImportRequest, CreateSchoolClassRequest; schoolclassuser (4): AcceptSchoolClassUserImportRequest, BulkCreateSchoolClassUsersRequest, CreateSchoolClassUserRequest, UpdateSchoolClassUserStatusRequest; schooldirectory (2): AcceptSchoolDirectoryImportRequest, CreateSchoolDirectoryRequest; schoolgrade (2): AcceptSchoolGradeImportRequest, CreateSchoolGradeRequest; schoolroom (2): AcceptSchoolRoomImportRequest, AddSchoolRoomRequest; schooluser (2): AcceptSchoolUserImportRequest, CreateSchoolUserRequest; scoringrule (1): CreateScoringRuleRequest; stream (2): IssueMonitorTokenRequest, IssueStudentStreamTokenRequest; subscription (9): AllocateQuotaRequest, AllocateUserQuotaAmountRequest, CreateSubscriptionPlanQuotaRequest, CreateSubscriptionPlanRequest, FundQuotaFromBalanceRequest, RenewSchoolSubscriptionRequest, SetQuotaDistributionPolicyRequest, SuspendSubscriptionRequest, UnsuspendSubscriptionRequest; supportedlanguage (1): CreateSupportedLanguageRequest. GraphQL target packages &ndash; assessmentpolicysystem (1): UpdateAssessmentPolicyInput; assessmentschedule (1): UpdateAssessmentScheduleInput; framework (5): SignalInput, UpdateFrameworkCriterionBandInput, UpdateFrameworkCriterionInput, UpdateFrameworkResultBandInput, UpdateFrameworkVersionInput; gradelevel (1): UpdateGradeLevelRequest; interestdimension (1): UpsertInterestDimensionInput; learnerprofile (2): InterestQuizAnswerInput, SubmitInterestQuizInput; practiceplanning (1): StartPracticeSessionInput; practicesession (1): EndPracticeSessionInput; rubricsystem (8): SearchRubricCriterionFilterRequest, SearchRubricFilterRequest, SearchRubricResultBandFilterRequest, SearchRubricVersionFilterRequest, UpdateRubricCriterionInput, UpdateRubricInput, UpdateRubricResultBandInput, UpdateRubricVersionInput; school (1): UpdateSchoolRequest; schoolgrade (1): UpdateSchoolGradeRequest; schoolroom (1): UpdateSchoolRoomRequest; scoringrule (1): UpdateScoringRuleInput; subscription (2): SubscriptionPlanQuotaInput, UpdateSubscriptionPlanInput. Placement: mapper return type; nested record follows parent; unmapped by the use case its controller method calls; several features: alphabetical first *system (AcceptImportRequest, AddRubricVersionsRequest, GraphQL rubric inputs), D6 table (BulkUpdateQuestionScopeStatusRequest), A1 (3 unused REST records), A2 (SessionReasonRequest). UpsertInterestDimensionInput follows UpsertInterestDimensionCommand (interestdimension), InterestQuizAnswerInput follows SubmitInterestQuizInput. The Vietnamese comments of 30 moved records (98 + 5 lines) were translated to English. GraphQLRubricController wildcard import replaced by 8 explicit imports.</li>
+<li>Phase 6 (2026-11-23): 131 REST mapper files became 5 (4 multipart Preview* and ViewMyAssessmentsQueryMapper, D4 = A). Naming per D1: one conversion on a record is <code>toCommand</code>, otherwise <code>to&lt;CommandClassName&gt;</code>, list conversions <code>toCommands</code>. Moved bodies equal the old ones except: 17 hostless wrappers inlined as constructor calls (D4 = A; DeleteSchoolRoom argument order swapped back to the command order); own-mapper method references and unqualified helper calls rewritten to the record (CreateAssessmentBlueprintVersion, CreateAssessmentPolicy, CreateFrameworkCriterionBands, CreateFrameworkResultBands, CreateQuestion); Vietnamese comments translated (SubmitGradingRequest, GradingDecisionRequest, CreateSystem/SchoolAssessmentPolicyRequest, AcceptImportRequest, AddRubricVersionsRequest, CreateSystem/SchoolRubricCriteriaRequest, CloneSystemRubricRequest). Two mappers with no caller anywhere (BuyTokensCommandMapper, UpdateSystemRubricCommandMapper) were moved onto BuyTokensRequest and UpdateSystemRubricRequest instead of being deleted. A record with a private helper got it as a private static method (ReportAiUsageRequest also its JsonMapper constant, declared before the methods).</li></ul>
 
 </div>
 <script>

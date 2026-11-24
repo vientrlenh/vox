@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.UnauthorizedException;
-import com.sep.vox.application.port.input.command.ProcessPaymentCallbackCommand;
+import com.sep.vox.application.port.input.command.payment.ProcessPaymentCallbackCommand;
 import com.sep.vox.application.port.input.service.OrderSettlementService;
 import com.sep.vox.application.port.input.service.PaymentProcessResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -22,15 +22,16 @@ import com.sep.vox.domain.model.payment.PaymentStatus;
 import com.sep.vox.domain.repository.PaymentRecordRepository;
 
 /**
- * Xử lý callback đã xác thực của MỌI cổng thanh toán, và chốt kết quả cho lần thử tương ứng.
+ * Handles the authenticated callback of EVERY payment gateway, and settles the result for the
+ * matching attempt.
  *
- * <p>Điểm tra ngược giờ là {@code payment_records.provider_order_ref} chứ không phải hóa đơn: hóa
- * đơn chỉ tồn tại SAU khi tiền về nên lúc callback tới nó chưa có. provider_order_ref là thứ duy
- * nhất cổng gửi kèm mà mình đã ghi xuống TRƯỚC khi gọi sang cổng -- xem
- * CreatePaymentCheckoutUrlUseCase.
+ * <p>The lookup key is now {@code payment_records.provider_order_ref}, not the invoice: the invoice
+ * only exists AFTER the money arrives, so it does not exist yet when the callback comes in.
+ * provider_order_ref is the only thing the gateway sends back that we wrote down BEFORE calling the
+ * gateway -- see CreatePaymentCheckoutUrlUseCase.
  *
- * <p>Cổng dùng mã HTTP để quyết định có gửi lại hay không, nên phân biệt các nhánh ở đây quyết định
- * hành vi retry của cổng. Xem CallbackController.
+ * <p>The gateway uses the HTTP status code to decide whether to resend, so how the branches here
+ * differ decides the gateway's retry behavior. See RestCallbackController.
  */
 @Service
 @RequiredArgsConstructor
@@ -63,16 +64,18 @@ public class ProcessPaymentCallbackUseCase implements IUseCase<ProcessPaymentCal
         // 200. Thoát sớm ở đây thay vì để settlePaid tự chặn, để phân biệt được "vừa chốt xong" và
         // "chốt từ lần gọi trước" trong log đối soát.
         if (payment.isSettled()) {
-            // "Đã chốt" KHÔNG đồng nghĩa "vô hại". isSettled() chỉ là status != PENDING, nên một lần
-            // thử đã bị ghi FAILED cũng rơi vào đây -- và cổng báo PAID cho đúng lần thử đó nghĩa là
-            // TIỀN VỀ THẬT cho một lần thử mình đã xóa sổ.
+            // "Already settled" does NOT mean "harmless". isSettled() is only status != PENDING, so an
+            // attempt that was already written as FAILED also lands here -- and the gateway reporting
+            // PAID for that very attempt means REAL MONEY ARRIVED for an attempt we wrote off.
             //
-            // Đường vào phổ biến nhất là webhook tới KHÔNG ĐÚNG THỨ TỰ: cổng bắn EXPIRED trước, mình
-            // ghi FAILED, rồi PAID mới tới. CallbackController trả 200 cho mọi nhánh đã xác thực nên
-            // cổng sẽ KHÔNG gửi lại -- dòng log này là tín hiệu duy nhất còn lại.
+            // The most common way in is a webhook arriving OUT OF ORDER: the gateway fires EXPIRED
+            // first, we write FAILED, and then PAID arrives. RestCallbackController returns 200 for
+            // every authenticated branch, so the gateway will NOT resend -- this log line is the only
+            // signal left.
             //
-            // Cùng hạng với nhánh "TIỀN VỀ CHO ĐƠN ĐÃ ĐÓNG" của OrderSettlementService, và cũng cùng
-            // lý do: hệ thống chưa có luồng hoàn tiền nào, nên phải kêu to để có người đối soát tay.
+            // Same class as the "MONEY ARRIVED FOR A CLOSED ORDER" branch of OrderSettlementService, and
+            // for the same reason: the system has no refund flow yet, so it must shout loudly for
+            // someone to reconcile by hand.
             if (verification.status() == PaymentLinkRemoteStatus.PAID
                     && payment.getStatus() != PaymentStatus.PAID) {
                 log.error(

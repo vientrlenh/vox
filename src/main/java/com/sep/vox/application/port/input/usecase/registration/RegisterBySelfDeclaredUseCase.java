@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ResourceDuplicatedException;
-import com.sep.vox.application.port.input.command.RegisterBySelfDeclaredCommand;
+import com.sep.vox.application.port.input.command.registration.RegisterBySelfDeclaredCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.model.registerform.RegisterForm;
 import com.sep.vox.domain.model.registerform.RegisterFormDocument;

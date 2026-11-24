@@ -93,27 +93,31 @@ public class SecurityConfig {
         "/actuator/**"
     };
 
-    // Chỉ những endpoint trên chain API ĐỌC COOKIE mới cần CSRF, và đây là danh sách đủ của
-    // chúng: hai @CookieValue duy nhất trong toàn bộ src/main/java.
+    // Only the endpoints on the API chain that READ A COOKIE need CSRF, and this is the complete
+    // list of them: the only two @CookieValue usages in the whole of src/main/java.
     //
-    // Lý do: mọi route khác xác thực bằng JWT trong header Authorization, mà trình duyệt KHÔNG
-    // tự gắn header đó vào request do trang khác gây ra -- không có credential đi ngầm thì không
-    // có CSRF để chống. Riêng POST /api/v1/auth/refresh và POST /api/v1/auth/logout đọc cookie
-    // refresh_token (AuthController, @CookieValue), và cookie thì trình duyệt gắn tự động. Thêm
-    // endpoint nào đọc cookie nữa thì phải thêm vào mảng này, không thì nó không được bảo vệ.
+    // Reason: every other route authenticates with the JWT in the Authorization header, and the
+    // browser does NOT attach that header to a request caused by another page -- with no hidden
+    // credential there is no CSRF to defend against. Only POST /api/v1/auth/refresh and
+    // POST /api/v1/auth/logout read the refresh_token cookie (RestAuthController, @CookieValue),
+    // and the browser attaches cookies automatically. Any endpoint added later that reads a cookie
+    // must be added to this array, otherwise it is not protected.
     //
-    // /logout nằm đây không phải vì hậu quả nặng -- ép đăng xuất chỉ là phiền, không phải chiếm
-    // tài khoản -- mà vì đúng một lý do: trang khác không được phép quyết định thời điểm học sinh
-    // rời phiên. Đá một học sinh ra giữa bài thi vấn đáp là làm hỏng bài thi đó.
+    // /logout is here not because its consequence is severe -- forcing a logout is only an
+    // annoyance, not an account takeover -- but for exactly one reason: another page must not
+    // decide when a student leaves the session. Kicking a student out in the middle of an oral
+    // assessment ruins that assessment.
     //
-    // Trước đây chỗ này từng là csrf().disable() cho cả chain. Bật lại cho TOÀN BỘ chain thì
-    // hỏng hết (đã xảy ra 2026-08-31: mọi POST /graphql và /api/v1/auth/login trả 403), nên
-    // phải thu hẹp bằng requireCsrfProtectionMatcher chứ không bật đại trà.
+    // This place used to be csrf().disable() for the whole chain. Turning it back on for the WHOLE
+    // chain broke everything (it happened on 2026-08-31: every POST /graphql and
+    // /api/v1/auth/login returned 403), so it had to be narrowed with
+    // requireCsrfProtectionMatcher instead of being enabled everywhere.
     //
-    // Phía frontend BẮT BUỘC phải có withXSRFToken: true (shared/api/apiClient.ts): axios từ
-    // 1.6 không tự gắn header X-XSRF-TOKEN cho request KHÁC ORIGIN nếu thiếu cờ đó, và
-    // voxenta.net -> api.voxenta.net là khác origin. Thiếu nó thì mọi lần refresh token đều 403
-    // -- và vì chỉ hỏng lúc access token hết hạn nên trông như "thỉnh thoảng bị đăng xuất".
+    // The frontend MUST set withXSRFToken: true (shared/api/apiClient.ts): since 1.6 axios does not
+    // attach the X-XSRF-TOKEN header to a CROSS-ORIGIN request without that flag, and
+    // voxenta.net -> api.voxenta.net is cross-origin. Without it every token refresh gets a 403
+    // -- and because it only breaks when the access token expires, it looks like "sometimes I get
+    // logged out".
     private static final String[] CSRF_PROTECTED_API_PATHS = {
         "/api/v1/auth/refresh",
         "/api/v1/auth/logout"

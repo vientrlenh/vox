@@ -15,7 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.sep.vox.application.port.input.query.ViewMyGradingTasksQuery;
+import com.sep.vox.application.port.input.query.assessmentgrading.ViewMyGradingTasksQuery;
 import com.sep.vox.application.port.input.service.AssessmentGradingAccessService;
 import com.sep.vox.application.port.input.usecase.assessmentgrading.ViewMyGradingAssessmentsUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentgrading.ViewMyGradingTasksUseCase;

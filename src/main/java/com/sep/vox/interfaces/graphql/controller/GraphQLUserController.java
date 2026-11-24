@@ -1,0 +1,97 @@
+package com.sep.vox.interfaces.graphql.controller;
+
+import com.sep.vox.application.port.input.command.user.UpdateProfileCommand;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+
+import lombok.RequiredArgsConstructor;
+import org.dataloader.DataLoader;
+import org.springframework.graphql.data.method.annotation.Argument;
+import org.springframework.graphql.data.method.annotation.MutationMapping;
+import org.springframework.graphql.data.method.annotation.QueryMapping;
+import org.springframework.graphql.data.method.annotation.SchemaMapping;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Controller;
+
+import com.sep.vox.application.port.input.query.user.ViewUserDetailsQuery;
+import com.sep.vox.application.port.input.query.user.ViewUsersQuery;
+import com.sep.vox.application.port.input.query.key.UserRolesKey;
+import com.sep.vox.application.port.input.usecase.user.UpdateProfileUseCase;
+import com.sep.vox.application.port.input.usecase.user.ViewProfileUseCase;
+import com.sep.vox.application.port.input.usecase.user.ViewUserDetailsUseCase;
+import com.sep.vox.application.port.input.usecase.user.ViewUsersUseCase;
+import com.sep.vox.interfaces.graphql.mapper.UpdateProfileCommandMapper;
+import com.sep.vox.domain.common.PageResult;
+import com.sep.vox.domain.dto.RoleDto;
+import com.sep.vox.domain.dto.SchoolDto;
+import com.sep.vox.domain.dto.UserDto;
+import com.sep.vox.domain.mapper.SchoolDtoMapper;
+import com.sep.vox.domain.repository.SchoolRepository;
+import com.sep.vox.domain.repository.SchoolUserRepository;
+import com.sep.vox.interfaces.shared.PageArguments;
+
+import graphql.schema.DataFetchingEnvironment;
+
+@Controller
+@RequiredArgsConstructor
+public class GraphQLUserController {
+
+    private final ViewUserDetailsUseCase viewUserDetailsUseCase;
+    private final ViewUsersUseCase viewUsersUseCase;
+    private final ViewProfileUseCase viewProfileUseCase;
+    private final UpdateProfileUseCase updateProfileUseCase;
+    private final SchoolUserRepository schoolUserRepository;
+    private final SchoolRepository schoolRepository;
+
+    @QueryMapping(name = "user")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public UserDto user(@Argument(name = "id") UUID id) {
+        ViewUserDetailsQuery query = new ViewUserDetailsQuery(id);
+        return viewUserDetailsUseCase.execute(query);
+    }
+
+    @QueryMapping(name = "users")
+    @PreAuthorize("hasRole('SYSTEM_ADMIN')")
+    public PageResult<UserDto> users(@Argument(name = "page") Integer page, @Argument(name = "size") Integer size) {
+        PageArguments.validate(page, size);
+        ViewUsersQuery query = new ViewUsersQuery(page, size);
+        return viewUsersUseCase.execute(query);
+    }
+
+    @QueryMapping(name = "profile")
+    @PreAuthorize("isAuthenticated()")
+    public UserDto profile() {
+        return viewProfileUseCase.execute(null);
+    }
+
+    /**
+     * {@code isAuthenticated()} chứ không liệt kê vai: mọi vai đều được sửa hồ sơ của chính mình.
+     * Riêng ảnh đại diện thì học sinh bị từ chối, và luật đó nằm trong use case chứ không ở đây --
+     * nó phụ thuộc vào việc client có gửi trường {@code avatarUrl} hay không, thứ mà
+     * {@code @PreAuthorize} không nhìn thấy.
+     */
+    @MutationMapping(name = "updateProfile")
+    @PreAuthorize("isAuthenticated()")
+    public UserDto updateProfile(@Argument(name = "input") Map<String, Object> input) {
+        UpdateProfileCommand command = UpdateProfileCommandMapper.fromInput(input);
+        return updateProfileUseCase.execute(command);
+    }
+
+    @SchemaMapping(typeName = "User", field = "roles")
+    @PreAuthorize("isAuthenticated()")
+    public CompletableFuture<List<RoleDto>> userRoles(UserDto user, DataFetchingEnvironment env) {
+        DataLoader<UserRolesKey, List<RoleDto>> loader = env.getDataLoader("rolesByUser");
+        return loader.load(new UserRolesKey(user.id()));
+    }
+
+    @SchemaMapping(typeName = "User", field = "school")
+    @PreAuthorize("isAuthenticated()")
+    public SchoolDto userSchool(UserDto user) {
+        return schoolUserRepository.findByUserId(user.id())
+            .flatMap(schoolUser -> schoolRepository.findById(schoolUser.getSchoolId()))
+            .map(SchoolDtoMapper::toSchoolDto)
+            .orElse(null);
+    }
+}

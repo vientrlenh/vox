@@ -1,6 +1,6 @@
 package com.sep.vox.application.port.input.usecase.assessmentcandidate;
 
-import com.sep.vox.application.port.input.command.AssessmentPaperAssignmentItem;
+import com.sep.vox.application.port.input.command.assessmentcandidate.AssessmentPaperAssignmentItem;
 import com.sep.vox.domain.model.assessment.AssessmentPaper;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.AssignAssessmentPapersCommand;
+import com.sep.vox.application.port.input.command.assessmentcandidate.AssignAssessmentPapersCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;

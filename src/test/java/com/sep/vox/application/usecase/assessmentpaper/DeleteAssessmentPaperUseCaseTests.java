@@ -22,7 +22,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
 import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.port.input.command.DeleteAssessmentPaperCommand;
+import com.sep.vox.application.port.input.command.assessmentpaper.DeleteAssessmentPaperCommand;
 import com.sep.vox.application.port.input.service.RecalculateAssessmentTimeDurationService;
 import com.sep.vox.application.port.input.usecase.assessmentpaper.DeleteAssessmentPaperUseCase;
 import com.sep.vox.application.port.input.service.AssessmentPaperAuthoringAccessService;

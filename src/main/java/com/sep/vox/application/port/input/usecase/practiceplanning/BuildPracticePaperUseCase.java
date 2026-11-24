@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 import com.sep.vox.application.exception.BusinessRuleViolationException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.mapper.practiceplanning.PracticePlanningResponseMapper;
-import com.sep.vox.application.port.input.command.BuildPracticePaperCommand;
+import com.sep.vox.application.port.input.command.practiceplanning.BuildPracticePaperCommand;
 import com.sep.vox.application.port.input.service.PracticePaperPersistenceService;
 import com.sep.vox.application.port.input.service.PracticeQuestionSelectionService;
 import com.sep.vox.application.port.input.service.PracticeTopicOfferEnrichmentService;

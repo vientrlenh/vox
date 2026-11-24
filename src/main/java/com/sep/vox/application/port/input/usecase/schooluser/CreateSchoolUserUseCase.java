@@ -16,7 +16,7 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.event.UserCreatedPayloadV1;
 import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.CreateSchoolUserCommand;
+import com.sep.vox.application.port.input.command.schooluser.CreateSchoolUserCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.UserContextPort;

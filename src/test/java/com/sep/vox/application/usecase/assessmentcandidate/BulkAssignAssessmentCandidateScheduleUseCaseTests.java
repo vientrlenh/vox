@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.BulkAssignAssessmentCandidateScheduleCommand;
+import com.sep.vox.application.port.input.command.assessmentcandidate.BulkAssignAssessmentCandidateScheduleCommand;
 import com.sep.vox.application.port.input.service.AssessmentPaperAutoAssigner;
 import com.sep.vox.application.port.input.service.AssessmentScheduleCandidateConflictValidator;
 import com.sep.vox.application.port.input.service.AssessmentScheduleManageAccessService;

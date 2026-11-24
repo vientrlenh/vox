@@ -7,7 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.common.CacheKey;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.UnauthorizedException;
-import com.sep.vox.application.port.input.command.ResetPasswordCommand;
+import com.sep.vox.application.port.input.command.auth.ResetPasswordCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.CacheManagerPort;
 import com.sep.vox.application.port.output.OneTimePasswordPort;

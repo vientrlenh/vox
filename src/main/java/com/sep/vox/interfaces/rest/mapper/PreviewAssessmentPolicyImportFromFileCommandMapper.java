@@ -1,8 +1,8 @@
 package com.sep.vox.interfaces.rest.mapper;
 
 import com.sep.vox.application.common.UploadedFile;
-import com.sep.vox.application.port.input.command.PreviewSchoolAssessmentPolicyImportFromFileCommand;
-import com.sep.vox.application.port.input.command.PreviewSystemAssessmentPolicyImportFromFileCommand;
+import com.sep.vox.application.port.input.command.assessmentpolicyschool.PreviewSchoolAssessmentPolicyImportFromFileCommand;
+import com.sep.vox.application.port.input.command.assessmentpolicysystem.PreviewSystemAssessmentPolicyImportFromFileCommand;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;

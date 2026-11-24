@@ -14,7 +14,7 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.mapper.schoolclass.CreateSchoolClassResponseMapper;
-import com.sep.vox.application.port.input.command.CreateSchoolClassCommand;
+import com.sep.vox.application.port.input.command.schoolclass.CreateSchoolClassCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.schoolclass.CreateSchoolClassResponse;

@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import com.sep.vox.application.common.UploadedFile;
-import com.sep.vox.application.port.input.command.PreviewSchoolClassUserImportFromFileCommand;
+import com.sep.vox.application.port.input.command.schoolclassuser.PreviewSchoolClassUserImportFromFileCommand;
 import com.sep.vox.application.port.input.usecase.schoolclassuser.PreviewSchoolClassUserImportFromFileUseCase;
 import com.sep.vox.application.port.output.FileProcessingPort;
 import com.sep.vox.application.port.output.UserContextPort;

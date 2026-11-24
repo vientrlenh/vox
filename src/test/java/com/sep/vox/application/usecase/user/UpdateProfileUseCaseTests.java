@@ -15,7 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sep.vox.application.exception.DataConflictException;
 import com.sep.vox.application.exception.ResourceDuplicatedException;
-import com.sep.vox.application.port.input.command.UpdateProfileCommand;
+import com.sep.vox.application.port.input.command.user.UpdateProfileCommand;
 import com.sep.vox.application.port.input.usecase.user.UpdateProfileUseCase;
 import com.sep.vox.application.port.output.AvatarConfigPort;
 import com.sep.vox.application.port.output.UserContextPort;

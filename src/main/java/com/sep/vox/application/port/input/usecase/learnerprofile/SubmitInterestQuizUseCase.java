@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.mapper.learnerprofile.LearnerProfileResponseMapper;
-import com.sep.vox.application.port.input.command.SubmitInterestQuizCommand;
+import com.sep.vox.application.port.input.command.learnerprofile.SubmitInterestQuizCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.port.input.service.LearnerProfileCommandService;

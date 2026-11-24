@@ -6,7 +6,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.query.ViewFrameworkCriteriaQuery;
+import com.sep.vox.application.port.input.query.framework.ViewFrameworkCriteriaQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.dto.FrameworkCriterionDto;
 import com.sep.vox.domain.mapper.FrameworkCriterionDtoMapper;

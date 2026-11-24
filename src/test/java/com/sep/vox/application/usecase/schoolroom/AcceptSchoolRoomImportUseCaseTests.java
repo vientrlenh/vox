@@ -17,7 +17,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.sep.vox.application.port.input.command.AcceptSchoolRoomImportCommand;
+import com.sep.vox.application.port.input.command.schoolroom.AcceptSchoolRoomImportCommand;
 import com.sep.vox.application.port.input.usecase.schoolroom.AcceptSchoolRoomImportUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.support.FakeJsonSerializationPort;

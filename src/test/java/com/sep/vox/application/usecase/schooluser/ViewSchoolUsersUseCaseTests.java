@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.common.RoleConstant;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.UnauthorizedException;
-import com.sep.vox.application.port.input.query.ViewSchoolUsersBySchoolQuery;
+import com.sep.vox.application.port.input.query.schooluser.ViewSchoolUsersBySchoolQuery;
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUsersBySchoolUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.common.PageResult;

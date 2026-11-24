@@ -19,7 +19,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.sep.vox.application.port.input.command.LogoutCommand;
+import com.sep.vox.application.port.input.command.auth.LogoutCommand;
 import com.sep.vox.application.port.input.usecase.auth.LogoutUseCase;
 import com.sep.vox.application.port.output.SessionManagerPort;
 import com.sep.vox.application.port.output.SessionTokenManagerPort;

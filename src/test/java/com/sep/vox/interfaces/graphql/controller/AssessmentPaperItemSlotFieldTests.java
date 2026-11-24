@@ -42,11 +42,11 @@ class AssessmentPaperItemSlotFieldTests {
     private static final UUID SECTION_ID = UUID.randomUUID();
     private static final UUID PAPER_ID = UUID.randomUUID();
 
-    private AssessmentController controller;
+    private GraphQLAssessmentController controller;
 
     @BeforeEach
     void setUp() {
-        controller = new AssessmentController(
+        controller = new GraphQLAssessmentController(
             mock(ViewAssessmentsUseCase.class),
             mock(ViewAssessmentDetailsUseCase.class),
             mock(ViewAssessmentPaperDetailsUseCase.class),

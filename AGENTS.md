@@ -44,7 +44,7 @@ infrastructure (persistence, security...) -/
 | domain | `domain/{model,repository,service,valueobject,dto,common}` | Plain-Java models and rules, repository **interfaces**. No Spring/JPA. |
 | application | `application/port/input/{usecase,command,query,service}`, `application/port/output`, `application/query`, `application/event`, `application/response` | One use case per class, commands/queries, ports the app needs from the outside world |
 | infrastructure | `infrastructure/{persistence,security,config,worker,event,client,service}` | JPA entities, repository implementations, Kafka/Redis/S3/PayOS/Firebase adapters, scheduled jobs |
-| interfaces | `interfaces/{rest,graphql,grpc,kafka}` | Controllers, request DTOs, consumers |
+| interfaces | `interfaces/{rest,graphql,grpc,kafka}` | Controllers (`RestXxxController`, `GraphQLXxxController`), request DTOs in `dto/request/<feature>/`, consumers |
 
 Hard rules (`src/test/.../architecture/LayeredArchitectureTests.java` fails the build on violation):
 
@@ -64,18 +64,23 @@ Hard rules (`src/test/.../architecture/LayeredArchitectureTests.java` fails the 
 ### Where things go when adding a feature
 
 1. Domain model / value object / repository interface -> `domain/...`.
-2. `XxxCommand` (write) or `XxxQuery` (read) record -> `application/port/input/command|query`.
+2. `XxxCommand` (write) or `XxxQuery` (read) record -> `application/port/input/command/<feature>/` or `.../query/<feature>/`
+   (never directly in `command` or `query`; the feature is the one of the use case with the same name).
 3. `XxxUseCase implements IUseCase<Input, Output>` -> `application/port/input/usecase/<feature>/`. Logic shared by several
    use cases goes in `application/port/input/service/`.
 4. JPA entity (`XxxJpaEntity`), Spring Data repository (`SpringDataXxxRepository`), mapper, and adapter
    (`XxxRepositoryImpl implements XxxRepository`) -> `infrastructure/persistence/{entity/<feature>,repository,mapper,adapter}`.
    Read-heavy/reporting queries are separate: interface in `application/query/repository`, implementation in
    `infrastructure/persistence/query`.
-5. Entry point: REST controller + request record (`interfaces/rest`) and/or GraphQL controller + schema
-   (`interfaces/graphql`, `src/main/resources/graphql/*.graphqls`).
+5. Entry point: `RestXxxController` + request record (`interfaces/rest/controller`, `interfaces/rest/dto/request/<feature>/`)
+   and/or `GraphQLXxxController` + schema (`interfaces/graphql`, `src/main/resources/graphql/*.graphqls`). The request
+   record turns itself into the command or query with a static `toCommand` or `toQuery` (a record with several
+   conversions names each `to<CommandClassName>`; a list is `toCommands`). A separate mapper class is only for
+   conversions that hold logic (multipart files, `ViewMyAssessmentsQueryMapper`, the GraphQL `Map` mappers, Kafka mappers);
+   the allowed classes are listed in `InterfacesStructureConventionTests` and the list may only shrink.
 6. Schema change -> a new Flyway migration (see Database).
 
-Look at an existing feature end to end before writing a new one (e.g. `CreateAssessmentUseCase`, `AssessmentController`,
+Look at an existing feature end to end before writing a new one (e.g. `CreateAssessmentUseCase`, `RestAssessmentController`,
 `AssessmentBlueprintRepositoryImpl`), and follow the rules in Scope when the pattern is unclear.
 
 ## Conventions that are easy to get wrong
@@ -153,15 +158,15 @@ Look at an existing feature end to end before writing a new one (e.g. `CreateAss
   awkward for `@InjectMocks`, construct the class explicitly in `@BeforeEach`. Tests that still use hand-written
   `mock(...)` in `@BeforeEach` are migrated gradually (per feature package, starting with `application/usecase/auth`);
   do not convert them as a drive-by.
-- REST controllers: `@RestControllerTest(XxxController.class)` (`support/`), a `@WebMvcTest` slice driven with
+- REST controllers: `@RestControllerTest(RestXxxController.class)` (`support/`), a `@WebMvcTest` slice driven with
   `MockMvcTester`, with use cases and ports as `@MockitoBean`. It needs no Docker and runs in `test`. Its security is the
   test-only `config/WebMvcTestSecurityConfiguration`, not `SecurityConfig`, so CSRF, CORS and the JWT filter are not covered.
-  See `AuthControllerTests`. Every role-protected endpoint group needs an authorization test: 401 with
+  See `RestAuthControllerTests`. Every role-protected endpoint group needs an authorization test: 401 with
   `@WithAnonymousUser`, 403 with a wrong role via `@WithMockUser(roles = ...)`, and success with the right role. Send
   a valid body in the 403 test, because `@Valid` runs before `@PreAuthorize` and an invalid body would answer 400.
 - GraphQL controllers: direct-call unit tests stay as they are. Where authorization matters, use
-  `@GraphQlControllerTest(XxxController.class)` (`support/`), which runs the real schema, `GlobalExceptionResolver`
-  and `@PreAuthorize` with no Docker. See `MyClassAuthorizationGraphQlTests`.
+  `@GraphQLControllerTest(GraphQLXxxController.class)` (`support/`), which runs the real schema, `GlobalExceptionResolver`
+  and `@PreAuthorize` with no Docker. See `MyClassAuthorizationGraphQLTests`.
 - Auditing: a `@RepositoryTest` already imports the auditing configuration. Test it with a `XxxAuditingTests`
   (see `SupportedLanguageAuditingTests`): set the principal through `SecurityContextHolder` with a `CustomUserDetails` for
   the user case and leave it empty for the `"System"` case, and flush and clear the `EntityManager` before each reload.
@@ -184,6 +189,9 @@ Look at an existing feature end to end before writing a new one (e.g. `CreateAss
   trace in the bytecode that `LayeredArchitectureTests` reads. It also fails on any `LoggerFactory.getLogger` under
   `src/main/java` and on any assignment-only constructor in `application`, `infrastructure` and `interfaces`; the
   constructor exemption set may only shrink.
+- `InterfacesStructureConventionTests` guards the interfaces layout: `Rest`/`GraphQL` controller prefixes, the spelling
+  `GraphQL`, no class directly in `port/input/command`, `port/input/query` or a `dto/request` package, the mapper
+  allow-list, and the return type of `toCommand`/`toQuery`.
 - Tests marked as architecture rules (`src/test/.../architecture`) are guardrails: fix the code, never loosen the rule to get green.
 
 ## Scope

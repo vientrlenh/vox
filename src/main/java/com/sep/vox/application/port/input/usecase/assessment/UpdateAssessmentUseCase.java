@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.UpdateAssessmentCommand;
+import com.sep.vox.application.port.input.command.assessment.UpdateAssessmentCommand;
 import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
 import com.sep.vox.application.port.input.service.AssessmentPolicyValidator;
 import com.sep.vox.application.port.input.service.AssessmentScheduleCandidateConflictValidator;

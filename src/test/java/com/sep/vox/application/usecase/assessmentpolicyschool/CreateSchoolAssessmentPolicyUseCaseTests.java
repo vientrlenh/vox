@@ -15,7 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ResourceDuplicatedException;
-import com.sep.vox.application.port.input.command.CreateAssessmentPolicyCommand;
+import com.sep.vox.application.port.input.command.assessmentpolicysystem.CreateAssessmentPolicyCommand;
 import com.sep.vox.application.port.input.service.GradeLevelBandScopeGuardService;
 import com.sep.vox.application.port.input.usecase.assessmentpolicyschool.CreateSchoolAssessmentPolicyUseCase;
 import com.sep.vox.application.port.output.UserContextPort;

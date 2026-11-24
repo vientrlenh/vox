@@ -9,7 +9,7 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
-import com.sep.vox.application.port.input.command.UpdateSystemRubricCriterionCommand;
+import com.sep.vox.application.port.input.command.rubricsystem.UpdateSystemRubricCriterionCommand;
 import com.sep.vox.application.port.input.service.RubricCriterionExamplesNormalizer;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;

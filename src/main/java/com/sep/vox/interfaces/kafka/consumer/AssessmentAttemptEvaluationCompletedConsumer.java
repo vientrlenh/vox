@@ -13,7 +13,7 @@ import org.springframework.kafka.retrytopic.DltStrategy;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
-import com.sep.vox.application.port.input.command.UpdateAssessmentSessionStatusCommand;
+import com.sep.vox.application.port.input.command.assessmentsession.UpdateAssessmentSessionStatusCommand;
 import com.sep.vox.application.port.input.usecase.assessmentevaluation.RecordAssessmentAttemptEvaluationUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentitemresponse.ResolveAssessmentSessionIdByResponseIdUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentsession.UpdateAssessmentSessionStatusUseCase;

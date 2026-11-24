@@ -14,7 +14,7 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.application.mapper.scoringrule.ScoringRuleDtoMapper;
-import com.sep.vox.application.port.input.query.SearchSchoolScoringRuleQuery;
+import com.sep.vox.application.port.input.query.scoringrule.SearchSchoolScoringRuleQuery;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.common.PageResult;

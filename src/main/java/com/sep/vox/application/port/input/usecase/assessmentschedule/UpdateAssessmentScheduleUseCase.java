@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
-import com.sep.vox.application.port.input.command.UpdateAssessmentScheduleCommand;
+import com.sep.vox.application.port.input.command.assessmentschedule.UpdateAssessmentScheduleCommand;
 import com.sep.vox.application.port.input.service.AssessmentScheduleCandidateConflictValidator;
 import com.sep.vox.application.port.input.service.AssessmentScheduleProctorConflictValidator;
 import com.sep.vox.application.port.input.service.AssessmentScheduleRoomValidator;

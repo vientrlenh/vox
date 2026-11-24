@@ -15,7 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.mapper.importfile.ImportSessionResponseMapper;
-import com.sep.vox.application.port.input.query.ViewImportSessionQuery;
+import com.sep.vox.application.port.input.query.importfile.ViewImportSessionQuery;
 import com.sep.vox.application.port.input.usecase.importfile.ViewImportSessionUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.importfile.ImportSessionDetailsResponse;

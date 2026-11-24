@@ -19,7 +19,6 @@ import com.sep.vox.application.port.input.service.GradingItemScoreResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.usecase.assessmentevaluation.UpsertAssessmentCandidateResultUseCase;
 import com.sep.vox.application.response.input.assessmentgrading.GradingActionResponse;
-import com.sep.vox.domain.model.assessment.AssessmentEvaluationEngineType;
 import com.sep.vox.domain.model.assessment.AssessmentItemCriterionScore;
 import com.sep.vox.domain.model.assessment.AssessmentItemEvaluation;
 import com.sep.vox.domain.model.assessment.AssessmentItemEvaluationStatus;
@@ -94,37 +93,19 @@ public class RegradeResultUseCase implements IUseCase<SubmitGradingCommand, Grad
 
         List<AssessmentItemCriterionScore> criterionScores = new ArrayList<AssessmentItemCriterionScore>();
         for (GradingItemScoreResolver.ResolvedItem item : resolvedItems) {
-            AssessmentItemEvaluation savedEvaluation = assessmentItemEvaluationRepository.save(AssessmentItemEvaluation.builder()
-                    .responseId(item.responseId())
-                    .paperItemId(item.paperItemId())
-                    .engineType(AssessmentEvaluationEngineType.HUMAN)
-                    .gradedByModel(HUMAN_GRADER)
-                    .sampleCount(null)
-                    .reviewerId(prepared.currentUserId())
-                    .rawItemScore(item.itemScore())
-                    .itemScore(item.itemScore())
-                    .overallConfidence(null)
-                    // false is the condition for the calculator not to keep the result waiting for a grader:
-                    // a person has already graded it, so there is nothing left to wait for.
-                    .requiresHumanReview(false)
-                    .reviewReasonCode(null)
-                    .markedInvalid(false)
-                    .requiresRetake(false)
-                    .signals(null)
-                    .validityJson(null)
-                    .feedbackSummary(item.feedbackSummary())
-                    .suggestionsJson(null)
-                    .promptVersion(null)
-                    .status(AssessmentItemEvaluationStatus.FINALIZED)
-                    .evaluatedAt(now)
-                    .build());
-            item.criterionScores().forEach(score -> criterionScores.add(AssessmentItemCriterionScore.builder()
-                    .evaluationId(savedEvaluation.getId())
-                    .rubricCriterionId(score.rubricCriterionId())
-                    .rawScore(score.score())
-                    .finalScore(score.score())
-                    .rationale(score.rationale())
-                    .build()));
+            AssessmentItemEvaluation savedEvaluation = assessmentItemEvaluationRepository.save(AssessmentItemEvaluation.humanGraded(
+                    item.responseId(),
+                    item.paperItemId(),
+                    HUMAN_GRADER,
+                    prepared.currentUserId(),
+                    item.itemScore(),
+                    item.feedbackSummary(),
+                    now));
+            item.criterionScores().forEach(score -> criterionScores.add(AssessmentItemCriterionScore.scoredWithoutBand(
+                    savedEvaluation.getId(),
+                    score.rubricCriterionId(),
+                    score.score(),
+                    score.rationale())));
         }
         assessmentItemCriterionScoreRepository.saveAll(criterionScores);
 

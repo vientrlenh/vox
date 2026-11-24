@@ -79,6 +79,31 @@ public class AssessmentItemResponse {
         this.submittedAt = submittedAt;
     }
 
+    public static AssessmentItemResponse answered(UUID id, UUID sessionId, UUID paperItemId, String audioUrl,
+                                                  Integer durationSeconds, String transcript, Instant submittedAt) {
+        return builder()
+                .id(id)
+                .sessionId(sessionId)
+                .paperItemId(paperItemId)
+                .audioUrl(audioUrl)
+                .durationSeconds(durationSeconds)
+                .transcript(transcript)
+                .submittedAt(submittedAt)
+                .build();
+    }
+
+    public static AssessmentItemResponse withoutRecording(UUID sessionId, UUID paperItemId,
+                                                          String terminationReason, Instant submittedAt) {
+        return builder()
+                .id(UUID.randomUUID())
+                .sessionId(sessionId)
+                .paperItemId(paperItemId)
+                .durationSeconds(0)
+                .terminationReason(terminationReason)
+                .submittedAt(submittedAt)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UUID v7 ids for every entity row Vox creates</title>
+<style>
+  :root {
+    --bg: #fafaf8; --surface: #ffffff; --text: #1d1d1b; --muted: #5f5f5a; --border: #e2e1dc;
+    --accent: #1f5fbf; --accent-soft: #e8f0fc; --warn: #8a5a00; --warn-soft: #fdf3dc;
+    --ok: #17673a; --ok-soft: #e3f4ea; --bad: #9b1c1c; --bad-soft: #fbe6e6; --code-bg: #f3f2ee;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #151514; --surface: #1d1d1b; --text: #ecebe6; --muted: #a2a19a; --border: #33332f;
+      --accent: #7fb0f5; --accent-soft: #1b2a40; --warn: #f0c36a; --warn-soft: #3a2f14;
+      --ok: #7fd3a0; --ok-soft: #14301f; --bad: #f19a9a; --bad-soft: #3d1b1b; --code-bg: #262623;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #151514; --surface: #1d1d1b; --text: #ecebe6; --muted: #a2a19a; --border: #33332f;
+    --accent: #7fb0f5; --accent-soft: #1b2a40; --warn: #f0c36a; --warn-soft: #3a2f14;
+    --ok: #7fd3a0; --ok-soft: #14301f; --bad: #f19a9a; --bad-soft: #3d1b1b; --code-bg: #262623;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 32px 16px 96px; }
+  h1 { font-size: 1.9rem; line-height: 1.2; margin: 0 0 8px; }
+  h2 { font-size: 1.35rem; margin: 48px 0 12px; padding-top: 16px; border-top: 1px solid var(--border); }
+  h3 { font-size: 1.05rem; margin: 28px 0 8px; }
+  p, li { max-width: 72ch; }
+  .meta { color: var(--muted); font-size: .92rem; margin-bottom: 20px; }
+  .status { display: inline-block; border-radius: 999px; padding: 2px 12px; font-size: .8rem;
+    font-weight: 600; white-space: nowrap; background: var(--code-bg); color: var(--muted); }
+  .status.draft, .status.open { background: var(--warn-soft); color: var(--warn); }
+  .status.approved, .status.progress { background: var(--accent-soft); color: var(--accent); }
+  .status.done, .status.answered { background: var(--ok-soft); color: var(--ok); }
+  .status.blocked { background: var(--bad-soft); color: var(--bad); }
+  nav { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 18px; margin: 20px 0; }
+  nav ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 32px; }
+  nav a, td a { color: var(--accent); text-decoration: none; }
+  code { background: var(--code-bg); padding: 1px 6px; border-radius: 4px;
+    font: .88em ui-monospace, "SF Mono", Menlo, monospace; }
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; font: .85rem/1.5 ui-monospace, "SF Mono", Menlo, monospace; }
+  pre code { background: none; padding: 0; }
+  .table-scroll { overflow-x: auto; margin: 12px 0; }
+  table { border-collapse: collapse; width: 100%; background: var(--surface);
+    border: 1px solid var(--border); font-size: .92rem; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--code-bg); font-weight: 600; white-space: nowrap; }
+  td.indent { padding-left: 32px; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .callout { border-left: 4px solid var(--accent); background: var(--accent-soft);
+    padding: 10px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+  .callout.warn { border-color: var(--warn); background: var(--warn-soft); }
+  .callout.ok { border-color: var(--ok); background: var(--ok-soft); }
+  .callout p { margin: 4px 0; }
+  .decision, .phase { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 4px 18px 14px; margin: 14px 0; }
+  .decision h3, .phase h3 { margin-top: 14px; }
+  .rec { color: var(--ok); font-weight: 600; }
+  .answer { background: var(--code-bg); border-radius: 8px; padding: 8px 12px; margin: 10px 0 0; color: var(--muted); }
+  .decision[data-decision-state="answered"] .answer { background: var(--ok-soft); color: var(--text); }
+  .tag { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .jobs { list-style: none; padding: 0; margin: 10px 0; }
+  .job { border-top: 1px solid var(--border); padding: 10px 0; }
+  .job > .title { font-weight: 600; }
+  .status-log { font-size: .85rem; color: var(--muted); margin: 8px 0 0; padding-left: 20px; }
+  .status-log:empty { display: none; }
+  @media (max-width: 600px) { nav ol { columns: 1; } h1 { font-size: 1.5rem; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>UUID v7 ids for every entity row Vox creates</h1>
+<div class="meta">
+  Repository: <code>vox</code> &middot; Base: <code>default</code> (HEAD <code>ad7e632c</code>) &middot; Written 2026-11-24 &middot;
+  Priority: runs <strong>before</strong> <code>model-methods-and-method-rules-plan</code> (paused after its phase 7) &middot;
+  Plan status: <span class="status draft" id="plan-status" data-plan-status="draft">Draft</span>
+</div>
+
+<p>16 JPA entities declare <code>@Id</code> with no generator, so the application invents their ids with
+<code>UUID.randomUUID()</code> (version 4) at 18 sites in 17 files, and their tables have no <code>DEFAULT uuidv7()</code>.
+This plan gives those entities Hibernate's <code>@UuidGenerator(style = VERSION_7)</code>, the declaration that 54 other entities and
+<code>BaseEntity</code> already use, removes the 18 sites, and adds a guard so a new entity cannot fall back to version 4. It is worth
+doing because ids then sort by creation time (the same property the rest of the schema already has) and one rule, not 16 adapters, decides how an id is made.</p>
+
+<div class="callout warn">
+  <p><strong>The cause is the missing generator, not the missing <code>BaseEntity</code>.</strong> A v7 id needs only
+  <code>@Id @UuidGenerator(style = VERSION_7)</code>. Extending <code>BaseEntity</code> would also add four audit columns, and none of the 16
+  tables has all four (13 have none, 3 have only <code>created_at</code>); AGENTS.md says such a class &ldquo;is not given the missing columns&rdquo;.
+  D1 asks whether you still want them to extend <code>BaseEntity</code>.</p>
+</div>
+<div class="callout warn">
+  <p><strong>This plan goes beyond AGENTS.md in one sentence</strong> (Database: &ldquo;Entities whose id the application assigns
+  (<code>UUID.randomUUID()</code> in the adapter) keep it&rdquo;), and it touches practice papers, which reserve quota seconds. Both are listed in
+  section 1.8 and asked as D3 and D5. Nothing may start until D1 to D5 are answered.</p>
+</div>
+
+<nav aria-label="Contents">
+  <ol>
+    <li><a href="#progress">Progress</a></li>
+    <li><a href="#current">Current state</a></li>
+    <li><a href="#decisions">Decisions</a></li>
+    <li><a href="#phases">Phases</a></li>
+    <li><a href="#risks">Risks</a></li>
+    <li><a href="#scope">Out of scope</a></li>
+    <li><a href="#verify">Verification</a></li>
+    <li><a href="#changelog">Change log</a></li>
+    <li><a href="#notes">Implementation notes</a></li>
+  </ol>
+</nav>
+
+<h2 id="progress">Progress</h2>
+<p id="overview-summary" class="meta"></p>
+<div class="table-scroll"><table>
+  <thead><tr><th>Phase / job</th><th>Status</th></tr></thead>
+  <tbody id="overview-body"></tbody>
+</table></div>
+
+<h2 id="current">1. Current state (measured)</h2>
+<p>Measured on 2026-11-24 on branch <code>refactor/model-methods-and-method-rules</code>, whose HEAD equals <code>default</code> and
+<code>origin/default</code> (<code>ad7e632c</code>). The working tree is not clean (section 1.7).
+<code>./gradlew compileJava compileTestJava</code> passes, so the plan takes on no existing compile failure. The full <code>test</code> and
+<code>integrationTest</code> suites were <em>not</em> run for this plan (job 1.2 does it). Docker is running (29.9.3), so integration tests can run here.</p>
+
+<h3>1.1 Entities by id declaration</h3>
+<div class="table-scroll"><table>
+  <thead><tr><th>Group</th><th class="num">Entities</th><th>Id declaration</th></tr></thead>
+  <tbody>
+    <tr><td>Extend <code>BaseEntity</code> (id + 4 audit columns)</td><td class="num">36</td><td>inherited <code>@Id @UuidGenerator(style = VERSION_7)</code></td></tr>
+    <tr><td>Own v7 generator</td><td class="num">54</td><td><code>@Id @UuidGenerator(style = VERSION_7)</code></td></tr>
+    <tr><td><strong>UUID <code>@Id</code> with no generator</strong></td><td class="num"><strong>16</strong></td><td><code>@Id @Column(name = "id", nullable = false, updatable = false)</code></td></tr>
+    <tr><td>String natural key (<code>InterestDimensionJpaEntity.code</code>)</td><td class="num">1</td><td>not a UUID, out of scope</td></tr>
+    <tr><td><strong>Total</strong></td><td class="num"><strong>107</strong></td><td><code>find src/main/java/com/sep/vox/infrastructure/persistence/entity -name '*JpaEntity.java'</code>, then <code>grep -L 'extends BaseEntity'</code> and <code>grep -L UuidGenerator</code></td></tr>
+  </tbody>
+</table></div>
+
+<h3>1.2 The 16 entities and where their ids are made today</h3>
+<div class="table-scroll"><table>
+  <thead><tr><th>Entity</th><th>Table</th><th>Audit columns</th><th>Id made at</th></tr></thead>
+  <tbody>
+    <tr><td><code>AssessmentItemEvaluationTurn</code></td><td>assessment_item_evaluation_turns</td><td>none</td><td>domain factory <code>recorded</code> (at HEAD: <code>RecordAssessmentAttemptEvaluationUseCase:368</code>)</td></tr>
+    <tr><td><code>AssessmentItemResponse</code></td><td>assessment_item_responses</td><td>none</td><td>main path: the AI service sends the id as <code>answerId</code>; backfill path: domain factory <code>withoutRecording</code> (at HEAD: <code>MissingResponseBackfillService:154</code>). See D2</td></tr>
+    <tr><td><code>AssessmentItemResponseTurn</code></td><td>assessment_item_response_turns</td><td>created_at</td><td><code>AssessmentItemResponseTurnRepositoryImpl.upsert:37</code></td></tr>
+    <tr><td><code>PracticeCriterionScore</code></td><td>practice_criterion_scores</td><td>none</td><td><code>PracticeCriterionScoreRepositoryImpl.upsertByCode:34</code></td></tr>
+    <tr><td><code>PracticeItemEvaluation</code></td><td>practice_item_evaluations</td><td>none</td><td><code>PracticeItemEvaluationRepositoryImpl.upsert:32</code> (returns the id)</td></tr>
+    <tr><td><code>PracticeItemResponse</code></td><td>practice_item_responses</td><td>none</td><td><code>PracticeItemResponseRepositoryImpl.upsertResponse:55</code> (returns the id)</td></tr>
+    <tr><td><code>PracticePaperItem</code></td><td>practice_paper_items</td><td>none</td><td><code>PracticePaperPersistenceService:106</code>, <code>ResolveNextPracticeQuestionPersistenceService:28</code></td></tr>
+    <tr><td><code>PracticePaper</code></td><td>practice_papers</td><td>created_at</td><td><code>PracticePaperPersistenceService:77</code> (the paper also reserves quota seconds; D5)</td></tr>
+    <tr><td><code>PracticeResponseTurn</code></td><td>practice_response_turns</td><td>none</td><td><code>PracticeResponseTurnRepositoryImpl.save:41</code> (returns the id)</td></tr>
+    <tr><td><code>PracticeSession</code></td><td>practice_sessions</td><td>none</td><td><code>StartPracticeSessionPersistenceService:38</code> (keeps the id to read the row back; D5)</td></tr>
+    <tr><td><code>SavedTopic</code></td><td>saved_topics</td><td>none</td><td><code>SavedTopicRepositoryImpl.save:29</code></td></tr>
+    <tr><td><code>TopicInterestEvent</code></td><td>topic_interest_events</td><td>none</td><td><code>TopicInterestEventRepositoryImpl.save:30</code></td></tr>
+    <tr><td><code>TopicInterestScore</code></td><td>topic_interest_scores</td><td>none</td><td><code>TopicInterestScoreRepositoryImpl.replaceForStudent:44</code></td></tr>
+    <tr><td><code>TopicSuggestion</code></td><td>topic_suggestions</td><td>created_at</td><td><code>TopicSuggestionMapper.toJpa:42</code> (with a comment explaining the missing generator)</td></tr>
+    <tr><td><code>TurnCorrection</code></td><td>turn_corrections</td><td>none</td><td><code>TurnCorrectionRepositoryImpl.save:29</code></td></tr>
+    <tr><td><code>StudentQuestionExposure</code></td><td>student_question_exposures</td><td>none</td><td><code>StudentQuestionExposureRepositoryImpl.recordExposure:28</code></td></tr>
+  </tbody>
+</table></div>
+<p>Audit columns were read from <code>V1__baseline.sql</code> with a throw-away script (not in the repository). Line numbers are from the working tree.</p>
+
+<h3>1.3 Every <code>UUID.randomUUID()</code> in <code>src/main/java</code></h3>
+<p><code>grep -rn 'UUID.randomUUID()' src/main/java</code> finds 35 calls in 34 files.</p>
+<ul>
+  <li><strong>18 make a row id</strong> (17 files): 12 in infrastructure (11 for the 16 entities above, plus
+  <code>DimensionInterestScoreRepositoryImpl.upsertScore:48</code>, a native upsert into a table whose entity already has a generator and whose column default is
+  <code>uuidv7()</code>), 4 in application (3 files), 2 in domain. These are the work of this plan.</li>
+  <li><strong>17 are not row ids and stay</strong>: 9 business codes (<code>QuestionImportCommitHandler</code>, <code>AttachAssessmentBlueprintUseCase</code>,
+  <code>CreateAssessmentUseCase</code>, <code>CreateClassTestUseCase</code>, <code>CreateAssessmentBlueprintUseCase</code>,
+  <code>CreateSystemQuestionBankQuestionUseCase</code>, <code>QuestionCloneService</code>, <code>SePayPaymentProcessService</code>, <code>Invoice</code>);
+  5 tokens (<code>TopicOfferBackfillService</code>, <code>ResolveNextPracticeQuestionUseCase</code>, <code>StartClassTestSessionUseCase</code>,
+  <code>VerifyAssessmentScheduleOtpUseCase</code>, <code>JwtStreamTokenProvider</code>); and the S3 key part in <code>GetQuestionAssetUploadUrlUseCase</code>,
+  the Redis draft key in <code>PracticePaperDraftService</code> and the worker instance id in <code>ImportJobDispatcher</code>.</li>
+</ul>
+
+<h3>1.4 What a preset id does to a generated entity, and the documentation check</h3>
+<ul>
+  <li><strong>Question: does Hibernate also need <code>@GeneratedValue</code> next to <code>@UuidGenerator</code>? No.</strong> Checked in the Hibernate
+  7.4.1.Final sources (Gradle cache, the version this project resolves): <code>@UuidGenerator</code> is meta-annotated <code>@IdGeneratorType(org.hibernate.id.uuid.UuidGenerator.class)</code>;
+  <code>GeneratorBinder.createIdGeneratorsFromGeneratorAnnotations</code> installs the id generator from that annotation first, and reads <code>@GeneratedValue</code> only in the final <code>else if</code>.
+  The <code>@IdGeneratorType</code> javadoc says the JPA <code>@GeneratedValue</code> is not used there and the generator annotation &ldquo;itself implies that <code>id</code> is a generated value&rdquo;, and names <code>@UuidGenerator</code> as the complete example.
+  So <code>@GeneratedValue</code> would be redundant (not re-tested here).</li>
+  <li>The repository agrees: 0 entities use <code>@GeneratedValue</code> (the only 2 matches in <code>src/main/java</code> are comments), 55 files use <code>@UuidGenerator</code> alone
+  (54 entities and <code>BaseEntity</code>), and <code>./gradlew integrationTest --tests '*GradingTaskDetailQueryTests' --tests '*SupportedLanguageAuditingTests'</code>, which persist such entities with null ids, passed on 2026-11-24.</li>
+  <li><strong>A preset id is ignored by a generated entity.</strong> <code>AbstractSaveEventListener.generateId</code> hands the preset id to the generator only when
+  <code>Generator.allowAssignedIdentifiers()</code> is true (default false; only <code>Assigned</code> overrides it, <code>org.hibernate.id.uuid.UuidGenerator</code> does not), so a merge of a new row
+  that carries <code>UUID.randomUUID()</code> gets a different id from the generator. Spring Data calls merge for a non-null id (rule recorded in the earlier base-model-audit plan, not re-read). That is why every job below changes the entity and its call sites together: one without the other compiles and still misbehaves.</li>
+  <li><code>UuidVersion7Strategy</code> keeps a last-timestamp and sequence state so ids stay monotonic inside one JVM (read in the same sources). Two queries order by id:
+  <code>TurnCorrection findByTurnIdOrderById</code> and <code>TopicInterestEvent findByStudentIdOrderByOccurredAtAscIdAsc</code> (tie-break). With v4 the order is random; with v7 it follows creation. Existing rows keep their v4 ids.</li>
+</ul>
+
+<h3>1.5 Database and tests</h3>
+<ul>
+  <li>Flyway is at <code>V22</code>, so the next migration is <code>V23</code> (re-check highest + 1 when the job runs). The 16 tables have <code>id uuid NOT NULL</code> with no default in <code>V1__baseline.sql</code>
+  and no migration sets one (<code>grep -i "SET DEFAULT uuidv7" src/main/resources/db/migration/*.sql</code> finds nothing). <code>dimension_interest_scores</code> and <code>practice_questions</code> do have <code>DEFAULT uuidv7()</code>.</li>
+  <li>Native SQL that inserts an id: <code>SpringDataDimensionInterestScoreRepository.upsertScore</code> (id from Java; in scope, job 5.3) and <code>SpringDataPracticeQuestionRepository.insertGeneratedQuestion</code> (id comes from the AI service's <code>GeneratedQuestion.id()</code> and is also the Chroma key; out of scope).</li>
+  <li><code>src/test/resources/application-test.yaml</code> sets <code>ddl-auto: create-drop</code>, so <code>@RepositoryTest</code> and <code>@IntegrationTest</code> run on a Hibernate-built schema <em>without</em> column defaults.
+  Only <code>SchemaMigrationTests</code> and <code>RenameExamToAssessmentMigrationTests</code> run Flyway, each on its own <code>postgres:18</code> container. A check of <code>DEFAULT uuidv7()</code> therefore needs that style of test.</li>
+  <li>Tests that touch the 16 entities directly: only <code>GradingTaskDetailQueryTests</code> (lines 257 and 296 preset <code>UUID.randomUUID()</code> ids on <code>AssessmentItemResponseJpaEntity</code> and <code>AssessmentItemEvaluationTurnJpaEntity</code>, with a comment that says they have application-assigned ids).
+  Model tests: <code>AssessmentItemEvaluationTurnTests.recordedGeneratesADifferentIdForEachTurn</code> and <code>AssessmentItemResponseTests</code> (both still untracked, see 1.7). No test references the other 14 entities.</li>
+  <li>Exemption files that may only shrink: <code>method-size-exemptions.txt</code> lists <code>PracticePaperPersistenceService#createPaper</code> and <code>StartPracticeSessionPersistenceService#persist</code>; <code>model-creation-exemptions.txt</code> lists all three practice services. This plan adds no entry to either.</li>
+</ul>
+
+<h3>1.6 Why <code>AssessmentItemResponse</code> is different</h3>
+<p>A comment in <code>MissingResponseBackfillService</code> says the id of an <code>assessment_item_responses</code> row is the <code>answerId</code> generated by the Python AI service (a deterministic UUID v5) and
+<code>RecordAnswerTurnUseCase</code> writes it straight in; with a generator on the entity that id would be replaced (1.4) and <code>findById(answerId)</code> would miss. The Python service is not in this repository, so the claim is taken from that comment (not checked at the source).
+Only the backfill path (<code>withoutRecording</code>, rows for unanswered questions) mints an id inside Vox. D2 decides what to do with it.</p>
+
+<h3>1.7 The paused plan and the working tree</h3>
+<ul>
+  <li><code>model-methods-and-method-rules-plan</code> is <code>in-progress</code>: phases 1 to 7 are marked done, 8 to 29 are not started. Phase 7 exists <em>only in the working tree</em>:
+  <code>git status --short</code> prints 21 lines (15 modified, 6 untracked test files). Its status log says <code>compileJava compileTestJava</code> and the full <code>test</code> passed.</li>
+  <li>Overlap with this plan: phase 7 moved the two domain factories that mint ids (<code>AssessmentItemEvaluationTurn.recorded</code>, <code>AssessmentItemResponse.withoutRecording</code>) out of application code; its phase 9 will later edit
+  <code>PracticePaperPersistenceService</code>, <code>ResolveNextPracticeQuestionPersistenceService</code> and <code>StartPracticeSessionPersistenceService</code>, which phase 3 here edits first.
+  Removing the id lines now makes that later job smaller; D4 decides how the two branches meet.</li>
+</ul>
+
+<h3>1.8 Where this plan leaves AGENTS.md</h3>
+<div class="table-scroll"><table>
+  <thead><tr><th>AGENTS.md says</th><th>This plan</th><th>Handled by</th></tr></thead>
+  <tbody>
+    <tr><td>Database: &ldquo;Entities whose id the application assigns (<code>UUID.randomUUID()</code> in the adapter) keep it.&rdquo;</td><td>Replaced for 15 entities (16 if D2 = B); the sentence becomes false</td><td>D3, job 7.2</td></tr>
+    <tr><td>Audit columns: a class that lacks an audit field &ldquo;does not extend the base classes and is not given the missing columns&rdquo;</td><td>Complies when D1 = A or C. D1 = B goes against it</td><td>D1</td></tr>
+    <tr><td>Ask first: a file that fits no <code>X + Command/Query/Controller/UseCase/Repository</code> pattern</td><td>Only if D1 = C (<code>BaseIdEntity</code>) or D2 = B (id annotation and generator)</td><td>D1, D2</td></tr>
+    <tr><td>Ask first: anything that moves money (orders, payments, quota, school balance)</td><td>Practice paper and session edits, limited to id creation; no amount or rule changes</td><td>D5</td></tr>
+    <tr><td>Ask first: change a public API contract</td><td>No change. Ids stay <code>UUID</code> in REST, GraphQL, events and DTOs; only the version of newly made ids changes</td><td>&ndash;</td></tr>
+    <tr><td>Database: next migration = highest + 1, never edit a merged migration</td><td>Complies: one new <code>V23</code>, no edit to an existing migration</td><td>&ndash;</td></tr>
+    <tr><td>Coding rules: methods at most 25 lines, comments in English, no new exemption entries</td><td>Complies by design; edited methods get their Vietnamese comments translated</td><td>each job</td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="decisions">2. Decisions</h2>
+
+<div class="decision" id="d1" data-decision-state="open">
+  <h3>D1. How do the 16 entities get v7 ids? <span class="status open">Open</span></h3>
+  <p>The 16 entities do not extend <code>BaseEntity</code> because they lack its audit columns (section 1.2).</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Declare <code>@Id @UuidGenerator(style = UuidGenerator.Style.VERSION_7)</code> on each of the 16, the declaration the 54 other non-base entities use and that AGENTS.md prescribes
+  (&ldquo;declare it on an entity that does not extend it&rdquo;). No schema change except the safety-net default of Phase 2, no audit columns invented, <code>BaseEntity</code> untouched.</p>
+  <p><strong>B.</strong> Make the 16 extend <code>BaseEntity</code>. Adds <code>created_at</code>, <code>updated_at</code>, <code>created_by</code>, <code>updated_by</code> to the tables that lack them (13 have none, 3 have only <code>created_at</code>), with migrations and a backfill of NOT NULL columns that invents timestamps for old rows,
+  and the 16 entities, mappers and models change. It contradicts the audit rule in AGENTS.md and decision D2 of the finished base-model-audit plan. Choose it only if you want an audit trail on these tables; the plan would then be rewritten around migrations.</p>
+  <p><strong>C.</strong> New abstract <code>BaseIdEntity</code> (id only, <code>@MappedSuperclass</code>, <code>@SuperBuilder</code>) that the 16 extend. One id declaration for the 16, but a new file that fits no AGENTS.md pattern, and the 54 existing entities keep their own declaration, so two ways to declare an id coexist.</p>
+  <div class="answer">Not answered yet.</div>
+</div>
+
+<div class="decision" id="d2" data-decision-state="open">
+  <h3>D2. What happens to <code>AssessmentItemResponse</code>, whose id the AI service supplies? <span class="status open">Open</span></h3>
+  <p>Section 1.6: most rows carry the AI service's <code>answerId</code>; only <code>withoutRecording</code> (the backfill of unanswered questions) mints an id in Vox.</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Leave this one entity as it is: assigned id, no generator, and <code>AssessmentItemResponse.withoutRecording</code> keeps <code>UUID.randomUUID()</code>. It becomes the single documented exemption of the new guard (job 7.1).
+  Reason: the table's ids are mostly the AI service's v5 values, so v7 would cover only a minority of its rows, and the change would sit on the grading hot path. Jobs 6.3 and 6.4 are then marked Deferred.</p>
+  <p><strong>B.</strong> Add a custom Hibernate id generator that keeps a preset id and otherwise makes a v7: two new files in <code>infrastructure/persistence</code> (an <code>@IdGeneratorType</code> annotation and a <code>BeforeExecutionGenerator</code> whose <code>allowAssignedIdentifiers()</code> returns true and that delegates to <code>UuidVersion7Strategy.INSTANCE</code>), proven by a test first (jobs 6.3, 6.4).
+  Result: no <code>UUID.randomUUID()</code> row id is left in <code>src/main</code>. Cost: two files that fit no pattern, custom code on the grading path, and the AI service's v5 ids are still not v7.</p>
+  <div class="answer">Not answered yet.</div>
+</div>
+
+<div class="decision" id="d3" data-decision-state="open">
+  <h3>D3. Update AGENTS.md so it matches the new rule? <span class="status open">Open</span></h3>
+  <p>The Database section keeps application-assigned ids (&ldquo;<code>UUID.randomUUID()</code> in the adapter&rdquo;) and the Testing section describes <code>ModelAndEntityConventionTests</code>. Changing AGENTS.md needs your confirmation.</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Approve this plan's departure from that sentence and update AGENTS.md in job 7.2 (replace the sentence, add the two new guard rules to the <code>ModelAndEntityConventionTests</code> bullet). Future agents then follow the new rule instead of re-adding <code>UUID.randomUUID()</code>.</p>
+  <p><strong>B.</strong> Approve the work but leave AGENTS.md unchanged. Smaller diff, but the file contradicts the code and a later agent could revert the change. Job 7.2 is then Deferred.</p>
+  <div class="answer">Not answered yet.</div>
+</div>
+
+<div class="decision" id="d4" data-decision-state="open">
+  <h3>D4. How does this plan start, given the uncommitted phase 7 of the paused plan? <span class="status open">Open</span></h3>
+  <p>Section 1.7: HEAD equals <code>default</code>, and 21 working-tree entries belong to phase 7 of <code>model-methods-and-method-rules-plan</code>. I do not commit unless you ask.</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) You commit phase 7 on <code>refactor/model-methods-and-method-rules</code> (or tell me to), then this plan runs on a new branch <code>refactor/uuidv7-entity-ids</code> created from that commit. Phase 6 edits the domain factories phase 7 created. The paused plan resumes at phase 8 after this plan is merged. The new branch's pull request includes the phase 7 commit unless you merge the paused branch first.</p>
+  <p><strong>B.</strong> Stash phase 7 (<code>git stash -u</code>) and run this plan from a clean <code>default</code> on a new branch, as a small independent pull request merged first. Phase 6 would edit the application call sites that mint ids at HEAD (<code>MissingResponseBackfillService:154</code>, <code>RecordAssessmentAttemptEvaluationUseCase:368</code>) instead of the factories, and popping the stash later conflicts in about six files.</p>
+  <p><strong>C.</strong> Work in the same dirty tree without committing. Not recommended: two plans' changes interleave in one diff and cannot be reviewed or committed separately.</p>
+  <div class="answer">Not answered yet.</div>
+</div>
+
+<div class="decision" id="d5" data-decision-state="open">
+  <h3>D5. May this plan touch the practice paper and session code, which reserves quota? <span class="status open">Open</span></h3>
+  <p>AGENTS.md &ldquo;Ask first&rdquo; lists anything that moves money, including quota. <code>PracticePaper</code> holds <code>reservedQuotaSeconds</code> and <code>PracticeSession</code> holds <code>gradedSeconds</code>; phase 3 edits only how their ids are made.</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Include phase 3 with a guard: the edits are limited to the id lines and to using the saved id, no amount, status or query changes; <code>./gradlew test --tests '*Practice*' --tests '*Quota*'</code> is run in job 1.2 and again at the end of phase 3 and must show the same pass count.</p>
+  <p><strong>B.</strong> Defer phase 3: <code>PracticePaper</code>, <code>PracticePaperItem</code> and <code>PracticeSession</code> keep <code>UUID.randomUUID()</code> as documented exemptions of the guard, so 3 of the 16 tables stay on v4.</p>
+  <div class="answer">Not answered yet.</div>
+</div>
+
+<h2 id="phases">3. Phases</h2>
+<p>Each phase is independently reviewable and leaves the build green. In phases 3 to 6 a job always changes an entity together with every site that makes its id (section 1.4); the jobs are ordered by the layer they touch inside a phase. The migration comes first because it is only a safety net and cannot change behaviour.</p>
+
+<div class="phase" id="phase-1" data-status="todo">
+  <h3><span class="title">Phase 1 &ndash; Prepare the branch and take a baseline</span>
+    <span class="tag">small &middot; mechanical &middot; needs D4</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> start from a clean tree, know the test counts, and record that the paused plan waits. <strong>Depends on:</strong> D4.</p>
+  <ul class="jobs">
+    <li class="job" id="job-1-1" data-status="todo">
+      <span class="title">1.1 Start from a clean tree on the work branch</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>git branch --show-current</code> prints the branch chosen in D4 and <code>git status --short</code> prints nothing. The commit of phase 7 is made by you (or by me when you ask); this job never commits on its own.
+         <strong>Files:</strong> none (git only)</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-1-2" data-status="todo">
+      <span class="title">1.2 Record the baseline test counts</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the pass counts of <code>./gradlew test</code>, <code>./gradlew integrationTest</code> and <code>./gradlew test --tests '*Practice*' --tests '*Quota*'</code> are written in the Implementation notes, with any failure that already exists.
+         <strong>Files:</strong> this plan (notes only)</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-1-3" data-status="todo">
+      <span class="title">1.3 Note on the paused plan that it waits behind this one</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the <code>#notes-list</code> of <code>docs/model-methods-and-method-rules-plan/index.html</code> has an entry saying it is paused after phase 7 on 2026-11-24 behind <code>uuidv7-entity-ids-plan</code> and resumes at phase 8 once this plan is merged; no status in that file changes.
+         <strong>Files:</strong> <code>docs/model-methods-and-method-rules-plan/index.html</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>grep -c "uuidv7-entity-ids-plan" docs/model-methods-and-method-rules-plan/index.html</code> prints 1 or more</p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-2" data-status="todo">
+  <h3><span class="title">Phase 2 &ndash; Safety-net default <code>uuidv7()</code> on the 16 tables</span>
+    <span class="tag">small &middot; mechanical</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> match the AGENTS.md convention that tables keep <code>DEFAULT uuidv7()</code>, so a row inserted outside Hibernate still gets a v7 id. <strong>Depends on:</strong> Phase 1. It changes no behaviour of the application code.</p>
+  <ul class="jobs">
+    <li class="job" id="job-2-1" data-status="todo">
+      <span class="title">2.1 Add <code>V23</code> and a test that reads the defaults</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> Flyway applies the new migration on <code>postgres:18</code> and <code>information_schema.columns</code> reports <code>uuidv7()</code> as <code>column_default</code> of <code>id</code> in all 16 tables; <code>SchemaMigrationTests</code> still starts the context with <code>ddl-auto=validate</code>. The migration holds 16 <code>ALTER TABLE &hellip; ALTER COLUMN id SET DEFAULT uuidv7();</code> statements and edits no existing migration.
+         <strong>Files:</strong> <code>src/main/resources/db/migration/V23__uuidv7_default_for_entity_ids.sql</code>, <code>src/test/java/com/sep/vox/infrastructure/migration/Uuidv7IdDefaultMigrationTests.java</code> (Flyway on its own container, <code>@Tag("integration")</code>, in the style of <code>RenameExamToAssessmentMigrationTests</code>)</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew integrationTest --tests '*Uuidv7IdDefaultMigrationTests' --tests '*SchemaMigrationTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-3" data-status="todo">
+  <h3><span class="title">Phase 3 &ndash; Practice papers, paper items and sessions</span>
+    <span class="tag">medium &middot; quota-adjacent &middot; needs D1, D5</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> <code>PracticePaper</code>, <code>PracticePaperItem</code> and <code>PracticeSession</code> get Hibernate v7 ids and the three application services stop making ids. <strong>Depends on:</strong> Phase 1, D1, D5. If D5 = B this whole phase is Deferred.</p>
+  <ul class="jobs">
+    <li class="job" id="job-3-1" data-status="todo">
+      <span class="title">3.1 Paper and paper item</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> a <code>@RepositoryTest</code> saves a <code>PracticePaper</code> and a <code>PracticePaperItem</code> with null ids through their adapters and both stored ids have <code>version() == 7</code>, the item's <code>practicePaperId</code> equals the paper's id.
+      <code>PracticePaperPersistenceService.createPaper</code> and <code>saveItemAndExposure</code>, and <code>ResolveNextPracticeQuestionPersistenceService.persist</code>, no longer call <code>.id(UUID.randomUUID())</code>; <code>persist</code> keeps using the id of the saved paper. The Vietnamese comments inside the edited methods are translated, comments that only restate code are removed.
+         <strong>Files:</strong> <code>PracticePaperJpaEntity</code>, <code>PracticePaperItemJpaEntity</code>, <code>PracticePaperPersistenceService</code>, <code>ResolveNextPracticeQuestionPersistenceService</code>, new <code>src/test/java/com/sep/vox/infrastructure/persistence/adapter/PracticePaperIdTests.java</code> (<code>@RepositoryTest</code> importing the two adapters and mappers)</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-3-2" data-status="todo">
+      <span class="title">3.2 Session</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>StartPracticeSessionPersistenceService.persist</code> reads the session row back with the id of the session returned by <code>PracticeSessionRepository.save</code>, shown by a Mockito test where <code>save</code> returns a session with a known id and <code>findSessionRow</code> is verified with that id (it fails against the old local <code>sessionId</code>); a <code>@RepositoryTest</code> shows a saved session's id has <code>version() == 7</code>. No new line is added to <code>method-size-exemptions.txt</code>; remove the <code>persist</code> entry only if the method drops to 25 lines.
+         <strong>Files:</strong> <code>PracticeSessionJpaEntity</code>, <code>StartPracticeSessionPersistenceService</code>, new <code>src/test/java/com/sep/vox/application/usecase/practicesession/StartPracticeSessionPersistenceServiceTests.java</code> and <code>src/test/java/com/sep/vox/infrastructure/persistence/adapter/PracticeSessionIdTests.java</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew integrationTest --tests '*PracticePaperIdTests' --tests '*PracticeSessionIdTests'</code>, <code>./gradlew test --tests '*StartPracticeSessionPersistenceServiceTests' --tests '*Practice*' --tests '*Quota*'</code> (same pass count as job 1.2), <code>./gradlew test --tests '*LayeredArchitectureTests' --tests '*MethodSizeConventionTests' --tests '*ModelCreationConventionTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-4" data-status="todo">
+  <h3><span class="title">Phase 4 &ndash; Practice answer rows</span>
+    <span class="tag">small &middot; mechanical &middot; needs D1</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> the five entities written while a student answers get v7 ids. <strong>Depends on:</strong> Phase 1, D1.</p>
+  <ul class="jobs">
+    <li class="job" id="job-4-1" data-status="todo">
+      <span class="title">4.1 Response, evaluation and turn (the adapters that return ids)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> a <code>@RepositoryTest</code> shows that <code>PracticeItemResponseRepositoryImpl.upsertResponse</code>, <code>PracticeItemEvaluationRepositoryImpl.upsert</code> and <code>PracticeResponseTurnRepositoryImpl.save</code> return an id with <code>version() == 7</code> for a new row, and the same id again for a repeated call with the same natural key; none of the three adapters mentions <code>UUID.randomUUID()</code>.
+         <strong>Files:</strong> <code>PracticeItemResponseJpaEntity</code>, <code>PracticeItemEvaluationJpaEntity</code>, <code>PracticeResponseTurnJpaEntity</code>, the three adapters, new <code>src/test/java/com/sep/vox/infrastructure/persistence/adapter/PracticeAnswerRowIdTests.java</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-4-2" data-status="todo">
+      <span class="title">4.2 Criterion score and turn correction</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> rows saved through <code>PracticeCriterionScoreRepositoryImpl.upsertByCode</code> and <code>TurnCorrectionRepositoryImpl.save</code> have ids with <code>version() == 7</code>, and three corrections saved one after another for one turn come back from <code>findByTurnIdOrderById</code> in the order they were saved (the order was random with v4).
+         <strong>Files:</strong> <code>PracticeCriterionScoreJpaEntity</code>, <code>TurnCorrectionJpaEntity</code>, the two adapters, new <code>src/test/java/com/sep/vox/infrastructure/persistence/adapter/PracticeScoreAndCorrectionIdTests.java</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew integrationTest --tests '*PracticeAnswerRowIdTests' --tests '*PracticeScoreAndCorrectionIdTests'</code>, <code>./gradlew test --tests '*Practice*'</code>, <code>./gradlew test --tests '*LayeredArchitectureTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-5" data-status="todo">
+  <h3><span class="title">Phase 5 &ndash; Interest, exposure and suggestion rows, and the native upsert</span>
+    <span class="tag">medium &middot; one native SQL change &middot; needs D1</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> the remaining personalization entities get v7 ids and the native <code>dimension_interest_scores</code> upsert stops sending a random id. <strong>Depends on:</strong> Phase 1, D1; job 5.3 relies on the table default that already exists.</p>
+  <ul class="jobs">
+    <li class="job" id="job-5-1" data-status="todo">
+      <span class="title">5.1 Saved topic, interest event, interest score and question exposure</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> a <code>@RepositoryTest</code> shows ids with <code>version() == 7</code> for rows written by <code>SavedTopicRepositoryImpl.save</code>, <code>TopicInterestEventRepositoryImpl.save</code>, <code>TopicInterestScoreRepositoryImpl.replaceForStudent</code> and <code>StudentQuestionExposureRepositoryImpl.recordExposure</code>, and that calling <code>replaceForStudent</code> twice for one student still succeeds (the flush-before-insert behaviour its comment protects is unchanged).
+         <strong>Files:</strong> the four entities, the four adapters, new <code>src/test/java/com/sep/vox/infrastructure/persistence/adapter/InterestRowIdTests.java</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-5-2" data-status="todo">
+      <span class="title">5.2 Topic suggestion</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>TopicSuggestionRepositoryImpl.save</code> of a suggestion with a null id stores a row whose id has <code>version() == 7</code>, and <code>TopicSuggestionMapper.toJpa</code> passes <code>suggestion.getId()</code> straight through; the mapper comment that explains the missing generator (now false) is removed.
+         <strong>Files:</strong> <code>TopicSuggestionJpaEntity</code>, <code>TopicSuggestionMapper</code>, new <code>src/test/java/com/sep/vox/infrastructure/persistence/adapter/TopicSuggestionIdTests.java</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-5-3" data-status="todo">
+      <span class="title">5.3 Native upsert of dimension interest scores</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>SpringDataDimensionInterestScoreRepository.upsertScore</code> has no <code>:id</code> parameter (the <code>INSERT</code> lets the table default fill <code>id</code>), <code>DimensionInterestScoreRepositoryImpl.upsertScore</code> no longer calls <code>UUID.randomUUID()</code>, and a test on a Flyway-built schema shows the first call inserts a row with <code>version() == 7</code> and a second call updates the score and keeps the same id. The test needs its own <code>postgres:18</code> container with Flyway on (as in <code>SchemaMigrationTests</code>) because the <code>create-drop</code> schema of <code>@RepositoryTest</code> has no column default. Callers: <code>InterestVectorService:192</code> only.
+         <strong>Files:</strong> <code>SpringDataDimensionInterestScoreRepository</code>, <code>DimensionInterestScoreRepositoryImpl</code>, new <code>src/test/java/com/sep/vox/infrastructure/persistence/adapter/DimensionInterestScoreUpsertTests.java</code> (<code>@Tag("integration")</code>)</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew integrationTest --tests '*InterestRowIdTests' --tests '*TopicSuggestionIdTests' --tests '*DimensionInterestScore*'</code>, <code>./gradlew test --tests '*TopicSuggestion*' --tests '*InterestVector*'</code>, <code>./gradlew test --tests '*LayeredArchitectureTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-6" data-status="todo">
+  <h3><span class="title">Phase 6 &ndash; Assessment grading rows</span>
+    <span class="tag">medium &middot; touches files of the paused plan &middot; needs D1, D2, D4</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> <code>AssessmentItemEvaluationTurn</code> and <code>AssessmentItemResponseTurn</code> get v7 ids, and <code>AssessmentItemResponse</code> is handled as D2 decides. <strong>Depends on:</strong> Phase 1, D1, D2, D4 (this phase is written for D4 = A, where the domain factories from phase 7 of the paused plan exist; with D4 = B the jobs edit the two application call sites listed in section 1.2 instead).</p>
+  <ul class="jobs">
+    <li class="job" id="job-6-1" data-status="todo">
+      <span class="title">6.1 Evaluation turn</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>AssessmentItemEvaluationTurn.recorded</code> leaves the id null, <code>AssessmentItemEvaluationTurnTests.recordedGeneratesADifferentIdForEachTurn</code> is replaced by a test that a recorded turn has a null id, a <code>@RepositoryTest</code> shows <code>AssessmentItemEvaluationTurnRepositoryImpl.saveAll</code> of turns with null ids returns ids with <code>version() == 7</code>, and the <code>turn()</code> fixture of <code>GradingTaskDetailQueryTests</code> uses <code>.id(null)</code> (its stale comment about application-assigned ids is updated to name only the response fixture, or removed).
+         <strong>Files:</strong> <code>AssessmentItemEvaluationTurnJpaEntity</code>, <code>domain/model/assessment/AssessmentItemEvaluationTurn</code>, <code>AssessmentItemEvaluationTurnTests</code>, <code>GradingTaskDetailQueryTests</code>, new <code>src/test/java/com/sep/vox/infrastructure/persistence/adapter/AssessmentItemEvaluationTurnIdTests.java</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-6-2" data-status="todo">
+      <span class="title">6.2 Response turn</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>AssessmentItemResponseTurnRepositoryImpl.upsert</code> no longer assigns a random id when no row exists, still reuses the id of an existing row for the same response and turn order, and a <code>@RepositoryTest</code> shows a new turn gets <code>version() == 7</code> while a second <code>upsert</code> of the same (response, turn order) keeps that id.
+         <strong>Files:</strong> <code>AssessmentItemResponseTurnJpaEntity</code>, <code>AssessmentItemResponseTurnRepositoryImpl</code>, new <code>src/test/java/com/sep/vox/infrastructure/persistence/adapter/AssessmentItemResponseTurnIdTests.java</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-6-3" data-status="todo">
+      <span class="title">6.3 Id generator that keeps a preset id (needs D2 = B)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> a <code>@RepositoryTest</code> shows that, on <code>AssessmentItemResponseJpaEntity</code> with the new generator, <code>save()</code> of a new row with a preset id stores exactly that id and <code>save()</code> of a row with a null id stores an id with <code>version() == 7</code>. Start by reading the Hibernate 7.4 <code>@IdGeneratorType</code> and <code>BeforeExecutionGenerator</code> documentation; if the test cannot pass, stop and report instead of changing the design. Marked Deferred when D2 = A.
+         <strong>Files:</strong> two new files under <code>infrastructure/persistence/</code> (annotation and generator), <code>AssessmentItemResponseJpaEntity</code>, new <code>src/test/java/com/sep/vox/infrastructure/persistence/adapter/AssessmentItemResponseIdTests.java</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-6-4" data-status="todo">
+      <span class="title">6.4 Backfill stops making ids (needs D2 = B)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>AssessmentItemResponse.withoutRecording</code> leaves the id null, <code>AssessmentItemResponseTests</code> says so, <code>MissingResponseBackfillService</code> uses the saved response's id for the evaluation it creates (it already does) and its comment that says the id &ldquo;must be generated at creation&rdquo; is replaced by one that matches the new generator, and the response fixture of <code>GradingTaskDetailQueryTests</code> still passes. Marked Deferred when D2 = A.
+         <strong>Files:</strong> <code>domain/model/assessment/AssessmentItemResponse</code>, <code>MissingResponseBackfillService</code>, <code>AssessmentItemResponseTests</code>, <code>GradingTaskDetailQueryTests</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew integrationTest --tests '*AssessmentItemEvaluationTurnIdTests' --tests '*AssessmentItemResponseTurnIdTests' --tests '*GradingTaskDetailQueryTests'</code> (plus <code>*AssessmentItemResponseIdTests</code> when D2 = B), <code>./gradlew test --tests '*AssessmentItem*' --tests '*RecordAssessmentAttemptEvaluation*' --tests '*RecordAnswerTurn*'</code>, <code>./gradlew test --tests '*LayeredArchitectureTests' --tests '*ModelCreationConventionTests' --tests '*MethodSizeConventionTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-7" data-status="todo">
+  <h3><span class="title">Phase 7 &ndash; Guard, AGENTS.md and final run</span>
+    <span class="tag">small &middot; needs D3</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> a new entity or a new <code>UUID.randomUUID()</code> row id cannot reappear unnoticed, and the tracked rules match the code. <strong>Depends on:</strong> Phases 3 to 6 (as decided), D3.</p>
+  <ul class="jobs">
+    <li class="job" id="job-7-1" data-status="todo">
+      <span class="title">7.1 Two rules in <code>ModelAndEntityConventionTests</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the test class has (a) a rule that every entity file that is not <code>BaseEntity</code> and declares a <code>UUID</code> <code>@Id</code> also declares <code>@UuidGenerator(style = UuidGenerator.Style.VERSION_7)</code>, and (b) a rule that no file under <code>src/main/java</code> matches <code>\.(?:id|setId)\(\s*UUID\.randomUUID\(\)</code>; both pass on the converted code, each has a self-test with a violating snippet (as <code>ModelCreationConventionTests</code> does) and a stale-exemption check. The exemption set holds only what the decisions leave: <code>AssessmentItemResponseJpaEntity.java</code> and <code>AssessmentItemResponse.java</code> when D2 = A; the three practice entities and services when D5 = B; nothing otherwise.
+         <strong>Files:</strong> <code>src/test/java/com/sep/vox/architecture/ModelAndEntityConventionTests.java</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-7-2" data-status="todo">
+      <span class="title">7.2 Update AGENTS.md (needs D3 = A)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>git diff AGENTS.md</code> shows only: the Database sentence about application-assigned ids replaced by &ldquo;every entity gets its id from <code>BaseEntity</code> or <code>@UuidGenerator(style = VERSION_7)</code>; never call <code>UUID.randomUUID()</code> to make a row id&rdquo; plus the exemption D2 left (if any), the safety-net default now covering all tables, and the two new rules added to the <code>ModelAndEntityConventionTests</code> bullet. Marked Deferred when D3 = B.
+         <strong>Files:</strong> <code>AGENTS.md</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-7-3" data-status="todo">
+      <span class="title">7.3 Full run and public-contract check</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>./gradlew test</code> and <code>./gradlew integrationTest</code> pass with at least the baseline counts of job 1.2 plus the new tests, and <code>git diff --stat default</code> lists no GraphQL schema, REST request record, <code>.proto</code> or event payload file and only <code>V23</code> under <code>src/main/resources</code>.
+         <strong>Files:</strong> none</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests '*ModelAndEntityConventionTests'</code>, <code>./gradlew test</code>, <code>./gradlew integrationTest</code>; then run the <code>verify-plan</code> skill</p>
+  <ul class="status-log"></ul>
+</div>
+
+<h2 id="risks">4. Risks</h2>
+<ul>
+  <li><strong>A preset id is silently replaced.</strong> If any call site still passes an id to a converted entity, Hibernate generates a different one (section 1.4) and code that kept the local id reads a row that does not exist; <code>PracticeSession</code> is the one place that keeps it. Limit: entity and call sites change in the same job, jobs 3.2 and 6.2 have tests that assert the saved id is the one used, and rule 7.1(b) fails on <code>.id(UUID.randomUUID())</code>.</li>
+  <li><strong>Quota-adjacent code.</strong> Paper and session edits could touch reservation logic by accident. Limit: D5 guard, only the id lines change, <code>*Practice*</code> and <code>*Quota*</code> pass counts compared with job 1.2.</li>
+  <li><strong>Test schema differs from production.</strong> Repository tests use <code>create-drop</code> tables without defaults, so they cannot show the native upsert or the migration working. Limit: jobs 2.1 and 5.3 run Flyway on their own container; each adds roughly the start-up time of a container to <code>integrationTest</code> (not measured).</li>
+  <li><strong>Mixed id versions in old data.</strong> Existing rows keep v4 ids, so id order is only creation order among new rows. Nothing in the code relies on the order of old rows; the two id-ordered queries only use the id as a tie-break or between rows of one turn.</li>
+  <li><strong>Merge conflicts with the paused plan.</strong> Phase 6 edits files that plan's phase 7 changed, and its phase 9 will edit the three practice services. Limit: D4, and this plan adds no exemption-file entry (those files may only shrink).</li>
+  <li><strong>Insert pattern changes.</strong> New rows go through <code>persist</code> (one <code>INSERT</code> at flush) instead of merge (a <code>SELECT</code> then an <code>INSERT</code>). Constraint violations still surface at flush, as before; whether the existing <code>*DataConflictTranslationTests</code> style tests cover these adapters was not checked.</li>
+  <li><strong>The v7 style is marked incubating in Hibernate 7.4.</strong> It is already used by 54 entities and <code>BaseEntity</code>, so this plan adds no new exposure.</li>
+</ul>
+
+<h2 id="scope">5. Out of scope</h2>
+<ul>
+  <li>Rewriting ids of existing rows from v4 to v7 (ids are referenced by other tables; no backfill).</li>
+  <li><code>InterestDimensionJpaEntity</code> (String natural key) and the 54 entities that already have a generator.</li>
+  <li><code>practice_questions</code> and <code>SpringDataPracticeQuestionRepository.insertGeneratedQuestion</code>: the id is made by the AI service and doubles as the Chroma key, a contract with another system.</li>
+  <li>The 17 non-row-id <code>UUID.randomUUID()</code> uses of section 1.3 (codes, tokens, S3 key, Redis key, worker id).</li>
+  <li>Audit columns, <code>BaseEntity</code> or <code>BaseModel</code> for these 16 (unless D1 = B, which rewrites this plan), and a shared id base class for the other 54 entities.</li>
+  <li>The 2,914 <code>UUID.randomUUID()</code> uses in 408 test files, except the two preset-id fixtures of <code>GradingTaskDetailQueryTests</code> that persist converted entities.</li>
+  <li>Everything in <code>model-methods-and-method-rules-plan</code> (builders in application, repository stamps, method length), which resumes afterwards.</li>
+</ul>
+<h3>Noticed and not fixed</h3>
+<ul>
+  <li><code>InterestQuizSeedInitializer</code> computes deterministic ids (<code>UUID.nameUUIDFromBytes</code>) that <code>InterestQuizItemRepositoryImpl.seedQuizItemsIfEmpty</code> ignores when it builds the entities.</li>
+  <li>The comment in <code>MissingResponseBackfillService</code> (&ldquo;<code>@Generated(INSERT)</code> + <code>DEFAULT uuidv7()</code>&rdquo; for evaluations) describes a pattern that no longer exists; it is only rewritten here when D2 = B touches that method.</li>
+</ul>
+
+<h2 id="verify">6. Verification</h2>
+<ul>
+  <li><code>grep -rnE '\.(id|setId)\(\s*UUID\.randomUUID\(\)' src/main/java</code> prints nothing (or only the D2 and D5 exemptions), and <code>UUID.randomUUID()</code> no longer appears as an argument of <code>upsertScore</code>.</li>
+  <li>Every entity with a UUID <code>@Id</code> either extends <code>BaseEntity</code> or declares the v7 generator: rule 7.1(a) passes.</li>
+  <li><code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test</code> and <code>./gradlew integrationTest</code> pass; <code>*Practice*</code> and <code>*Quota*</code> show the baseline counts of job 1.2.</li>
+  <li><code>LayeredArchitectureTests</code>, <code>ModelAndEntityConventionTests</code>, <code>MethodSizeConventionTests</code> and <code>ModelCreationConventionTests</code> pass, and <code>git diff --stat -- src/test/resources/architecture</code> shows no added line.</li>
+  <li><code>Uuidv7IdDefaultMigrationTests</code> shows the default on all 16 tables and <code>SchemaMigrationTests</code> still passes (entities and Flyway agree).</li>
+  <li>No public contract changed: section 1.8, checked by job 7.3.</li>
+</ul>
+<p>Run the <code>verify-plan</code> skill after the last phase.</p>
+
+<h2 id="changelog">7. Change log</h2>
+<div class="table-scroll"><table>
+  <thead><tr><th>Date</th><th>Change</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>2026-11-24</td><td>Plan written (Draft)</td><td>First version. Requested with priority above model-methods-and-method-rules-plan, which is paused after its phase 7.</td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="notes">8. Implementation notes</h2>
+<p>Filled in by <code>implement-plan</code>: deviations from the plan, results of <code>verify-plan</code>, and
+problems noticed but not fixed.</p>
+<ul id="notes-list"></ul>
+
+</div>
+<script>
+  (function () {
+    var labels = { todo: "Not started", progress: "In progress", done: "Done", blocked: "Blocked", skipped: "Deferred" };
+    var body = document.getElementById("overview-body");
+    var summary = document.getElementById("overview-summary");
+    var phaseCounts = {};
+    document.querySelectorAll(".phase[data-status], .job[data-status]").forEach(function (element) {
+      var status = element.getAttribute("data-status");
+      if (element.classList.contains("phase")) { phaseCounts[status] = (phaseCounts[status] || 0) + 1; }
+      var row = body.insertRow();
+      var nameCell = row.insertCell();
+      if (element.classList.contains("job")) { nameCell.className = "indent"; }
+      var link = document.createElement("a");
+      link.href = "#" + element.id;
+      link.textContent = element.querySelector(".title").textContent;
+      nameCell.appendChild(link);
+      var pill = document.createElement("span");
+      pill.className = "status " + status;
+      pill.textContent = labels[status] || status;
+      row.insertCell().appendChild(pill);
+    });
+    var parts = Object.keys(labels).filter(function (key) { return phaseCounts[key]; })
+      .map(function (key) { return phaseCounts[key] + " " + labels[key].toLowerCase(); });
+    summary.textContent = parts.length ? "Phases: " + parts.join(" · ") : "";
+  })();
+</script>
+</body>
+</html>

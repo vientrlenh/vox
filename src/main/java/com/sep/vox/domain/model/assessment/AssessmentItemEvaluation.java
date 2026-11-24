@@ -199,6 +199,73 @@ public class AssessmentItemEvaluation {
         this.promptVersion = promptVersion;
     }
 
+    public static AssessmentItemEvaluation zeroScoredWithoutRecording(UUID responseId, UUID paperItemId,
+                                                                      String gradedByModel, String reviewReasonCode,
+                                                                      String feedbackSummary, Instant evaluatedAt) {
+        return builder()
+                .responseId(responseId)
+                .paperItemId(paperItemId)
+                .engineType(AssessmentEvaluationEngineType.AI_SINGLE)
+                .gradedByModel(gradedByModel)
+                .rawItemScore(BigDecimal.ZERO)
+                .itemScore(BigDecimal.ZERO)
+                .requiresHumanReview(false)
+                .reviewReasonCode(reviewReasonCode)
+                .markedInvalid(false)
+                .requiresRetake(false)
+                .feedbackSummary(feedbackSummary)
+                .status(AssessmentItemEvaluationStatus.FINALIZED)
+                .evaluatedAt(evaluatedAt)
+                .build();
+    }
+
+    public static AssessmentItemEvaluation autoGraded(UUID responseId, UUID paperItemId, String gradedByModel, BigDecimal itemScore,
+            BigDecimal overallConfidence, boolean requiresHumanReview, String reviewReasonCode, boolean markedInvalid, boolean requiresRetake,
+            EvaluationSignals signals, String validityJson, String feedbackSummary, String suggestionsJson, String promptVersion, Instant evaluatedAt) {
+        return builder()
+                .responseId(responseId)
+                .paperItemId(paperItemId)
+                .engineType(AssessmentEvaluationEngineType.AI_SINGLE)
+                .gradedByModel(gradedByModel)
+                .sampleCount(1)
+                .rawItemScore(itemScore)
+                .itemScore(itemScore)
+                .overallConfidence(overallConfidence)
+                .requiresHumanReview(requiresHumanReview)
+                .reviewReasonCode(reviewReasonCode)
+                .markedInvalid(markedInvalid)
+                .requiresRetake(requiresRetake)
+                .signals(signals)
+                .validityJson(validityJson)
+                .feedbackSummary(feedbackSummary)
+                .suggestionsJson(suggestionsJson)
+                .promptVersion(promptVersion)
+                .status(AssessmentItemEvaluationStatus.AUTO_GRADED)
+                .evaluatedAt(evaluatedAt)
+                .build();
+    }
+
+    public static AssessmentItemEvaluation humanGraded(UUID responseId, UUID paperItemId, String gradedByModel,
+                                                       UUID reviewerId, BigDecimal itemScore,
+                                                       String feedbackSummary, Instant evaluatedAt) {
+        return builder()
+                .responseId(responseId)
+                .paperItemId(paperItemId)
+                .engineType(AssessmentEvaluationEngineType.HUMAN)
+                .gradedByModel(gradedByModel)
+                .reviewerId(reviewerId)
+                .rawItemScore(itemScore)
+                .itemScore(itemScore)
+                // false keeps the calculator from holding the result for a grader: a person has already graded it.
+                .requiresHumanReview(false)
+                .markedInvalid(false)
+                .requiresRetake(false)
+                .feedbackSummary(feedbackSummary)
+                .status(AssessmentItemEvaluationStatus.FINALIZED)
+                .evaluatedAt(evaluatedAt)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

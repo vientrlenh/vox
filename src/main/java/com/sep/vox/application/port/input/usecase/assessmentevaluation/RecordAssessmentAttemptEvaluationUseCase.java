@@ -266,28 +266,22 @@ public class RecordAssessmentAttemptEvaluationUseCase implements IUseCase<Record
 
             AssessmentItemEvaluation existingEvaluation = assessmentItemEvaluationRepository.findLatestByResponseId(response.getId()).orElse(null);
             AssessmentItemEvaluation evaluation = existingEvaluation == null
-                ? AssessmentItemEvaluation.builder()
-                        .responseId(response.getId())
-                        .paperItemId(response.getPaperItemId())
-                        .engineType(AssessmentEvaluationEngineType.AI_SINGLE)
-                        .gradedByModel(input.payload() == null ? "gpt-4o" : input.payload().modelVersion())
-                        .sampleCount(1)
-                        .reviewerId(null)
-                        .rawItemScore(itemScore)
-                        .itemScore(itemScore)
-                        .overallConfidence(overallConfidence)
-                        .requiresHumanReview(requiresHumanReview)
-                        .reviewReasonCode(reviewReasonCode)
-                        .markedInvalid(markedInvalid)
-                        .requiresRetake(requiresRetake)
-                        .signals(signals)
-                        .validityJson(toNullableJson(validity))
-                        .feedbackSummary(input.payload() == null ? "" : input.payload().feedbackSummary())
-                        .suggestionsJson(toJson(input.payload() == null ? List.of() : input.payload().suggestions()))
-                        .promptVersion(input.payload() == null ? null : input.payload().promptVersion())
-                        .status(AssessmentItemEvaluationStatus.AUTO_GRADED)
-                        .evaluatedAt(parseEvaluatedAt(input.payload() == null ? null : input.payload().evaluatedAt()))
-                        .build()
+                ? AssessmentItemEvaluation.autoGraded(
+                        response.getId(),
+                        response.getPaperItemId(),
+                        input.payload() == null ? "gpt-4o" : input.payload().modelVersion(),
+                        itemScore,
+                        overallConfidence,
+                        requiresHumanReview,
+                        reviewReasonCode,
+                        markedInvalid,
+                        requiresRetake,
+                        signals,
+                        toNullableJson(validity),
+                        input.payload() == null ? "" : input.payload().feedbackSummary(),
+                        toJson(input.payload() == null ? List.of() : input.payload().suggestions()),
+                        input.payload() == null ? null : input.payload().promptVersion(),
+                        parseEvaluatedAt(input.payload() == null ? null : input.payload().evaluatedAt()))
                 : existingEvaluation;
 
             if (existingEvaluation != null) {
@@ -335,14 +329,12 @@ public class RecordAssessmentAttemptEvaluationUseCase implements IUseCase<Record
                             BigDecimal.valueOf(entry.getValue().score()),
                             criterion
                         );
-                    return AssessmentItemCriterionScore.builder()
-                        .evaluationId(savedEvaluation.getId())
-                        .rubricCriterionId(criterion.getId())
-                        .rawScore(score)
-                        .finalScore(score)
-                        .rationale(entry.getValue().note())
-                        .matchedBandCode(blankToNull(entry.getValue().matchedBandCode()))
-                        .build();
+                    return AssessmentItemCriterionScore.scored(
+                        savedEvaluation.getId(),
+                        criterion.getId(),
+                        score,
+                        entry.getValue().note(),
+                        blankToNull(entry.getValue().matchedBandCode()));
                 })
                 .filter(item -> item != null)
                 .toList();
@@ -364,20 +356,18 @@ public class RecordAssessmentAttemptEvaluationUseCase implements IUseCase<Record
                         // A turn missing its audio is real, not hypothetical: a turn
                         // published before the recording made it back (see
                         // turn_publisher.publish_turn_if_new, phase 1) carries audio_url null.
-                        return AssessmentItemEvaluationTurn.builder()
-                            .id(UUID.randomUUID())
-                            .evaluationId(savedEvaluation.getId())
-                            .turnOrder(turnOrder == null ? 0 : turnOrder)
-                            .turnType(parseTurnType(turn.turnType()))
-                            .promptText(turn.promptText())
-                            .audioUrl(turn.audioUrl() == null ? "" : turn.audioUrl())
-                            .transcript(turn.transcript() == null ? "" : turn.transcript())
-                            .wordCount(wordCount == null ? 0 : wordCount)
-                            .durationSeconds(turn.durationSeconds())
-                            .asrConfidence(turn.asrConfidence())
-                            .pronunciationOverallJson(toJson(turn.pronunciationOverall()))
-                            .wordFeedbackJson(toJson(turn.wordFeedback()))
-                            .build();
+                        return AssessmentItemEvaluationTurn.recorded(
+                            savedEvaluation.getId(),
+                            turnOrder == null ? 0 : turnOrder,
+                            parseTurnType(turn.turnType()),
+                            turn.promptText(),
+                            turn.audioUrl() == null ? "" : turn.audioUrl(),
+                            turn.transcript() == null ? "" : turn.transcript(),
+                            wordCount == null ? 0 : wordCount,
+                            turn.durationSeconds(),
+                            turn.asrConfidence(),
+                            toJson(turn.pronunciationOverall()),
+                            toJson(turn.wordFeedback()));
                     })
                     .toList();
             if (!turns.isEmpty()) {

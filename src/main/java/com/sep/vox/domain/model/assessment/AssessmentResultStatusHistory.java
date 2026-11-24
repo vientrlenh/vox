@@ -114,6 +114,25 @@ public class AssessmentResultStatusHistory {
         this.createdAt = createdAt;
     }
 
+    public static AssessmentResultStatusHistory transition(UUID candidateResultId,
+                                                           AssessmentCandidateResultStatus fromStatus,
+                                                           AssessmentCandidateResultStatus toStatus,
+                                                           BigDecimal scoreBefore, BigDecimal scoreAfter,
+                                                           ResultStatusChangeSource source, UUID actorId,
+                                                           String reason, Instant createdAt) {
+        return builder()
+                .candidateResultId(candidateResultId)
+                .fromStatus(fromStatus)
+                .toStatus(toStatus)
+                .scoreBefore(scoreBefore)
+                .scoreAfter(scoreAfter)
+                .source(source)
+                .actorId(actorId)
+                .reason(reason)
+                .createdAt(createdAt)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

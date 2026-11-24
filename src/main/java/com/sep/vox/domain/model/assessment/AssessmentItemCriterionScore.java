@@ -70,6 +70,23 @@ public class AssessmentItemCriterionScore {
         this.matchedBandCode = matchedBandCode;
     }
 
+    public static AssessmentItemCriterionScore scored(UUID evaluationId, UUID rubricCriterionId, BigDecimal score,
+                                                      String rationale, String matchedBandCode) {
+        return builder()
+                .evaluationId(evaluationId)
+                .rubricCriterionId(rubricCriterionId)
+                .rawScore(score)
+                .finalScore(score)
+                .rationale(rationale)
+                .matchedBandCode(matchedBandCode)
+                .build();
+    }
+
+    public static AssessmentItemCriterionScore scoredWithoutBand(UUID evaluationId, UUID rubricCriterionId,
+                                                                 BigDecimal score, String rationale) {
+        return scored(evaluationId, rubricCriterionId, score, rationale, null);
+    }
+
     public static Builder builder() {
         return new Builder();
     }

@@ -84,7 +84,7 @@ class UpdateSystemRubricCriterionUseCaseTests {
         useCase.execute(new UpdateSystemRubricCriterionCommand(criterionId, "Criterion", null, true, null, true, null, null, null, null, null));
 
         verify(rubricCriterionRepository).updateCriterionAtomic(eq(criterionId), any(), any(), eq(null), eq(true),
-            eq(null), eq(true), any(), any(), any(), any(), any(), any(), any());
+            eq(null), eq(true), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -95,14 +95,14 @@ class UpdateSystemRubricCriterionUseCaseTests {
         useCase.execute(new UpdateSystemRubricCriterionCommand(criterionId, "Criterion", "  ", true, null, false, null, null, null, null, null));
 
         verify(rubricCriterionRepository, org.mockito.Mockito.times(2)).updateCriterionAtomic(eq(criterionId), any(), any(), eq(null), eq(false),
-            eq(null), eq(false), any(), any(), any(), any(), any(), any(), any());
+            eq(null), eq(false), any(), any(), any(), any(), any());
     }
 
     @Test
     void execute_throwsIllegalArgumentWhenTheRepositoryReportsADataConflict() {
         stubDraftCriterion();
         doThrow(new DataConflictException("unique violation", null)).when(rubricCriterionRepository)
-            .updateCriterionAtomic(any(), any(), any(), any(), anyBoolean(), any(), anyBoolean(), any(), any(), any(), any(), any(), any(), any());
+            .updateCriterionAtomic(any(), any(), any(), any(), anyBoolean(), any(), anyBoolean(), any(), any(), any(), any(), any());
         UpdateSystemRubricCriterionCommand command = new UpdateSystemRubricCriterionCommand(criterionId, "Criterion", null, false, null, false, null, null, null, null, null);
 
         assertThatThrownBy(() -> useCase.execute(command))

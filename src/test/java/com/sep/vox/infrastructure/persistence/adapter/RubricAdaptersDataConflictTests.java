@@ -13,6 +13,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import com.sep.vox.application.exception.DataConflictException;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
 import com.sep.vox.domain.model.rubric.RubricResultBand;
+import com.sep.vox.infrastructure.persistence.audit.AuditStampProvider;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataRubricCriterionRepository;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataRubricResultBandRepository;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataRubricVersionRepository;
@@ -24,6 +25,8 @@ import com.sep.vox.infrastructure.persistence.repository.SpringDataRubricVersion
 class RubricAdaptersDataConflictTests {
 
     private static final DataIntegrityViolationException VIOLATION = new DataIntegrityViolationException("unique violation");
+
+    private final AuditStampProvider auditStampProvider = mock(AuditStampProvider.class);
 
     private static <T> T repositoryRejectingEveryCall(Class<T> repositoryType) {
         return mock(repositoryType, invocation -> {
@@ -38,21 +41,21 @@ class RubricAdaptersDataConflictTests {
 
     @Test
     void rubricCriterion_translatesTheConstraintViolation() {
-        RubricCriterionRepositoryImpl adapter = new RubricCriterionRepositoryImpl(repositoryRejectingEveryCall(SpringDataRubricCriterionRepository.class));
+        RubricCriterionRepositoryImpl adapter = new RubricCriterionRepositoryImpl(repositoryRejectingEveryCall(SpringDataRubricCriterionRepository.class), auditStampProvider);
         assertCarrier(() -> adapter.saveAll(List.of(RubricCriterion.builder().build())));
-        assertCarrier(() -> adapter.updateCriterionAtomic(UUID.randomUUID(), null, "name", "description", true, null, true, BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.TEN, 1, true, Instant.now(), "user"));
+        assertCarrier(() -> adapter.updateCriterionAtomic(UUID.randomUUID(), null, "name", "description", true, null, true, BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.TEN, 1, true));
     }
 
     @Test
     void rubricResultBand_translatesTheConstraintViolation() {
-        RubricResultBandRepositoryImpl adapter = new RubricResultBandRepositoryImpl(repositoryRejectingEveryCall(SpringDataRubricResultBandRepository.class));
+        RubricResultBandRepositoryImpl adapter = new RubricResultBandRepositoryImpl(repositoryRejectingEveryCall(SpringDataRubricResultBandRepository.class), auditStampProvider);
         assertCarrier(() -> adapter.saveAll(List.of(RubricResultBand.builder().build())));
-        assertCarrier(() -> adapter.updateResultBandAtomic(UUID.randomUUID(), null, "name", "description", true, BigDecimal.ZERO, BigDecimal.TEN, 1, Instant.now(), "user"));
+        assertCarrier(() -> adapter.updateResultBandAtomic(UUID.randomUUID(), null, "name", "description", true, BigDecimal.ZERO, BigDecimal.TEN, 1));
     }
 
     @Test
     void rubricVersion_translatesTheConstraintViolation() {
-        RubricVersionRepositoryImpl adapter = new RubricVersionRepositoryImpl(repositoryRejectingEveryCall(SpringDataRubricVersionRepository.class));
-        assertCarrier(() -> adapter.updateRubricVersionAtomic(UUID.randomUUID(), null, "name", "description", true, Instant.now(), null, true, BigDecimal.ZERO, BigDecimal.TEN, "AVERAGE", Instant.now(), "user"));
+        RubricVersionRepositoryImpl adapter = new RubricVersionRepositoryImpl(repositoryRejectingEveryCall(SpringDataRubricVersionRepository.class), auditStampProvider);
+        assertCarrier(() -> adapter.updateRubricVersionAtomic(UUID.randomUUID(), null, "name", "description", true, Instant.now(), null, true, BigDecimal.ZERO, BigDecimal.TEN, "AVERAGE"));
     }
 }

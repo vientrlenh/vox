@@ -2,7 +2,6 @@ package com.sep.vox.infrastructure.persistence.adapter;
 
 import com.sep.vox.infrastructure.persistence.entity.rubric.RubricResultBandJpaEntity;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -20,6 +19,7 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.domain.model.rubric.RubricResultBand;
 import com.sep.vox.domain.repository.RubricResultBandRepository;
 import com.sep.vox.infrastructure.persistence.mapper.RubricResultBandMapper;
+import com.sep.vox.infrastructure.persistence.audit.AuditStampProvider;
 import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataRubricResultBandRepository;
 import com.sep.vox.infrastructure.persistence.DataConflictTranslation;
@@ -29,6 +29,7 @@ import com.sep.vox.infrastructure.persistence.DataConflictTranslation;
 public class RubricResultBandRepositoryImpl implements RubricResultBandRepository {
 
     private final SpringDataRubricResultBandRepository springDataRubricResultBandRepository;
+    private final AuditStampProvider auditStampProvider;
 
     @Override
     public Optional<RubricResultBand> findById(UUID id) {
@@ -72,8 +73,9 @@ public class RubricResultBandRepositoryImpl implements RubricResultBandRepositor
     }
 
     @Override
-    public void updateResultBandAtomic(UUID id, String code, String name, String description, boolean descriptionProvided, BigDecimal scoreMin, BigDecimal scoreMax, Integer order, Instant updatedAt, String updatedBy) {
-        DataConflictTranslation.translating(() -> springDataRubricResultBandRepository.updateResultBandAtomic(id, code, name, description, descriptionProvided, scoreMin, scoreMax, order, updatedAt, updatedBy));
+    public void updateResultBandAtomic(UUID id, String code, String name, String description, boolean descriptionProvided, BigDecimal scoreMin, BigDecimal scoreMax, Integer order) {
+        DataConflictTranslation.translating(() -> springDataRubricResultBandRepository.updateResultBandAtomic(id, code, name, description, descriptionProvided, scoreMin, scoreMax, order,
+                auditStampProvider.currentUpdatedAt(), auditStampProvider.currentUpdatedBy()));
     }
 
     @Override

@@ -43,22 +43,10 @@ public class RecordProctoringAlertUseCase implements IUseCase<RecordProctoringAl
             return false;
         }
 
-        AssessmentProctoringAlert alert = AssessmentProctoringAlert.builder()
-                .eventId(input.eventId())
-                .assessmentSessionId(input.assessmentSessionId())
-                .candidateId(input.candidateId())
-                .streamId(input.streamId())
-                .streamType(input.streamType())
-                .alertType(input.alertType())
-                .level(input.level())
-                .source(input.source())
-                .detail(input.detail())
-                .confidence(input.confidence())
-                .sequenceNo(input.sequenceNo())
-                .capturedAt(input.capturedAt())
-                .raisedAt(input.raisedAt())
-                .createdAt(Instant.now())
-                .build();
+        AssessmentProctoringAlert alert = AssessmentProctoringAlert.raised(
+                input.eventId(), input.assessmentSessionId(), input.candidateId(), input.streamId(), input.streamType(),
+                input.alertType(), input.level(), input.source(), input.detail(), input.confidence(),
+                input.sequenceNo(), input.capturedAt(), input.raisedAt(), Instant.now());
 
         return assessmentProctoringAlertRepository.saveIfAbsent(alert);
     }

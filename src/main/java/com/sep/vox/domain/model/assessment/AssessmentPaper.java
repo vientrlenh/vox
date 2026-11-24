@@ -62,6 +62,21 @@ public class AssessmentPaper extends BaseModel {
         this.timeDurationSeconds = timeDurationSeconds;
     }
 
+    public static AssessmentPaper draft(UUID assessmentId, UUID blueprintVersionId, String code, int variant) {
+        return builder()
+            .assessmentId(assessmentId)
+            .blueprintVersionId(blueprintVersionId)
+            .code(code)
+            .variant(variant)
+            .status(AssessmentPaperStatus.DRAFT)
+            .timeDurationSeconds(0)
+            .build();
+    }
+
+    public static AssessmentPaper draftWithoutBlueprint(UUID assessmentId, String code, int variant) {
+        return draft(assessmentId, null, code, variant);
+    }
+
     public static Builder builder() {
         return new Builder();
     }

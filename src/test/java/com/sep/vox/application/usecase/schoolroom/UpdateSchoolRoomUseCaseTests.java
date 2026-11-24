@@ -7,7 +7,6 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -51,23 +50,20 @@ class UpdateSchoolRoomUseCaseTests {
         when(userRepository.existsByIdAndStatus(userId, UserStatus.ACTIVE)).thenReturn(true);
         when(schoolRoomRepository.findById(roomId)).thenReturn(Optional.of(SchoolRoom.builder().id(roomId).build()));
         when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.empty());
-        when(schoolRoomRepository.updateSchoolRoomAtomic(any(), any(), any(), anyBoolean(),
-            any(Instant.class), any())).thenReturn(1);
+        when(schoolRoomRepository.updateSchoolRoomAtomic(any(), any(), any(), anyBoolean())).thenReturn(1);
     }
 
     @Test
     void execute_clearsTheDescriptionWhenProvidedAsNull() {
         useCase.execute(new UpdateSchoolRoomCommand(roomId, null, null, true));
 
-        verify(schoolRoomRepository).updateSchoolRoomAtomic(eq(roomId), isNull(), isNull(), eq(true),
-            any(Instant.class), eq(userId.toString()));
+        verify(schoolRoomRepository).updateSchoolRoomAtomic(eq(roomId), isNull(), isNull(), eq(true));
     }
 
     @Test
     void execute_keepsTheDescriptionWhenNotProvided() {
         useCase.execute(new UpdateSchoolRoomCommand(roomId, "Room", null, false));
 
-        verify(schoolRoomRepository).updateSchoolRoomAtomic(eq(roomId), eq("Room"), isNull(), eq(false),
-            any(Instant.class), eq(userId.toString()));
+        verify(schoolRoomRepository).updateSchoolRoomAtomic(eq(roomId), eq("Room"), isNull(), eq(false));
     }
 }

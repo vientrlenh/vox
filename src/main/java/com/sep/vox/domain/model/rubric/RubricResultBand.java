@@ -72,6 +72,20 @@ public class RubricResultBand extends BaseModel {
         this.order = order;
     }
 
+    public static RubricResultBand create(
+            UUID rubricVersionId, String code, String name, String description,
+            BigDecimal scoreMin, BigDecimal scoreMax, int order) {
+        return builder()
+                .rubricVersionId(rubricVersionId)
+                .code(code)
+                .name(name)
+                .description(description)
+                .scoreMin(scoreMin)
+                .scoreMax(scoreMax)
+                .order(order)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

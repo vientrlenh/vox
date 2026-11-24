@@ -91,6 +91,54 @@ public class AssessmentBlueprintSlot extends BaseModel {
         this.selectionSpec = selectionSpec;
     }
 
+    public static AssessmentBlueprintSlot create(
+            UUID sectionId,
+            UUID blueprintVersionId,
+            int order,
+            BigDecimal weight,
+            Integer prepTimeSecondsOverride,
+            Integer responseTimeSecondsOverride,
+            AssessmentBlueprintSlotType slotType,
+            UUID fixedQuestionId,
+            QuestionSelectionSpec selectionSpec) {
+        return builder()
+            .sectionId(sectionId)
+            .blueprintVersionId(blueprintVersionId)
+            .order(order)
+            .weight(weight)
+            .prepTimeSecondsOverride(prepTimeSecondsOverride)
+            .responseTimeSecondsOverride(responseTimeSecondsOverride)
+            .slotType(slotType)
+            .fixedQuestionId(fixedQuestionId)
+            .selectionSpec(selectionSpec)
+            .build();
+    }
+
+    /** Returns a new instance that keeps this slot's id, section, version and creation audit values. */
+    public AssessmentBlueprintSlot revisedWith(
+            int newOrder,
+            BigDecimal newWeight,
+            Integer newPrepTimeSecondsOverride,
+            Integer newResponseTimeSecondsOverride,
+            AssessmentBlueprintSlotType newSlotType,
+            UUID newFixedQuestionId,
+            QuestionSelectionSpec newSelectionSpec) {
+        return builder()
+            .id(getId())
+            .sectionId(sectionId)
+            .blueprintVersionId(blueprintVersionId)
+            .order(newOrder)
+            .weight(newWeight)
+            .prepTimeSecondsOverride(newPrepTimeSecondsOverride)
+            .responseTimeSecondsOverride(newResponseTimeSecondsOverride)
+            .slotType(newSlotType)
+            .fixedQuestionId(newFixedQuestionId)
+            .selectionSpec(newSelectionSpec)
+            .createdAt(getCreatedAt())
+            .createdBy(getCreatedBy())
+            .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

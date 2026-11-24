@@ -2,14 +2,12 @@ package com.sep.vox.application.usecase.schoolclass;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
@@ -72,9 +70,7 @@ class UpdateSchoolClassUseCaseTests {
             eq(null),
             eq(false),
             eq(null),
-            eq(false),
-            any(Instant.class),
-            eq(userId.toString())
+            eq(false)
         )).thenReturn(1);
 
         UpdateSchoolClassResponse response = useCase.execute(command);
@@ -88,9 +84,7 @@ class UpdateSchoolClassUseCaseTests {
             eq(null),
             eq(false),
             eq(null),
-            eq(false),
-            any(Instant.class),
-            eq(userId.toString())
+            eq(false)
         );
     }
 
@@ -108,9 +102,7 @@ class UpdateSchoolClassUseCaseTests {
             eq(null),
             eq(false),
             eq(SchoolClassStatus.INACTIVE),
-            eq(true),
-            any(Instant.class),
-            eq(userId.toString())
+            eq(true)
         )).thenReturn(1);
 
         UpdateSchoolClassResponse response = useCase.execute(new UpdateSchoolClassCommand(classId, null, false, null, false, SchoolClassStatus.INACTIVE, true));
@@ -132,9 +124,7 @@ class UpdateSchoolClassUseCaseTests {
             eq(null),
             eq(true),
             eq(null),
-            eq(false),
-            any(Instant.class),
-            eq(userId.toString())
+            eq(false)
         )).thenReturn(1);
 
         UpdateSchoolClassResponse response = useCase.execute(new UpdateSchoolClassCommand(classId, null, false, null, true, null, false));
@@ -166,9 +156,7 @@ class UpdateSchoolClassUseCaseTests {
             eq(null),
             eq(false),
             eq(null),
-            eq(false),
-            any(Instant.class),
-            eq(userId.toString())
+            eq(false)
         )).thenReturn(0);
 
         assertThrows(

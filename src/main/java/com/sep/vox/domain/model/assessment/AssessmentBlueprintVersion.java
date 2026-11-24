@@ -81,6 +81,18 @@ public class AssessmentBlueprintVersion extends BaseModel {
         this.effectiveTo = effectiveTo;
     }
 
+    public static AssessmentBlueprintVersion draft(
+            UUID blueprintId, int version, String code, Instant effectiveFrom, Instant effectiveTo) {
+        return builder()
+            .blueprintId(blueprintId)
+            .version(version)
+            .code(code)
+            .status(AssessmentBlueprintVersionStatus.DRAFT)
+            .effectiveFrom(effectiveFrom)
+            .effectiveTo(effectiveTo)
+            .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

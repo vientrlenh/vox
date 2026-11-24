@@ -115,6 +115,24 @@ public class AssessmentRecording {
         this.source = source;
     }
 
+    public static AssessmentRecording registered(
+            UUID assessmentSessionId, UUID candidateId, AssessmentRequiredStreamType streamType, String source,
+            AssessmentRecordingAssemblyStatus status, Instant createdAt) {
+        return builder()
+            .assessmentSessionId(assessmentSessionId)
+            .candidateId(candidateId)
+            .streamType(streamType)
+            .bucket("")
+            .s3Key("")
+            .status(status)
+            .sizeBytes(null)
+            .durationSeconds(null)
+            .source(source)
+            .createdAt(createdAt)
+            .assembledAt(null)
+            .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

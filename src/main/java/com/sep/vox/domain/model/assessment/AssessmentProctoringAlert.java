@@ -189,6 +189,19 @@ public class AssessmentProctoringAlert {
         this.createdAt = createdAt;
     }
 
+    public static AssessmentProctoringAlert raised(
+            String eventId, UUID assessmentSessionId, UUID candidateId, String streamId, String streamType,
+            String alertType, String level, String source, String detail, BigDecimal confidence, Long sequenceNo,
+            Instant capturedAt, Instant raisedAt, Instant createdAt) {
+        return builder()
+            .eventId(eventId).assessmentSessionId(assessmentSessionId).candidateId(candidateId)
+            .streamId(streamId).streamType(streamType).alertType(alertType)
+            .level(level).source(source).detail(detail)
+            .confidence(confidence).sequenceNo(sequenceNo)
+            .capturedAt(capturedAt).raisedAt(raisedAt).createdAt(createdAt)
+            .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

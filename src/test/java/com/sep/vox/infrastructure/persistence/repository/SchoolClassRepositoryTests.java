@@ -9,9 +9,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.SchoolClass;
@@ -22,6 +25,7 @@ import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.valueobject.ClassCode;
 import com.sep.vox.infrastructure.persistence.adapter.SchoolClassRepositoryImpl;
 import com.sep.vox.infrastructure.persistence.adapter.SchoolClassUserRepositoryImpl;
+import com.sep.vox.infrastructure.security.CustomUserDetails;
 import com.sep.vox.support.RepositoryTest;
 
 @RepositoryTest
@@ -30,6 +34,17 @@ import com.sep.vox.support.RepositoryTest;
     SchoolClassUserRepositoryImpl.class
 })
 class SchoolClassRepositoryTests {
+
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
+
+    private static void logIn(String userId) {
+        CustomUserDetails principal = CustomUserDetails.builder().id(UUID.fromString(userId)).build();
+        SecurityContextHolder.getContext()
+            .setAuthentication(new UsernamePasswordAuthenticationToken(principal, null, List.of()));
+    }
 
     @Autowired
     private SchoolClassRepository schoolClassRepository;
@@ -202,8 +217,8 @@ class SchoolClassRepositoryTests {
     void whenUpdateMutableFieldsWithMatchingSchool_thenUpdatesSchoolClass() {
         UUID schoolId = UUID.randomUUID();
         String updatedBy = UUID.randomUUID().toString();
+        logIn(updatedBy);
         SchoolClass saved = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-UPD", "English Old"));
-        Instant updatedAt = Instant.now().plus(1, ChronoUnit.DAYS);
 
         int updatedRows = schoolClassRepository.updateMutableFields(
             saved.getId(),
@@ -213,9 +228,7 @@ class SchoolClassRepositoryTests {
             "Updated description",
             true,
             SchoolClassStatus.INACTIVE,
-            true,
-            updatedAt,
-            updatedBy
+            true
         );
 
         Optional<SchoolClass> found = schoolClassRepository.findById(saved.getId());
@@ -234,6 +247,7 @@ class SchoolClassRepositoryTests {
     void whenUpdateMutableFieldsNameOnly_thenPreservesDescriptionAndStatus() {
         UUID schoolId = UUID.randomUUID();
         String updatedBy = UUID.randomUUID().toString();
+        logIn(updatedBy);
         SchoolClass saved = schoolClassRepository.save(newSchoolClass(schoolId, "ENG-NAME-UPD", "English Old"));
 
         int updatedRows = schoolClassRepository.updateMutableFields(
@@ -244,9 +258,7 @@ class SchoolClassRepositoryTests {
             null,
             false,
             null,
-            false,
-            Instant.now().plus(1, ChronoUnit.MINUTES),
-            updatedBy
+            false
         );
 
         Optional<SchoolClass> found = schoolClassRepository.findById(saved.getId());
@@ -271,9 +283,7 @@ class SchoolClassRepositoryTests {
             null,
             true,
             null,
-            false,
-            Instant.now().plus(1, ChronoUnit.MINUTES),
-            UUID.randomUUID().toString()
+            false
         );
 
         Optional<SchoolClass> found = schoolClassRepository.findById(saved.getId());
@@ -297,9 +307,7 @@ class SchoolClassRepositoryTests {
             null,
             false,
             SchoolClassStatus.ARCHIVED,
-            true,
-            Instant.now().plus(1, ChronoUnit.MINUTES),
-            UUID.randomUUID().toString()
+            true
         );
 
         Optional<SchoolClass> found = schoolClassRepository.findById(saved.getId());
@@ -323,9 +331,7 @@ class SchoolClassRepositoryTests {
             "Updated description",
             true,
             SchoolClassStatus.INACTIVE,
-            true,
-            Instant.now().plus(1, ChronoUnit.MINUTES),
-            UUID.randomUUID().toString()
+            true
         );
 
         Optional<SchoolClass> found = schoolClassRepository.findById(saved.getId());

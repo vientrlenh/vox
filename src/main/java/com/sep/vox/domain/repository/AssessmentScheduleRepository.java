@@ -51,11 +51,10 @@ public interface AssessmentScheduleRepository {
 
     /**
      * Atomically updates the room/time of a schedule. Applied only while the schedule is DRAFT (WHERE ... status='DRAFT').
-     * Returns the number of affected rows. {@code updatedBy} is the acting user's id as text: a bulk update bypasses the
-     * auditing listener, so the audit values are written here.
+     * Returns the number of affected rows. The adapter writes the audit values itself, because a bulk update bypasses
+     * the auditing listener.
      */
-    int updateAtomic(UUID id, UUID schoolRoomId, boolean schoolRoomIdProvided, Instant start, Instant end,
-            Instant now, String updatedBy);
+    int updateAtomic(UUID id, UUID schoolRoomId, boolean schoolRoomIdProvided, Instant start, Instant end);
     /**
      * Ca đã công bố nhưng đã qua giờ kết thúc, cũ nhất trước, tối đa {@code limit} dòng — dùng cho
      * job tự chuyển ca sang COMPLETED. Có trần vì lần chạy đầu sau khi triển khai phải quét cả tồn

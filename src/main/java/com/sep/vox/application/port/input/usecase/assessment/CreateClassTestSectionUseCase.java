@@ -96,25 +96,15 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
         AssessmentPaper paper = classTestPaperResolver.resolve(assessment.getId(), input.paperId());
         int order = assessmentPaperSectionRepository.findByPaperId(paper.getId()).size() + 1;
 
-        AssessmentPaperSection paperSection = assessmentPaperSectionRepository.save(AssessmentPaperSection.builder()
-            .paperId(paper.getId())
-            .order(order)
-            .title(input.title())
-            .instruction(input.instruction())
-            .weight(input.weight())
-            .build());
+        AssessmentPaperSection paperSection = assessmentPaperSectionRepository.save(AssessmentPaperSection.forClassTest(
+            paper.getId(), order, input.title(), input.instruction(), input.weight()));
 
         List<ClassTestQuestionCommand> questions = input.questions();
         List<BigDecimal> weights = ClassTestSectionWeightPolicy.resolveQuestionWeights(questions);
         for (int i = 0; i < questions.size(); i++) {
             UUID questionId = questions.get(i).questionId();
-            assessmentPaperItemRepository.save(AssessmentPaperItem.builder()
-                .sectionId(paperSection.getId())
-                .paperId(paper.getId())
-                .questionId(questionId)
-                .order(i + 1)
-                .weight(weights.get(i))
-                .build());
+            assessmentPaperItemRepository.save(AssessmentPaperItem.forQuestion(
+                paperSection.getId(), paper.getId(), questionId, i + 1, weights.get(i)));
             assessmentQuestionSecureLockService.lockQuestionForAssessment(
                 questionId, assessment.getId(), AssessmentSecurePoolReleaseMode.AUTO_AFTER_CLOSE, currentUserId
             );

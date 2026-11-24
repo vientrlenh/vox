@@ -70,6 +70,15 @@ public class ImportRow {
         this.status = status;
     }
 
+    public static ImportRow pending(UUID sessionId, long rowNumber, String rawDataJson) {
+        return builder()
+                .sessionId(sessionId)
+                .rowNumber(rowNumber)
+                .rawDataJson(rawDataJson)
+                .status(ImportRowStatus.PENDING)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

@@ -72,7 +72,7 @@ public class DeleteSchoolGradeUseCase implements IUseCase<DeleteSchoolGradeComma
         //    Toàn bộ đều là xóa mềm để giữ lại tham chiếu (bài thi/điểm...).
         Instant now = Instant.now();
         schoolClassUserRepository.deactivateByGradeId(grade.getId(), now);
-        schoolClassRepository.archiveByGradeId(grade.getId(), now, currentUserId.toString());
+        schoolClassRepository.archiveByGradeId(grade.getId());
 
         grade.setStatus(SchoolGradeStatus.ARCHIVED);
         schoolGradeRepository.save(grade);

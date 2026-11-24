@@ -142,15 +142,13 @@ public class AttachAssessmentBlueprintUseCase implements IUseCase<AttachAssessme
                 && gradeLevelRepository.findById(command.gradeLevelId()).isEmpty()) {
             throw new ResourceNotFoundException("Không tìm thấy khối lớp");
         }
-        AssessmentBlueprint blueprint = AssessmentBlueprint.builder()
-            .schoolId(schoolId)
-            .languageId(command.languageId() == null ? assessmentLanguageId : command.languageId())
-            .gradeLevelId(command.gradeLevelId())
-            .code(blueprintCodeOf(command.code()))
-            .name(name)
-            .description(StringNormalization.trimAndCollapseSpaces(command.description()))
-            .active(true)
-            .build();
+        AssessmentBlueprint blueprint = AssessmentBlueprint.create(
+            schoolId,
+            command.languageId() == null ? assessmentLanguageId : command.languageId(),
+            command.gradeLevelId(),
+            blueprintCodeOf(command.code()),
+            name,
+            StringNormalization.trimAndCollapseSpaces(command.description()));
         return assessmentBlueprintRepository.save(blueprint);
     }
 

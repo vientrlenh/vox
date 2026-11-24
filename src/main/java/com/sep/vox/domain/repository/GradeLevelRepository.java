@@ -4,7 +4,6 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.gradelevel.GradeLevel;
 import com.sep.vox.domain.model.gradelevel.GradeLevelStatus;
 
-import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -24,8 +23,7 @@ public interface GradeLevelRepository {
     List<GradeLevel> findByNameIn(Collection<String> names);
     List<GradeLevel> findByIdIn(Collection<UUID> ids);
     GradeLevel save(GradeLevel gradeLevel);
-    int updateGradeLevelAtomic(UUID id, String name, String description, boolean descriptionProvided, Integer order,
-            Instant updatedAt, String updatedBy);
+    int updateGradeLevelAtomic(UUID id, String name, String description, boolean descriptionProvided, Integer order);
     boolean existsByCode(String code);
     boolean existsByOrder(int order);
     void deleteById(UUID id);

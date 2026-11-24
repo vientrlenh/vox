@@ -106,15 +106,10 @@ public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSyst
 
             // 4.4 Build the object with id = null to tell Hibernate this is new data.
             // The id stays unset (null): it prevents a redundant SELECT before the INSERT.
-            RubricResultBand band = RubricResultBand.builder()
-                    .rubricVersionId(command.versionId())
-                    .code(safeCode)
-                    .name(safeName)
-                    .description(bCmd.description() != null ? StringNormalization.trimAndCollapseSpaces(bCmd.description()) : null)
-                    .scoreMin(bCmd.mappedScoreMin())
-                    .scoreMax(bCmd.mappedScoreMax())
-                    .order(bCmd.order())
-                    .build();
+            RubricResultBand band = RubricResultBand.create(
+                    command.versionId(), safeCode, safeName,
+                    bCmd.description() != null ? StringNormalization.trimAndCollapseSpaces(bCmd.description()) : null,
+                    bCmd.mappedScoreMin(), bCmd.mappedScoreMax(), bCmd.order());
             bandsSoFarByMin.put(band.getScoreMin(), band);
             return band;
         }).toList();

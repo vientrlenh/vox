@@ -3,7 +3,6 @@ package com.sep.vox.infrastructure.persistence.adapter;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -16,6 +15,7 @@ import com.sep.vox.domain.model.school.SchoolClassUser;
 import com.sep.vox.domain.model.school.SchoolGrade;
 import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 import com.sep.vox.domain.valueobject.LanguageCode;
+import com.sep.vox.infrastructure.persistence.audit.AuditStampProvider;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataGradeLevelRepository;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolClassUserRepository;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolGradeRepository;
@@ -28,6 +28,8 @@ import com.sep.vox.infrastructure.persistence.repository.SpringDataSupportedLang
 class CatalogAdaptersDataConflictTests {
 
     private static final DataIntegrityViolationException VIOLATION = new DataIntegrityViolationException("unique violation");
+
+    private final AuditStampProvider auditStampProvider = mock(AuditStampProvider.class);
 
     private static <T> T repositoryRejectingEveryCall(Class<T> repositoryType) {
         return mock(repositoryType, invocation -> {
@@ -42,21 +44,21 @@ class CatalogAdaptersDataConflictTests {
 
     @Test
     void gradeLevel_translatesTheConstraintViolation() {
-        GradeLevelRepositoryImpl adapter = new GradeLevelRepositoryImpl(repositoryRejectingEveryCall(SpringDataGradeLevelRepository.class));
+        GradeLevelRepositoryImpl adapter = new GradeLevelRepositoryImpl(repositoryRejectingEveryCall(SpringDataGradeLevelRepository.class), auditStampProvider);
         assertCarrier(() -> adapter.save(GradeLevel.builder().status(GradeLevelStatus.ACTIVE).build()));
-        assertCarrier(() -> adapter.updateGradeLevelAtomic(UUID.randomUUID(), "name", "description", true, 1, Instant.now(), "user"));
+        assertCarrier(() -> adapter.updateGradeLevelAtomic(UUID.randomUUID(), "name", "description", true, 1));
     }
 
     @Test
     void supportedLanguage_translatesTheConstraintViolation() {
-        SupportedLanguageRepositoryImpl adapter = new SupportedLanguageRepositoryImpl(repositoryRejectingEveryCall(SpringDataSupportedLanguageRepository.class));
+        SupportedLanguageRepositoryImpl adapter = new SupportedLanguageRepositoryImpl(repositoryRejectingEveryCall(SpringDataSupportedLanguageRepository.class), auditStampProvider);
         assertCarrier(() -> adapter.save(SupportedLanguage.builder().code(new LanguageCode("EN")).build()));
-        assertCarrier(() -> adapter.updateMutableFields(UUID.randomUUID(), "EN", true, "English", true, null, false, true, true, Instant.now(), "user"));
+        assertCarrier(() -> adapter.updateMutableFields(UUID.randomUUID(), "EN", true, "English", true, null, false, true, true));
     }
 
     @Test
     void schoolGrade_translatesTheConstraintViolation() {
-        SchoolGradeRepositoryImpl adapter = new SchoolGradeRepositoryImpl(repositoryRejectingEveryCall(SpringDataSchoolGradeRepository.class));
+        SchoolGradeRepositoryImpl adapter = new SchoolGradeRepositoryImpl(repositoryRejectingEveryCall(SpringDataSchoolGradeRepository.class), auditStampProvider);
         assertCarrier(() -> adapter.save(SchoolGrade.builder().build()));
     }
 

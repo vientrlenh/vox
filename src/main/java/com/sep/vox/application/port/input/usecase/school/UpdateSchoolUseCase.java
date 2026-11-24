@@ -19,7 +19,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -60,9 +59,7 @@ public class UpdateSchoolUseCase implements IUseCase<UpdateSchoolCommand, UUID> 
                 command.domain() != null ? StringNormalization.normalizeDomain(command.domain()) : null,
                 command.domainProvided(),
                 normalizedText(command.address()),
-                command.studentCount(),
-                Instant.now(),
-                currentUserId.toString()
+                command.studentCount()
         );
 
         if (updatedRows == 0) {

@@ -32,8 +32,7 @@ public interface RubricVersionRepository {
     void updateRubricVersionAtomic(UUID id, String code, String name, String description, boolean descriptionProvided,
                                    Instant effectiveFrom, Instant effectiveTo, boolean effectiveToProvided,
                                    BigDecimal scoringScaleMin,
-                                   BigDecimal scoringScaleMax, String totalScoreMethod,
-                                   Instant updatedAt, String updatedBy);
+                                   BigDecimal scoringScaleMax, String totalScoreMethod);
 
     PageResult<RubricVersion> findAllByRubricIdAndStatus(UUID rubricId, String status, int page, int size);
 

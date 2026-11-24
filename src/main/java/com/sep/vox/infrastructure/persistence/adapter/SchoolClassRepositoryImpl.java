@@ -1,7 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
 import com.sep.vox.infrastructure.persistence.entity.school.SchoolClassJpaEntity;
-import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -21,6 +20,7 @@ import com.sep.vox.domain.model.school.SchoolClass;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolClassMapper;
+import com.sep.vox.infrastructure.persistence.audit.AuditStampProvider;
 import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolClassRepository;
 
@@ -29,6 +29,7 @@ import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolClassRe
 public class SchoolClassRepositoryImpl implements SchoolClassRepository {
 
     private final SpringDataSchoolClassRepository springDataSchoolClassRepository;
+    private final AuditStampProvider auditStampProvider;
 
     @Override
     public Optional<SchoolClass> findById(UUID id) {
@@ -160,8 +161,7 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
 
     @Override
     public int updateMutableFields(UUID id, UUID schoolId, String name, boolean nameProvided,
-            String description, boolean descriptionProvided, SchoolClassStatus status, boolean statusProvided,
-            Instant updatedAt, String updatedBy) {
+            String description, boolean descriptionProvided, SchoolClassStatus status, boolean statusProvided) {
         return springDataSchoolClassRepository.updateMutableFields(
             id,
             schoolId,
@@ -171,8 +171,8 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
             descriptionProvided,
             valueOf(status),
             statusProvided,
-            updatedAt,
-            updatedBy
+            auditStampProvider.currentUpdatedAt(),
+            auditStampProvider.currentUpdatedBy()
         );
     }
 
@@ -205,8 +205,9 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
     }
 
     @Override
-    public int archiveByGradeId(UUID schoolGradeId, Instant updatedAt, String updatedBy) {
-        return springDataSchoolClassRepository.archiveByGradeId(schoolGradeId, updatedAt, updatedBy);
+    public int archiveByGradeId(UUID schoolGradeId) {
+        return springDataSchoolClassRepository.archiveByGradeId(
+            schoolGradeId, auditStampProvider.currentUpdatedAt(), auditStampProvider.currentUpdatedBy());
     }
 
 

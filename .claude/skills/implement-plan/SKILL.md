@@ -1,13 +1,12 @@
 ---
 name: implement-plan
-description: Implement an agreed plan or task step by step, safely and in scope. Use when asked to "implement the plan", "build this", "execute the plan", or after a plan is approved and coding starts. Gates on AGENTS.md boundaries and plan approval, asks open decisions in chat, works in small verified slices layer by layer, keeps the status of the plan, its phases and jobs, and the user's answers current in the plan's HTML file, reuses earlier answers instead of asking the same question again in later phases or jobs, handles deviations, and ends by handing off to verify-plan.
+description: Implement an agreed plan or task step by step, safely and in scope. Use when asked to "implement the plan", "build this", "execute the plan", or after a plan is approved and coding starts. Gates on AGENTS.md boundaries and plan approval, asks open decisions in chat, works in small verified slices layer by layer, keeps the status of the plan, its phases and jobs, and the user's answers current in the plan's HTML file, reuses earlier answers instead of asking the same question again in later phases or jobs, handles deviations.
 ---
 
 # Implement a plan
 
 Purpose: turn an agreed plan into working code without drifting from it. The plan is the contract. This skill covers
-the work between "plan approved" and "ready to verify". Use `verify-plan` afterwards to prove the result, but only
-after the last phase or job of the plan is implemented (see Step 9).
+the work between "plan approved" and "ready to verify".
 
 Rules for the whole skill:
 
@@ -142,8 +141,7 @@ Rules:
 | User defers a job or phase | `skipped`, log line with the user's words |
 | A job is done differently from the plan | Log line on the job (how and why), plus a line in Implementation notes |
 | All jobs of a phase are done and its verify passes | Phase -> `done` |
-| `verify-plan` PASS (or PASS WITH GAPS the user accepts) after the last phase | Plan -> `done`, and its report summary in Implementation notes |
-| `verify-plan` FAIL | Plan stays `in-progress`; failures in Implementation notes |
+| Every phase is `done` or `skipped` and the final checks pass | Plan -> `done` |
 | You stop with phases remaining | Plan stays `in-progress`; every status current |
 
 Resuming: when the plan is already `in-progress`, start from the first job that is not `done` or `skipped`. Check
@@ -296,16 +294,7 @@ again.
    only if feasible.
 2. Look at `git status --short` and `git diff --stat`. Every changed file must trace to a plan item. Read each new
    untracked file. Revert accidental edits (whitespace, import reordering, IDE or formatter changes).
-3. Decide whether to run `verify-plan`. Run it only when the last phase or job of the plan is implemented, meaning
-   every item of the plan is done or explicitly deferred by the user. Then run it before reporting done, and do not
-   report "done" from memory of what you intended.
-   - The plan has phases or jobs and you finished one that is not the last: do not call `verify-plan`. Keep the
-     per-slice checks from Step 7, say in the report which phases are done and which remain, and stop.
-   - The user asked for only part of the plan and said the rest comes later: treat it the same way, do not call it.
-   - The plan has a single phase: that phase is the last one, so call it.
-   - After `verify-plan` runs, update the plan file as the table says: `done` on PASS, otherwise stay `in-progress`.
-     A phase that is finished but not last: mark the phase `done` and leave the plan `in-progress`.
-4. Do not commit or push unless the user asked.
+3. Do not commit or push unless the user asked.
 
 ## Final report
 
@@ -325,7 +314,6 @@ Keep it short and factual.
 ### Verified
 - `./gradlew compileJava` -> pass
 - `./gradlew test --tests '*Foo*'` -> N passed
-- `verify-plan` -> <result, or "not run: phases remain">
 
 ### Decisions from you
 - <question -> your answer (recorded as D2 / A3, scope), or "none">

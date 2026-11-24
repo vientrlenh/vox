@@ -78,6 +78,32 @@ public class Rubric {
         this.schoolId = schoolId;
     }
 
+    public static Rubric forSchool(
+            UUID languageId, UUID frameworkId, String code, String name, String description, UUID schoolId) {
+        return builder()
+                .languageId(languageId)
+                .frameworkId(frameworkId)
+                .code(code)
+                .name(name)
+                .description(description)
+                .ownerType(RubricOwnerType.SCHOOL)
+                .schoolId(schoolId)
+                .build();
+    }
+
+    public static Rubric forSystem(
+            UUID languageId, UUID frameworkId, String code, String name, String description) {
+        return builder()
+                .languageId(languageId)
+                .frameworkId(frameworkId)
+                .code(code)
+                .name(name)
+                .description(description)
+                .ownerType(RubricOwnerType.SYSTEM)
+                .schoolId(null)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

@@ -33,6 +33,13 @@ public class AssessmentScheduleProctor {
         this.teacherId = teacherId;
     }
 
+    public static AssessmentScheduleProctor assigned(UUID scheduleId, UUID teacherId) {
+        return builder()
+            .scheduleId(scheduleId)
+            .teacherId(teacherId)
+            .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

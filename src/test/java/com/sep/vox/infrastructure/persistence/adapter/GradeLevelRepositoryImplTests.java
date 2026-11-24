@@ -2,7 +2,6 @@ package com.sep.vox.infrastructure.persistence.adapter;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import java.time.Instant;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -57,7 +56,7 @@ class GradeLevelRepositoryImplTests {
         TransactionTemplate transaction = new TransactionTemplate(transactionManager);
 
         assertThatThrownBy(() -> transaction.executeWithoutResult(status -> gradeLevelRepository.updateGradeLevelAtomic(
-            second.getId(), null, null, false, FIRST_ORDER, Instant.now(), "user")))
+            second.getId(), null, null, false, FIRST_ORDER)))
             .isInstanceOf(DataConflictException.class);
     }
 

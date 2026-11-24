@@ -111,19 +111,19 @@ class UpdateAssessmentScheduleUseCaseTests {
     void should_update_draft_schedule_time() {
         when(assessmentScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(AssessmentScheduleStatus.DRAFT)));
         when(assessmentScheduleRepository.existsOverlapping(roomId, newStart, newEnd, scheduleId)).thenReturn(false);
-        when(assessmentScheduleRepository.updateAtomic(eq(scheduleId), eq(null), eq(false), eq(newStart), eq(newEnd), any(), eq(userId.toString())))
+        when(assessmentScheduleRepository.updateAtomic(eq(scheduleId), eq(null), eq(false), eq(newStart), eq(newEnd)))
             .thenReturn(1);
 
         UUID result = useCase.execute(new UpdateAssessmentScheduleCommand(scheduleId, null, false, newStart, newEnd));
 
         assertThat(result).isEqualTo(scheduleId);
-        verify(assessmentScheduleRepository).updateAtomic(eq(scheduleId), eq(null), eq(false), eq(newStart), eq(newEnd), any(), eq(userId.toString()));
+        verify(assessmentScheduleRepository).updateAtomic(eq(scheduleId), eq(null), eq(false), eq(newStart), eq(newEnd));
     }
 
     @Test
     void should_clear_the_room_of_a_centralized_schedule_without_checking_it() {
         when(assessmentScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(AssessmentScheduleStatus.DRAFT)));
-        when(assessmentScheduleRepository.updateAtomic(eq(scheduleId), eq(null), eq(true), eq(null), eq(null), any(), eq(userId.toString())))
+        when(assessmentScheduleRepository.updateAtomic(eq(scheduleId), eq(null), eq(true), eq(null), eq(null)))
             .thenReturn(1);
 
         UUID result = useCase.execute(new UpdateAssessmentScheduleCommand(scheduleId, null, true, null, null));
@@ -164,7 +164,7 @@ class UpdateAssessmentScheduleUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentScheduleCommand(scheduleId, null, false, newStart, newEnd)))
             .isInstanceOf(IllegalArgumentException.class);
-        verify(assessmentScheduleRepository, never()).updateAtomic(any(), any(), anyBoolean(), any(), any(), any(), any());
+        verify(assessmentScheduleRepository, never()).updateAtomic(any(), any(), anyBoolean(), any(), any());
     }
 
     @Test
@@ -174,7 +174,7 @@ class UpdateAssessmentScheduleUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentScheduleCommand(scheduleId, null, false, newStart, newEnd)))
             .isInstanceOf(ResourceDuplicatedException.class);
-        verify(assessmentScheduleRepository, never()).updateAtomic(any(), any(), anyBoolean(), any(), any(), any(), any());
+        verify(assessmentScheduleRepository, never()).updateAtomic(any(), any(), anyBoolean(), any(), any());
     }
 
     /**
@@ -197,7 +197,7 @@ class UpdateAssessmentScheduleUseCaseTests {
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentScheduleCommand(scheduleId, null, false, newStart, newEnd)))
             .isInstanceOf(ResourceDuplicatedException.class)
             .hasMessageContaining("Giám thị");
-        verify(assessmentScheduleRepository, never()).updateAtomic(any(), any(), anyBoolean(), any(), any(), any(), any());
+        verify(assessmentScheduleRepository, never()).updateAtomic(any(), any(), anyBoolean(), any(), any());
     }
 
     /**
@@ -217,7 +217,7 @@ class UpdateAssessmentScheduleUseCaseTests {
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentScheduleCommand(scheduleId, null, false, newStart, newEnd)))
             .isInstanceOf(ResourceDuplicatedException.class)
             .hasMessageContaining("đã có ca thi khác");
-        verify(assessmentScheduleRepository, never()).updateAtomic(any(), any(), anyBoolean(), any(), any(), any(), any());
+        verify(assessmentScheduleRepository, never()).updateAtomic(any(), any(), anyBoolean(), any(), any());
     }
 
     @Test
@@ -231,7 +231,7 @@ class UpdateAssessmentScheduleUseCaseTests {
         when(assessmentCandidateRepository.findConflictsForStudents(anyCollection(), any(), any(), any()))
             .thenReturn(List.of(new StudentScheduleConflict(
                 candidate.getStudentId(), scheduleId, newStart, newEnd)));
-        when(assessmentScheduleRepository.updateAtomic(eq(scheduleId), eq(null), eq(false), eq(newStart), eq(newEnd), any(), eq(userId.toString())))
+        when(assessmentScheduleRepository.updateAtomic(eq(scheduleId), eq(null), eq(false), eq(newStart), eq(newEnd)))
             .thenReturn(1);
 
         UUID result = useCase.execute(new UpdateAssessmentScheduleCommand(scheduleId, null, false, newStart, newEnd));
@@ -253,7 +253,7 @@ class UpdateAssessmentScheduleUseCaseTests {
     void should_reject_when_atomic_update_affects_no_rows() {
         when(assessmentScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(AssessmentScheduleStatus.DRAFT)));
         when(assessmentScheduleRepository.existsOverlapping(roomId, newStart, newEnd, scheduleId)).thenReturn(false);
-        when(assessmentScheduleRepository.updateAtomic(eq(scheduleId), eq(null), eq(false), eq(newStart), eq(newEnd), any(), eq(userId.toString())))
+        when(assessmentScheduleRepository.updateAtomic(eq(scheduleId), eq(null), eq(false), eq(newStart), eq(newEnd)))
             .thenReturn(0);
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentScheduleCommand(scheduleId, null, false, newStart, newEnd)))
@@ -271,7 +271,7 @@ class UpdateAssessmentScheduleUseCaseTests {
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentScheduleCommand(scheduleId, null, false, newStart, newEnd)))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("thời gian làm bài");
-        verify(assessmentScheduleRepository, never()).updateAtomic(any(), any(), anyBoolean(), any(), any(), any(), any());
+        verify(assessmentScheduleRepository, never()).updateAtomic(any(), any(), anyBoolean(), any(), any());
     }
 
     @Test
@@ -286,7 +286,7 @@ class UpdateAssessmentScheduleUseCaseTests {
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentScheduleCommand(scheduleId, null, false, newStart, newEnd)))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("mở và đóng");
-        verify(assessmentScheduleRepository, never()).updateAtomic(any(), any(), anyBoolean(), any(), any(), any(), any());
+        verify(assessmentScheduleRepository, never()).updateAtomic(any(), any(), anyBoolean(), any(), any());
     }
 
     @Test
@@ -352,7 +352,7 @@ class UpdateAssessmentScheduleUseCaseTests {
     void should_not_check_subscription_period_for_centralized_schedule() {
         when(assessmentScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(AssessmentScheduleStatus.DRAFT)));
         when(assessmentScheduleRepository.existsOverlapping(roomId, newStart, newEnd, scheduleId)).thenReturn(false);
-        when(assessmentScheduleRepository.updateAtomic(eq(scheduleId), eq(null), eq(false), eq(newStart), eq(newEnd), any(), eq(userId.toString())))
+        when(assessmentScheduleRepository.updateAtomic(eq(scheduleId), eq(null), eq(false), eq(newStart), eq(newEnd)))
             .thenReturn(1);
 
         useCase.execute(new UpdateAssessmentScheduleCommand(scheduleId, null, false, newStart, newEnd));

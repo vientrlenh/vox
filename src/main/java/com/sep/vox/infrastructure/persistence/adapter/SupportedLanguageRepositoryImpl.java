@@ -1,7 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
 import com.sep.vox.infrastructure.persistence.entity.supportedlanguage.SupportedLanguageJpaEntity;
-import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -20,6 +19,7 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SupportedLanguageMapper;
+import com.sep.vox.infrastructure.persistence.audit.AuditStampProvider;
 import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSupportedLanguageRepository;
 import com.sep.vox.infrastructure.persistence.DataConflictTranslation;
@@ -29,6 +29,7 @@ import com.sep.vox.infrastructure.persistence.DataConflictTranslation;
 public class SupportedLanguageRepositoryImpl implements SupportedLanguageRepository {
 
     private final SpringDataSupportedLanguageRepository springDataSupportedLanguageRepository;
+    private final AuditStampProvider auditStampProvider;
 
     @Override
     public Optional<SupportedLanguage> findById(UUID id) {
@@ -103,8 +104,7 @@ public class SupportedLanguageRepositoryImpl implements SupportedLanguageReposit
 
     @Override
     public int updateMutableFields(UUID id, String code, boolean codeProvided, String name, boolean nameProvided,
-            String description, boolean descriptionProvided, Boolean isActive, boolean isActiveProvided,
-            Instant updatedAt, String updatedBy) {
+            String description, boolean descriptionProvided, Boolean isActive, boolean isActiveProvided) {
         return DataConflictTranslation.translating(() -> springDataSupportedLanguageRepository.updateMutableFields(
             id,
             code,
@@ -115,8 +115,8 @@ public class SupportedLanguageRepositoryImpl implements SupportedLanguageReposit
             descriptionProvided,
             isActive,
             isActiveProvided,
-            updatedAt,
-            updatedBy
+            auditStampProvider.currentUpdatedAt(),
+            auditStampProvider.currentUpdatedBy()
         ));
     }
 

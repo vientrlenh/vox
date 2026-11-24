@@ -4,7 +4,6 @@ import com.sep.vox.domain.model.school.SchoolClassUser;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -29,14 +28,10 @@ import com.sep.vox.application.response.input.assessment.CreateClassTestResponse
 import com.sep.vox.domain.mapper.AssessmentDtoMapper;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentCandidate;
-import com.sep.vox.domain.model.assessment.AssessmentDeliveryMode;
-import com.sep.vox.domain.model.assessment.AssessmentKind;
 import com.sep.vox.domain.model.assessment.AssessmentMember;
 import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
 import com.sep.vox.domain.model.assessment.AssessmentSchedule;
 import com.sep.vox.domain.model.assessment.AssessmentScheduleProctor;
-import com.sep.vox.domain.model.assessment.AssessmentStatus;
-import com.sep.vox.domain.model.assessment.ResultDecisionMethod;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
 import com.sep.vox.domain.repository.AssessmentCandidateRepository;
 import com.sep.vox.domain.repository.AssessmentMemberRepository;
@@ -121,23 +116,15 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             SchoolClass schoolClass,
             UUID currentUserId,
             Instant now) {
-        assessmentMemberRepository.save(AssessmentMember.builder()
-                .assessmentId(assessment.getId())
-                .userId(currentUserId)
-                .role(AssessmentMemberRole.CHAIR)
-                .grantedAt(now)
-                .grantedBy(currentUserId)
-                .build());
-        // Giám khảo mặc định là chính giáo viên tạo bài; giáo viên có thể thêm/bớt sau qua
-        // endpoint proctor của ca thi. Quyền thì không phải kiểm thêm (người gọi đã được xác nhận là
-        // TEACHER và là thành viên active của lớp ở đầu execute()), nhưng lịch thì có: luật "không
-        // gác hai ca trùng giờ" là toàn trường nên bài trên lớp này có thể đâm vào một ca thi khác.
+        assessmentMemberRepository.save(AssessmentMember.granted(
+            assessment.getId(), currentUserId, AssessmentMemberRole.CHAIR, now, currentUserId));
+        // The default proctor is the teacher who creates the test; the teacher can add or remove proctors later through the
+        // proctor endpoint of the schedule. The permission needs no extra check (the caller was confirmed as a TEACHER and an
+        // active member of the class at the start of execute()), but the timetable does: the rule "no proctoring two
+        // overlapping schedules" is school-wide, so this class test can collide with another schedule.
         assessmentScheduleProctorConflictValidator.requireTeacherFree(
             currentUserId, schedule.getStartDate(), schedule.getEndDate(), schedule.getId());
-        assessmentScheduleProctorRepository.save(AssessmentScheduleProctor.builder()
-                .scheduleId(schedule.getId())
-                .teacherId(currentUserId)
-                .build());
+        assessmentScheduleProctorRepository.save(AssessmentScheduleProctor.assigned(schedule.getId(), currentUserId));
         int candidateCount = assignCandidates(assessment, schoolClass.getId(), currentUserId, now);
         return new CreateClassTestResponse(AssessmentDtoMapper.toDto(assessment), candidateCount);
     }
@@ -171,38 +158,19 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
             UUID currentUserId,
             Instant now) {
         String code = "CT-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
-        Integer requestedMaxAttempt = command.maxAttempt();
-        int maxAttempt = requestedMaxAttempt == null ? 1 : requestedMaxAttempt;
         AssessmentStreamConfigResolver.StreamConfig streamConfig = assessmentStreamConfigResolver.resolve(
             command.requiredStreamTypes(), command.streamTypePermission());
         // A class test is not attached to a blueprint when created: the teacher chooses how to compose each paper code
         // on the detail page. To use a shared blueprint later, attach it through ChangeClassTestBlueprintUseCase.
-        Assessment classTest = Assessment.builder()
-                .code(code)
-                .name(command.name())
-                .description(command.description())
-                .schoolId(schoolClass.getSchoolId())
-                .languageId(schoolClass.getLanguageId())
-                .kind(AssessmentKind.CLASS_TEST)
-                // A class test is taken right in the room; the only difference is the device used: the school's
-                // machine (LAB) or the one the student brings (STUDENT_DEVICE, the default).
-                .deliveryMode(Objects.requireNonNullElse(command.deliveryMode(), AssessmentDeliveryMode.STUDENT_DEVICE))
-                .status(AssessmentStatus.DRAFT)
-                .maxAttempt(maxAttempt)
-                .assessmentTimeDurationSecond(command.assessmentTimeDurationSecond())
-                .resultDecisionMethod(command.resultDecisionMethod() == null
-                    ? ResultDecisionMethod.HIGHEST : command.resultDecisionMethod())
-                .openAt(command.openAt())
-                .closeAt(command.closeAt())
-                .assessmentPolicyId(command.assessmentPolicyId())
-                // A class test goes straight in by default; the teacher turns OTP on to tighten it like a centralized assessment.
-                .requiresOtp(command.requiresOtp() != null && command.requiresOtp())
-                // Both being NULL means no stream proctoring -- the DB allows it
-                // (chk_assessments_required_stream_type_and_stream_type_permission_valid).
-                .requiredStreamType(streamConfig.requiredStreamType())
-                .streamTypePermission(streamConfig.streamTypePermission())
-                .aiConfidenceThresholdPercent(command.aiConfidenceThresholdPercent())
-                .build();
+        Assessment classTest = Assessment.classTestDraft(code, command.name(), command.description(),
+            schoolClass.getSchoolId(), schoolClass.getLanguageId());
+        classTest.configure(command.deliveryMode(), command.maxAttempt(), command.assessmentTimeDurationSecond(),
+            command.resultDecisionMethod(), command.requiresOtp());
+        classTest.scheduleBetween(command.openAt(), command.closeAt(), command.assessmentPolicyId());
+        // Both being NULL means no stream proctoring -- the DB allows it
+        // (chk_assessments_required_stream_type_and_stream_type_permission_valid).
+        classTest.useStreamProctoring(streamConfig.requiredStreamType(), streamConfig.streamTypePermission(),
+            command.aiConfidenceThresholdPercent());
         return assessmentRepository.save(classTest);
     }
 

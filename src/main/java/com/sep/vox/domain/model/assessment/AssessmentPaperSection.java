@@ -63,6 +63,39 @@ public class AssessmentPaperSection extends BaseModel {
         this.weight = weight;
     }
 
+    public static AssessmentPaperSection fromBlueprintSection(UUID paperId, AssessmentBlueprintSection blueprintSection) {
+        return builder()
+            .paperId(paperId)
+            .order(blueprintSection.getOrder())
+            .title(blueprintSection.getTitle())
+            .instruction(blueprintSection.getInstruction())
+            .sectionTimeLimitSeconds(blueprintSection.getSectionTimeLimitSeconds())
+            .weight(blueprintSection.getSectionWeight())
+            .build();
+    }
+
+    public static AssessmentPaperSection forClassTest(
+            UUID paperId, int order, String title, String instruction, BigDecimal weight) {
+        return builder()
+            .paperId(paperId)
+            .order(order)
+            .title(title)
+            .instruction(instruction)
+            .weight(weight)
+            .build();
+    }
+
+    public AssessmentPaperSection copyInto(UUID targetPaperId) {
+        return builder()
+            .paperId(targetPaperId)
+            .order(order)
+            .title(title)
+            .instruction(instruction)
+            .sectionTimeLimitSeconds(sectionTimeLimitSeconds)
+            .weight(weight)
+            .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

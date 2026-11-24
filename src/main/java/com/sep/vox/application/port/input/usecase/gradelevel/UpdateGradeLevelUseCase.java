@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.gradelevel;
 
-import java.time.Instant;
 import java.util.UUID;
 
 import com.sep.vox.application.exception.DataConflictException;
@@ -62,9 +61,7 @@ public class UpdateGradeLevelUseCase implements IUseCase<UpdateGradeLevelCommand
                     name,
                     description,
                     command.descriptionProvided(),
-                    command.order(),
-                    Instant.now(),
-                    currentUserId.toString()
+                    command.order()
             );
         } catch (DataConflictException e) {
             throw new ResourceDuplicatedException("Thứ tự khối học đã được sử dụng.");

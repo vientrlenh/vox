@@ -15,8 +15,8 @@ public interface RegisterFormRepository {
     Optional<RegisterForm> findById(UUID id);
     PageResult<RegisterForm> findAll(int pageNumber, int size);
     Optional<RegisterForm> findByIdForUpdate(UUID id);
-    int updateApprovedRegisterForm(UUID id, UUID updatedBy, Instant now);
-    int updateRejectedRegisterForm(UUID id, UUID updatedBy, String reason, Instant now);
+    int updateApprovedRegisterForm(UUID id, UUID reviewerId);
+    int updateRejectedRegisterForm(UUID id, UUID reviewerId, String reason);
     boolean existsBySchoolDirectoryIdAndStatusIn(UUID schoolDirectoryId, Collection<RegisterFormStatus> statuses);
     boolean existsByContactEmailAndStatus(String contactEmail, RegisterFormStatus status);
     boolean existsByContactPhoneAndStatus(String contactPhone, RegisterFormStatus status);

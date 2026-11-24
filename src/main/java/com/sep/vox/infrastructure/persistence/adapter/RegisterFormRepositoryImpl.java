@@ -16,6 +16,7 @@ import com.sep.vox.domain.model.registerform.RegisterForm;
 import com.sep.vox.domain.model.registerform.RegisterFormStatus;
 import com.sep.vox.domain.repository.RegisterFormRepository;
 import com.sep.vox.infrastructure.persistence.mapper.RegisterFormMapper;
+import com.sep.vox.infrastructure.persistence.audit.AuditStampProvider;
 import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataRegisterFormRepository;
 
@@ -24,6 +25,7 @@ import com.sep.vox.infrastructure.persistence.repository.SpringDataRegisterFormR
 public class RegisterFormRepositoryImpl implements RegisterFormRepository {
 
     private final SpringDataRegisterFormRepository springDataRegisterFormRepository;
+    private final AuditStampProvider auditStampProvider;
 
     @Override
     public RegisterForm save(RegisterForm rf) {
@@ -60,13 +62,13 @@ public class RegisterFormRepositoryImpl implements RegisterFormRepository {
     }
 
     @Override
-    public int updateApprovedRegisterForm(UUID id, UUID updatedBy, Instant now) {
-        return springDataRegisterFormRepository.updateApprovedRegisterForm(id, updatedBy, now);
+    public int updateApprovedRegisterForm(UUID id, UUID reviewerId) {
+        return springDataRegisterFormRepository.updateApprovedRegisterForm(id, reviewerId, auditStampProvider.currentUpdatedAt());
     }
 
     @Override
-    public int updateRejectedRegisterForm(UUID id, UUID updatedBy, String reason, Instant now) {
-        return springDataRegisterFormRepository.updateRejectedRegisterForm(id, updatedBy, reason, now);
+    public int updateRejectedRegisterForm(UUID id, UUID reviewerId, String reason) {
+        return springDataRegisterFormRepository.updateRejectedRegisterForm(id, reviewerId, reason, auditStampProvider.currentUpdatedAt());
     }
 
     @Override

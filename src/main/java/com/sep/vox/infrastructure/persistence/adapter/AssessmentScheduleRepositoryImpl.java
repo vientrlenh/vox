@@ -13,6 +13,7 @@ import org.springframework.stereotype.Repository;
 import com.sep.vox.domain.model.assessment.AssessmentSchedule;
 import com.sep.vox.domain.model.assessment.AssessmentScheduleStatus;
 import com.sep.vox.domain.repository.AssessmentScheduleRepository;
+import com.sep.vox.infrastructure.persistence.audit.AuditStampProvider;
 import com.sep.vox.infrastructure.persistence.mapper.AssessmentScheduleMapper;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataAssessmentScheduleRepository;
 
@@ -21,6 +22,7 @@ import com.sep.vox.infrastructure.persistence.repository.SpringDataAssessmentSch
 public class AssessmentScheduleRepositoryImpl implements AssessmentScheduleRepository {
 
     private final SpringDataAssessmentScheduleRepository springDataAssessmentScheduleRepository;
+    private final AuditStampProvider auditStampProvider;
 
     @Override
     public Optional<AssessmentSchedule> findById(UUID id) {
@@ -98,10 +100,10 @@ public class AssessmentScheduleRepositoryImpl implements AssessmentScheduleRepos
     }
 
     @Override
-    public int updateAtomic(UUID id, UUID schoolRoomId, boolean schoolRoomIdProvided, Instant start, Instant end,
-            Instant now, String updatedBy) {
+    public int updateAtomic(UUID id, UUID schoolRoomId, boolean schoolRoomIdProvided, Instant start, Instant end) {
         return springDataAssessmentScheduleRepository.updateAtomic(
-            id, schoolRoomId, schoolRoomIdProvided, start, end, now, updatedBy);
+            id, schoolRoomId, schoolRoomIdProvided, start, end,
+            auditStampProvider.currentUpdatedAt(), auditStampProvider.currentUpdatedBy());
     }
     
     @Override

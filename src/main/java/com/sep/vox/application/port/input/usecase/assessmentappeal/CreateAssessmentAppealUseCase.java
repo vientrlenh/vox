@@ -21,7 +21,6 @@ import com.sep.vox.application.port.input.command.assessmentappeal.CreateAssessm
 import com.sep.vox.application.port.input.service.AssessmentAppealAccessService;
 import com.sep.vox.application.port.input.service.ResultStatusHistoryRecorder;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.domain.model.assessment.AssessmentAppealStatus;
 import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
 import com.sep.vox.domain.model.assessment.AssessmentResultAppeal;
 import com.sep.vox.domain.model.assessment.AssessmentResultAppealItem;
@@ -106,33 +105,14 @@ public class CreateAssessmentAppealUseCase implements IUseCase<CreateAssessmentA
         }
 
         Instant now = Instant.now();
-        AssessmentResultAppeal appeal = AssessmentResultAppeal.builder()
-                .candidateResultId(command.candidateResultId())
-                .requestedBy(currentUserId)
-                .reason(command.reason())
-                .requestedAt(now)
-                .status(AssessmentAppealStatus.PENDING)
-                .scoreBefore(candidateResult.getTotalScore())
-                .scoreAfter(null)
-                .resolvedBy(null)
-                .resolvedAt(null)
-                .notes(command.notes())
-                .deadline(null)
-                .approvedAt(null)
-                .decisionNote(null)
-                .withdrawnAt(null)
-                .reviewerOverrideReason(null)
-                .build();
+        AssessmentResultAppeal appeal = AssessmentResultAppeal.requested(command.candidateResultId(), currentUserId,
+                command.reason(), now, candidateResult.getTotalScore(), command.notes());
         AssessmentResultAppeal saved = assessmentResultAppealRepository.save(appeal);
 
-        // Id của đơn chỉ có sau khi INSERT trả về, nên phần thi phải lưu ở bước sau.
+        // The appeal id exists only after the INSERT returns, so the appealed paper items have to be saved in a later step.
         assessmentResultAppealItemRepository.saveAll(distinctPaperItemIds.stream()
-            .map(paperItemId -> AssessmentResultAppealItem.builder()
-                    .appealId(saved.getId())
-                    .paperItemId(paperItemId)
-                    .responseId(responsesByPaperItem.get(paperItemId).getId())
-                    .finalScore(null)
-                    .build())
+            .map(paperItemId -> AssessmentResultAppealItem.forResponse(
+                saved.getId(), paperItemId, responsesByPaperItem.get(paperItemId).getId()))
             .toList());
 
         // Đóng vòng chấm đang mở (thường là hậu kiểm) trước khi kéo bài sang APPEALED.

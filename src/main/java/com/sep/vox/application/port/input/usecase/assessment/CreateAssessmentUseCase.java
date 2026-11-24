@@ -2,7 +2,6 @@ package com.sep.vox.application.port.input.usecase.assessment;
 
 import com.sep.vox.domain.model.assessment.AssessmentBlueprint;
 import java.time.Instant;
-import java.util.Objects;
 import java.util.UUID;
 
 import lombok.RequiredArgsConstructor;
@@ -22,10 +21,6 @@ import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.dto.AssessmentDto;
 import com.sep.vox.domain.mapper.AssessmentDtoMapper;
 import com.sep.vox.domain.model.assessment.Assessment;
-import com.sep.vox.domain.model.assessment.AssessmentDeliveryMode;
-import com.sep.vox.domain.model.assessment.AssessmentKind;
-import com.sep.vox.domain.model.assessment.AssessmentStatus;
-import com.sep.vox.domain.model.assessment.ResultDecisionMethod;
 import com.sep.vox.domain.repository.AssessmentBlueprintRepository;
 import com.sep.vox.domain.repository.AssessmentRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -76,29 +71,13 @@ public class CreateAssessmentUseCase implements IUseCase<CreateAssessmentCommand
 
         validateOpenClose(command.openAt(), command.closeAt(), currentSchoolId);
 
-        Assessment assessment = Assessment.builder()
-                .blueprintId(command.blueprintId())
-                .code(assessmentCodeOf(command.code()))
-                .name(command.name())
-                .description(command.description())
-                .schoolId(currentSchoolId)
-                .languageId(command.languageId())
-                .kind(AssessmentKind.CENTRALIZED)
-                // A centralized assessment is taken on school devices by default; a school that lets candidates
-                // bring their own device into the room picks STUDENT_DEVICE when creating it.
-                .deliveryMode(Objects.requireNonNullElse(command.deliveryMode(), AssessmentDeliveryMode.LAB))
-                .status(AssessmentStatus.DRAFT)
-                .maxAttempt(Objects.requireNonNullElse(command.maxAttempt(), 1))
-                .assessmentTimeDurationSecond(command.assessmentTimeDurationSecond())
-                .resultDecisionMethod(Objects.requireNonNullElse(command.resultDecisionMethod(), ResultDecisionMethod.HIGHEST))
-                .openAt(command.openAt())
-                .closeAt(command.closeAt())
-                .assessmentPolicyId(command.assessmentPolicyId())
-                .requiresOtp(command.requiresOtp() == null || command.requiresOtp())
-                .requiredStreamType(streamConfig.requiredStreamType())
-                .streamTypePermission(streamConfig.streamTypePermission())
-                .aiConfidenceThresholdPercent(command.aiConfidenceThresholdPercent())
-                .build();
+        Assessment assessment = Assessment.centralizedDraft(command.blueprintId(), assessmentCodeOf(command.code()),
+            command.name(), command.description(), currentSchoolId, command.languageId());
+        assessment.configure(command.deliveryMode(), command.maxAttempt(), command.assessmentTimeDurationSecond(),
+            command.resultDecisionMethod(), command.requiresOtp());
+        assessment.scheduleBetween(command.openAt(), command.closeAt(), command.assessmentPolicyId());
+        assessment.useStreamProctoring(streamConfig.requiredStreamType(), streamConfig.streamTypePermission(),
+            command.aiConfidenceThresholdPercent());
         return AssessmentDtoMapper.toDto(assessmentRepository.save(assessment));
     }
 

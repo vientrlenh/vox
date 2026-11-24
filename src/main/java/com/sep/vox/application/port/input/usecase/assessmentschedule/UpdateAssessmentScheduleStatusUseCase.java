@@ -174,10 +174,8 @@ public class UpdateAssessmentScheduleStatusUseCase implements IUseCase<UpdateAss
                 // vào một ca thứ ba. Loại ca nguồn khỏi phép kiểm tra vì nó sắp thành MOVED.
                 assessmentScheduleProctorConflictValidator.requireTeacherFree(
                     proctor.getTeacherId(), target.getStartDate(), target.getEndDate(), sourceScheduleId);
-                assessmentScheduleProctorRepository.save(AssessmentScheduleProctor.builder()
-                        .scheduleId(target.getId())
-                        .teacherId(proctor.getTeacherId())
-                        .build());
+                assessmentScheduleProctorRepository.save(
+                    AssessmentScheduleProctor.assigned(target.getId(), proctor.getTeacherId()));
             }
             assessmentScheduleProctorRepository.deleteById(proctor.getId());
         }

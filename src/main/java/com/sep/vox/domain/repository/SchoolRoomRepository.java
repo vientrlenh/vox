@@ -1,6 +1,5 @@
 package com.sep.vox.domain.repository;
 
-import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -20,5 +19,5 @@ public interface SchoolRoomRepository {
     PageResult<SchoolRoom> findBySchoolId(UUID schoolId, int pageNumber, int size);
 
     boolean existsBySchoolIdAndIsActive(UUID schoolId, boolean isActive);
-    int updateSchoolRoomAtomic(UUID id, String name, String description, boolean descriptionProvided, Instant now, String updatedBy);
+    int updateSchoolRoomAtomic(UUID id, String name, String description, boolean descriptionProvided);
 }

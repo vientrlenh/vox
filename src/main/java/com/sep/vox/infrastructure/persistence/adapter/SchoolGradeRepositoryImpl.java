@@ -2,7 +2,6 @@ package com.sep.vox.infrastructure.persistence.adapter;
 
 import com.sep.vox.infrastructure.persistence.entity.school.SchoolGradeJpaEntity;
 import java.time.LocalDate;
-import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -20,6 +19,7 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.SchoolGrade;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolGradeMapper;
+import com.sep.vox.infrastructure.persistence.audit.AuditStampProvider;
 import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolGradeRepository;
 import com.sep.vox.infrastructure.persistence.DataConflictTranslation;
@@ -29,6 +29,7 @@ import com.sep.vox.infrastructure.persistence.DataConflictTranslation;
 public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
 
     private final SpringDataSchoolGradeRepository springDataSchoolGradeRepository;
+    private final AuditStampProvider auditStampProvider;
 
     @Override
     public Optional<SchoolGrade> findById(UUID id) {
@@ -123,8 +124,9 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
     }
 
     @Override
-    public int updateSchoolGradeAtomic(UUID id, String name, String description, boolean descriptionProvided, LocalDate startDate, LocalDate endDate, Instant now, String updatedBy) {
-        return springDataSchoolGradeRepository.updateSchoolGradeAtomic(id, name, description, descriptionProvided, startDate, endDate, now, updatedBy);
+    public int updateSchoolGradeAtomic(UUID id, String name, String description, boolean descriptionProvided, LocalDate startDate, LocalDate endDate) {
+        return springDataSchoolGradeRepository.updateSchoolGradeAtomic(
+                id, name, description, descriptionProvided, startDate, endDate, auditStampProvider.currentUpdatedAt(), auditStampProvider.currentUpdatedBy());
     }
 
     @Override

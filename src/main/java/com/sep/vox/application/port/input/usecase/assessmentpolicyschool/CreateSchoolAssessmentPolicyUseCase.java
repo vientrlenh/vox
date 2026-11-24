@@ -9,7 +9,6 @@ import com.sep.vox.application.port.input.service.GradeLevelBandScopeGuardServic
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
-import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStrictness;
 import com.sep.vox.domain.model.framework.FrameworkResultBand;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
@@ -219,22 +218,10 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
                             key.gradeLevelId(), key.schoolGradeId(), key.schoolClassId()) + 1);
             nextVersionByScope.put(versionScopeKey, nextVersion + 1);
 
-            AssessmentPolicy newPolicy = AssessmentPolicy.builder()
-                .schoolId(schoolId)
-                .gradeLevelId(command.gradeLevelId())
-                .schoolGradeId(command.schoolGradeId())
-                .schoolClassId(command.schoolClassId())
-                .languageId(command.languageId())
-                .frameworkVersionId(command.frameworkVersionId())
-                .rubricVersionId(rubricVersionId)
-                .targetFrameworkBandId(command.targetFrameworkBandId())
-                .passingScore(command.passingScore())
-                .strictness(strictness)
-                .version(nextVersion)
-                .status(AssessmentPolicyStatus.DRAFT)
-                .effectiveFrom(command.effectiveFrom())
-                .effectiveTo(command.effectiveTo())
-                .build();
+            AssessmentPolicy newPolicy = AssessmentPolicy.draftForScope(schoolId, command.gradeLevelId(),
+                command.schoolGradeId(), command.schoolClassId(), command.languageId(), command.frameworkVersionId(),
+                rubricVersionId, command.targetFrameworkBandId(), command.passingScore(), strictness, nextVersion,
+                command.effectiveFrom(), command.effectiveTo());
             policiesToSave.add(newPolicy);
         }
 

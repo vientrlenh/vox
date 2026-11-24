@@ -171,13 +171,8 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
         List<BigDecimal> weights = ClassTestSectionWeightPolicy.resolveQuestionWeights(questions);
         for (int i = 0; i < questions.size(); i++) {
             UUID questionId = questions.get(i).questionId();
-            assessmentPaperItemRepository.save(AssessmentPaperItem.builder()
-                .sectionId(paperSection.getId())
-                .paperId(paperSection.getPaperId())
-                .questionId(questionId)
-                .order(i + 1)
-                .weight(weights.get(i))
-                .build());
+            assessmentPaperItemRepository.save(AssessmentPaperItem.forQuestion(
+                paperSection.getId(), paperSection.getPaperId(), questionId, i + 1, weights.get(i)));
             assessmentQuestionSecureLockService.lockQuestionForAssessment(
                 questionId, assessmentId, AssessmentSecurePoolReleaseMode.AUTO_AFTER_CLOSE, currentUserId
             );
@@ -198,25 +193,15 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
             int order,
             UUID assessmentId,
             UUID currentUserId) {
-        AssessmentPaperSection paperSection = assessmentPaperSectionRepository.save(AssessmentPaperSection.builder()
-            .paperId(paper.getId())
-            .order(order)
-            .title(sectionCommand.title())
-            .instruction(sectionCommand.instruction())
-            .weight(sectionWeight)
-            .build());
+        AssessmentPaperSection paperSection = assessmentPaperSectionRepository.save(AssessmentPaperSection.forClassTest(
+            paper.getId(), order, sectionCommand.title(), sectionCommand.instruction(), sectionWeight));
 
         List<ClassTestQuestionCommand> questions = sectionCommand.questions();
         List<BigDecimal> weights = ClassTestSectionWeightPolicy.resolveQuestionWeights(questions);
         for (int i = 0; i < questions.size(); i++) {
             UUID questionId = questions.get(i).questionId();
-            assessmentPaperItemRepository.save(AssessmentPaperItem.builder()
-                .sectionId(paperSection.getId())
-                .paperId(paper.getId())
-                .questionId(questionId)
-                .order(i + 1)
-                .weight(weights.get(i))
-                .build());
+            assessmentPaperItemRepository.save(AssessmentPaperItem.forQuestion(
+                paperSection.getId(), paper.getId(), questionId, i + 1, weights.get(i)));
             assessmentQuestionSecureLockService.lockQuestionForAssessment(
                 questionId, assessmentId, AssessmentSecurePoolReleaseMode.AUTO_AFTER_CLOSE, currentUserId
             );

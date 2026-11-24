@@ -14,6 +14,7 @@ import org.springframework.test.context.ActiveProfiles;
 import com.sep.vox.config.TestcontainersConfiguration;
 import com.sep.vox.infrastructure.config.JpaAuditingConfig;
 import com.sep.vox.infrastructure.persistence.audit.AuditActorProvider;
+import com.sep.vox.infrastructure.persistence.audit.AuditStampProvider;
 import com.sep.vox.infrastructure.persistence.audit.ThreadLocalAuditActorScope;
 import com.sep.vox.infrastructure.security.SecurityContextProvider;
 
@@ -27,7 +28,7 @@ import com.sep.vox.infrastructure.security.SecurityContextProvider;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({ TestcontainersConfiguration.class, JpaAuditingConfig.class, AuditActorProvider.class,
-        ThreadLocalAuditActorScope.class, SecurityContextProvider.class })
+        AuditStampProvider.class, ThreadLocalAuditActorScope.class, SecurityContextProvider.class })
 @ActiveProfiles("test")
 public @interface RepositoryTest {
 }

@@ -69,11 +69,11 @@ class AcceptSchoolClassUserImportUseCaseTests {
 
         mockCurrentUserAndSchool(currentUserId, schoolId, true, true);
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session(sessionId, schoolId)));
-        when(importSessionRepository.markQueued(any(), any(), any(), any(), any())).thenReturn(1);
+        when(importSessionRepository.markQueued(any(), any(), any(), any())).thenReturn(1);
 
         useCase.execute(command(schoolId, sessionId));
 
-        verify(importSessionRepository).markQueued(eq(sessionId), eq("SCHOOL_CLASS_USER"), any(String.class), any(), any());
+        verify(importSessionRepository).markQueued(eq(sessionId), eq("SCHOOL_CLASS_USER"), any(String.class), any());
     }
 
     @Test
@@ -195,7 +195,7 @@ class AcceptSchoolClassUserImportUseCaseTests {
 
         mockCurrentUserAndSchool(currentUserId, schoolId, true, true);
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(session(sessionId, schoolId)));
-        when(importSessionRepository.markQueued(any(), any(), any(), any(), any())).thenReturn(0);
+        when(importSessionRepository.markQueued(any(), any(), any(), any())).thenReturn(0);
 
         assertThatThrownBy(() -> useCase.execute(command(schoolId, sessionId)))
                 .hasMessageContaining("không ở trạng thái cho accept hoặc đã hết hạn");

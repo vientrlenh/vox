@@ -72,12 +72,12 @@ class AcceptSchoolGradeImportUseCaseTests {
     @Test
     void execute_should_mark_queued_with_grade_type() {
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(previewedSession()));
-        when(importSessionRepository.markQueued(eq(sessionId), eq("SCHOOL_GRADE"), any(), any(), eq(userId.toString())))
+        when(importSessionRepository.markQueued(eq(sessionId), eq("SCHOOL_GRADE"), any(), any()))
             .thenReturn(1);
 
         useCase.execute(new AcceptSchoolGradeImportCommand(schoolId, sessionId, validMapping()));
 
-        verify(importSessionRepository).markQueued(eq(sessionId), eq("SCHOOL_GRADE"), any(), any(), eq(userId.toString()));
+        verify(importSessionRepository).markQueued(eq(sessionId), eq("SCHOOL_GRADE"), any(), any());
     }
 
     @Test
@@ -87,7 +87,7 @@ class AcceptSchoolGradeImportUseCaseTests {
         assertThatThrownBy(() -> useCase.execute(
                 new AcceptSchoolGradeImportCommand(schoolId, sessionId, Map.of("Mã năm học", "code"))))
             .isInstanceOf(IllegalArgumentException.class);
-        verify(importSessionRepository, never()).markQueued(any(), any(), any(), any(), any());
+        verify(importSessionRepository, never()).markQueued(any(), any(), any(), any());
     }
 
     @Test

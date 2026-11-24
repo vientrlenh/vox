@@ -1,21 +1,25 @@
 package com.sep.vox.infrastructure.persistence.repository;
 
-import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.domain.valueobject.LanguageCode;
 import com.sep.vox.infrastructure.persistence.adapter.SupportedLanguageRepositoryImpl;
+import com.sep.vox.infrastructure.security.CustomUserDetails;
 import com.sep.vox.support.RepositoryTest;
 
 import jakarta.persistence.EntityManager;
@@ -25,6 +29,17 @@ import jakarta.persistence.EntityManager;
     SupportedLanguageRepositoryImpl.class
 })
 class SupportedLanguageRepositoryTests {
+
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
+
+    private static void logIn(String userId) {
+        CustomUserDetails principal = CustomUserDetails.builder().id(UUID.fromString(userId)).build();
+        SecurityContextHolder.getContext()
+            .setAuthentication(new UsernamePasswordAuthenticationToken(principal, null, List.of()));
+    }
 
     @Autowired
     private SupportedLanguageRepository supportedLanguageRepository;
@@ -140,8 +155,8 @@ class SupportedLanguageRepositoryTests {
     @Test
     void whenUpdateMutableFields_thenOnlyProvidedFieldsAreUpdated() {
         SupportedLanguage saved = supportedLanguageRepository.save(newSupportedLanguage("RU", "Russian", true));
-        Instant updatedAt = Instant.parse("2026-06-10T10:00:00Z");
         String updatedBy = UUID.randomUUID().toString();
+        logIn(updatedBy);
 
         int updatedRows = supportedLanguageRepository.updateMutableFields(
             saved.getId(),
@@ -152,9 +167,7 @@ class SupportedLanguageRepositoryTests {
             "Spanish language",
             true,
             false,
-            true,
-            updatedAt,
-            updatedBy
+            true
         );
 
         SupportedLanguage updated = supportedLanguageRepository.findById(saved.getId()).orElseThrow();
@@ -163,7 +176,7 @@ class SupportedLanguageRepositoryTests {
         assertThat(updated.getName()).isEqualTo("Russian");
         assertThat(updated.getDescription()).isEqualTo("Spanish language");
         assertThat(updated.isActive()).isFalse();
-        assertThat(updated.getUpdatedAt()).isEqualTo(updatedAt);
+        assertThat(updated.getUpdatedAt()).isAfterOrEqualTo(saved.getUpdatedAt().truncatedTo(ChronoUnit.MICROS));
         assertThat(updated.getUpdatedBy()).isEqualTo(updatedBy);
     }
 
@@ -180,9 +193,7 @@ class SupportedLanguageRepositoryTests {
             null,
             true,
             null,
-            false,
-            Instant.now(),
-            UUID.randomUUID().toString()
+            false
         );
 
         SupportedLanguage updated = supportedLanguageRepository.findById(saved.getId()).orElseThrow();
@@ -201,9 +212,7 @@ class SupportedLanguageRepositoryTests {
             "Indonesian language",
             true,
             true,
-            true,
-            Instant.now(),
-            UUID.randomUUID().toString()
+            true
         );
 
         assertThat(updatedRows).isZero();

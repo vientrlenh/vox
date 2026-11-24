@@ -25,7 +25,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -132,9 +131,7 @@ public class UpdateSchoolRubricResultBandUseCase implements IUseCase<UpdateSchoo
                     descriptionProvided,
                     command.scoreMin(),
                     command.scoreMax(),
-                    command.order(),
-                    Instant.now(),
-                    currentUserId.toString()
+                    command.order()
             );
         } catch (DataConflictException e) {
             throw new IllegalArgumentException("Không thể cập nhật Dải điểm Kết quả do dữ liệu bị trùng hoặc không hợp lệ.");

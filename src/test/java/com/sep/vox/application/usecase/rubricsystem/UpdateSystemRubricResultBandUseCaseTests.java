@@ -83,7 +83,7 @@ class UpdateSystemRubricResultBandUseCaseTests {
         useCase.execute(new UpdateSystemRubricResultBandCommand(resultBandId, "Band", null, true, null, null, null));
 
         verify(rubricResultBandRepository).updateResultBandAtomic(eq(resultBandId), any(), any(), eq(null), eq(true),
-            any(), any(), any(), any(), any());
+            any(), any(), any());
     }
 
     @Test
@@ -94,14 +94,14 @@ class UpdateSystemRubricResultBandUseCaseTests {
         useCase.execute(new UpdateSystemRubricResultBandCommand(resultBandId, "Band", "  ", true, null, null, null));
 
         verify(rubricResultBandRepository, times(2)).updateResultBandAtomic(eq(resultBandId), any(), any(), eq(null), eq(false),
-            any(), any(), any(), any(), any());
+            any(), any(), any());
     }
 
     @Test
     void execute_throwsIllegalArgumentWhenTheRepositoryReportsADataConflict() {
         stubDraftResultBand();
         doThrow(new DataConflictException("unique violation", null)).when(rubricResultBandRepository)
-            .updateResultBandAtomic(any(), any(), any(), any(), anyBoolean(), any(), any(), any(), any(), any());
+            .updateResultBandAtomic(any(), any(), any(), any(), anyBoolean(), any(), any(), any());
         UpdateSystemRubricResultBandCommand command = new UpdateSystemRubricResultBandCommand(resultBandId, "Band", null, false, null, null, null);
 
         assertThatThrownBy(() -> useCase.execute(command))

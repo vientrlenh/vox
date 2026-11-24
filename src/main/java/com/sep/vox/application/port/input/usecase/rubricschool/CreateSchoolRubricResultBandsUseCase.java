@@ -119,15 +119,10 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
                     bCmd.mappedScoreMin(), bCmd.mappedScoreMax(), safeName);
 
             // Để ID là null để đảm bảo JPA hiểu đây là record mới, chừa cho DB sinh UUID
-            RubricResultBand band = RubricResultBand.builder()
-                    .rubricVersionId(command.versionId())
-                    .code(safeCode)
-                    .name(safeName)
-                    .description(bCmd.description() != null ? StringNormalization.trimAndCollapseSpaces(bCmd.description()) : null)
-                    .scoreMin(bCmd.mappedScoreMin())
-                    .scoreMax(bCmd.mappedScoreMax())
-                    .order(bCmd.order())
-                    .build();
+            RubricResultBand band = RubricResultBand.create(
+                    command.versionId(), safeCode, safeName,
+                    bCmd.description() != null ? StringNormalization.trimAndCollapseSpaces(bCmd.description()) : null,
+                    bCmd.mappedScoreMin(), bCmd.mappedScoreMax(), bCmd.order());
             bandsSoFarByMin.put(band.getScoreMin(), band);
             return band;
         }).toList();

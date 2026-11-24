@@ -83,7 +83,7 @@ class DeleteSchoolGradeUseCaseTests {
 
         // Deactivates memberships + archives the classes that belong to the school year.
         verify(schoolClassUserRepository).deactivateByGradeId(eq(gradeId), any(Instant.class));
-        verify(schoolClassRepository).archiveByGradeId(eq(gradeId), any(Instant.class), eq(currentUserId.toString()));
+        verify(schoolClassRepository).archiveByGradeId(eq(gradeId));
 
         // Archives the school year itself (soft delete), no hard delete.
         ArgumentCaptor<SchoolGrade> captor = ArgumentCaptor.forClass(SchoolGrade.class);
@@ -100,7 +100,7 @@ class DeleteSchoolGradeUseCaseTests {
             .isInstanceOf(ResourceNotFoundException.class);
 
         verify(schoolClassUserRepository, never()).deactivateByGradeId(any(), any());
-        verify(schoolClassRepository, never()).archiveByGradeId(any(), any(), any());
+        verify(schoolClassRepository, never()).archiveByGradeId(any());
         verify(schoolGradeRepository, never()).save(any());
         verify(schoolGradeRepository, never()).deleteById(any());
     }

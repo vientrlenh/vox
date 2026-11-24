@@ -229,22 +229,10 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
                         maxVersionByScope.getOrDefault(key, 0) + 1);
                 nextVersionByScope.put(versionScopeKey, nextVersion + 1);
 
-                AssessmentPolicy newPolicy = AssessmentPolicy.builder()
-                    .schoolId(schoolId)
-                    .gradeLevelId(scopeIds.gradeLevelId())
-                    .schoolGradeId(scopeIds.schoolGradeId())
-                    .schoolClassId(scopeIds.schoolClassId())
-                    .languageId(languageId)
-                    .frameworkVersionId(frameworkVersionId)
-                    .rubricVersionId(rubricVersionId)
-                    .targetFrameworkBandId(bandIds.targetBandId())
-                    .passingScore(passingScore)
-                    .strictness(strictness)
-                    .version(nextVersion)
-                    .status(AssessmentPolicyStatus.DRAFT)
-                    .effectiveFrom(effectivePeriod.from())
-                    .effectiveTo(effectivePeriod.to())
-                    .build();
+                AssessmentPolicy newPolicy = AssessmentPolicy.draftForScope(schoolId, scopeIds.gradeLevelId(),
+                    scopeIds.schoolGradeId(), scopeIds.schoolClassId(), languageId, frameworkVersionId, rubricVersionId,
+                    bandIds.targetBandId(), passingScore, strictness, nextVersion,
+                    effectivePeriod.from(), effectivePeriod.to());
                 policiesToSave.add(newPolicy);
 
                 row.setStatus(ImportRowStatus.IMPORTED);

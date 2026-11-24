@@ -70,6 +70,49 @@ public class AssessmentPaperItem {
         this.weight = weight;
     }
 
+    public static AssessmentPaperItem emptySlot(UUID sectionId, UUID paperId, AssessmentBlueprintSlot slot) {
+        return builder()
+            .sectionId(sectionId)
+            .paperId(paperId)
+            .order(slot.getOrder())
+            .weight(slot.getWeight())
+            .build();
+    }
+
+    public static AssessmentPaperItem forBlueprintSlot(
+            UUID sectionId, UUID paperId, AssessmentBlueprintSlot slot, UUID questionId) {
+        return builder()
+            .blueprintSlotId(slot.getId())
+            .sectionId(sectionId)
+            .paperId(paperId)
+            .questionId(questionId)
+            .order(slot.getOrder())
+            .weight(slot.getWeight())
+            .build();
+    }
+
+    public static AssessmentPaperItem forQuestion(
+            UUID sectionId, UUID paperId, UUID questionId, int order, BigDecimal weight) {
+        return builder()
+            .sectionId(sectionId)
+            .paperId(paperId)
+            .questionId(questionId)
+            .order(order)
+            .weight(weight)
+            .build();
+    }
+
+    public AssessmentPaperItem copyInto(UUID targetPaperId, UUID targetSectionId) {
+        return builder()
+            .blueprintSlotId(blueprintSlotId)
+            .sectionId(targetSectionId)
+            .paperId(targetPaperId)
+            .questionId(questionId)
+            .order(order)
+            .weight(weight)
+            .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

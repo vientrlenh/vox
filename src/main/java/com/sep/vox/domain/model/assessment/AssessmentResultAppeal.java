@@ -166,6 +166,20 @@ public class AssessmentResultAppeal {
         this.reviewerOverrideReason = reviewerOverrideReason;
     }
 
+    public static AssessmentResultAppeal requested(
+            UUID candidateResultId, UUID requestedBy, String reason, Instant requestedAt, BigDecimal scoreBefore,
+            String notes) {
+        return builder()
+            .candidateResultId(candidateResultId)
+            .requestedBy(requestedBy)
+            .reason(reason)
+            .requestedAt(requestedAt)
+            .status(AssessmentAppealStatus.PENDING)
+            .scoreBefore(scoreBefore)
+            .notes(notes)
+            .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

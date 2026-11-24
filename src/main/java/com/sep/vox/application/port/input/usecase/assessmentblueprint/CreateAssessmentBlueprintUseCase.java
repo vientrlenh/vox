@@ -49,15 +49,13 @@ public class CreateAssessmentBlueprintUseCase implements IUseCase<CreateAssessme
             throw new ResourceNotFoundException("Không tìm thấy khối lớp");
         }
 
-        AssessmentBlueprint blueprint = AssessmentBlueprint.builder()
-            .schoolId(currentSchoolId)
-            .languageId(command.languageId())
-            .gradeLevelId(command.gradeLevelId())
-            .code(blueprintCodeOf(command.code()))
-            .name(command.name())
-            .description(command.description())
-            .active(true)
-            .build();
+        AssessmentBlueprint blueprint = AssessmentBlueprint.create(
+            currentSchoolId,
+            command.languageId(),
+            command.gradeLevelId(),
+            blueprintCodeOf(command.code()),
+            command.name(),
+            command.description());
         return AssessmentBlueprintDtoMapper.toDto(assessmentBlueprintRepository.save(blueprint));
     }
 

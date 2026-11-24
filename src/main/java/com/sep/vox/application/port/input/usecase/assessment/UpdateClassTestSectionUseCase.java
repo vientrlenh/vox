@@ -139,13 +139,8 @@ public class UpdateClassTestSectionUseCase implements IUseCase<UpdateClassTestSe
         List<BigDecimal> weights = ClassTestSectionWeightPolicy.resolveQuestionWeights(questions);
         for (int i = 0; i < questions.size(); i++) {
             UUID questionId = questions.get(i).questionId();
-            assessmentPaperItemRepository.save(AssessmentPaperItem.builder()
-                .sectionId(paperSection.getId())
-                .paperId(paperSection.getPaperId())
-                .questionId(questionId)
-                .order(i + 1)
-                .weight(weights.get(i))
-                .build());
+            assessmentPaperItemRepository.save(AssessmentPaperItem.forQuestion(
+                paperSection.getId(), paperSection.getPaperId(), questionId, i + 1, weights.get(i)));
             assessmentQuestionSecureLockService.lockQuestionForAssessment(
                 questionId, assessmentId, AssessmentSecurePoolReleaseMode.AUTO_AFTER_CLOSE, currentUserId
             );

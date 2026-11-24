@@ -11,9 +11,7 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.importfile.PreviewRubricVersionImportResponse; // 👉 IMPORT THÊM RESPONSE MỚI
 import com.sep.vox.application.response.output.ParseImportFileResult;
 import com.sep.vox.domain.model.importfile.ImportRow;
-import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
-import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
 import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
@@ -70,45 +68,24 @@ public class PreviewSystemRubricVersionImportFromFileUseCase implements IUseCase
         Instant now = Instant.now();
         Instant expiresAt = now.plus(1, ChronoUnit.DAYS); // Phiên hết hạn sau 1 ngày
 
-        // 1. Tạo Session với ID = null để DB tự sinh UUIDv7
-        ImportSession session = ImportSession.builder()
-            .schoolId(null)
-            .type(ImportType.RUBRIC_VERSION)
-            .fileName(command.file().fileName())
-            .originalHeadersJson(jsonSerializationPort.toJson(parsedResult.originalHeaders()))
-            .suggestedMappingJson(jsonSerializationPort.toJson(parsedResult.suggestedMapping()))
-            .confirmedMappingJson(null)
-            .validRows(0)
-            .invalidRows(0)
-            .importedRows(0)
-            .skippedRows(0)
-            .totalRows(parsedResult.rows().size())
-            .failureReason(null)
-            .status(ImportSessionStatus.PREVIEWED)
-            .importedEntityId(command.rubricId())
-            .expiresAt(expiresAt)
-            .claimedAt(null)
-            .claimedBy(null)
-            .leaseExpiresAt(null)
-            .attempts(0)
-            .build();
+        // The session id stays null so the database generates the UUIDv7
+        ImportSession session = ImportSession.previewedForEntity(
+            null,
+            ImportType.RUBRIC_VERSION,
+            command.file().fileName(),
+            jsonSerializationPort.toJson(parsedResult.originalHeaders()),
+            jsonSerializationPort.toJson(parsedResult.suggestedMapping()),
+            parsedResult.rows().size(),
+            expiresAt,
+            command.rubricId());
 
-        // 2. Lưu vào DB và lấy ID xịn do DB sinh ra
         ImportSession savedSession = importSessionRepository.save(session);
         UUID generatedSessionId = savedSession.getId();
 
-        // 3. Tạo các dòng ImportRow
         List<ImportRow> importRows = IntStream.range(0, parsedResult.rows().size())
                 .mapToObj(i -> {
                     Map<String, String> rowMap = parsedResult.rows().get(i);
-                    return ImportRow.builder()
-                        .sessionId(generatedSessionId)
-                        .rowNumber(i + 1)
-                        .rawDataJson(jsonSerializationPort.toJson(rowMap))
-                        .mappedDataJson(null)
-                        .errorsJson(null)
-                        .status(ImportRowStatus.PENDING)
-                        .build();
+                    return ImportRow.pending(generatedSessionId, i + 1, jsonSerializationPort.toJson(rowMap));
                 })
                 .toList();
 

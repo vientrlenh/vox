@@ -16,6 +16,7 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.repository.SchoolRepository;
+import com.sep.vox.infrastructure.persistence.audit.AuditStampProvider;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolMapper;
 import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolRepository;
@@ -25,6 +26,7 @@ import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolReposit
 public class SchoolRepositoryImpl implements SchoolRepository {
 
     private final SpringDataSchoolRepository springDataSchoolRepository;
+    private final AuditStampProvider auditStampProvider;
 
     @Override
     public Optional<School> findById(UUID id) {
@@ -97,10 +99,10 @@ public class SchoolRepositoryImpl implements SchoolRepository {
 
     @Override
     public int updateSchoolAtomic(UUID id, String name, String description, boolean descriptionProvided, String phone,
-                                  String email, String domain, boolean domainProvided, String address, Integer studentCount,
-                                  Instant now, String updatedBy) {
+                                  String email, String domain, boolean domainProvided, String address, Integer studentCount) {
         return springDataSchoolRepository.updateSchoolAtomic(
-                id, name, description, descriptionProvided, phone, email, domain, domainProvided, address, studentCount, now, updatedBy
+                id, name, description, descriptionProvided, phone, email, domain, domainProvided, address, studentCount,
+                auditStampProvider.currentUpdatedAt(), auditStampProvider.currentUpdatedBy()
         );
     }
 

@@ -160,15 +160,8 @@ public class RubricResultBandImportCommitHandler implements ImportCommitHandler 
                         bandsToSave.add(targetBand);
                     } else {
                         // Insert
-                        targetBand = RubricResultBand.builder()
-                                .rubricVersionId(versionId)
-                                .code(safeCode)
-                                .name(safeNameStr)
-                                .description(descStr)
-                                .scoreMin(scoreMin)
-                                .scoreMax(scoreMax)
-                                .order(order)
-                                .build();
+                        targetBand = RubricResultBand.create(
+                                versionId, safeCode, safeNameStr, descStr, scoreMin, scoreMax, order);
                         bandsToSave.add(targetBand);
                     }
                     bandsSoFarByMin.put(scoreMin, targetBand);

@@ -8,7 +8,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
-import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
@@ -85,19 +84,10 @@ public class AddSystemRubricVersionsUseCase implements IUseCase<AddSystemRubricV
                     ? vCmd.name().trim()
                     : rubric.getName() + " - Version " + vCmd.version();
 
-            return RubricVersion.builder()
-                    .rubricId(command.rubricId())
-                    .version(vCmd.version())
-                    .code(safeCode)
-                    .name(safeName)
-                    .description(rubric.getDescription())
-                    .status(RubricStatus.DRAFT)
-                    .effectiveFrom(validFrom)
-                    .effectiveTo(vCmd.effectiveTo())
-                    .scoringScaleMin(vCmd.scoringScaleMin())
-                    .scoringScaleMax(vCmd.scoringScaleMax())
-                    .totalScoreMethod(vCmd.totalScoreMethod())
-                    .build();
+            return RubricVersion.draft(
+                    command.rubricId(), vCmd.version(), safeCode, safeName, rubric.getDescription(),
+                    validFrom, vCmd.effectiveTo(),
+                    vCmd.scoringScaleMin(), vCmd.scoringScaleMax(), vCmd.totalScoreMethod());
         }).toList();
 
         // 5. Lưu vào DB và trả về ID của các version vừa tạo

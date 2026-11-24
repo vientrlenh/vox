@@ -25,9 +25,7 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.importfile.PreviewQuestionImportResponse;
 import com.sep.vox.domain.model.importfile.ImportRow;
-import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
-import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.model.question.QuestionTopicStatus;
@@ -116,27 +114,14 @@ public class PreviewQuestionImportFromFileUseCase
         ParseImportFileResult parsed = fileProcessingPort.parse(input.file(), ImportType.QUESTION);
         Instant now = Instant.now();
         Instant expiresAt = now.plus(SESSION_EXPIRY_DAYS, ChronoUnit.DAYS);
-        ImportSession savedSession = importSessionRepository.save(ImportSession.builder()
-            .schoolId(sessionSchoolId)
-            .type(ImportType.QUESTION)
-            .fileName(safeFileName(input.file().fileName()))
-            .originalHeadersJson(jsonSerializationPort.toJson(parsed.originalHeaders()))
-            .suggestedMappingJson(jsonSerializationPort.toJson(parsed.suggestedMapping()))
-            .confirmedMappingJson(null)
-            .validRows(0L)
-            .invalidRows(0L)
-            .importedRows(0L)
-            .skippedRows(0L)
-            .totalRows(parsed.totalRows())
-            .failureReason(null)
-            .status(ImportSessionStatus.PREVIEWED)
-            .importedEntityId(null)
-            .expiresAt(expiresAt)
-            .claimedAt(null)
-            .claimedBy(null)
-            .leaseExpiresAt(null)
-            .attempts(0)
-            .build());
+        ImportSession savedSession = importSessionRepository.save(ImportSession.previewed(
+            sessionSchoolId,
+            ImportType.QUESTION,
+            safeFileName(input.file().fileName()),
+            jsonSerializationPort.toJson(parsed.originalHeaders()),
+            jsonSerializationPort.toJson(parsed.suggestedMapping()),
+            parsed.totalRows(),
+            expiresAt));
         saveRows(savedSession.getId(), parsed.rows(), input.questionBankId(), input.questionTopicId());
 
         return new PreviewQuestionImportResponse(
@@ -174,14 +159,7 @@ public class PreviewQuestionImportFromFileUseCase
             if (questionTopicId != null) {
                 rawData.put("questionTopicId", questionTopicId.toString());
             }
-            importRows.add(ImportRow.builder()
-                .sessionId(sessionId)
-                .rowNumber(rowNumber)
-                .rawDataJson(jsonSerializationPort.toJson(rawData))
-                .mappedDataJson(null)
-                .errorsJson(null)
-                .status(ImportRowStatus.PENDING)
-                .build());
+            importRows.add(ImportRow.pending(sessionId, rowNumber, jsonSerializationPort.toJson(rawData)));
             rowNumber++;
         }
         importRowRepository.saveAll(importRows);

@@ -22,9 +22,7 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.schoolroom.PreviewSchoolRoomImportResponse;
 import com.sep.vox.application.response.output.ParseImportFileResult;
 import com.sep.vox.domain.model.importfile.ImportRow;
-import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
-import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
@@ -120,27 +118,14 @@ public class PreviewSchoolRoomImportFromFileUseCase
             UUID currentUserId,
             Instant now,
             Instant expiresAt) {
-        return ImportSession.builder()
-            .schoolId(schoolId)
-            .type(ImportType.SCHOOL_ROOM)
-            .fileName(safeFileName(input.file().fileName()))
-            .originalHeadersJson(jsonSerializationPort.toJson(parsed.originalHeaders()))
-            .suggestedMappingJson(jsonSerializationPort.toJson(parsed.suggestedMapping()))
-            .confirmedMappingJson(null)
-            .validRows(0L)
-            .invalidRows(0L)
-            .importedRows(0L)
-            .skippedRows(0L)
-            .totalRows(parsed.totalRows())
-            .failureReason(null)
-            .status(ImportSessionStatus.PREVIEWED)
-            .importedEntityId(null)
-            .expiresAt(expiresAt)
-            .claimedAt(null)
-            .claimedBy(null)
-            .leaseExpiresAt(null)
-            .attempts(0)
-            .build();
+        return ImportSession.previewed(
+            schoolId,
+            ImportType.SCHOOL_ROOM,
+            safeFileName(input.file().fileName()),
+            jsonSerializationPort.toJson(parsed.originalHeaders()),
+            jsonSerializationPort.toJson(parsed.suggestedMapping()),
+            parsed.totalRows(),
+            expiresAt);
     }
 
     private void saveRows(UUID sessionId, ParseImportFileResult parsed) {
@@ -150,14 +135,7 @@ public class PreviewSchoolRoomImportFromFileUseCase
         List<ImportRow> rows = new ArrayList<ImportRow>();
         long rowNumber = 1L;
         for (Map<String, String> rawRow : parsed.rows()) {
-            rows.add(ImportRow.builder()
-                .sessionId(sessionId)
-                .rowNumber(rowNumber)
-                .rawDataJson(jsonSerializationPort.toJson(rawRow))
-                .mappedDataJson(null)
-                .errorsJson(null)
-                .status(ImportRowStatus.PENDING)
-                .build());
+            rows.add(ImportRow.pending(sessionId, rowNumber, jsonSerializationPort.toJson(rawRow)));
             rowNumber++;
         }
         importRowRepository.saveAll(rows);

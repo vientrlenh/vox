@@ -7,7 +7,6 @@ import com.sep.vox.application.port.input.command.assessmentpolicysystem.CreateA
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicy;
-import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStrictness;
 import com.sep.vox.domain.model.framework.FrameworkResultBand;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
@@ -160,22 +159,9 @@ public class CreateSystemAssessmentPolicyUseCase implements IUseCase<List<Create
                             key.gradeLevelId(), null, null) + 1);
             nextVersionByScope.put(versionScopeKey, nextVersion + 1);
 
-            AssessmentPolicy newPolicy = AssessmentPolicy.builder()
-                .schoolId(null)
-                .gradeLevelId(command.gradeLevelId())
-                .schoolGradeId(null)
-                .schoolClassId(null)
-                .languageId(command.languageId())
-                .frameworkVersionId(command.frameworkVersionId())
-                .rubricVersionId(rubricVersionId)
-                .targetFrameworkBandId(command.targetFrameworkBandId())
-                .passingScore(command.passingScore())
-                .strictness(strictness)
-                .version(nextVersion)
-                .status(AssessmentPolicyStatus.DRAFT)
-                .effectiveFrom(command.effectiveFrom())
-                .effectiveTo(command.effectiveTo())
-                .build();
+            AssessmentPolicy newPolicy = AssessmentPolicy.draftSystemWide(command.gradeLevelId(), command.languageId(),
+                command.frameworkVersionId(), rubricVersionId, command.targetFrameworkBandId(), command.passingScore(),
+                strictness, nextVersion, command.effectiveFrom(), command.effectiveTo());
             policiesToSave.add(newPolicy);
         }
 

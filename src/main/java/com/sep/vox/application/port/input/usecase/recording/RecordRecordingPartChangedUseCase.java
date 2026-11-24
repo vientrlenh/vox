@@ -48,19 +48,8 @@ public class RecordRecordingPartChangedUseCase implements IUseCase<RecordRecordi
             return null;
         }
 
-        AssessmentRecording recording = existing.orElseGet(() -> AssessmentRecording.builder()
-                .assessmentSessionId(input.assessmentSessionId())
-                .candidateId(input.candidateId())
-                .streamType(input.streamType())
-                .bucket("")
-                .s3Key("")
-                .status(input.status())
-                .sizeBytes(null)
-                .durationSeconds(null)
-                .source(input.source())
-                .createdAt(now)
-                .assembledAt(null)
-                .build());
+        AssessmentRecording recording = existing.orElseGet(() -> AssessmentRecording.registered(
+                input.assessmentSessionId(), input.candidateId(), input.streamType(), input.source(), input.status(), now));
 
         // Không set lại source: nó là một phần danh tính của hàng, nên hàng tìm được luôn đã
         // thuộc đúng nguồn này rồi.

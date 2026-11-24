@@ -1,7 +1,6 @@
 package com.sep.vox.domain.repository;
 
 import java.time.LocalDate;
-import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -31,7 +30,7 @@ public interface SchoolGradeRepository {
     PageResult<SchoolGrade> findBySchoolId(UUID schoolId, UUID gradeLevelId, String status, int pageNumber, int size);
 
     boolean existsBySchoolIdAndStatus(UUID schoolId, String status);
-    int updateSchoolGradeAtomic(UUID id, String name, String description, boolean descriptionProvided, LocalDate startDate, LocalDate endDate, Instant now, String updatedBy);
+    int updateSchoolGradeAtomic(UUID id, String name, String description, boolean descriptionProvided, LocalDate startDate, LocalDate endDate);
     void deleteById(UUID schoolGradeId);
     List<SchoolGrade> findByIdIn(Collection<UUID> ids);
 }

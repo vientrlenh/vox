@@ -1,7 +1,6 @@
 package com.sep.vox.domain.repository;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -16,7 +15,7 @@ public interface RubricCriterionRepository {
     void deleteByRubricVersionId(UUID rubricVersionId);
     void saveAll(List<RubricCriterion> criteria);
 
-    void updateCriterionAtomic(UUID id, String code, String name, String description, boolean descriptionProvided, String examplesJson, boolean examplesJsonProvided, BigDecimal weight, BigDecimal minScore, BigDecimal maxScore, Integer order, Boolean isRequired, Instant updatedAt, String updatedBy);
+    void updateCriterionAtomic(UUID id, String code, String name, String description, boolean descriptionProvided, String examplesJson, boolean examplesJsonProvided, BigDecimal weight, BigDecimal minScore, BigDecimal maxScore, Integer order, Boolean isRequired);
     PageResult<RubricCriterion> findAllByRubricVersionId(UUID rubricVersionId, int page, int size);
 
     List<RubricCriterion> findByRubricVersionIdIn(List<UUID> versionIds);

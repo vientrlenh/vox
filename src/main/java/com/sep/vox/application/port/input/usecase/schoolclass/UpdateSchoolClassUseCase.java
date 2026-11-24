@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.usecase.schoolclass;
 
 import com.sep.vox.domain.model.school.School;
-import java.time.Instant;
 import java.util.UUID;
 
 import lombok.RequiredArgsConstructor;
@@ -43,7 +42,6 @@ public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassComma
         validateCommand(command);
         SchoolClassStatus status = command.status();
 
-        Instant now = Instant.now();
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = findCurrentUser(currentUserId);
         UUID schoolId = getSchoolId(currentUser);
@@ -57,9 +55,7 @@ public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassComma
             command.description(),
             command.descriptionProvided(),
             status,
-            command.statusProvided(),
-            now,
-            currentUserId.toString()
+            command.statusProvided()
         );
         if (updatedRows == 0) {
             throw new ResourceNotFoundException("Không tìm thấy lớp học");

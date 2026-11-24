@@ -7,7 +7,6 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -51,8 +50,7 @@ class UpdateSchoolGradeUseCaseTests {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(userRepository.existsByIdAndStatus(userId, UserStatus.ACTIVE)).thenReturn(true);
         when(userContextPort.isSystemAdmin()).thenReturn(true);
-        when(schoolGradeRepository.updateSchoolGradeAtomic(any(), any(), any(), anyBoolean(), any(), any(),
-            any(Instant.class), any())).thenReturn(1);
+        when(schoolGradeRepository.updateSchoolGradeAtomic(any(), any(), any(), anyBoolean(), any(), any())).thenReturn(1);
     }
 
     @Test
@@ -60,7 +58,7 @@ class UpdateSchoolGradeUseCaseTests {
         useCase.execute(new UpdateSchoolGradeCommand(gradeId, null, null, true, null, null));
 
         verify(schoolGradeRepository).updateSchoolGradeAtomic(eq(gradeId), isNull(), isNull(), eq(true), isNull(),
-            isNull(), any(Instant.class), eq(userId.toString()));
+            isNull());
     }
 
     @Test
@@ -68,6 +66,6 @@ class UpdateSchoolGradeUseCaseTests {
         useCase.execute(new UpdateSchoolGradeCommand(gradeId, "Grade", null, false, null, null));
 
         verify(schoolGradeRepository).updateSchoolGradeAtomic(eq(gradeId), eq("Grade"), isNull(), eq(false), isNull(),
-            isNull(), any(Instant.class), eq(userId.toString()));
+            isNull());
     }
 }

@@ -23,9 +23,7 @@ import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.importfile.PreviewImportResponse;
 import com.sep.vox.domain.model.importfile.ImportRow;
-import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
-import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.repository.ImportRowRepository;
@@ -85,27 +83,15 @@ public class PreviewQuestionTopicImportFromFileUseCase
         ParseImportFileResult parsed = fileProcessingPort.parse(input.file(), ImportType.QUESTION_TOPIC);
         Instant now = Instant.now();
         Instant expiresAt = now.plus(SESSION_EXPIRY_DAYS, ChronoUnit.DAYS);
-        ImportSession savedSession = importSessionRepository.save(ImportSession.builder()
-            .schoolId(questionBank.getOwnerType() == QuestionBankOwnerType.SCHOOL ? questionBank.getSchoolId() : null)
-            .type(ImportType.QUESTION_TOPIC)
-            .fileName(safeFileName(input.file().fileName()))
-            .originalHeadersJson(jsonSerializationPort.toJson(parsed.originalHeaders()))
-            .suggestedMappingJson(jsonSerializationPort.toJson(parsed.suggestedMapping()))
-            .confirmedMappingJson(null)
-            .validRows(0L)
-            .invalidRows(0L)
-            .importedRows(0L)
-            .skippedRows(0L)
-            .totalRows(parsed.totalRows())
-            .failureReason(null)
-            .status(ImportSessionStatus.PREVIEWED)
-            .importedEntityId(questionBank.getId())
-            .expiresAt(expiresAt)
-            .claimedAt(null)
-            .claimedBy(null)
-            .leaseExpiresAt(null)
-            .attempts(0)
-            .build());
+        ImportSession savedSession = importSessionRepository.save(ImportSession.previewedForEntity(
+            questionBank.getOwnerType() == QuestionBankOwnerType.SCHOOL ? questionBank.getSchoolId() : null,
+            ImportType.QUESTION_TOPIC,
+            safeFileName(input.file().fileName()),
+            jsonSerializationPort.toJson(parsed.originalHeaders()),
+            jsonSerializationPort.toJson(parsed.suggestedMapping()),
+            parsed.totalRows(),
+            expiresAt,
+            questionBank.getId()));
         saveRows(savedSession.getId(), parsed.rows());
 
         return new PreviewImportResponse(
@@ -126,14 +112,10 @@ public class PreviewQuestionTopicImportFromFileUseCase
         List<ImportRow> importRows = new ArrayList<ImportRow>();
         long rowNumber = 1L;
         for (Map<String, String> row : rows) {
-            importRows.add(ImportRow.builder()
-                .sessionId(sessionId)
-                .rowNumber(rowNumber)
-                .rawDataJson(jsonSerializationPort.toJson(new LinkedHashMap<>(row)))
-                .mappedDataJson(null)
-                .errorsJson(null)
-                .status(ImportRowStatus.PENDING)
-                .build());
+            importRows.add(ImportRow.pending(
+                sessionId,
+                rowNumber,
+                jsonSerializationPort.toJson(new LinkedHashMap<>(row))));
             rowNumber++;
         }
         importRowRepository.saveAll(importRows);

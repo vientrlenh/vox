@@ -124,6 +124,25 @@ public class RubricVersion extends BaseModel {
         this.sourceRubricVersionId = sourceRubricVersionId;
     }
 
+    public static RubricVersion draft(
+            UUID rubricId, int version, String code, String name, String description,
+            Instant effectiveFrom, Instant effectiveTo,
+            BigDecimal scoringScaleMin, BigDecimal scoringScaleMax, RubricTotalScoreMethod totalScoreMethod) {
+        return builder()
+                .rubricId(rubricId)
+                .version(version)
+                .code(code)
+                .name(name)
+                .description(description)
+                .status(RubricStatus.DRAFT)
+                .effectiveFrom(effectiveFrom)
+                .effectiveTo(effectiveTo)
+                .scoringScaleMin(scoringScaleMin)
+                .scoringScaleMax(scoringScaleMax)
+                .totalScoreMethod(totalScoreMethod)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

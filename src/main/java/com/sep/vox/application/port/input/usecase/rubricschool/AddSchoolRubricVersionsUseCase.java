@@ -8,7 +8,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.rubric.Rubric;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
-import com.sep.vox.domain.model.rubric.RubricStatus;
 import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.model.school.SchoolUser;
 import com.sep.vox.domain.model.user.User;
@@ -83,19 +82,10 @@ public class AddSchoolRubricVersionsUseCase implements IUseCase<AddSchoolRubricV
                     ? vCmd.name().trim()
                     : rubric.getName() + " - Version " + vCmd.version();
 
-            return RubricVersion.builder()
-                    .rubricId(command.rubricId())
-                    .version(vCmd.version())
-                    .code(safeCode)
-                    .name(safeName)
-                    .description(rubric.getDescription())
-                    .status(RubricStatus.DRAFT)
-                    .effectiveFrom(validFrom)
-                    .effectiveTo(vCmd.effectiveTo())
-                    .scoringScaleMin(vCmd.scoringScaleMin())
-                    .scoringScaleMax(vCmd.scoringScaleMax())
-                    .totalScoreMethod(vCmd.totalScoreMethod())
-                    .build();
+            return RubricVersion.draft(
+                    command.rubricId(), vCmd.version(), safeCode, safeName, rubric.getDescription(),
+                    validFrom, vCmd.effectiveTo(),
+                    vCmd.scoringScaleMin(), vCmd.scoringScaleMax(), vCmd.totalScoreMethod());
         }).toList();
 
         List<RubricVersion> savedVersions = rubricVersionRepository.saveAll(newVersions);

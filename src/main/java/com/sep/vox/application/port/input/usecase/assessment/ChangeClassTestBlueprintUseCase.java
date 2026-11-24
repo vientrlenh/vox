@@ -191,14 +191,8 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
             List<AssessmentBlueprintSlot> slots = slotsBySectionId.getOrDefault(section.getId(), List.of()).stream()
                 .sorted(Comparator.comparingInt(slot -> slot.getOrder()))
                 .toList();
-            AssessmentPaperSection paperSection = assessmentPaperSectionRepository.save(AssessmentPaperSection.builder()
-                .paperId(paper.getId())
-                .order(section.getOrder())
-                .title(section.getTitle())
-                .instruction(section.getInstruction())
-                .sectionTimeLimitSeconds(section.getSectionTimeLimitSeconds())
-                .weight(section.getSectionWeight())
-                .build());
+            AssessmentPaperSection paperSection = assessmentPaperSectionRepository.save(
+                AssessmentPaperSection.fromBlueprintSection(paper.getId(), section));
             for (AssessmentBlueprintSlot slot : slots) {
                 UUID questionId = slot.getSlotType() == AssessmentBlueprintSlotType.FIXED ? slot.getFixedQuestionId() : null;
                 if (questionId != null) {
@@ -206,23 +200,13 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
                         .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi cố định trong blueprint"));
                     if (fixedQuestion.getStatus() != QuestionStatus.PUBLISHED) {
                         // The fixed question was archived after the blueprint was published: leave this slot empty, the CHAIR picks another question through the picker.
-                        assessmentPaperItemRepository.save(AssessmentPaperItem.builder()
-                            .sectionId(paperSection.getId())
-                            .paperId(paper.getId())
-                            .order(slot.getOrder())
-                            .weight(slot.getWeight())
-                            .build());
+                        assessmentPaperItemRepository.save(
+                            AssessmentPaperItem.emptySlot(paperSection.getId(), paper.getId(), slot));
                         continue;
                     }
                 }
-                AssessmentPaperItem item = AssessmentPaperItem.builder()
-                    .blueprintSlotId(slot.getId())
-                    .sectionId(paperSection.getId())
-                    .paperId(paper.getId())
-                    .questionId(questionId)
-                    .order(slot.getOrder())
-                    .weight(slot.getWeight())
-                    .build();
+                AssessmentPaperItem item = AssessmentPaperItem.forBlueprintSlot(
+                    paperSection.getId(), paper.getId(), slot, questionId);
                 assessmentPaperItemRepository.save(item);
                 if (questionId != null) {
                     assessmentQuestionSecureLockService.lockQuestionForAssessment(

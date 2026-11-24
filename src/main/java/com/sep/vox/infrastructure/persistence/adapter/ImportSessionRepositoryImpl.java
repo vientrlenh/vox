@@ -18,6 +18,7 @@ import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
 import com.sep.vox.domain.repository.ImportSessionRepository;
+import com.sep.vox.infrastructure.persistence.audit.AuditStampProvider;
 import com.sep.vox.infrastructure.persistence.mapper.ImportSessionMapper;
 import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataImportSessionRepository;
@@ -27,6 +28,7 @@ import com.sep.vox.infrastructure.persistence.repository.SpringDataImportSession
 public class ImportSessionRepositoryImpl implements ImportSessionRepository {
 
     private final SpringDataImportSessionRepository springDataImportSessionRepository;
+    private final AuditStampProvider auditStampProvider;
 
     @Override
     public ImportSession save(ImportSession session) {
@@ -74,18 +76,15 @@ public class ImportSessionRepositoryImpl implements ImportSessionRepository {
     }
 
     @Override
-    public int markImporting(UUID id, String type, String confirmedMapping, Instant now, String updatedBy) {
-        return springDataImportSessionRepository.markImporting(id, type, confirmedMapping, now, updatedBy);
-    }
-
-    @Override
-    public int markQueued(UUID id, String type, String confirmedMapping, Instant now, String updatedBy) {
-        return springDataImportSessionRepository.markQueued(id, type, confirmedMapping, now, updatedBy);
+    public int markQueued(UUID id, String type, String confirmedMapping, Instant now) {
+        return springDataImportSessionRepository.markQueued(
+            id, type, confirmedMapping, now, auditStampProvider.currentUpdatedAt(), auditStampProvider.currentUpdatedBy());
     }
 
     @Override
     public int markClaimed(Collection<UUID> ids, UUID worker, Instant now, Instant leaseUntil) {
-        return springDataImportSessionRepository.markClaimed(ids, worker, now, leaseUntil, worker.toString());
+        return springDataImportSessionRepository.markClaimed(
+            ids, worker, now, leaseUntil, auditStampProvider.currentUpdatedAt(), auditStampProvider.currentUpdatedBy());
     }
 
     @Override
@@ -100,6 +99,6 @@ public class ImportSessionRepositoryImpl implements ImportSessionRepository {
 
     @Override
     public int requeueExpiredLeases(Instant now, int maxAttempts) {
-        return springDataImportSessionRepository.requeueExpiredLeases(now, maxAttempts);
+        return springDataImportSessionRepository.requeueExpiredLeases(now, maxAttempts, auditStampProvider.currentUpdatedAt());
     }
 }

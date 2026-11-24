@@ -1,7 +1,6 @@
 package com.sep.vox.infrastructure.persistence.adapter;
 
 import com.sep.vox.infrastructure.persistence.entity.school.SchoolRoomJpaEntity;
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -15,6 +14,7 @@ import org.springframework.stereotype.Repository;
 import com.sep.vox.domain.model.school.SchoolRoom;
 import com.sep.vox.domain.repository.SchoolRoomRepository;
 import com.sep.vox.infrastructure.persistence.mapper.SchoolRoomMapper;
+import com.sep.vox.infrastructure.persistence.audit.AuditStampProvider;
 import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolRoomRepository;
 
@@ -23,6 +23,7 @@ import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolRoomRep
 public class SchoolRoomRepositoryImpl implements SchoolRoomRepository {
 
     private final SpringDataSchoolRoomRepository springDataSchoolRoomRepository;
+    private final AuditStampProvider auditStampProvider;
 
     @Override
     public Optional<SchoolRoom> findById(UUID id) {
@@ -88,7 +89,8 @@ public class SchoolRoomRepositoryImpl implements SchoolRoomRepository {
     }
 
     @Override
-    public int updateSchoolRoomAtomic(UUID id, String name, String description, boolean descriptionProvided, Instant now, String updatedBy) {
-        return springDataSchoolRoomRepository.updateSchoolRoomAtomic(id, name, description, descriptionProvided, now, updatedBy);
+    public int updateSchoolRoomAtomic(UUID id, String name, String description, boolean descriptionProvided) {
+        return springDataSchoolRoomRepository.updateSchoolRoomAtomic(
+                id, name, description, descriptionProvided, auditStampProvider.currentUpdatedAt(), auditStampProvider.currentUpdatedBy());
     }
 }

@@ -76,17 +76,16 @@ public class CreateAssessmentBlueprintSlotUseCase implements IUseCase<CreateAsse
         }
         validateSlot(command);
 
-        AssessmentBlueprintSlot slot = AssessmentBlueprintSlot.builder()
-            .sectionId(section.getId())
-            .blueprintVersionId(version.getId())
-            .order(command.order())
-            .weight(command.weight() == null ? BigDecimal.ONE : command.weight())
-            .prepTimeSecondsOverride(command.prepTimeSecondsOverride())
-            .responseTimeSecondsOverride(command.responseTimeSecondsOverride())
-            .slotType(command.slotType())
-            .fixedQuestionId(command.fixedQuestionId())
-            .selectionSpec(selectionSpecOf(command.selectionSpec()))
-            .build();
+        AssessmentBlueprintSlot slot = AssessmentBlueprintSlot.create(
+            section.getId(),
+            version.getId(),
+            command.order(),
+            command.weight() == null ? BigDecimal.ONE : command.weight(),
+            command.prepTimeSecondsOverride(),
+            command.responseTimeSecondsOverride(),
+            command.slotType(),
+            command.fixedQuestionId(),
+            selectionSpecOf(command.selectionSpec()));
         AssessmentBlueprintSlot savedSlot = assessmentBlueprintSlotRepository.save(slot);
         recalculateBlueprintVersionTimeLimitService.recalculate(version.getId());
         return AssessmentBlueprintSlotDtoMapper.toDto(savedSlot);

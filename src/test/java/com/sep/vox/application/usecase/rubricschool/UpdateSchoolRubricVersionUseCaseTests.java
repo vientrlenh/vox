@@ -96,7 +96,7 @@ class UpdateSchoolRubricVersionUseCaseTests {
         useCase.execute(new UpdateSchoolRubricVersionCommand(schoolId, versionId, "Version", null, false, null, null, true, null, null, null));
 
         verify(rubricVersionRepository).updateRubricVersionAtomic(eq(versionId), any(), any(), any(), eq(false),
-            any(), eq(null), eq(true), any(), any(), any(), any(), any());
+            any(), eq(null), eq(true), any(), any(), any());
     }
 
     @Test
@@ -107,16 +107,16 @@ class UpdateSchoolRubricVersionUseCaseTests {
         useCase.execute(new UpdateSchoolRubricVersionCommand(schoolId, versionId, "Version", "  ", true, null, null, false, null, null, null));
 
         verify(rubricVersionRepository).updateRubricVersionAtomic(eq(versionId), any(), any(), eq(null), eq(true),
-            any(), any(), eq(false), any(), any(), any(), any(), any());
+            any(), any(), eq(false), any(), any(), any());
         verify(rubricVersionRepository).updateRubricVersionAtomic(eq(versionId), any(), any(), eq(null), eq(false),
-            any(), any(), eq(false), any(), any(), any(), any(), any());
+            any(), any(), eq(false), any(), any(), any());
     }
 
     @Test
     void execute_throwsIllegalArgumentWhenTheRepositoryReportsADataConflict() {
         stubDraftVersion();
         doThrow(new DataConflictException("unique violation", null)).when(rubricVersionRepository)
-            .updateRubricVersionAtomic(any(), any(), any(), any(), anyBoolean(), any(), any(), anyBoolean(), any(), any(), any(), any(), any());
+            .updateRubricVersionAtomic(any(), any(), any(), any(), anyBoolean(), any(), any(), anyBoolean(), any(), any(), any());
         UpdateSchoolRubricVersionCommand command = new UpdateSchoolRubricVersionCommand(schoolId, versionId, "Version", null, false, null, null, false, null, null, null);
 
         assertThatThrownBy(() -> useCase.execute(command))

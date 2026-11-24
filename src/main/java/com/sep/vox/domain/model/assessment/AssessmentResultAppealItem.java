@@ -59,6 +59,14 @@ public class AssessmentResultAppealItem {
         this.finalScore = finalScore;
     }
 
+    public static AssessmentResultAppealItem forResponse(UUID appealId, UUID paperItemId, UUID responseId) {
+        return builder()
+            .appealId(appealId)
+            .paperItemId(paperItemId)
+            .responseId(responseId)
+            .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

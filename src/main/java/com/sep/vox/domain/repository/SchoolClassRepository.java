@@ -1,6 +1,5 @@
 package com.sep.vox.domain.repository;
 
-import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -26,8 +25,7 @@ public interface SchoolClassRepository {
     List<SchoolClass> findBySchoolIdAndNameIn(UUID schoolId, Collection<String> names);
     SchoolClass save(SchoolClass schoolClass);
     int updateMutableFields(UUID id, UUID schoolId, String name, boolean nameProvided,
-            String description, boolean descriptionProvided, SchoolClassStatus status, boolean statusProvided,
-            Instant updatedAt, String updatedBy);
+            String description, boolean descriptionProvided, SchoolClassStatus status, boolean statusProvided);
     void deleteById(UUID id);
     List<SchoolClass> findBySchoolIdIn(Collection<UUID> schoolIds, int pageNumber, int size);
 
@@ -38,5 +36,5 @@ public interface SchoolClassRepository {
     boolean existsBySchoolIdAndStatus(UUID schoolId, String status);
 
     /** Xóa mềm (ARCHIVED) tất cả lớp thuộc một năm học, bỏ qua lớp đã ARCHIVED. Trả về số dòng bị ảnh hưởng. */
-    int archiveByGradeId(UUID schoolGradeId, Instant updatedAt, String updatedBy);
+    int archiveByGradeId(UUID schoolGradeId);
 }

@@ -71,6 +71,19 @@ public class AssessmentBlueprint extends BaseModel {
         this.isActive = isActive;
     }
 
+    public static AssessmentBlueprint create(
+            UUID schoolId, UUID languageId, UUID gradeLevelId, String code, String name, String description) {
+        return builder()
+            .schoolId(schoolId)
+            .languageId(languageId)
+            .gradeLevelId(gradeLevelId)
+            .code(code)
+            .name(name)
+            .description(description)
+            .active(true)
+            .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

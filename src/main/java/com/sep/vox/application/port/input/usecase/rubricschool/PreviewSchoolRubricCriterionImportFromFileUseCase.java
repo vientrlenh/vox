@@ -25,9 +25,7 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.importfile.PreviewRubricCriterionImportResponse;
 import com.sep.vox.application.response.output.ParseImportFileResult;
 import com.sep.vox.domain.model.importfile.ImportRow;
-import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
-import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
 import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.user.UserStatus;
@@ -97,44 +95,25 @@ public class PreviewSchoolRubricCriterionImportFromFileUseCase implements IUseCa
         Instant now = Instant.now();
         Instant expiresAt = now.plus(1, ChronoUnit.DAYS);
 
-        // Bước 5: Tạo phiên import (ImportSession) mới lưu vào DB
-        ImportSession session = ImportSession.builder()
-            // Store the school id strictly so the background worker can pick up the job
-            .schoolId(command.schoolId())
-            .type(ImportType.RUBRIC_CRITERION)
-            .fileName(command.file().fileName())
-            .originalHeadersJson(jsonSerializationPort.toJson(parsedResult.originalHeaders()))
-            .suggestedMappingJson(jsonSerializationPort.toJson(parsedResult.suggestedMapping()))
-            .confirmedMappingJson(null)
-            .validRows(0)
-            .invalidRows(0)
-            .importedRows(0)
-            .skippedRows(0)
-            .totalRows(parsedResult.rows().size())
-            .failureReason(null)
-            // Ready state so the user can map the columns
-            .status(ImportSessionStatus.PREVIEWED)
-            .importedEntityId(command.rubricVersionId())
-            .expiresAt(expiresAt)
-            .claimedAt(null)
-            .claimedBy(null)
-            .leaseExpiresAt(null)
-            .attempts(0)
-            .build();
+        // Store the school id strictly so the background worker can pick up the job
+        ImportSession session = ImportSession.previewedForEntity(
+            command.schoolId(),
+            ImportType.RUBRIC_CRITERION,
+            command.file().fileName(),
+            jsonSerializationPort.toJson(parsedResult.originalHeaders()),
+            jsonSerializationPort.toJson(parsedResult.suggestedMapping()),
+            parsedResult.rows().size(),
+            expiresAt,
+            command.rubricVersionId());
 
         ImportSession savedSession = importSessionRepository.save(session);
         UUID generatedSessionId = savedSession.getId();
 
-        // Bước 6: Tạo danh sách các dòng dữ liệu Excel thô (ImportRows)
         List<ImportRow> importRows = IntStream.range(0, parsedResult.rows().size())
-                .mapToObj(i -> ImportRow.builder()
-                    .sessionId(generatedSessionId)
-                    .rowNumber(i + 1)
-                    .rawDataJson(jsonSerializationPort.toJson(parsedResult.rows().get(i)))
-                    .mappedDataJson(null)
-                    .errorsJson(null)
-                    .status(ImportRowStatus.PENDING)
-                    .build()).toList();
+                .mapToObj(i -> ImportRow.pending(
+                    generatedSessionId,
+                    i + 1,
+                    jsonSerializationPort.toJson(parsedResult.rows().get(i)))).toList();
 
         importRowRepository.saveAll(importRows);
 

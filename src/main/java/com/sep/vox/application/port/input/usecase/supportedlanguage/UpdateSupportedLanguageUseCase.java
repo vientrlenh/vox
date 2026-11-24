@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.usecase.supportedlanguage;
 
-import java.time.Instant;
 
 import com.sep.vox.application.exception.DataConflictException;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +11,6 @@ import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.supportedlanguage.UpdateSupportedLanguageCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.supportedlanguage.UpdateSupportedLanguageResponse;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.domain.valueobject.LanguageCode;
@@ -26,7 +24,6 @@ public class UpdateSupportedLanguageUseCase implements IUseCase<UpdateSupportedL
     private static final int MAX_DESCRIPTION_LENGTH = 2048;
 
     private final SupportedLanguageRepository supportedLanguageRepository;
-    private final UserContextPort userContextPort;
 
     @Override
     @Transactional
@@ -34,9 +31,6 @@ public class UpdateSupportedLanguageUseCase implements IUseCase<UpdateSupportedL
         UpdateSupportedLanguageCommand command = normalize(input);
         validateCommand(command);
         validateUniqueCode(command);
-
-        Instant now = Instant.now();
-        String currentUserId = userContextPort.getCurrentAuthenticatedUserId().toString();
 
         try {
             int updatedRows = supportedLanguageRepository.updateMutableFields(
@@ -48,9 +42,7 @@ public class UpdateSupportedLanguageUseCase implements IUseCase<UpdateSupportedL
                 command.description(),
                 command.descriptionProvided(),
                 command.isActive(),
-                command.isActiveProvided(),
-                now,
-                currentUserId
+                command.isActiveProvided()
             );
             if (updatedRows == 0) {
                 throw new ResourceNotFoundException("Không tìm thấy ngôn ngữ");

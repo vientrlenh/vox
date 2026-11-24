@@ -209,6 +209,32 @@ public class AssessmentSession {
         this.gradingRetryCount = null;
     }
 
+    public static AssessmentSession started(UUID assessmentId, UUID candidateId, UUID paperId, Instant startedAt) {
+        return builder()
+            .assessmentId(assessmentId)
+            .candidateId(candidateId)
+            .paperId(paperId)
+            .startedAt(startedAt)
+            .submittedAt(null)
+            .status(AssessmentSessionStatus.IN_PROGRESS)
+            .flagged(false)
+            .flagReason(null)
+            .build();
+    }
+
+    public static AssessmentSession gradedWithoutAnswers(UUID assessmentId, UUID candidateId, UUID paperId, Instant at) {
+        return builder()
+            .assessmentId(assessmentId)
+            .candidateId(candidateId)
+            .paperId(paperId)
+            .startedAt(at)
+            .submittedAt(at)
+            .status(AssessmentSessionStatus.GRADED)
+            .flagged(false)
+            .flagReason(null)
+            .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

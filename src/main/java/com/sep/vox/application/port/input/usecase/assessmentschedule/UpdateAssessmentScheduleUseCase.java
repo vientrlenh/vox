@@ -54,7 +54,7 @@ public class UpdateAssessmentScheduleUseCase implements IUseCase<UpdateAssessmen
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi"));
         Assessment assessment = assessmentRepository.findById(schedule.getAssessmentId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
-        UUID currentUserId = authorize(assessment);
+        authorize(assessment);
         AssessmentEditingGuard.requireScheduleEditable(assessment);
 
         boolean isClassTest = assessment.getKind() == AssessmentKind.CLASS_TEST;
@@ -109,7 +109,6 @@ public class UpdateAssessmentScheduleUseCase implements IUseCase<UpdateAssessmen
                 assessment.getSchoolId(), effectiveStart, effectiveEnd);
         }
 
-        Instant now = Instant.now();
         if (isClassTest) {
             schedule.setSchoolRoomId(effectiveRoomId);
             schedule.setStartDate(effectiveStart);
@@ -124,9 +123,7 @@ public class UpdateAssessmentScheduleUseCase implements IUseCase<UpdateAssessmen
                 input.schoolRoomId(),
                 input.schoolRoomIdProvided(),
                 input.startDate(),
-                input.endDate(),
-                now,
-                currentUserId.toString());
+                input.endDate());
             if (updated == 0) {
                 throw new IllegalArgumentException("Không thể cập nhật ca thi (đã bị thay đổi trạng thái)");
             }
@@ -134,7 +131,7 @@ public class UpdateAssessmentScheduleUseCase implements IUseCase<UpdateAssessmen
         return schedule.getId();
     }
 
-    private UUID authorize(Assessment assessment) {
+    private void authorize(Assessment assessment) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
@@ -142,10 +139,10 @@ public class UpdateAssessmentScheduleUseCase implements IUseCase<UpdateAssessmen
         boolean schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
         if (schoolAdmin && currentSchoolId != null && currentSchoolId.equals(assessment.getSchoolId())) {
-            return currentUserId;
+            return;
         }
         if (assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessment.getId(), currentUserId, AssessmentMemberRole.CHAIR)) {
-            return currentUserId;
+            return;
         }
         throw new ForbiddenException("Quyền truy cập bị từ chối");
     }

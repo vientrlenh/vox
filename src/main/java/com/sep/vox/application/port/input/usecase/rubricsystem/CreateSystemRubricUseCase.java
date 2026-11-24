@@ -8,7 +8,6 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.framework.Framework;
 import com.sep.vox.domain.model.rubric.Rubric;
-import com.sep.vox.domain.model.rubric.RubricOwnerType;
 import com.sep.vox.domain.model.user.User;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.FrameworkRepository;
@@ -64,15 +63,8 @@ public class CreateSystemRubricUseCase implements IUseCase<CreateSystemRubricCom
         String safeDesc = command.description() != null ? StringNormalization.trimAndCollapseSpaces(command.description()) : null;
 
         // 3. TẠO RUBRIC SYSTEM (Vỏ bọc)
-        Rubric newRubric = Rubric.builder()
-                .languageId(command.languageId())
-                .frameworkId(command.frameworkId())
-                .code(safeCode)
-                .name(safeName)
-                .description(safeDesc)
-                .ownerType(RubricOwnerType.SYSTEM)
-                .schoolId(null)
-                .build();
+        Rubric newRubric = Rubric.forSystem(
+                command.languageId(), command.frameworkId(), safeCode, safeName, safeDesc);
 
         Rubric savedRubric = rubricRepository.save(newRubric);
 

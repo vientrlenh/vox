@@ -1,6 +1,5 @@
 package com.sep.vox.domain.repository;
 
-import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -19,8 +18,7 @@ public interface SupportedLanguageRepository {
     PageResult<SupportedLanguage> findAll(String search, Boolean isActive, int pageNumber, int size);
     SupportedLanguage save(SupportedLanguage supportedLanguage);
     int updateMutableFields(UUID id, String code, boolean codeProvided, String name, boolean nameProvided,
-            String description, boolean descriptionProvided, Boolean isActive, boolean isActiveProvided,
-            Instant updatedAt, String updatedBy);
+            String description, boolean descriptionProvided, Boolean isActive, boolean isActiveProvided);
     long count();
     boolean existsById(UUID id);
     boolean existsByIdAndIsActive(UUID id, boolean isActive);

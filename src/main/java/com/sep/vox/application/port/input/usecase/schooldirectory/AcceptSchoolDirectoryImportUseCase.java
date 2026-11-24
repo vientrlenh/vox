@@ -41,7 +41,8 @@ public class AcceptSchoolDirectoryImportUseCase
         validateCommand(input);
 
         Instant now = Instant.now();
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        // Throws when nobody is authenticated; the session itself is not tied to the caller.
+        userContextPort.getCurrentAuthenticatedUserId();
 
         ImportSession session = findSession(input.importSessionId());
         validateSession(session, now);
@@ -49,7 +50,7 @@ public class AcceptSchoolDirectoryImportUseCase
 
         String confirmedMappingJson = jsonSerializationPort.toJson(input.confirmedMapping());
         int queued = importSessionRepository.markQueued(
-                input.importSessionId(), SCHOOL_DIRECTORY_TYPE, confirmedMappingJson, now, currentUserId.toString());
+                input.importSessionId(), SCHOOL_DIRECTORY_TYPE, confirmedMappingJson, now);
         if (queued == 0) {
             throw new IllegalArgumentException("Phiên import không ở trạng thái cho accept hoặc đã hết hạn");
         }

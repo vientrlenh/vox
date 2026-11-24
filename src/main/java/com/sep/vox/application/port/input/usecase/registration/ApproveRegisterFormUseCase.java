@@ -40,7 +40,7 @@ public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormC
         RegisterForm registerForm = registerFormRepository.findById(command.registerFormId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn đăng ký theo yêu cầu"));
         
-        int updatedRows = registerFormRepository.updateApprovedRegisterForm(command.registerFormId(), currentUserId, now);
+        int updatedRows = registerFormRepository.updateApprovedRegisterForm(command.registerFormId(), currentUserId);
         if (updatedRows == 0) {
             throw new IllegalArgumentException("Đơn đăng ký không ở trạng thái chờ hoặc không tồn tại");
         }

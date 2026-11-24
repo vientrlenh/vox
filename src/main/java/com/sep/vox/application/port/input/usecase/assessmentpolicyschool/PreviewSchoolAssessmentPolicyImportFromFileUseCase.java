@@ -11,9 +11,7 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.importfile.PreviewAssessmentPolicyImportResponse;
 import com.sep.vox.application.response.output.ParseImportFileResult;
 import com.sep.vox.domain.model.importfile.ImportRow;
-import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
-import com.sep.vox.domain.model.importfile.ImportSessionStatus;
 import com.sep.vox.domain.model.importfile.ImportType;
 import com.sep.vox.domain.model.school.School;
 import com.sep.vox.domain.model.school.SchoolUser;
@@ -74,40 +72,23 @@ public class PreviewSchoolAssessmentPolicyImportFromFileUseCase implements IUseC
         Instant now = Instant.now();
         Instant expiresAt = now.plus(1, ChronoUnit.DAYS);
 
-        ImportSession session = ImportSession.builder()
-            .schoolId(command.schoolId())
-            .type(ImportType.ASSESSMENT_POLICY)
-            .fileName(command.file().fileName())
-            .originalHeadersJson(jsonSerializationPort.toJson(parsedResult.originalHeaders()))
-            .suggestedMappingJson(jsonSerializationPort.toJson(parsedResult.suggestedMapping()))
-            .confirmedMappingJson(null)
-            .validRows(0)
-            .invalidRows(0)
-            .importedRows(0)
-            .skippedRows(0)
-            .totalRows(parsedResult.rows().size())
-            .failureReason(null)
-            .status(ImportSessionStatus.PREVIEWED)
-            .importedEntityId(null)
-            .expiresAt(expiresAt)
-            .claimedAt(null)
-            .claimedBy(null)
-            .leaseExpiresAt(null)
-            .attempts(0)
-            .build();
+        ImportSession session = ImportSession.previewed(
+            command.schoolId(),
+            ImportType.ASSESSMENT_POLICY,
+            command.file().fileName(),
+            jsonSerializationPort.toJson(parsedResult.originalHeaders()),
+            jsonSerializationPort.toJson(parsedResult.suggestedMapping()),
+            parsedResult.rows().size(),
+            expiresAt);
 
         ImportSession savedSession = importSessionRepository.save(session);
         UUID generatedSessionId = savedSession.getId();
 
         List<ImportRow> importRows = IntStream.range(0, parsedResult.rows().size())
-                .mapToObj(i -> ImportRow.builder()
-                    .sessionId(generatedSessionId)
-                    .rowNumber(i + 1)
-                    .rawDataJson(jsonSerializationPort.toJson(parsedResult.rows().get(i)))
-                    .mappedDataJson(null)
-                    .errorsJson(null)
-                    .status(ImportRowStatus.PENDING)
-                    .build()).toList();
+                .mapToObj(i -> ImportRow.pending(
+                    generatedSessionId,
+                    i + 1,
+                    jsonSerializationPort.toJson(parsedResult.rows().get(i)))).toList();
 
         importRowRepository.saveAll(importRows);
 

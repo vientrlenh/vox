@@ -3,6 +3,7 @@ package com.sep.vox.domain.model.assessment;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 
 import com.sep.vox.domain.model.BaseModel;
@@ -285,6 +286,61 @@ public class Assessment extends BaseModel {
     }
 
     public void setAiConfidenceThresholdPercent(java.math.BigDecimal aiConfidenceThresholdPercent) {
+        this.aiConfidenceThresholdPercent = aiConfidenceThresholdPercent;
+    }
+
+    public static Assessment centralizedDraft(
+            UUID blueprintId, String code, String name, String description, UUID schoolId, UUID languageId) {
+        // A centralized assessment is taken on school devices by default; a school that lets candidates
+        // bring their own device into the room picks STUDENT_DEVICE when creating it.
+        return draft(AssessmentKind.CENTRALIZED, AssessmentDeliveryMode.LAB, true, code, name, description, schoolId,
+                languageId)
+            .blueprintId(blueprintId)
+            .build();
+    }
+
+    public static Assessment classTestDraft(
+            String code, String name, String description, UUID schoolId, UUID languageId) {
+        // A class test is taken right in the room; the only difference is the device used: the school's machine (LAB)
+        // or the one the student brings (STUDENT_DEVICE, the default). It goes straight in without OTP by default; the
+        // teacher turns OTP on to tighten it like a centralized assessment.
+        return draft(AssessmentKind.CLASS_TEST, AssessmentDeliveryMode.STUDENT_DEVICE, false, code, name, description,
+                schoolId, languageId)
+            .build();
+    }
+
+    private static Builder draft(
+            AssessmentKind kind, AssessmentDeliveryMode defaultDeliveryMode, boolean defaultRequiresOtp, String code,
+            String name, String description, UUID schoolId, UUID languageId) {
+        return builder()
+            .code(code).name(name).description(description).schoolId(schoolId).languageId(languageId)
+            .kind(kind).status(AssessmentStatus.DRAFT)
+            .deliveryMode(defaultDeliveryMode).requiresOtp(defaultRequiresOtp)
+            .maxAttempt(1).resultDecisionMethod(ResultDecisionMethod.HIGHEST);
+    }
+
+    /** Applies the optional settings of a new assessment: a null argument keeps the default set by the draft factory. */
+    public void configure(
+            AssessmentDeliveryMode deliveryMode, Integer maxAttempt, Integer assessmentTimeDurationSecond,
+            ResultDecisionMethod resultDecisionMethod, Boolean requiresOtp) {
+        this.deliveryMode = Objects.requireNonNullElse(deliveryMode, this.deliveryMode);
+        this.maxAttempt = Objects.requireNonNullElse(maxAttempt, this.maxAttempt);
+        this.assessmentTimeDurationSecond = assessmentTimeDurationSecond;
+        this.resultDecisionMethod = Objects.requireNonNullElse(resultDecisionMethod, this.resultDecisionMethod);
+        this.requiresOtp = Objects.requireNonNullElse(requiresOtp, this.requiresOtp);
+    }
+
+    public void scheduleBetween(Instant openAt, Instant closeAt, UUID assessmentPolicyId) {
+        this.openAt = openAt;
+        this.closeAt = closeAt;
+        this.assessmentPolicyId = assessmentPolicyId;
+    }
+
+    public void useStreamProctoring(
+            AssessmentRequiredStreamType requiredStreamType, AssessmentStreamTypePermission streamTypePermission,
+            BigDecimal aiConfidenceThresholdPercent) {
+        this.requiredStreamType = requiredStreamType;
+        this.streamTypePermission = streamTypePermission;
         this.aiConfidenceThresholdPercent = aiConfidenceThresholdPercent;
     }
 

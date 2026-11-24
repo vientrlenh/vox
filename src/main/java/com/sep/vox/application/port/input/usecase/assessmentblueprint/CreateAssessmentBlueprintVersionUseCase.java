@@ -29,7 +29,6 @@ import com.sep.vox.domain.model.assessment.AssessmentBlueprintSection;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlot;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlotType;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersion;
-import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersionStatus;
 import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.repository.AssessmentBlueprintRepository;
 import com.sep.vox.domain.repository.AssessmentBlueprintSectionRepository;
@@ -72,37 +71,33 @@ public class CreateAssessmentBlueprintVersionUseCase implements IUseCase<CreateA
 
         Instant now = Instant.now();
         int versionNumber = assessmentBlueprintVersionRepository.nextVersionNumber(blueprint.getId());
-        AssessmentBlueprintVersion version = AssessmentBlueprintVersion.builder()
-            .blueprintId(blueprint.getId())
-            .version(versionNumber)
-            .code(blueprint.getCode() + "-V" + versionNumber)
-            .status(AssessmentBlueprintVersionStatus.DRAFT)
-            .effectiveFrom(command.effectiveFrom() == null ? now : command.effectiveFrom())
-            .effectiveTo(command.effectiveTo())
-            .build();
+        AssessmentBlueprintVersion version = AssessmentBlueprintVersion.draft(
+            blueprint.getId(),
+            versionNumber,
+            blueprint.getCode() + "-V" + versionNumber,
+            command.effectiveFrom() == null ? now : command.effectiveFrom(),
+            command.effectiveTo());
         AssessmentBlueprintVersion savedVersion = assessmentBlueprintVersionRepository.save(version);
 
         for (CreateAssessmentBlueprintSectionCommand sectionCommand : command.sections()) {
-            AssessmentBlueprintSection savedSection = assessmentBlueprintSectionRepository.save(AssessmentBlueprintSection.builder()
-                .blueprintVersionId(savedVersion.getId())
-                .order(sectionCommand.order())
-                .title(sectionCommand.title())
-                .instruction(sectionCommand.instruction())
-                .sectionTimeLimitSeconds(sectionCommand.sectionTimeLimitSeconds())
-                .sectionWeight(defaultWeight(sectionCommand.sectionWeight()))
-                .build());
+            AssessmentBlueprintSection savedSection = assessmentBlueprintSectionRepository.save(AssessmentBlueprintSection.create(
+                savedVersion.getId(),
+                sectionCommand.order(),
+                sectionCommand.title(),
+                sectionCommand.instruction(),
+                sectionCommand.sectionTimeLimitSeconds(),
+                defaultWeight(sectionCommand.sectionWeight())));
             for (CreateAssessmentBlueprintSlotCommand slotCommand : slotsOf(sectionCommand)) {
-                assessmentBlueprintSlotRepository.save(AssessmentBlueprintSlot.builder()
-                    .sectionId(savedSection.getId())
-                    .blueprintVersionId(savedVersion.getId())
-                    .order(slotCommand.order())
-                    .weight(defaultWeight(slotCommand.weight()))
-                    .prepTimeSecondsOverride(slotCommand.prepTimeSecondsOverride())
-                    .responseTimeSecondsOverride(slotCommand.responseTimeSecondsOverride())
-                    .slotType(slotCommand.slotType())
-                    .fixedQuestionId(slotCommand.fixedQuestionId())
-                    .selectionSpec(selectionSpecOf(slotCommand.selectionSpec()))
-                    .build());
+                assessmentBlueprintSlotRepository.save(AssessmentBlueprintSlot.create(
+                    savedSection.getId(),
+                    savedVersion.getId(),
+                    slotCommand.order(),
+                    defaultWeight(slotCommand.weight()),
+                    slotCommand.prepTimeSecondsOverride(),
+                    slotCommand.responseTimeSecondsOverride(),
+                    slotCommand.slotType(),
+                    slotCommand.fixedQuestionId(),
+                    selectionSpecOf(slotCommand.selectionSpec())));
             }
         }
 

@@ -26,7 +26,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -130,9 +129,7 @@ public class UpdateSystemRubricCriterionUseCase implements IUseCase<UpdateSystem
                     command.minScore(),
                     command.maxScore(),
                     command.order(),
-                    command.isRequired(),
-                    Instant.now(),
-                    currentUserId.toString()
+                    command.isRequired()
             );
         } catch (DataConflictException e) {
             throw new IllegalArgumentException("Không thể cập nhật Tiêu chí do dữ liệu bị trùng hoặc không hợp lệ.");

@@ -186,19 +186,9 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
                                 ? descriptionStr.trim()
                                 : rubric.getDescription();
 
-                        targetVersion = RubricVersion.builder()
-                                .rubricId(rubricId)
-                                .version(versionNum)
-                                .code(safeCode)
-                                .name(safeName)
-                                .description(safeDescription)
-                                .status(RubricStatus.DRAFT)
-                                .effectiveFrom(effectiveFrom)
-                                .effectiveTo(effectiveTo)
-                                .scoringScaleMin(minScore)
-                                .scoringScaleMax(maxScore)
-                                .totalScoreMethod(method)
-                                .build();
+                        targetVersion = RubricVersion.draft(
+                                rubricId, versionNum, safeCode, safeName, safeDescription,
+                                effectiveFrom, effectiveTo, minScore, maxScore, method);
                         versionsToSave.add(targetVersion);
                     }
 

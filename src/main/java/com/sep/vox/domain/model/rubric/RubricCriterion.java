@@ -110,6 +110,25 @@ public class RubricCriterion extends BaseModel {
         this.isRequired = isRequired;
     }
 
+    public static RubricCriterion create(
+            UUID rubricVersionId, UUID frameworkCriterionId, String code, String name, String description,
+            RubricCriterionExamples examples, BigDecimal weight, BigDecimal minScore, BigDecimal maxScore,
+            int order, boolean isRequired) {
+        return builder()
+                .rubricVersionId(rubricVersionId)
+                .frameworkCriterionId(frameworkCriterionId)
+                .code(code)
+                .name(name)
+                .description(description)
+                .examples(examples)
+                .weight(weight)
+                .minScore(minScore)
+                .maxScore(maxScore)
+                .order(order)
+                .required(isRequired)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

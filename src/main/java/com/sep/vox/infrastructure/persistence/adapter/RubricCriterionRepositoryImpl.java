@@ -2,7 +2,6 @@ package com.sep.vox.infrastructure.persistence.adapter;
 
 import com.sep.vox.infrastructure.persistence.entity.rubric.RubricCriterionJpaEntity;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -19,6 +18,7 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.domain.model.rubric.RubricCriterion;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
 import com.sep.vox.infrastructure.persistence.mapper.RubricCriterionMapper;
+import com.sep.vox.infrastructure.persistence.audit.AuditStampProvider;
 import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataRubricCriterionRepository;
 import com.sep.vox.infrastructure.persistence.DataConflictTranslation;
@@ -28,6 +28,7 @@ import com.sep.vox.infrastructure.persistence.DataConflictTranslation;
 public class RubricCriterionRepositoryImpl implements RubricCriterionRepository {
 
     private final SpringDataRubricCriterionRepository springDataRubricCriterionRepository;
+    private final AuditStampProvider auditStampProvider;
 
     @Override
     public Optional<RubricCriterion> findById(UUID id) {
@@ -60,8 +61,9 @@ public class RubricCriterionRepositoryImpl implements RubricCriterionRepository 
     }
 
     @Override
-    public void updateCriterionAtomic(UUID id, String code, String name, String description, boolean descriptionProvided, String examplesJson, boolean examplesJsonProvided, BigDecimal weight, BigDecimal minScore, BigDecimal maxScore, Integer order, Boolean isRequired, Instant updatedAt, String updatedBy) {
-        DataConflictTranslation.translating(() -> springDataRubricCriterionRepository.updateCriterionAtomic(id, code, name, description, descriptionProvided, examplesJson, examplesJsonProvided, weight, minScore, maxScore, order, isRequired, updatedAt, updatedBy));
+    public void updateCriterionAtomic(UUID id, String code, String name, String description, boolean descriptionProvided, String examplesJson, boolean examplesJsonProvided, BigDecimal weight, BigDecimal minScore, BigDecimal maxScore, Integer order, Boolean isRequired) {
+        DataConflictTranslation.translating(() -> springDataRubricCriterionRepository.updateCriterionAtomic(id, code, name, description, descriptionProvided, examplesJson, examplesJsonProvided, weight, minScore, maxScore, order, isRequired,
+                auditStampProvider.currentUpdatedAt(), auditStampProvider.currentUpdatedBy()));
     }
 
     @Override

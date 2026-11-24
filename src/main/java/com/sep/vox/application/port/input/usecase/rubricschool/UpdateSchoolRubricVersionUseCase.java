@@ -174,9 +174,7 @@ public class UpdateSchoolRubricVersionUseCase
                     command.effectiveToProvided(),
                     command.scoringScaleMin(),
                     command.scoringScaleMax(),
-                    safeMethod,
-                    Instant.now(),
-                    currentUserId.toString()
+                    safeMethod
             );
         } catch (DataConflictException e) {
             throw new IllegalArgumentException(

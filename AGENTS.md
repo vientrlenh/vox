@@ -124,7 +124,10 @@ Look at an existing feature end to end before writing a new one (e.g. `CreateAss
 - **Types**: prefer explicit types over `var` in new code.
 - **Models and builders.** Every concrete class in `domain/model` has a nested `Builder` and
   `public static Builder builder()`, and is built with it. There are no all-args constructors; the public no-argument
-  constructor stays because the builder uses it. Value objects, DTOs, commands and queries do not get builders.
+  constructor stays because the builder uses it. A model is built with its builder only inside the model (static factories
+  and behaviour methods named for the situation they build, e.g. `ImportSession.previewed(...)`), in infrastructure
+  mappers and in tests; `application` never calls `Model.builder()`. Value objects, DTOs, commands and queries do not
+  get builders.
 - **Audit columns.** A model with `id`, `createdAt`, `updatedAt`, `createdBy` and `updatedBy` extends `BaseModel`, and its
   entity extends `BaseEntity` (`infrastructure/persistence/entity`). Spring Data JPA auditing fills the four audit values
   when the entity is saved, so use cases, services, factories and workers never call
@@ -135,7 +138,9 @@ Look at an existing feature end to end before writing a new one (e.g. `CreateAss
   `UUID` by hand. DTOs and GraphQL keep `UUID`, with `"System"` and `null` shown as `null`. Background work that acts for a
   user (import commits) runs inside `AuditActorScopePort.callAs(actor, supplier)`. A class that lacks one of the audit
   fields does not extend the base classes and is not given the missing columns. `@Modifying` JPQL and native
-  statements bypass auditing, so they still set `updated_at`/`updated_by` themselves (the user id as text).
+  statements bypass auditing, so their adapter still sets `updated_at`/`updated_by` (the user id as text), taking the time
+  and the actor from the same source as the auditing hook. Such a statement never receives `updatedAt` or `updatedBy`
+  from its caller.
 - **Entities.** Each entity is in `entity/<feature>/` (only `BaseEntity` sits directly in `entity/`) and uses
   `@Getter @Setter @SuperBuilder @NoArgsConstructor(access = AccessLevel.PROTECTED)`; mappers and tests build it with
   `builder()`. Give a field that has an initializer `@Builder.Default`. Never put `@Data`, `@EqualsAndHashCode` or
@@ -204,6 +209,11 @@ Look at an existing feature end to end before writing a new one (e.g. `CreateAss
 - `GraphQLDataLoaderConventionTests` guards the loader rules above by scanning source text: `getDataLoader(` only in
   `GraphQLDataLoaders`, every `forName(` argument a constant of the same config, no name registered twice, and every name
   matching `<result>By<KeyField>`. Each rule has a self-test with a violating snippet.
+- `ModelCreationConventionTests` fails when a file in `application` calls `Model.builder()` on a domain model;
+  `RepositoryAuditParameterConventionTests` fails when a `domain/repository` method takes `updatedAt`, `updatedBy`,
+  `modifiedAt` or `modifiedBy`; `MethodSizeConventionTests` fails when a method is over 25 lines. Their exemptions
+  (`model-creation-exemptions.txt`, a set in the test, `method-size-exemptions.txt`) may only shrink and never get new
+  entries; each rule has a self-test with a violating snippet.
 - Tests marked as architecture rules (`src/test/.../architecture`) are guardrails: fix the code, never loosen the rule to get green.
 
 ## Scope
@@ -234,14 +244,16 @@ Look at an existing feature end to end before writing a new one (e.g. `CreateAss
 ## Coding rules
 
 - **Small functions.** A function or method is at most 25 lines, counted from its signature to its closing brace. A very
-  large feature may use up to 30.
+  large feature may use up to 30. `MethodSizeConventionTests` enforces 25.
 - **One place for each piece of logic.** Before writing logic, search the other files for the same or nearly the same
   logic. If it exists, extract it into one shared method that all callers use, so a change is made in one place. Extract
   only logic that really exists in more than one place, never for hypothetical future reuse, unless the task asks for that.
 - **Names say what the code does.** Function, method and variable names describe what they do. Long names are fine.
   Avoid abbreviations and vague words (`data`, `info`, `handle`, `process`, `manager`).
 - **Self-explaining code.** Do not write comments that restate what a line does. Add a doc comment to a function, method
-  or class only when its contract, side effects or failure cases cannot be read from its name and signature.
+  or class only when its contract, side effects or failure cases cannot be read from its name and signature. When you
+  edit a method, delete the comments in it that only restate the code (`// 1. Validate the user`); keep, and translate to
+  English, those that record a reason (a race, a security rule, a workaround).
 - **No N+1 queries.** Never query inside a loop or per element of a collection. Fetch in bulk (`IN` queries, joins, fetch
   graphs, batch methods on the repository). This also applies to GraphQL field resolvers, so use batch mapping there.
 - **Read the docs for the version in use.** Before using a package or framework API, read the official documentation

@@ -87,16 +87,8 @@ public class ZeroScoreAssessmentResultService {
                 if (paperId == null) {
                     continue;
                 }
-                AssessmentSession session = assessmentSessionRepository.save(AssessmentSession.builder()
-                        .assessmentId(assessmentId)
-                        .candidateId(candidate.getId())
-                        .paperId(paperId)
-                        .startedAt(now)
-                        .submittedAt(now)
-                        .status(AssessmentSessionStatus.GRADED)
-                        .flagged(false)
-                        .flagReason(null)
-                        .build());
+                AssessmentSession session = assessmentSessionRepository.save(
+                    AssessmentSession.gradedWithoutAnswers(assessmentId, candidate.getId(), paperId, now));
                 releaseZeroForSession(session, policy, now);
                 continue;
             }

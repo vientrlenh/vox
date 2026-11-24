@@ -61,7 +61,7 @@ public class AcceptSchoolGradeImportUseCase implements IUseCase<AcceptSchoolGrad
 
         String confirmedMappingJson = jsonSerializationPort.toJson(input.confirmedMapping());
         int queued = importSessionRepository.markQueued(
-                input.importSessionId(), SCHOOL_GRADE_TYPE, confirmedMappingJson, now, currentUserId.toString());
+                input.importSessionId(), SCHOOL_GRADE_TYPE, confirmedMappingJson, now);
         if (queued == 0) {
             throw new IllegalArgumentException("Phiên import không ở trạng thái cho accept hoặc đã hết hạn");
         }

@@ -61,6 +61,17 @@ public class AssessmentMember {
         this.grantedBy = grantedBy;
     }
 
+    public static AssessmentMember granted(
+            UUID assessmentId, UUID userId, AssessmentMemberRole role, Instant grantedAt, UUID grantedBy) {
+        return builder()
+            .assessmentId(assessmentId)
+            .userId(userId)
+            .role(role)
+            .grantedAt(grantedAt)
+            .grantedBy(grantedBy)
+            .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

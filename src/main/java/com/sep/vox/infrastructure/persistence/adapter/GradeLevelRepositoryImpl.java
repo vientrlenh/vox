@@ -6,6 +6,7 @@ import com.sep.vox.domain.model.gradelevel.GradeLevelStatus;
 import com.sep.vox.domain.repository.GradeLevelRepository;
 import com.sep.vox.infrastructure.persistence.entity.gradelevel.GradeLevelJpaEntity;
 import com.sep.vox.infrastructure.persistence.mapper.GradeLevelMapper;
+import com.sep.vox.infrastructure.persistence.audit.AuditStampProvider;
 import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataGradeLevelRepository;
 import com.sep.vox.infrastructure.persistence.DataConflictTranslation;
@@ -15,7 +16,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
-import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 public class GradeLevelRepositoryImpl implements GradeLevelRepository {
 
     private final SpringDataGradeLevelRepository gradeLevelRepository;
+    private final AuditStampProvider auditStampProvider;
 
     @Override
     public Optional<GradeLevel> findById(UUID id) {
@@ -105,9 +106,9 @@ public class GradeLevelRepositoryImpl implements GradeLevelRepository {
     }
 
     @Override
-    public int updateGradeLevelAtomic(UUID id, String name, String description, boolean descriptionProvided, Integer order,
-            Instant updatedAt, String updatedBy) {
-        return DataConflictTranslation.translating(() -> gradeLevelRepository.updateGradeLevelAtomic(id, name, description, descriptionProvided, order, updatedAt, updatedBy));
+    public int updateGradeLevelAtomic(UUID id, String name, String description, boolean descriptionProvided, Integer order) {
+        return DataConflictTranslation.translating(() -> gradeLevelRepository.updateGradeLevelAtomic(
+            id, name, description, descriptionProvided, order, auditStampProvider.currentUpdatedAt(), auditStampProvider.currentUpdatedBy()));
     }
 
     @Override

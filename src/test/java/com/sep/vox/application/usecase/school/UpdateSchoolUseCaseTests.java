@@ -2,13 +2,11 @@ package com.sep.vox.application.usecase.school;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -54,7 +52,7 @@ class UpdateSchoolUseCaseTests {
         when(userRepository.existsByIdAndStatus(userId, UserStatus.ACTIVE)).thenReturn(true);
         when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.empty());
         when(schoolRepository.updateSchoolAtomic(any(), any(), any(), anyBoolean(), any(), any(), any(), anyBoolean(),
-            any(), any(), any(Instant.class), anyString())).thenReturn(1);
+            any(), any())).thenReturn(1);
     }
 
     @Test
@@ -62,7 +60,7 @@ class UpdateSchoolUseCaseTests {
         useCase.execute(new UpdateSchoolCommand(schoolId, null, null, true, null, null, null, true, null, null));
 
         verify(schoolRepository).updateSchoolAtomic(eq(schoolId), isNull(), isNull(), eq(true), isNull(), isNull(),
-            isNull(), eq(true), isNull(), isNull(), any(Instant.class), eq(userId.toString()));
+            isNull(), eq(true), isNull(), isNull());
     }
 
     @Test
@@ -70,7 +68,7 @@ class UpdateSchoolUseCaseTests {
         useCase.execute(new UpdateSchoolCommand(schoolId, "Name", null, false, null, null, null, false, null, null));
 
         verify(schoolRepository).updateSchoolAtomic(eq(schoolId), eq("Name"), isNull(), eq(false), isNull(), isNull(),
-            isNull(), eq(false), isNull(), isNull(), any(Instant.class), eq(userId.toString()));
+            isNull(), eq(false), isNull(), isNull());
     }
 
     @Test
@@ -78,6 +76,6 @@ class UpdateSchoolUseCaseTests {
         useCase.execute(new UpdateSchoolCommand(schoolId, null, "  Some   text ", true, null, null, " Vox.Edu.VN ", true, null, null));
 
         verify(schoolRepository).updateSchoolAtomic(eq(schoolId), isNull(), eq("Some text"), eq(true), isNull(), isNull(),
-            eq("vox.edu.vn"), eq(true), isNull(), isNull(), any(Instant.class), eq(userId.toString()));
+            eq("vox.edu.vn"), eq(true), isNull(), isNull());
     }
 }

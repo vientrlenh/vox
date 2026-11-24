@@ -76,8 +76,7 @@ public class AcceptQuestionBankImportUseCase implements IUseCase<AcceptQuestionB
             input.importSessionId(),
             ImportType.QUESTION_BANK.name(),
             jsonSerializationPort.toJson(input.confirmedMapping()),
-            now,
-            currentUserId.toString()
+            now
         );
         if (queued == 0) {
             throw new IllegalArgumentException("Phiên import không ở trạng thái cho accept hoặc đã hết hạn");

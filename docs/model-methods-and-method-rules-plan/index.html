@@ -79,7 +79,7 @@
 <h1>Model methods, audit-stamp parameters and method rules plan</h1>
 <div class="meta">
   Repository: <code>vox</code> &middot; Branch: <code>default</code> &middot; Written 2026-11-24 &middot;
-  Plan status: <span class="status approved" id="plan-status" data-plan-status="approved">Approved</span>
+  Plan status: <span class="status progress" id="plan-status" data-plan-status="in-progress">In progress</span>
 </div>
 
 <p>Three changes. <strong>(1)</strong> Application code stops calling <code>Model.builder()</code>: 162 calls on 59 models in 103 files become named factory and behaviour methods on the models. <strong>(2)</strong> 17 repository methods stop receiving <code>Instant</code>, <code>UUID</code> or <code>String</code> values whose only job is to write <code>updated_at</code> or <code>updated_by</code>. <strong>(3)</strong> Methods that break the coding rules are migrated: 586 methods are longer than 25 lines, 19 have vague names, and comments that only restate code are removed from every method the plan edits. Worth doing because the same builder blocks are copied across 17 import use cases, because AGENTS.md says use cases never pass a user id or <code>now</code> only to stamp a row while 15 repository methods still do, and because 270 use case <code>execute</code> methods alone are over 25 lines. Decisions D2 to D7 are answered (all as recommended); nothing in this plan changes a public contract or a database table.</p>
@@ -291,178 +291,178 @@
 <p>Each phase is independently reviewable and leaves the build green. Phase 1 adds the guards, phase 2 removes stamp parameters, phases 3 to 12 add model methods and replace call sites, phases 13 to 28 split methods by feature area, phase 29 closes out. Every job also removes the imports, locals and private methods its change orphaned, and translates the Vietnamese comments in the lines it edits.</p>
 <p><strong>Procedure of a method-rule job (phases 13 to 28).</strong> Every method over 25 lines is split into private methods of at most 25 lines, named for what they do (D1, D7). A block that already exists in two or more methods is extracted once into a shared method in <code>application/port/input/service/</code> (the AGENTS.md "one place" rule) and named in the Implementation notes. Statements move verbatim: same order, same conditions. Comments that only restate the code are deleted; those that record a reason are kept and translated to English; the school-scope and role checks are never rewritten. The done condition is always the same: the job's entries leave <code>method-size-exemptions.txt</code> and <code>MethodSizeConventionTests</code> passes.</p>
 
-<div class="phase" id="phase-1" data-status="todo">
+<div class="phase" id="phase-1" data-status="done">
   <h3><span class="title">Phase 1 &ndash; Baseline, AGENTS.md and guard tests</span>
     <span class="tag">medium · mechanical · needs D5</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> Record the starting point and turn the three rules into AGENTS.md text and guard tests whose exemption lists are the work lists of the later phases. <strong>Depends on:</strong> D5 (D1 is answered).</p>
   <ul class="jobs">
-    <li class="job" id="job-1-1" data-status="todo">
-      <span class="title">1.1 Re-run the baseline on the working branch</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-1-1" data-status="done">
+      <span class="title">1.1 Re-run the baseline on the working branch</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The Implementation notes record <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test</code> (2,700 tests, 0 failures when this plan was written) and <code>./gradlew integrationTest</code> (438 tests, 0 failures) on the branch before the first change; any failure found is listed there so it is not blamed on later phases.
          <strong>Files:</strong> This plan only.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-24 &middot; Done &middot; Baseline on branch default before any change: ./gradlew compileJava compileTestJava test integrationTest --continue -> BUILD SUCCESSFUL in 7m 37s, no failing task (Docker running).</li></ul>
     </li>
-    <li class="job" id="job-1-2" data-status="todo">
-      <span class="title">1.2 Edit AGENTS.md (needs D5)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-1-2" data-status="done">
+      <span class="title">1.2 Edit AGENTS.md (needs D5)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> AGENTS.md has exactly these edits and no others: (a) "Models and builders": a model is built with its builder only inside the model (factories and behaviour methods), infrastructure mappers and tests; <code>application</code> calls named factory or behaviour methods (naming per D4); (b) "Audit columns": a <code>@Modifying</code> or native statement never takes <code>updatedAt</code> or <code>updatedBy</code> from its caller, and its adapter stamps it from the same source as the auditing hook; (c) "Coding rules": a comment that only restates the code is deleted when its method is edited, and "Small functions" names <code>MethodSizeConventionTests</code>; (d) "Testing": the three guards and their shrink-only exemption lists. <code>git diff --stat AGENTS.md</code> shows only those hunks.
          <strong>Files:</strong> <code>AGENTS.md</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-24 &middot; Done &middot; AGENTS.md edited in 5 hunks: Models and builders, Audit columns, Small functions, Self-explaining code, Testing (the three guards). git diff --stat AGENTS.md: 16 insertions, 4 deletions.</li></ul>
     </li>
-    <li class="job" id="job-1-3" data-status="todo">
-      <span class="title">1.3 Guard: application does not call a domain model's <code>builder()</code></span> <span class="status todo">Not started</span>
+    <li class="job" id="job-1-3" data-status="done">
+      <span class="title">1.3 Guard: application does not call a domain model's <code>builder()</code></span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>ModelCreationConventionTests</code> scans <code>src/main/java/.../application</code> (comments stripped) for <code>&lt;ModelName&gt;.builder()</code> where <code>&lt;ModelName&gt;</code> is any concrete class under <code>domain/model</code>; the 103 files that contain such a call today (162 calls) are the exemption set, an exemption that no longer applies fails the test, the test asserts it scanned enough files, and a self-test with a violating snippet proves the rule can fail.
          <strong>Files:</strong> <code>src/test/java/com/sep/vox/architecture/ModelCreationConventionTests.java</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-24 &middot; Done &middot; ModelCreationConventionTests (3 tests pass); 103 files / 162 calls in src/test/resources/architecture/model-creation-exemptions.txt.</li></ul>
     </li>
-    <li class="job" id="job-1-4" data-status="todo">
-      <span class="title">1.4 Guard: repository methods do not take audit stamps</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-1-4" data-status="done">
+      <span class="title">1.4 Guard: repository methods do not take audit stamps</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>RepositoryAuditParameterConventionTests</code> scans <code>domain/repository</code> for parameters named <code>updatedAt</code>, <code>updatedBy</code>, <code>modifiedAt</code>, <code>modifiedBy</code>; the 15 methods that have one today are the exemption set (stale entries fail, a self-test proves the rule can fail). The <code>now</code>-only parameters are not visible to a name scan and are covered by the signature changes and tests of phase 2.
          <strong>Files:</strong> <code>src/test/java/com/sep/vox/architecture/RepositoryAuditParameterConventionTests.java</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-24 &middot; Done &middot; RepositoryAuditParameterConventionTests (3 tests pass); 15 methods in its EXEMPTIONS set.</li></ul>
     </li>
-    <li class="job" id="job-1-5" data-status="todo">
-      <span class="title">1.5 Guard: a method is at most 25 lines</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-1-5" data-status="done">
+      <span class="title">1.5 Guard: a method is at most 25 lines</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>MethodSizeConventionTests</code> parses <code>src/main/java</code> with the JDK compiler tree API, counts each method and constructor from its return type (or constructor name) to the closing brace, and fails for a method over 25 lines that is not listed in <code>method-size-exemptions.txt</code> (one <code>relative/path.java#name(ParamTypes)</code> per line); the file starts with the 586 methods measured on 2026-11-24, the 6 security-path ones under a <code># deferred: Ask first (security)</code> heading. A listed method that is now short enough fails the test (the list only shrinks), and a self-test with a 26-line snippet proves the rule can fail.
          <strong>Files:</strong> <code>src/test/java/com/sep/vox/architecture/MethodSizeConventionTests.java</code>, <code>src/test/resources/architecture/method-size-exemptions.txt</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-24 &middot; Done &middot; MethodSizeConventionTests (3 tests pass); 586 entries in method-size-exemptions.txt, 6 under the deferred security heading; scanner MethodLengthScanner measured 8,408 methods, 586 over 25, 442 over 30.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*ModelCreationConventionTests' --tests '*RepositoryAuditParameterConventionTests' --tests '*MethodSizeConventionTests' --tests '*LayeredArchitectureTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-24 &middot; Done &middot; Verify passed: ./gradlew compileJava test --tests ModelCreationConventionTests, RepositoryAuditParameterConventionTests, MethodSizeConventionTests, LayeredArchitectureTests -> BUILD SUCCESSFUL.</li></ul>
 </div>
 
-<div class="phase" id="phase-2" data-status="todo">
+<div class="phase" id="phase-2" data-status="done">
   <h3><span class="title">Phase 2 &ndash; Remove audit-stamp parameters from repository methods</span>
     <span class="tag">large · needs D2, D3</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> The 17 repository methods of the table in 1.2 no longer take <code>updatedAt</code>, <code>updatedBy</code> or a <code>now</code> that only feeds <code>updated_at</code>, and the rows still get the same actor and time (D2 decides how). <strong>Depends on:</strong> Phase 1 (guards), D2, D3.</p>
   <ul class="jobs">
-    <li class="job" id="job-2-1" data-status="todo">
-      <span class="title">2.1 Stamp source for bulk statements (D2 = A)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-2-1" data-status="done">
+      <span class="title">2.1 Stamp source for bulk statements (D2 = A)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> One infrastructure source returns the instant and the actor text that a <code>@Modifying</code> statement writes, using the same rule as <code>AuditActorProvider</code> (actor of the active <code>ThreadLocalAuditActorScope</code>, else the authenticated user id, else <code>"System"</code>); a unit test covers the three actor cases. Adapters use it; use cases and domain interfaces do not see it.
          <strong>Files:</strong> <code>infrastructure/persistence/audit/</code> (one new class, or one method on <code>AuditActorProvider</code>), its test</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-24 &middot; Done &middot; New AuditStampProvider (currentUpdatedAt, currentUpdatedBy via AuditActorProvider). AuditStampProviderTests: 4 pass.</li><li>2026-11-24 &middot; Done &middot; All 5 jobs done. Verify: compileJava, ./gradlew test (2713 tests, 0 failures), integrationTest (all pass after fixing two test-only flakes: random identity number, microsecond timestamp comparison). RepositoryAuditParameterConventionTests exemption set is now empty.</li></ul>
     </li>
-    <li class="job" id="job-2-2" data-status="todo">
-      <span class="title">2.2 School catalog: 7 methods (rows 2-8)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-2-2" data-status="done">
+      <span class="title">2.2 School catalog: 7 methods (rows 2-8)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>School.updateSchoolAtomic</code>, <code>SchoolRoom.updateSchoolRoomAtomic</code>, <code>SchoolGrade.updateSchoolGradeAtomic</code>, <code>SchoolClass.updateMutableFields</code>, <code>SchoolClass.archiveByGradeId</code>, <code>SupportedLanguage.updateMutableFields</code> and <code>GradeLevel.updateGradeLevelAtomic</code> take no <code>Instant</code> or <code>String</code> stamp; <code>UpdateSchoolUseCase</code>, <code>UpdateSchoolRoomUseCase</code>, <code>UpdateSchoolGradeUseCase</code>, <code>UpdateSchoolClassUseCase</code>, <code>DeleteSchoolGradeUseCase</code>, <code>UpdateSupportedLanguageUseCase</code>, <code>UpdateGradeLevelUseCase</code> no longer create <code>Instant.now()</code> or <code>currentUserId.toString()</code> for the call; <code>SchoolAreaAtomicUpdateTests</code>, <code>SchoolClassRepositoryTests</code>, <code>SupportedLanguageRepositoryTests</code>, <code>GradeLevelRepositoryImplTests</code> still show <code>updated_at</code>/<code>updated_by</code> written with the current actor; the entries of these 7 methods leave <code>RepositoryAuditParameterConventionTests</code>.
          <strong>Files:</strong> <code>domain/repository/{School,SchoolRoom,SchoolGrade,SchoolClass,SupportedLanguage,GradeLevel}Repository</code>, their <code>*RepositoryImpl</code> adapters and <code>SpringData*</code> repositories, the 7 use cases, 7 use case tests, 4 repository tests, <code>CatalogAdaptersDataConflictTests</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-24 &middot; Done &middot; 7 methods lost their stamp parameters in interface, adapter (AuditStampProvider injected) and use case; Spring Data statements keep their parameters. RepositoryTest now imports AuditStampProvider. compileJava/compileTestJava pass; unit tests for school*, gradelevel, supportedlanguage, CatalogAdaptersDataConflictTests, LayeredArchitectureTests, RepositoryAuditParameterConventionTests pass; integrationTest SchoolAreaAtomicUpdateTests, SchoolClassRepositoryTests, SupportedLanguageRepositoryTests, GradeLevelRepositoryImplTests, SupportedLanguageAuditingTests pass. Two repository tests now log in a user and assert updated_by is that user.</li></ul>
     </li>
-    <li class="job" id="job-2-3" data-status="todo">
-      <span class="title">2.3 Rubrics: 3 methods (rows 9-11)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-2-3" data-status="done">
+      <span class="title">2.3 Rubrics: 3 methods (rows 9-11)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>RubricCriterion.updateCriterionAtomic</code>, <code>RubricResultBand.updateResultBandAtomic</code>, <code>RubricVersion.updateRubricVersionAtomic</code> take no stamp; the six use cases <code>UpdateSystemRubric{Criterion,ResultBand,Version}UseCase</code> and <code>UpdateSchoolRubric{Criterion,ResultBand,Version}UseCase</code> and their 6 tests are updated; <code>RubricAtomicUpdateTests</code> and <code>RubricAdaptersDataConflictTests</code> pass; the <code>COALESCE</code> and <code>Provided</code> semantics are unchanged.
          <strong>Files:</strong> 3 repositories with adapters and <code>SpringData*</code>, 6 use cases, 6 use case tests, 2 repository tests</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-24 &middot; Done &middot; 3 rubric methods lost their stamp parameters (interface, adapter with AuditStampProvider, 6 use cases, 6 use case tests, RubricAdaptersDataConflictTests). unit tests rubric*, RubricAdaptersDataConflictTests, MethodSizeConventionTests, RepositoryAuditParameterConventionTests pass; integrationTest RubricAtomicUpdateTests and Rubric*RepositoryTests pass. method-size-exemptions.txt: UpdateSupportedLanguageUseCase.execute left the list (now short); RubricVersionRepositoryImpl.updateRubricVersionAtomic key renamed to its new signature (still over 25 lines).</li></ul>
     </li>
-    <li class="job" id="job-2-4" data-status="todo">
-      <span class="title">2.4 Schedule and register form: 3 methods (rows 1, 16, 17)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-2-4" data-status="done">
+      <span class="title">2.4 Schedule and register form: 3 methods (rows 1, 16, 17)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>AssessmentSchedule.updateAtomic</code> takes no <code>now</code>/<code>updatedBy</code> and keeps its <code>WHERE status = 'DRAFT'</code> guard (<code>AssessmentScheduleAtomicUpdateTests</code>, <code>UpdateAssessmentScheduleUseCaseTests</code> pass); <code>RegisterForm.updateApprovedRegisterForm</code> and <code>updateRejectedRegisterForm</code> lose <code>now</code>, and their UUID parameter is renamed <code>reviewerId</code> (it writes <code>reviewed_by</code>); <code>ApproveRegisterFormUseCase</code> and <code>RejectRegisterFormUseCase</code> no longer create <code>Instant.now()</code>.
          <strong>Files:</strong> <code>AssessmentScheduleRepository</code>, <code>RegisterFormRepository</code> with adapters and <code>SpringData*</code>, <code>UpdateAssessmentScheduleUseCase</code>, <code>ApproveRegisterFormUseCase</code>, <code>RejectRegisterFormUseCase</code>, their tests</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-24 &middot; Done &middot; AssessmentSchedule.updateAtomic lost now/updatedBy (WHERE status = DRAFT guard unchanged); RegisterForm approve/reject lost now and the UUID is now reviewerId; UpdateAssessmentScheduleUseCase.authorize now returns void (its UUID result only fed the stamp). New RegisterFormReviewTests (2) and AssessmentScheduleAtomicUpdateTests actor test; integrationTest 6 tests pass; unit tests assessmentschedule*, registration*, MethodSize and RepositoryAuditParameter guards pass.</li></ul>
     </li>
-    <li class="job" id="job-2-5" data-status="todo">
-      <span class="title">2.5 Import queue: 4 methods (rows 12-15)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-2-5" data-status="done">
+      <span class="title">2.5 Import queue: 4 methods (rows 12-15)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>ImportSession.markImporting</code> (no caller anywhere) is deleted from the interface, adapter and Spring Data repository; <code>markQueued</code> loses <code>now</code>/<code>updatedBy</code> in the 9 <code>Accept*ImportUseCase</code> classes; <code>markClaimed</code> and <code>requeueExpiredLeases</code> lose the stamp half in <code>ImportQueueService</code> and keep <code>claimedAt</code> and the lease predicate. The Implementation notes record that <code>updated_by</code> of a claimed session changes from the worker id to the audit actor (<code>"System"</code> for the scheduler) while <code>claimed_by</code> still holds the worker.
          <strong>Files:</strong> <code>ImportSessionRepository</code>, <code>ImportSessionRepositoryImpl</code>, <code>SpringDataImportSessionRepository</code>, <code>ImportQueueService</code>, 9 <code>Accept*ImportUseCase</code> classes and their tests</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-24 &middot; Done &middot; markImporting deleted (interface, adapter, Spring Data). markQueued lost updatedBy but CHANGED: keeps now, because the SQL also uses it as the expires_at predicate (same as requeueExpiredLeases); the adapter writes updated_at/updated_by from AuditStampProvider through new :updatedAt/:updatedBy bindings in the Spring Data statements. markClaimed keeps now (claimed_at) and requeueExpiredLeases keeps now (lease predicate); both stamp updated_at from the provider. 9 Accept*ImportUseCase classes updated. New tests in ImportSessionRepositoryTests (3) pass.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*RepositoryAuditParameterConventionTests' --tests 'com.sep.vox.application.usecase.*'</code>, <code>./gradlew integrationTest --tests '*AtomicUpdate*' --tests '*RepositoryTests' --tests '*AdaptersDataConflictTests'</code></p>
   <ul class="status-log"></ul>
 </div>
 
-<div class="phase" id="phase-3" data-status="todo">
+<div class="phase" id="phase-3" data-status="done">
   <h3><span class="title">Phase 3 &ndash; Model methods: Import sessions and rows</span>
     <span class="tag">medium · needs D4</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> Application code stops calling <code>builder()</code> for 2 models (34 calls in 17 files); the models gain the methods that build them. <strong>Depends on:</strong> Phase 1, D4. Comments in the edited code follow the rule of D1.</p>
   <ul class="jobs">
-    <li class="job" id="job-3-1" data-status="todo">
-      <span class="title">3.1 Add the methods to the models (domain)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-3-1" data-status="done">
+      <span class="title">3.1 Add the methods to the models (domain)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> Each of <code>ImportSession</code> (17), <code>ImportRow</code> (17) has the public static factories and instance methods its call sites need (names per D4): one method per distinct set of fields among the call sites, defaults (counters, initial status, nulls spelled out by callers) set inside the model, built through the model's own <code>builder()</code>; each method has a unit test in <code>src/test/java/com/sep/vox/domain/model/</code> that asserts the defaults and the arguments it sets; <code>LayeredArchitectureTests</code> still passes (<code>domain</code> stays plain Java).
          <strong>Files:</strong> <code>domain/model/...</code> for the 2 models above, one new <code>*Tests</code> per model in the mirrored test package</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-24 &middot; Done &middot; CHANGED from the plan count: the 17 session calls share two call shapes, so ImportSession gets two factories, previewed(...) (7 sites) and previewedForEntity(..., importedEntityId) (10 sites); ImportRow gets pending(sessionId, rowNumber, rawDataJson). ImportSessionTests (2) and ImportRowTests (1) pass; LayeredArchitectureTests pass.</li></ul>
     </li>
-    <li class="job" id="job-3-2" data-status="todo">
-      <span class="title">3.2 Replace the call sites in application</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-3-2" data-status="done">
+      <span class="title">3.2 Replace the call sites in application</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 34 calls in these 17 files use the new methods; <code>grep -rnE '(ImportSession|ImportRow)\.builder\(\)' src/main/java/com/sep/vox/application</code> prints nothing; a file leaves the <code>ModelCreationConventionTests</code> exemptions when its last builder call is gone; unused imports and locals the change orphaned are removed; Vietnamese comments in the edited lines are in English; the use case tests of these classes are updated and pass.
          <strong>Files:</strong> <code>PreviewQuestionBankImportFromFileUseCase</code>, <code>PreviewQuestionImportFromFileUseCase</code>, <code>PreviewQuestionTopicImportFromFileUseCase</code>, <code>PreviewSchoolAssessmentPolicyImportFromFileUseCase</code>, <code>PreviewSchoolClassImportFromFileUseCase</code>, <code>PreviewSchoolClassUserImportFromFileUseCase</code>, <code>PreviewSchoolDirectoryImportFromFileUseCase</code>, <code>PreviewSchoolGradeImportFromFileUseCase</code>, <code>PreviewSchoolRoomImportFromFileUseCase</code>, <code>PreviewSchoolRubricCriterionImportFromFileUseCase</code>, <code>PreviewSchoolRubricResultBandImportFromFileUseCase</code>, <code>PreviewSchoolRubricVersionImportFromFileUseCase</code>, <code>PreviewSchoolUserImportFromFileUseCase</code>, <code>PreviewSystemAssessmentPolicyImportFromFileUseCase</code>, <code>PreviewSystemRubricCriterionImportFromFileUseCase</code>, <code>PreviewSystemRubricResultBandImportFromFileUseCase</code>, <code>PreviewSystemRubricVersionImportFromFileUseCase</code>; their tests; <code>ModelCreationConventionTests</code> exemptions</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-24 &middot; Done &middot; 34 calls in 17 Preview*ImportFromFileUseCase files replaced; grep for ImportSession/ImportRow builder() in application prints nothing; 17 files left model-creation-exemptions.txt; 6 createSession methods became short and left method-size-exemptions.txt. Restating comments next to the edited statements deleted, reason comments (school id binding) kept in English. ./gradlew test --tests *Import* *ModelCreationConventionTests *LayeredArchitectureTests *MethodSizeConventionTests *RepositoryAuditParameterConventionTests *InterfacesStructureConventionTests -> BUILD SUCCESSFUL.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*Import*' --tests '*ModelCreationConventionTests' --tests '*LayeredArchitectureTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-24 &middot; Done &middot; Verify passed: compileJava; test *Import*, ModelCreationConventionTests, LayeredArchitectureTests, MethodSizeConventionTests -> BUILD SUCCESSFUL.</li></ul>
 </div>
 
-<div class="phase" id="phase-4" data-status="todo">
+<div class="phase" id="phase-4" data-status="done">
   <h3><span class="title">Phase 4 &ndash; Model methods: Rubrics</span>
     <span class="tag">medium · needs D4</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> Application code stops calling <code>builder()</code> for 4 models (15 calls in 12 files); the models gain the methods that build them. <strong>Depends on:</strong> Phase 1, D4. Comments in the edited code follow the rule of D1.</p>
   <ul class="jobs">
-    <li class="job" id="job-4-1" data-status="todo">
-      <span class="title">4.1 Add the methods to the models (domain)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-4-1" data-status="done">
+      <span class="title">4.1 Add the methods to the models (domain)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> Each of <code>Rubric</code> (3), <code>RubricVersion</code> (4), <code>RubricCriterion</code> (4), <code>RubricResultBand</code> (4) has the public static factories and instance methods its call sites need (names per D4): one method per distinct set of fields among the call sites, defaults (counters, initial status, nulls spelled out by callers) set inside the model, built through the model's own <code>builder()</code>; each method has a unit test in <code>src/test/java/com/sep/vox/domain/model/</code> that asserts the defaults and the arguments it sets; <code>LayeredArchitectureTests</code> still passes (<code>domain</code> stays plain Java).
          <strong>Files:</strong> <code>domain/model/...</code> for the 4 models above, one new <code>*Tests</code> per model in the mirrored test package</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-24 &middot; Done &middot; CHANGED from the plan count: the 15 calls share few shapes, so Rubric gets forSchool(...) and forSystem(...), RubricVersion gets draft(...) (4 sites with the same fields; the clone passes version 1 and a null end), RubricCriterion.create(...) and RubricResultBand.create(...). RubricTests (2), RubricVersionTests, RubricCriterionTests, RubricResultBandTests pass.</li></ul>
     </li>
-    <li class="job" id="job-4-2" data-status="todo">
-      <span class="title">4.2 Replace the call sites in application</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-4-2" data-status="done">
+      <span class="title">4.2 Replace the call sites in application</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 15 calls in these 12 files use the new methods; <code>grep -rnE '(Rubric|RubricVersion|RubricCriterion|RubricResultBand)\.builder\(\)' src/main/java/com/sep/vox/application</code> prints nothing; a file leaves the <code>ModelCreationConventionTests</code> exemptions when its last builder call is gone; unused imports and locals the change orphaned are removed; Vietnamese comments in the edited lines are in English; the use case tests of these classes are updated and pass.
          <strong>Files:</strong> <code>AddSchoolRubricVersionsUseCase</code>, <code>AddSystemRubricVersionsUseCase</code>, <code>CreateSchoolRubricCriterionUseCase</code>, <code>CreateSchoolRubricResultBandsUseCase</code>, <code>CreateSchoolRubricUseCase</code>, <code>CreateSystemRubricCriteriaUseCase</code>, <code>CreateSystemRubricResultBandsUseCase</code>, <code>CreateSystemRubricUseCase</code>, <code>RubricCloneService</code>, <code>RubricCriterionImportCommitHandler</code>, <code>RubricResultBandImportCommitHandler</code>, <code>RubricVersionImportCommitHandler</code>; their tests; <code>ModelCreationConventionTests</code> exemptions</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-24 &middot; Done &middot; 15 calls in 12 files replaced; grep for Rubric/RubricVersion/RubricCriterion/RubricResultBand builder() in application prints nothing; 12 files left model-creation-exemptions.txt (87 to 75 entries); unused RubricStatus/RubricOwnerType imports removed. Reason comments in RubricCloneService kept, the restating comment next to the criterion Value Object removed. ./gradlew test --tests *Rubric* *ModelCreationConventionTests *LayeredArchitectureTests *MethodSizeConventionTests *RepositoryAuditParameterConventionTests *InterfacesStructureConventionTests *LombokUsageConventionTests -> BUILD SUCCESSFUL.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*Rubric*' --tests '*ModelCreationConventionTests' --tests '*LayeredArchitectureTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-24 &middot; Done &middot; Verify passed: compileJava compileTestJava; test *Rubric*, ModelCreationConventionTests, LayeredArchitectureTests, MethodSizeConventionTests -> BUILD SUCCESSFUL.</li></ul>
 </div>
 
-<div class="phase" id="phase-5" data-status="todo">
+<div class="phase" id="phase-5" data-status="done">
   <h3><span class="title">Phase 5 &ndash; Model methods: Assessment papers and blueprints</span>
     <span class="tag">medium · needs D4</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> Application code stops calling <code>builder()</code> for 7 models (30 calls in 11 files); the models gain the methods that build them. <strong>Depends on:</strong> Phase 1, D4. Comments in the edited code follow the rule of D1.</p>
   <ul class="jobs">
-    <li class="job" id="job-5-1" data-status="todo">
-      <span class="title">5.1 Add the methods to the models (domain)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-5-1" data-status="done">
+      <span class="title">5.1 Add the methods to the models (domain)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> Each of <code>AssessmentPaper</code> (3), <code>AssessmentPaperSection</code> (6), <code>AssessmentPaperItem</code> (10), <code>AssessmentBlueprint</code> (2), <code>AssessmentBlueprintSection</code> (4), <code>AssessmentBlueprintSlot</code> (4), <code>AssessmentBlueprintVersion</code> (1) has the public static factories and instance methods its call sites need (names per D4): one method per distinct set of fields among the call sites, defaults (counters, initial status, nulls spelled out by callers) set inside the model, built through the model's own <code>builder()</code>; each method has a unit test in <code>src/test/java/com/sep/vox/domain/model/</code> that asserts the defaults and the arguments it sets; <code>LayeredArchitectureTests</code> still passes (<code>domain</code> stays plain Java).
          <strong>Files:</strong> <code>domain/model/...</code> for the 7 models above, one new <code>*Tests</code> per model in the mirrored test package</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-24 &middot; In progress &middot; applies D4 (intent-named methods)<li>2026-11-24 &middot; Done &middot; Added 15 methods to the 7 models (AssessmentPaper.draft/draftWithoutBlueprint, AssessmentPaperSection.fromBlueprintSection/forClassTest/copyInto, AssessmentPaperItem.emptySlot/forBlueprintSlot/forQuestion/copyInto, AssessmentBlueprint.create, AssessmentBlueprintSection.create/revisedWith, AssessmentBlueprintSlot.create/revisedWith, AssessmentBlueprintVersion.draft). Tests: 7 new *Tests in domain/model/assessment, LayeredArchitectureTests -> BUILD SUCCESSFUL.</li>.</li></ul>
     </li>
-    <li class="job" id="job-5-2" data-status="todo">
-      <span class="title">5.2 Replace the call sites in application</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-5-2" data-status="done">
+      <span class="title">5.2 Replace the call sites in application</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 30 calls in these 11 files use the new methods; <code>grep -rnE '(AssessmentPaper|AssessmentPaperSection|AssessmentPaperItem|AssessmentBlueprint|AssessmentBlueprintSection|AssessmentBlueprintSlot|AssessmentBlueprintVersion)\.builder\(\)' src/main/java/com/sep/vox/application</code> prints nothing; a file leaves the <code>ModelCreationConventionTests</code> exemptions when its last builder call is gone; unused imports and locals the change orphaned are removed; Vietnamese comments in the edited lines are in English; the use case tests of these classes are updated and pass.
          <strong>Files:</strong> <code>AttachAssessmentBlueprintUseCase</code>, <code>ChangeClassTestBlueprintUseCase</code>, <code>CreateAssessmentBlueprintSectionUseCase</code>, <code>CreateAssessmentBlueprintSlotUseCase</code>, <code>CreateAssessmentBlueprintUseCase</code>, <code>CreateAssessmentBlueprintVersionUseCase</code>, <code>CreateAssessmentPaperUseCase</code>, <code>CreateClassTestSectionUseCase</code>, <code>UpdateAssessmentBlueprintVersionUseCase</code>, <code>UpdateClassTestQuestionsUseCase</code>, <code>UpdateClassTestSectionUseCase</code>; their tests; <code>ModelCreationConventionTests</code> exemptions</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-24 &middot; In progress &middot; Replacing the 30 call sites<li>2026-11-24 &middot; Done &middot; Replaced all 30 builder calls in the 11 files; grep for the 7 models in application prints nothing; removed 11 files from model-creation-exemptions.txt and 3 methods that fell to 25 lines or fewer from method-size-exemptions.txt (UpdateClassTestQuestionsUseCase.createNewSection, UpdateClassTestSectionUseCase.updateSectionQuestions, UpdateAssessmentBlueprintVersionUseCase.toSection); removed orphaned imports AssessmentPaperStatus and AssessmentBlueprintVersionStatus. Existing use case tests unchanged and passing. Verify: compileJava compileTestJava; test *AssessmentPaper*, *Blueprint*, *ClassTest*, ModelCreationConventionTests, LayeredArchitectureTests, MethodSizeConventionTests, LombokUsageConventionTests, ModelAndEntityConventionTests -> BUILD SUCCESSFUL.</li>.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*AssessmentPaper*' --tests '*AssessmentBlueprint*' --tests '*Blueprint*' --tests '*ModelCreationConventionTests' --tests '*LayeredArchitectureTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-24 &middot; Done &middot; Phase verify passed: compileJava compileTestJava; test *AssessmentPaper*, *Blueprint*, *ClassTest*, ModelCreationConventionTests, LayeredArchitectureTests, MethodSizeConventionTests -> BUILD SUCCESSFUL.</li></ul>
 </div>
 
-<div class="phase" id="phase-6" data-status="todo">
+<div class="phase" id="phase-6" data-status="done">
   <h3><span class="title">Phase 6 &ndash; Model methods: Assessments, proctors, appeals and policies</span>
     <span class="tag">medium · needs D4</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> Application code stops calling <code>builder()</code> for 9 models (16 calls in 13 files); the models gain the methods that build them. <strong>Depends on:</strong> Phase 1, D4. Comments in the edited code follow the rule of D1.</p>
   <ul class="jobs">
-    <li class="job" id="job-6-1" data-status="todo">
-      <span class="title">6.1 Add the methods to the models (domain)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-6-1" data-status="done">
+      <span class="title">6.1 Add the methods to the models (domain)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> Each of <code>Assessment</code> (2), <code>AssessmentMember</code> (2), <code>AssessmentScheduleProctor</code> (3), <code>AssessmentSession</code> (2), <code>AssessmentProctoringAlert</code> (1), <code>AssessmentRecording</code> (1), <code>AssessmentResultAppeal</code> (1), <code>AssessmentResultAppealItem</code> (1), <code>AssessmentPolicy</code> (3) has the public static factories and instance methods its call sites need (names per D4): one method per distinct set of fields among the call sites, defaults (counters, initial status, nulls spelled out by callers) set inside the model, built through the model's own <code>builder()</code>; each method has a unit test in <code>src/test/java/com/sep/vox/domain/model/</code> that asserts the defaults and the arguments it sets; <code>LayeredArchitectureTests</code> still passes (<code>domain</code> stays plain Java).
          <strong>Files:</strong> <code>domain/model/...</code> for the 9 models above, one new <code>*Tests</code> per model in the mirrored test package</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-24 &middot; Done &middot; Added methods: Assessment.centralizedDraft/classTestDraft + configure/scheduleBetween/useStreamProctoring (a 17-argument factory would break the 25-line rule, so the optional settings are instance methods; null keeps the draft default), AssessmentMember.granted, AssessmentScheduleProctor.assigned, AssessmentSession.started/gradedWithoutAnswers, AssessmentProctoringAlert.raised, AssessmentRecording.registered, AssessmentResultAppeal.requested, AssessmentResultAppealItem.forResponse, AssessmentPolicy.draftForScope/draftSystemWide. Applies D4. Evidence: 9 new *Tests in src/test/.../domain/model/{assessment,assessmentpolicy}; `./gradlew test --tests '*domain.model.assessment.Assessment*Tests' --tests '*AssessmentPolicyTests'` passed.</li></ul>
     </li>
-    <li class="job" id="job-6-2" data-status="todo">
-      <span class="title">6.2 Replace the call sites in application</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-6-2" data-status="done">
+      <span class="title">6.2 Replace the call sites in application</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 16 calls in these 13 files use the new methods; <code>grep -rnE '(Assessment|AssessmentMember|AssessmentScheduleProctor|AssessmentSession|AssessmentProctoringAlert|AssessmentRecording|AssessmentResultAppeal|AssessmentResultAppealItem|AssessmentPolicy)\.builder\(\)' src/main/java/com/sep/vox/application</code> prints nothing; a file leaves the <code>ModelCreationConventionTests</code> exemptions when its last builder call is gone; unused imports and locals the change orphaned are removed; Vietnamese comments in the edited lines are in English; the use case tests of these classes are updated and pass.
          <strong>Files:</strong> <code>AddAssessmentScheduleProctorUseCase</code>, <code>AssessmentPolicyImportCommitHandler</code>, <code>CreateAssessmentAppealUseCase</code>, <code>CreateAssessmentMemberUseCase</code>, <code>CreateAssessmentSessionUseCase</code>, <code>CreateAssessmentUseCase</code>, <code>CreateClassTestUseCase</code>, <code>CreateSchoolAssessmentPolicyUseCase</code>, <code>CreateSystemAssessmentPolicyUseCase</code>, <code>RecordProctoringAlertUseCase</code>, <code>RecordRecordingPartChangedUseCase</code>, <code>UpdateAssessmentScheduleStatusUseCase</code>, <code>ZeroScoreAssessmentResultService</code>; their tests; <code>ModelCreationConventionTests</code> exemptions</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-24 &middot; Done &middot; 16 builder calls in 13 files replaced by the new model methods; orphaned imports removed; Vietnamese comments in edited lines translated; the reason comments of CreateAssessmentUseCase/CreateClassTestUseCase moved into Assessment.centralizedDraft/classTestDraft. 13 entries removed from model-creation-exemptions.txt; 3 methods that became 25 lines or fewer (CreateClassTestUseCase.createAssessment, finishSetup, RecordProctoringAlertUseCase.execute) removed from method-size-exemptions.txt. Evidence: grep for builder() of the 9 models in application prints nothing; the phase verify command (Assessment, ClassTest, Recording, Proctor, ZeroScore tests plus ModelCreation, LayeredArchitecture, MethodSize, ModelAndEntity convention tests) BUILD SUCCESSFUL.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*Assessment*' --tests '*ModelCreationConventionTests' --tests '*LayeredArchitectureTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-24 &middot; Done &middot; Both jobs done and verify passes. Evidence: `./gradlew compileJava compileTestJava` clean; `./gradlew test --tests` for Assessment, ClassTest, Recording, Proctor, ZeroScore, ModelCreationConventionTests, LayeredArchitectureTests, MethodSizeConventionTests, ModelAndEntityConventionTests BUILD SUCCESSFUL.</li></ul>
 </div>
 
 <div class="phase" id="phase-7" data-status="todo">
@@ -1040,13 +1040,14 @@
     <tr><td>2026-11-24</td><td>Plan written (Draft)</td><td>First version</td></tr>
     <tr><td>2026-11-24</td><td>D2 to D7 answered, all with option A (recommended); conditional wording tied to the other options removed (job 2.1 title, 1.2, 29.1, risks, out of scope, verification)</td><td>The user answered the open decisions in chat</td></tr>
     <tr><td>2026-11-24</td><td>Approved</td><td>The user approved the plan as written, including the readings in D1</td></tr>
+    <tr><td>2026-11-24</td><td>In progress</td><td>Implementation started with phase 1</td></tr>
   </tbody>
 </table></div>
 
 <h2 id="notes">8. Implementation notes</h2>
 <p>Filled in by <code>implement-plan</code>: deviations from the plan, results of <code>verify-plan</code>, and
 problems noticed but not fixed.</p>
-<ul id="notes-list"></ul>
+<ul id="notes-list"><li>Phase 2: the stamp source is infrastructure/persistence/audit/AuditStampProvider (time = Instant.now(), actor = AuditActorProvider); adapters inject it, Spring Data statements keep their updatedAt/updatedBy parameters, so SchoolAreaAtomicUpdateTests and similar still call them directly. RepositoryTest imports AuditStampProvider.</li><li>Phase 2, job 2.5: CHANGED markQueued keeps <code>now</code> (expiry predicate). Behaviour change: updated_by of a claimed import session is now the audit actor ("System" from the scheduler) instead of the worker id; claimed_by still holds the worker.</li><li>Phase 2, job 2.4: UpdateAssessmentScheduleUseCase.authorize now returns void (its result only fed the stamp); AcceptSchoolDirectoryImportUseCase keeps a bare getCurrentAuthenticatedUserId() call because it throws when nobody is authenticated.</li><li>Phase 2: method-size-exemptions.txt shrank by 1 (UpdateSupportedLanguageUseCase.execute) and RubricVersionRepositoryImpl.updateRubricVersionAtomic was re-keyed to its new signature. Added tests: AuditStampProviderTests, RegisterFormReviewTests, ImportSessionRepositoryTests (3), AssessmentScheduleAtomicUpdateTests actor test. Gap: ApproveRegisterFormUseCase and RejectRegisterFormUseCase have no use case tests.</li><li>Phase 1, job 1.3: the 103 exempt files are stored in src/test/resources/architecture/model-creation-exemptions.txt (paths relative to com/sep/vox) instead of a Java set, because 103 entries do not fit a readable literal; the plan listed only the test class as file. Default choice, no behaviour change.</li><li>Phase 1, job 1.5: the JDK-tree measuring code lives in a helper, src/test/java/com/sep/vox/architecture/MethodLengthScanner.java, so the guard test stays small. A repeated exemption line covers a repeated method key (same file, name and parameter types).</li><li>Phase 1: the 102 concrete models found in domain/model by the guard (the plan text said 104) give the same 103 files and 162 calls.</li><li>Known gap (D7): the first run of the guard in the test JVM was slow because a compiler task was created per file; it now parses all files in one task (about 1 s).</li></ul>
 
 </div>
 <script>

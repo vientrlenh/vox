@@ -22,6 +22,7 @@ import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.domain.model.rubric.RubricVersion;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 import com.sep.vox.infrastructure.persistence.mapper.RubricVersionMapper;
+import com.sep.vox.infrastructure.persistence.audit.AuditStampProvider;
 import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import com.sep.vox.infrastructure.persistence.repository.SpringDataRubricVersionRepository;
 import com.sep.vox.infrastructure.persistence.DataConflictTranslation;
@@ -31,6 +32,7 @@ import com.sep.vox.infrastructure.persistence.DataConflictTranslation;
 public class RubricVersionRepositoryImpl implements RubricVersionRepository {
 
     private final SpringDataRubricVersionRepository springDataRubricVersionRepository;
+    private final AuditStampProvider auditStampProvider;
 
     @Override
     public Optional<RubricVersion> findById(UUID id) {
@@ -123,9 +125,7 @@ public class RubricVersionRepositoryImpl implements RubricVersionRepository {
             boolean effectiveToProvided,
             BigDecimal scoringScaleMin,
             BigDecimal scoringScaleMax,
-            String totalScoreMethod,
-            Instant updatedAt,
-            String updatedBy) {
+            String totalScoreMethod) {
         // SpringDataRubricVersionRepository.updateRubricVersionAtomic declares its parameters in the order (id, name, code, ...)
         DataConflictTranslation.translating(() -> springDataRubricVersionRepository.updateRubricVersionAtomic(
             id,
@@ -139,8 +139,8 @@ public class RubricVersionRepositoryImpl implements RubricVersionRepository {
             scoringScaleMin,
             scoringScaleMax,
             totalScoreMethod,
-            updatedAt,
-            updatedBy
+            auditStampProvider.currentUpdatedAt(),
+            auditStampProvider.currentUpdatedBy()
         ));
     }
 

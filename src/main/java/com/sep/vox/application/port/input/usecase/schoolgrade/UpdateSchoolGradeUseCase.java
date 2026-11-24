@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -69,9 +68,7 @@ public class UpdateSchoolGradeUseCase implements IUseCase<UpdateSchoolGradeComma
                 command.description() != null ? StringNormalization.trimAndCollapseSpaces(command.description()) : null,
                 command.descriptionProvided(),
                 command.startDate(),
-                command.endDate(),
-                Instant.now(),
-                currentUserId.toString()
+                command.endDate()
         );
 
         if (updatedRows == 0) {

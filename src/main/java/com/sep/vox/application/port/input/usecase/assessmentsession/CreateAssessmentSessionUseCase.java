@@ -10,7 +10,6 @@ import com.sep.vox.application.port.input.command.assessmentsession.CreateAssess
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.assessmentsession.AssessmentSessionResponse;
 import com.sep.vox.domain.model.assessment.AssessmentSession;
-import com.sep.vox.domain.model.assessment.AssessmentSessionStatus;
 import com.sep.vox.domain.repository.AssessmentCandidateRepository;
 import com.sep.vox.domain.repository.AssessmentPaperRepository;
 import com.sep.vox.domain.repository.AssessmentRepository;
@@ -35,16 +34,8 @@ public class CreateAssessmentSessionUseCase implements IUseCase<CreateAssessment
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đề thi"));
 
         Instant now = Instant.now();
-        AssessmentSession session = AssessmentSession.builder()
-                .assessmentId(input.assessmentId())
-                .candidateId(input.candidateId())
-                .paperId(input.paperId())
-                .startedAt(now)
-                .submittedAt(null)
-                .status(AssessmentSessionStatus.IN_PROGRESS)
-                .flagged(false)
-                .flagReason(null)
-                .build();
+        AssessmentSession session = AssessmentSession.started(
+                input.assessmentId(), input.candidateId(), input.paperId(), now);
         return toResponse(assessmentSessionRepository.save(session));
     }
 

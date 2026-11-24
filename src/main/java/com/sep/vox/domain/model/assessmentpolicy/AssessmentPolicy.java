@@ -158,6 +158,27 @@ public class AssessmentPolicy extends BaseModel {
         }
     }
 
+    public static AssessmentPolicy draftForScope(
+            UUID schoolId, UUID gradeLevelId, UUID schoolGradeId, UUID schoolClassId, UUID languageId,
+            UUID frameworkVersionId, UUID rubricVersionId, UUID targetFrameworkBandId, BigDecimal passingScore,
+            AssessmentPolicyStrictness strictness, int version, Instant effectiveFrom, Instant effectiveTo) {
+        return builder()
+            .schoolId(schoolId).gradeLevelId(gradeLevelId).schoolGradeId(schoolGradeId).schoolClassId(schoolClassId)
+            .languageId(languageId).frameworkVersionId(frameworkVersionId).rubricVersionId(rubricVersionId)
+            .targetFrameworkBandId(targetFrameworkBandId).passingScore(passingScore).strictness(strictness)
+            .version(version).status(AssessmentPolicyStatus.DRAFT)
+            .effectiveFrom(effectiveFrom).effectiveTo(effectiveTo)
+            .build();
+    }
+
+    public static AssessmentPolicy draftSystemWide(
+            UUID gradeLevelId, UUID languageId, UUID frameworkVersionId, UUID rubricVersionId,
+            UUID targetFrameworkBandId, BigDecimal passingScore, AssessmentPolicyStrictness strictness, int version,
+            Instant effectiveFrom, Instant effectiveTo) {
+        return draftForScope(null, gradeLevelId, null, null, languageId, frameworkVersionId, rubricVersionId,
+            targetFrameworkBandId, passingScore, strictness, version, effectiveFrom, effectiveTo);
+    }
+
     public static Builder builder() {
         return new Builder();
     }

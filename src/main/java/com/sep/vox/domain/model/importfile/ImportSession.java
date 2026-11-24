@@ -180,6 +180,30 @@ public class ImportSession extends BaseModel {
         this.attempts = attempts;
     }
 
+    public static ImportSession previewed(UUID schoolId, ImportType type, String fileName,
+                                          String originalHeadersJson, String suggestedMappingJson,
+                                          long totalRows, Instant expiresAt) {
+        return builder()
+                .schoolId(schoolId)
+                .type(type)
+                .fileName(fileName)
+                .originalHeadersJson(originalHeadersJson)
+                .suggestedMappingJson(suggestedMappingJson)
+                .totalRows(totalRows)
+                .status(ImportSessionStatus.PREVIEWED)
+                .expiresAt(expiresAt)
+                .build();
+    }
+
+    public static ImportSession previewedForEntity(UUID schoolId, ImportType type, String fileName,
+                                                   String originalHeadersJson, String suggestedMappingJson,
+                                                   long totalRows, Instant expiresAt, UUID importedEntityId) {
+        ImportSession session = previewed(schoolId, type, fileName, originalHeadersJson,
+                suggestedMappingJson, totalRows, expiresAt);
+        session.importedEntityId = importedEntityId;
+        return session;
+    }
+
     public static Builder builder() {
         return new Builder();
     }

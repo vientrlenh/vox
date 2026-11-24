@@ -63,6 +63,43 @@ public class AssessmentBlueprintSection extends BaseModel {
         this.sectionWeight = sectionWeight;
     }
 
+    public static AssessmentBlueprintSection create(
+            UUID blueprintVersionId,
+            int order,
+            String title,
+            String instruction,
+            Integer sectionTimeLimitSeconds,
+            BigDecimal sectionWeight) {
+        return builder()
+            .blueprintVersionId(blueprintVersionId)
+            .order(order)
+            .title(title)
+            .instruction(instruction)
+            .sectionTimeLimitSeconds(sectionTimeLimitSeconds)
+            .sectionWeight(sectionWeight)
+            .build();
+    }
+
+    /** Returns a new instance that keeps this section's id, version and creation audit values. */
+    public AssessmentBlueprintSection revisedWith(
+            int newOrder,
+            String newTitle,
+            String newInstruction,
+            Integer newSectionTimeLimitSeconds,
+            BigDecimal newSectionWeight) {
+        return builder()
+            .id(getId())
+            .blueprintVersionId(blueprintVersionId)
+            .order(newOrder)
+            .title(newTitle)
+            .instruction(newInstruction)
+            .sectionTimeLimitSeconds(newSectionTimeLimitSeconds)
+            .sectionWeight(newSectionWeight)
+            .createdAt(getCreatedAt())
+            .createdBy(getCreatedBy())
+            .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

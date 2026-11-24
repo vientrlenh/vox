@@ -24,31 +24,12 @@ public interface SpringDataImportSessionRepository extends JpaRepository<ImportS
         """)
     Page<ImportSessionJpaEntity> findBySchoolIdWithFilters(@Param("schoolId") UUID schoolId, @Param("type") String type, @Param("status") String status, Pageable pageable);
 
-    
-    @Modifying
-    @Query("""
-        UPDATE ImportSessionJpaEntity i 
-            SET i.status = 'IMPORTING', 
-                i.confirmedMappingJson = :confirmedMapping, 
-                i.updatedAt = :now, 
-                i.updatedBy = :updatedBy 
-        WHERE i.id = :id 
-            AND i.type = :type 
-            AND i.status = 'PREVIEWED' 
-            AND i.expiresAt > :now     
-    """)
-    int markImporting(@Param("id") UUID id,
-                    @Param("type") String type,
-                    @Param("confirmedMapping") String confirmedMapping,
-                    @Param("now") Instant now,
-                    @Param("updatedBy") String updatedBy);
-
     @Modifying
     @Query("""
         UPDATE ImportSessionJpaEntity i
             SET i.status = 'QUEUED',
                 i.confirmedMappingJson = :confirmedMapping,
-                i.updatedAt = :now,
+                i.updatedAt = :updatedAt,
                 i.updatedBy = :updatedBy
         WHERE i.id = :id
             AND i.type = :type
@@ -59,6 +40,7 @@ public interface SpringDataImportSessionRepository extends JpaRepository<ImportS
                     @Param("type") String type,
                     @Param("confirmedMapping") String confirmedMapping,
                     @Param("now") Instant now,
+                    @Param("updatedAt") Instant updatedAt,
                     @Param("updatedBy") String updatedBy);
 
 
@@ -78,15 +60,16 @@ public interface SpringDataImportSessionRepository extends JpaRepository<ImportS
                 i.claimedBy = :worker, 
                 i.claimedAt = :now, 
                 i.leaseExpiresAt = :leaseUntil, 
-                i.updatedAt = :now, 
-                i.updatedBy = :workerActor
+                i.updatedAt = :updatedAt, 
+                i.updatedBy = :updatedBy
         WHERE i.id IN :ids
     """)
     int markClaimed(@Param("ids") Collection<UUID> ids, 
                     @Param("worker") UUID worker, 
                     @Param("now") Instant now, 
                     @Param("leaseUntil") Instant leaseUntil,
-                    @Param("workerActor") String workerActor);
+                    @Param("updatedAt") Instant updatedAt,
+                    @Param("updatedBy") String updatedBy);
 
     
     @Modifying
@@ -107,8 +90,9 @@ public interface SpringDataImportSessionRepository extends JpaRepository<ImportS
                 lease_expires_at = NULL,
                 failure_reason = CASE WHEN attempts >= :maxAttempts
                     THEN 'Vượt số lần thử lại' ELSE failure_reason END,
-                updated_at = :now
+                updated_at = :updatedAt
         WHERE status = 'IMPORTING' AND lease_expires_at < :now
     """, nativeQuery = true)
-    int requeueExpiredLeases(@Param("now") Instant now, @Param("maxAttempts") int maxAttempts);
+    int requeueExpiredLeases(@Param("now") Instant now, @Param("maxAttempts") int maxAttempts,
+                             @Param("updatedAt") Instant updatedAt);
 }

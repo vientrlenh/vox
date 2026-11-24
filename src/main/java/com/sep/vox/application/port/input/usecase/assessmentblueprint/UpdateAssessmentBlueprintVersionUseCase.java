@@ -241,30 +241,24 @@ public class UpdateAssessmentBlueprintVersionUseCase implements IUseCase<UpdateA
             CreateAssessmentBlueprintSectionCommand command,
             Map<UUID, AssessmentBlueprintSection> existingSectionsById) {
         if (command.id() == null) {
-            return AssessmentBlueprintSection.builder()
-                .blueprintVersionId(versionId)
-                .order(command.order())
-                .title(command.title())
-                .instruction(command.instruction())
-                .sectionTimeLimitSeconds(command.sectionTimeLimitSeconds())
-                .sectionWeight(defaultWeight(command.sectionWeight()))
-                .build();
+            return AssessmentBlueprintSection.create(
+                versionId,
+                command.order(),
+                command.title(),
+                command.instruction(),
+                command.sectionTimeLimitSeconds(),
+                defaultWeight(command.sectionWeight()));
         }
         AssessmentBlueprintSection existing = existingSectionsById.get(command.id());
         if (existing == null) {
             throw new ResourceNotFoundException("Không tìm thấy section cần cập nhật");
         }
-        return AssessmentBlueprintSection.builder()
-            .id(existing.getId())
-            .blueprintVersionId(existing.getBlueprintVersionId())
-            .order(command.order())
-            .title(command.title())
-            .instruction(command.instruction())
-            .sectionTimeLimitSeconds(command.sectionTimeLimitSeconds())
-            .sectionWeight(defaultWeight(command.sectionWeight()))
-            .createdAt(existing.getCreatedAt())
-            .createdBy(existing.getCreatedBy())
-            .build();
+        return existing.revisedWith(
+            command.order(),
+            command.title(),
+            command.instruction(),
+            command.sectionTimeLimitSeconds(),
+            defaultWeight(command.sectionWeight()));
     }
 
     private AssessmentBlueprintSlot toSlot(
@@ -273,17 +267,16 @@ public class UpdateAssessmentBlueprintVersionUseCase implements IUseCase<UpdateA
             CreateAssessmentBlueprintSlotCommand command,
             Map<UUID, AssessmentBlueprintSlot> existingSlots) {
         if (command.id() == null) {
-            return AssessmentBlueprintSlot.builder()
-                .sectionId(sectionId)
-                .blueprintVersionId(versionId)
-                .order(command.order())
-                .weight(defaultWeight(command.weight()))
-                .prepTimeSecondsOverride(command.prepTimeSecondsOverride())
-                .responseTimeSecondsOverride(command.responseTimeSecondsOverride())
-                .slotType(command.slotType())
-                .fixedQuestionId(command.fixedQuestionId())
-                .selectionSpec(selectionSpecOf(command.selectionSpec()))
-                .build();
+            return AssessmentBlueprintSlot.create(
+                sectionId,
+                versionId,
+                command.order(),
+                defaultWeight(command.weight()),
+                command.prepTimeSecondsOverride(),
+                command.responseTimeSecondsOverride(),
+                command.slotType(),
+                command.fixedQuestionId(),
+                selectionSpecOf(command.selectionSpec()));
         }
         AssessmentBlueprintSlot existing = existingSlots.get(command.id());
         if (existing == null) {
@@ -292,20 +285,14 @@ public class UpdateAssessmentBlueprintVersionUseCase implements IUseCase<UpdateA
         if (!existing.getSectionId().equals(sectionId)) {
             throw new IllegalArgumentException("Không được di chuyển slot sang section khác bằng PUT hiện tại");
         }
-        return AssessmentBlueprintSlot.builder()
-            .id(existing.getId())
-            .sectionId(existing.getSectionId())
-            .blueprintVersionId(existing.getBlueprintVersionId())
-            .order(command.order())
-            .weight(defaultWeight(command.weight()))
-            .prepTimeSecondsOverride(command.prepTimeSecondsOverride())
-            .responseTimeSecondsOverride(command.responseTimeSecondsOverride())
-            .slotType(command.slotType())
-            .fixedQuestionId(command.fixedQuestionId())
-            .selectionSpec(selectionSpecOf(command.selectionSpec()))
-            .createdAt(existing.getCreatedAt())
-            .createdBy(existing.getCreatedBy())
-            .build();
+        return existing.revisedWith(
+            command.order(),
+            defaultWeight(command.weight()),
+            command.prepTimeSecondsOverride(),
+            command.responseTimeSecondsOverride(),
+            command.slotType(),
+            command.fixedQuestionId(),
+            selectionSpecOf(command.selectionSpec()));
     }
 
     private void deleteRemovedSlots(Map<UUID, Map<UUID, AssessmentBlueprintSlot>> existingSlotsBySectionId, Set<UUID> keptSlotIds) {

@@ -38,13 +38,12 @@ class UpdateSupportedLanguageUseCaseTests {
     void setUp() {
         supportedLanguageRepository = mock(SupportedLanguageRepository.class);
         userContextPort = mock(UserContextPort.class);
-        useCase = new UpdateSupportedLanguageUseCase(supportedLanguageRepository, userContextPort);
+        useCase = new UpdateSupportedLanguageUseCase(supportedLanguageRepository);
     }
 
     @Test
     void update_should_call_single_update_statement_with_normalized_values_and_audit_fields() {
         UUID id = UUID.randomUUID();
-        UUID userId = UUID.randomUUID();
         UpdateSupportedLanguageCommand command = new UpdateSupportedLanguageCommand(
             id,
             " fr ",
@@ -57,7 +56,6 @@ class UpdateSupportedLanguageUseCaseTests {
             true
         );
         when(supportedLanguageRepository.findByCode("FR")).thenReturn(Optional.empty());
-        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(supportedLanguageRepository.updateMutableFields(
             eq(id),
             eq("FR"),
@@ -67,9 +65,7 @@ class UpdateSupportedLanguageUseCaseTests {
             eq("New description"),
             eq(true),
             eq(false),
-            eq(true),
-            any(Instant.class),
-            eq(userId.toString())
+            eq(true)
         )).thenReturn(1);
 
         UpdateSupportedLanguageResponse result = useCase.execute(command);
@@ -84,18 +80,14 @@ class UpdateSupportedLanguageUseCaseTests {
             eq("New description"),
             eq(true),
             eq(false),
-            eq(true),
-            any(Instant.class),
-            eq(userId.toString())
+            eq(true)
         );
     }
 
     @Test
     void update_should_clear_description_when_description_is_provided_as_null() {
         UUID id = UUID.randomUUID();
-        UUID userId = UUID.randomUUID();
         UpdateSupportedLanguageCommand command = new UpdateSupportedLanguageCommand(id, null, false, null, false, null, true, null, false);
-        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(supportedLanguageRepository.updateMutableFields(
             eq(id),
             isNull(),
@@ -105,9 +97,7 @@ class UpdateSupportedLanguageUseCaseTests {
             isNull(),
             eq(true),
             isNull(),
-            eq(false),
-            any(Instant.class),
-            eq(userId.toString())
+            eq(false)
         )).thenReturn(1);
 
         useCase.execute(command);
@@ -121,9 +111,7 @@ class UpdateSupportedLanguageUseCaseTests {
             isNull(),
             eq(true),
             isNull(),
-            eq(false),
-            any(Instant.class),
-            eq(userId.toString())
+            eq(false)
         );
     }
 
@@ -138,17 +126,15 @@ class UpdateSupportedLanguageUseCaseTests {
 
         assertThat(exception).hasMessage("Ngôn ngữ đã tồn tại với mã: FR");
         verify(supportedLanguageRepository, never()).updateMutableFields(any(), any(), any(Boolean.class), any(), any(Boolean.class),
-            any(), any(Boolean.class), any(), any(Boolean.class), any(), any());
+            any(), any(Boolean.class), any(), any(Boolean.class));
     }
 
     @Test
     void update_should_allow_same_code_on_same_language() {
         UUID id = UUID.randomUUID();
-        UUID userId = UUID.randomUUID();
         SupportedLanguage existing = language(id, "EN", "English", null, true);
         UpdateSupportedLanguageCommand command = new UpdateSupportedLanguageCommand(id, "en", true, null, false, null, false, null, false);
         when(supportedLanguageRepository.findByCode("EN")).thenReturn(Optional.of(existing));
-        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(supportedLanguageRepository.updateMutableFields(
             eq(id),
             eq("EN"),
@@ -158,9 +144,7 @@ class UpdateSupportedLanguageUseCaseTests {
             isNull(),
             eq(false),
             isNull(),
-            eq(false),
-            any(Instant.class),
-            eq(userId.toString())
+            eq(false)
         )).thenReturn(1);
 
         UpdateSupportedLanguageResponse result = useCase.execute(command);
@@ -177,7 +161,7 @@ class UpdateSupportedLanguageUseCaseTests {
 
         assertThat(exception).hasMessage("Cần cung cấp ít nhất một trường để cập nhật");
         verify(supportedLanguageRepository, never()).updateMutableFields(any(), any(), any(Boolean.class), any(), any(Boolean.class),
-            any(), any(Boolean.class), any(), any(Boolean.class), any(), any());
+            any(), any(Boolean.class), any(), any(Boolean.class));
     }
 
     @Test
@@ -189,7 +173,7 @@ class UpdateSupportedLanguageUseCaseTests {
 
         assertThat(exception).hasMessage("Tên ngôn ngữ không được để trống");
         verify(supportedLanguageRepository, never()).updateMutableFields(any(), any(), any(Boolean.class), any(), any(Boolean.class),
-            any(), any(Boolean.class), any(), any(Boolean.class), any(), any());
+            any(), any(Boolean.class), any(), any(Boolean.class));
     }
 
     @Test
@@ -200,7 +184,7 @@ class UpdateSupportedLanguageUseCaseTests {
         assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
 
         verify(supportedLanguageRepository, never()).updateMutableFields(any(), any(), any(Boolean.class), any(), any(Boolean.class),
-            any(), any(Boolean.class), any(), any(Boolean.class), any(), any());
+            any(), any(Boolean.class), any(), any(Boolean.class));
     }
 
     @Test
@@ -212,16 +196,14 @@ class UpdateSupportedLanguageUseCaseTests {
 
         assertThat(exception).hasMessage("Mô tả ngôn ngữ không được vượt quá 2048 ký tự");
         verify(supportedLanguageRepository, never()).updateMutableFields(any(), any(), any(Boolean.class), any(), any(Boolean.class),
-            any(), any(Boolean.class), any(), any(Boolean.class), any(), any());
+            any(), any(Boolean.class), any(), any(Boolean.class));
     }
 
     @Test
     void update_should_throw_when_update_statement_returns_zero() {
         UUID id = UUID.randomUUID();
-        UUID userId = UUID.randomUUID();
         UpdateSupportedLanguageCommand command = new UpdateSupportedLanguageCommand(id, "FR", true, null, false, null, false, null, false);
         when(supportedLanguageRepository.findByCode("FR")).thenReturn(Optional.empty());
-        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(supportedLanguageRepository.updateMutableFields(
             eq(id),
             eq("FR"),
@@ -231,9 +213,7 @@ class UpdateSupportedLanguageUseCaseTests {
             isNull(),
             eq(false),
             isNull(),
-            eq(false),
-            any(Instant.class),
-            eq(userId.toString())
+            eq(false)
         )).thenReturn(0);
 
         ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> useCase.execute(command));
@@ -244,10 +224,8 @@ class UpdateSupportedLanguageUseCaseTests {
     @Test
     void update_should_rethrow_database_duplicate_as_duplicated_exception() {
         UUID id = UUID.randomUUID();
-        UUID userId = UUID.randomUUID();
         UpdateSupportedLanguageCommand command = new UpdateSupportedLanguageCommand(id, "FR", true, null, false, null, false, null, false);
         when(supportedLanguageRepository.findByCode("FR")).thenReturn(Optional.empty());
-        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(supportedLanguageRepository.updateMutableFields(
             eq(id),
             eq("FR"),
@@ -257,9 +235,7 @@ class UpdateSupportedLanguageUseCaseTests {
             isNull(),
             eq(false),
             isNull(),
-            eq(false),
-            any(Instant.class),
-            eq(userId.toString())
+            eq(false)
         )).thenThrow(new DataConflictException("duplicate", null));
 
         ResourceDuplicatedException exception = assertThrows(ResourceDuplicatedException.class, () -> useCase.execute(command));

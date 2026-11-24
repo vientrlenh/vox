@@ -277,19 +277,9 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
 
                         criterionsToSave.add(targetCriterion);
                     } else {
-                        targetCriterion = RubricCriterion.builder()
-                                .rubricVersionId(versionId)
-                                .frameworkCriterionId(fwCriterionId)
-                                .code(safeCode)
-                                .name(safeNameStr)
-                                .description(descStr)
-                                .examples(examplesObj)
-                                .weight(weight)
-                                .minScore(minScore)
-                                .maxScore(maxScore)
-                                .order(order)
-                                .required(isRequired)
-                                .build();
+                        targetCriterion = RubricCriterion.create(
+                                versionId, fwCriterionId, safeCode, safeNameStr, descStr, examplesObj,
+                                weight, minScore, maxScore, order, isRequired);
                         criterionsToSave.add(targetCriterion);
                     }
 

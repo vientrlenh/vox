@@ -31,8 +31,7 @@ public interface SchoolRepository {
     boolean existsByIdAndIsActiveTrue(UUID schoolId);
 
     int updateSchoolAtomic(UUID id, String name, String description, boolean descriptionProvided, String phone,
-                           String email, String domain, boolean domainProvided, String address, Integer studentCount,
-                           Instant now, String updatedBy);
+                           String email, String domain, boolean domainProvided, String address, Integer studentCount);
     List<School> findByIdIn(Collection<UUID> ids);
     boolean existsByCode(String code);
 

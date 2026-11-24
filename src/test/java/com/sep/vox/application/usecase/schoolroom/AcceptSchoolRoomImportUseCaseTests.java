@@ -72,12 +72,12 @@ class AcceptSchoolRoomImportUseCaseTests {
     @Test
     void execute_should_mark_queued_with_room_type() {
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.of(previewedSession()));
-        when(importSessionRepository.markQueued(eq(sessionId), eq("SCHOOL_ROOM"), any(), any(), eq(userId.toString())))
+        when(importSessionRepository.markQueued(eq(sessionId), eq("SCHOOL_ROOM"), any(), any()))
             .thenReturn(1);
 
         useCase.execute(new AcceptSchoolRoomImportCommand(schoolId, sessionId, validMapping()));
 
-        verify(importSessionRepository).markQueued(eq(sessionId), eq("SCHOOL_ROOM"), any(), any(), eq(userId.toString()));
+        verify(importSessionRepository).markQueued(eq(sessionId), eq("SCHOOL_ROOM"), any(), any());
     }
 
     @Test
@@ -87,7 +87,7 @@ class AcceptSchoolRoomImportUseCaseTests {
         assertThatThrownBy(() -> useCase.execute(
                 new AcceptSchoolRoomImportCommand(schoolId, sessionId, Map.of("Mã phòng", "code"))))
             .isInstanceOf(IllegalArgumentException.class);
-        verify(importSessionRepository, never()).markQueued(any(), any(), any(), any(), any());
+        verify(importSessionRepository, never()).markQueued(any(), any(), any(), any());
     }
 
     @Test

@@ -61,14 +61,13 @@ public class CreateAssessmentBlueprintSectionUseCase implements IUseCase<CreateA
             throw new IllegalArgumentException("Thứ tự section đã tồn tại trong version này");
         }
 
-        AssessmentBlueprintSection section = AssessmentBlueprintSection.builder()
-            .blueprintVersionId(version.getId())
-            .order(command.order())
-            .title(command.title())
-            .instruction(command.instruction())
-            .sectionTimeLimitSeconds(command.sectionTimeLimitSeconds())
-            .sectionWeight(command.sectionWeight() == null ? BigDecimal.ONE : command.sectionWeight())
-            .build();
+        AssessmentBlueprintSection section = AssessmentBlueprintSection.create(
+            version.getId(),
+            command.order(),
+            command.title(),
+            command.instruction(),
+            command.sectionTimeLimitSeconds(),
+            command.sectionWeight() == null ? BigDecimal.ONE : command.sectionWeight());
         return AssessmentBlueprintSectionDtoMapper.toDto(assessmentBlueprintSectionRepository.save(section));
     }
 

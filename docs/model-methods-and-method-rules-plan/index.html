@@ -1,0 +1,1079 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Model methods, audit-stamp parameters and method rules plan</title>
+<style>
+  :root {
+    --bg: #fafaf8; --surface: #ffffff; --text: #1d1d1b; --muted: #5f5f5a; --border: #e2e1dc;
+    --accent: #1f5fbf; --accent-soft: #e8f0fc; --warn: #8a5a00; --warn-soft: #fdf3dc;
+    --ok: #17673a; --ok-soft: #e3f4ea; --bad: #9b1c1c; --bad-soft: #fbe6e6; --code-bg: #f3f2ee;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #151514; --surface: #1d1d1b; --text: #ecebe6; --muted: #a2a19a; --border: #33332f;
+      --accent: #7fb0f5; --accent-soft: #1b2a40; --warn: #f0c36a; --warn-soft: #3a2f14;
+      --ok: #7fd3a0; --ok-soft: #14301f; --bad: #f19a9a; --bad-soft: #3d1b1b; --code-bg: #262623;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #151514; --surface: #1d1d1b; --text: #ecebe6; --muted: #a2a19a; --border: #33332f;
+    --accent: #7fb0f5; --accent-soft: #1b2a40; --warn: #f0c36a; --warn-soft: #3a2f14;
+    --ok: #7fd3a0; --ok-soft: #14301f; --bad: #f19a9a; --bad-soft: #3d1b1b; --code-bg: #262623;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 32px 16px 96px; }
+  h1 { font-size: 1.9rem; line-height: 1.2; margin: 0 0 8px; }
+  h2 { font-size: 1.35rem; margin: 48px 0 12px; padding-top: 16px; border-top: 1px solid var(--border); }
+  h3 { font-size: 1.05rem; margin: 28px 0 8px; }
+  p, li { max-width: 72ch; }
+  .meta { color: var(--muted); font-size: .92rem; margin-bottom: 20px; }
+  .status { display: inline-block; border-radius: 999px; padding: 2px 12px; font-size: .8rem;
+    font-weight: 600; white-space: nowrap; background: var(--code-bg); color: var(--muted); }
+  .status.draft, .status.open { background: var(--warn-soft); color: var(--warn); }
+  .status.approved, .status.progress { background: var(--accent-soft); color: var(--accent); }
+  .status.done, .status.answered { background: var(--ok-soft); color: var(--ok); }
+  .status.blocked { background: var(--bad-soft); color: var(--bad); }
+  nav { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 18px; margin: 20px 0; }
+  nav ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 32px; }
+  nav a, td a { color: var(--accent); text-decoration: none; }
+  code { background: var(--code-bg); padding: 1px 6px; border-radius: 4px;
+    font: .88em ui-monospace, "SF Mono", Menlo, monospace; }
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; font: .85rem/1.5 ui-monospace, "SF Mono", Menlo, monospace; }
+  pre code { background: none; padding: 0; }
+  .table-scroll { overflow-x: auto; margin: 12px 0; }
+  table { border-collapse: collapse; width: 100%; background: var(--surface);
+    border: 1px solid var(--border); font-size: .92rem; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--code-bg); font-weight: 600; white-space: nowrap; }
+  td.indent { padding-left: 32px; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .callout { border-left: 4px solid var(--accent); background: var(--accent-soft);
+    padding: 10px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+  .callout.warn { border-color: var(--warn); background: var(--warn-soft); }
+  .callout.ok { border-color: var(--ok); background: var(--ok-soft); }
+  .callout p { margin: 4px 0; }
+  .decision, .phase { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 4px 18px 14px; margin: 14px 0; }
+  .decision h3, .phase h3 { margin-top: 14px; }
+  .rec { color: var(--ok); font-weight: 600; }
+  .answer { background: var(--code-bg); border-radius: 8px; padding: 8px 12px; margin: 10px 0 0; color: var(--muted); }
+  .decision[data-decision-state="answered"] .answer { background: var(--ok-soft); color: var(--text); }
+  .tag { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .jobs { list-style: none; padding: 0; margin: 10px 0; }
+  .job { border-top: 1px solid var(--border); padding: 10px 0; }
+  .job > .title { font-weight: 600; }
+  .status-log { font-size: .85rem; color: var(--muted); margin: 8px 0 0; padding-left: 20px; }
+  .status-log:empty { display: none; }
+  @media (max-width: 600px) { nav ol { columns: 1; } h1 { font-size: 1.5rem; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Model methods, audit-stamp parameters and method rules plan</h1>
+<div class="meta">
+  Repository: <code>vox</code> &middot; Branch: <code>default</code> &middot; Written 2026-11-24 &middot;
+  Plan status: <span class="status approved" id="plan-status" data-plan-status="approved">Approved</span>
+</div>
+
+<p>Three changes. <strong>(1)</strong> Application code stops calling <code>Model.builder()</code>: 162 calls on 59 models in 103 files become named factory and behaviour methods on the models. <strong>(2)</strong> 17 repository methods stop receiving <code>Instant</code>, <code>UUID</code> or <code>String</code> values whose only job is to write <code>updated_at</code> or <code>updated_by</code>. <strong>(3)</strong> Methods that break the coding rules are migrated: 586 methods are longer than 25 lines, 19 have vague names, and comments that only restate code are removed from every method the plan edits. Worth doing because the same builder blocks are copied across 17 import use cases, because AGENTS.md says use cases never pass a user id or <code>now</code> only to stamp a row while 15 repository methods still do, and because 270 use case <code>execute</code> methods alone are over 25 lines. Decisions D2 to D7 are answered (all as recommended); nothing in this plan changes a public contract or a database table.</p>
+
+<nav aria-label="Contents">
+  <ol>
+    <li><a href="#progress">Progress</a></li>
+    <li><a href="#current">Current state</a></li>
+    <li><a href="#decisions">Decisions</a></li>
+    <li><a href="#phases">Phases</a></li>
+    <li><a href="#risks">Risks</a></li>
+    <li><a href="#scope">Out of scope</a></li>
+    <li><a href="#verify">Verification</a></li>
+    <li><a href="#changelog">Change log</a></li>
+    <li><a href="#notes">Implementation notes</a></li>
+  </ol>
+</nav>
+
+<h2 id="progress">Progress</h2>
+<p id="overview-summary" class="meta"></p>
+<div class="table-scroll"><table>
+  <thead><tr><th>Phase / job</th><th>Status</th></tr></thead>
+  <tbody id="overview-body"></tbody>
+</table></div>
+
+<h2 id="current">1. Current state (measured)</h2>
+<h3>Baseline (2026-11-24, branch <code>default</code>, clean tree)</h3>
+<div class="table-scroll"><table>
+  <thead><tr><th>Check</th><th>Result</th></tr></thead>
+  <tbody>
+    <tr><td><code>./gradlew compileJava compileTestJava</code></td><td>passes</td></tr>
+    <tr><td><code>./gradlew test</code></td><td>2,700 tests, 0 failures, 1 m 11 s</td></tr>
+    <tr><td><code>./gradlew integrationTest</code> (Docker running)</td><td>438 tests, 0 failures, 2 m 47 s</td></tr>
+  </tbody>
+</table></div>
+<p>No failure exists today, so none is carried into this plan.</p>
+<h3>1.1 Builders in application (item 1)</h3>
+<ul>
+<li><code>grep -rnE '[A-Z][A-Za-z0-9]*\.builder\(\)' src/main/java/com/sep/vox/application</code> finds <strong>162 calls in 103 files</strong>. All 162 are on domain models (59 of the 104 concrete classes in <code>domain/model</code>); no other type is built there.</li>
+<li>The same grep finds 279 calls in <code>infrastructure</code> (mappers), 10 in <code>domain</code> (copy methods inside models) and 4 in <code>interfaces</code> (other types: <code>JsonMapper</code>, <code>QuizAnswer</code>, <code>SubmitPracticeTurn</code>, <code>TurnCorrectionSubmission</code>). They are not changed.</li>
+<li>28 models already have 42 static factories; <strong>none of the 59 models called through <code>builder()</code> in application has one</strong>. Duplication is the main symptom: the 17 <code>Preview*ImportFromFileUseCase</code> classes each spell out the same <code>ImportSession</code> field list (counters 0, status <code>PREVIEWED</code>, nulls written out) and the same <code>ImportRow</code> field list.</li>
+<li>5 more sites build a model with <code>new</code> plus setters (<code>AssessmentCandidateResult</code> x4, <code>QuestionCollaborator</code> x1). 193 test files use model builders for fixtures. Neither is in scope.</li>
+</ul>
+<div class="table-scroll"><table>
+  <thead><tr><th>Family</th><th>Model and call count</th><th class="num">Calls</th><th class="num">Files</th><th>Phase</th></tr></thead>
+  <tbody>
+    <tr><td>Import sessions and rows</td><td><code>ImportSession</code> 17, <code>ImportRow</code> 17</td><td class="num">34</td><td class="num">17</td><td>Phase 3</td></tr>
+    <tr><td>Rubrics</td><td><code>Rubric</code> 3, <code>RubricVersion</code> 4, <code>RubricCriterion</code> 4, <code>RubricResultBand</code> 4</td><td class="num">15</td><td class="num">12</td><td>Phase 4</td></tr>
+    <tr><td>Assessment papers and blueprints</td><td><code>AssessmentPaper</code> 3, <code>AssessmentPaperSection</code> 6, <code>AssessmentPaperItem</code> 10, <code>AssessmentBlueprint</code> 2, <code>AssessmentBlueprintSection</code> 4, <code>AssessmentBlueprintSlot</code> 4, <code>AssessmentBlueprintVersion</code> 1</td><td class="num">30</td><td class="num">11</td><td>Phase 5</td></tr>
+    <tr><td>Assessments, proctors, appeals and policies</td><td><code>Assessment</code> 2, <code>AssessmentMember</code> 2, <code>AssessmentScheduleProctor</code> 3, <code>AssessmentSession</code> 2, <code>AssessmentProctoringAlert</code> 1, <code>AssessmentRecording</code> 1, <code>AssessmentResultAppeal</code> 1, <code>AssessmentResultAppealItem</code> 1, <code>AssessmentPolicy</code> 3</td><td class="num">16</td><td class="num">13</td><td>Phase 6</td></tr>
+    <tr><td>Responses, evaluations and result history</td><td><code>AssessmentItemEvaluation</code> 4, <code>AssessmentItemEvaluationTurn</code> 1, <code>AssessmentItemCriterionScore</code> 2, <code>AssessmentItemResponse</code> 2, <code>AssessmentItemResponseTurn</code> 1, <code>AssessmentResultStatusHistory</code> 3</td><td class="num">13</td><td class="num">6</td><td>Phase 7</td></tr>
+    <tr><td>Questions, topics and suggestions</td><td><code>Question</code> 3, <code>QuestionEvaluationGuide</code> 4, <code>QuestionAsset</code> 4, <code>QuestionTopic</code> 2, <code>QuestionBankGrade</code> 1, <code>TopicSuggestion</code> 2</td><td class="num">16</td><td class="num">10</td><td>Phase 8</td></tr>
+    <tr><td>Practice and interest</td><td><code>PracticeTopic</code> 3, <code>PracticePaper</code> 1, <code>PracticePaperItem</code> 2, <code>PracticeQuestion</code> 1, <code>PracticeSession</code> 1, <code>TopicInterestScoreEntry</code> 1, <code>InterestDimension</code> 2</td><td class="num">11</td><td class="num">9</td><td>Phase 9</td></tr>
+    <tr><td>Frameworks and scoring rules</td><td><code>Framework</code> 1, <code>FrameworkVersion</code> 2, <code>FrameworkCriterion</code> 1, <code>FrameworkCriterionBand</code> 1, <code>FrameworkResultBand</code> 1, <code>ScoringRule</code> 2</td><td class="num">8</td><td class="num">8</td><td>Phase 10</td></tr>
+    <tr><td>Schools, users and catalogs</td><td><code>SchoolRoom</code> 2, <code>SchoolGrade</code> 2, <code>SchoolClassUser</code> 3, <code>UserRole</code> 3, <code>GradeLevel</code> 1, <code>SupportedLanguage</code> 1</td><td class="num">12</td><td class="num">12</td><td>Phase 11</td></tr>
+    <tr><td>Money and quota (Ask first)</td><td><code>OrderItem</code> 1, <code>SubscriptionPlanQuota</code> 2, <code>SchoolDebtEvent</code> 1, <code>SchoolSubscriptionQuotaUserAllocation</code> 1, <code>QuotaPricingCalibration</code> 1, <code>AiUsageRecord</code> 1</td><td class="num">7</td><td class="num">7</td><td>Phase 12</td></tr>
+    <tr><td><strong>Total</strong></td><td></td><td class="num">162</td><td class="num">103</td><td></td></tr>
+  </tbody>
+</table></div>
+<p>A file can hold models of two families (an import use case builds <code>ImportSession</code> and a rubric); its exemption entry is removed when its last builder call is gone, so the per-family file counts add up to more than 103.</p>
+<h3>1.2 Repository methods that pass audit stamps (item 2)</h3>
+<ul>
+<li>Spring Data repositories hold 72 <code>@Modifying</code> methods in 44 files; 19 of them write <code>updated_at</code>, 16 of those also <code>updated_by</code>. The domain interfaces expose <strong>17</strong> methods that carry a stamp parameter (table below), called from <strong>27</strong> production sites and referenced by <strong>27</strong> test files (19 application, 8 infrastructure).</li>
+<li>The auditing hook cannot help these statements (bulk updates bypass it). <code>AuditActorProvider</code> already returns the actor (scope actor, else authenticated user, else <code>"System"</code>); there is no <code>Clock</code> bean and <code>Instant.now()</code> appears 271 times in main.</li>
+<li>None of the 12 entities involved has <code>@Version</code>; the <code>WHERE</code> clauses are guards (<code>status = 'DRAFT'</code>, <code>'PREVIEWED'</code>, <code>'PENDING'</code>), and the import queue claim is a <code>FOR UPDATE SKIP LOCKED</code> select followed by <code>markClaimed</code>.</li>
+<li><code>ImportSessionRepository.markImporting</code> has no caller in main or test.</li>
+<li>AGENTS.md "Audit columns" currently says <code>@Modifying</code> and native statements "still set updated_at/updated_by themselves (the user id as text)".</li>
+<li>Seven other <code>@Modifying</code> methods take <code>Instant now</code> for a business column and do not touch <code>updated_at</code>: <code>DeviceSession.revokeDeviceSession</code>, <code>Notification.markRead</code>, <code>markAllRead</code>, <code>NotificationDevice.registerDevice</code>, <code>Outbox.releaseExpiredLeases</code>, <code>PasswordSetUpToken.updateUsedToken</code>, <code>RefreshToken.markUsedAndReplacedBy</code> (D3).</li>
+</ul>
+<div class="table-scroll"><table>
+  <thead><tr><th class="num">#</th><th>Domain repository method</th><th>Stamp parameters</th><th>Guard or shape</th><th>Production callers</th><th>Kind</th></tr></thead>
+  <tbody>
+    <tr><td class="num">1</td><td><code>AssessmentScheduleRepository.updateAtomic</code></td><td><code>now</code>, <code>updatedBy</code></td><td>guard <code>status = DRAFT</code></td><td><code>UpdateAssessmentScheduleUseCase</code></td><td>guarded</td></tr>
+    <tr><td class="num">2</td><td><code>GradeLevelRepository.updateGradeLevelAtomic</code></td><td><code>updatedAt</code>, <code>updatedBy</code></td><td></td><td><code>UpdateGradeLevelUseCase</code></td><td>plain</td></tr>
+    <tr><td class="num">3</td><td><code>SchoolRepository.updateSchoolAtomic</code></td><td><code>now</code>, <code>updatedBy</code></td><td></td><td><code>UpdateSchoolUseCase</code></td><td>plain</td></tr>
+    <tr><td class="num">4</td><td><code>SchoolClassRepository.updateMutableFields</code></td><td><code>updatedAt</code>, <code>updatedBy</code></td><td></td><td><code>UpdateSchoolClassUseCase</code></td><td>plain</td></tr>
+    <tr><td class="num">5</td><td><code>SchoolClassRepository.archiveByGradeId</code></td><td><code>updatedAt</code>, <code>updatedBy</code></td><td>bulk by grade</td><td><code>DeleteSchoolGradeUseCase</code></td><td>bulk</td></tr>
+    <tr><td class="num">6</td><td><code>SchoolRoomRepository.updateSchoolRoomAtomic</code></td><td><code>now</code>, <code>updatedBy</code></td><td></td><td><code>UpdateSchoolRoomUseCase</code></td><td>plain</td></tr>
+    <tr><td class="num">7</td><td><code>SupportedLanguageRepository.updateMutableFields</code></td><td><code>updatedAt</code>, <code>updatedBy</code></td><td></td><td><code>UpdateSupportedLanguageUseCase</code></td><td>plain</td></tr>
+    <tr><td class="num">8</td><td><code>SchoolGradeRepository.updateSchoolGradeAtomic</code></td><td><code>now</code>, <code>updatedBy</code></td><td></td><td><code>UpdateSchoolGradeUseCase</code></td><td>plain</td></tr>
+    <tr><td class="num">9</td><td><code>RubricCriterionRepository.updateCriterionAtomic</code></td><td><code>updatedAt</code>, <code>updatedBy</code></td><td><code>COALESCE</code> patch</td><td><code>UpdateSystemRubricCriterionUseCase</code>, <code>UpdateSchoolRubricCriterionUseCase</code></td><td>plain</td></tr>
+    <tr><td class="num">10</td><td><code>RubricResultBandRepository.updateResultBandAtomic</code></td><td><code>updatedAt</code>, <code>updatedBy</code></td><td><code>COALESCE</code> patch</td><td>system and school result band use cases</td><td>plain</td></tr>
+    <tr><td class="num">11</td><td><code>RubricVersionRepository.updateRubricVersionAtomic</code></td><td><code>updatedAt</code>, <code>updatedBy</code></td><td><code>COALESCE</code> patch</td><td>system and school version use cases</td><td>plain</td></tr>
+    <tr><td class="num">12</td><td><code>ImportSessionRepository.markImporting</code></td><td><code>now</code>, <code>updatedBy</code></td><td>guard <code>PREVIEWED</code>, not expired</td><td>none (dead)</td><td>dead</td></tr>
+    <tr><td class="num">13</td><td><code>ImportSessionRepository.markQueued</code></td><td><code>now</code>, <code>updatedBy</code></td><td>guard <code>PREVIEWED</code>, not expired</td><td>9 <code>Accept*ImportUseCase</code></td><td>guarded</td></tr>
+    <tr><td class="num">14</td><td><code>ImportSessionRepository.markClaimed</code></td><td><code>now</code> (also <code>claimed_at</code>), actor = worker id</td><td>queue claim</td><td><code>ImportQueueService</code></td><td>mixed</td></tr>
+    <tr><td class="num">15</td><td><code>ImportSessionRepository.requeueExpiredLeases</code></td><td><code>now</code> (also the lease predicate)</td><td>native, <code>updated_at</code> only</td><td><code>ImportQueueService</code></td><td>mixed</td></tr>
+    <tr><td class="num">16</td><td><code>RegisterFormRepository.updateApprovedRegisterForm</code></td><td><code>now</code>; UUID writes <code>reviewed_by</code></td><td>guard <code>PENDING</code></td><td><code>ApproveRegisterFormUseCase</code></td><td>mixed</td></tr>
+    <tr><td class="num">17</td><td><code>RegisterFormRepository.updateRejectedRegisterForm</code></td><td><code>now</code>; UUID writes <code>reviewed_by</code></td><td>guard <code>PENDING</code></td><td><code>RejectRegisterFormUseCase</code></td><td>mixed</td></tr>
+  </tbody>
+</table></div>
+<h3>1.3 Methods that break the coding rules (item 3)</h3>
+<ul>
+<li>Measured with the JDK compiler tree API (a throw-away <code>MethodLengths.java</code>, not in the repository): 8,408 methods and constructors in <code>src/main/java</code>, counted from the return type or constructor name to the closing brace (annotations and Javadoc excluded). <strong>586 are longer than 25 lines</strong>, 442 longer than 30, 190 longer than 50, 25 longer than 100, in 442 files. 270 of the 586 are <code>execute</code> methods of use cases (the name is fixed by <code>IUseCase</code>).</li>
+<li>Largest: <code>RecordAssessmentAttemptEvaluationUseCase.persistEvaluation</code> (297 lines), <code>RubricCriterionImportCommitHandler.commit</code> (268), <code>ConfidenceReviewCalculator.compute</code> (225), <code>NotificationPushedEventConsumer.renderDrafts</code> (224).</li>
+<li>Comments in main: 4,782 <code>//</code> lines (2,461 Vietnamese) and 5,053 Vietnamese Javadoc or block lines. In <code>application</code> alone 460 lines are numbered step labels (<code>// 1.</code>, <code>// Step</code>); each is judged against the "Self-explaining code" rule when its method is edited. Only the comments inside methods the plan edits are touched (AGENTS.md "Language": do not translate files you do not otherwise touch).</li>
+<li>Vague names (AGENTS.md: avoid <code>data</code>, <code>info</code>, <code>handle</code>, <code>process</code>, <code>manager</code>): <strong>19 methods</strong> &ndash; <code>processRows</code> x6 (import commit handlers), <code>handleDlt</code> x10 (Kafka consumers), <code>handle</code> x2 (event listeners), <code>data</code> x1. Nothing in <code>src/test</code> calls them. 46 more methods contain such a word in their name and are left: domain terms (<code>rawDataJson</code>), framework names (<code>authenticationManager</code>), and <code>GlobalExceptionHandler.handleNotFound</code>-style methods whose name already says which exception they answer.</li>
+<li>Example: <code>UpdateSchoolRoomUseCase.execute</code> is a 43-line method with <code>// 1. Validate the user (optimized with an exists call)</code> and <code>// Return the id of the room that was just updated</code>, and it is also a stamp caller (item 2).</li>
+<li>Test net: of the 350 application files with a long method, 207 (248 methods) have no <code>XxxTests</code> class of their own (D7).</li>
+</ul>
+<div class="table-scroll"><table>
+  <thead><tr><th>Layer</th><th class="num">Methods over 25 lines</th><th class="num">Over 30</th><th class="num">Files</th></tr></thead>
+  <tbody>
+    <tr><td>application</td><td class="num">432</td><td class="num">328</td><td class="num">350</td></tr>
+    <tr><td>infrastructure</td><td class="num">123</td><td class="num">95</td><td class="num">66</td></tr>
+    <tr><td>interfaces</td><td class="num">18</td><td class="num">11</td><td class="num">16</td></tr>
+    <tr><td>domain</td><td class="num">13</td><td class="num">8</td><td class="num">10</td></tr>
+    <tr><td><strong>Total</strong></td><td class="num">586</td><td class="num">442</td><td class="num">442</td></tr>
+  </tbody>
+</table></div>
+<div class="table-scroll"><table>
+  <thead><tr><th>Area</th><th class="num">Methods</th><th class="num">Files</th><th>Phase</th></tr></thead>
+  <tbody>
+    <tr><td>Application services: import commit and queue</td><td class="num">27</td><td class="num">14</td><td>Phase 13</td></tr>
+    <tr><td>Application services: the rest</td><td class="num">53</td><td class="num">37</td><td>Phase 14</td></tr>
+    <tr><td>Use cases: schools, classes, grades, rooms, users, registration, subscriptions (view and catalog)</td><td class="num">57</td><td class="num">49</td><td>Phase 15</td></tr>
+    <tr><td>Use cases: school and teacher rubrics</td><td class="num">36</td><td class="num">35</td><td>Phase 16</td></tr>
+    <tr><td>Use cases: system rubrics</td><td class="num">26</td><td class="num">26</td><td>Phase 17</td></tr>
+    <tr><td>Use cases: assessments and schedules</td><td class="num">36</td><td class="num">26</td><td>Phase 18</td></tr>
+    <tr><td>Use cases: blueprints, papers and assessment policies</td><td class="num">44</td><td class="num">36</td><td>Phase 19</td></tr>
+    <tr><td>Use cases: frameworks, scoring rules and practice</td><td class="num">29</td><td class="num">26</td><td>Phase 20</td></tr>
+    <tr><td>Use cases: candidates, sessions, item responses and appeals</td><td class="num">30</td><td class="num">26</td><td>Phase 21</td></tr>
+    <tr><td>Use cases: grading and evaluation</td><td class="num">26</td><td class="num">18</td><td>Phase 22</td></tr>
+    <tr><td>Use cases: questions, question banks and topics</td><td class="num">35</td><td class="num">34</td><td>Phase 23</td></tr>
+    <tr><td>Application mappers and the domain layer</td><td class="num">16</td><td class="num">13</td><td>Phase 24</td></tr>
+    <tr><td>Infrastructure: persistence (queries, adapters, mappers)</td><td class="num">66</td><td class="num">31</td><td>Phase 25</td></tr>
+    <tr><td>Infrastructure: events, initializers, services, workers, config</td><td class="num">47</td><td class="num">28</td><td>Phase 26</td></tr>
+    <tr><td>Interfaces: GraphQL, gRPC, Kafka, REST DTOs</td><td class="num">15</td><td class="num">13</td><td>Phase 27</td></tr>
+    <tr><td>Money and quota code (Ask first)</td><td class="num">37</td><td class="num">25</td><td>Phase 28</td></tr>
+    <tr><td>Security paths (Ask first; not scheduled, see Out of scope)</td><td class="num">6</td><td class="num">5</td><td>-</td></tr>
+    <tr><td><strong>Total</strong></td><td class="num">586</td><td class="num">442</td><td></td></tr>
+  </tbody>
+</table></div>
+<h3>1.4 Ask-first overlaps</h3>
+<ul>
+<li><strong>Money and quota:</strong> 37 long methods in 25 files plus 7 builder calls (D6). <strong>Security and JWT/OAuth:</strong> 6 long methods in 5 files (<code>SecurityConfig</code> x2, <code>GoogleIdTokenProvider</code>, <code>JwtStreamTokenProvider</code>, <code>JwtGrpcServerInterceptor</code>, <code>OAuth2AuthenticationSuccessHandler</code>) are not scheduled.</li>
+<li>No Flyway migration, REST/GraphQL schema, gRPC proto, Kafka topic or payload, or JWT claim changes: <code>git diff --stat -- src/main/resources</code> must stay empty.</li>
+</ul>
+<h3>1.5 Noticed and not fixed</h3>
+<ul>
+<li><code>CreateAssessmentPaperUseCase</code> calls <code>assessmentPaperItemRepository.save(...)</code> inside loops (AGENTS.md "No N+1 queries"); phase 5 moves those calls but does not batch them.</li>
+<li><code>SchoolBalanceRepository.findBySchoolIdForUpdateOrCreate(schoolId, now)</code> and <code>SchoolBalance.emptyFor(schoolId, now)</code> pass <code>now</code> that stamps <code>created_at</code>/<code>updated_at</code>; money code, left as it is.</li>
+<li><code>InterestDimension.deactivate</code> writes <code>updated_at = CURRENT_TIMESTAMP</code> in a native statement and sets no <code>updated_by</code>.</li>
+<li>Several business updates (<code>Notification.markRead</code>, <code>RefreshToken.markUsedAndReplacedBy</code>) change a row without touching <code>updated_at</code>.</li>
+</ul>
+
+<h2 id="decisions">2. Decisions</h2>
+<div class="decision" id="d1" data-decision-state="answered">
+  <h3>D1. Scope of the request and how this plan reads it <span class="status answered">Answered</span></h3>
+  <p>Decided in the request: three changes. The plan reads them like this, and approving the plan confirms the readings:</p>
+  <p><strong>Item 1 (builders).</strong> Application code stops calling <code>Model.builder()</code> on a domain model. Each call becomes a named public static factory or an instance method on the model, which still builds itself with its own <code>builder()</code> (AGENTS.md requires the nested <code>Builder</code>; infrastructure mappers, domain code and tests keep using it). Setters, <code>new Model()</code> (5 sites) and immutability are untouched.</p>
+  <p><strong>Item 2 (stamps).</strong> A repository method stops receiving a value only to write <code>updated_at</code> or <code>updated_by</code>: the 17 methods in the table of 1.2, and their callers and tests. How they stop is D2 and which parameters count is D3.</p>
+  <p><strong>Item 3 (method rules).</strong> A method is migrated when it is longer than 25 lines (AGENTS.md "Small functions"; the allowance of 30 is not used as a blanket exemption) or when its name is one of the vague words AGENTS.md lists (19 methods). "Names that describe how they work" is applied to every extracted or renamed method; "remove comments if they violate the rules" is applied inside every method the plan edits: a comment that only restates the code (<code>// 1. Validate the user</code>) is deleted; a comment that records a reason (a race, a security rule, a workaround) is kept and translated faithfully to English, as the Language rule demands.</p>
+  <p><strong>Order.</strong> Stamps first (small, and it settles what repository methods look like), then builders (new model API), then method size by feature area, so that the long methods are already shorter when they are split.</p>
+  <div class="answer"><strong>Answer (2026-11-24):</strong> As requested &ndash; taken from the task description. The readings above are mine and are confirmed by approving the plan.</div>
+</div>
+
+<div class="decision" id="d2" data-decision-state="answered">
+  <h3>D2. How do the 17 stamp-passing repository methods lose their parameters? <span class="status answered">Answered</span></h3>
+  <p>Today <code>@Modifying</code> statements bypass the JPA auditing hook, so 15 domain repository methods take an <code>updatedAt</code> or <code>updatedBy</code> parameter (two more take a <code>now</code> that also feeds <code>updated_at</code>) and 27 call sites compute <code>Instant.now()</code> and <code>currentUserId.toString()</code> for them. AGENTS.md "Audit columns" says they "still set updated_at/updated_by themselves", so any answer here also changes that sentence (D5). None of the 12 entities involved has <code>@Version</code> (it exists only on Order, SubscriptionPlan and SchoolBalance).</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Keep the single-statement updates; remove the stamp parameters from the domain interface, adapter, use case and test. The adapter takes the time and the actor from one infrastructure source that follows the auditing rule (actor of the active scope, else the authenticated user, else <code>"System"</code>). Atomic guards (<code>WHERE status = ...</code>, queue claims) behave exactly as today; use cases lose two arguments and two locals each. Trade-off: the methods still exist, only their parameters go, and the stamp is computed in the adapters (one small infrastructure class or one method on <code>AuditActorProvider</code>).</p>
+  <p><strong>B.</strong> Delete the update methods: the use case loads the model, calls a new model method (for example <code>schoolRoom.update(...)</code>), and <code>save</code> lets the hook stamp it. Cleanest result and the closest to item 1, but the 16 live single-statement updates become read-modify-write of whole rows: with no <code>@Version</code> a concurrent edit is last-write-wins on every column, the <code>DRAFT</code>/<code>PREVIEWED</code>/<code>PENDING</code> guards become check-then-write races, and the import queue claim loses its atomicity.</p>
+  <p><strong>C.</strong> Hybrid by kind: B for the 9 plain edits whose use case already loads the row and has no status guard (School, SchoolRoom, SchoolGrade, SchoolClass.updateMutableFields, SupportedLanguage, GradeLevel, and the three rubric updates) plus deleting the dead <code>markImporting</code>; A for the 7 guarded, queue or bulk statements. Removes 10 methods, keeps the guards. Trade-off: two patterns to maintain, and the 9 plain edits still lose per-column atomicity.</p>
+  <div class="answer"><strong>Answer (2026-11-24):</strong> A &ndash; Keep the single-statement updates; remove the stamp parameters from interface, adapter, use case and test; the adapter takes the time and the actor from one infrastructure source that follows the auditing rule.</div>
+</div>
+
+<div class="decision" id="d3" data-decision-state="answered">
+  <h3>D3. Which parameters count as the "same behaviour" as <code>updatedAt</code> / <code>updatedBy</code>? <span class="status answered">Answered</span></h3>
+  <p>The request says "or any their same behaviour attributes". The code has three kinds of parameter next to the stamps, listed in 1.2.</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Only values that end in <code>updated_at</code> / <code>updated_by</code>: the 13 pure-stamp methods lose both parameters, and the 4 mixed ones lose only the stamp half (<code>RegisterForm</code> approve/reject lose <code>now</code> and the reviewer id is renamed <code>reviewerId</code>, because it writes <code>reviewed_by</code>; <code>markClaimed</code> keeps <code>now</code> for <code>claimed_at</code>; <code>requeueExpiredLeases</code> keeps <code>now</code> as the lease predicate). The 7 methods whose <code>now</code> writes a business column (<code>readAt</code>, <code>revokedAt</code>, <code>usedAt</code>, ...) are not touched.</p>
+  <p><strong>B.</strong> Also the 7 business-timestamp methods stop receiving <code>Instant now</code>; their adapters read the clock. Moves the moment of a business event (when a notification was read, a token used) out of the use case, needs an injectable clock in adapters to stay testable (there is no <code>Clock</code> bean and <code>Instant.now()</code> appears 271 times in main), and widens the blast radius to 7 more methods and their tests.</p>
+  <div class="answer"><strong>Answer (2026-11-24):</strong> A &ndash; Only values that end in <code>updated_at</code> / <code>updated_by</code>; the 7 business-timestamp methods are not touched.</div>
+</div>
+
+<div class="decision" id="d4" data-decision-state="answered">
+  <h3>D4. What are the new model methods called? <span class="status answered">Answered</span></h3>
+  <p>AGENTS.md says to ask when a pattern is ambiguous. Today 28 of the 104 models have 42 factories: <code>create</code> x11, <code>createFresh</code> x3, <code>forTopUp</code> x2 and 26 one-off names (<code>seeded</code>, <code>suspended</code>, <code>forQuotaFunding</code>, <code>emptyFor</code>, <code>createByAdmin</code>).</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Intent-named: one static factory or instance method per distinct set of call sites, named for the situation it builds, for example <code>ImportSession.previewed(...)</code>, <code>ImportRow.pending(...)</code>, <code>AssessmentPaperItem.forQuestion(...)</code> and <code>AssessmentPaperItem.emptySlot(...)</code>, <code>item.copyInto(paperId, sectionId)</code>. <code>create</code> only when a model has exactly one way of being created. Identical call shapes share one method (the 17 import sessions become one). Matches the request's "names that describe how they work" and the majority of existing factories.</p>
+  <p><strong>B.</strong> Uniform <code>create(...)</code> / <code>of(...)</code> with overloads. Easier to guess and find, but different situations share one name and only the parameter list tells them apart, and it contradicts the naming rule the request asks to prioritize.</p>
+  <div class="answer"><strong>Answer (2026-11-24):</strong> A &ndash; Intent-named factories and instance methods, one per distinct set of call sites.</div>
+</div>
+
+<div class="decision" id="d5" data-decision-state="answered">
+  <h3>D5. Record the new rules in AGENTS.md and guard them with tests? <span class="status answered">Answered</span></h3>
+  <p>"Models and builders" says each model "is built with" its builder, "Audit columns" tells <code>@Modifying</code> statements to stamp themselves, and "Small functions" has no check. Editing AGENTS.md needs your confirmation, and the three guard tests are new files that match no listed pattern (both are on the "Ask first" list). The repository already works this way: exemption lists that may only shrink (<code>APPLICATION_EXEMPTIONS</code>).</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Edit AGENTS.md (the 4 spots in job 1.2) and add <code>ModelCreationConventionTests</code> (103 exempt files), <code>RepositoryAuditParameterConventionTests</code> (15 exempt methods) and <code>MethodSizeConventionTests</code> with <code>src/test/resources/architecture/method-size-exemptions.txt</code> (586 exempt methods). The exemption lists are the plan's work lists: each later job is done when its entries are gone, and a regression cannot slip back in. The size scan uses the JDK's own <code>com.sun.source</code> API (no dependency) and takes about 1.3 s on all of <code>src/main/java</code>.</p>
+  <p><strong>B.</strong> Edit AGENTS.md only. Progress is tracked by the grep commands in each job; nothing stops the rules from drifting back after the plan, and every reviewer must re-measure by hand.</p>
+  <div class="answer"><strong>Answer (2026-11-24):</strong> A &ndash; Edit AGENTS.md (4 spots) and add the three guard tests with shrink-only exemption lists.</div>
+</div>
+
+<div class="decision" id="d6" data-decision-state="answered">
+  <h3>D6. Touch money and quota code (Ask first)? <span class="status answered">Answered</span></h3>
+  <p>AGENTS.md lists "anything that moves money (orders, payments, quota, school balance)". The plan reaches it in 37 long methods in 25 files (orders, payments, subscription plans, quota, metering, the payment gateways, <code>PendingOrderReconciler</code>) and 7 builder calls (<code>OrderItem</code>, <code>SubscriptionPlanQuota</code> x2, <code>SchoolDebtEvent</code>, <code>SchoolSubscriptionQuotaUserAllocation</code>, <code>QuotaPricingCalibration</code>, <code>AiUsageRecord</code>). No amount, fee, price or rule would change: the edits are moves.</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Include them, last (phases 12 and 28), with the guard the base-model-audit plan used: run the money tests (<code>*Order*</code>, <code>*Payment*</code>, <code>*Subscription*</code>, <code>*Quota*</code>, <code>*SchoolBalance*</code>, <code>*Debt*</code>, <code>*Metering*</code>) before and after each phase and require the same pass counts, and review the diff as pure moves.</p>
+  <p><strong>B.</strong> Exclude them. The 7 builder sites and 37 methods stay in the exemption lists as "deferred: money" and are left for a plan that you approve separately.</p>
+  <div class="answer"><strong>Answer (2026-11-24):</strong> A &ndash; Include money and quota code, last (phases 12 and 28), with the before/after money-test pass counts.</div>
+</div>
+
+<div class="decision" id="d7" data-decision-state="answered">
+  <h3>D7. How safe must splitting an untested method be? <span class="status answered">Answered</span></h3>
+  <p>Of the 350 application files with a method over 25 lines, 207 (248 methods) have no test class named after them; infrastructure 40 of 66 files, interfaces 12 of 16, domain 9 of 10. A pure extract-method leaves behaviour unchanged by construction, but a slip (a dropped school-scope check) would not be caught by a test.</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Mechanical extraction: statements move verbatim into private methods, same order and conditions, no rewrites. If a method cannot be split that way, the job stops and reports it. New tests only where a job changes behaviour-relevant code (every builder and stamp job already adds or updates tests). <code>./gradlew test</code> and <code>./gradlew integrationTest</code> run after each phase, and the files without a test class are listed in the Implementation notes as a known gap.</p>
+  <p><strong>B.</strong> Characterize first: write a Mockito unit test for each of the 268 untested files before touching it. The strongest net, and probably as much work as the refactoring itself.</p>
+  <p><strong>C.</strong> Split only classes that already have a test class; the other 343 methods stay in the exemption list.</p>
+  <div class="answer"><strong>Answer (2026-11-24):</strong> A &ndash; Mechanical extraction; new tests only where a job changes behaviour-relevant code; untested files listed as a known gap.</div>
+</div>
+
+<h2 id="phases">3. Phases</h2>
+<p>Each phase is independently reviewable and leaves the build green. Phase 1 adds the guards, phase 2 removes stamp parameters, phases 3 to 12 add model methods and replace call sites, phases 13 to 28 split methods by feature area, phase 29 closes out. Every job also removes the imports, locals and private methods its change orphaned, and translates the Vietnamese comments in the lines it edits.</p>
+<p><strong>Procedure of a method-rule job (phases 13 to 28).</strong> Every method over 25 lines is split into private methods of at most 25 lines, named for what they do (D1, D7). A block that already exists in two or more methods is extracted once into a shared method in <code>application/port/input/service/</code> (the AGENTS.md "one place" rule) and named in the Implementation notes. Statements move verbatim: same order, same conditions. Comments that only restate the code are deleted; those that record a reason are kept and translated to English; the school-scope and role checks are never rewritten. The done condition is always the same: the job's entries leave <code>method-size-exemptions.txt</code> and <code>MethodSizeConventionTests</code> passes.</p>
+
+<div class="phase" id="phase-1" data-status="todo">
+  <h3><span class="title">Phase 1 &ndash; Baseline, AGENTS.md and guard tests</span>
+    <span class="tag">medium · mechanical · needs D5</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> Record the starting point and turn the three rules into AGENTS.md text and guard tests whose exemption lists are the work lists of the later phases. <strong>Depends on:</strong> D5 (D1 is answered).</p>
+  <ul class="jobs">
+    <li class="job" id="job-1-1" data-status="todo">
+      <span class="title">1.1 Re-run the baseline on the working branch</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The Implementation notes record <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test</code> (2,700 tests, 0 failures when this plan was written) and <code>./gradlew integrationTest</code> (438 tests, 0 failures) on the branch before the first change; any failure found is listed there so it is not blamed on later phases.
+         <strong>Files:</strong> This plan only.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-1-2" data-status="todo">
+      <span class="title">1.2 Edit AGENTS.md (needs D5)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> AGENTS.md has exactly these edits and no others: (a) "Models and builders": a model is built with its builder only inside the model (factories and behaviour methods), infrastructure mappers and tests; <code>application</code> calls named factory or behaviour methods (naming per D4); (b) "Audit columns": a <code>@Modifying</code> or native statement never takes <code>updatedAt</code> or <code>updatedBy</code> from its caller, and its adapter stamps it from the same source as the auditing hook; (c) "Coding rules": a comment that only restates the code is deleted when its method is edited, and "Small functions" names <code>MethodSizeConventionTests</code>; (d) "Testing": the three guards and their shrink-only exemption lists. <code>git diff --stat AGENTS.md</code> shows only those hunks.
+         <strong>Files:</strong> <code>AGENTS.md</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-1-3" data-status="todo">
+      <span class="title">1.3 Guard: application does not call a domain model's <code>builder()</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>ModelCreationConventionTests</code> scans <code>src/main/java/.../application</code> (comments stripped) for <code>&lt;ModelName&gt;.builder()</code> where <code>&lt;ModelName&gt;</code> is any concrete class under <code>domain/model</code>; the 103 files that contain such a call today (162 calls) are the exemption set, an exemption that no longer applies fails the test, the test asserts it scanned enough files, and a self-test with a violating snippet proves the rule can fail.
+         <strong>Files:</strong> <code>src/test/java/com/sep/vox/architecture/ModelCreationConventionTests.java</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-1-4" data-status="todo">
+      <span class="title">1.4 Guard: repository methods do not take audit stamps</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>RepositoryAuditParameterConventionTests</code> scans <code>domain/repository</code> for parameters named <code>updatedAt</code>, <code>updatedBy</code>, <code>modifiedAt</code>, <code>modifiedBy</code>; the 15 methods that have one today are the exemption set (stale entries fail, a self-test proves the rule can fail). The <code>now</code>-only parameters are not visible to a name scan and are covered by the signature changes and tests of phase 2.
+         <strong>Files:</strong> <code>src/test/java/com/sep/vox/architecture/RepositoryAuditParameterConventionTests.java</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-1-5" data-status="todo">
+      <span class="title">1.5 Guard: a method is at most 25 lines</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>MethodSizeConventionTests</code> parses <code>src/main/java</code> with the JDK compiler tree API, counts each method and constructor from its return type (or constructor name) to the closing brace, and fails for a method over 25 lines that is not listed in <code>method-size-exemptions.txt</code> (one <code>relative/path.java#name(ParamTypes)</code> per line); the file starts with the 586 methods measured on 2026-11-24, the 6 security-path ones under a <code># deferred: Ask first (security)</code> heading. A listed method that is now short enough fails the test (the list only shrinks), and a self-test with a 26-line snippet proves the rule can fail.
+         <strong>Files:</strong> <code>src/test/java/com/sep/vox/architecture/MethodSizeConventionTests.java</code>, <code>src/test/resources/architecture/method-size-exemptions.txt</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*ModelCreationConventionTests' --tests '*RepositoryAuditParameterConventionTests' --tests '*MethodSizeConventionTests' --tests '*LayeredArchitectureTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-2" data-status="todo">
+  <h3><span class="title">Phase 2 &ndash; Remove audit-stamp parameters from repository methods</span>
+    <span class="tag">large · needs D2, D3</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> The 17 repository methods of the table in 1.2 no longer take <code>updatedAt</code>, <code>updatedBy</code> or a <code>now</code> that only feeds <code>updated_at</code>, and the rows still get the same actor and time (D2 decides how). <strong>Depends on:</strong> Phase 1 (guards), D2, D3.</p>
+  <ul class="jobs">
+    <li class="job" id="job-2-1" data-status="todo">
+      <span class="title">2.1 Stamp source for bulk statements (D2 = A)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> One infrastructure source returns the instant and the actor text that a <code>@Modifying</code> statement writes, using the same rule as <code>AuditActorProvider</code> (actor of the active <code>ThreadLocalAuditActorScope</code>, else the authenticated user id, else <code>"System"</code>); a unit test covers the three actor cases. Adapters use it; use cases and domain interfaces do not see it.
+         <strong>Files:</strong> <code>infrastructure/persistence/audit/</code> (one new class, or one method on <code>AuditActorProvider</code>), its test</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-2-2" data-status="todo">
+      <span class="title">2.2 School catalog: 7 methods (rows 2-8)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>School.updateSchoolAtomic</code>, <code>SchoolRoom.updateSchoolRoomAtomic</code>, <code>SchoolGrade.updateSchoolGradeAtomic</code>, <code>SchoolClass.updateMutableFields</code>, <code>SchoolClass.archiveByGradeId</code>, <code>SupportedLanguage.updateMutableFields</code> and <code>GradeLevel.updateGradeLevelAtomic</code> take no <code>Instant</code> or <code>String</code> stamp; <code>UpdateSchoolUseCase</code>, <code>UpdateSchoolRoomUseCase</code>, <code>UpdateSchoolGradeUseCase</code>, <code>UpdateSchoolClassUseCase</code>, <code>DeleteSchoolGradeUseCase</code>, <code>UpdateSupportedLanguageUseCase</code>, <code>UpdateGradeLevelUseCase</code> no longer create <code>Instant.now()</code> or <code>currentUserId.toString()</code> for the call; <code>SchoolAreaAtomicUpdateTests</code>, <code>SchoolClassRepositoryTests</code>, <code>SupportedLanguageRepositoryTests</code>, <code>GradeLevelRepositoryImplTests</code> still show <code>updated_at</code>/<code>updated_by</code> written with the current actor; the entries of these 7 methods leave <code>RepositoryAuditParameterConventionTests</code>.
+         <strong>Files:</strong> <code>domain/repository/{School,SchoolRoom,SchoolGrade,SchoolClass,SupportedLanguage,GradeLevel}Repository</code>, their <code>*RepositoryImpl</code> adapters and <code>SpringData*</code> repositories, the 7 use cases, 7 use case tests, 4 repository tests, <code>CatalogAdaptersDataConflictTests</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-2-3" data-status="todo">
+      <span class="title">2.3 Rubrics: 3 methods (rows 9-11)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>RubricCriterion.updateCriterionAtomic</code>, <code>RubricResultBand.updateResultBandAtomic</code>, <code>RubricVersion.updateRubricVersionAtomic</code> take no stamp; the six use cases <code>UpdateSystemRubric{Criterion,ResultBand,Version}UseCase</code> and <code>UpdateSchoolRubric{Criterion,ResultBand,Version}UseCase</code> and their 6 tests are updated; <code>RubricAtomicUpdateTests</code> and <code>RubricAdaptersDataConflictTests</code> pass; the <code>COALESCE</code> and <code>Provided</code> semantics are unchanged.
+         <strong>Files:</strong> 3 repositories with adapters and <code>SpringData*</code>, 6 use cases, 6 use case tests, 2 repository tests</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-2-4" data-status="todo">
+      <span class="title">2.4 Schedule and register form: 3 methods (rows 1, 16, 17)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>AssessmentSchedule.updateAtomic</code> takes no <code>now</code>/<code>updatedBy</code> and keeps its <code>WHERE status = 'DRAFT'</code> guard (<code>AssessmentScheduleAtomicUpdateTests</code>, <code>UpdateAssessmentScheduleUseCaseTests</code> pass); <code>RegisterForm.updateApprovedRegisterForm</code> and <code>updateRejectedRegisterForm</code> lose <code>now</code>, and their UUID parameter is renamed <code>reviewerId</code> (it writes <code>reviewed_by</code>); <code>ApproveRegisterFormUseCase</code> and <code>RejectRegisterFormUseCase</code> no longer create <code>Instant.now()</code>.
+         <strong>Files:</strong> <code>AssessmentScheduleRepository</code>, <code>RegisterFormRepository</code> with adapters and <code>SpringData*</code>, <code>UpdateAssessmentScheduleUseCase</code>, <code>ApproveRegisterFormUseCase</code>, <code>RejectRegisterFormUseCase</code>, their tests</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-2-5" data-status="todo">
+      <span class="title">2.5 Import queue: 4 methods (rows 12-15)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>ImportSession.markImporting</code> (no caller anywhere) is deleted from the interface, adapter and Spring Data repository; <code>markQueued</code> loses <code>now</code>/<code>updatedBy</code> in the 9 <code>Accept*ImportUseCase</code> classes; <code>markClaimed</code> and <code>requeueExpiredLeases</code> lose the stamp half in <code>ImportQueueService</code> and keep <code>claimedAt</code> and the lease predicate. The Implementation notes record that <code>updated_by</code> of a claimed session changes from the worker id to the audit actor (<code>"System"</code> for the scheduler) while <code>claimed_by</code> still holds the worker.
+         <strong>Files:</strong> <code>ImportSessionRepository</code>, <code>ImportSessionRepositoryImpl</code>, <code>SpringDataImportSessionRepository</code>, <code>ImportQueueService</code>, 9 <code>Accept*ImportUseCase</code> classes and their tests</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*RepositoryAuditParameterConventionTests' --tests 'com.sep.vox.application.usecase.*'</code>, <code>./gradlew integrationTest --tests '*AtomicUpdate*' --tests '*RepositoryTests' --tests '*AdaptersDataConflictTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-3" data-status="todo">
+  <h3><span class="title">Phase 3 &ndash; Model methods: Import sessions and rows</span>
+    <span class="tag">medium · needs D4</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> Application code stops calling <code>builder()</code> for 2 models (34 calls in 17 files); the models gain the methods that build them. <strong>Depends on:</strong> Phase 1, D4. Comments in the edited code follow the rule of D1.</p>
+  <ul class="jobs">
+    <li class="job" id="job-3-1" data-status="todo">
+      <span class="title">3.1 Add the methods to the models (domain)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> Each of <code>ImportSession</code> (17), <code>ImportRow</code> (17) has the public static factories and instance methods its call sites need (names per D4): one method per distinct set of fields among the call sites, defaults (counters, initial status, nulls spelled out by callers) set inside the model, built through the model's own <code>builder()</code>; each method has a unit test in <code>src/test/java/com/sep/vox/domain/model/</code> that asserts the defaults and the arguments it sets; <code>LayeredArchitectureTests</code> still passes (<code>domain</code> stays plain Java).
+         <strong>Files:</strong> <code>domain/model/...</code> for the 2 models above, one new <code>*Tests</code> per model in the mirrored test package</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-3-2" data-status="todo">
+      <span class="title">3.2 Replace the call sites in application</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 34 calls in these 17 files use the new methods; <code>grep -rnE '(ImportSession|ImportRow)\.builder\(\)' src/main/java/com/sep/vox/application</code> prints nothing; a file leaves the <code>ModelCreationConventionTests</code> exemptions when its last builder call is gone; unused imports and locals the change orphaned are removed; Vietnamese comments in the edited lines are in English; the use case tests of these classes are updated and pass.
+         <strong>Files:</strong> <code>PreviewQuestionBankImportFromFileUseCase</code>, <code>PreviewQuestionImportFromFileUseCase</code>, <code>PreviewQuestionTopicImportFromFileUseCase</code>, <code>PreviewSchoolAssessmentPolicyImportFromFileUseCase</code>, <code>PreviewSchoolClassImportFromFileUseCase</code>, <code>PreviewSchoolClassUserImportFromFileUseCase</code>, <code>PreviewSchoolDirectoryImportFromFileUseCase</code>, <code>PreviewSchoolGradeImportFromFileUseCase</code>, <code>PreviewSchoolRoomImportFromFileUseCase</code>, <code>PreviewSchoolRubricCriterionImportFromFileUseCase</code>, <code>PreviewSchoolRubricResultBandImportFromFileUseCase</code>, <code>PreviewSchoolRubricVersionImportFromFileUseCase</code>, <code>PreviewSchoolUserImportFromFileUseCase</code>, <code>PreviewSystemAssessmentPolicyImportFromFileUseCase</code>, <code>PreviewSystemRubricCriterionImportFromFileUseCase</code>, <code>PreviewSystemRubricResultBandImportFromFileUseCase</code>, <code>PreviewSystemRubricVersionImportFromFileUseCase</code>; their tests; <code>ModelCreationConventionTests</code> exemptions</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*Import*' --tests '*ModelCreationConventionTests' --tests '*LayeredArchitectureTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-4" data-status="todo">
+  <h3><span class="title">Phase 4 &ndash; Model methods: Rubrics</span>
+    <span class="tag">medium · needs D4</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> Application code stops calling <code>builder()</code> for 4 models (15 calls in 12 files); the models gain the methods that build them. <strong>Depends on:</strong> Phase 1, D4. Comments in the edited code follow the rule of D1.</p>
+  <ul class="jobs">
+    <li class="job" id="job-4-1" data-status="todo">
+      <span class="title">4.1 Add the methods to the models (domain)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> Each of <code>Rubric</code> (3), <code>RubricVersion</code> (4), <code>RubricCriterion</code> (4), <code>RubricResultBand</code> (4) has the public static factories and instance methods its call sites need (names per D4): one method per distinct set of fields among the call sites, defaults (counters, initial status, nulls spelled out by callers) set inside the model, built through the model's own <code>builder()</code>; each method has a unit test in <code>src/test/java/com/sep/vox/domain/model/</code> that asserts the defaults and the arguments it sets; <code>LayeredArchitectureTests</code> still passes (<code>domain</code> stays plain Java).
+         <strong>Files:</strong> <code>domain/model/...</code> for the 4 models above, one new <code>*Tests</code> per model in the mirrored test package</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-4-2" data-status="todo">
+      <span class="title">4.2 Replace the call sites in application</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 15 calls in these 12 files use the new methods; <code>grep -rnE '(Rubric|RubricVersion|RubricCriterion|RubricResultBand)\.builder\(\)' src/main/java/com/sep/vox/application</code> prints nothing; a file leaves the <code>ModelCreationConventionTests</code> exemptions when its last builder call is gone; unused imports and locals the change orphaned are removed; Vietnamese comments in the edited lines are in English; the use case tests of these classes are updated and pass.
+         <strong>Files:</strong> <code>AddSchoolRubricVersionsUseCase</code>, <code>AddSystemRubricVersionsUseCase</code>, <code>CreateSchoolRubricCriterionUseCase</code>, <code>CreateSchoolRubricResultBandsUseCase</code>, <code>CreateSchoolRubricUseCase</code>, <code>CreateSystemRubricCriteriaUseCase</code>, <code>CreateSystemRubricResultBandsUseCase</code>, <code>CreateSystemRubricUseCase</code>, <code>RubricCloneService</code>, <code>RubricCriterionImportCommitHandler</code>, <code>RubricResultBandImportCommitHandler</code>, <code>RubricVersionImportCommitHandler</code>; their tests; <code>ModelCreationConventionTests</code> exemptions</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*Rubric*' --tests '*ModelCreationConventionTests' --tests '*LayeredArchitectureTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-5" data-status="todo">
+  <h3><span class="title">Phase 5 &ndash; Model methods: Assessment papers and blueprints</span>
+    <span class="tag">medium · needs D4</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> Application code stops calling <code>builder()</code> for 7 models (30 calls in 11 files); the models gain the methods that build them. <strong>Depends on:</strong> Phase 1, D4. Comments in the edited code follow the rule of D1.</p>
+  <ul class="jobs">
+    <li class="job" id="job-5-1" data-status="todo">
+      <span class="title">5.1 Add the methods to the models (domain)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> Each of <code>AssessmentPaper</code> (3), <code>AssessmentPaperSection</code> (6), <code>AssessmentPaperItem</code> (10), <code>AssessmentBlueprint</code> (2), <code>AssessmentBlueprintSection</code> (4), <code>AssessmentBlueprintSlot</code> (4), <code>AssessmentBlueprintVersion</code> (1) has the public static factories and instance methods its call sites need (names per D4): one method per distinct set of fields among the call sites, defaults (counters, initial status, nulls spelled out by callers) set inside the model, built through the model's own <code>builder()</code>; each method has a unit test in <code>src/test/java/com/sep/vox/domain/model/</code> that asserts the defaults and the arguments it sets; <code>LayeredArchitectureTests</code> still passes (<code>domain</code> stays plain Java).
+         <strong>Files:</strong> <code>domain/model/...</code> for the 7 models above, one new <code>*Tests</code> per model in the mirrored test package</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-5-2" data-status="todo">
+      <span class="title">5.2 Replace the call sites in application</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 30 calls in these 11 files use the new methods; <code>grep -rnE '(AssessmentPaper|AssessmentPaperSection|AssessmentPaperItem|AssessmentBlueprint|AssessmentBlueprintSection|AssessmentBlueprintSlot|AssessmentBlueprintVersion)\.builder\(\)' src/main/java/com/sep/vox/application</code> prints nothing; a file leaves the <code>ModelCreationConventionTests</code> exemptions when its last builder call is gone; unused imports and locals the change orphaned are removed; Vietnamese comments in the edited lines are in English; the use case tests of these classes are updated and pass.
+         <strong>Files:</strong> <code>AttachAssessmentBlueprintUseCase</code>, <code>ChangeClassTestBlueprintUseCase</code>, <code>CreateAssessmentBlueprintSectionUseCase</code>, <code>CreateAssessmentBlueprintSlotUseCase</code>, <code>CreateAssessmentBlueprintUseCase</code>, <code>CreateAssessmentBlueprintVersionUseCase</code>, <code>CreateAssessmentPaperUseCase</code>, <code>CreateClassTestSectionUseCase</code>, <code>UpdateAssessmentBlueprintVersionUseCase</code>, <code>UpdateClassTestQuestionsUseCase</code>, <code>UpdateClassTestSectionUseCase</code>; their tests; <code>ModelCreationConventionTests</code> exemptions</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*AssessmentPaper*' --tests '*AssessmentBlueprint*' --tests '*Blueprint*' --tests '*ModelCreationConventionTests' --tests '*LayeredArchitectureTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-6" data-status="todo">
+  <h3><span class="title">Phase 6 &ndash; Model methods: Assessments, proctors, appeals and policies</span>
+    <span class="tag">medium · needs D4</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> Application code stops calling <code>builder()</code> for 9 models (16 calls in 13 files); the models gain the methods that build them. <strong>Depends on:</strong> Phase 1, D4. Comments in the edited code follow the rule of D1.</p>
+  <ul class="jobs">
+    <li class="job" id="job-6-1" data-status="todo">
+      <span class="title">6.1 Add the methods to the models (domain)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> Each of <code>Assessment</code> (2), <code>AssessmentMember</code> (2), <code>AssessmentScheduleProctor</code> (3), <code>AssessmentSession</code> (2), <code>AssessmentProctoringAlert</code> (1), <code>AssessmentRecording</code> (1), <code>AssessmentResultAppeal</code> (1), <code>AssessmentResultAppealItem</code> (1), <code>AssessmentPolicy</code> (3) has the public static factories and instance methods its call sites need (names per D4): one method per distinct set of fields among the call sites, defaults (counters, initial status, nulls spelled out by callers) set inside the model, built through the model's own <code>builder()</code>; each method has a unit test in <code>src/test/java/com/sep/vox/domain/model/</code> that asserts the defaults and the arguments it sets; <code>LayeredArchitectureTests</code> still passes (<code>domain</code> stays plain Java).
+         <strong>Files:</strong> <code>domain/model/...</code> for the 9 models above, one new <code>*Tests</code> per model in the mirrored test package</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-6-2" data-status="todo">
+      <span class="title">6.2 Replace the call sites in application</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 16 calls in these 13 files use the new methods; <code>grep -rnE '(Assessment|AssessmentMember|AssessmentScheduleProctor|AssessmentSession|AssessmentProctoringAlert|AssessmentRecording|AssessmentResultAppeal|AssessmentResultAppealItem|AssessmentPolicy)\.builder\(\)' src/main/java/com/sep/vox/application</code> prints nothing; a file leaves the <code>ModelCreationConventionTests</code> exemptions when its last builder call is gone; unused imports and locals the change orphaned are removed; Vietnamese comments in the edited lines are in English; the use case tests of these classes are updated and pass.
+         <strong>Files:</strong> <code>AddAssessmentScheduleProctorUseCase</code>, <code>AssessmentPolicyImportCommitHandler</code>, <code>CreateAssessmentAppealUseCase</code>, <code>CreateAssessmentMemberUseCase</code>, <code>CreateAssessmentSessionUseCase</code>, <code>CreateAssessmentUseCase</code>, <code>CreateClassTestUseCase</code>, <code>CreateSchoolAssessmentPolicyUseCase</code>, <code>CreateSystemAssessmentPolicyUseCase</code>, <code>RecordProctoringAlertUseCase</code>, <code>RecordRecordingPartChangedUseCase</code>, <code>UpdateAssessmentScheduleStatusUseCase</code>, <code>ZeroScoreAssessmentResultService</code>; their tests; <code>ModelCreationConventionTests</code> exemptions</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*Assessment*' --tests '*ModelCreationConventionTests' --tests '*LayeredArchitectureTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-7" data-status="todo">
+  <h3><span class="title">Phase 7 &ndash; Model methods: Responses, evaluations and result history</span>
+    <span class="tag">medium · needs D4</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> Application code stops calling <code>builder()</code> for 6 models (13 calls in 6 files); the models gain the methods that build them. <strong>Depends on:</strong> Phase 1, D4. Comments in the edited code follow the rule of D1.</p>
+  <ul class="jobs">
+    <li class="job" id="job-7-1" data-status="todo">
+      <span class="title">7.1 Add the methods to the models (domain)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> Each of <code>AssessmentItemEvaluation</code> (4), <code>AssessmentItemEvaluationTurn</code> (1), <code>AssessmentItemCriterionScore</code> (2), <code>AssessmentItemResponse</code> (2), <code>AssessmentItemResponseTurn</code> (1), <code>AssessmentResultStatusHistory</code> (3) has the public static factories and instance methods its call sites need (names per D4): one method per distinct set of fields among the call sites, defaults (counters, initial status, nulls spelled out by callers) set inside the model, built through the model's own <code>builder()</code>; each method has a unit test in <code>src/test/java/com/sep/vox/domain/model/</code> that asserts the defaults and the arguments it sets; <code>LayeredArchitectureTests</code> still passes (<code>domain</code> stays plain Java).
+         <strong>Files:</strong> <code>domain/model/...</code> for the 6 models above, one new <code>*Tests</code> per model in the mirrored test package</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-7-2" data-status="todo">
+      <span class="title">7.2 Replace the call sites in application</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 13 calls in these 6 files use the new methods; <code>grep -rnE '(AssessmentItemEvaluation|AssessmentItemEvaluationTurn|AssessmentItemCriterionScore|AssessmentItemResponse|AssessmentItemResponseTurn|AssessmentResultStatusHistory)\.builder\(\)' src/main/java/com/sep/vox/application</code> prints nothing; a file leaves the <code>ModelCreationConventionTests</code> exemptions when its last builder call is gone; unused imports and locals the change orphaned are removed; Vietnamese comments in the edited lines are in English; the use case tests of these classes are updated and pass.
+         <strong>Files:</strong> <code>BulkFinalizeAssessmentResultsUseCase</code>, <code>MissingResponseBackfillService</code>, <code>RecordAnswerTurnUseCase</code>, <code>RecordAssessmentAttemptEvaluationUseCase</code>, <code>RegradeResultUseCase</code>, <code>ResultStatusHistoryRecorder</code>; their tests; <code>ModelCreationConventionTests</code> exemptions</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*Evaluation*' --tests '*Grading*' --tests '*ItemResponse*' --tests '*ModelCreationConventionTests' --tests '*LayeredArchitectureTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-8" data-status="todo">
+  <h3><span class="title">Phase 8 &ndash; Model methods: Questions, topics and suggestions</span>
+    <span class="tag">medium · needs D4</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> Application code stops calling <code>builder()</code> for 6 models (16 calls in 10 files); the models gain the methods that build them. <strong>Depends on:</strong> Phase 1, D4. Comments in the edited code follow the rule of D1.</p>
+  <ul class="jobs">
+    <li class="job" id="job-8-1" data-status="todo">
+      <span class="title">8.1 Add the methods to the models (domain)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> Each of <code>Question</code> (3), <code>QuestionEvaluationGuide</code> (4), <code>QuestionAsset</code> (4), <code>QuestionTopic</code> (2), <code>QuestionBankGrade</code> (1), <code>TopicSuggestion</code> (2) has the public static factories and instance methods its call sites need (names per D4): one method per distinct set of fields among the call sites, defaults (counters, initial status, nulls spelled out by callers) set inside the model, built through the model's own <code>builder()</code>; each method has a unit test in <code>src/test/java/com/sep/vox/domain/model/</code> that asserts the defaults and the arguments it sets; <code>LayeredArchitectureTests</code> still passes (<code>domain</code> stays plain Java).
+         <strong>Files:</strong> <code>domain/model/...</code> for the 6 models above, one new <code>*Tests</code> per model in the mirrored test package</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-8-2" data-status="todo">
+      <span class="title">8.2 Replace the call sites in application</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 16 calls in these 10 files use the new methods; <code>grep -rnE '(Question|QuestionEvaluationGuide|QuestionAsset|QuestionTopic|QuestionBankGrade|TopicSuggestion)\.builder\(\)' src/main/java/com/sep/vox/application</code> prints nothing; a file leaves the <code>ModelCreationConventionTests</code> exemptions when its last builder call is gone; unused imports and locals the change orphaned are removed; Vietnamese comments in the edited lines are in English; the use case tests of these classes are updated and pass.
+         <strong>Files:</strong> <code>CreateQuestionAssetUseCase</code>, <code>CreateQuestionBankGradeUseCase</code>, <code>CreateQuestionTopicUseCase</code>, <code>CreateSystemQuestionBankQuestionUseCase</code>, <code>KeywordTopicPersistenceService</code>, <code>QuestionCloneService</code>, <code>QuestionImportCommitHandler</code>, <code>QuestionTopicImportCommitHandler</code>, <code>TopicSuggestionService</code>, <code>UpsertQuestionEvaluationGuideUseCase</code>; their tests; <code>ModelCreationConventionTests</code> exemptions</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*Question*' --tests '*Topic*' --tests '*ModelCreationConventionTests' --tests '*LayeredArchitectureTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-9" data-status="todo">
+  <h3><span class="title">Phase 9 &ndash; Model methods: Practice and interest</span>
+    <span class="tag">small · needs D4</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> Application code stops calling <code>builder()</code> for 7 models (11 calls in 9 files); the models gain the methods that build them. <strong>Depends on:</strong> Phase 1, D4. Comments in the edited code follow the rule of D1.</p>
+  <ul class="jobs">
+    <li class="job" id="job-9-1" data-status="todo">
+      <span class="title">9.1 Add the methods to the models (domain)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> Each of <code>PracticeTopic</code> (3), <code>PracticePaper</code> (1), <code>PracticePaperItem</code> (2), <code>PracticeQuestion</code> (1), <code>PracticeSession</code> (1), <code>TopicInterestScoreEntry</code> (1), <code>InterestDimension</code> (2) has the public static factories and instance methods its call sites need (names per D4): one method per distinct set of fields among the call sites, defaults (counters, initial status, nulls spelled out by callers) set inside the model, built through the model's own <code>builder()</code>; each method has a unit test in <code>src/test/java/com/sep/vox/domain/model/</code> that asserts the defaults and the arguments it sets; <code>LayeredArchitectureTests</code> still passes (<code>domain</code> stays plain Java).
+         <strong>Files:</strong> <code>domain/model/...</code> for the 7 models above, one new <code>*Tests</code> per model in the mirrored test package</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-9-2" data-status="todo">
+      <span class="title">9.2 Replace the call sites in application</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 11 calls in these 9 files use the new methods; <code>grep -rnE '(PracticeTopic|PracticePaper|PracticePaperItem|PracticeQuestion|PracticeSession|TopicInterestScoreEntry|InterestDimension)\.builder\(\)' src/main/java/com/sep/vox/application</code> prints nothing; a file leaves the <code>ModelCreationConventionTests</code> exemptions when its last builder call is gone; unused imports and locals the change orphaned are removed; Vietnamese comments in the edited lines are in English; the use case tests of these classes are updated and pass.
+         <strong>Files:</strong> <code>InterestVectorService</code>, <code>KeywordTopicPersistenceService</code>, <code>ManageInterestDimensionUseCase</code>, <code>PracticePaperPersistenceService</code>, <code>PracticeQuestionGenerationService</code>, <code>ResolveNextPracticeQuestionPersistenceService</code>, <code>StartPracticeSessionPersistenceService</code>, <code>TopicSuggestionService</code>, <code>ViewPracticeTopicOffersUseCase</code>; their tests; <code>ModelCreationConventionTests</code> exemptions</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*Practice*' --tests '*Interest*' --tests '*ModelCreationConventionTests' --tests '*LayeredArchitectureTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-10" data-status="todo">
+  <h3><span class="title">Phase 10 &ndash; Model methods: Frameworks and scoring rules</span>
+    <span class="tag">small · needs D4</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> Application code stops calling <code>builder()</code> for 6 models (8 calls in 8 files); the models gain the methods that build them. <strong>Depends on:</strong> Phase 1, D4. Comments in the edited code follow the rule of D1.</p>
+  <ul class="jobs">
+    <li class="job" id="job-10-1" data-status="todo">
+      <span class="title">10.1 Add the methods to the models (domain)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> Each of <code>Framework</code> (1), <code>FrameworkVersion</code> (2), <code>FrameworkCriterion</code> (1), <code>FrameworkCriterionBand</code> (1), <code>FrameworkResultBand</code> (1), <code>ScoringRule</code> (2) has the public static factories and instance methods its call sites need (names per D4): one method per distinct set of fields among the call sites, defaults (counters, initial status, nulls spelled out by callers) set inside the model, built through the model's own <code>builder()</code>; each method has a unit test in <code>src/test/java/com/sep/vox/domain/model/</code> that asserts the defaults and the arguments it sets; <code>LayeredArchitectureTests</code> still passes (<code>domain</code> stays plain Java).
+         <strong>Files:</strong> <code>domain/model/...</code> for the 6 models above, one new <code>*Tests</code> per model in the mirrored test package</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-10-2" data-status="todo">
+      <span class="title">10.2 Replace the call sites in application</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 8 calls in these 8 files use the new methods; <code>grep -rnE '(Framework|FrameworkVersion|FrameworkCriterion|FrameworkCriterionBand|FrameworkResultBand|ScoringRule)\.builder\(\)' src/main/java/com/sep/vox/application</code> prints nothing; a file leaves the <code>ModelCreationConventionTests</code> exemptions when its last builder call is gone; unused imports and locals the change orphaned are removed; Vietnamese comments in the edited lines are in English; the use case tests of these classes are updated and pass.
+         <strong>Files:</strong> <code>CreateFrameworkCriteriaUseCase</code>, <code>CreateFrameworkCriterionBandsUseCase</code>, <code>CreateFrameworkResultBandsUseCase</code>, <code>CreateFrameworkUseCase</code>, <code>CreateFrameworkVersionUseCase</code>, <code>CreateSchoolScoringRuleUseCase</code>, <code>CreateSystemScoringRuleUseCase</code>, <code>UpdateFrameworkVersionUseCase</code>; their tests; <code>ModelCreationConventionTests</code> exemptions</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*Framework*' --tests '*ScoringRule*' --tests '*ModelCreationConventionTests' --tests '*LayeredArchitectureTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-11" data-status="todo">
+  <h3><span class="title">Phase 11 &ndash; Model methods: Schools, users and catalogs</span>
+    <span class="tag">small · needs D4</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> Application code stops calling <code>builder()</code> for 6 models (12 calls in 12 files); the models gain the methods that build them. <strong>Depends on:</strong> Phase 1, D4. Comments in the edited code follow the rule of D1.</p>
+  <ul class="jobs">
+    <li class="job" id="job-11-1" data-status="todo">
+      <span class="title">11.1 Add the methods to the models (domain)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> Each of <code>SchoolRoom</code> (2), <code>SchoolGrade</code> (2), <code>SchoolClassUser</code> (3), <code>UserRole</code> (3), <code>GradeLevel</code> (1), <code>SupportedLanguage</code> (1) has the public static factories and instance methods its call sites need (names per D4): one method per distinct set of fields among the call sites, defaults (counters, initial status, nulls spelled out by callers) set inside the model, built through the model's own <code>builder()</code>; each method has a unit test in <code>src/test/java/com/sep/vox/domain/model/</code> that asserts the defaults and the arguments it sets; <code>LayeredArchitectureTests</code> still passes (<code>domain</code> stays plain Java).
+         <strong>Files:</strong> <code>domain/model/...</code> for the 6 models above, one new <code>*Tests</code> per model in the mirrored test package</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-11-2" data-status="todo">
+      <span class="title">11.2 Replace the call sites in application</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 12 calls in these 12 files use the new methods; <code>grep -rnE '(SchoolRoom|SchoolGrade|SchoolClassUser|UserRole|GradeLevel|SupportedLanguage)\.builder\(\)' src/main/java/com/sep/vox/application</code> prints nothing; a file leaves the <code>ModelCreationConventionTests</code> exemptions when its last builder call is gone; unused imports and locals the change orphaned are removed; Vietnamese comments in the edited lines are in English; the use case tests of these classes are updated and pass.
+         <strong>Files:</strong> <code>AddSchoolRoomUseCase</code>, <code>BulkCreateSchoolClassUsersUseCase</code>, <code>CreateGradeLevelUseCase</code>, <code>CreateSchoolClassUserUseCase</code>, <code>CreateSchoolGradeUseCase</code>, <code>CreateSchoolUserUseCase</code>, <code>CreateSupportedLanguageUseCase</code>, <code>ProvisionSchoolService</code>, <code>SchoolClassUserImportCommitHandler</code>, <code>SchoolGradeImportCommitHandler</code>, <code>SchoolRoomImportCommitHandler</code>, <code>SchoolUserImportCommitHandler</code>; their tests; <code>ModelCreationConventionTests</code> exemptions</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*SchoolRoom*' --tests '*SchoolGrade*' --tests '*SchoolClassUser*' --tests '*UserRole*' --tests '*GradeLevel*' --tests '*SupportedLanguage*' --tests '*ModelCreationConventionTests' --tests '*LayeredArchitectureTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-12" data-status="todo">
+  <h3><span class="title">Phase 12 &ndash; Model methods: Money and quota (Ask first)</span>
+    <span class="tag">small · needs D4, D6</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> Application code stops calling <code>builder()</code> for 6 models (7 calls in 7 files); the models gain the methods that build them. <strong>Depends on:</strong> Phase 1, D4, D6. Comments in the edited code follow the rule of D1.</p>
+  <ul class="jobs">
+    <li class="job" id="job-12-1" data-status="todo">
+      <span class="title">12.1 Add the methods to the models (domain)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> Each of <code>OrderItem</code> (1), <code>SubscriptionPlanQuota</code> (2), <code>SchoolDebtEvent</code> (1), <code>SchoolSubscriptionQuotaUserAllocation</code> (1), <code>QuotaPricingCalibration</code> (1), <code>AiUsageRecord</code> (1) has the public static factories and instance methods its call sites need (names per D4): one method per distinct set of fields among the call sites, defaults (counters, initial status, nulls spelled out by callers) set inside the model, built through the model's own <code>builder()</code>; each method has a unit test in <code>src/test/java/com/sep/vox/domain/model/</code> that asserts the defaults and the arguments it sets; <code>LayeredArchitectureTests</code> still passes (<code>domain</code> stays plain Java).
+         <strong>Files:</strong> <code>domain/model/...</code> for the 6 models above, one new <code>*Tests</code> per model in the mirrored test package</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-12-2" data-status="todo">
+      <span class="title">12.2 Replace the call sites in application</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 7 calls in these 7 files use the new methods; <code>grep -rnE '(OrderItem|SubscriptionPlanQuota|SchoolDebtEvent|SchoolSubscriptionQuotaUserAllocation|QuotaPricingCalibration|AiUsageRecord)\.builder\(\)' src/main/java/com/sep/vox/application</code> prints nothing; a file leaves the <code>ModelCreationConventionTests</code> exemptions when its last builder call is gone; unused imports and locals the change orphaned are removed; Vietnamese comments in the edited lines are in English; the use case tests of these classes are updated and pass.
+         <strong>Files:</strong> <code>CreateSubscriptionOrderUseCase</code>, <code>CreateSubscriptionPlanUseCase</code>, <code>DistributeQuotaToUsersService</code>, <code>QuotaPricingCalibrationService</code>, <code>RecordAiUsageUseCase</code>, <code>SchoolDebtNotificationService</code>, <code>UpdateSubscriptionPlanUseCase</code>; their tests; <code>ModelCreationConventionTests</code> exemptions</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*Order*' --tests '*Subscription*' --tests '*Quota*' --tests '*Debt*' --tests '*Metering*' --tests '*ModelCreationConventionTests' --tests '*LayeredArchitectureTests'</code>, and the money-test pass counts equal the counts recorded before the phase (D6)</p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-13" data-status="todo">
+  <h3><span class="title">Phase 13 &ndash; Method rules: Application services: import commit and queue</span>
+    <span class="tag">medium · needs D7</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> 27 methods in 14 files are split to at most 25 lines. Procedure in the introduction of section 3. <strong>Depends on:</strong> Phase 1, D7 (best after phases 2 to 12, when the long methods are already shorter).</p>
+  <ul class="jobs">
+    <li class="job" id="job-13-1" data-status="todo">
+      <span class="title">13.1 Split and clean 14 long methods in 6 files</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 14 entries (application services: 14 methods in 6 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
+         <strong>Files:</strong> <code>AssessmentPolicyImportCommitHandler</code>, <code>ImportCommitService</code>, <code>QuestionBankImportCommitHandler</code>, <code>QuestionImportCommitHandler</code>, <code>QuestionTopicImportCommitHandler</code>, <code>RubricCriterionImportCommitHandler</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-13-2" data-status="todo">
+      <span class="title">13.2 Split and clean 13 long methods in 8 files</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 13 entries (application services: 13 methods in 8 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
+         <strong>Files:</strong> <code>RubricResultBandImportCommitHandler</code>, <code>RubricVersionImportCommitHandler</code>, <code>SchoolClassImportCommitHandler</code>, <code>SchoolClassUserImportCommitHandler</code>, <code>SchoolDirectoryImportCommitHandler</code>, <code>SchoolGradeImportCommitHandler</code>, <code>SchoolRoomImportCommitHandler</code>, <code>SchoolUserImportCommitHandler</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-13-3" data-status="todo">
+      <span class="title">13.3 Rename the 6 <code>processRows</code> methods</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The six private <code>processRows</code> methods in <code>SchoolClassImportCommitHandler</code>, <code>SchoolUserImportCommitHandler</code>, <code>SchoolDirectoryImportCommitHandler</code>, <code>SchoolGradeImportCommitHandler</code>, <code>SchoolRoomImportCommitHandler</code> and <code>SchoolClassUserImportCommitHandler</code> have names that say what they do to the rows (for example <code>commitRowsAndCountOutcomes</code>); <code>grep -rn processRows src</code> prints nothing.
+         <strong>Files:</strong> the six handlers above</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests 'com.sep.vox.application.service.*' --tests '*MethodSizeConventionTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-14" data-status="todo">
+  <h3><span class="title">Phase 14 &ndash; Method rules: Application services: the rest</span>
+    <span class="tag">large · needs D7</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> 53 methods in 37 files are split to at most 25 lines. Procedure in the introduction of section 3. <strong>Depends on:</strong> Phase 1, D7 (best after phases 2 to 12, when the long methods are already shorter).</p>
+  <ul class="jobs">
+    <li class="job" id="job-14-1" data-status="todo">
+      <span class="title">14.1 Split and clean 18 long methods in 12 files</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 18 entries (application services: 18 methods in 12 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
+         <strong>Files:</strong> <code>AssessmentHumanGradingNotificationService</code>, <code>AssessmentRecordingAccessService</code>, <code>AssessmentResultAccessService</code>, <code>AssessmentScheduleCandidateConflictValidator</code>, <code>AssessmentSessionModerationAccessService</code>, <code>AssessmentStreamConfigResolver</code>, <code>ClassTestGradingAssignmentService</code>, <code>ConfidenceReviewCalculator</code>, <code>GradeLevelBandScopeGuardService</code>, <code>GradingActionSupport</code>, <code>GradingAssignmentNotificationService</code>, <code>GradingItemScoreResolver</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-14-2" data-status="todo">
+      <span class="title">14.2 Split and clean 18 long methods in 12 files</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 18 entries (application services: 18 methods in 12 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
+         <strong>Files:</strong> <code>InterestQuizBankTopUpService</code>, <code>InterestQuizItemSelector</code>, <code>InterestVectorService</code>, <code>KeywordTopicPersistenceService</code>, <code>LearnerProfileCommandService</code>, <code>MissingResponseBackfillService</code>, <code>PracticeEvaluationRequestFactory</code>, <code>PracticeGradingFlushService</code>, <code>PracticePaperDraftService</code>, <code>PracticePaperPersistenceService</code>, <code>PracticeQuestionGenerationService</code>, <code>PracticeQuestionSelectionService</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-14-3" data-status="todo">
+      <span class="title">14.3 Split and clean 17 long methods in 14 files</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 17 entries (application services: 17 methods in 14 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
+         <strong>Files:</strong> <code>PracticeQuestionSelectionService</code>, <code>PracticeSessionCleanupService</code>, <code>PracticeSessionClosedHandler</code>, <code>PracticeSessionDetailAssemblyService</code>, <code>ProvisionSchoolService</code>, <code>RecalculateAssessmentTimeDurationService</code>, <code>RecalculateBlueprintVersionTimeLimitService</code>, <code>ResolveNextPracticeQuestionClaimService</code>, <code>RubricCloneService</code>, <code>StartPracticeSessionPersistenceService</code>, <code>TopicOfferBackfillService</code>, <code>TopicSuggestionService</code>, <code>UndeliveredQuestionCleanupService</code>, <code>ZeroScoreAssessmentResultService</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests 'com.sep.vox.application.service.*' --tests '*MethodSizeConventionTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-15" data-status="todo">
+  <h3><span class="title">Phase 15 &ndash; Method rules: Use cases: schools, classes, grades, rooms, users, registration, subscriptions (view and catalog)</span>
+    <span class="tag">large · needs D7</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> 57 methods in 49 files are split to at most 25 lines. Procedure in the introduction of section 3. <strong>Depends on:</strong> Phase 1, D7 (best after phases 2 to 12, when the long methods are already shorter).</p>
+  <ul class="jobs">
+    <li class="job" id="job-15-1" data-status="todo">
+      <span class="title">15.1 Split and clean 19 long methods in 17 files</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 19 entries (usecase/dashboard: 8 methods in 7 files; usecase/gradelevel: 2 methods in 2 files; usecase/importfile: 1 method in 1 file; usecase/learnerprofile: 1 method in 1 file; usecase/proctoring: 1 method in 1 file; usecase/recording: 2 methods in 2 files; usecase/registration: 4 methods in 3 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
+         <strong>Files:</strong> <code>ApproveRegisterFormUseCase</code>, <code>DeleteGradeLevelUseCase</code>, <code>GetAssessmentRecordingPlaybackUseCase</code>, <code>RecordProctoringAlertUseCase</code>, <code>RecordRecordingPartChangedUseCase</code>, <code>RegisterBySelfDeclaredUseCase</code>, <code>RegisterFromSchoolDirectoryUseCase</code>, <code>UpdateGradeLevelUseCase</code>, <code>ViewImportRowsUseCase</code>, <code>ViewInterestQuizItemsUseCase</code>, <code>ViewPlatformBusinessHealthUseCase</code>, <code>ViewPlatformOperationalHealthUseCase</code>, <code>ViewSchoolAdminDashboardUseCase</code>, <code>ViewSchoolAiCostTimeseriesUseCase</code>, <code>ViewSchoolAiSpendByUserUseCase</code>, <code>ViewSystemAdminDashboardUseCase</code>, <code>ViewTeacherDashboardUseCase</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-15-2" data-status="todo">
+      <span class="title">15.2 Split and clean 19 long methods in 16 files</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 19 entries (usecase/registration: 3 methods in 3 files; usecase/school: 4 methods in 4 files; usecase/schoolclass: 4 methods in 3 files; usecase/schoolclassuser: 4 methods in 3 files; usecase/schooldirectory: 1 method in 1 file; usecase/schoolgrade: 3 methods in 2 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
+         <strong>Files:</strong> <code>BulkCreateSchoolClassUsersUseCase</code>, <code>CreateSchoolClassUserUseCase</code>, <code>CreateSchoolUseCase</code>, <code>DeleteSchoolClassUseCase</code>, <code>DeleteSchoolGradeUseCase</code>, <code>DeleteSchoolUseCase</code>, <code>PreviewSchoolClassImportFromFileUseCase</code>, <code>PreviewSchoolClassUserImportFromFileUseCase</code>, <code>PreviewSchoolDirectoryImportFromFileUseCase</code>, <code>PreviewSchoolGradeImportFromFileUseCase</code>, <code>RegisterFromSchoolDirectoryUseCase</code>, <code>RejectRegisterFormUseCase</code>, <code>UpdateSchoolClassUseCase</code>, <code>UpdateSchoolStatusUseCase</code>, <code>UpdateSchoolUseCase</code>, <code>VerifyRegisterFormOtpUseCase</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-15-3" data-status="todo">
+      <span class="title">15.3 Split and clean 19 long methods in 17 files</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 19 entries (usecase/schoolgrade: 2 methods in 2 files; usecase/schoolroom: 4 methods in 3 files; usecase/schooluser: 8 methods in 7 files; usecase/stream: 2 methods in 2 files; usecase/subscription: 1 method in 1 file; usecase/supportedlanguage: 1 method in 1 file; usecase/user: 1 method in 1 file) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
+         <strong>Files:</strong> <code>AcceptSchoolUserImportUseCase</code>, <code>CreateSchoolUserUseCase</code>, <code>DeleteSchoolRoomUseCase</code>, <code>DeleteSchoolUserUseCase</code>, <code>IssueMonitorTokenUseCase</code>, <code>IssueStudentStreamTokenUseCase</code>, <code>PreviewSchoolRoomImportFromFileUseCase</code>, <code>PreviewSchoolUserImportFromFileUseCase</code>, <code>UpdateProfileUseCase</code>, <code>UpdateSchoolGradeUseCase</code>, <code>UpdateSchoolRoomUseCase</code>, <code>UpdateSchoolUserUseCase</code>, <code>UpdateSupportedLanguageUseCase</code>, <code>ViewSchoolGradesUseCase</code>, <code>ViewSchoolUsersBySchoolUseCase</code>, <code>ViewSchoolUsersForRequesterUseCase</code>, <code>ViewSubscriptionPlansUseCase</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests 'com.sep.vox.application.usecase.*' --tests 'com.sep.vox.application.usecase.dashboard.*' --tests 'com.sep.vox.application.usecase.gradelevel.*' --tests 'com.sep.vox.application.usecase.importfile.*' --tests 'com.sep.vox.application.usecase.recording.*' --tests 'com.sep.vox.application.usecase.school.*' --tests 'com.sep.vox.application.usecase.schoolclass.*' --tests 'com.sep.vox.application.usecase.schoolclassuser.*' --tests 'com.sep.vox.application.usecase.schooldirectory.*' --tests 'com.sep.vox.application.usecase.schoolgrade.*' --tests 'com.sep.vox.application.usecase.schoolroom.*' --tests 'com.sep.vox.application.usecase.schooluser.*' --tests 'com.sep.vox.application.usecase.stream.*' --tests 'com.sep.vox.application.usecase.subscription.*' --tests 'com.sep.vox.application.usecase.supportedlanguage.*' --tests 'com.sep.vox.application.usecase.user.*' --tests '*MethodSizeConventionTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-16" data-status="todo">
+  <h3><span class="title">Phase 16 &ndash; Method rules: Use cases: school and teacher rubrics</span>
+    <span class="tag">medium · needs D7</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> 36 methods in 35 files are split to at most 25 lines. Procedure in the introduction of section 3. <strong>Depends on:</strong> Phase 1, D7 (best after phases 2 to 12, when the long methods are already shorter).</p>
+  <ul class="jobs">
+    <li class="job" id="job-16-1" data-status="todo">
+      <span class="title">16.1 Split and clean 18 long methods in 17 files</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 18 entries (usecase/rubricschool: 18 methods in 17 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
+         <strong>Files:</strong> <code>AcceptSchoolRubricCriterionImportUseCase</code>, <code>AcceptSchoolRubricResultBandImportUseCase</code>, <code>AcceptSchoolRubricVersionImportUseCase</code>, <code>AddSchoolRubricVersionsUseCase</code>, <code>ArchiveSchoolRubricVersionUseCase</code>, <code>ChangeSchoolRubricVersionStatusUseCase</code>, <code>CloneSystemRubricToSchoolUseCase</code>, <code>CreateSchoolRubricCriterionUseCase</code>, <code>CreateSchoolRubricResultBandsUseCase</code>, <code>CreateSchoolRubricUseCase</code>, <code>DeleteSchoolRubricCriterionUseCase</code>, <code>DeleteSchoolRubricResultBandUseCase</code>, <code>DeleteSchoolRubricUseCase</code>, <code>DeleteSchoolRubricVersionUseCase</code>, <code>PreviewSchoolRubricCriterionImportFromFileUseCase</code>, <code>PreviewSchoolRubricResultBandImportFromFileUseCase</code>, <code>PreviewSchoolRubricVersionImportFromFileUseCase</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-16-2" data-status="todo">
+      <span class="title">16.2 Split and clean 18 long methods in 18 files</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 18 entries (usecase/rubricschool: 16 methods in 16 files; usecase/rubricteacher: 2 methods in 2 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
+         <strong>Files:</strong> <code>SearchSchoolRubricCriteriaUseCase</code>, <code>SearchSchoolRubricResultBandsUseCase</code>, <code>SearchSchoolRubricVersionsUseCase</code>, <code>SearchSchoolRubricsUseCase</code>, <code>SearchTeacherRubricsUseCase</code>, <code>UpdateSchoolRubricCriterionUseCase</code>, <code>UpdateSchoolRubricResultBandUseCase</code>, <code>UpdateSchoolRubricUseCase</code>, <code>UpdateSchoolRubricVersionUseCase</code>, <code>ViewSchoolRubricCriteriaUseCase</code>, <code>ViewSchoolRubricCriterionDetailsUseCase</code>, <code>ViewSchoolRubricDetailsUseCase</code>, <code>ViewSchoolRubricResultBandDetailsUseCase</code>, <code>ViewSchoolRubricResultBandsUseCase</code>, <code>ViewSchoolRubricVersionDetailsUseCase</code>, <code>ViewSchoolRubricVersionsUseCase</code>, <code>ViewSchoolRubricsUseCase</code>, <code>ViewTeacherRubricVersionsUseCase</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests 'com.sep.vox.application.usecase.*' --tests 'com.sep.vox.application.usecase.rubricschool.*' --tests '*MethodSizeConventionTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-17" data-status="todo">
+  <h3><span class="title">Phase 17 &ndash; Method rules: Use cases: system rubrics</span>
+    <span class="tag">medium · needs D7</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> 26 methods in 26 files are split to at most 25 lines. Procedure in the introduction of section 3. <strong>Depends on:</strong> Phase 1, D7 (best after phases 2 to 12, when the long methods are already shorter).</p>
+  <ul class="jobs">
+    <li class="job" id="job-17-1" data-status="todo">
+      <span class="title">17.1 Split and clean 13 long methods in 13 files</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 13 entries (usecase/rubricsystem: 13 methods in 13 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
+         <strong>Files:</strong> <code>AcceptSystemRubricCriterionImportUseCase</code>, <code>AcceptSystemRubricResultBandImportUseCase</code>, <code>AcceptSystemRubricVersionImportUseCase</code>, <code>AddSystemRubricVersionsUseCase</code>, <code>ArchiveSystemRubricVersionUseCase</code>, <code>ChangeSystemRubricVersionStatusUseCase</code>, <code>CreateSystemRubricCriteriaUseCase</code>, <code>CreateSystemRubricResultBandsUseCase</code>, <code>CreateSystemRubricUseCase</code>, <code>DeleteSystemRubricCriterionUseCase</code>, <code>DeleteSystemRubricUseCase</code>, <code>DeleteSystemRubricVersionUseCase</code>, <code>PreviewSystemRubricCriterionImportFromFileUseCase</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-17-2" data-status="todo">
+      <span class="title">17.2 Split and clean 13 long methods in 13 files</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 13 entries (usecase/rubricsystem: 13 methods in 13 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
+         <strong>Files:</strong> <code>PreviewSystemRubricResultBandImportFromFileUseCase</code>, <code>PreviewSystemRubricVersionImportFromFileUseCase</code>, <code>SearchSystemRubricCriteriaUseCase</code>, <code>SearchSystemRubricVersionsUseCase</code>, <code>UpdateSystemRubricCriterionUseCase</code>, <code>UpdateSystemRubricResultBandUseCase</code>, <code>UpdateSystemRubricUseCase</code>, <code>UpdateSystemRubricVersionUseCase</code>, <code>ViewSystemRubricCriteriaUseCase</code>, <code>ViewSystemRubricCriterionDetailsUseCase</code>, <code>ViewSystemRubricResultBandDetailsUseCase</code>, <code>ViewSystemRubricResultBandsUseCase</code>, <code>ViewSystemRubricVersionsUseCase</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests 'com.sep.vox.application.usecase.rubricsystem.*' --tests '*MethodSizeConventionTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-18" data-status="todo">
+  <h3><span class="title">Phase 18 &ndash; Method rules: Use cases: assessments and schedules</span>
+    <span class="tag">medium · needs D7</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> 36 methods in 26 files are split to at most 25 lines. Procedure in the introduction of section 3. <strong>Depends on:</strong> Phase 1, D7 (best after phases 2 to 12, when the long methods are already shorter).</p>
+  <ul class="jobs">
+    <li class="job" id="job-18-1" data-status="todo">
+      <span class="title">18.1 Split and clean 18 long methods in 12 files</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 18 entries (usecase/assessment: 18 methods in 12 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
+         <strong>Files:</strong> <code>AttachAssessmentBlueprintUseCase</code>, <code>ChangeClassTestBlueprintUseCase</code>, <code>CreateAssessmentUseCase</code>, <code>CreateClassTestSectionUseCase</code>, <code>CreateClassTestUseCase</code>, <code>DeleteAssessmentUseCase</code>, <code>DeleteClassTestSectionUseCase</code>, <code>GetAssessmentSessionPaperUseCase</code>, <code>StartClassTestSessionUseCase</code>, <code>UpdateAssessmentDeliveryModeUseCase</code>, <code>UpdateAssessmentSecurePoolStatusUseCase</code>, <code>UpdateAssessmentStatusUseCase</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-18-2" data-status="todo">
+      <span class="title">18.2 Split and clean 18 long methods in 14 files</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 18 entries (usecase/assessment: 10 methods in 7 files; usecase/assessmentschedule: 8 methods in 7 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
+         <strong>Files:</strong> <code>AddAssessmentScheduleProctorUseCase</code>, <code>CreateAssessmentScheduleUseCase</code>, <code>DeleteAssessmentScheduleUseCase</code>, <code>UpdateAssessmentScheduleStatusUseCase</code>, <code>UpdateAssessmentScheduleUseCase</code>, <code>UpdateAssessmentUseCase</code>, <code>UpdateClassTestQuestionsUseCase</code>, <code>UpdateClassTestSectionUseCase</code>, <code>VerifyAssessmentScheduleOtpUseCase</code>, <code>ViewAssessmentDetailsUseCase</code>, <code>ViewAssessmentsUseCase</code>, <code>ViewMyAssessmentSchedulesUseCase</code>, <code>ViewMyAssessmentsUseCase</code>, <code>ViewStudentBusySlotsUseCase</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests 'com.sep.vox.application.usecase.assessment.*' --tests 'com.sep.vox.application.usecase.assessmentschedule.*' --tests '*MethodSizeConventionTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-19" data-status="todo">
+  <h3><span class="title">Phase 19 &ndash; Method rules: Use cases: blueprints, papers and assessment policies</span>
+    <span class="tag">large · needs D7</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> 44 methods in 36 files are split to at most 25 lines. Procedure in the introduction of section 3. <strong>Depends on:</strong> Phase 1, D7 (best after phases 2 to 12, when the long methods are already shorter).</p>
+  <ul class="jobs">
+    <li class="job" id="job-19-1" data-status="todo">
+      <span class="title">19.1 Split and clean 22 long methods in 14 files</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 22 entries (usecase/assessmentblueprint: 18 methods in 12 files; usecase/assessmentpaper: 4 methods in 2 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
+         <strong>Files:</strong> <code>CreateAssessmentBlueprintSectionUseCase</code>, <code>CreateAssessmentBlueprintSlotUseCase</code>, <code>CreateAssessmentBlueprintUseCase</code>, <code>CreateAssessmentBlueprintVersionUseCase</code>, <code>CreateAssessmentPaperUseCase</code>, <code>DeleteAssessmentBlueprintSectionUseCase</code>, <code>DeleteAssessmentBlueprintVersionUseCase</code>, <code>DeleteAssessmentPaperUseCase</code>, <code>UpdateAssessmentBlueprintSectionUseCase</code>, <code>UpdateAssessmentBlueprintSlotUseCase</code>, <code>UpdateAssessmentBlueprintUseCase</code>, <code>UpdateAssessmentBlueprintVersionStatusUseCase</code>, <code>UpdateAssessmentBlueprintVersionUseCase</code>, <code>ViewAssessmentBlueprintsUseCase</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-19-2" data-status="todo">
+      <span class="title">19.2 Split and clean 22 long methods in 22 files</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 22 entries (usecase/assessmentpaper: 3 methods in 3 files; usecase/assessmentpolicyschool: 10 methods in 10 files; usecase/assessmentpolicysystem: 8 methods in 8 files; usecase/assessmentpolicyteacher: 1 method in 1 file) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
+         <strong>Files:</strong> <code>AcceptSchoolAssessmentPolicyImportUseCase</code>, <code>AcceptSystemAssessmentPolicyImportUseCase</code>, <code>ArchiveSchoolAssessmentPolicyUseCase</code>, <code>ArchiveSystemAssessmentPolicyUseCase</code>, <code>CreateSchoolAssessmentPolicyUseCase</code>, <code>CreateSystemAssessmentPolicyUseCase</code>, <code>DeleteSchoolAssessmentPolicyUseCase</code>, <code>PreviewSchoolAssessmentPolicyImportFromFileUseCase</code>, <code>PreviewSystemAssessmentPolicyImportFromFileUseCase</code>, <code>PublishSchoolAssessmentPoliciesByRubricVersionUseCase</code>, <code>PublishSchoolAssessmentPolicyUseCase</code>, <code>PublishSystemAssessmentPoliciesByRubricVersionUseCase</code>, <code>PublishSystemAssessmentPolicyUseCase</code>, <code>UpdateAssessmentPaperItemUseCase</code>, <code>UpdateAssessmentPaperSectionUseCase</code>, <code>UpdateAssessmentPaperStatusUseCase</code>, <code>UpdateSchoolAssessmentPolicyUseCase</code>, <code>UpdateSystemAssessmentPolicyUseCase</code>, <code>ViewSchoolAssessmentPoliciesUseCase</code>, <code>ViewSchoolAssessmentPolicyDetailsUseCase</code>, <code>ViewSystemAssessmentPoliciesUseCase</code>, <code>ViewTeacherAssessmentPoliciesUseCase</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests 'com.sep.vox.application.usecase.*' --tests 'com.sep.vox.application.usecase.assessmentpaper.*' --tests 'com.sep.vox.application.usecase.assessmentpolicyschool.*' --tests 'com.sep.vox.application.usecase.assessmentpolicysystem.*' --tests '*MethodSizeConventionTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-20" data-status="todo">
+  <h3><span class="title">Phase 20 &ndash; Method rules: Use cases: frameworks, scoring rules and practice</span>
+    <span class="tag">medium · needs D7</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> 29 methods in 26 files are split to at most 25 lines. Procedure in the introduction of section 3. <strong>Depends on:</strong> Phase 1, D7 (best after phases 2 to 12, when the long methods are already shorter).</p>
+  <ul class="jobs">
+    <li class="job" id="job-20-1" data-status="todo">
+      <span class="title">20.1 Split and clean 15 long methods in 14 files</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 15 entries (usecase/framework: 7 methods in 7 files; usecase/practiceevaluation: 1 method in 1 file; usecase/practiceplanning: 5 methods in 4 files; usecase/practicesession: 2 methods in 2 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
+         <strong>Files:</strong> <code>BuildPracticePaperUseCase</code>, <code>CreateFrameworkCriteriaUseCase</code>, <code>CreateFrameworkCriterionBandsUseCase</code>, <code>CreateFrameworkResultBandsUseCase</code>, <code>CreateFrameworkVersionUseCase</code>, <code>EndPracticeSessionUseCase</code>, <code>RecordPracticeAttemptEvaluationUseCase</code>, <code>ResolveNextPracticeQuestionUseCase</code>, <code>SearchPracticeTopicsSemanticUseCase</code>, <code>SearchPracticeTopicsUseCase</code>, <code>UpdateFrameworkCriterionUseCase</code>, <code>UpdateFrameworkResultBandUseCase</code>, <code>UpdateFrameworkVersionStatusUseCase</code>, <code>ViewPracticeTopicOffersUseCase</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-20-2" data-status="todo">
+      <span class="title">20.2 Split and clean 14 long methods in 13 files</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 14 entries (usecase/practicesession: 3 methods in 2 files; usecase/scoringrule: 11 methods in 11 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
+         <strong>Files:</strong> <code>CreateSchoolScoringRuleUseCase</code>, <code>CreateSystemScoringRuleUseCase</code>, <code>DeleteSchoolScoringRuleUseCase</code>, <code>ResolveNextPracticeQuestionUseCase</code>, <code>SearchSchoolScoringRuleUseCase</code>, <code>SearchSystemScoringRuleUseCase</code>, <code>SubmitPracticeTurnUseCase</code>, <code>UpdateSchoolScoringRuleUseCase</code>, <code>UpdateSystemScoringRuleUseCase</code>, <code>ViewAllSchoolScoringRuleUseCase</code>, <code>ViewAllSystemScoringRuleUseCase</code>, <code>ViewSchoolScoringRuleDetailUseCase</code>, <code>ViewSystemScoringRuleDetailUseCase</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests 'com.sep.vox.application.usecase.*' --tests 'com.sep.vox.application.usecase.framework.*' --tests 'com.sep.vox.application.usecase.practiceplanning.*' --tests 'com.sep.vox.application.usecase.practicesession.*' --tests 'com.sep.vox.application.usecase.scoringrule.*' --tests '*MethodSizeConventionTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-21" data-status="todo">
+  <h3><span class="title">Phase 21 &ndash; Method rules: Use cases: candidates, sessions, item responses and appeals</span>
+    <span class="tag">medium · needs D7</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> 30 methods in 26 files are split to at most 25 lines. Procedure in the introduction of section 3. <strong>Depends on:</strong> Phase 1, D7 (best after phases 2 to 12, when the long methods are already shorter).</p>
+  <ul class="jobs">
+    <li class="job" id="job-21-1" data-status="todo">
+      <span class="title">21.1 Split and clean 15 long methods in 15 files</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 15 entries (usecase/assessmentappeal: 4 methods in 4 files; usecase/assessmentcandidate: 10 methods in 10 files; usecase/assessmentitemresponse: 1 method in 1 file) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
+         <strong>Files:</strong> <code>AddAssessmentCandidateUseCase</code>, <code>AssignAssessmentAppealReviewerUseCase</code>, <code>AssignAssessmentCandidateScheduleUseCase</code>, <code>AssignAssessmentPapersUseCase</code>, <code>AutoFillAssessmentCandidatesUseCase</code>, <code>BulkAssignAssessmentCandidateScheduleUseCase</code>, <code>BulkDeleteAssessmentCandidatesUseCase</code>, <code>CreateAssessmentAppealUseCase</code>, <code>ImportAssessmentCandidatesFromClassUseCase</code>, <code>ImportAssessmentCandidatesFromGradeUseCase</code>, <code>RecordAnswerTurnUseCase</code>, <code>RejectAssessmentAppealUseCase</code>, <code>UpdateAssessmentCandidateStatusUseCase</code>, <code>UpdateAssessmentCandidatesAttendanceUseCase</code>, <code>WithdrawAssessmentAppealUseCase</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-21-2" data-status="todo">
+      <span class="title">21.2 Split and clean 15 long methods in 11 files</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 15 entries (usecase/assessmentitemresponse: 1 method in 1 file; usecase/assessmentsession: 14 methods in 10 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
+         <strong>Files:</strong> <code>CompleteAssessmentSessionGradingUseCase</code>, <code>DecideAssessmentCandidateResultOutcomeUseCase</code>, <code>DeleteAssessmentSessionUseCase</code>, <code>ForceEndAssessmentSessionUseCase</code>, <code>HandOffGradingToHumanUseCase</code>, <code>RetryGradingAssessmentSessionUseCase</code>, <code>SubmitAssessmentSessionUseCase</code>, <code>UpdateAssessmentItemResponseTurnUseCase</code>, <code>UpdateAssessmentSessionStatusUseCase</code>, <code>ViewAssessmentSessionResultUseCase</code>, <code>ViewMyAssessmentResultsUseCase</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests 'com.sep.vox.application.usecase.*' --tests 'com.sep.vox.application.usecase.assessmentappeal.*' --tests 'com.sep.vox.application.usecase.assessmentcandidate.*' --tests 'com.sep.vox.application.usecase.assessmentsession.*' --tests '*MethodSizeConventionTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-22" data-status="todo">
+  <h3><span class="title">Phase 22 &ndash; Method rules: Use cases: grading and evaluation</span>
+    <span class="tag">medium · needs D7</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> 26 methods in 18 files are split to at most 25 lines. Procedure in the introduction of section 3. <strong>Depends on:</strong> Phase 1, D7 (best after phases 2 to 12, when the long methods are already shorter).</p>
+  <ul class="jobs">
+    <li class="job" id="job-22-1" data-status="todo">
+      <span class="title">22.1 Split and clean 13 long methods in 7 files</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 13 entries (usecase/assessmentevaluation: 10 methods in 4 files; usecase/assessmentgrading: 3 methods in 3 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
+         <strong>Files:</strong> <code>AssessmentSessionResultCalculator</code>, <code>AssignGradingUseCase</code>, <code>AutoAssignGradingUseCase</code>, <code>BulkFinalizeAssessmentResultsUseCase</code>, <code>RecordAssessmentAttemptEvaluationUseCase</code>, <code>ResolveAssessmentCandidateAttemptsUseCase</code>, <code>ViewAssessmentItemResponseEvaluationUseCase</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-22-2" data-status="todo">
+      <span class="title">22.2 Split and clean 13 long methods in 11 files</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 13 entries (usecase/assessmentgrading: 13 methods in 11 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
+         <strong>Files:</strong> <code>ClaimClassTestGradingUseCase</code>, <code>ClearInvalidResultUseCase</code>, <code>DeclineGradingAssignmentUseCase</code>, <code>InvalidateResultUseCase</code>, <code>ReassignGradingUseCase</code>, <code>ReclaimOverdueAssignmentsUseCase</code>, <code>RegradeResultUseCase</code>, <code>RemoveGradingAssignmentUseCase</code>, <code>SetGradingDeadlineUseCase</code>, <code>UpholdResultUseCase</code>, <code>ViewResultStatusHistoryUseCase</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests 'com.sep.vox.application.usecase.assessmentevaluation.*' --tests 'com.sep.vox.application.usecase.assessmentgrading.*' --tests '*MethodSizeConventionTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-23" data-status="todo">
+  <h3><span class="title">Phase 23 &ndash; Method rules: Use cases: questions, question banks and topics</span>
+    <span class="tag">medium · needs D7</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> 35 methods in 34 files are split to at most 25 lines. Procedure in the introduction of section 3. <strong>Depends on:</strong> Phase 1, D7 (best after phases 2 to 12, when the long methods are already shorter).</p>
+  <ul class="jobs">
+    <li class="job" id="job-23-1" data-status="todo">
+      <span class="title">23.1 Split and clean 18 long methods in 17 files</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 18 entries (usecase/question: 18 methods in 17 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
+         <strong>Files:</strong> <code>AcceptQuestionImportUseCase</code>, <code>BulkUpdateQuestionStatusUseCase</code>, <code>CreateQuestionAssetUseCase</code>, <code>CreateQuestionCollaboratorUseCase</code>, <code>CreateSystemQuestionBankQuestionUseCase</code>, <code>DeleteQuestionAssetUseCase</code>, <code>DeleteQuestionUseCase</code>, <code>PreviewQuestionImportFromFileUseCase</code>, <code>QuestionAssetAnalysisRequestPublisher</code>, <code>QuestionAssetContentValidator</code>, <code>QuestionCloneService</code>, <code>RecordQuestionAssetAnalysisResultUseCase</code>, <code>RegenerateQuestionAssetAnalysisUseCase</code>, <code>UpdateQuestionAssetUseCase</code>, <code>UpdateQuestionStatusUseCase</code>, <code>UpdateQuestionUseCase</code>, <code>UpsertQuestionEvaluationGuideUseCase</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-23-2" data-status="todo">
+      <span class="title">23.2 Split and clean 17 long methods in 17 files</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 17 entries (usecase/question: 3 methods in 3 files; usecase/questionbank: 7 methods in 7 files; usecase/questiontopic: 7 methods in 7 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
+         <strong>Files:</strong> <code>AcceptQuestionBankImportUseCase</code>, <code>AcceptQuestionTopicImportUseCase</code>, <code>BulkUpdateQuestionBankStatusUseCase</code>, <code>BulkUpdateQuestionTopicStatusUseCase</code>, <code>CreateQuestionBankGradeUseCase</code>, <code>CreateQuestionTopicUseCase</code>, <code>DeleteQuestionBankUseCase</code>, <code>DeleteQuestionTopicUseCase</code>, <code>PreviewQuestionBankImportFromFileUseCase</code>, <code>PreviewQuestionTopicImportFromFileUseCase</code>, <code>UpdateQuestionBankStatusUseCase</code>, <code>UpdateQuestionTopicStatusUseCase</code>, <code>UpdateQuestionTopicUseCase</code>, <code>ViewQuestionBanksUseCase</code>, <code>ViewQuestionStatusCountsUseCase</code>, <code>ViewQuestionsForAssessmentPaperUseCase</code>, <code>ViewQuestionsUseCase</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests 'com.sep.vox.application.usecase.*' --tests 'com.sep.vox.application.usecase.question.*' --tests '*MethodSizeConventionTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-24" data-status="todo">
+  <h3><span class="title">Phase 24 &ndash; Method rules: Application mappers and the domain layer</span>
+    <span class="tag">medium · needs D7</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> 16 methods in 13 files are split to at most 25 lines. Procedure in the introduction of section 3. <strong>Depends on:</strong> Phase 1, D7 (best after phases 2 to 12, when the long methods are already shorter).</p>
+  <ul class="jobs">
+    <li class="job" id="job-24-1" data-status="todo">
+      <span class="title">24.1 Split and clean 16 long methods in 13 files</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 16 entries (application/common: 1 method in 1 file; application/mapper/assessmentevaluation: 1 method in 1 file; application/query/dto: 1 method in 1 file; domain/common: 1 method in 1 file; domain/mapper: 2 methods in 2 files; domain/model/personalization: 1 method in 1 file; domain/model/registerform: 3 methods in 1 file; domain/service/assessment: 1 method in 1 file; domain/service/personalization: 1 method in 1 file; domain/service/question: 1 method in 1 file; domain/service/rubric: 1 method in 1 file; domain/valueobject: 2 methods in 1 file) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
+         <strong>Files:</strong> <code>AssessmentAttemptSummary</code>, <code>AssessmentDtoMapper</code>, <code>AssessmentEvaluationSignalMapper</code>, <code>DateMapper</code>, <code>EvaluationSignals</code>, <code>EventTypeConstant</code>, <code>PracticeSession</code>, <code>QuestionDtoMapper</code>, <code>QuestionStatusTransition</code>, <code>RegisterForm</code>, <code>RubricItemScoreFormula</code>, <code>RubricScoringConsistencyValidator</code>, <code>SessionDiagnosisPolicy</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests 'com.sep.vox.application.common.*' --tests 'com.sep.vox.application.mapper.assessmentevaluation.*' --tests 'com.sep.vox.application.query.dto.*' --tests 'com.sep.vox.domain.*' --tests 'com.sep.vox.domain.model.*' --tests 'com.sep.vox.domain.service.*' --tests 'com.sep.vox.domain.service.question.*' --tests 'com.sep.vox.domain.service.rubric.*' --tests 'com.sep.vox.domain.valueobject.*' --tests '*MethodSizeConventionTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-25" data-status="todo">
+  <h3><span class="title">Phase 25 &ndash; Method rules: Infrastructure: persistence (queries, adapters, mappers)</span>
+    <span class="tag">large · needs D7</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> 66 methods in 31 files are split to at most 25 lines. Procedure in the introduction of section 3. <strong>Depends on:</strong> Phase 1, D7 (best after phases 2 to 12, when the long methods are already shorter).</p>
+  <ul class="jobs">
+    <li class="job" id="job-25-1" data-status="todo">
+      <span class="title">25.1 Split and clean 22 long methods in 14 files</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 22 entries (infrastructure/persistence/adapter: 10 methods in 8 files; infrastructure/persistence/mapper: 9 methods in 5 files; infrastructure/persistence/query: 3 methods in 1 file) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
+         <strong>Files:</strong> <code>AssessmentItemEvaluationMapper</code>, <code>AssessmentMapper</code>, <code>DimensionInterestScoreRepositoryImpl</code>, <code>ImportSessionMapper</code>, <code>JpaAssessmentAppealQueryRepository</code>, <code>PracticeItemResponseRepositoryImpl</code>, <code>PracticeResponseTurnRepositoryImpl</code>, <code>QuestionBankRepositoryImpl</code>, <code>QuestionMapper</code>, <code>QuestionRepositoryImpl</code>, <code>RegisterFormMapper</code>, <code>RubricVersionRepositoryImpl</code>, <code>SchoolClassRepositoryImpl</code>, <code>TopicInterestScoreRepositoryImpl</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-25-2" data-status="todo">
+      <span class="title">25.2 Split and clean 22 long methods in 3 files</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 22 entries (infrastructure/persistence/query: 22 methods in 3 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
+         <strong>Files:</strong> <code>JpaAssessmentAppealQueryRepository</code>, <code>JpaAssessmentDirectoryQueryRepository</code>, <code>JpaAssessmentGradingQueryRepository</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-25-3" data-status="todo">
+      <span class="title">25.3 Split and clean 22 long methods in 16 files</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 22 entries (infrastructure/persistence/query: 22 methods in 16 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
+         <strong>Files:</strong> <code>JpaAssessmentGradingQueryRepository</code>, <code>JpaAssessmentResultAuditQueryRepository</code>, <code>JpaAssessmentStatusCountsQueryRepository</code>, <code>JpaGradingFailureQueryRepository</code>, <code>JpaMonitoredAssessmentQueryRepository</code>, <code>JpaNearestCentralizedAssessmentQueryRepository</code>, <code>JpaPlatformBusinessHealthQueryRepository</code>, <code>JpaProctorScheduleCandidatesQueryRepository</code>, <code>JpaQuestionBankStatsQueryRepository</code>, <code>JpaQuestionQueryRepository</code>, <code>JpaSchoolAiCostQueryRepository</code>, <code>JpaSchoolUserQueryRepository</code>, <code>JpaSchoolWorkloadQueryRepository</code>, <code>JpaSchoolsAtRiskQueryRepository</code>, <code>JpaStudentAssessmentQueryRepository</code>, <code>JpaSubscriptionPlanQueryRepository</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests 'com.sep.vox.infrastructure.persistence.*' --tests 'com.sep.vox.infrastructure.persistence.adapter.*' --tests 'com.sep.vox.infrastructure.persistence.query.*' --tests '*MethodSizeConventionTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-26" data-status="todo">
+  <h3><span class="title">Phase 26 &ndash; Method rules: Infrastructure: events, initializers, services, workers, config</span>
+    <span class="tag">large · needs D7</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> 47 methods in 28 files are split to at most 25 lines. Procedure in the introduction of section 3. <strong>Depends on:</strong> Phase 1, D7 (best after phases 2 to 12, when the long methods are already shorter).</p>
+  <ul class="jobs">
+    <li class="job" id="job-26-1" data-status="todo">
+      <span class="title">26.1 Split and clean 16 long methods in 12 files</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 16 entries (infrastructure/config: 2 methods in 2 files; infrastructure/event/internal: 14 methods in 10 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
+         <strong>Files:</strong> <code>AssessmentAppealEmailConsumer</code>, <code>AssessmentResultLifecycleEmailConsumer</code>, <code>FirebaseConfig</code>, <code>GradingAssignmentEmailConsumer</code>, <code>InvoiceEmailConsumer</code>, <code>NotificationCategoryMappingValidator</code>, <code>NotificationPushedEventConsumer</code>, <code>RegisterVerificationOtpEmailConsumer</code>, <code>RejectRegisterFormEventConsumer</code>, <code>ResetPasswordOtpEmailConsumer</code>, <code>SchoolDebtEmailConsumer</code>, <code>UserCreatedEventConsumer</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-26-2" data-status="todo">
+      <span class="title">26.2 Split and clean 16 long methods in 7 files</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 16 entries (infrastructure/initializer: 13 methods in 5 files; infrastructure/service: 3 methods in 2 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
+         <strong>Files:</strong> <code>AwsS3StorageService</code>, <code>FcmNotificationService</code>, <code>FrameworkInitializer</code>, <code>GradeLevelBandScopeInitializer</code>, <code>S3BucketInitializer</code>, <code>SystemAssessmentPolicyInitializer</code>, <code>SystemRubricTemplateInitializer</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-26-3" data-status="todo">
+      <span class="title">26.3 Split and clean 15 long methods in 9 files</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 15 entries (infrastructure/service: 11 methods in 5 files; infrastructure/worker: 4 methods in 4 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
+         <strong>Files:</strong> <code>AssessmentStatusAutoTransitionJob</code>, <code>FileProcessingService</code>, <code>GradingDeadlineReminderBatch</code>, <code>GradingDeadlineReminderJob</code>, <code>InterestQuizGenerationClient</code>, <code>OutboxEventScheduler</code>, <code>PracticeQuestionGenerationClient</code>, <code>QuestionDiversityClient</code>, <code>TopicGenerationClient</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-26-4" data-status="todo">
+      <span class="title">26.4 Rename 13 vague-named methods</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>handleDlt</code> (10 Kafka consumers) becomes a name that says it logs a dead-lettered record, <code>handle</code> in <code>NotificationDeviceRevokeListener</code> and <code>RegisterVerificationCleanUpListener</code> say what they remove, and <code>data(String)</code> in <code>NotificationPushedEventConsumer</code> says what it builds; <code>@DltHandler</code>, <code>@TransactionalEventListener</code> and <code>@Transactional</code> stay as they are; <code>grep -rnE "\b(handleDlt|handle)\(" src/main/java/com/sep/vox/infrastructure</code> prints nothing. If the 10 <code>handleDlt</code> bodies are identical they are extracted once (D1 "one place" rule), otherwise each keeps its own body.
+         <strong>Files:</strong> 10 consumers under <code>infrastructure/event/internal/consumer</code>, 2 listeners under <code>.../listener</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests 'com.sep.vox.infrastructure.config.*' --tests 'com.sep.vox.infrastructure.event.internal.consumer.*' --tests 'com.sep.vox.infrastructure.initializer.*' --tests 'com.sep.vox.infrastructure.service.*' --tests 'com.sep.vox.infrastructure.worker.*' --tests '*MethodSizeConventionTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-27" data-status="todo">
+  <h3><span class="title">Phase 27 &ndash; Method rules: Interfaces: GraphQL, gRPC, Kafka, REST DTOs</span>
+    <span class="tag">medium · needs D7</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> 15 methods in 13 files are split to at most 25 lines. Procedure in the introduction of section 3. <strong>Depends on:</strong> Phase 1, D7 (best after phases 2 to 12, when the long methods are already shorter).</p>
+  <ul class="jobs">
+    <li class="job" id="job-27-1" data-status="todo">
+      <span class="title">27.1 Split and clean 15 long methods in 13 files</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 15 entries (interfaces/graphql/controller: 5 methods in 3 files; interfaces/graphql/exception: 1 method in 1 file; interfaces/grpc/exception: 1 method in 1 file; interfaces/kafka/consumer: 5 methods in 5 files; interfaces/kafka/mapper: 1 method in 1 file; interfaces/rest/dto: 2 methods in 2 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
+         <strong>Files:</strong> <code>AnswerTurnsRecordedConsumer</code>, <code>AssessmentAttemptEvaluationCompletedConsumer</code>, <code>CreateSchoolRubricCriteriaRequest</code>, <code>CreateSystemRubricCriteriaRequest</code>, <code>GlobalExceptionResolver</code>, <code>GlobalGrpcExceptionHandler</code>, <code>GraphQLPracticeController</code>, <code>GraphQLPracticePlanningController</code>, <code>GraphQLQuestionController</code>, <code>PracticeAttemptEvaluationCompletedConsumer</code>, <code>ProctoringAlertRaisedConsumer</code>, <code>QuestionAssetAnalysisCompletedConsumer</code>, <code>RecordPracticeAttemptEvaluationCommandMapper</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests 'com.sep.vox.interfaces.*' --tests 'com.sep.vox.interfaces.graphql.controller.*' --tests 'com.sep.vox.interfaces.graphql.exception.*' --tests 'com.sep.vox.interfaces.grpc.exception.*' --tests 'com.sep.vox.interfaces.rest.*' --tests '*MethodSizeConventionTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-28" data-status="todo">
+  <h3><span class="title">Phase 28 &ndash; Method rules: Money and quota code (Ask first)</span>
+    <span class="tag">medium · needs D6, D7</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> 37 methods in 25 files are split to at most 25 lines. Procedure in the introduction of section 3. <strong>Depends on:</strong> Phase 1, D6, D7 (best after phases 2 to 12, when the long methods are already shorter).</p>
+  <ul class="jobs">
+    <li class="job" id="job-28-1" data-status="todo">
+      <span class="title">28.1 Split and clean 19 long methods in 11 files</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 19 entries (application services: 14 methods in 6 files; usecase/metering: 1 method in 1 file; usecase/order: 3 methods in 3 files; usecase/payment: 1 method in 1 file) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
+         <strong>Files:</strong> <code>CancelOrderUseCase</code>, <code>ClassTestTokenQuotaGuardService</code>, <code>ConsumeQuotaService</code>, <code>CreatePaymentCheckoutUrlUseCase</code>, <code>CreateSubscriptionOrderUseCase</code>, <code>CreateTopUpOrderUseCase</code>, <code>DistributeQuotaToUsersService</code>, <code>OrderSettlementService</code>, <code>QuotaPricingCalibrationService</code>, <code>RecordAiUsageUseCase</code>, <code>SubscriptionPeriodGuardService</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-28-2" data-status="todo">
+      <span class="title">28.2 Split and clean 18 long methods in 15 files</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The 18 entries (usecase/payment: 2 methods in 2 files; usecase/subscription: 9 methods in 8 files; infrastructure/initializer: 1 method in 1 file; infrastructure/service: 3 methods in 2 files; infrastructure/worker: 2 methods in 1 file; interfaces/kafka/consumer: 1 method in 1 file) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
+         <strong>Files:</strong> <code>AiUsageRecordedConsumer</code>, <code>ArchiveSubscriptionPlanUseCase</code>, <code>CancelSchoolSubscriptionUseCase</code>, <code>CreatePaymentCheckoutUrlUseCase</code>, <code>CreateSubscriptionPlanUseCase</code>, <code>ForceSuspendSubscriptionUseCase</code>, <code>FundQuotaFromBalanceUseCase</code>, <code>PayOSService</code>, <code>PendingOrderReconciler</code>, <code>ProcessPaymentCallbackUseCase</code>, <code>PublishSubscriptionPlanUseCase</code>, <code>SePayPaymentProcessService</code>, <code>SubscriptionPlanInitializer</code>, <code>UnsuspendSubscriptionUseCase</code>, <code>UpdateSubscriptionPlanUseCase</code></p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, the money tests (<code>*Order*</code>, <code>*Payment*</code>, <code>*Subscription*</code>, <code>*Quota*</code>, <code>*SchoolBalance*</code>, <code>*Debt*</code>, <code>*Metering*</code>) with pass counts equal to the counts recorded before the phase, <code>./gradlew test --tests '*MethodSizeConventionTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-29" data-status="todo">
+  <h3><span class="title">Phase 29 &ndash; Close out</span>
+    <span class="tag">small · mechanical</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> The guards describe the final state, AGENTS.md matches the code, and the plan is verified. <strong>Depends on:</strong> Every other phase that is not Deferred.</p>
+  <ul class="jobs">
+    <li class="job" id="job-29-1" data-status="todo">
+      <span class="title">29.1 Exemption lists hold only what was deferred</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> The <code>ModelCreationConventionTests</code> and <code>RepositoryAuditParameterConventionTests</code> exemption sets are empty; <code>method-size-exemptions.txt</code> holds only the 6 security-path methods; each remaining entry is explained in the Implementation notes.
+         <strong>Files:</strong> <code>src/test/.../architecture/*ConventionTests.java</code>, <code>src/test/resources/architecture/method-size-exemptions.txt</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-29-2" data-status="todo">
+      <span class="title">29.2 AGENTS.md matches the final code</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> Every statement the plan changed in AGENTS.md is true of the code; no phase marked Done contradicts it. The user confirms the final text (AGENTS.md changes need confirmation).
+         <strong>Files:</strong> <code>AGENTS.md</code></p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-29-3" data-status="todo">
+      <span class="title">29.3 Full verification</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>./gradlew clean build --no-daemon</code> passes (unit and integration suites); <code>verify-plan</code> has run and its result is in the Implementation notes.
+         <strong>Files:</strong> nothing new</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew clean build --no-daemon</code> (what CI runs), then the <code>verify-plan</code> skill</p>
+  <ul class="status-log"></ul>
+</div>
+
+<h2 id="risks">4. Risks</h2>
+<ul><li>Volume: 586 long methods in 442 files, 162 builder calls in 103 files, 17 repository methods. Each phase leaves the build green and can be marked Deferred on its own; the guards' exemption lists show exactly what remains.</li><li>Behaviour drift in splits of untested methods (207 of 350 application files have no test class): D7 sets the rule; a split moves statements verbatim, and school-scope and role checks (<code>SECURITY GUARD</code> blocks) are moved, never rewritten or reordered.</li><li>Stamp semantics: the adapter stamp must equal what the auditing hook writes (scope actor, else authenticated user, else <code>"System"</code>), and <code>markClaimed</code> stops writing the worker id into <code>updated_by</code> (it becomes the audit actor). The integration tests <code>*AtomicUpdate*</code>, <code>*AuditingTests</code> and the repository tests are the proof; the second fact goes into the Implementation notes.</li><li>JPQL binding: the base-model-audit plan (phases 7 and 8) needed <code>cast(:userId as string)</code> where one parameter binds both a <code>varchar</code> audit column and a <code>uuid</code> column; any statement here that binds an actor text is proved by an integration test, not by a unit test.</li><li>Model API growth: models get many public methods. They stay plain Java (no Spring, Lombok or Jackson in <code>domain</code>); <code>LayeredArchitectureTests</code> runs in every builder phase.</li><li>Merge conflicts: the plan edits several hundred files (442 with a long method, 103 with a builder call, about 40 for stamps, with overlap). A feature area is touched by at most three phases; keep each phase on its own short-lived branch.</li><li>Money code (D6) is touched only by moves; the money test counts must match before and after, and no amount, fee, price or quota rule may change.</li><li>The size guard counts lines the way this plan measured them (return type to closing brace). A method that is 25 lines by that count but 28 with annotations passes; this is the rule of the AGENTS.md wording ("from its signature to its closing brace").</li></ul>
+
+<h2 id="scope">5. Out of scope</h2>
+<ul><li>Security, JWT and OAuth code: <code>SecurityConfig</code> (2 long methods), <code>GoogleIdTokenProvider</code>, <code>JwtStreamTokenProvider</code>, <code>JwtGrpcServerInterceptor</code>, <code>OAuth2AuthenticationSuccessHandler</code> (6 methods; "Ask first"). They stay in <code>method-size-exemptions.txt</code> under a deferred heading.</li><li>Replacing setter calls and the 5 <code>new Model()</code> sites with behaviour methods, making models immutable, removing the public no-argument constructor, and builders in infrastructure mappers, domain copy methods or tests.</li><li>Business-timestamp parameters of the 7 methods listed in 1.2 (D3 = A), <code>SchoolBalance</code> creation stamps, <code>InterestDimension.deactivate</code>, <code>Instant.now()</code> call sites and any <code>Clock</code> bean.</li><li>Batching the <code>save</code> calls inside loops, and any other N+1 or performance finding.</li><li>Public contracts: REST and GraphQL schema, gRPC proto, Kafka topics and payloads, JWT claims, Flyway migrations, env vars.</li><li>Names fixed by a contract: <code>execute</code> (from <code>IUseCase</code>), <code>@ExceptionHandler</code> methods named after the exception they answer, accessor names that are domain terms.</li><li>Translating comments or removing unused code in files the plan does not edit; converting hand-written Mockito tests; adding tests for untested classes beyond what D7 = A says.</li><li>Test code: no test is split for length, and fixtures keep using model builders.</li></ul>
+
+<h2 id="verify">6. Verification</h2>
+<ul><li><code>./gradlew clean build --no-daemon</code>: unit suite (2,700 tests at planning time, plus the new ones) and integration suite (438 tests plus new ones) pass.</li><li><code>grep -rnE '[A-Z][A-Za-z0-9]*\.builder\(\)' src/main/java/com/sep/vox/application</code> prints no domain model; <code>ModelCreationConventionTests</code> has an empty exemption set.</li><li><code>grep -rnE '(updatedAt|updatedBy)' src/main/java/com/sep/vox/domain/repository</code> prints nothing; <code>RepositoryAuditParameterConventionTests</code> has an empty exemption set; the 17 rows of the table in 1.2 pass their auditing and atomic-update integration tests.</li><li><code>MethodSizeConventionTests</code> passes with <code>method-size-exemptions.txt</code> holding only the deferred entries (the security-path methods).</li><li><code>git diff --stat -- src/main/resources</code> is empty (no migration, schema or config change); <code>./gradlew test --tests '*LayeredArchitectureTests'</code> passes; no unused import, local, parameter or private method remains in an edited file.</li><li>Run the <code>verify-plan</code> skill after the last phase; its result goes in the Implementation notes.</li></ul>
+
+<h2 id="changelog">7. Change log</h2>
+<div class="table-scroll"><table>
+  <thead><tr><th>Date</th><th>Change</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>2026-11-24</td><td>Plan written (Draft)</td><td>First version</td></tr>
+    <tr><td>2026-11-24</td><td>D2 to D7 answered, all with option A (recommended); conditional wording tied to the other options removed (job 2.1 title, 1.2, 29.1, risks, out of scope, verification)</td><td>The user answered the open decisions in chat</td></tr>
+    <tr><td>2026-11-24</td><td>Approved</td><td>The user approved the plan as written, including the readings in D1</td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="notes">8. Implementation notes</h2>
+<p>Filled in by <code>implement-plan</code>: deviations from the plan, results of <code>verify-plan</code>, and
+problems noticed but not fixed.</p>
+<ul id="notes-list"></ul>
+
+</div>
+<script>
+  (function () {
+    var labels = { todo: "Not started", progress: "In progress", done: "Done", blocked: "Blocked", skipped: "Deferred" };
+    var body = document.getElementById("overview-body");
+    var summary = document.getElementById("overview-summary");
+    var phaseCounts = {};
+    document.querySelectorAll(".phase[data-status], .job[data-status]").forEach(function (element) {
+      var status = element.getAttribute("data-status");
+      if (element.classList.contains("phase")) { phaseCounts[status] = (phaseCounts[status] || 0) + 1; }
+      var row = body.insertRow();
+      var nameCell = row.insertCell();
+      if (element.classList.contains("job")) { nameCell.className = "indent"; }
+      var link = document.createElement("a");
+      link.href = "#" + element.id;
+      link.textContent = element.querySelector(".title").textContent;
+      nameCell.appendChild(link);
+      var pill = document.createElement("span");
+      pill.className = "status " + status;
+      pill.textContent = labels[status] || status;
+      row.insertCell().appendChild(pill);
+    });
+    var parts = Object.keys(labels).filter(function (key) { return phaseCounts[key]; })
+      .map(function (key) { return phaseCounts[key] + " " + labels[key].toLowerCase(); });
+    summary.textContent = parts.length ? "Phases: " + parts.join(" · ") : "";
+  })();
+</script>
+</body>
+</html>

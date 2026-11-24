@@ -44,7 +44,7 @@ class CatalogAdaptersDataConflictTests {
     void gradeLevel_translatesTheConstraintViolation() {
         GradeLevelRepositoryImpl adapter = new GradeLevelRepositoryImpl(repositoryRejectingEveryCall(SpringDataGradeLevelRepository.class));
         assertCarrier(() -> adapter.save(GradeLevel.builder().status(GradeLevelStatus.ACTIVE).build()));
-        assertCarrier(() -> adapter.updateGradeLevelAtomic(UUID.randomUUID(), "name", "description", 1, Instant.now(), "user"));
+        assertCarrier(() -> adapter.updateGradeLevelAtomic(UUID.randomUUID(), "name", "description", true, 1, Instant.now(), "user"));
     }
 
     @Test

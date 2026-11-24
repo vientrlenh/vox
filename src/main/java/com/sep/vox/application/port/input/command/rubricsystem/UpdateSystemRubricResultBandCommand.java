@@ -7,6 +7,7 @@ public record UpdateSystemRubricResultBandCommand(
         UUID resultBandId,
         String name,
         String description,
+        boolean descriptionProvided,
         BigDecimal scoreMin,
         BigDecimal scoreMax,
         Integer order

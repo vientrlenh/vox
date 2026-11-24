@@ -2,6 +2,9 @@ package com.sep.vox.application.usecase.rubricschool;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
@@ -71,8 +74,7 @@ class UpdateSchoolRubricVersionUseCaseTests {
     @InjectMocks
     private UpdateSchoolRubricVersionUseCase useCase;
 
-    @Test
-    void execute_throwsIllegalArgumentWhenTheRepositoryReportsADataConflict() {
+    private void stubDraftVersion() {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(userRepository.existsByIdAndStatus(userId, UserStatus.ACTIVE)).thenReturn(true);
         when(schoolUserRepository.findByUserId(userId))
@@ -85,9 +87,37 @@ class UpdateSchoolRubricVersionUseCaseTests {
             .effectiveFrom(Instant.parse("2026-01-01T00:00:00Z"))
             .scoringScaleMin(BigDecimal.ZERO).scoringScaleMax(BigDecimal.TEN).build()));
         when(rubricRepository.findById(rubricId)).thenReturn(Optional.of(Rubric.builder().id(rubricId).ownerType(RubricOwnerType.SCHOOL).schoolId(schoolId).build()));
+    }
+
+    @Test
+    void execute_clearsEffectiveToOnAnExplicitNullAndSkipsTheRangeCheck() {
+        stubDraftVersion();
+
+        useCase.execute(new UpdateSchoolRubricVersionCommand(schoolId, versionId, "Version", null, false, null, null, true, null, null, null));
+
+        verify(rubricVersionRepository).updateRubricVersionAtomic(eq(versionId), any(), any(), any(), eq(false),
+            any(), eq(null), eq(true), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void execute_clearsDescriptionOnAnExplicitNullButKeepsItWhenBlank() {
+        stubDraftVersion();
+
+        useCase.execute(new UpdateSchoolRubricVersionCommand(schoolId, versionId, "Version", null, true, null, null, false, null, null, null));
+        useCase.execute(new UpdateSchoolRubricVersionCommand(schoolId, versionId, "Version", "  ", true, null, null, false, null, null, null));
+
+        verify(rubricVersionRepository).updateRubricVersionAtomic(eq(versionId), any(), any(), eq(null), eq(true),
+            any(), any(), eq(false), any(), any(), any(), any(), any());
+        verify(rubricVersionRepository).updateRubricVersionAtomic(eq(versionId), any(), any(), eq(null), eq(false),
+            any(), any(), eq(false), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void execute_throwsIllegalArgumentWhenTheRepositoryReportsADataConflict() {
+        stubDraftVersion();
         doThrow(new DataConflictException("unique violation", null)).when(rubricVersionRepository)
-            .updateRubricVersionAtomic(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
-        UpdateSchoolRubricVersionCommand command = new UpdateSchoolRubricVersionCommand(schoolId, versionId, "Version", null, null, null, null, null, null);
+            .updateRubricVersionAtomic(any(), any(), any(), any(), anyBoolean(), any(), any(), anyBoolean(), any(), any(), any(), any(), any());
+        UpdateSchoolRubricVersionCommand command = new UpdateSchoolRubricVersionCommand(schoolId, versionId, "Version", null, false, null, null, false, null, null, null);
 
         assertThatThrownBy(() -> useCase.execute(command))
             .isInstanceOf(IllegalArgumentException.class)

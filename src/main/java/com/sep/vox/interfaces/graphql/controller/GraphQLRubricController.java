@@ -1,6 +1,10 @@
 package com.sep.vox.interfaces.graphql.controller;
 
 
+import com.sep.vox.interfaces.graphql.dataloader.GraphQLDataLoaders;
+import com.sep.vox.interfaces.graphql.dataloader.FrameworkGraphQLDataLoaderConfig;
+import com.sep.vox.interfaces.graphql.dataloader.RubricGraphQLDataLoaderConfig;
+import com.sep.vox.interfaces.graphql.dataloader.SupportedLanguageGraphQLDataLoaderConfig;
 import com.sep.vox.application.port.input.command.rubricschool.UpdateSchoolRubricCommand;
 import com.sep.vox.application.port.input.command.rubricschool.UpdateSchoolRubricCriterionCommand;
 import com.sep.vox.application.port.input.command.rubricschool.UpdateSchoolRubricResultBandCommand;
@@ -35,23 +39,23 @@ import com.sep.vox.application.port.input.query.rubricsystem.ViewSystemRubricVer
 import com.sep.vox.application.port.input.query.rubricsystem.ViewSystemRubricVersionsQuery;
 import com.sep.vox.application.port.input.query.rubricsystem.ViewSystemRubricsQuery;
 import com.sep.vox.application.port.input.query.rubricteacher.ViewTeacherRubricVersionsQuery;
-import com.sep.vox.application.port.input.query.key.RubricCriteriaKey;
-import com.sep.vox.application.port.input.query.key.RubricResultBandsKey;
-import com.sep.vox.application.port.input.query.key.RubricVersionsKey;
+import com.sep.vox.interfaces.graphql.key.RubricCriteriaKey;
+import com.sep.vox.interfaces.graphql.key.RubricResultBandsKey;
+import com.sep.vox.interfaces.graphql.key.RubricVersionsKey;
 import com.sep.vox.application.port.input.usecase.rubricschool.*;
 import com.sep.vox.application.port.input.usecase.rubricsystem.*;
 import com.sep.vox.application.port.input.usecase.rubricteacher.*;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.*;
 import com.sep.vox.domain.model.rubric.RubricStatus;
-import com.sep.vox.interfaces.graphql.dto.request.rubricsystem.SearchRubricCriterionFilterRequest;
-import com.sep.vox.interfaces.graphql.dto.request.rubricsystem.SearchRubricFilterRequest;
-import com.sep.vox.interfaces.graphql.dto.request.rubricsystem.SearchRubricResultBandFilterRequest;
-import com.sep.vox.interfaces.graphql.dto.request.rubricsystem.SearchRubricVersionFilterRequest;
-import com.sep.vox.interfaces.graphql.dto.request.rubricsystem.UpdateRubricCriterionInput;
-import com.sep.vox.interfaces.graphql.dto.request.rubricsystem.UpdateRubricInput;
-import com.sep.vox.interfaces.graphql.dto.request.rubricsystem.UpdateRubricResultBandInput;
-import com.sep.vox.interfaces.graphql.dto.request.rubricsystem.UpdateRubricVersionInput;
+import com.sep.vox.interfaces.graphql.input.rubricsystem.SearchRubricCriterionFilterRequest;
+import com.sep.vox.interfaces.graphql.input.rubricsystem.SearchRubricFilterRequest;
+import com.sep.vox.interfaces.graphql.input.rubricsystem.SearchRubricResultBandFilterRequest;
+import com.sep.vox.interfaces.graphql.input.rubricsystem.SearchRubricVersionFilterRequest;
+import com.sep.vox.interfaces.graphql.input.rubricsystem.UpdateRubricCriterionInput;
+import com.sep.vox.interfaces.graphql.input.rubricsystem.UpdateRubricInput;
+import com.sep.vox.interfaces.graphql.input.rubricsystem.UpdateRubricResultBandInput;
+import com.sep.vox.interfaces.graphql.input.rubricsystem.UpdateRubricVersionInput;
 import com.sep.vox.interfaces.shared.PageArguments;
 import graphql.schema.DataFetchingEnvironment;
 import jakarta.validation.Valid;
@@ -190,10 +194,7 @@ public class GraphQLRubricController {
             RubricDto rubric,
             DataFetchingEnvironment env) {
 
-        DataLoader<UUID, SupportedLanguageDto> loader = env.getDataLoader("supportedLanguageDataLoader");
-        if (loader == null) {
-            throw new IllegalStateException("Không tìm thấy DataLoader: supportedLanguageDataLoader");
-        }
+        DataLoader<UUID, SupportedLanguageDto> loader = GraphQLDataLoaders.require(env, SupportedLanguageGraphQLDataLoaderConfig.SUPPORTED_LANGUAGE_BY_SUPPORTED_LANGUAGE_ID);
         return loader.load(rubric.languageId());
     }
 
@@ -203,10 +204,7 @@ public class GraphQLRubricController {
             RubricDto rubric,
             DataFetchingEnvironment env) {
 
-        DataLoader<UUID, FrameworkDto> loader = env.getDataLoader("frameworkDataLoader");
-        if (loader == null) {
-            throw new IllegalStateException("Không tìm thấy DataLoader: frameworkDataLoader");
-        }
+        DataLoader<UUID, FrameworkDto> loader = GraphQLDataLoaders.require(env, FrameworkGraphQLDataLoaderConfig.FRAMEWORK_BY_FRAMEWORK_ID);
         return loader.load(rubric.frameworkId());
     }
 
@@ -225,7 +223,7 @@ public class GraphQLRubricController {
 
         PageArguments.validate(page, size);
 
-        DataLoader<RubricVersionsKey, PageResult<RubricVersionDto>> loader = env.getDataLoader("rubricVersionsDataLoader");
+        DataLoader<RubricVersionsKey, PageResult<RubricVersionDto>> loader = GraphQLDataLoaders.require(env, RubricGraphQLDataLoaderConfig.RUBRIC_VERSIONS_BY_RUBRIC_ID);
         return loader.load(new RubricVersionsKey(rubric.id(), status, page, size));
     }
 
@@ -442,10 +440,7 @@ public class GraphQLRubricController {
 
         PageArguments.validate(page, size);
 
-        DataLoader<RubricCriteriaKey, PageResult<RubricCriterionDto>> loader = env.getDataLoader("rubricCriteriaDataLoader");
-        if (loader == null) {
-            throw new IllegalStateException("Không tìm thấy DataLoader rubricCriteriaDataLoader.");
-        }
+        DataLoader<RubricCriteriaKey, PageResult<RubricCriterionDto>> loader = GraphQLDataLoaders.require(env, RubricGraphQLDataLoaderConfig.RUBRIC_CRITERIA_BY_RUBRIC_VERSION_ID);
 
         return loader.load(new RubricCriteriaKey(version.id(), page, size));
     }
@@ -462,10 +457,7 @@ public class GraphQLRubricController {
 
         PageArguments.validate(page, size);
 
-        DataLoader<RubricResultBandsKey, PageResult<RubricResultBandDto>> loader = env.getDataLoader("rubricResultBandsDataLoader");
-        if (loader == null) {
-            throw new IllegalStateException("Không tìm thấy DataLoader rubricResultBandsDataLoader.");
-        }
+        DataLoader<RubricResultBandsKey, PageResult<RubricResultBandDto>> loader = GraphQLDataLoaders.require(env, RubricGraphQLDataLoaderConfig.RUBRIC_RESULT_BANDS_BY_RUBRIC_VERSION_ID);
 
         return loader.load(new RubricResultBandsKey(version.id(), page, size));
     }

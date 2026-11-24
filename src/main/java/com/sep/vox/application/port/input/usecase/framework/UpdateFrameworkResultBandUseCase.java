@@ -93,7 +93,8 @@ public class UpdateFrameworkResultBandUseCase
     private void updateResultBand(UpdateFrameworkResultBandCommand command, FrameworkResultBand band) {
         band.setCode(StringNormalization.normalizeCode(command.code()));
         band.setLabel(StringNormalization.trimAndCollapseSpaces(command.label()));
-        band.setDescription(StringNormalization.trimAndCollapseSpaces(command.description()));
+        if (command.descriptionProvided())
+            band.setDescription(StringNormalization.trimAndCollapseSpaces(command.description()));
         band.setOrder(command.order());
     }
 }

@@ -21,7 +21,7 @@ import com.sep.vox.domain.dto.RegisterFormDto;
 import com.sep.vox.domain.model.registerform.RegisterFormDocument;
 import com.sep.vox.domain.model.registerform.RegisterFormStatus;
 import com.sep.vox.domain.repository.RegisterFormDocumentRepository;
-import com.sep.vox.interfaces.graphql.config.RegisterFormGraphQLDataLoaderConfig;
+import com.sep.vox.interfaces.graphql.dataloader.RegisterFormGraphQLDataLoaderConfig;
 import com.sep.vox.support.GraphQLControllerTest;
 
 /**

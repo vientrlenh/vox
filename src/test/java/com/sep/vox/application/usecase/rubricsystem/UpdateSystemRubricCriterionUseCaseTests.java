@@ -2,6 +2,9 @@ package com.sep.vox.application.usecase.rubricsystem;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
@@ -61,8 +64,7 @@ class UpdateSystemRubricCriterionUseCaseTests {
     @InjectMocks
     private UpdateSystemRubricCriterionUseCase useCase;
 
-    @Test
-    void execute_throwsIllegalArgumentWhenTheRepositoryReportsADataConflict() {
+    private void stubDraftCriterion() {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(userRepository.existsByIdAndStatus(userId, UserStatus.ACTIVE)).thenReturn(true);
         when(rubricCriterionRepository.findById(criterionId)).thenReturn(Optional.of(RubricCriterion.builder()
@@ -73,9 +75,35 @@ class UpdateSystemRubricCriterionUseCaseTests {
             .effectiveFrom(Instant.parse("2026-01-01T00:00:00Z"))
             .scoringScaleMin(BigDecimal.ZERO).scoringScaleMax(BigDecimal.TEN).build()));
         when(rubricRepository.findById(rubricId)).thenReturn(Optional.of(Rubric.builder().id(rubricId).ownerType(RubricOwnerType.SYSTEM).build()));
+    }
+
+    @Test
+    void execute_clearsDescriptionAndExamplesOnAnExplicitNull() {
+        stubDraftCriterion();
+
+        useCase.execute(new UpdateSystemRubricCriterionCommand(criterionId, "Criterion", null, true, null, true, null, null, null, null, null));
+
+        verify(rubricCriterionRepository).updateCriterionAtomic(eq(criterionId), any(), any(), eq(null), eq(true),
+            eq(null), eq(true), any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void execute_keepsDescriptionAndExamplesWhenNotProvidedAndKeepsABlankDescription() {
+        stubDraftCriterion();
+
+        useCase.execute(new UpdateSystemRubricCriterionCommand(criterionId, "Criterion", null, false, null, false, null, null, null, null, null));
+        useCase.execute(new UpdateSystemRubricCriterionCommand(criterionId, "Criterion", "  ", true, null, false, null, null, null, null, null));
+
+        verify(rubricCriterionRepository, org.mockito.Mockito.times(2)).updateCriterionAtomic(eq(criterionId), any(), any(), eq(null), eq(false),
+            eq(null), eq(false), any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void execute_throwsIllegalArgumentWhenTheRepositoryReportsADataConflict() {
+        stubDraftCriterion();
         doThrow(new DataConflictException("unique violation", null)).when(rubricCriterionRepository)
-            .updateCriterionAtomic(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
-        UpdateSystemRubricCriterionCommand command = new UpdateSystemRubricCriterionCommand(criterionId, "Criterion", null, null, null, null, null, null, null);
+            .updateCriterionAtomic(any(), any(), any(), any(), anyBoolean(), any(), anyBoolean(), any(), any(), any(), any(), any(), any(), any());
+        UpdateSystemRubricCriterionCommand command = new UpdateSystemRubricCriterionCommand(criterionId, "Criterion", null, false, null, false, null, null, null, null, null);
 
         assertThatThrownBy(() -> useCase.execute(command))
             .isInstanceOf(IllegalArgumentException.class)

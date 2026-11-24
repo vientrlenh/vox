@@ -29,8 +29,9 @@ public interface RubricVersionRepository {
 
     List<RubricVersion> saveAll(List<RubricVersion> rubricVersions);
 
-    void updateRubricVersionAtomic(UUID id, String code, String name, String description, Instant effectiveFrom,
-                                   Instant effectiveTo, BigDecimal scoringScaleMin,
+    void updateRubricVersionAtomic(UUID id, String code, String name, String description, boolean descriptionProvided,
+                                   Instant effectiveFrom, Instant effectiveTo, boolean effectiveToProvided,
+                                   BigDecimal scoringScaleMin,
                                    BigDecimal scoringScaleMax, String totalScoreMethod,
                                    Instant updatedAt, String updatedBy);
 

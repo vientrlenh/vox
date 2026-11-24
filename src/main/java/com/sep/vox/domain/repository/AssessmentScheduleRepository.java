@@ -54,7 +54,7 @@ public interface AssessmentScheduleRepository {
      * Returns the number of affected rows. {@code updatedBy} is the acting user's id as text: a bulk update bypasses the
      * auditing listener, so the audit values are written here.
      */
-    int updateAtomic(UUID id, UUID schoolRoomId, Instant start, Instant end,
+    int updateAtomic(UUID id, UUID schoolRoomId, boolean schoolRoomIdProvided, Instant start, Instant end,
             Instant now, String updatedBy);
     /**
      * Ca đã công bố nhưng đã qua giờ kết thúc, cũ nhất trước, tối đa {@code limit} dòng — dùng cho

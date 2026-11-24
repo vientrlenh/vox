@@ -5,13 +5,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.graphql.data.ArgumentValue;
+
 import com.sep.vox.application.port.input.command.supportedlanguage.UpdateSupportedLanguageCommand;
 import com.sep.vox.application.port.input.query.supportedlanguage.ViewSupportedLanguageDetailsQuery;
 import com.sep.vox.application.port.input.query.supportedlanguage.ViewSupportedLanguagesQuery;
@@ -21,6 +21,7 @@ import com.sep.vox.application.port.input.usecase.supportedlanguage.ViewSupporte
 import com.sep.vox.application.response.input.supportedlanguage.UpdateSupportedLanguageResponse;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
+import com.sep.vox.interfaces.graphql.input.supportedlanguage.UpdateSupportedLanguageInput;
 
 class GraphQLSupportedLanguageControllerTests {
 
@@ -80,11 +81,9 @@ class GraphQLSupportedLanguageControllerTests {
     @Test
     void update_supported_language_should_map_input_presence_and_return_response() {
         UUID id = UUID.randomUUID();
-        Map<String, Object> input = new HashMap<String, Object>();
-        input.put("code", "fr");
-        input.put("name", "French");
-        input.put("description", null);
-        input.put("isActive", false);
+        UpdateSupportedLanguageInput input = new UpdateSupportedLanguageInput(
+            ArgumentValue.ofNullable("fr"), ArgumentValue.ofNullable("French"),
+            ArgumentValue.ofNullable(null), ArgumentValue.ofNullable(false));
         UpdateSupportedLanguageCommand command = new UpdateSupportedLanguageCommand(
             id,
             "fr",
@@ -108,7 +107,9 @@ class GraphQLSupportedLanguageControllerTests {
     @Test
     void update_supported_language_should_keep_absent_fields_unprovided() {
         UUID id = UUID.randomUUID();
-        Map<String, Object> input = Map.<String, Object>of("name", "French");
+        UpdateSupportedLanguageInput input = new UpdateSupportedLanguageInput(
+            ArgumentValue.omitted(), ArgumentValue.ofNullable("French"),
+            ArgumentValue.omitted(), ArgumentValue.omitted());
         UpdateSupportedLanguageCommand command = new UpdateSupportedLanguageCommand(
             id,
             null,

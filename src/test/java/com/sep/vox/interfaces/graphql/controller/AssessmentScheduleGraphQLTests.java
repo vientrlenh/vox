@@ -124,7 +124,25 @@ class AssessmentScheduleGraphQLTests {
             .variable("startDate", "2026-08-01T08:00:00+07:00").variable("endDate", "2026-08-01T10:00:00+07:00").execute()
             .errors().verify();
 
-        verify(updateAssessmentScheduleUseCase).execute(new UpdateAssessmentScheduleCommand(SCHEDULE_ID, null, START, END));
+        verify(updateAssessmentScheduleUseCase).execute(new UpdateAssessmentScheduleCommand(SCHEDULE_ID, null, false, START, END));
+    }
+
+    @Test
+    @WithMockUser(roles = "TEACHER")
+    void update_schedule_should_distinguish_omitted_null_and_value_for_the_room() {
+        UUID roomId = UUID.randomUUID();
+        when(updateAssessmentScheduleUseCase.execute(any())).thenReturn(SCHEDULE_ID);
+
+        graphQlTester.document("mutation { updateAssessmentSchedule(id: \"%s\", input: {}) }".formatted(SCHEDULE_ID))
+            .execute().errors().verify();
+        graphQlTester.document("mutation { updateAssessmentSchedule(id: \"%s\", input: { schoolRoomId: null }) }"
+            .formatted(SCHEDULE_ID)).execute().errors().verify();
+        graphQlTester.document("mutation { updateAssessmentSchedule(id: \"%s\", input: { schoolRoomId: \"%s\" }) }"
+            .formatted(SCHEDULE_ID, roomId)).execute().errors().verify();
+
+        verify(updateAssessmentScheduleUseCase).execute(new UpdateAssessmentScheduleCommand(SCHEDULE_ID, null, false, null, null));
+        verify(updateAssessmentScheduleUseCase).execute(new UpdateAssessmentScheduleCommand(SCHEDULE_ID, null, true, null, null));
+        verify(updateAssessmentScheduleUseCase).execute(new UpdateAssessmentScheduleCommand(SCHEDULE_ID, roomId, true, null, null));
     }
 
     @Test

@@ -52,10 +52,6 @@ class InterfacesStructureConventionTests {
         "com.sep.vox.interfaces.rest.mapper.PreviewRubricResultBandImportCommandMapper",
         "com.sep.vox.interfaces.rest.mapper.PreviewRubricVersionImportFromFileCommandMapper",
         "com.sep.vox.interfaces.rest.mapper.ViewMyAssessmentsQueryMapper",
-        "com.sep.vox.interfaces.graphql.mapper.UpdateProfileCommandMapper",
-        "com.sep.vox.interfaces.graphql.mapper.UpdateSchoolClassCommandMapper",
-        "com.sep.vox.interfaces.graphql.mapper.UpdateSchoolUserCommandMapper",
-        "com.sep.vox.interfaces.graphql.mapper.UpdateSupportedLanguageCommandMapper",
         "com.sep.vox.interfaces.kafka.mapper.ProctoringAlertCommandMapper",
         "com.sep.vox.interfaces.kafka.mapper.RecordAssessmentAttemptEvaluationCommandMapper",
         "com.sep.vox.interfaces.kafka.mapper.RecordPracticeAttemptEvaluationCommandMapper",
@@ -153,7 +149,7 @@ class InterfacesStructureConventionTests {
         assertThat(isFlatPackage(COMMAND_PACKAGE)).isTrue();
         assertThat(isFlatPackage(QUERY_PACKAGE)).isTrue();
         assertThat(isFlatPackage(INTERFACES_PACKAGE + ".rest.dto.request")).isTrue();
-        assertThat(isFlatPackage(INTERFACES_PACKAGE + ".graphql.dto.request")).isTrue();
+        assertThat(isFlatPackage(INTERFACES_PACKAGE + ".graphql.input")).isTrue();
         assertThat(isFlatPackage(COMMAND_PACKAGE + ".assessment")).isFalse();
         assertThat(isFlatPackage(QUERY_PACKAGE + ".key")).isFalse();
         assertThat(isFlatPackage(INTERFACES_PACKAGE + ".rest.dto.request.assessment")).isFalse();
@@ -196,7 +192,7 @@ class InterfacesStructureConventionTests {
         return packageName.equals(COMMAND_PACKAGE)
             || packageName.equals(QUERY_PACKAGE)
             || packageName.equals(INTERFACES_PACKAGE + ".rest.dto.request")
-            || packageName.equals(INTERFACES_PACKAGE + ".graphql.dto.request");
+            || packageName.equals(INTERFACES_PACKAGE + ".graphql.input");
     }
 
     private static boolean isInterfacesMapperPackage(String packageName) {
@@ -207,7 +203,7 @@ class InterfacesStructureConventionTests {
 
     private static boolean isRequestPackage(String packageName) {
         return packageName.startsWith(INTERFACES_PACKAGE + ".rest.dto.request")
-            || packageName.startsWith(INTERFACES_PACKAGE + ".graphql.dto.request");
+            || packageName.startsWith(INTERFACES_PACKAGE + ".graphql.input");
     }
 
     private static List<String> wronglyTypedConversions(Class<?> type) {
@@ -230,5 +226,13 @@ class InterfacesStructureConventionTests {
 
     private record SampleRequest(String name) {
 
+        @SuppressWarnings("unused")
+        static void toCommand() {}
+
+        @SuppressWarnings("unused")
+        static void toQuery() {}
+
+        @SuppressWarnings("unused")
+        static void toSampleCommand() {}
     }
 }

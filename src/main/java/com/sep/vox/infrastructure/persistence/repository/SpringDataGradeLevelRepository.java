@@ -45,7 +45,7 @@ public interface SpringDataGradeLevelRepository extends JpaRepository<GradeLevel
     @Query("""
         UPDATE GradeLevelJpaEntity l SET
         l.name = COALESCE(:name, l.name),
-        l.description = COALESCE(:description, l.description),
+        l.description = CASE WHEN :descriptionProvided = true THEN :description ELSE l.description END,
         l.order = COALESCE(:order, l.order),
         l.updatedAt = :updatedAt,
         l.updatedBy = :updatedBy
@@ -55,6 +55,7 @@ public interface SpringDataGradeLevelRepository extends JpaRepository<GradeLevel
         @Param("id") UUID id,
         @Param("name") String name,
         @Param("description") String description,
+        @Param("descriptionProvided") boolean descriptionProvided,
         @Param("order") Integer order,
         @Param("updatedAt") Instant updatedAt,
         @Param("updatedBy") String updatedBy

@@ -25,13 +25,14 @@ public interface SpringDataRubricRepository extends JpaRepository<RubricJpaEntit
             
         UPDATE RubricJpaEntity r SET 
             r.name = COALESCE(:name, r.name),
-            r.description = COALESCE(:description, r.description)
+            r.description = CASE WHEN :descriptionProvided = true THEN :description ELSE r.description END
         WHERE r.id = :id
             """)
     int updateRubricAtomic(
             @Param("id") UUID id,
             @Param("name") String name,
-            @Param("description") String description
+            @Param("description") String description,
+            @Param("descriptionProvided") boolean descriptionProvided
     );
 
 

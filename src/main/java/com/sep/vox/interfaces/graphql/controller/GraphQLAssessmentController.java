@@ -1,5 +1,7 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import com.sep.vox.interfaces.graphql.dataloader.GraphQLDataLoaders;
+import com.sep.vox.interfaces.graphql.dataloader.UserGraphQLDataLoaderConfig;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -50,6 +52,8 @@ import com.sep.vox.domain.model.assessment.AssessmentKind;
 import com.sep.vox.domain.model.assessment.AssessmentPaperStatus;
 import com.sep.vox.domain.model.assessment.AssessmentStatus;
 import com.sep.vox.interfaces.shared.PageArguments;
+import com.sep.vox.interfaces.graphql.dataloader.AssessmentGraphQLDataLoaderConfig;
+import com.sep.vox.interfaces.graphql.dataloader.QuestionGraphQLDataLoaderConfig;
 
 @Controller
 @RequiredArgsConstructor
@@ -127,7 +131,7 @@ public class GraphQLAssessmentController {
             if (!canView) {
                 return CompletableFuture.completedFuture(null);
             }
-            DataLoader<UUID, AssessmentBlueprintDto> loader = env.getDataLoader("assessmentBlueprintById");
+            DataLoader<UUID, AssessmentBlueprintDto> loader = GraphQLDataLoaders.require(env, AssessmentGraphQLDataLoaderConfig.ASSESSMENT_BLUEPRINT_BY_ASSESSMENT_BLUEPRINT_ID);
             return loader.load(source.blueprintId());
         });
     }
@@ -141,26 +145,26 @@ public class GraphQLAssessmentController {
             if (!canView) {
                 return CompletableFuture.completedFuture(null);
             }
-            DataLoader<UUID, AssessmentBlueprintVersionDto> loader = env.getDataLoader("assessmentBlueprintVersionById");
+            DataLoader<UUID, AssessmentBlueprintVersionDto> loader = GraphQLDataLoaders.require(env, AssessmentGraphQLDataLoaderConfig.ASSESSMENT_BLUEPRINT_VERSION_BY_ASSESSMENT_BLUEPRINT_VERSION_ID);
             return loader.load(source.blueprintVersionId());
         });
     }
 
     @SchemaMapping(typeName = "Assessment", field = "candidateCount")
     public CompletableFuture<Integer> candidateCount(AssessmentDto source, DataFetchingEnvironment env) {
-        DataLoader<UUID, Integer> loader = env.getDataLoader("assessmentCandidateCountByAssessmentId");
+        DataLoader<UUID, Integer> loader = GraphQLDataLoaders.require(env, AssessmentGraphQLDataLoaderConfig.ASSESSMENT_CANDIDATE_COUNT_BY_ASSESSMENT_ID);
         return loader.load(source.id());
     }
 
     @SchemaMapping(typeName = "Assessment", field = "members")
     public CompletableFuture<List<AssessmentMemberDto>> members(AssessmentDto source, DataFetchingEnvironment env) {
-        DataLoader<UUID, List<AssessmentMemberDto>> loader = env.getDataLoader("assessmentMembersByAssessmentId");
+        DataLoader<UUID, List<AssessmentMemberDto>> loader = GraphQLDataLoaders.require(env, AssessmentGraphQLDataLoaderConfig.ASSESSMENT_MEMBERS_BY_ASSESSMENT_ID);
         return loader.load(source.id());
     }
 
     @SchemaMapping(typeName = "AssessmentMember", field = "user")
     public CompletableFuture<UserDto> assessmentMemberUser(AssessmentMemberDto source, DataFetchingEnvironment env) {
-        DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
+        DataLoader<UUID, UserDto> loader = GraphQLDataLoaders.require(env, UserGraphQLDataLoaderConfig.USER_BY_USER_ID);
         return loader.load(source.userId());
     }
 
@@ -169,7 +173,7 @@ public class GraphQLAssessmentController {
             AssessmentDto source,
             @Argument(name = "status") AssessmentPaperStatus status,
             DataFetchingEnvironment env) {
-        DataLoader<UUID, List<AssessmentPaperDto>> loader = env.getDataLoader("assessmentPapersByAssessmentId");
+        DataLoader<UUID, List<AssessmentPaperDto>> loader = GraphQLDataLoaders.require(env, AssessmentGraphQLDataLoaderConfig.ASSESSMENT_PAPERS_BY_ASSESSMENT_ID);
         return loader.load(source.id()).thenApply(papers -> status == null
             ? papers
             : papers.stream().filter(paper -> paper.status() == status).toList());
@@ -177,31 +181,31 @@ public class GraphQLAssessmentController {
 
     @SchemaMapping(typeName = "AssessmentPaper", field = "sections")
     public CompletableFuture<List<AssessmentPaperSectionDto>> sections(AssessmentPaperDto source, DataFetchingEnvironment env) {
-        DataLoader<UUID, List<AssessmentPaperSectionDto>> loader = env.getDataLoader("assessmentPaperSectionsByPaperId");
+        DataLoader<UUID, List<AssessmentPaperSectionDto>> loader = GraphQLDataLoaders.require(env, AssessmentGraphQLDataLoaderConfig.ASSESSMENT_PAPER_SECTIONS_BY_ASSESSMENT_PAPER_ID);
         return loader.load(source.id());
     }
 
     @SchemaMapping(typeName = "AssessmentPaperSection", field = "items")
     public CompletableFuture<List<AssessmentPaperItemDto>> items(AssessmentPaperSectionDto source, DataFetchingEnvironment env) {
-        DataLoader<UUID, List<AssessmentPaperItemDto>> loader = env.getDataLoader("assessmentPaperItemsBySectionId");
+        DataLoader<UUID, List<AssessmentPaperItemDto>> loader = GraphQLDataLoaders.require(env, AssessmentGraphQLDataLoaderConfig.ASSESSMENT_PAPER_ITEMS_BY_ASSESSMENT_PAPER_SECTION_ID);
         return loader.load(source.id());
     }
 
     @SchemaMapping(typeName = "Assessment", field = "schedules")
     public CompletableFuture<List<AssessmentScheduleDto>> schedules(AssessmentDto source, DataFetchingEnvironment env) {
-        DataLoader<UUID, List<AssessmentScheduleDto>> loader = env.getDataLoader("assessmentSchedulesByAssessmentId");
+        DataLoader<UUID, List<AssessmentScheduleDto>> loader = GraphQLDataLoaders.require(env, AssessmentGraphQLDataLoaderConfig.ASSESSMENT_SCHEDULES_BY_ASSESSMENT_ID);
         return loader.load(source.id());
     }
 
     @SchemaMapping(typeName = "Assessment", field = "securePool")
     public CompletableFuture<AssessmentSecurePoolDto> securePool(AssessmentDto source, DataFetchingEnvironment env) {
-        DataLoader<UUID, AssessmentSecurePoolDto> loader = env.getDataLoader("assessmentSecurePoolByAssessmentId");
+        DataLoader<UUID, AssessmentSecurePoolDto> loader = GraphQLDataLoaders.require(env, AssessmentGraphQLDataLoaderConfig.ASSESSMENT_SECURE_POOL_BY_ASSESSMENT_ID);
         return loader.load(source.id());
     }
 
     @SchemaMapping(typeName = "Assessment", field = "schoolClassId")
     public CompletableFuture<UUID> schoolClassId(AssessmentDto source, DataFetchingEnvironment env) {
-        DataLoader<UUID, UUID> loader = env.getDataLoader("assessmentSchoolClassIdByAssessmentId");
+        DataLoader<UUID, UUID> loader = GraphQLDataLoaders.require(env, AssessmentGraphQLDataLoaderConfig.ASSESSMENT_SCHOOL_CLASS_ID_BY_ASSESSMENT_ID);
         return loader.load(source.id());
     }
 
@@ -210,7 +214,7 @@ public class GraphQLAssessmentController {
         if (source.questionId() == null) {
             return CompletableFuture.completedFuture(null);
         }
-        DataLoader<UUID, QuestionDto> loader = env.getDataLoader("questionByIdAccessible");
+        DataLoader<UUID, QuestionDto> loader = GraphQLDataLoaders.require(env, QuestionGraphQLDataLoaderConfig.ACCESSIBLE_QUESTION_BY_QUESTION_ID);
         return loader.load(source.questionId());
     }
 
@@ -238,7 +242,7 @@ public class GraphQLAssessmentController {
         if (source.blueprintSlotId() == null) {
             return CompletableFuture.completedFuture(null);
         }
-        DataLoader<UUID, AssessmentBlueprintSlotDto> loader = env.getDataLoader("assessmentBlueprintSlotById");
+        DataLoader<UUID, AssessmentBlueprintSlotDto> loader = GraphQLDataLoaders.require(env, AssessmentGraphQLDataLoaderConfig.ASSESSMENT_BLUEPRINT_SLOT_BY_ASSESSMENT_BLUEPRINT_SLOT_ID);
         return loader.load(source.blueprintSlotId());
     }
 
@@ -249,7 +253,7 @@ public class GraphQLAssessmentController {
         }
 
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        DataLoader<UUID, List<AssessmentMemberDto>> loader = env.getDataLoader("assessmentMembersByAssessmentId");
+        DataLoader<UUID, List<AssessmentMemberDto>> loader = GraphQLDataLoaders.require(env, AssessmentGraphQLDataLoaderConfig.ASSESSMENT_MEMBERS_BY_ASSESSMENT_ID);
         return loader.load(source.id()).thenApply(members -> members.stream()
             .anyMatch(member -> member.userId().equals(currentUserId)));
     }

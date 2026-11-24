@@ -1,5 +1,7 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import com.sep.vox.interfaces.graphql.dataloader.GraphQLDataLoaders;
+import com.sep.vox.interfaces.graphql.dataloader.UserGraphQLDataLoaderConfig;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -14,7 +16,7 @@ import org.springframework.stereotype.Controller;
 
 import com.sep.vox.application.port.input.query.role.ViewRoleDetailsQuery;
 import com.sep.vox.application.port.input.query.role.ViewRolesQuery;
-import com.sep.vox.application.port.input.query.key.RoleUsersKey;
+import com.sep.vox.interfaces.graphql.key.RoleUsersKey;
 import com.sep.vox.application.port.input.usecase.role.ViewRoleDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.role.ViewRolesUseCase;
 import com.sep.vox.domain.common.PageResult;
@@ -50,7 +52,7 @@ public class GraphQLRoleController {
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public CompletableFuture<List<UserDto>> roleUsers(RoleDto role, @Argument(name = "page") Integer page, @Argument(name = "size") Integer size,  DataFetchingEnvironment env) {
         PageArguments.validate(page, size);
-        DataLoader<RoleUsersKey, List<UserDto>> loader = env.getDataLoader("usersByRole");
+        DataLoader<RoleUsersKey, List<UserDto>> loader = GraphQLDataLoaders.require(env, UserGraphQLDataLoaderConfig.USERS_BY_ROLE_ID);
         return loader.load(new RoleUsersKey(role.id(), page, size));
     }
 }

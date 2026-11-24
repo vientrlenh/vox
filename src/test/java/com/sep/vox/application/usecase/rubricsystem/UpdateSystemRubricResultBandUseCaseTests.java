@@ -2,6 +2,10 @@ package com.sep.vox.application.usecase.rubricsystem;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
@@ -58,8 +62,7 @@ class UpdateSystemRubricResultBandUseCaseTests {
     @InjectMocks
     private UpdateSystemRubricResultBandUseCase useCase;
 
-    @Test
-    void execute_throwsIllegalArgumentWhenTheRepositoryReportsADataConflict() {
+    private void stubDraftResultBand() {
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(userRepository.existsByIdAndStatus(userId, UserStatus.ACTIVE)).thenReturn(true);
         when(rubricResultBandRepository.findById(resultBandId)).thenReturn(Optional.of(RubricResultBand.builder()
@@ -71,9 +74,35 @@ class UpdateSystemRubricResultBandUseCaseTests {
             .effectiveFrom(Instant.parse("2026-01-01T00:00:00Z"))
             .scoringScaleMin(BigDecimal.ZERO).scoringScaleMax(BigDecimal.TEN).build()));
         when(rubricRepository.findById(rubricId)).thenReturn(Optional.of(Rubric.builder().id(rubricId).ownerType(RubricOwnerType.SYSTEM).build()));
+    }
+
+    @Test
+    void execute_clearsDescriptionOnAnExplicitNull() {
+        stubDraftResultBand();
+
+        useCase.execute(new UpdateSystemRubricResultBandCommand(resultBandId, "Band", null, true, null, null, null));
+
+        verify(rubricResultBandRepository).updateResultBandAtomic(eq(resultBandId), any(), any(), eq(null), eq(true),
+            any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void execute_keepsDescriptionWhenNotProvidedOrBlank() {
+        stubDraftResultBand();
+
+        useCase.execute(new UpdateSystemRubricResultBandCommand(resultBandId, "Band", null, false, null, null, null));
+        useCase.execute(new UpdateSystemRubricResultBandCommand(resultBandId, "Band", "  ", true, null, null, null));
+
+        verify(rubricResultBandRepository, times(2)).updateResultBandAtomic(eq(resultBandId), any(), any(), eq(null), eq(false),
+            any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void execute_throwsIllegalArgumentWhenTheRepositoryReportsADataConflict() {
+        stubDraftResultBand();
         doThrow(new DataConflictException("unique violation", null)).when(rubricResultBandRepository)
-            .updateResultBandAtomic(any(), any(), any(), any(), any(), any(), any(), any(), any());
-        UpdateSystemRubricResultBandCommand command = new UpdateSystemRubricResultBandCommand(resultBandId, "Band", null, null, null, null);
+            .updateResultBandAtomic(any(), any(), any(), any(), anyBoolean(), any(), any(), any(), any(), any());
+        UpdateSystemRubricResultBandCommand command = new UpdateSystemRubricResultBandCommand(resultBandId, "Band", null, false, null, null, null);
 
         assertThatThrownBy(() -> useCase.execute(command))
             .isInstanceOf(IllegalArgumentException.class)

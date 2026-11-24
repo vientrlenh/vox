@@ -94,7 +94,8 @@ public class UpdateFrameworkCriterionUseCase
     private void updateCriterion(UpdateFrameworkCriterionCommand command, FrameworkCriterion criterion) {
         criterion.setCode(StringNormalization.normalizeCode(command.code()));
         criterion.setName(StringNormalization.trimAndCollapseSpaces(command.name()));
-        criterion.setDescription(StringNormalization.trimAndCollapseSpaces(command.description()));
+        if (command.descriptionProvided())
+            criterion.setDescription(StringNormalization.trimAndCollapseSpaces(command.description()));
         criterion.setOrder(command.order());
     }
 }

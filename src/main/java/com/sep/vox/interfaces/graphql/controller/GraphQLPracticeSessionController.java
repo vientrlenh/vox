@@ -21,7 +21,7 @@ import com.sep.vox.application.port.input.usecase.practicesession.ViewMyPractice
 import com.sep.vox.application.port.input.usecase.practicesession.ViewStudentPracticeSessionDetailUseCase;
 import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.PracticeSession;
 import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.TeacherPracticeSessionDetail;
-import com.sep.vox.interfaces.graphql.dto.request.practicesession.EndPracticeSessionInput;
+import com.sep.vox.interfaces.graphql.input.practicesession.EndPracticeSessionInput;
 
 @Controller
 @RequiredArgsConstructor

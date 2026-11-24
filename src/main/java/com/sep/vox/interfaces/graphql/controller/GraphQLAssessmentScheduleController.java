@@ -1,5 +1,8 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import com.sep.vox.interfaces.graphql.dataloader.SchoolGraphQLDataLoaderConfig;
+import com.sep.vox.interfaces.graphql.dataloader.GraphQLDataLoaders;
+import com.sep.vox.interfaces.graphql.dataloader.UserGraphQLDataLoaderConfig;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -35,7 +38,8 @@ import com.sep.vox.domain.mapper.AssessmentScheduleProctorDtoMapper;
 import com.sep.vox.domain.model.assessment.AssessmentScheduleStatus;
 import com.sep.vox.domain.repository.AssessmentCandidateRepository;
 import com.sep.vox.domain.repository.AssessmentScheduleProctorRepository;
-import com.sep.vox.interfaces.graphql.dto.request.assessmentschedule.UpdateAssessmentScheduleInput;
+import com.sep.vox.interfaces.graphql.input.assessmentschedule.UpdateAssessmentScheduleInput;
+import com.sep.vox.interfaces.graphql.dataloader.AssessmentGraphQLDataLoaderConfig;
 
 @Controller
 @RequiredArgsConstructor
@@ -100,7 +104,7 @@ public class GraphQLAssessmentScheduleController {
         if (source.schoolRoomId() == null) {
             return CompletableFuture.completedFuture(null);
         }
-        DataLoader<UUID, SchoolRoomFromDto> loader = env.getDataLoader("schoolRoomById");
+        DataLoader<UUID, SchoolRoomFromDto> loader = GraphQLDataLoaders.require(env, SchoolGraphQLDataLoaderConfig.SCHOOL_ROOM_BY_SCHOOL_ROOM_ID);
         return loader.load(source.schoolRoomId());
     }
 
@@ -110,7 +114,7 @@ public class GraphQLAssessmentScheduleController {
      */
     @SchemaMapping(typeName = "AssessmentSchedule", field = "assessment")
     public CompletableFuture<AssessmentDto> assessment(AssessmentScheduleDto source, DataFetchingEnvironment env) {
-        DataLoader<UUID, AssessmentDto> loader = env.getDataLoader("assessmentById");
+        DataLoader<UUID, AssessmentDto> loader = GraphQLDataLoaders.require(env, AssessmentGraphQLDataLoaderConfig.ASSESSMENT_BY_ASSESSMENT_ID);
         return loader.load(source.assessmentId());
     }
 
@@ -131,7 +135,7 @@ public class GraphQLAssessmentScheduleController {
 
     @SchemaMapping(typeName = "AssessmentScheduleProctor", field = "teacher")
     public CompletableFuture<UserDto> teacher(AssessmentScheduleProctorDto source, DataFetchingEnvironment env) {
-        DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
+        DataLoader<UUID, UserDto> loader = GraphQLDataLoaders.require(env, UserGraphQLDataLoaderConfig.USER_BY_USER_ID);
         return loader.load(source.teacherId());
     }
 

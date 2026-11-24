@@ -70,26 +70,33 @@ public class ManageInterestDimensionUseCase {
         String code = normalizeCode(input.code());
         InterestDimension existing = repository.findByCode(code)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chiều sở thích: " + code));
-        // Mã là khoá và đã được gán vào practice_topics/dimension_interest_scores -- không cho
-        // đổi, chỉ sửa phần hiển thị và cờ. Muốn đổi mã thì tạo mới rồi tắt cái cũ.
+        // The code is the key and is already assigned to practice_topics/dimension_interest_scores, so it cannot change:
+        // only the display fields and flags are editable. To change a code, create a new one and deactivate the old one.
         InterestDimensionResponses.InterestDimensionResponse saved = toResponse(repository.save(InterestDimension.builder()
                 .code(existing.getCode())
                 .label(input.label() == null ? existing.getLabel() : input.label().strip())
-                .description(input.description() == null ? existing.getDescription() : input.description().strip())
+                .description(descriptionAfterUpdate(input, existing))
                 .active(input.active() == null ? existing.isActive() : input.active())
                 .quizEligible(input.quizEligible() == null ? existing.isQuizEligible() : input.quizEligible())
                 .displayOrder(input.displayOrder() == null ? existing.getDisplayOrder() : input.displayOrder())
                 .createdAt(existing.getCreatedAt())
                 .updatedAt(null)
                 .build()));
-        // Bật lại một chiều từng tắt cũng cần kiểm tra phủ: trong lúc nó tắt, kho có thể đã
-        // được sinh thêm mà bỏ qua chiều này.
+        // Re-enabling a dimension that was off also needs a coverage check: while it was off, the bank may have
+        // been topped up without this dimension.
         boolean becameUsable = saved.active() && saved.quizEligible()
             && (!existing.isActive() || !existing.isQuizEligible());
         if (becameUsable) {
             quizBankTopUpService.topUpAsync();
         }
         return saved;
+    }
+
+    private static String descriptionAfterUpdate(UpsertInterestDimensionCommand input, InterestDimension existing) {
+        if (!input.descriptionProvided()) {
+            return existing.getDescription();
+        }
+        return input.description() == null ? null : input.description().strip();
     }
 
     @Transactional

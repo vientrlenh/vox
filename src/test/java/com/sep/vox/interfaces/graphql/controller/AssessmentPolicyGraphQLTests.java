@@ -28,6 +28,7 @@ import com.sep.vox.application.port.input.usecase.assessmentpolicyteacher.ViewTe
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.AssessmentPolicyDto;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
+import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStrictness;
 import com.sep.vox.support.GraphQLControllerTest;
 
 /**
@@ -64,6 +65,19 @@ class AssessmentPolicyGraphQLTests {
         mutation($effectiveFrom: DateTime!, $effectiveTo: DateTime) {
             updateSystemAssessmentPolicy(policyId: "%s",
                 input: { targetFrameworkBandId: "%s", effectiveFrom: $effectiveFrom, effectiveTo: $effectiveTo })
+        }""".formatted(POLICY_ID, BAND_ID);
+
+    private static final String UPDATE_POLICY_REQUIRED_FIELDS_ONLY_MUTATION = """
+        mutation($effectiveFrom: DateTime!) {
+            updateSystemAssessmentPolicy(policyId: "%s",
+                input: { targetFrameworkBandId: "%s", effectiveFrom: $effectiveFrom })
+        }""".formatted(POLICY_ID, BAND_ID);
+
+    private static final String UPDATE_POLICY_ALL_FIELDS_MUTATION = """
+        mutation($passingScore: Float, $strictness: AssessmentPolicyStrictness, $effectiveFrom: DateTime!, $effectiveTo: DateTime) {
+            updateSystemAssessmentPolicy(policyId: "%s",
+                input: { targetFrameworkBandId: "%s", passingScore: $passingScore, strictness: $strictness,
+                         effectiveFrom: $effectiveFrom, effectiveTo: $effectiveTo })
         }""".formatted(POLICY_ID, BAND_ID);
 
     private AssessmentPolicyDto policy() {
@@ -129,7 +143,34 @@ class AssessmentPolicyGraphQLTests {
             .execute().errors().verify();
 
         verify(updateSystemAssessmentPolicyUseCase).execute(
-            new UpdateAssessmentPolicyCommand(null, POLICY_ID, BAND_ID, null, null, EFFECTIVE_FROM, null));
+            new UpdateAssessmentPolicyCommand(null, POLICY_ID, BAND_ID, null, false, null, false, EFFECTIVE_FROM, null, true));
+    }
+
+    @Test
+    @WithMockUser(roles = "SYSTEM_ADMIN")
+    void update_system_policy_should_keep_passing_score_strictness_and_effective_to_when_omitted() {
+        when(updateSystemAssessmentPolicyUseCase.execute(any())).thenReturn(POLICY_ID);
+
+        graphQlTester.document(UPDATE_POLICY_REQUIRED_FIELDS_ONLY_MUTATION)
+            .variable("effectiveFrom", "2026-07-28T00:00:00+07:00")
+            .execute().errors().verify();
+
+        verify(updateSystemAssessmentPolicyUseCase).execute(
+            new UpdateAssessmentPolicyCommand(null, POLICY_ID, BAND_ID, null, false, null, false, EFFECTIVE_FROM, null, false));
+    }
+
+    @Test
+    @WithMockUser(roles = "SYSTEM_ADMIN")
+    void update_system_policy_should_mark_explicit_null_and_given_values_as_provided() {
+        when(updateSystemAssessmentPolicyUseCase.execute(any())).thenReturn(POLICY_ID);
+
+        graphQlTester.document(UPDATE_POLICY_ALL_FIELDS_MUTATION)
+            .variable("passingScore", null).variable("strictness", "STRICT")
+            .variable("effectiveFrom", "2026-07-28T00:00:00+07:00").variable("effectiveTo", null)
+            .execute().errors().verify();
+
+        verify(updateSystemAssessmentPolicyUseCase).execute(new UpdateAssessmentPolicyCommand(
+            null, POLICY_ID, BAND_ID, null, true, AssessmentPolicyStrictness.STRICT, true, EFFECTIVE_FROM, null, true));
     }
 
     @Test

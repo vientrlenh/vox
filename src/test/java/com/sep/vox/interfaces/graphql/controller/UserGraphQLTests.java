@@ -102,6 +102,26 @@ class UserGraphQLTests {
 
     @Test
     @WithMockUser
+    void update_profile_should_tell_an_explicit_null_avatar_from_an_absent_one() {
+        when(updateProfileUseCase.execute(any())).thenReturn(user());
+
+        graphQlTester.document("mutation { updateProfile(input: { avatarUrl: null }) { id } }").execute()
+            .errors().verify();
+        graphQlTester.document("mutation { updateProfile(input: { phone: \"0911000001\" }) { id } }").execute()
+            .errors().verify();
+
+        ArgumentCaptor<UpdateProfileCommand> captor = ArgumentCaptor.forClass(UpdateProfileCommand.class);
+        verify(updateProfileUseCase, times(2)).execute(captor.capture());
+        UpdateProfileCommand explicitNull = captor.getAllValues().get(0);
+        UpdateProfileCommand absent = captor.getAllValues().get(1);
+        assertThat(explicitNull.avatarUrl()).isNull();
+        assertThat(explicitNull.avatarUrlProvided()).isTrue();
+        assertThat(absent.avatarUrl()).isNull();
+        assertThat(absent.avatarUrlProvided()).isFalse();
+    }
+
+    @Test
+    @WithMockUser
     void update_profile_should_reject_a_date_of_birth_that_is_not_yyyy_mm_dd() {
         graphQlTester.document(UPDATE_PROFILE_WITH_VARIABLE).variable("dateOfBirth", "01/05/2008").execute()
             .errors().expect(error -> error.getMessage() != null && error.getMessage().contains("dateOfBirth"))

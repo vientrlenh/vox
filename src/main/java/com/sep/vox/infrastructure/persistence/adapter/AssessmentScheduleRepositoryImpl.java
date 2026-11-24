@@ -98,9 +98,10 @@ public class AssessmentScheduleRepositoryImpl implements AssessmentScheduleRepos
     }
 
     @Override
-    public int updateAtomic(UUID id, UUID schoolRoomId, Instant start, Instant end,
+    public int updateAtomic(UUID id, UUID schoolRoomId, boolean schoolRoomIdProvided, Instant start, Instant end,
             Instant now, String updatedBy) {
-        return springDataAssessmentScheduleRepository.updateAtomic(id, schoolRoomId, start, end, now, updatedBy);
+        return springDataAssessmentScheduleRepository.updateAtomic(
+            id, schoolRoomId, schoolRoomIdProvided, start, end, now, updatedBy);
     }
     
     @Override

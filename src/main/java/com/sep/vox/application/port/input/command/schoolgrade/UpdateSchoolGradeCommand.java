@@ -7,6 +7,7 @@ public record UpdateSchoolGradeCommand(
         UUID schoolGradeId,
         String name,
         String description,
+        boolean descriptionProvided,
         LocalDate startDate,
         LocalDate endDate
 ) {}

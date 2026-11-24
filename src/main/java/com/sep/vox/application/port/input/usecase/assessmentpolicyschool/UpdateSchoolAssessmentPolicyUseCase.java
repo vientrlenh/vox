@@ -24,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -41,7 +42,7 @@ public class UpdateSchoolAssessmentPolicyUseCase implements IUseCase<UpdateAsses
     @Override
     @Transactional
     public UUID execute(UpdateAssessmentPolicyCommand command) {
-        // 1. Kiểm tra tài khoản School Admin
+        // 1. Check the School Admin account
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
@@ -49,7 +50,7 @@ public class UpdateSchoolAssessmentPolicyUseCase implements IUseCase<UpdateAsses
             throw new UnauthorizedException("Tài khoản đã bị khóa.");
         }
 
-        // 2. Kiểm tra tài khoản thuộc đúng trường học yêu cầu
+        // 2. Check that the account belongs to the requested school
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được phân bổ vào trường học nào."));
         if (!schoolUser.getSchoolId().equals(command.schoolId())) {
@@ -62,48 +63,52 @@ public class UpdateSchoolAssessmentPolicyUseCase implements IUseCase<UpdateAsses
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
         }
 
-        // 3. Kiểm tra Assessment Policy tồn tại và thuộc đúng trường học
+        // 3. Check that the Assessment Policy exists and belongs to the school
         AssessmentPolicy policy = assessmentPolicyRepository.findById(command.policyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
         if (policy.getSchoolId() == null || !policy.getSchoolId().equals(command.schoolId())) {
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền can thiệp vào Assessment Policy của trường khác.");
         }
 
-        // 4. Chỉ được sửa khi đang DRAFT
+        // 4. It can only be edited while it is DRAFT
         if (policy.getStatus() != AssessmentPolicyStatus.DRAFT) {
             throw new IllegalArgumentException("Chỉ có thể cập nhật Assessment Policy khi đang ở trạng thái DRAFT.");
         }
 
-        // 5. Kiểm tra Band mục tiêu (frameworkVersionId giữ nguyên, không cho đổi)
+        // 5. Check the target Band (frameworkVersionId stays the same and cannot be changed)
         FrameworkResultBand targetBand = frameworkResultBandRepository.findById(command.targetFrameworkBandId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Band mục tiêu (targetFrameworkBandId)."));
         if (!targetBand.getFrameworkVersionId().equals(policy.getFrameworkVersionId())) {
             throw new IllegalArgumentException("Band mục tiêu phải thuộc đúng Phiên bản Khung tiêu chuẩn của Policy này.");
         }
 
-        // 5b. Trần bậc theo Khối. Phạm vi không sửa được ở đây nên lấy thẳng từ policy đang có --
-        //     nhưng Band thì SỬA ĐƯỢC, nên thiếu chốt này thì một policy tạo đúng trần vẫn bị
-        //     chỉnh vượt trần ngay sau đó.
+        // 5b. Band ceiling per grade level. The scope cannot be edited here, so it is taken straight from the existing policy --
+        //     but the Band CAN be edited, so without this check a policy created within the ceiling would still be
+        //     pushed past the ceiling right afterwards.
         gradeLevelBandScopeGuardService.assertWithinScope(
                 policy.getGradeLevelId(), policy.getSchoolGradeId(), policy.getSchoolClassId(),
                 policy.getFrameworkVersionId(), targetBand);
 
-        // 6. Kiểm tra khoảng thời gian hiệu lực
+        // 6. Validate the effective period against the end date that will be stored (omitted keeps the stored one)
         if (command.effectiveFrom() == null) {
             throw new IllegalArgumentException("Ngày bắt đầu hiệu lực (effectiveFrom) không được để trống.");
         }
-        if (command.effectiveTo() != null && command.effectiveFrom().isAfter(command.effectiveTo())) {
+        Instant effectiveTo = command.effectiveToProvided() ? command.effectiveTo() : policy.getEffectiveTo();
+        if (effectiveTo != null && command.effectiveFrom().isAfter(effectiveTo)) {
             throw new IllegalArgumentException("Ngày bắt đầu hiệu lực không được sau ngày kết thúc hiệu lực.");
         }
 
         // 7. Update the business fields (frameworkVersionId/rubricVersionId/languageId/scope do not change)
-        AssessmentPolicyStrictness strictness = command.strictness() != null ? command.strictness() : AssessmentPolicyStrictness.STANDARD;
-
+        // An omitted passingScore/strictness keeps the stored value; an explicit null clears passingScore and stores STANDARD.
         policy.setTargetFrameworkBandId(command.targetFrameworkBandId());
-        policy.setPassingScore(command.passingScore());
-        policy.setStrictness(strictness);
+        if (command.passingScoreProvided()) {
+            policy.setPassingScore(command.passingScore());
+        }
+        if (command.strictnessProvided()) {
+            policy.setStrictness(command.strictness() != null ? command.strictness() : AssessmentPolicyStrictness.STANDARD);
+        }
         policy.setEffectiveFrom(command.effectiveFrom());
-        policy.setEffectiveTo(command.effectiveTo());
+        policy.setEffectiveTo(effectiveTo);
 
         AssessmentPolicy saved = assessmentPolicyRepository.save(policy);
         return saved.getId();

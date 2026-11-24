@@ -1,8 +1,9 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import com.sep.vox.interfaces.graphql.dataloader.GraphQLDataLoaders;
+import com.sep.vox.interfaces.graphql.dataloader.UserGraphQLDataLoaderConfig;
 import com.sep.vox.application.port.input.command.user.UpdateProfileCommand;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -17,12 +18,12 @@ import org.springframework.stereotype.Controller;
 
 import com.sep.vox.application.port.input.query.user.ViewUserDetailsQuery;
 import com.sep.vox.application.port.input.query.user.ViewUsersQuery;
-import com.sep.vox.application.port.input.query.key.UserRolesKey;
+import com.sep.vox.interfaces.graphql.key.UserRolesKey;
 import com.sep.vox.application.port.input.usecase.user.UpdateProfileUseCase;
 import com.sep.vox.application.port.input.usecase.user.ViewProfileUseCase;
 import com.sep.vox.application.port.input.usecase.user.ViewUserDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.user.ViewUsersUseCase;
-import com.sep.vox.interfaces.graphql.mapper.UpdateProfileCommandMapper;
+import com.sep.vox.interfaces.graphql.input.user.UpdateProfileInput;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.RoleDto;
 import com.sep.vox.domain.dto.SchoolDto;
@@ -67,22 +68,22 @@ public class GraphQLUserController {
     }
 
     /**
-     * {@code isAuthenticated()} chứ không liệt kê vai: mọi vai đều được sửa hồ sơ của chính mình.
-     * Riêng ảnh đại diện thì học sinh bị từ chối, và luật đó nằm trong use case chứ không ở đây --
-     * nó phụ thuộc vào việc client có gửi trường {@code avatarUrl} hay không, thứ mà
-     * {@code @PreAuthorize} không nhìn thấy.
+     * {@code isAuthenticated()} rather than a list of roles: every role may edit its own profile.
+     * Only the avatar is refused to students, and that rule lives in the use case, not here --
+     * it depends on whether the client sent the {@code avatarUrl} field, which
+     * {@code @PreAuthorize} cannot see.
      */
     @MutationMapping(name = "updateProfile")
     @PreAuthorize("isAuthenticated()")
-    public UserDto updateProfile(@Argument(name = "input") Map<String, Object> input) {
-        UpdateProfileCommand command = UpdateProfileCommandMapper.fromInput(input);
+    public UserDto updateProfile(@Argument(name = "input") UpdateProfileInput input) {
+        UpdateProfileCommand command = UpdateProfileInput.toCommand(input);
         return updateProfileUseCase.execute(command);
     }
 
     @SchemaMapping(typeName = "User", field = "roles")
     @PreAuthorize("isAuthenticated()")
     public CompletableFuture<List<RoleDto>> userRoles(UserDto user, DataFetchingEnvironment env) {
-        DataLoader<UserRolesKey, List<RoleDto>> loader = env.getDataLoader("rolesByUser");
+        DataLoader<UserRolesKey, List<RoleDto>> loader = GraphQLDataLoaders.require(env, UserGraphQLDataLoaderConfig.ROLES_BY_USER_ID);
         return loader.load(new UserRolesKey(user.id()));
     }
 

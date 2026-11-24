@@ -15,6 +15,11 @@ public interface AssessmentCandidateRepository {
     List<AssessmentCandidate> saveAll(Collection<AssessmentCandidate> candidates);
     List<AssessmentCandidate> findByAssessmentId(UUID assessmentId);
     List<AssessmentCandidate> findByAssessmentIdIn(Collection<UUID> assessmentIds);
+    /**
+     * At most one candidate per assessment: the earliest assigned one (ties broken by id), the same one
+     * {@link #findByAssessmentId} lists first. Assessments without candidates are absent from the result.
+     */
+    List<AssessmentCandidate> findFirstCandidateByAssessmentIdIn(Collection<UUID> assessmentIds);
     long countByAssessmentId(UUID assessmentId);
     Map<UUID, Long> countByAssessmentIdIn(Collection<UUID> assessmentIds);
 

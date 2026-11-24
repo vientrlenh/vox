@@ -73,7 +73,7 @@ public class UpdateFrameworkCriterionBandUseCase
     }
 
     private void updateCriterionBand(UpdateFrameworkCriterionBandCommand command, FrameworkCriterionBand band) {
-        if (hasText(command.descriptor()))
+        if (shouldChangeDescriptor(command))
             band.setDescriptor(StringNormalization.trimAndCollapseSpaces(command.descriptor()));
 
         if (hasSignals(command.positiveSignals())) 
@@ -84,8 +84,8 @@ public class UpdateFrameworkCriterionBandUseCase
 
     }
 
-    private boolean hasText(String request) {
-        return request != null && !request.isEmpty();
+    private boolean shouldChangeDescriptor(UpdateFrameworkCriterionBandCommand command) {
+        return command.descriptorProvided() && (command.descriptor() == null || !command.descriptor().isEmpty());
     }
 
     private boolean hasSignals(FrameworkCriterionSignals signals) {

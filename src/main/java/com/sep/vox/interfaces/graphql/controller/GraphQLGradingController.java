@@ -1,5 +1,7 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import com.sep.vox.interfaces.graphql.dataloader.GraphQLDataLoaders;
+import com.sep.vox.interfaces.graphql.dataloader.UserGraphQLDataLoaderConfig;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -197,14 +199,14 @@ public class GraphQLGradingController {
     @SchemaMapping(typeName = "AssignableTeacher", field = "user")
     public CompletableFuture<UserDto> assignableTeacherUser(
             AssignableTeacherInfo source, DataFetchingEnvironment env) {
-        DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
+        DataLoader<UUID, UserDto> loader = GraphQLDataLoaders.require(env, UserGraphQLDataLoaderConfig.USER_BY_USER_ID);
         return loader.load(source.id());
     }
 
     @SchemaMapping(typeName = "GradingTeacherProgress", field = "teacher")
     public CompletableFuture<UserDto> teacherProgressUser(
             GradingStatsInfo.TeacherProgress source, DataFetchingEnvironment env) {
-        DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
+        DataLoader<UUID, UserDto> loader = GraphQLDataLoaders.require(env, UserGraphQLDataLoaderConfig.USER_BY_USER_ID);
         return loader.load(source.teacherId());
     }
 
@@ -216,7 +218,7 @@ public class GraphQLGradingController {
         if (source.teacherId() == null) {
             return CompletableFuture.completedFuture(null);
         }
-        DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
+        DataLoader<UUID, UserDto> loader = GraphQLDataLoaders.require(env, UserGraphQLDataLoaderConfig.USER_BY_USER_ID);
         return loader.load(source.teacherId());
     }
 }

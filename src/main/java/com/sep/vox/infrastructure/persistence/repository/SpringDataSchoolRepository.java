@@ -32,17 +32,16 @@ public interface SpringDataSchoolRepository extends JpaRepository<SchoolJpaEntit
     boolean existsByCodeAndIdNot(String normalizedCode, UUID id);
     boolean existsByIdAndIsActiveTrue(UUID schoolId);
 
-    //COALESCE sẽ đóng vai trò hoạt động như sau : nhập name nếu ma null -> s.name
-    //            s.name = COALESCE(:name, s.name, 'Vit'),
-    //nếu mà s.name null -> Vit
+    // COALESCE works as follows: if the given name is null, the stored s.name is kept.
+    // description and domain are nullable columns, so their "Provided" flags decide between keeping and clearing them.
     @Modifying
     @Query("""
             UPDATE SchoolJpaEntity s SET 
             s.name = COALESCE(:name, s.name),
-            s.description = COALESCE(:description, s.description),
+            s.description = CASE WHEN :descriptionProvided = true THEN :description ELSE s.description END,
             s.contactPhone = COALESCE(:phone, s.contactPhone),
             s.contactEmail = COALESCE(:email, s.contactEmail),
-            s.domain = COALESCE(:domain, s.domain),
+            s.domain = CASE WHEN :domainProvided = true THEN :domain ELSE s.domain END,
             s.address = COALESCE(:address, s.address),
             s.studentCount = COALESCE(:studentCount, s.studentCount),
             s.updatedAt = :updatedAt,
@@ -53,9 +52,11 @@ public interface SpringDataSchoolRepository extends JpaRepository<SchoolJpaEntit
             @Param("id") UUID id,
             @Param("name") String name,
             @Param("description") String description,
+            @Param("descriptionProvided") boolean descriptionProvided,
             @Param("phone") String phone,
             @Param("email") String email,
             @Param("domain") String domain,
+            @Param("domainProvided") boolean domainProvided,
             @Param("address") String address,
             @Param("studentCount") Integer studentCount,
             @Param("updatedAt") Instant updatedAt,

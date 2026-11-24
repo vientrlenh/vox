@@ -88,7 +88,7 @@ public class SchoolRoomRepositoryImpl implements SchoolRoomRepository {
     }
 
     @Override
-    public int updateSchoolRoomAtomic(UUID id, String name, String description, Instant now, String updatedBy) {
-        return springDataSchoolRoomRepository.updateSchoolRoomAtomic(id, name, description, now, updatedBy);
+    public int updateSchoolRoomAtomic(UUID id, String name, String description, boolean descriptionProvided, Instant now, String updatedBy) {
+        return springDataSchoolRoomRepository.updateSchoolRoomAtomic(id, name, description, descriptionProvided, now, updatedBy);
     }
 }

@@ -85,16 +85,20 @@ public class UpdateSystemRubricVersionUseCase
         // consistent with UpdateSystemRubricCriterionUseCase/UpdateSystemRubricResultBandUseCase. It used
         // to use normalizeRequiredText(), which required a description, contradicting the "partial update"
         // comment right below for the other fields of the version.
-        String safeDescription = (command.description() != null && !command.description().isBlank())
+        // A blank description keeps the stored one; an explicit null clears it.
+        boolean descriptionBlank = command.description() != null && command.description().isBlank();
+        boolean descriptionProvided = command.descriptionProvided() && !descriptionBlank;
+        String safeDescription = (command.description() != null && !descriptionBlank)
                 ? StringNormalization.trimAndCollapseSpaces(command.description())
                 : null;
 
         // Partial update: any field that is not passed (null) keeps the current value of the version
-        // (updateRubricVersionAtomic uses COALESCE(:param, v.field) at the SQL layer).
+        // (updateRubricVersionAtomic uses COALESCE(:param, v.field) at the SQL layer), except effectiveTo,
+        // which is cleared by an explicit null.
         Instant finalEffectiveFrom = command.effectiveFrom() != null
                 ? command.effectiveFrom() : version.getEffectiveFrom();
 
-        Instant finalEffectiveTo = command.effectiveTo() != null
+        Instant finalEffectiveTo = command.effectiveToProvided()
                 ? command.effectiveTo() : version.getEffectiveTo();
 
         if (finalEffectiveTo != null
@@ -126,7 +130,7 @@ public class UpdateSystemRubricVersionUseCase
 
         String safeMethod = command.totalScoreMethod() == null ? null : command.totalScoreMethod().name();
         // 5. Atomic update: pass null for the code to keep the old code. For the fields that support
-        // partial updates (effectiveFrom/effectiveTo/scoringScaleMin/scoringScaleMax), pass the original value
+        // partial updates (effectiveFrom/scoringScaleMin/scoringScaleMax), pass the original value
         // (possibly null) straight from the command so the SQL COALESCE keeps the value currently in the DB at the
         // time of the update -- this avoids overwriting with the `version` snapshot read earlier (a lost update when
         // another request updates these fields concurrently). finalEffectiveFrom/finalEffectiveTo/finalScoreMin/
@@ -137,8 +141,10 @@ public class UpdateSystemRubricVersionUseCase
                     null,
                     safeName,
                     safeDescription,
+                    descriptionProvided,
                     command.effectiveFrom(),
                     command.effectiveTo(),
+                    command.effectiveToProvided(),
                     command.scoringScaleMin(),
                     command.scoringScaleMax(),
                     safeMethod,

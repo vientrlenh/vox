@@ -123,8 +123,8 @@ public class SchoolGradeRepositoryImpl implements SchoolGradeRepository {
     }
 
     @Override
-    public int updateSchoolGradeAtomic(UUID id, String name, String description, LocalDate startDate, LocalDate endDate, Instant now, String updatedBy) {
-        return springDataSchoolGradeRepository.updateSchoolGradeAtomic(id, name, description, startDate, endDate, now, updatedBy);
+    public int updateSchoolGradeAtomic(UUID id, String name, String description, boolean descriptionProvided, LocalDate startDate, LocalDate endDate, Instant now, String updatedBy) {
+        return springDataSchoolGradeRepository.updateSchoolGradeAtomic(id, name, description, descriptionProvided, startDate, endDate, now, updatedBy);
     }
 
     @Override

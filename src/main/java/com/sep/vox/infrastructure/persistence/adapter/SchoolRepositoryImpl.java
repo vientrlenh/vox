@@ -96,11 +96,11 @@ public class SchoolRepositoryImpl implements SchoolRepository {
     }
 
     @Override
-    public int updateSchoolAtomic(UUID id, String name, String description, String phone,
-                                  String email, String domain, String address, Integer studentCount,
+    public int updateSchoolAtomic(UUID id, String name, String description, boolean descriptionProvided, String phone,
+                                  String email, String domain, boolean domainProvided, String address, Integer studentCount,
                                   Instant now, String updatedBy) {
         return springDataSchoolRepository.updateSchoolAtomic(
-                id, name, description, phone, email, domain, address, studentCount, now, updatedBy
+                id, name, description, descriptionProvided, phone, email, domain, domainProvided, address, studentCount, now, updatedBy
         );
     }
 

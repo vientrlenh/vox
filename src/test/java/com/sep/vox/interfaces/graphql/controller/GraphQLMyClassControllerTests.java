@@ -1,5 +1,8 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import com.sep.vox.interfaces.graphql.dataloader.SchoolGraphQLDataLoaderConfig;
+import com.sep.vox.interfaces.graphql.dataloader.SupportedLanguageGraphQLDataLoaderConfig;
+import com.sep.vox.interfaces.graphql.dataloader.UserGraphQLDataLoaderConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
@@ -17,7 +20,7 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.port.input.query.schoolclass.ViewMyClassDetailsQuery;
 import com.sep.vox.application.port.input.query.schoolclass.ViewMyClassMembersQuery;
 import com.sep.vox.application.port.input.query.schoolclass.ViewMyClassesQuery;
-import com.sep.vox.application.port.input.query.key.UserRolesKey;
+import com.sep.vox.interfaces.graphql.key.UserRolesKey;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewMyClassDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewMyClassMembersUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewMyClassesUseCase;
@@ -111,7 +114,7 @@ class GraphQLMyClassControllerTests {
         SchoolGradeDto expected = new SchoolGradeDto(gradeId, schoolId, UUID.randomUUID(), "G10", "Grade 10", null, null, null, SchoolGradeStatus.ACTIVE, null, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader<UUID, SchoolGradeDto> loader = mock(DataLoader.class);
-        when(env.<UUID, SchoolGradeDto>getDataLoader("schoolGradeByClass")).thenReturn(loader);
+        when(env.<UUID, SchoolGradeDto>getDataLoader(SchoolGraphQLDataLoaderConfig.SCHOOL_GRADE_BY_SCHOOL_GRADE_ID)).thenReturn(loader);
         when(loader.load(gradeId)).thenReturn(CompletableFuture.completedFuture(expected));
 
         assertThat(controller.myClassSchoolGrade(schoolClass, env).join()).isEqualTo(expected);
@@ -127,7 +130,7 @@ class GraphQLMyClassControllerTests {
         SupportedLanguageDto expected = new SupportedLanguageDto(languageId, "EN", "English", null, true, null, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader<UUID, SupportedLanguageDto> loader = mock(DataLoader.class);
-        when(env.<UUID, SupportedLanguageDto>getDataLoader("supportedLanguageByClass")).thenReturn(loader);
+        when(env.<UUID, SupportedLanguageDto>getDataLoader(SupportedLanguageGraphQLDataLoaderConfig.SUPPORTED_LANGUAGE_BY_SUPPORTED_LANGUAGE_ID)).thenReturn(loader);
         when(loader.load(languageId)).thenReturn(CompletableFuture.completedFuture(expected));
 
         assertThat(controller.myClassLanguage(schoolClass, env).join()).isEqualTo(expected);
@@ -140,7 +143,7 @@ class GraphQLMyClassControllerTests {
         SchoolClassDto schoolClass = schoolClassDto();
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader<UUID, Integer> loader = mock(DataLoader.class);
-        when(env.<UUID, Integer>getDataLoader("activeMemberCountByClass")).thenReturn(loader);
+        when(env.<UUID, Integer>getDataLoader(SchoolGraphQLDataLoaderConfig.ACTIVE_MEMBER_COUNT_BY_SCHOOL_CLASS_ID)).thenReturn(loader);
         when(loader.load(classId)).thenReturn(CompletableFuture.completedFuture(7));
 
         assertThat(controller.myClassActiveMemberCount(schoolClass, env).join()).isEqualTo(7);
@@ -155,7 +158,7 @@ class GraphQLMyClassControllerTests {
         UserDto expected = userDto(userId);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader<UUID, UserDto> loader = mock(DataLoader.class);
-        when(env.<UUID, UserDto>getDataLoader("userBySchoolClassUser")).thenReturn(loader);
+        when(env.<UUID, UserDto>getDataLoader(UserGraphQLDataLoaderConfig.USER_BY_USER_ID)).thenReturn(loader);
         when(loader.load(userId)).thenReturn(CompletableFuture.completedFuture(expected));
 
         assertThat(controller.myClassMemberUser(member, env).join()).isEqualTo(expected);
@@ -168,7 +171,7 @@ class GraphQLMyClassControllerTests {
         UUID userId = UUID.randomUUID();
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader<UserRolesKey, List<RoleDto>> loader = mock(DataLoader.class);
-        when(env.<UserRolesKey, List<RoleDto>>getDataLoader("rolesByUser")).thenReturn(loader);
+        when(env.<UserRolesKey, List<RoleDto>>getDataLoader(UserGraphQLDataLoaderConfig.ROLES_BY_USER_ID)).thenReturn(loader);
         when(loader.load(new UserRolesKey(userId))).thenReturn(CompletableFuture.completedFuture(List.of(
             new RoleDto(UUID.randomUUID(), "TEACHER", "Giáo viên", null, null),
             new RoleDto(UUID.randomUUID(), "STUDENT", "Học sinh", null, null)

@@ -24,6 +24,19 @@ public interface SpringDataAssessmentCandidateRepository extends JpaRepository<A
      */
     List<AssessmentCandidateJpaEntity> findByAssessmentIdOrderByAssignedAtAscIdAsc(UUID assessmentId);
     List<AssessmentCandidateJpaEntity> findByAssessmentIdIn(Collection<UUID> assessmentIds);
+
+    @Query(value = """
+        SELECT c.*
+        FROM assessment_candidates c
+        JOIN (
+            SELECT id, ROW_NUMBER() OVER (PARTITION BY assessment_id ORDER BY assigned_at, id) AS position_in_assessment
+            FROM assessment_candidates
+            WHERE assessment_id IN (:assessmentIds)
+        ) ranked ON ranked.id = c.id
+        WHERE ranked.position_in_assessment = 1
+        """, nativeQuery = true)
+    List<AssessmentCandidateJpaEntity> findFirstCandidateByAssessmentIdIn(@Param("assessmentIds") Collection<UUID> assessmentIds);
+
     void deleteByAssessmentId(UUID assessmentId);
     void deleteByIdIn(Collection<UUID> ids);
     Optional<AssessmentCandidateJpaEntity> findByAssessmentIdAndStudentId(UUID assessmentId, UUID studentId);

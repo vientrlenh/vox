@@ -36,7 +36,7 @@ public class UpdateSchoolRubricUseCase implements IUseCase<UpdateSchoolRubricCom
     @Override
     @Transactional
     public UUID execute(UpdateSchoolRubricCommand command) {
-        // 1. Xác thực tài khoản
+        // 1. Authenticate the account
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
@@ -45,11 +45,11 @@ public class UpdateSchoolRubricUseCase implements IUseCase<UpdateSchoolRubricCom
             throw new UnauthorizedException("Tài khoản bị khóa.");
         }
 
-        // 2. Lấy Rubric gốc ra kiểm tra
+        // 2. Load the original Rubric to check it
         Rubric rubric = rubricRepository.findById(command.rubricId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric này."));
 
-        // 3. Chốt chặn an ninh: Bằng SchoolUser
+        // 3. Security checkpoint: via SchoolUser
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
 
@@ -59,7 +59,7 @@ public class UpdateSchoolRubricUseCase implements IUseCase<UpdateSchoolRubricCom
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền chỉnh sửa Rubric của trường khác.");
         }
 
-        // 4. Chốt chặn an ninh: Kiểm tra trường học có đang hoạt động không
+        // 4. Security checkpoint: check that the school is active
         School school = schoolRepository.findById(command.schoolId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
         if (!school.isActive()) {
@@ -74,19 +74,22 @@ public class UpdateSchoolRubricUseCase implements IUseCase<UpdateSchoolRubricCom
             }
         }
 
-        // Để trống (null hoặc rỗng) thì coi như không đổi -- giữ nguyên description cũ (SQL COALESCE),
-        // đồng nhất với UpdateSchoolRubricCriterionUseCase/UpdateSchoolRubricResultBandUseCase.
-        String finalDesc = (command.description() != null && !command.description().isBlank())
+        // A blank description means keep the stored one (the SQL leaves it untouched); an explicit null clears it.
+        // Same rule as UpdateSchoolRubricCriterionUseCase/UpdateSchoolRubricResultBandUseCase.
+        boolean descriptionBlank = command.description() != null && command.description().isBlank();
+        boolean descriptionProvided = command.descriptionProvided() && !descriptionBlank;
+        String finalDesc = (command.description() != null && !descriptionBlank)
                 ? StringNormalization.trimAndCollapseSpaces(command.description())
                 : null;
-        // 6. Bắn SQL Atomic xuống DB
+        // 6. Fire the atomic SQL at the DB
         rubricRepository.updateRubricAtomic(
                 command.rubricId(),
                 finalName,
-                finalDesc
+                finalDesc,
+                descriptionProvided
         );
 
-        // 7. Trả về UUID
+        // 7. Return the UUID
         return command.rubricId();
     }
 }

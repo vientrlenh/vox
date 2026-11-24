@@ -9,5 +9,6 @@ public record UpdateFrameworkResultBandCommand(
         String code,
         String label,
         String description,
+        boolean descriptionProvided,
         int order
 ) {}

@@ -1,5 +1,10 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import com.sep.vox.interfaces.graphql.dataloader.SchoolGraphQLDataLoaderConfig;
+import com.sep.vox.interfaces.graphql.dataloader.GraphQLDataLoaders;
+import com.sep.vox.interfaces.graphql.dataloader.FrameworkGraphQLDataLoaderConfig;
+import com.sep.vox.interfaces.graphql.dataloader.RubricGraphQLDataLoaderConfig;
+import com.sep.vox.interfaces.graphql.dataloader.SupportedLanguageGraphQLDataLoaderConfig;
 import com.sep.vox.application.port.input.command.assessmentpolicysystem.UpdateAssessmentPolicyCommand;
 import com.sep.vox.application.port.input.query.assessmentpolicyschool.ViewSchoolAssessmentPoliciesQuery;
 import com.sep.vox.application.port.input.query.assessmentpolicyschool.ViewSchoolAssessmentPolicyDetailsQuery;
@@ -24,7 +29,7 @@ import com.sep.vox.domain.dto.SchoolGradeDto;
 import com.sep.vox.domain.dto.GradeLevelDto;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
 import com.sep.vox.domain.model.assessmentpolicy.AssessmentPolicyStatus;
-import com.sep.vox.interfaces.graphql.dto.request.assessmentpolicysystem.UpdateAssessmentPolicyInput;
+import com.sep.vox.interfaces.graphql.input.assessmentpolicysystem.UpdateAssessmentPolicyInput;
 import com.sep.vox.interfaces.shared.PageArguments;
 import lombok.RequiredArgsConstructor;
 import org.dataloader.DataLoader;
@@ -130,7 +135,7 @@ public class GraphQLAssessmentPolicyController {
         if (policy.schoolId() == null) {
             return CompletableFuture.completedFuture(null);
         }
-        DataLoader<UUID, SchoolDto> loader = env.getDataLoader("schoolDataLoader");
+        DataLoader<UUID, SchoolDto> loader = GraphQLDataLoaders.require(env, SchoolGraphQLDataLoaderConfig.SCHOOL_BY_SCHOOL_ID);
         return loader.load(policy.schoolId());
     }
 
@@ -140,7 +145,7 @@ public class GraphQLAssessmentPolicyController {
         if (policy.gradeLevelId() == null) {
             return CompletableFuture.completedFuture(null);
         }
-        DataLoader<UUID, GradeLevelDto> loader = env.getDataLoader("gradeLevelDataLoader");
+        DataLoader<UUID, GradeLevelDto> loader = GraphQLDataLoaders.require(env, SchoolGraphQLDataLoaderConfig.GRADE_LEVEL_BY_GRADE_LEVEL_ID);
         return loader.load(policy.gradeLevelId());
     }
 
@@ -149,7 +154,7 @@ public class GraphQLAssessmentPolicyController {
         if (policy.schoolGradeId() == null) {
             return CompletableFuture.completedFuture(null);
         }
-        DataLoader<UUID, SchoolGradeDto> loader = env.getDataLoader("schoolGradeById");
+        DataLoader<UUID, SchoolGradeDto> loader = GraphQLDataLoaders.require(env, SchoolGraphQLDataLoaderConfig.SCHOOL_GRADE_BY_SCHOOL_GRADE_ID);
         return loader.load(policy.schoolGradeId());
     }
 
@@ -158,35 +163,35 @@ public class GraphQLAssessmentPolicyController {
         if (policy.schoolClassId() == null) {
             return CompletableFuture.completedFuture(null);
         }
-        DataLoader<UUID, SchoolClassDto> loader = env.getDataLoader("schoolClassDataLoader");
+        DataLoader<UUID, SchoolClassDto> loader = GraphQLDataLoaders.require(env, SchoolGraphQLDataLoaderConfig.SCHOOL_CLASS_BY_SCHOOL_CLASS_ID);
         return loader.load(policy.schoolClassId());
     }
 
     @SchemaMapping(typeName = "AssessmentPolicy", field = "language")
     public CompletableFuture<SupportedLanguageDto> getLanguage(AssessmentPolicyDto policy,
             DataFetchingEnvironment env) {
-        DataLoader<UUID, SupportedLanguageDto> loader = env.getDataLoader("supportedLanguageDataLoader");
+        DataLoader<UUID, SupportedLanguageDto> loader = GraphQLDataLoaders.require(env, SupportedLanguageGraphQLDataLoaderConfig.SUPPORTED_LANGUAGE_BY_SUPPORTED_LANGUAGE_ID);
         return loader.load(policy.languageId());
     }
 
     @SchemaMapping(typeName = "AssessmentPolicy", field = "frameworkVersion")
     public CompletableFuture<FrameworkVersionDto> getFrameworkVersion(AssessmentPolicyDto policy,
             DataFetchingEnvironment env) {
-        DataLoader<UUID, FrameworkVersionDto> loader = env.getDataLoader("frameworkVersionDataLoader");
+        DataLoader<UUID, FrameworkVersionDto> loader = GraphQLDataLoaders.require(env, FrameworkGraphQLDataLoaderConfig.FRAMEWORK_VERSION_BY_FRAMEWORK_VERSION_ID);
         return loader.load(policy.frameworkVersionId());
     }
 
     @SchemaMapping(typeName = "AssessmentPolicy", field = "rubricVersion")
     public CompletableFuture<RubricVersionDto> getRubricVersion(AssessmentPolicyDto policy,
             DataFetchingEnvironment env) {
-        DataLoader<UUID, RubricVersionDto> loader = env.getDataLoader("rubricVersionDataLoader");
+        DataLoader<UUID, RubricVersionDto> loader = GraphQLDataLoaders.require(env, RubricGraphQLDataLoaderConfig.RUBRIC_VERSION_BY_RUBRIC_VERSION_ID);
         return loader.load(policy.rubricVersionId());
     }
 
     @SchemaMapping(typeName = "AssessmentPolicy", field = "targetFrameworkBand")
     public CompletableFuture<FrameworkResultBandDto> getTargetFrameworkBand(AssessmentPolicyDto policy,
             DataFetchingEnvironment env) {
-        DataLoader<UUID, FrameworkResultBandDto> loader = env.getDataLoader("frameworkResultBandDataLoader");
+        DataLoader<UUID, FrameworkResultBandDto> loader = GraphQLDataLoaders.require(env, FrameworkGraphQLDataLoaderConfig.FRAMEWORK_RESULT_BAND_BY_FRAMEWORK_RESULT_BAND_ID);
         return loader.load(policy.targetFrameworkBandId());
     }
 

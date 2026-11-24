@@ -15,7 +15,8 @@ public record UpdateSystemRubricRequest(
         return new UpdateSystemRubricCommand(
                 rubricId,
                 request.name(),
-                request.description()
+                request.description(),
+                request.description() != null
         );
     }
 }

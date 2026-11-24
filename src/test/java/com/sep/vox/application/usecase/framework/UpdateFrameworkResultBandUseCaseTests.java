@@ -1,5 +1,6 @@
 package com.sep.vox.application.usecase.framework;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -59,10 +60,52 @@ class UpdateFrameworkResultBandUseCaseTests {
         when(frameworkResultBandRepository.save(any(FrameworkResultBand.class)))
             .thenThrow(new DataConflictException("unique violation", null));
         UpdateFrameworkResultBandCommand command = new UpdateFrameworkResultBandCommand(
-            frameworkId, versionId, bandId, "B1", "Basic", "Basic level", 1);
+            frameworkId, versionId, bandId, "B1", "Basic", "Basic level", true, 1);
 
         assertThatThrownBy(() -> useCase.execute(command))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessage("Mã hoặc nhãn kết quả đã tồn tại cho phiên bản này");
+    }
+
+    private FrameworkResultBand storedBand() {
+        FrameworkVersion draftVersion = FrameworkVersion.builder()
+            .id(versionId).frameworkId(frameworkId).status(FrameworkVersionStatus.DRAFT).build();
+        FrameworkResultBand band = FrameworkResultBand.builder()
+            .id(bandId).frameworkVersionId(versionId).code("B1").label("Basic")
+            .description("Stored").order(1).build();
+        when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(draftVersion));
+        when(frameworkResultBandRepository.findById(bandId)).thenReturn(Optional.of(band));
+        when(frameworkResultBandRepository.findByFrameworkVersionId(versionId)).thenReturn(List.of(band));
+        return band;
+    }
+
+    @Test
+    void execute_keepsTheDescriptionWhenItIsNotProvided() {
+        FrameworkResultBand band = storedBand();
+
+        useCase.execute(new UpdateFrameworkResultBandCommand(
+            frameworkId, versionId, bandId, "B1", "Basic", null, false, 1));
+
+        assertThat(band.getDescription()).isEqualTo("Stored");
+    }
+
+    @Test
+    void execute_clearsTheDescriptionWhenNullIsProvided() {
+        FrameworkResultBand band = storedBand();
+
+        useCase.execute(new UpdateFrameworkResultBandCommand(
+            frameworkId, versionId, bandId, "B1", "Basic", null, true, 1));
+
+        assertThat(band.getDescription()).isNull();
+    }
+
+    @Test
+    void execute_storesTheNormalizedDescriptionWhenATextIsProvided() {
+        FrameworkResultBand band = storedBand();
+
+        useCase.execute(new UpdateFrameworkResultBandCommand(
+            frameworkId, versionId, bandId, "B1", "Basic", "  New   text ", true, 1));
+
+        assertThat(band.getDescription()).isEqualTo("New text");
     }
 }

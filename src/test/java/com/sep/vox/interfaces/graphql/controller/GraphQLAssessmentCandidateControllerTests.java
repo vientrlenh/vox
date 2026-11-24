@@ -1,5 +1,7 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import com.sep.vox.interfaces.graphql.dataloader.UserGraphQLDataLoaderConfig;
+import com.sep.vox.interfaces.graphql.dataloader.AssessmentGraphQLDataLoaderConfig;
 import com.sep.vox.domain.model.assessment.AssessmentScheduleStatus;
 import com.sep.vox.domain.model.assessment.AssessmentDeliveryMode;
 import com.sep.vox.domain.model.assessment.AssessmentKind;
@@ -106,7 +108,7 @@ class GraphQLAssessmentCandidateControllerTests {
             null, null, null, null, null, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader loader = mock(DataLoader.class);
-        when(env.<UUID, UserDto>getDataLoader("userById")).thenReturn(loader);
+        when(env.<UUID, UserDto>getDataLoader(UserGraphQLDataLoaderConfig.USER_BY_USER_ID)).thenReturn(loader);
         when(loader.load(studentId)).thenReturn(CompletableFuture.completedFuture(user));
 
         CompletableFuture<UserDto> result = controller.student(dto, env);
@@ -134,7 +136,7 @@ class GraphQLAssessmentCandidateControllerTests {
         AssessmentPaperDto paper = new AssessmentPaperDto(paperId, assessmentId, null, "P1", 1, AssessmentPaperStatus.LOCKED, null, null, null, null, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader loader = mock(DataLoader.class);
-        when(env.<UUID, AssessmentPaperDto>getDataLoader("assessmentPaperById")).thenReturn(loader);
+        when(env.<UUID, AssessmentPaperDto>getDataLoader(AssessmentGraphQLDataLoaderConfig.ASSESSMENT_PAPER_BY_ASSESSMENT_PAPER_ID)).thenReturn(loader);
         when(loader.load(paperId)).thenReturn(CompletableFuture.completedFuture(paper));
 
         CompletableFuture<AssessmentPaperDto> result = controller.assignedPaper(dto, env);
@@ -150,7 +152,7 @@ class GraphQLAssessmentCandidateControllerTests {
         AssessmentScheduleDto schedule = new AssessmentScheduleDto(scheduleId, assessmentId, UUID.randomUUID(), null, null, AssessmentScheduleStatus.DRAFT, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader loader = mock(DataLoader.class);
-        when(env.<UUID, AssessmentScheduleDto>getDataLoader("assessmentScheduleById")).thenReturn(loader);
+        when(env.<UUID, AssessmentScheduleDto>getDataLoader(AssessmentGraphQLDataLoaderConfig.ASSESSMENT_SCHEDULE_BY_ASSESSMENT_SCHEDULE_ID)).thenReturn(loader);
         when(loader.load(scheduleId)).thenReturn(CompletableFuture.completedFuture(schedule));
 
         CompletableFuture<AssessmentScheduleDto> result = controller.schedule(dto, env);
@@ -179,7 +181,7 @@ class GraphQLAssessmentCandidateControllerTests {
             null, null, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader loader = mock(DataLoader.class);
-        when(env.<UUID, AssessmentDto>getDataLoader("assessmentById")).thenReturn(loader);
+        when(env.<UUID, AssessmentDto>getDataLoader(AssessmentGraphQLDataLoaderConfig.ASSESSMENT_BY_ASSESSMENT_ID)).thenReturn(loader);
         when(loader.load(assessmentId)).thenReturn(CompletableFuture.completedFuture(assessment));
 
         CompletableFuture<AssessmentDto> result = controller.assessment(dto, env);

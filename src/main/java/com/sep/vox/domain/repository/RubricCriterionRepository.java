@@ -16,7 +16,7 @@ public interface RubricCriterionRepository {
     void deleteByRubricVersionId(UUID rubricVersionId);
     void saveAll(List<RubricCriterion> criteria);
 
-    void updateCriterionAtomic(UUID id, String code, String name, String description, String examplesJson, BigDecimal weight, BigDecimal minScore, BigDecimal maxScore, Integer order, Boolean isRequired, Instant updatedAt, String updatedBy);
+    void updateCriterionAtomic(UUID id, String code, String name, String description, boolean descriptionProvided, String examplesJson, boolean examplesJsonProvided, BigDecimal weight, BigDecimal minScore, BigDecimal maxScore, Integer order, Boolean isRequired, Instant updatedAt, String updatedBy);
     PageResult<RubricCriterion> findAllByRubricVersionId(UUID rubricVersionId, int page, int size);
 
     List<RubricCriterion> findByRubricVersionIdIn(List<UUID> versionIds);

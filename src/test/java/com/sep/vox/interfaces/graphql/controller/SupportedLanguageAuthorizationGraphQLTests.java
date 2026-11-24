@@ -1,6 +1,8 @@
 package com.sep.vox.interfaces.graphql.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -10,6 +12,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +22,7 @@ import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import com.sep.vox.application.port.input.command.supportedlanguage.UpdateSupportedLanguageCommand;
 import com.sep.vox.application.port.input.usecase.supportedlanguage.UpdateSupportedLanguageUseCase;
 import com.sep.vox.application.port.input.usecase.supportedlanguage.ViewSupportedLanguageDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.supportedlanguage.ViewSupportedLanguagesUseCase;
@@ -166,5 +170,24 @@ class SupportedLanguageAuthorizationGraphQLTests {
         graphQlTester.document(UPDATE_MUTATION).execute()
             .errors().verify()
             .path("updateSupportedLanguage.supportedLanguageId").entity(String.class).isEqualTo(ID.toString());
+    }
+
+    @Test
+    @WithMockUser(roles = "SYSTEM_ADMIN")
+    void update_should_tell_a_false_is_active_and_a_null_description_from_omitted_fields() {
+        when(updateSupportedLanguageUseCase.execute(any())).thenReturn(new UpdateSupportedLanguageResponse(ID));
+
+        graphQlTester.document("mutation { updateSupportedLanguage(id: \"%s\", input: { isActive: false, description: null }) { supportedLanguageId } }".formatted(ID))
+            .execute().errors().verify();
+
+        ArgumentCaptor<UpdateSupportedLanguageCommand> captor = ArgumentCaptor.forClass(UpdateSupportedLanguageCommand.class);
+        verify(updateSupportedLanguageUseCase).execute(captor.capture());
+        UpdateSupportedLanguageCommand command = captor.getValue();
+        assertThat(command.isActive()).isFalse();
+        assertThat(command.isActiveProvided()).isTrue();
+        assertThat(command.description()).isNull();
+        assertThat(command.descriptionProvided()).isTrue();
+        assertThat(command.nameProvided()).isFalse();
+        assertThat(command.codeProvided()).isFalse();
     }
 }

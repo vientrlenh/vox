@@ -9,8 +9,10 @@ public record UpdateSystemRubricVersionCommand(
         UUID versionId,
         String name,
         String description,
+        boolean descriptionProvided,
         Instant effectiveFrom,
         Instant effectiveTo,
+        boolean effectiveToProvided,
         BigDecimal scoringScaleMin,
         BigDecimal scoringScaleMax,
         RubricTotalScoreMethod totalScoreMethod

@@ -25,7 +25,7 @@ public interface RubricRepository {
     boolean existsByOwnerTypeAndSchoolIdAndLanguageIdAndFrameworkIdAndCode(
             String ownerType, UUID schoolId, UUID languageId, UUID frameworkId, String code);
 
-    void updateRubricAtomic(UUID id, String name, String description);
+    void updateRubricAtomic(UUID id, String name, String description, boolean descriptionProvided);
 
     PageResult<Rubric> findAllByOwnerType(RubricOwnerType ownerType, int page, int size);
 

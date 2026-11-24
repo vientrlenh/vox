@@ -68,10 +68,10 @@ public class RubricRepositoryImpl implements RubricRepository {
         return springDataRubricRepository.existsByOwnerTypeAndLanguageId(ownerType, languageId);
     }
 
-    // Implement hàm vừa khai báo
+    // Implement the method just declared
     @Override
-    public void updateRubricAtomic(UUID id, String name, String description) {
-        springDataRubricRepository.updateRubricAtomic(id, name, description);
+    public void updateRubricAtomic(UUID id, String name, String description, boolean descriptionProvided) {
+        springDataRubricRepository.updateRubricAtomic(id, name, description, descriptionProvided);
     }
 
     @Override

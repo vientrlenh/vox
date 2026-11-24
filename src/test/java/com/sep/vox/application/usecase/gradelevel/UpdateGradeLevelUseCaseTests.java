@@ -2,7 +2,10 @@ package com.sep.vox.application.usecase.gradelevel;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
@@ -48,12 +51,29 @@ class UpdateGradeLevelUseCaseTests {
         when(userRepository.existsByIdAndStatus(adminId, UserStatus.ACTIVE)).thenReturn(true);
         when(userContextPort.isSystemAdmin()).thenReturn(true);
         when(gradeLevelRepository.findById(gradeLevelId)).thenReturn(Optional.of(GradeLevel.builder().id(gradeLevelId).build()));
-        when(gradeLevelRepository.updateGradeLevelAtomic(eq(gradeLevelId), any(), any(), any(), any(Instant.class), any()))
+        when(gradeLevelRepository.updateGradeLevelAtomic(eq(gradeLevelId), any(), any(), anyBoolean(), any(), any(Instant.class), any()))
             .thenThrow(new DataConflictException("unique violation", null));
-        UpdateGradeLevelCommand command = new UpdateGradeLevelCommand(gradeLevelId, "Grade 10", "Tenth grade", 10);
+        UpdateGradeLevelCommand command = new UpdateGradeLevelCommand(gradeLevelId, "Grade 10", "Tenth grade", true, 10);
 
         assertThatThrownBy(() -> useCase.execute(command))
             .isInstanceOf(ResourceDuplicatedException.class)
             .hasMessage("Thứ tự khối học đã được sử dụng.");
+    }
+
+    @Test
+    void execute_clearsTheDescriptionWhenProvidedAsNull() {
+        UUID adminId = UUID.randomUUID();
+        UUID gradeLevelId = UUID.randomUUID();
+        when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(adminId);
+        when(userRepository.existsByIdAndStatus(adminId, UserStatus.ACTIVE)).thenReturn(true);
+        when(userContextPort.isSystemAdmin()).thenReturn(true);
+        when(gradeLevelRepository.findById(gradeLevelId)).thenReturn(Optional.of(GradeLevel.builder().id(gradeLevelId).build()));
+        when(gradeLevelRepository.updateGradeLevelAtomic(eq(gradeLevelId), any(), any(), anyBoolean(), any(), any(Instant.class), any()))
+            .thenReturn(1);
+
+        useCase.execute(new UpdateGradeLevelCommand(gradeLevelId, null, null, true, null));
+
+        verify(gradeLevelRepository).updateGradeLevelAtomic(eq(gradeLevelId), isNull(), isNull(), eq(true), isNull(),
+            any(Instant.class), eq(adminId.toString()));
     }
 }

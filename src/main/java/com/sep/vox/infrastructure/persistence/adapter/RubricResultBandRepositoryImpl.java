@@ -72,8 +72,8 @@ public class RubricResultBandRepositoryImpl implements RubricResultBandRepositor
     }
 
     @Override
-    public void updateResultBandAtomic(UUID id, String code, String name, String description, BigDecimal scoreMin, BigDecimal scoreMax, Integer order, Instant updatedAt, String updatedBy) {
-        DataConflictTranslation.translating(() -> springDataRubricResultBandRepository.updateResultBandAtomic(id, code, name, description, scoreMin, scoreMax, order, updatedAt, updatedBy));
+    public void updateResultBandAtomic(UUID id, String code, String name, String description, boolean descriptionProvided, BigDecimal scoreMin, BigDecimal scoreMax, Integer order, Instant updatedAt, String updatedBy) {
+        DataConflictTranslation.translating(() -> springDataRubricResultBandRepository.updateResultBandAtomic(id, code, name, description, descriptionProvided, scoreMin, scoreMax, order, updatedAt, updatedBy));
     }
 
     @Override

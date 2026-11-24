@@ -21,6 +21,8 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.RegisterFormDocumentDto;
 import com.sep.vox.domain.dto.RegisterFormDto;
 import com.sep.vox.interfaces.shared.PageArguments;
+import com.sep.vox.interfaces.graphql.dataloader.GraphQLDataLoaders;
+import com.sep.vox.interfaces.graphql.dataloader.RegisterFormGraphQLDataLoaderConfig;
 
 import graphql.schema.DataFetchingEnvironment;
 
@@ -48,10 +50,7 @@ public class GraphQLRegisterFormController {
 
     @SchemaMapping(typeName = "RegisterForm", field = "documents")
     public CompletableFuture<List<RegisterFormDocumentDto>> registerFormDocuments(RegisterFormDto form, DataFetchingEnvironment env) {
-        DataLoader<UUID, List<RegisterFormDocumentDto>> loader = env.getDataLoader("documentsByRegisterForm");
-        if (loader == null) {
-            throw new IllegalStateException("Không tìm thấy loader của documentsByRegisterForm");
-        }
+        DataLoader<UUID, List<RegisterFormDocumentDto>> loader = GraphQLDataLoaders.require(env, RegisterFormGraphQLDataLoaderConfig.REGISTER_FORM_DOCUMENTS_BY_REGISTER_FORM_ID);
         return loader.load(form.id());
-    } 
+    }
 }

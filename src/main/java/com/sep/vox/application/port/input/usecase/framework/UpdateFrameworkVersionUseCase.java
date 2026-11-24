@@ -1,5 +1,6 @@
 package com.sep.vox.application.port.input.usecase.framework;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import lombok.RequiredArgsConstructor;
@@ -42,10 +43,12 @@ public class UpdateFrameworkVersionUseCase implements IUseCase<UpdateFrameworkVe
             .frameworkId(version.getFrameworkId())
             .code(StringNormalization.normalizeCode(input.code()))
             .name(StringNormalization.trimAndCollapseSpaces(input.name()))
-            .description(StringNormalization.trimAndCollapseSpaces(input.description()))
+            .description(input.descriptionProvided()
+                ? StringNormalization.trimAndCollapseSpaces(input.description())
+                : version.getDescription())
             .version(version.getVersion())
             .effectiveFrom(input.effectiveFrom())
-            .effectiveTo(input.effectiveTo())
+            .effectiveTo(effectiveTo(input, version))
             .status(version.getStatus())
             .createdAt(version.getCreatedAt())
             .createdBy(version.getCreatedBy())
@@ -59,7 +62,12 @@ public class UpdateFrameworkVersionUseCase implements IUseCase<UpdateFrameworkVe
         if (version.getStatus() != FrameworkVersionStatus.DRAFT)
             throw new IllegalArgumentException("Chỉ có thể cập nhật phiên bản framework ở trạng thái DRAFT");
 
-        if (input.effectiveTo() != null && !input.effectiveTo().isAfter(input.effectiveFrom()))
+        Instant effectiveTo = effectiveTo(input, version);
+        if (effectiveTo != null && !effectiveTo.isAfter(input.effectiveFrom()))
             throw new IllegalArgumentException("Ngày hết hiệu lực phải sau ngày hiệu lực");
+    }
+
+    private Instant effectiveTo(UpdateFrameworkVersionCommand input, FrameworkVersion version) {
+        return input.effectiveToProvided() ? input.effectiveTo() : version.getEffectiveTo();
     }
 }

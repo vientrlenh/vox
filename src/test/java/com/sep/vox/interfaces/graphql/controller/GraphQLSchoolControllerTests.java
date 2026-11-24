@@ -1,5 +1,8 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import com.sep.vox.interfaces.graphql.dataloader.SchoolGraphQLDataLoaderConfig;
+import com.sep.vox.interfaces.graphql.dataloader.SupportedLanguageGraphQLDataLoaderConfig;
+import com.sep.vox.interfaces.graphql.dataloader.UserGraphQLDataLoaderConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -9,15 +12,14 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import org.dataloader.DataLoader;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.graphql.data.ArgumentValue;
 
 import com.sep.vox.application.port.input.command.schoolclass.UpdateSchoolClassCommand;
 import com.sep.vox.application.port.input.query.schoolclass.ViewSchoolClassDetailsQuery;
@@ -68,6 +70,7 @@ import com.sep.vox.domain.model.school.SchoolClassStatus;
 
 import graphql.schema.DataFetchingEnvironment;
 import com.sep.vox.domain.model.school.SchoolGradeStatus;
+import com.sep.vox.interfaces.graphql.input.schoolclass.UpdateSchoolClassInput;
 
 class GraphQLSchoolControllerTests {
     private ViewSchoolsUseCase viewSchoolsUseCase;
@@ -214,7 +217,7 @@ class GraphQLSchoolControllerTests {
         SchoolDto expected = new SchoolDto(schoolId, "SCH", "School", null, null, null, null, null, 0, true, null, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader<UUID, SchoolDto> loader = mock(DataLoader.class);
-        when(env.<UUID, SchoolDto>getDataLoader("schoolByClass")).thenReturn(loader);
+        when(env.<UUID, SchoolDto>getDataLoader(SchoolGraphQLDataLoaderConfig.SCHOOL_BY_SCHOOL_ID)).thenReturn(loader);
         when(loader.load(schoolId)).thenReturn(CompletableFuture.completedFuture(expected));
 
         SchoolDto result = controller.school(response, env).join();
@@ -232,7 +235,7 @@ class GraphQLSchoolControllerTests {
         SchoolGradeDto expected = new SchoolGradeDto(gradeId, schoolId, UUID.randomUUID(), "G10", "Grade 10", null, null, null, SchoolGradeStatus.ACTIVE, null, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader<UUID, SchoolGradeDto> loader = mock(DataLoader.class);
-        when(env.<UUID, SchoolGradeDto>getDataLoader("schoolGradeByClass")).thenReturn(loader);
+        when(env.<UUID, SchoolGradeDto>getDataLoader(SchoolGraphQLDataLoaderConfig.SCHOOL_GRADE_BY_SCHOOL_GRADE_ID)).thenReturn(loader);
         when(loader.load(gradeId)).thenReturn(CompletableFuture.completedFuture(expected));
 
         SchoolGradeDto result = controller.schoolGrade(response, env).join();
@@ -249,7 +252,7 @@ class GraphQLSchoolControllerTests {
         SupportedLanguageDto expected = new SupportedLanguageDto(languageId, "EN", "English", null, true, null, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader<UUID, SupportedLanguageDto> loader = mock(DataLoader.class);
-        when(env.<UUID, SupportedLanguageDto>getDataLoader("supportedLanguageByClass")).thenReturn(loader);
+        when(env.<UUID, SupportedLanguageDto>getDataLoader(SupportedLanguageGraphQLDataLoaderConfig.SUPPORTED_LANGUAGE_BY_SUPPORTED_LANGUAGE_ID)).thenReturn(loader);
         when(loader.load(languageId)).thenReturn(CompletableFuture.completedFuture(expected));
 
         SupportedLanguageDto result = controller.language(response, env).join();
@@ -298,7 +301,8 @@ class GraphQLSchoolControllerTests {
     @Test
     void update_school_class_name_only_should_return_id_response() {
         UUID classId = UUID.randomUUID();
-        Map<String, Object> input = Map.<String, Object>of("name", "English 02");
+        UpdateSchoolClassInput input = new UpdateSchoolClassInput(
+            ArgumentValue.ofNullable("English 02"), ArgumentValue.omitted(), ArgumentValue.omitted());
         UpdateSchoolClassCommand command = new UpdateSchoolClassCommand(classId, "English 02", true, null, false, null, false);
         UpdateSchoolClassResponse expected = new UpdateSchoolClassResponse(classId);
         when(updateSchoolClassUseCase.execute(command)).thenReturn(expected);
@@ -312,8 +316,8 @@ class GraphQLSchoolControllerTests {
     @Test
     void update_school_class_description_null_should_map_presence() {
         UUID classId = UUID.randomUUID();
-        Map<String, Object> input = new HashMap<String, Object>();
-        input.put("description", null);
+        UpdateSchoolClassInput input = new UpdateSchoolClassInput(
+            ArgumentValue.omitted(), ArgumentValue.ofNullable(null), ArgumentValue.omitted());
         UpdateSchoolClassCommand command = new UpdateSchoolClassCommand(classId, null, false, null, true, null, false);
         UpdateSchoolClassResponse expected = new UpdateSchoolClassResponse(classId);
         when(updateSchoolClassUseCase.execute(command)).thenReturn(expected);
@@ -327,7 +331,8 @@ class GraphQLSchoolControllerTests {
     @Test
     void update_school_class_status_only_should_map_presence() {
         UUID classId = UUID.randomUUID();
-        Map<String, Object> input = Map.<String, Object>of("status", "INACTIVE");
+        UpdateSchoolClassInput input = new UpdateSchoolClassInput(
+            ArgumentValue.omitted(), ArgumentValue.omitted(), ArgumentValue.ofNullable(SchoolClassStatus.INACTIVE));
         UpdateSchoolClassCommand command = new UpdateSchoolClassCommand(classId, null, false, null, false, SchoolClassStatus.INACTIVE, true);
         UpdateSchoolClassResponse expected = new UpdateSchoolClassResponse(classId);
         when(updateSchoolClassUseCase.execute(command)).thenReturn(expected);
@@ -407,7 +412,7 @@ class GraphQLSchoolControllerTests {
         UserDto expected = new UserDto(userId, "student@example.com", null, "Student", null, null, null, null, null, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader<UUID, UserDto> loader = mock(DataLoader.class);
-        when(env.<UUID, UserDto>getDataLoader("userBySchoolUser")).thenReturn(loader);
+        when(env.<UUID, UserDto>getDataLoader(UserGraphQLDataLoaderConfig.USER_BY_USER_ID)).thenReturn(loader);
         when(loader.load(userId)).thenReturn(CompletableFuture.completedFuture(expected));
 
         UserDto result = controller.schoolUserUser(response, env).join();

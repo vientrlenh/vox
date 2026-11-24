@@ -6,9 +6,11 @@ public record UpdateSchoolCommand(
         UUID id,
         String name,
         String description,
+        boolean descriptionProvided,
         String contactPhone,
         String contactEmail,
         String domain,
+        boolean domainProvided,
         String address,
         Integer studentCount
 ) {}

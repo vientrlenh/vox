@@ -47,13 +47,13 @@ public class UpdateSchoolRubricCriterionUseCase implements IUseCase<UpdateSchool
     @Override
     @Transactional
     public UUID execute(UpdateSchoolRubricCriterionCommand command) {
-        // 1. Xác thực User
+        // 1. Authenticate the User
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
         }
 
-        // 2. Chốt chặn an ninh bằng SchoolUser
+        // 2. Security checkpoint via SchoolUser
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Tài khoản chưa liên kết với trường học."));
         if (!schoolUser.getSchoolId().equals(command.schoolId())) {
@@ -66,30 +66,33 @@ public class UpdateSchoolRubricCriterionUseCase implements IUseCase<UpdateSchool
             throw new ForbiddenException("Trường học này đang bị vô hiệu hóa.");
         }
 
-        // 3. Lấy Criterion
+        // 3. Load the Criterion
         RubricCriterion criterion = rubricCriterionRepository.findById(command.criterionId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Tiêu chí (Criterion) này."));
 
-        // 4. Lấy Version và kiểm tra DRAFT
+        // 4. Load the Version and check it is DRAFT
         RubricVersion version = rubricVersionRepository.findById(criterion.getRubricVersionId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric Version chứa tiêu chí này."));
         if (version.getStatus() != RubricStatus.DRAFT) {
             throw new IllegalArgumentException("Chỉ có thể sửa tiêu chí khi phiên bản Rubric đang ở trạng thái DRAFT.");
         }
 
-        // 5. Lấy Rubric gốc và kiểm tra quyền SCHOOL (Đảm bảo Tiêu chí nằm trong bộ Rubric của trường)
+        // 5. Load the original Rubric and check the SCHOOL permission (make sure the Criterion belongs to the school's Rubric)
         Rubric rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !rubric.getSchoolId().equals(command.schoolId())) {
             throw new ForbiddenException("Hành động bị từ chối: Tiêu chí này không thuộc về trường học của bạn.");
         }
 
-        // 6. Chuẩn hóa & Validate Data (Code không được phép sửa sau khi tạo, luôn giữ nguyên)
+        // 6. Normalize & validate the data (the code must not change after creation and always stays as it is)
         String safeName = (command.name() != null && !command.name().isBlank()) ? StringNormalization.trimAndCollapseSpaces(command.name()) : null;
-        String safeDesc = (command.description() != null && !command.description().isBlank()) ? StringNormalization.trimAndCollapseSpaces(command.description()) : null;
+        // A blank description keeps the stored one; an explicit null clears it.
+        boolean descriptionBlank = command.description() != null && command.description().isBlank();
+        boolean descriptionProvided = command.descriptionProvided() && !descriptionBlank;
+        String safeDesc = (command.description() != null && !descriptionBlank) ? StringNormalization.trimAndCollapseSpaces(command.description()) : null;
 
-        // Chặn 2026-08-14: xem lý do ở CreateSchoolRubricCriterionUseCase -- đường REST và đường
-        // import file đang hiểu "20%" theo hai kiểu lệch nhau 100 lần.
+        // Guard added 2026-08-14: see the reason in CreateSchoolRubricCriterionUseCase -- the REST path and the
+        // file-import path read "20%" in two ways that differ by a factor of 100.
         if (command.weight() != null
                 && (command.weight().compareTo(BigDecimal.ZERO) < 0
                         || command.weight().compareTo(BigDecimal.ONE) > 0)) {
@@ -108,12 +111,12 @@ public class UpdateSchoolRubricCriterionUseCase implements IUseCase<UpdateSchool
             throw new IllegalArgumentException("Điểm tối thiểu (minScore) không được lớn hơn điểm tối đa (maxScore).");
         }
 
-        // Validate nằm trong thang điểm tổng của RubricVersion
+        // Validate that it lies within the total score scale of the RubricVersion
         String nameForError = safeName != null ? safeName : criterion.getName();
         ScoreRangeValidator.assertWithinScale(version.getScoringScaleMin(), version.getScoringScaleMax(),
                 finalMinScore, finalMaxScore, nameForError);
 
-        // Validate không trùng thứ tự (order) với sibling khác trong cùng version
+        // Validate that the order does not clash with another sibling in the same version
         if (command.order() != null) {
             Set<Integer> siblingOrders = rubricCriterionRepository.findByRubricVersionId(criterion.getRubricVersionId())
                     .stream()
@@ -133,7 +136,9 @@ public class UpdateSchoolRubricCriterionUseCase implements IUseCase<UpdateSchool
                     null,
                     safeName,
                     safeDesc,
+                    descriptionProvided,
                     examplesJsonToPersist,
+                    command.examplesJsonProvided(),
                     command.weight(),
                     command.minScore(),
                     command.maxScore(),

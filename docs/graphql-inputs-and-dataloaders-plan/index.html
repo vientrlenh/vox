@@ -1,0 +1,969 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GraphQL inputs, keys and data loaders restructuring plan</title>
+<style>
+  :root {
+    --bg: #fafaf8; --surface: #ffffff; --text: #1d1d1b; --muted: #5f5f5a; --border: #e2e1dc;
+    --accent: #1f5fbf; --accent-soft: #e8f0fc; --warn: #8a5a00; --warn-soft: #fdf3dc;
+    --ok: #17673a; --ok-soft: #e3f4ea; --bad: #9b1c1c; --bad-soft: #fbe6e6; --code-bg: #f3f2ee;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #151514; --surface: #1d1d1b; --text: #ecebe6; --muted: #a2a19a; --border: #33332f;
+      --accent: #7fb0f5; --accent-soft: #1b2a40; --warn: #f0c36a; --warn-soft: #3a2f14;
+      --ok: #7fd3a0; --ok-soft: #14301f; --bad: #f19a9a; --bad-soft: #3d1b1b; --code-bg: #262623;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #151514; --surface: #1d1d1b; --text: #ecebe6; --muted: #a2a19a; --border: #33332f;
+    --accent: #7fb0f5; --accent-soft: #1b2a40; --warn: #f0c36a; --warn-soft: #3a2f14;
+    --ok: #7fd3a0; --ok-soft: #14301f; --bad: #f19a9a; --bad-soft: #3d1b1b; --code-bg: #262623;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 32px 16px 96px; }
+  h1 { font-size: 1.9rem; line-height: 1.2; margin: 0 0 8px; }
+  h2 { font-size: 1.35rem; margin: 48px 0 12px; padding-top: 16px; border-top: 1px solid var(--border); }
+  h3 { font-size: 1.05rem; margin: 28px 0 8px; }
+  p, li { max-width: 72ch; }
+  .meta { color: var(--muted); font-size: .92rem; margin-bottom: 20px; }
+  .status { display: inline-block; border-radius: 999px; padding: 2px 12px; font-size: .8rem;
+    font-weight: 600; white-space: nowrap; background: var(--code-bg); color: var(--muted); }
+  .status.draft, .status.open { background: var(--warn-soft); color: var(--warn); }
+  .status.approved, .status.progress { background: var(--accent-soft); color: var(--accent); }
+  .status.done, .status.answered { background: var(--ok-soft); color: var(--ok); }
+  .status.blocked { background: var(--bad-soft); color: var(--bad); }
+  nav { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 18px; margin: 20px 0; }
+  nav ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 32px; }
+  nav a, td a { color: var(--accent); text-decoration: none; }
+  code { background: var(--code-bg); padding: 1px 6px; border-radius: 4px;
+    font: .88em ui-monospace, "SF Mono", Menlo, monospace; }
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; font: .85rem/1.5 ui-monospace, "SF Mono", Menlo, monospace; }
+  pre code { background: none; padding: 0; }
+  .table-scroll { overflow-x: auto; margin: 12px 0; }
+  table { border-collapse: collapse; width: 100%; background: var(--surface);
+    border: 1px solid var(--border); font-size: .92rem; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--code-bg); font-weight: 600; white-space: nowrap; }
+  td.indent { padding-left: 32px; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .callout { border-left: 4px solid var(--accent); background: var(--accent-soft);
+    padding: 10px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+  .callout.warn { border-color: var(--warn); background: var(--warn-soft); }
+  .callout.ok { border-color: var(--ok); background: var(--ok-soft); }
+  .callout p { margin: 4px 0; }
+  .decision, .phase { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 4px 18px 14px; margin: 14px 0; }
+  .decision h3, .phase h3 { margin-top: 14px; }
+  .rec { color: var(--ok); font-weight: 600; }
+  .answer { background: var(--code-bg); border-radius: 8px; padding: 8px 12px; margin: 10px 0 0; color: var(--muted); }
+  .decision[data-decision-state="answered"] .answer { background: var(--ok-soft); color: var(--text); }
+  .tag { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .jobs { list-style: none; padding: 0; margin: 10px 0; }
+  .job { border-top: 1px solid var(--border); padding: 10px 0; }
+  .job > .title { font-weight: 600; }
+  .status-log { font-size: .85rem; color: var(--muted); margin: 8px 0 0; padding-left: 20px; }
+  .status-log:empty { display: none; }
+  @media (max-width: 600px) { nav ol { columns: 1; } h1 { font-size: 1.5rem; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>GraphQL inputs, keys and data loaders restructuring plan</h1>
+<div class="meta">
+  Repository: <code>vox</code> &middot; Branch: <code>default</code> &middot; Written 2026-11-24 &middot;
+  Plan status: <span class="status approved" id="plan-status" data-plan-status="approved">Approved</span>
+</div>
+
+<p>Five changes, none of which edits the GraphQL schema text (the fifth changes what a request does, see D8 and the risks):
+(1) the four mutations that take a raw <code>Map&lt;String, Object&gt;</code> take records whose omit-able fields are Spring&rsquo;s <code>ArgumentValue&lt;T&gt;</code>;
+(2) <code>graphql/dto/request</code> becomes <code>graphql/input</code> and the DataLoader key records leave <code>application</code> for <code>graphql/key</code>;
+(3) <code>graphql/config</code> is split into <code>dataloader</code> and <code>scalar</code>, and the 57 loaders are regrouped so that each schema&rsquo;s config registers every loader that returns its types
+(51 loaders after merging 6 duplicates), under one naming rule; (4) every <code>env.getDataLoader(...)</code> goes through one shared method that throws
+<code>IllegalStateException</code> when the loader is not registered; (5) the 17 existing update inputs with nullable fields use <code>ArgumentValue</code>, so a client can leave a field alone (omit it) or clear it
+(send <code>null</code>) where the column allows it. Worth doing because today the same user is loaded by three differently named loaders, a missing loader is a <code>NullPointerException</code> at 74 of the 78 call sites, and the loader code is spread over 13 files that do not match the schema files.</p>
+
+<nav aria-label="Contents">
+  <ol>
+    <li><a href="#progress">Progress</a></li>
+    <li><a href="#current">Current state</a></li>
+    <li><a href="#decisions">Decisions</a></li>
+    <li><a href="#phases">Phases</a></li>
+    <li><a href="#risks">Risks</a></li>
+    <li><a href="#scope">Out of scope</a></li>
+    <li><a href="#verify">Verification</a></li>
+    <li><a href="#changelog">Change log</a></li>
+    <li><a href="#notes">Implementation notes</a></li>
+  </ol>
+</nav>
+
+<h2 id="progress">Progress</h2>
+<p id="overview-summary" class="meta"></p>
+<div class="table-scroll"><table>
+  <thead><tr><th>Phase / job</th><th>Status</th></tr></thead>
+  <tbody id="overview-body"></tbody>
+</table></div>
+
+<h2 id="current">1. Current state (measured 2026-11-24)</h2>
+
+<h3>1.1 What the request touches</h3>
+<div class="table-scroll"><table>
+  <thead><tr><th>Item</th><th>Measured</th></tr></thead>
+  <tbody>
+    <tr><td>Map inputs</td><td>4 controller parameters <code>@Argument(name = "input") Map&lt;String, Object&gt;</code>: <code>updateSchoolClass</code> and <code>updateSchoolUser</code>
+      (<code>GraphQLSchoolController</code>), <code>updateSupportedLanguage</code> (<code>GraphQLSupportedLanguageController</code>), <code>updateProfile</code> (<code>GraphQLUserController</code>).
+      4 classes in <code>interfaces/graphql/mapper</code> turn the Map into the command. Each command carries <code>value</code> + <code>valueProvided</code> pairs
+      (profile 5, school user 5, school class 3, supported language 4). Every field of the 4 schema inputs is nullable (PATCH semantics).
+      <code>grep -rn 'Map&lt;String, *Object&gt;' src/main/java/com/sep/vox/interfaces/graphql</code> prints 4 parameters, 4 mapper signatures and 1 comment (<code>GraphQLScoringRuleController</code>, not an input).</td></tr>
+    <tr><td>Tests of the Map inputs</td><td>2 mapper test classes with 3 tests each (<code>UpdateProfileCommandMapperTests</code>, <code>UpdateSchoolUserCommandMapperTests</code>); 3 direct-call tests with a Map in
+      <code>GraphQLSchoolControllerTests</code> (<code>updateSchoolClass</code>) and 2 in <code>GraphQLSupportedLanguageControllerTests</code>; real-binder slice tests already exist for
+      <code>updateProfile</code> (<code>UserGraphQLTests</code>, 3 tests on <code>dateOfBirth</code> null versus absent) and <code>updateSchoolClass</code> (<code>SchoolGraphQLTests</code>, status variable and invalid status).
+      <code>updateSchoolUser</code> has no controller-level test at all, and <code>updateSupportedLanguage</code> has one authorization slice test (<code>name</code> only).</td></tr>
+    <tr><td><code>graphql/dto/request</code></td><td>27 records in 14 sub-packages (<code>git ls-files 'src/main/java/**/interfaces/graphql/dto/**' | wc -l</code>); 11 main files import them; no test imports them.
+      <code>InterfacesStructureConventionTests</code> names <code>graphql.dto.request</code> at lines 156, 199 and 210. <code>AGENTS.md</code> names <code>dto/request/&lt;feature&gt;/</code> at lines 47 and 193.</td></tr>
+    <tr><td>Keys</td><td>8 records in <code>application/port/input/query/key</code>. Only <code>interfaces/graphql</code> uses them: 4 loader configs and 5 controllers (9 main files) plus <code>GraphQLMyClassControllerTests</code>;
+      nothing in <code>domain</code> or <code>application</code> imports them. <code>SchoolClassUsersKey</code> has no user at all. Seven keys carry <code>page</code>/<code>size</code>; <code>UserRolesKey</code> carries only <code>userId</code>.</td></tr>
+    <tr><td><code>graphql/config</code></td><td>15 files: 13 <code>XxxGraphQLDataLoaderConfig</code>, <code>DateScalarsGraphQLConfig</code> and <code>PageKey</code> (3 users). 57 loader registrations (<code>grep -rh 'forName(' ... | wc -l</code>).
+      Importers in tests: 4 slice tests and <code>support/GraphQLControllerTest</code>; <code>DateScalarsGraphQLConfigTests</code> sits in a mirrored <code>config</code> test package.
+      Every config registers all its loaders inside the constructor (Assessment 247 lines with 14 repositories, School 183 lines).</td></tr>
+    <tr><td>Duplicate loaders</td><td>Same repository call and same mapper under different names: user &times;3 (<code>userById</code>, <code>userBySchoolClassUser</code>, <code>userBySchoolUser</code>), school &times;3
+      (<code>schoolByClass</code>, <code>schoolDataLoader</code>, <code>schoolBySchoolSubscription</code>), school grade &times;2, supported language &times;2. Merging them takes 57 to 51 loaders.
+      <code>questionByIdAccessible</code> and <code>questionByIdBasic</code> look alike but differ on purpose (access check), so they stay two.</td></tr>
+    <tr><td>Call sites</td><td>78 <code>getDataLoader</code> calls in 17 controllers (largest: <code>GraphQLAssessmentController</code> 14, <code>GraphQLQuestionController</code> 9, <code>GraphQLAssessmentCandidateController</code> 8,
+      <code>GraphQLAssessmentPolicyController</code> 8) and 24 references in 7 test files. Only <code>GraphQLRubricController</code> checks for null (4 places, Vietnamese messages); the other 74 calls would throw a
+      <code>NullPointerException</code> on a missing loader.</td></tr>
+    <tr><td>Existing paging pattern</td><td>Per-parent windowed SQL: <code>row_number() OVER (PARTITION BY parent ORDER BY ...)</code> in <code>SpringDataSchoolClassRepository.findBySchoolIdIn</code>,
+      <code>SpringDataSchoolUserRepository.findBySchoolIdIn</code>, <code>SpringDataUserRoleRepository.findByRoleIdIn</code>; the adapters use <code>OneBasedPaging.toFirstRow/toLastRow</code>; loaders group their keys by
+      <code>PageKey</code> and call the repository once per distinct (page, size). The paged fields call <code>PageArguments.validate(page, size)</code> first (<code>GraphQLSchoolController.classes</code>).</td></tr>
+    <tr><td>An unpaged loader that reads every row</td><td><code>assessmentSchoolClassIdByAssessmentId</code> loads all candidates of every assessment (<code>AssessmentCandidateRepository.findByAssessmentIdIn</code>, a derived query with no
+      <code>ORDER BY</code>) and keeps only the first one per assessment. See D7.</td></tr>
+    <tr><td>Library facts</td><td>Spring Boot 4.1.0; <code>spring-graphql</code> 2.0.4 on the runtime classpath; graphql-java 25.0; java-dataloader 6.0.0. <code>ArgumentValue</code> (<code>@since 1.1.0</code>) was read in the
+      2.0.5 sources found in the Gradle cache: it is supported &ldquo;as a field within the object structure of an <code>@Argument</code> method parameter, either initialized via a constructor argument or a setter&rdquo;, and
+      <code>GraphQlArgumentBinder.bindViaConstructorAndSetters</code> gives each constructor component <code>ArgumentValue.omitted()</code> when the key is absent and <code>ArgumentValue.ofNullable(...)</code> otherwise.
+      The 2.0.4 behavior is proven by the real-binder tests of job 2.1, not assumed.</td></tr>
+    <tr><td>Vietnamese comments in files the plan edits</td><td>Lines with Vietnamese text (diacritics grep): <code>UpdateProfileCommand</code> 7, <code>GraphQLSubscriptionController</code> 8, <code>GraphQLRubricController</code> 6,
+      <code>GraphQLGradingController</code> 5, <code>GraphQLUserController</code> 4, <code>InvoiceGraphQLDataLoaderConfig</code> 4, <code>GraphQLOrderController</code> 3, and 1 each in <code>GraphQLSchoolController</code>,
+      <code>GraphQLRegisterFormController</code>, <code>GraphQLFrameworkController</code>. Each job translates the comments in the method or class it edits; a file touched only on an import line is left alone.</td></tr>
+    <tr><td>Baseline</td><td><code>./gradlew compileJava --offline</code> printed no error on 2026-11-24, so there are no existing failures for the plan to take on. Tests were not run while planning.</td></tr>
+    <tr><td>Not checked</td><td>The Docker-based <code>integrationTest</code> suite; real data volumes (D7 uses domain reasoning, not production counts); the frontend&rsquo;s use of GraphQL fields (nothing the client sees changes).</td></tr>
+  </tbody>
+</table></div>
+
+<h3>1.2 Loader inventory and target (57 rows)</h3>
+<p>Rule for the target name: <code>&lt;result&gt;By&lt;KeyField&gt;</code>, plural result for a list, an extra qualifier in front of the result (D5). Loader names are internal (not in the schema), so renaming is not a contract change.
+Target config follows D3 (one config per schema file); rows marked &ldquo;merged&rdquo; collapse into the row above them with the same target name.</p>
+<div class="table-scroll"><table>
+  <thead><tr><th class="num">#</th><th>Current name</th><th>Config today</th><th>Key &rarr; value</th><th>Target config</th><th>Target name</th></tr></thead>
+  <tbody>
+    <tr><td class="num">56</td><td><code>userById</code></td><td>User</td><td>UUID &rarr; UserDto</td><td rowspan="5">User</td><td><code>userByUserId</code></td></tr>
+    <tr><td class="num">50</td><td><code>userBySchoolClassUser</code></td><td>School</td><td>UUID &rarr; UserDto</td><td>merged</td></tr>
+    <tr><td class="num">52</td><td><code>userBySchoolUser</code></td><td>School</td><td>UUID &rarr; UserDto</td><td>merged</td></tr>
+    <tr><td class="num">38</td><td><code>usersByRole</code></td><td>Role</td><td>RoleUsersKey &rarr; List&lt;UserDto&gt;</td><td><code>usersByRoleId</code></td></tr>
+    <tr><td class="num">57</td><td><code>rolesByUser</code></td><td>User</td><td>UserRolesKey &rarr; List&lt;RoleDto&gt;</td><td><code>rolesByUserId</code></td></tr>
+
+    <tr><td class="num">46</td><td><code>schoolByClass</code></td><td>School</td><td>UUID &rarr; SchoolDto</td><td rowspan="11">School</td><td><code>schoolBySchoolId</code></td></tr>
+    <tr><td class="num">17</td><td><code>schoolDataLoader</code></td><td>AssessmentPolicy</td><td>UUID &rarr; SchoolDto</td><td>merged</td></tr>
+    <tr><td class="num">55</td><td><code>schoolBySchoolSubscription</code></td><td>Subscription</td><td>UUID &rarr; SchoolDto</td><td>merged</td></tr>
+    <tr><td class="num">19</td><td><code>schoolClassDataLoader</code></td><td>AssessmentPolicy</td><td>UUID &rarr; SchoolClassDto</td><td><code>schoolClassBySchoolClassId</code></td></tr>
+    <tr><td class="num">44</td><td><code>schoolClassesBySchool</code></td><td>School</td><td>SchoolClassesKey &rarr; List&lt;SchoolClassDto&gt;</td><td><code>schoolClassesBySchoolId</code></td></tr>
+    <tr><td class="num">45</td><td><code>schoolUsersBySchool</code></td><td>School</td><td>SchoolUsersKey &rarr; List&lt;SchoolUserDto&gt;</td><td><code>schoolUsersBySchoolId</code></td></tr>
+    <tr><td class="num">47</td><td><code>schoolGradeByClass</code></td><td>School</td><td>UUID &rarr; SchoolGradeDto</td><td><code>schoolGradeBySchoolGradeId</code></td></tr>
+    <tr><td class="num">48</td><td><code>schoolGradeById</code></td><td>School</td><td>UUID &rarr; SchoolGradeDto</td><td>merged</td></tr>
+    <tr><td class="num">18</td><td><code>gradeLevelDataLoader</code></td><td>AssessmentPolicy</td><td>UUID &rarr; GradeLevelDto</td><td><code>gradeLevelByGradeLevelId</code></td></tr>
+    <tr><td class="num">1</td><td><code>schoolRoomById</code></td><td>Assessment</td><td>UUID &rarr; SchoolRoomFromDto</td><td><code>schoolRoomBySchoolRoomId</code></td></tr>
+    <tr><td class="num">51</td><td><code>activeMemberCountByClass</code></td><td>School</td><td>UUID &rarr; Integer</td><td><code>activeMemberCountBySchoolClassId</code></td></tr>
+
+    <tr><td class="num">42</td><td><code>supportedLanguageDataLoader</code></td><td>Rubric</td><td>UUID &rarr; SupportedLanguageDto</td><td rowspan="2">SupportedLanguage (new config)</td><td><code>supportedLanguageBySupportedLanguageId</code></td></tr>
+    <tr><td class="num">49</td><td><code>supportedLanguageByClass</code></td><td>School</td><td>UUID &rarr; SupportedLanguageDto</td><td>merged</td></tr>
+
+    <tr><td class="num">43</td><td><code>frameworkDataLoader</code></td><td>Rubric</td><td>UUID &rarr; FrameworkDto</td><td rowspan="6">Framework</td><td><code>frameworkByFrameworkId</code></td></tr>
+    <tr><td class="num">20</td><td><code>frameworkVersionDataLoader</code></td><td>AssessmentPolicy</td><td>UUID &rarr; FrameworkVersionDto</td><td><code>frameworkVersionByFrameworkVersionId</code></td></tr>
+    <tr><td class="num">22</td><td><code>frameworkResultBandDataLoader</code></td><td>AssessmentPolicy</td><td>UUID &rarr; FrameworkResultBandDto</td><td><code>frameworkResultBandByFrameworkResultBandId</code></td></tr>
+    <tr><td class="num">23</td><td><code>criteriaByFrameworkVersion</code></td><td>Framework</td><td>UUID &rarr; List&lt;FrameworkCriterionDto&gt;</td><td><code>frameworkCriteriaByFrameworkVersionId</code></td></tr>
+    <tr><td class="num">24</td><td><code>resultBandsByFrameworkVersion</code></td><td>Framework</td><td>UUID &rarr; List&lt;FrameworkResultBandDto&gt;</td><td><code>frameworkResultBandsByFrameworkVersionId</code></td></tr>
+    <tr><td class="num">25</td><td><code>criterionBandsByFrameworkCriterion</code></td><td>Framework</td><td>UUID &rarr; List&lt;FrameworkCriterionBandDto&gt;</td><td><code>frameworkCriterionBandsByFrameworkCriterionId</code></td></tr>
+
+    <tr><td class="num">21</td><td><code>rubricVersionDataLoader</code></td><td>AssessmentPolicy</td><td>UUID &rarr; RubricVersionDto</td><td rowspan="4">Rubric</td><td><code>rubricVersionByRubricVersionId</code></td></tr>
+    <tr><td class="num">39</td><td><code>rubricVersionsDataLoader</code></td><td>Rubric</td><td>RubricVersionsKey &rarr; PageResult&lt;RubricVersionDto&gt;</td><td><code>rubricVersionsByRubricId</code></td></tr>
+    <tr><td class="num">40</td><td><code>rubricCriteriaDataLoader</code></td><td>Rubric</td><td>RubricCriteriaKey &rarr; PageResult&lt;RubricCriterionDto&gt;</td><td><code>rubricCriteriaByRubricVersionId</code></td></tr>
+    <tr><td class="num">41</td><td><code>rubricResultBandsDataLoader</code></td><td>Rubric</td><td>RubricResultBandsKey &rarr; PageResult&lt;RubricResultBandDto&gt;</td><td><code>rubricResultBandsByRubricVersionId</code></td></tr>
+
+    <tr><td class="num">2</td><td><code>assessmentById</code></td><td>Assessment</td><td>UUID &rarr; AssessmentDto</td><td rowspan="15">Assessment</td><td><code>assessmentByAssessmentId</code></td></tr>
+    <tr><td class="num">3</td><td><code>assessmentScheduleById</code></td><td>Assessment</td><td>UUID &rarr; AssessmentScheduleDto</td><td><code>assessmentScheduleByAssessmentScheduleId</code></td></tr>
+    <tr><td class="num">4</td><td><code>assessmentPaperById</code></td><td>Assessment</td><td>UUID &rarr; AssessmentPaperDto</td><td><code>assessmentPaperByAssessmentPaperId</code></td></tr>
+    <tr><td class="num">5</td><td><code>assessmentCandidateAttemptsByCandidateId</code></td><td>Assessment</td><td>UUID &rarr; AssessmentCandidateAttempts</td><td><code>assessmentCandidateAttemptsByAssessmentCandidateId</code></td></tr>
+    <tr><td class="num">6</td><td><code>assessmentBlueprintById</code></td><td>Assessment</td><td>UUID &rarr; AssessmentBlueprintDto</td><td><code>assessmentBlueprintByAssessmentBlueprintId</code></td></tr>
+    <tr><td class="num">7</td><td><code>assessmentBlueprintVersionById</code></td><td>Assessment</td><td>UUID &rarr; AssessmentBlueprintVersionDto</td><td><code>assessmentBlueprintVersionByAssessmentBlueprintVersionId</code></td></tr>
+    <tr><td class="num">8</td><td><code>assessmentBlueprintSlotById</code></td><td>Assessment</td><td>UUID &rarr; AssessmentBlueprintSlotDto</td><td><code>assessmentBlueprintSlotByAssessmentBlueprintSlotId</code></td></tr>
+    <tr><td class="num">9</td><td><code>assessmentMembersByAssessmentId</code></td><td>Assessment</td><td>UUID &rarr; List&lt;AssessmentMemberDto&gt;</td><td>unchanged</td></tr>
+    <tr><td class="num">10</td><td><code>assessmentPapersByAssessmentId</code></td><td>Assessment</td><td>UUID &rarr; List&lt;AssessmentPaperDto&gt;</td><td>unchanged</td></tr>
+    <tr><td class="num">11</td><td><code>assessmentPaperSectionsByPaperId</code></td><td>Assessment</td><td>UUID &rarr; List&lt;AssessmentPaperSectionDto&gt;</td><td><code>assessmentPaperSectionsByAssessmentPaperId</code></td></tr>
+    <tr><td class="num">12</td><td><code>assessmentPaperItemsBySectionId</code></td><td>Assessment</td><td>UUID &rarr; List&lt;AssessmentPaperItemDto&gt;</td><td><code>assessmentPaperItemsByAssessmentPaperSectionId</code></td></tr>
+    <tr><td class="num">13</td><td><code>assessmentSchedulesByAssessmentId</code></td><td>Assessment</td><td>UUID &rarr; List&lt;AssessmentScheduleDto&gt;</td><td>unchanged</td></tr>
+    <tr><td class="num">14</td><td><code>assessmentSecurePoolByAssessmentId</code></td><td>Assessment</td><td>UUID &rarr; AssessmentSecurePoolDto</td><td>unchanged</td></tr>
+    <tr><td class="num">15</td><td><code>assessmentCandidateCountByAssessmentId</code></td><td>Assessment</td><td>UUID &rarr; Integer</td><td>unchanged</td></tr>
+    <tr><td class="num">16</td><td><code>assessmentSchoolClassIdByAssessmentId</code></td><td>Assessment</td><td>UUID &rarr; UUID</td><td>unchanged</td></tr>
+
+    <tr><td class="num">29</td><td><code>questionBankById</code></td><td>Question</td><td>UUID &rarr; QuestionBankDto</td><td rowspan="8">Question</td><td><code>questionBankByQuestionBankId</code></td></tr>
+    <tr><td class="num">30</td><td><code>questionTopicById</code></td><td>Question</td><td>UUID &rarr; QuestionTopicDto</td><td><code>questionTopicByQuestionTopicId</code></td></tr>
+    <tr><td class="num">31</td><td><code>questionAssetsByQuestionId</code></td><td>Question</td><td>UUID &rarr; List&lt;QuestionAssetDto&gt;</td><td>unchanged</td></tr>
+    <tr><td class="num">32</td><td><code>questionEvaluationGuideByQuestionId</code></td><td>Question</td><td>UUID &rarr; QuestionEvaluationGuideDto</td><td>unchanged</td></tr>
+    <tr><td class="num">33</td><td><code>questionCollaboratorsByQuestionId</code></td><td>Question</td><td>UUID &rarr; List&lt;QuestionCollaboratorDto&gt;</td><td>unchanged</td></tr>
+    <tr><td class="num">34</td><td><code>questionBankGradesByBankId</code></td><td>Question</td><td>UUID &rarr; List&lt;QuestionBankGradeDto&gt;</td><td><code>questionBankGradesByQuestionBankId</code></td></tr>
+    <tr><td class="num">35</td><td><code>questionByIdAccessible</code></td><td>Question</td><td>UUID &rarr; QuestionDto (access checked)</td><td><code>accessibleQuestionByQuestionId</code></td></tr>
+    <tr><td class="num">36</td><td><code>questionByIdBasic</code></td><td>Question</td><td>UUID &rarr; QuestionDto (no access check)</td><td><code>questionByQuestionIdWithoutAccessCheck</code></td></tr>
+
+    <tr><td class="num">27</td><td><code>itemsByOrderId</code></td><td>Order</td><td>UUID &rarr; List&lt;OrderItemDto&gt;</td><td>Order</td><td><code>orderItemsByOrderId</code></td></tr>
+    <tr><td class="num">26</td><td><code>invoiceByOrderId</code></td><td>Invoice</td><td>UUID &rarr; InvoiceDto</td><td>Invoice</td><td>unchanged</td></tr>
+    <tr><td class="num">28</td><td><code>paymentsByOrderId</code></td><td>Payment</td><td>UUID &rarr; List&lt;PaymentDto&gt;</td><td>Payment</td><td>unchanged</td></tr>
+    <tr><td class="num">37</td><td><code>documentsByRegisterForm</code></td><td>RegisterForm</td><td>UUID &rarr; List&lt;RegisterFormDocumentDto&gt;</td><td>RegisterForm</td><td><code>registerFormDocumentsByRegisterFormId</code></td></tr>
+    <tr><td class="num">53</td><td><code>subscriptionPlanById</code></td><td>Subscription</td><td>UUID &rarr; SubscriptionPlanDto</td><td rowspan="2">Subscription</td><td><code>subscriptionPlanBySubscriptionPlanId</code></td></tr>
+    <tr><td class="num">54</td><td><code>quotasBySubscriptionPlanId</code></td><td>Subscription</td><td>UUID &rarr; List&lt;SubscriptionPlanQuotaDto&gt;</td><td><code>subscriptionPlanQuotasBySubscriptionPlanId</code></td></tr>
+  </tbody>
+</table></div>
+<p>Counts after the plan: User 3, School 8, SupportedLanguage 1, Framework 6, Rubric 4, Assessment 15, Question 8, Order 1, Invoice 1, Payment 1, RegisterForm 1, Subscription 2 = 51 loaders in 12 configs.
+<code>RoleGraphQLDataLoaderConfig</code> and <code>AssessmentPolicyGraphQLDataLoaderConfig</code> are deleted because every loader they hold returns a type of another schema.</p>
+
+<h3>1.3 Audit of the other 27 GraphQL input records (added 2026-11-24)</h3>
+<p>The question was whether other inputs also need <code>ArgumentValue</code>. It matters only where a nullable field decides between &ldquo;keep the stored value&rdquo; and &ldquo;clear it&rdquo;. For each of the 27 records in
+<code>graphql/dto/request</code> I read the schema nullability (<code>src/main/resources/graphql/*.graphqls</code>) and how the use case treats <code>null</code>. All 27 fall into three groups:</p>
+<div class="table-scroll"><table>
+  <thead><tr><th>Group</th><th>Inputs (nullable fields)</th><th>What <code>null</code> does today</th><th>Would <code>ArgumentValue</code> change anything?</th></tr></thead>
+  <tbody>
+    <tr><td><strong>1. Patch: null keeps the value</strong> (12 inputs)</td>
+      <td><code>UpdateAssessmentScheduleInput</code> (3), <code>UpdateRubricInput</code> (2), <code>UpdateRubricVersionInput</code> (7), <code>UpdateRubricCriterionInput</code> (8), <code>UpdateRubricResultBandInput</code> (5),
+      <code>UpdateFrameworkCriterionBandInput</code> (3), <code>UpdateSchoolRequest</code> (7), <code>UpdateSchoolRoomRequest</code> (2), <code>UpdateSchoolGradeRequest</code> (4), <code>UpdateGradeLevelRequest</code> (3),
+      <code>UpdateSubscriptionPlanInput</code> (6), <code>UpsertInterestDimensionInput</code> (5)</td>
+      <td>Schedule use case: <code>x != null ? x : current</code> (lines 69&ndash;71). The 4 rubric inputs go to 8 use cases (system and school): null or blank keeps the stored value, and the SQL uses <code>COALESCE</code> (commented in the code).
+      Criterion band: <code>hasText</code>/<code>hasSignals</code> keep the value on null, blank or empty. School, room, grade and grade level: atomic updates with <code>COALESCE(:param, column)</code>. Subscription plan: <code>if (x != null) set</code>; <code>quotas</code> null keeps, an empty list is a separate case already told apart by value.
+      Interest dimension: create uses null as &ldquo;default&rdquo;, update uses it as &ldquo;keep&rdquo;.</td>
+      <td><strong>No.</strong> Omitted and null already mean the same thing, by design, and the code cannot clear a field. It would matter only if &ldquo;clear this field&rdquo; became a requirement; that needs <code>Provided</code> flags in the commands, use-case changes and, for the <code>COALESCE</code> updates, SQL changes.</td></tr>
+    <tr><td><strong>2. Full replace although the schema says nullable</strong> (5 inputs, 8 fields)</td>
+      <td><code>UpdateAssessmentPolicyInput</code> (<code>passingScore</code>, <code>strictness</code>, <code>effectiveTo</code>), <code>UpdateFrameworkVersionInput</code> (<code>description</code>, <code>effectiveTo</code>),
+      <code>UpdateFrameworkCriterionInput</code> (<code>description</code>), <code>UpdateFrameworkResultBandInput</code> (<code>description</code>), <code>UpdateScoringRuleInput</code> (<code>description</code>)</td>
+      <td>The use case assigns the value unconditionally: <code>UpdateSystemAssessmentPolicyUseCase</code> lines 76&ndash;80 and <code>UpdateSchoolAssessmentPolicyUseCase</code> lines 102&ndash;106 (a null <code>strictness</code> becomes <code>STANDARD</code>),
+      the version builder in <code>UpdateFrameworkVersionUseCase</code>, <code>setDescription(...)</code> in <code>UpdateFrameworkCriterionUseCase</code> (line 97) and <code>UpdateFrameworkResultBandUseCase</code> (line 96),
+      <code>rule.setDescription(command.description())</code> in <code>UpdateSystemScoringRuleUseCase</code> (line 96) and the school variant (line 113).</td>
+      <td><strong>Yes, but as a behavior change.</strong> A client that omits one of these fields silently clears it today (invisible if the UI always sends the whole form). <code>ArgumentValue</code> would allow omitted = keep, null = clear, which changes what the API does for the same request and needs <code>Provided</code> flags in 5 commands plus edits in 8 use cases. Wrapping the values without those edits would change nothing.</td></tr>
+    <tr><td><strong>3. No omitted-versus-null question</strong> (10 inputs)</td>
+      <td><code>StartPracticeSessionInput</code> (optional lists), the 4 <code>SearchRubric*FilterRequest</code> (null = no filter), <code>SubmitInterestQuizInput</code>, <code>InterestQuizAnswerInput</code>, <code>EndPracticeSessionInput</code>, <code>SignalInput</code>, <code>SubscriptionPlanQuotaInput</code></td>
+      <td>Fields are required, or null and omitted both mean &ldquo;not given&rdquo; (a filter, an optional list).</td>
+      <td><strong>No.</strong> Loose nullable arguments on mutations: a scan of every <code>Mutation</code> field found only <code>flagAssessmentSession(reason: String)</code>, a create-style call.</td></tr>
+  </tbody>
+</table></div>
+<p>Counts check: 12 + 5 + 10 = 27. The four <code>Map</code> inputs of phase 2 are not among the 27; they are the only inputs whose use cases already keep a <code>Provided</code> flag per field.
+Read for the audit: all system-level use cases of groups 1 and 2, the school-level rubric use cases at the lines that decide null handling, and the grade-level SQL; the other school-level variants were not read line by line.</p>
+
+<h3>1.4 Which fields can be cleared (D8 and D9; measured from <code>V1__baseline.sql</code> and the entities)</h3>
+<p>&ldquo;Clearable&rdquo; = the column is nullable, so storing <code>NULL</code> is valid. Of the 63 omit-able fields in the 17 inputs, 21 are clearable and 42 sit on <code>NOT NULL</code> columns (<code>name</code>, <code>order</code>, weights, scores, dates, <code>tagline</code>, prices, ...).
+<code>strictness</code> is a required column with a default (<code>STANDARD</code>), listed separately. Explicit null on a required field stays &ldquo;not given&rdquo; (D9).</p>
+<div class="table-scroll"><table>
+  <thead><tr><th>Input (group)</th><th>Clearable fields</th><th>Command(s)</th><th>Use case(s) and write path</th></tr></thead>
+  <tbody>
+    <tr><td><code>UpdateAssessmentPolicyInput</code> (2)</td><td><code>passingScore</code>, <code>effectiveTo</code>; defaulted: <code>strictness</code></td><td><code>UpdateAssessmentPolicyCommand</code></td><td><code>UpdateSystemAssessmentPolicyUseCase</code>, <code>UpdateSchoolAssessmentPolicyUseCase</code>; entity setters</td></tr>
+    <tr><td><code>UpdateScoringRuleInput</code> (2)</td><td><code>description</code></td><td><code>UpdateScoringRuleCommand</code>, <code>UpdateSchoolScoringRuleCommand</code></td><td><code>UpdateSystemScoringRuleUseCase</code>, <code>UpdateSchoolScoringRuleUseCase</code>; entity setters</td></tr>
+    <tr><td><code>UpdateFrameworkVersionInput</code> (2)</td><td><code>description</code>, <code>effectiveTo</code></td><td><code>UpdateFrameworkVersionCommand</code></td><td><code>UpdateFrameworkVersionUseCase</code>; rebuilt entity</td></tr>
+    <tr><td><code>UpdateFrameworkCriterionInput</code> (2)</td><td><code>description</code></td><td><code>UpdateFrameworkCriterionCommand</code></td><td><code>UpdateFrameworkCriterionUseCase</code>; entity setters</td></tr>
+    <tr><td><code>UpdateFrameworkResultBandInput</code> (2)</td><td><code>description</code></td><td><code>UpdateFrameworkResultBandCommand</code></td><td><code>UpdateFrameworkResultBandUseCase</code>; entity setters</td></tr>
+    <tr><td><code>UpdateFrameworkCriterionBandInput</code> (1)</td><td><code>descriptor</code> (the two signal lists keep today&rsquo;s rule: null or empty keeps them)</td><td><code>UpdateFrameworkCriterionBandCommand</code></td><td><code>UpdateFrameworkCriterionBandUseCase</code>; entity setters</td></tr>
+    <tr><td><code>UpdateAssessmentScheduleInput</code> (1)</td><td><code>schoolRoomId</code> (<code>startDate</code> and <code>endDate</code> are required)</td><td><code>UpdateAssessmentScheduleCommand</code></td><td><code>UpdateAssessmentScheduleUseCase</code>; class tests <code>save</code>, other assessments <code>AssessmentScheduleRepository.updateAtomic</code> (<code>COALESCE</code>)</td></tr>
+    <tr><td><code>UpdateRubricInput</code> (1)</td><td><code>description</code></td><td><code>UpdateSystemRubricCommand</code>, <code>UpdateSchoolRubricCommand</code></td><td>2 use cases; <code>updateRubricAtomic</code></td></tr>
+    <tr><td><code>UpdateRubricVersionInput</code> (1)</td><td><code>description</code>, <code>effectiveTo</code></td><td><code>UpdateSystemRubricVersionCommand</code>, <code>UpdateSchoolRubricVersionCommand</code></td><td>2 use cases; <code>updateRubricVersionAtomic</code></td></tr>
+    <tr><td><code>UpdateRubricCriterionInput</code> (1)</td><td><code>description</code>, <code>examplesJson</code></td><td><code>UpdateSystemRubricCriterionCommand</code>, <code>UpdateSchoolRubricCriterionCommand</code></td><td>2 use cases; <code>updateCriterionAtomic</code></td></tr>
+    <tr><td><code>UpdateRubricResultBandInput</code> (1)</td><td><code>description</code></td><td><code>UpdateSystemRubricResultBandCommand</code>, <code>UpdateSchoolRubricResultBandCommand</code></td><td>2 use cases; <code>updateResultBandAtomic</code></td></tr>
+    <tr><td><code>UpdateSchoolRequest</code> (1)</td><td><code>description</code>, <code>domain</code></td><td><code>UpdateSchoolCommand</code></td><td><code>UpdateSchoolUseCase</code>; <code>updateSchoolAtomic</code></td></tr>
+    <tr><td><code>UpdateSchoolRoomRequest</code> (1)</td><td><code>description</code></td><td><code>UpdateSchoolRoomCommand</code></td><td><code>UpdateSchoolRoomUseCase</code>; <code>updateSchoolRoomAtomic</code></td></tr>
+    <tr><td><code>UpdateSchoolGradeRequest</code> (1)</td><td><code>description</code> (<code>startDate</code>, <code>endDate</code> are required)</td><td><code>UpdateSchoolGradeCommand</code></td><td><code>UpdateSchoolGradeUseCase</code>; <code>updateSchoolGradeAtomic</code></td></tr>
+    <tr><td><code>UpdateGradeLevelRequest</code> (1)</td><td><code>description</code></td><td><code>UpdateGradeLevelCommand</code></td><td><code>UpdateGradeLevelUseCase</code>; <code>updateGradeLevelAtomic</code></td></tr>
+    <tr><td><code>UpsertInterestDimensionInput</code> (1)</td><td><code>description</code> (update path only; create keeps null = none)</td><td><code>UpsertInterestDimensionCommand</code></td><td><code>ManageInterestDimensionUseCase.update</code>; rebuilt entity</td></tr>
+    <tr><td><code>UpdateSubscriptionPlanInput</code> (1)</td><td>none: every column is <code>NOT NULL</code>; <code>quotas</code> null keeps, as today</td><td><code>UpdateSubscriptionPlanCommand</code> (unchanged)</td><td><code>UpdateSubscriptionPlanUseCase</code> (unchanged)</td></tr>
+  </tbody>
+</table></div>
+<p>Totals: 21 clearable fields (7 in group 2, 14 in group 1) plus <code>strictness</code>; 21 commands get flags; 22 use cases change; 9 <code>@Modifying</code> statements must learn to clear a column (the 8 atomic updates above and the schedule&rsquo;s <code>updateAtomic</code>);
+each of those methods is called only by its use cases (no import or other caller). Only one REST record builds one of these commands: <code>UpdateSystemRubricRequest</code> (<code>UpdateSystemRubricCommand</code>), which must keep &ldquo;null means keep&rdquo;.
+17 command-to-test-file references exist today (a test file can reference several commands). Blank strings: the rubric family treats a blank description as &ldquo;keep&rdquo; and the group-2 use cases store whatever normalization returns; the plan leaves both as they are.</p>
+
+<h2 id="decisions">2. Decisions</h2>
+
+<div class="decision" id="d1" data-decision-state="answered">
+  <h3>D1. Scope of the request and how this plan reads it <span class="status answered">Answered</span></h3>
+  <p>Decided in the request: the four changes listed at the top. The plan reads them like this, and approving the plan confirms the readings:</p>
+  <ul>
+    <li><strong>ArgumentValue.</strong> It is Spring&rsquo;s <code>org.springframework.graphql.data.ArgumentValue</code>, used on every component of the 4 input records (all their schema fields are nullable PATCH fields).
+    The application commands keep their <code>value</code> + <code>valueProvided</code> pairs, because <code>application</code> may not import Spring (<code>LayeredArchitectureTests</code>); the record&rsquo;s static
+    <code>toCommand</code> turns <code>!isOmitted()</code> into the flag. What a client sends and gets back does not change.</li>
+    <li><strong>Packages.</strong> <code>graphql/dto/request/&lt;feature&gt;/</code> becomes <code>graphql/input/&lt;feature&gt;/</code> with the same 14 sub-packages; the key records go to <code>graphql/key</code>;
+    <code>graphql/config</code> becomes <code>graphql/dataloader</code> (the 13 loader configs and <code>PageKey</code>, which is a grouping helper and not a loader key) and <code>graphql/scalar</code> (<code>DateScalarsGraphQLConfig</code>).
+    Moves use <code>git mv</code> so history follows.</li>
+    <li><strong>Loaders.</strong> A loader is registered in the config of the type it returns, loaders with identical behavior are merged (6 of them), and the name follows <code>&lt;result&gt;By&lt;KeyField&gt;</code> (<code>userByUserId</code>).
+    The example <code>usersByUserIds</code> is read as naming style: no loader of that shape is created, because no object-type field resolves users from a list of user ids
+    (<code>grep -n '\[ID' src/main/resources/graphql/*.graphqls</code> finds only query and mutation arguments such as <code>teacherIds</code>, <code>studentIds</code>, <code>excludeUserIds</code>, one input (<code>offeredTopicIds</code>) and one query that returns school ids). Granularity of &ldquo;config per type&rdquo;: D3.</li>
+    <li><strong>The 20-record rule.</strong> &ldquo;Types expected to retrieve more than 20 records use a key and a repository method&rdquo; is read as: a loader that returns many children per parent takes a key with <code>page</code> and <code>size</code>,
+    and its repository has a per-parent windowed method like the three that exist. Which loaders qualify is D7.</li>
+    <li><strong>The check.</strong> One shared method looks the loader up and throws <code>IllegalStateException</code> when it is missing (D6 decides where it lives). The type fits AGENTS.md &ldquo;Errors&rdquo;: a missing loader is a wiring fault the caller cannot cause or fix, and
+    <code>GlobalExceptionResolver</code> already answers an <code>IllegalStateException</code> as <code>INTERNAL_ERROR</code> (its last branch).</li>
+  </ul>
+  <div class="answer"><strong>Answer (2026-11-24):</strong> As requested &ndash; taken from the task description. The readings above are mine and are confirmed by approving the plan.</div>
+</div>
+
+<div class="decision" id="d2" data-decision-state="answered">
+  <h3>D2. May this plan change AGENTS.md and the structure guard test? <span class="status answered">Answered</span></h3>
+  <p>Parts of the request go against AGENTS.md as written, and its &ldquo;Refactoring stage notice&rdquo; says to stop and ask: (a) the layer table (line 47) and the guard test put request DTOs in <code>dto/request/&lt;feature&gt;/</code>;
+  the request moves the GraphQL ones to <code>graphql/input/</code>. (b) The table has no <code>key</code>, <code>dataloader</code> or <code>scalar</code> package, and keys live in <code>application</code> today. (c) The plan adds conventions
+  (<code>ArgumentValue</code> for omit-able inputs, one loader lookup, loader naming) and removes &ldquo;the GraphQL <code>Map</code> mappers&rdquo; from the mapper sentence.</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Approve. Phase 17 edits AGENTS.md (the exact edits are listed in job 17.2) and each phase that moves something updates <code>InterfacesStructureConventionTests</code> in the same phase.
+  No rule is loosened: the flat-package check applies to <code>graphql/input</code> exactly as it did to <code>graphql/dto/request</code>, and the mapper allow-list only shrinks (4 entries leave).</p>
+  <p><strong>B.</strong> Do only what agrees with AGENTS.md as written: skip phases 1, 3 and 4 (no rename, keys stay in <code>application</code>, <code>config</code> stays), put the 4 new inputs in <code>graphql/dto/request/&lt;feature&gt;/</code>, and do the loader
+  consolidation and the shared check inside <code>graphql/config</code>. Nothing needs the user&rsquo;s sign-off on AGENTS.md, but the package requests are not met.</p>
+  <div class="answer"><strong>Answer (2026-11-24):</strong> Approve and edit AGENTS.md &ndash; the recommended option.</div>
+</div>
+
+<div class="decision" id="d3" data-decision-state="answered">
+  <h3>D3. Where does a loader live: one config per schema file, or one per result type? <span class="status answered">Answered</span></h3>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) One config per schema file, named after it, holding every loader whose result type is defined in that <code>.graphqls</code> file: 12 configs (table in 1.2). <code>user.graphqls</code> defines both
+  <code>User</code> and <code>Role</code>, so <code>UserGraphQLDataLoaderConfig</code> holds <code>userByUserId</code>, <code>usersByRoleId</code> and <code>rolesByUserId</code>. Biggest files: Assessment 15 loaders, School 8, Framework 6. A reader goes from the schema file to the config
+  with the same name.</p>
+  <p><strong>B.</strong> One config per result type: 41 configs by my count (<code>SchoolClassGraphQLDataLoaderConfig</code>, <code>AssessmentPaperGraphQLDataLoaderConfig</code>, <code>RubricCriterionGraphQLDataLoaderConfig</code>, ...). Every file is small and each constructor is short, which makes D4 trivial. The cost is many files with 1&ndash;3 loaders,
+  Assessment&rsquo;s 15 loaders spread over about 11 files, and a reader has to know the exact type name to find a loader.</p>
+  <div class="answer"><strong>Answer (2026-11-24):</strong> One config per schema file &ndash; the recommended option.</div>
+</div>
+
+<div class="decision" id="d4" data-decision-state="answered">
+  <h3>D4. How does a config register its loaders within the 25-line method limit? <span class="status answered">Answered</span></h3>
+  <p>AGENTS.md: a method is at most 25 lines (30 for a very large feature), signature to closing brace. Today each config registers everything in its constructor. After D3 = A, Assessment has 14 repositories and 15 loaders and School 8 and 8, so no explicit constructor can fit. The repository has no <code>@PostConstruct</code> today, so option A is a new pattern.</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) <code>@RequiredArgsConstructor</code> with <code>private final</code> fields (the registry and the repositories), and one <code>@PostConstruct</code> method that calls one private <code>registerXxx()</code> per loader, each at most 25 lines.
+  This is exactly AGENTS.md&rsquo;s constructor rule (an assignment-only constructor becomes Lombok), a slice test that <code>@Import</code>s a config still works because Spring calls the method, and no signature carries 14 parameters.</p>
+  <p><strong>B.</strong> Keep explicit constructors; each loader is a private static method taking <code>(registry, repository...)</code> and the constructor only calls them. No new pattern, but it only fits configs with few repositories: Assessment (and School) would have to be split by type, which is D3 = B for those configs.</p>
+  <div class="answer"><strong>Answer (2026-11-24):</strong> @RequiredArgsConstructor + @PostConstruct &ndash; the recommended option.</div>
+</div>
+
+<div class="decision" id="d5" data-decision-state="answered">
+  <h3>D5. Loader names: constants or string literals? <span class="status answered">Answered</span></h3>
+  <p>The request renames loaders (<code>userById</code> becomes <code>userByUserId</code>). 78 main call sites and about 20 test stubs change either way.</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Every name is a <code>public static final String</code> in its owning config (<code>UserGraphQLDataLoaderConfig.USER_BY_USER_ID</code>); registration, controllers and tests use the constant and never a literal.
+  A typo or a missed rename then fails to compile instead of failing when a client first resolves that field.</p>
+  <p><strong>B.</strong> Same new names, written as string literals at registration and at every call site. A smaller diff per line and no new members in the configs, but a wrong name is found only at request time (the check from D6 makes that error clear, but it is still at runtime).</p>
+  <div class="answer"><strong>Answer (2026-11-24):</strong> Constants in the owning config &ndash; the recommended option.</div>
+</div>
+
+<div class="decision" id="d6" data-decision-state="answered">
+  <h3>D6. Where does the shared loader check live, and is it guarded? <span class="status answered">Answered</span></h3>
+  <p>A new class does not fit the file patterns in AGENTS.md &ldquo;Ask first&rdquo;, so it is a decision.</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) A final class <code>GraphQLDataLoaders</code> in <code>interfaces/graphql/dataloader</code> with
+  <code>static &lt;K, V&gt; DataLoader&lt;K, V&gt; require(DataFetchingEnvironment environment, String loaderName)</code> that returns the loader or throws <code>IllegalStateException("DataLoader not registered: " + loaderName)</code>. Plus a guard test
+  <code>GraphQLDataLoaderConventionTests</code> (source-text scan like <code>PagingConventionTests</code>) that fails when <code>getDataLoader(</code> appears in <code>src/main/java</code> outside that class and, with D5 = A, when a loader is registered with a literal or a name is registered twice.</p>
+  <p><strong>B.</strong> The same class without the guard test. Less to maintain, but nothing stops the next controller from calling <code>env.getDataLoader(...)</code> directly.</p>
+  <p><strong>C.</strong> A protected method on an abstract base class for the 17 controllers. They share no base class today, and inheritance would couple them for one helper. Not recommended.</p>
+  <div class="answer"><strong>Answer (2026-11-24):</strong> GraphQLDataLoaders + guard test &ndash; the recommended option.</div>
+</div>
+
+<div class="decision" id="d7" data-decision-state="answered">
+  <h3>D7. Which loaders become keyed (paged) with a new repository method? <span class="status answered">Answered</span></h3>
+  <p>The 17 loaders that return an unpaged list (16) or read a list to return one value (1), judged from the domain, not from production counts:</p>
+  <ul>
+    <li><strong>Can pass 20 per parent:</strong> <code>assessmentSchedulesByAssessmentId</code> (one session per room and time slot of an assessment; the assessment list page reads <em>all</em> of them to draw the scheduling progress bar, so paging it would break that page),
+    <code>assessmentMembersByAssessmentId</code> (CHAIR, AUTHOR, REVIEWER of one assessment; usually below 20 but not bounded by the model).</li>
+    <li><strong>Reads far more rows than it returns:</strong> <code>assessmentSchoolClassIdByAssessmentId</code> loads every candidate of every assessment on the page (a class-sized assessment has as many candidates as students) to keep one student id per assessment.</li>
+    <li><strong>Bounded by the model or the domain:</strong> framework criteria, result bands and criterion bands; order items; payments of an order; question assets, collaborators and bank grades (a bank has at most a few grade levels); register form documents; plan quotas;
+    paper sections and items; papers of an assessment; roles of a user.</li>
+  </ul>
+  <p>The 6 loaders that already have a key (school classes, school users, users by role, rubric versions, criteria, result bands) are relocated and renamed in every option.</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) No GraphQL change. Give <code>assessmentSchoolClassIdByAssessmentId</code> a repository method that returns only the first candidate per assessment
+  (<code>row_number() OVER (PARTITION BY assessment_id ORDER BY assigned_at, id)</code>, the same pattern as the 3 existing windowed queries), so it stops reading every candidate. The class id it returns is unchanged; &ldquo;first&rdquo; becomes deterministic
+  (today <code>findByAssessmentIdIn</code> has no <code>ORDER BY</code>, so the first row is whatever the database returns).</p>
+  <p><strong>B.</strong> A, plus paged keyed loaders for <code>Assessment.schedules</code> and <code>Assessment.members</code>: two new keys, two windowed repository methods, and new <code>page</code>/<code>size</code> arguments on two schema fields. That is a GraphQL contract change (AGENTS.md &ldquo;Ask first&rdquo;):
+  the frontend must pass the arguments, results are cut to the default page size, and the progress bar that reads all schedules needs another source.</p>
+  <p><strong>C.</strong> Relocate and rename only; no new repository method. The 20-record rule is not applied to anything new and <code>assessmentSchoolClassIdByAssessmentId</code> keeps reading every candidate.</p>
+  <div class="answer"><strong>Answer (2026-11-24):</strong> Fix only the candidate loader &ndash; the recommended option.</div>
+</div>
+
+<div class="decision" id="d8" data-decision-state="answered">
+  <h3>D8. Do other existing inputs get ArgumentValue as well? <span class="status answered">Answered</span></h3>
+  <p>Evidence is in 1.3: 12 inputs are patch-by-design (null keeps the value), 5 inputs replace everything although the schema says nullable (omitted is stored as null), 10 have no question. D1 already covers the 4 Map inputs.</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Only the 4 Map inputs. Group 1 has no behavior for <code>ArgumentValue</code> to protect (wrapping the fields changes nothing, because the use cases and the <code>COALESCE</code> SQL cannot clear a field).
+  Group 2 is an API behavior question, not a refactoring one: the plan lists it under &ldquo;Out of scope&rdquo; and in the final report as a risk (omitting <code>passingScore</code>, <code>effectiveTo</code> or <code>description</code> clears it), for you to decide with the frontend.</p>
+  <p><strong>B.</strong> The 4 plus the 5 group-2 inputs (8 fields): <code>ArgumentValue</code> in the records, <code>Provided</code> flags in the 5 commands (<code>UpdateAssessmentPolicyCommand</code>, <code>UpdateFrameworkVersionCommand</code>, <code>UpdateFrameworkCriterionCommand</code>,
+  <code>UpdateFrameworkResultBandCommand</code>, <code>UpdateScoringRuleCommand</code>) and edits in 8 use cases (system and school policy, version, criterion, result band, system and school scoring rule), so omitted = keep and null = clear.
+  The same request would now do something different for a client that omits these fields (a public API behavior change, AGENTS.md &ldquo;Ask first&rdquo;), and each use case needs regression tests. It adds one phase (13).</p>
+  <p><strong>C.</strong> B plus the 12 group-1 inputs (55 fields): clients can finally clear a field. It needs <code>Provided</code> flags in about 12 commands, rewrites of the <code>COALESCE</code> updates (rubric system and school, school, room, grade, grade level) and about 25 use-case edits. A new capability nobody asked for; not recommended.</p>
+  <div class="answer"><strong>Answer (2026-11-24):</strong> C &ndash; all nullable update inputs (17), chosen after the audit (the recommended option was A). The user was told what it means: a client that omits a group-2 field now keeps it (it was cleared), a client that sends an explicit null for a clearable group-1 field now clears it (it was kept), and the frontend has to be checked. Scoped by D9: the work is limited to the 21 clearable fields plus <code>strictness</code>.</div>
+</div>
+
+<div class="decision" id="d9" data-decision-state="answered">
+  <h3>D9. What does an explicit null do on a field whose column is NOT NULL? <span class="status answered">Answered</span></h3>
+  <p>Of the 63 omit-able fields in the 17 inputs of D8, 21 sit on nullable columns (1.4) and 42 on <code>NOT NULL</code> columns. Today an explicit null on a required field silently means &ldquo;keep&rdquo;;
+  the 4 existing Provided-flag use cases (for example <code>updateProfile</code> <code>fullName</code>) reject it with a 400.</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Treat it as not given, as today. Only the 21 clearable fields (plus <code>strictness</code>) get <code>Provided</code> flags; commands, use cases and SQL for the 42 required fields stay untouched and no client gets a new 400.
+  All 63 omit-able record components are still typed <code>ArgumentValue</code> so the records stay uniform; <code>toCommand</code> flattens the required ones with <code>.value()</code>.</p>
+  <p><strong>B.</strong> Reject it with a 400 (<code>IllegalArgumentException</code>), like the 4 existing use cases. Cleanest contract and fails loudly, but all 63 fields need <code>Provided</code> flags and about 42 extra null checks and tests across 21 commands and 22 use cases,
+  and a client that sends null for an untouched required field starts getting 400s.</p>
+  <div class="answer"><strong>Answer (2026-11-24):</strong> A &ndash; treat as not given, the recommended option. <code>strictness</code> is the one required column with a default: omitted keeps the stored value, an explicit null still stores <code>STANDARD</code> (what null means today).</div>
+</div>
+
+<h2 id="phases">3. Phases</h2>
+<p>Each phase is independently reviewable and leaves the build green. Order: renames and moves first (they only change names), then the new inputs, then the loader work, then the guards and documentation.</p>
+
+<div class="callout">
+  <p><strong>Rules every loader job (phases 6&ndash;10) follows.</strong> (1) The loader&rsquo;s registration moves into the target config as one private method of at most 25 lines (D4). (2) Its name is the target name from 1.2 and a
+  <code>public static final String</code> constant of the config. (3) Every call site in a controller becomes <code>GraphQLDataLoaders.require(environment, &lt;Config&gt;.&lt;CONSTANT&gt;)</code>; no literal remains. (4) Test stubs of <code>env.getDataLoader(...)</code> use the constant, and a slice test
+  that imports a config imports the config that now owns the loader, with its repositories mocked. (5) Vietnamese comments in the method or class being edited are translated to English, keeping their meaning. (6) Behavior, SQL and DTO mapping of a loader are moved unchanged.</p>
+</div>
+
+<!-- ===================== PHASE 1 ===================== -->
+<div class="phase" id="phase-1" data-status="todo">
+  <h3><span class="title">Phase 1 &ndash; Rename graphql/dto/request to graphql/input</span>
+    <span class="tag">small &middot; mechanical &middot; needs D2</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> there is no <code>dto</code> package under <code>interfaces/graphql</code>; the 27 inputs sit in <code>interfaces/graphql/input/&lt;same sub-package&gt;/</code>. <strong>Depends on:</strong> D2.</p>
+  <ul class="jobs">
+    <li class="job" id="job-1-1" data-status="todo">
+      <span class="title">1.1 Move the 27 input records</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>git ls-files 'src/main/java/**/interfaces/graphql/dto/**'</code> prints nothing, <code>git ls-files 'src/main/java/**/interfaces/graphql/input/**' | wc -l</code> prints 27, the 11 importing main files import the new package, and
+         <code>./gradlew compileJava compileTestJava</code> is green. Only <code>package</code> and <code>import</code> lines change.
+         <strong>Files:</strong> the 27 records in 14 sub-packages and 11 importers (GraphQL controllers and mappers).</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-1-2" data-status="todo">
+      <span class="title">1.2 Point the structure guard at the new package</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>InterfacesStructureConventionTests</code> checks <code>graphql.input</code> where it checked <code>graphql.dto.request</code> (the flat-package self-test at line 156 and the request-package predicates at lines 199 and 210; the generic <code>dto/request</code> wording of the class Javadoc at line 28 also covers REST and stays), no
+         <code>graphql.dto.request</code> string remains in <code>src/test</code>, and <code>./gradlew test --tests '*InterfacesStructureConventionTests'</code> is green.
+         <strong>Files:</strong> <code>src/test/java/com/sep/vox/architecture/InterfacesStructureConventionTests.java</code>.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests '*InterfacesStructureConventionTests'</code>, <code>./gradlew test --tests '*GraphQL*'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ===================== PHASE 2 ===================== -->
+<div class="phase" id="phase-2" data-status="todo">
+  <h3><span class="title">Phase 2 &ndash; Four Map inputs become records with ArgumentValue</span>
+    <span class="tag">medium &middot; needs the binder proof of 2.1</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> no controller argument is a <code>Map&lt;String, Object&gt;</code> and <code>interfaces/graphql/mapper</code> holds no class; &ldquo;omitted&rdquo; versus &ldquo;null&rdquo; travels as <code>ArgumentValue&lt;T&gt;</code> and is proven through the real GraphQL binder.
+  <strong>Depends on:</strong> phase 1 (the new records are created in <code>input/&lt;feature&gt;/</code>), D1.</p>
+<pre><code>public record UpdateProfileInput(
+        ArgumentValue&lt;String&gt; fullName, ArgumentValue&lt;String&gt; phone, ArgumentValue&lt;String&gt; address,
+        ArgumentValue&lt;LocalDate&gt; dateOfBirth, ArgumentValue&lt;String&gt; avatarUrl) {
+
+    public static UpdateProfileCommand toCommand(UpdateProfileInput input) {
+        return new UpdateProfileCommand(
+                input.fullName().value(), !input.fullName().isOmitted(),
+                /* ... one pair per field ... */);
+    }
+}</code></pre>
+  <p>The shape follows <code>UpdateSchoolRequest.toCommand(UUID id, UpdateSchoolRequest request)</code> (path ids first, the input last). The commands do not change, except the Javadoc that names the mapper.
+  Each job removes its mapper&rsquo;s entry from <code>ALLOWED_MAPPERS</code> in <code>InterfacesStructureConventionTests</code> (an entry for a deleted class fails the test).</p>
+  <ul class="jobs">
+    <li class="job" id="job-2-1" data-status="todo">
+      <span class="title">2.1 UpdateProfileInput (input/user)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>GraphQLUserController.updateProfile</code> takes <code>@Argument(name = "input") UpdateProfileInput</code> and calls <code>UpdateProfileInput.toCommand</code>; <code>UpdateProfileCommandMapper</code> and
+         <code>UpdateProfileCommandMapperTests</code> are deleted; <code>UpdateProfileInputTests</code> covers value, explicit null and omitted for all 5 fields; <code>UserGraphQLTests</code> keeps its 3 <code>dateOfBirth</code> tests green and adds
+         <code>avatarUrl: null</code> &rarr; <code>avatarUrlProvided = true</code> versus omitted &rarr; <code>false</code> through the real binder (this is the proof that spring-graphql 2.0.4 binds <code>ArgumentValue</code> in a record); the 7 Vietnamese lines of
+         <code>UpdateProfileCommand</code> and the 4 of <code>GraphQLUserController</code> are translated and the Javadoc no longer mentions a mapper.
+         <strong>Files:</strong> <code>input/user/UpdateProfileInput.java</code> (new), <code>GraphQLUserController</code>, <code>UpdateProfileCommand</code> (Javadoc only), <code>UpdateProfileCommandMapper(Tests)</code> (deleted), <code>UserGraphQLTests</code>, <code>InterfacesStructureConventionTests</code>.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-2-2" data-status="todo">
+      <span class="title">2.2 UpdateSupportedLanguageInput (input/supportedlanguage)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>GraphQLSupportedLanguageController.updateSupportedLanguage(UUID id, UpdateSupportedLanguageInput input)</code> calls <code>UpdateSupportedLanguageInput.toCommand(id, input)</code>; <code>UpdateSupportedLanguageCommandMapper</code> is deleted;
+         the 2 Map-based tests in <code>GraphQLSupportedLanguageControllerTests</code> pass the record; <code>UpdateSupportedLanguageInputTests</code> covers <code>code</code>, <code>name</code>, <code>description</code>, <code>isActive</code>; a real-binder slice test
+         (next to <code>SupportedLanguageAuthorizationGraphQLTests</code>) proves <code>isActive: false</code> &rarr; provided with value <code>false</code> and <code>isActive</code> omitted &rarr; not provided.
+         <strong>Files:</strong> <code>input/supportedlanguage/UpdateSupportedLanguageInput.java</code> (new), the controller, the mapper (deleted), 2 test classes, <code>InterfacesStructureConventionTests</code>.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-2-3" data-status="todo">
+      <span class="title">2.3 UpdateSchoolClassInput (input/schoolclass)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>GraphQLSchoolController.updateSchoolClass(UUID id, UpdateSchoolClassInput input)</code> calls <code>UpdateSchoolClassInput.toCommand(id, input)</code> with <code>status</code> typed <code>ArgumentValue&lt;SchoolClassStatus&gt;</code>;
+         <code>UpdateSchoolClassCommandMapper</code> is deleted; the 3 <code>update_school_class_*</code> tests in <code>GraphQLSchoolControllerTests</code> pass records; <code>UpdateSchoolClassInputTests</code> covers the three fields; the existing real-binder tests in
+         <code>SchoolGraphQLTests</code> (status variable, invalid status) stay green and one more proves <code>description: null</code> &rarr; provided versus omitted &rarr; not provided.
+         <strong>Files:</strong> <code>input/schoolclass/UpdateSchoolClassInput.java</code> (new), the controller, the mapper (deleted), <code>GraphQLSchoolControllerTests</code>, <code>SchoolGraphQLTests</code>, <code>InterfacesStructureConventionTests</code>.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-2-4" data-status="todo">
+      <span class="title">2.4 UpdateSchoolUserInput (input/schooluser)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>GraphQLSchoolController.updateSchoolUser(UUID schoolId, UUID userId, UpdateSchoolUserInput input)</code> calls <code>UpdateSchoolUserInput.toCommand(schoolId, userId, input)</code>; <code>UpdateSchoolUserCommandMapper</code> and
+         <code>UpdateSchoolUserCommandMapperTests</code> are deleted; <code>UpdateSchoolUserInputTests</code> covers the 5 fields; <code>SchoolGraphQLTests</code> gains the first controller-level test of <code>updateSchoolUser</code>, through the real binder:
+         <code>avatarUrl: null</code> &rarr; provided (avatar removed) versus omitted &rarr; not provided, and <code>dateOfBirth</code> coerced by the <code>Date</code> scalar. After this job <code>git ls-files 'src/main/java/**/interfaces/graphql/mapper/*'</code> prints nothing and
+         <code>grep -rn '@Argument(name = "input") Map' src/main/java</code> prints nothing.
+         <strong>Files:</strong> <code>input/schooluser/UpdateSchoolUserInput.java</code> (new), the controller (its 1 Vietnamese line translated), the mapper and its test (deleted), <code>SchoolGraphQLTests</code>, <code>InterfacesStructureConventionTests</code>.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*UserGraphQLTests' --tests '*SchoolGraphQLTests' --tests '*GraphQLSchoolControllerTests' --tests '*GraphQLSupportedLanguageControllerTests' --tests '*SupportedLanguage*' --tests '*Update*InputTests' --tests '*InterfacesStructureConventionTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ===================== PHASE 3 ===================== -->
+<div class="phase" id="phase-3" data-status="todo">
+  <h3><span class="title">Phase 3 &ndash; Move the loader keys to graphql/key</span>
+    <span class="tag">small &middot; mechanical &middot; needs D2</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> <code>application</code> holds no DataLoader key; the 8 records live in <code>interfaces/graphql/key</code>. <strong>Depends on:</strong> D2.</p>
+  <ul class="jobs">
+    <li class="job" id="job-3-1" data-status="todo">
+      <span class="title">3.1 Move the 8 key records</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>src/main/java/com/sep/vox/application/port/input/query/key</code> no longer exists, <code>git ls-files 'src/main/java/**/interfaces/graphql/key/*.java' | wc -l</code> prints 8, the 9 importing main files and
+         <code>GraphQLMyClassControllerTests</code> import the new package, <code>grep -rn 'query\.key' src</code> prints nothing, and <code>LayeredArchitectureTests</code> is green. <code>SchoolClassUsersKey</code> (no user) moves unchanged and is reported in the notes, not deleted.
+         <strong>Files:</strong> 8 key records, 4 configs, 5 controllers, 1 test.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests '*LayeredArchitectureTests' --tests '*InterfacesStructureConventionTests' --tests '*GraphQLMyClassControllerTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ===================== PHASE 4 ===================== -->
+<div class="phase" id="phase-4" data-status="todo">
+  <h3><span class="title">Phase 4 &ndash; Split graphql/config into dataloader and scalar</span>
+    <span class="tag">small &middot; mechanical &middot; needs D2</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> <code>interfaces/graphql/config</code> is gone; loaders and <code>PageKey</code> live in <code>dataloader</code>, the scalar wiring in <code>scalar</code>. Contents are not changed. <strong>Depends on:</strong> D2.</p>
+  <ul class="jobs">
+    <li class="job" id="job-4-1" data-status="todo">
+      <span class="title">4.1 Move the 13 loader configs, PageKey and DateScalarsGraphQLConfig</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>git ls-files '*interfaces/graphql/config*'</code> prints nothing (main and test); <code>dataloader</code> holds the 13 configs and <code>PageKey</code>; <code>scalar</code> holds <code>DateScalarsGraphQLConfig</code>;
+         <code>DateScalarsGraphQLConfigTests</code> sits in the mirrored <code>scalar</code> test package; the 4 slice tests and <code>support/GraphQLControllerTest</code> that import a config use the new packages; <code>./gradlew test --tests '*GraphQL*'</code> is green.
+         <strong>Files:</strong> 15 main files, 1 mirrored test, 5 importing test files.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests '*GraphQL*'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ===================== PHASE 5 ===================== -->
+<div class="phase" id="phase-5" data-status="todo">
+  <h3><span class="title">Phase 5 &ndash; Shared loader lookup</span>
+    <span class="tag">small &middot; needs D6</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> one method looks a loader up and fails with a clear <code>IllegalStateException</code> when it is not registered. No call site uses it yet. <strong>Depends on:</strong> phase 4, D6.</p>
+  <ul class="jobs">
+    <li class="job" id="job-5-1" data-status="todo">
+      <span class="title">5.1 GraphQLDataLoaders.require and its tests</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>GraphQLDataLoaders.require(environment, name)</code> returns the loader <code>environment.getDataLoader(name)</code> gives, and throws <code>IllegalStateException</code> whose message contains the loader name when that call returns null;
+         <code>GraphQLDataLoadersTests</code> (Mockito, no Spring context) proves both cases. The class is final with a private constructor and a short Javadoc that states the failure contract and why it is an <code>IllegalStateException</code> (wiring fault, 500).
+         <strong>Files:</strong> <code>interfaces/graphql/dataloader/GraphQLDataLoaders.java</code> (new), its test.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*GraphQLDataLoadersTests'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ===================== PHASE 6 ===================== -->
+<div class="phase" id="phase-6" data-status="todo">
+  <h3><span class="title">Phase 6 &ndash; User and SupportedLanguage loaders</span>
+    <span class="tag">medium &middot; needs D3, D4, D5</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> every loader that returns a user, a role or a supported language is registered in one config. <strong>Depends on:</strong> phase 5, D3, D4, D5.</p>
+  <ul class="jobs">
+    <li class="job" id="job-6-1" data-status="todo">
+      <span class="title">6.1 User config: userByUserId, usersByRoleId, rolesByUserId</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>UserGraphQLDataLoaderConfig</code> registers exactly those three loaders (rows 56, 50, 52, 38, 57 of 1.2; the three user-by-id loaders are one); <code>RoleGraphQLDataLoaderConfig</code> is deleted; the 16 call sites in 11 controllers use
+         <code>GraphQLDataLoaders.require</code>; <code>grep -rnE '"(userById|userBySchoolClassUser|userBySchoolUser|usersByRole|rolesByUser)"' src</code> prints nothing; the 5 test stubs in 4 test files use the constants; the Vietnamese lines of
+         <code>GraphQLUserController</code> edited here are translated. <code>UserRolesKey</code> stays as it is.
+         <strong>Files:</strong> 2 configs, 11 controllers, 4 test files.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-6-2" data-status="todo">
+      <span class="title">6.2 New SupportedLanguageGraphQLDataLoaderConfig: supportedLanguageBySupportedLanguageId</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the new config registers one loader (rows 42 and 49 merged), <code>RubricGraphQLDataLoaderConfig</code> and <code>SchoolGraphQLDataLoaderConfig</code> no longer register it, the 4 call sites in 4 controllers use <code>require</code> (the hand-written null check for it in <code>GraphQLRubricController</code> goes),
+         <code>grep -rnE '"(supportedLanguageDataLoader|supportedLanguageByClass)"' src</code> prints nothing, and the 2 test stubs in 2 test files use the constant.
+         <strong>Files:</strong> the new config, 2 old configs, 4 controllers, 2 test files.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests '*GraphQL*'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ===================== PHASE 7 ===================== -->
+<div class="phase" id="phase-7" data-status="todo">
+  <h3><span class="title">Phase 7 &ndash; School loaders</span>
+    <span class="tag">medium &middot; needs D3, D4, D5</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> <code>SchoolGraphQLDataLoaderConfig</code> registers the 8 loaders that return school-schema types, and no other config registers one. <strong>Depends on:</strong> phase 6.</p>
+  <ul class="jobs">
+    <li class="job" id="job-7-1" data-status="todo">
+      <span class="title">7.1 School, SchoolClass and SchoolUser loaders</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>schoolBySchoolId</code> (rows 46, 17, 55 merged), <code>schoolClassBySchoolClassId</code>, <code>schoolClassesBySchoolId</code> and <code>schoolUsersBySchoolId</code> are registered in <code>SchoolGraphQLDataLoaderConfig</code> and removed from
+         <code>AssessmentPolicy</code> and <code>Subscription</code> configs; the 6 call sites in 3 controllers use <code>require</code>; the 2 test stubs in 2 test files use the constants; the two keyed loaders still group by <code>PageKey</code> and behave as before
+         (<code>SchoolAuthorizationGraphQLTests</code> and <code>GraphQLSchoolControllerTests</code> green); no old name remains in <code>src</code> (<code>grep -rnE '"(schoolByClass|schoolDataLoader|schoolBySchoolSubscription|schoolClassDataLoader|schoolClassesBySchool|schoolUsersBySchool)"' src</code>).
+         <strong>Files:</strong> 3 configs, 3 controllers, 2 test files.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-7-2" data-status="todo">
+      <span class="title">7.2 SchoolGrade, GradeLevel, SchoolRoom and member-count loaders</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>schoolGradeBySchoolGradeId</code> (rows 47, 48 merged), <code>gradeLevelByGradeLevelId</code>, <code>schoolRoomBySchoolRoomId</code> and <code>activeMemberCountBySchoolClassId</code> are registered in <code>SchoolGraphQLDataLoaderConfig</code> only; the 7 call sites in 5 controllers use
+         <code>require</code> (the null-key guard in <code>GraphQLAssessmentScheduleController.room</code> stays); the 5 test stubs in 3 test files use the constants; the comment on the member-count loader (&ldquo;must return an entry for EVERY key&rdquo;) moves with it;
+         <code>grep -rnE '"(schoolGradeByClass|schoolGradeById|gradeLevelDataLoader|schoolRoomById|activeMemberCountByClass)"' src</code> prints nothing.
+         <strong>Files:</strong> 3 configs, 5 controllers, 3 test files.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests '*GraphQL*'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ===================== PHASE 8 ===================== -->
+<div class="phase" id="phase-8" data-status="todo">
+  <h3><span class="title">Phase 8 &ndash; Framework and Rubric loaders</span>
+    <span class="tag">medium &middot; needs D3, D4, D5</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> framework and rubric loaders each sit in their own config, and <code>AssessmentPolicyGraphQLDataLoaderConfig</code> is gone. <strong>Depends on:</strong> phase 7 (it emptied the policy config of school loaders).</p>
+  <ul class="jobs">
+    <li class="job" id="job-8-1" data-status="todo">
+      <span class="title">8.1 Framework config: 6 loaders</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>FrameworkGraphQLDataLoaderConfig</code> registers <code>frameworkByFrameworkId</code>, <code>frameworkVersionByFrameworkVersionId</code>, <code>frameworkResultBandByFrameworkResultBandId</code>, <code>frameworkCriteriaByFrameworkVersionId</code>,
+         <code>frameworkResultBandsByFrameworkVersionId</code> and <code>frameworkCriterionBandsByFrameworkCriterionId</code>; the 6 call sites in 3 controllers use <code>require</code>; the old names are gone from <code>src</code>; the hand-written null check for <code>frameworkDataLoader</code> in <code>GraphQLRubricController</code> goes;
+         the Vietnamese line of <code>GraphQLFrameworkController</code> edited here is translated. <strong>Files:</strong> 3 configs, 3 controllers.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-8-2" data-status="todo">
+      <span class="title">8.2 Rubric config: 4 loaders, and delete the AssessmentPolicy config</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>RubricGraphQLDataLoaderConfig</code> registers <code>rubricVersionByRubricVersionId</code>, <code>rubricVersionsByRubricId</code>, <code>rubricCriteriaByRubricVersionId</code> and <code>rubricResultBandsByRubricVersionId</code>;
+         <code>AssessmentPolicyGraphQLDataLoaderConfig</code> no longer exists; the 4 call sites in 2 controllers use <code>require</code>, and the last 2 of the 4 hand-written null checks with Vietnamese messages in <code>GraphQLRubricController</code> (criteria and result bands) are removed, so with jobs 6.2 and 8.1
+         <code>grep -rn 'Không tìm thấy DataLoader' src</code> prints nothing; the Vietnamese lines of that controller that sit in edited methods are translated. <strong>Files:</strong> 2 configs, 2 controllers.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests '*GraphQL*'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ===================== PHASE 9 ===================== -->
+<div class="phase" id="phase-9" data-status="todo">
+  <h3><span class="title">Phase 9 &ndash; Assessment loaders</span>
+    <span class="tag">large &middot; needs D3, D4, D5</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> <code>AssessmentGraphQLDataLoaderConfig</code> registers the 15 assessment loaders, each in its own method of at most 25 lines, under the names of 1.2. <strong>Depends on:</strong> phase 7 (the school-room loader already left).</p>
+  <ul class="jobs">
+    <li class="job" id="job-9-1" data-status="todo">
+      <span class="title">9.1 The seven by-id loaders</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> rows 2&ndash;8 of 1.2 are renamed with constants; their 11 call sites in 3 controllers use <code>require</code>; the 6 test stubs in 2 test files (<code>AssessmentPaperItemSlotFieldTests</code>, <code>GraphQLAssessmentCandidateControllerTests</code>) use the constants;
+         the old names are gone from <code>src</code>. <strong>Files:</strong> 1 config, 3 controllers, 2 test files.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-9-2" data-status="todo">
+      <span class="title">9.2 The eight child, secure-pool, count and class-id loaders</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> rows 9&ndash;16 of 1.2 are registered by their own methods with constants (6 keep their name, 2 are renamed: <code>assessmentPaperSectionsByAssessmentPaperId</code> and <code>assessmentPaperItemsByAssessmentPaperSectionId</code>);
+         their 9 call sites in <code>GraphQLAssessmentController</code> use <code>require</code>; <code>AssessmentGraphQLTests</code> and <code>AssessmentCandidateGraphQLTests</code> (slice tests that import this config) are green, and
+         <code>grep -c 'registerMappedBatchLoader' src/main/java/com/sep/vox/interfaces/graphql/dataloader/AssessmentGraphQLDataLoaderConfig.java</code> prints 15. <strong>Files:</strong> 1 config, 1 controller, 2 slice tests.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests '*Assessment*GraphQL*' --tests '*GraphQLAssessment*'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ===================== PHASE 10 ===================== -->
+<div class="phase" id="phase-10" data-status="todo">
+  <h3><span class="title">Phase 10 &ndash; Question, Order, Invoice, Payment, RegisterForm and Subscription loaders</span>
+    <span class="tag">medium &middot; needs D4, D5</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> the remaining 14 loaders follow the same method size, naming and constant rules. They already sit in the right config; only the school loader of the Subscription config left in phase 7. <strong>Depends on:</strong> phase 7.</p>
+  <ul class="jobs">
+    <li class="job" id="job-10-1" data-status="todo">
+      <span class="title">10.1 Question config: 8 loaders</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> rows 29&ndash;36 of 1.2 are registered by their own methods with constants (including <code>accessibleQuestionByQuestionId</code> and <code>questionByQuestionIdWithoutAccessCheck</code>, whose comment about permissions moves with it); the 9 call sites in 3 controllers use <code>require</code>;
+         the <code>[blueprint-perf]</code> log lines and the access logic are unchanged. <strong>Files:</strong> 1 config, 3 controllers.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-10-2" data-status="todo">
+      <span class="title">10.2 Order, Invoice, Payment, RegisterForm and Subscription configs: 6 loaders</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> rows 26&ndash;28, 37, 53 and 54 of 1.2 carry their target names and constants; the 6 call sites in 3 controllers use <code>require</code>; <code>OrderGraphQLTests</code> and <code>RegisterFormGraphQLTests</code> are green; the 4 Vietnamese lines of
+         <code>InvoiceGraphQLDataLoaderConfig</code> and those of <code>GraphQLOrderController</code>, <code>GraphQLSubscriptionController</code> and <code>GraphQLRegisterFormController</code> that sit in edited code are translated. These loaders are read-only displays; no order, payment, quota or balance logic is touched.
+         <strong>Files:</strong> 5 configs, 3 controllers.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests '*GraphQL*'</code>; then <code>grep -rn 'getDataLoader(' src/main/java</code> prints only <code>GraphQLDataLoaders</code>.</p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ===================== PHASE 11 ===================== -->
+<div class="phase" id="phase-11" data-status="todo">
+  <h3><span class="title">Phase 11 &ndash; The candidate loader reads one row per assessment</span>
+    <span class="tag">small &middot; applies D7</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> <code>assessmentSchoolClassIdByAssessmentId</code> stops loading every candidate of every assessment; a per-parent windowed repository method returns the first one (D7 = A: the other 16 unpaged loaders stay as they are, and no GraphQL field changes). <strong>Depends on:</strong> phase 9, D7.</p>
+  <ul class="jobs">
+    <li class="job" id="job-11-1" data-status="todo">
+      <span class="title">11.1 First candidate per assessment for assessmentSchoolClassIdByAssessmentId</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>AssessmentCandidateRepository</code> has a method that returns at most one candidate per assessment (windowed native query ordered by <code>assigned_at, id</code>, implemented in the adapter and the Spring Data repository, no schema change so no migration);
+         the loader calls it instead of <code>findByAssessmentIdIn</code> and returns the same class ids; a <code>@RepositoryTest</code> proves 3 assessments with 5, 1 and 0 candidates give 2 rows, the earliest assigned candidate each; the loader&rsquo;s unit or slice test proves a class id is still resolved.
+         <strong>Files:</strong> <code>AssessmentCandidateRepository</code>, its adapter, <code>SpringDataAssessmentCandidateRepository</code>, the loader, 1 repository test, 1 loader test.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*GraphQL*'</code>, <code>./gradlew integrationTest --tests '*AssessmentCandidate*'</code> (needs Docker)</p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="callout">
+  <p><strong>Rules for phases 12&ndash;16 (D8, D9).</strong> (1) In the input record every component the schema lets the client omit is <code>ArgumentValue&lt;T&gt;</code>; components that are <code>!</code> in the schema stay plain, and no schema line changes.
+  (2) A field whose column is nullable (and <code>strictness</code>) gets a <code>&lt;field&gt;Provided</code> flag next to its value in the command, as in <code>UpdateProfileCommand</code>; <code>toCommand</code> passes <code>x.value()</code> and <code>!x.isOmitted()</code>.
+  The other components pass <code>x.value()</code> only (null = not given, as today). (3) Behavior of a flagged field: omitted keeps the stored value, an explicit null clears it (<code>strictness</code>: stores <code>STANDARD</code>), and any other value goes through today&rsquo;s normalization and validation unchanged &ndash;
+  only an explicit null clears, so a blank string behaves as it does today. (4) A command that keeps a flag the use case ignores is not allowed: every flag is read by the use case and covered by a test.
+  (5) A <code>COALESCE</code> update keeps <code>COALESCE(:param, column)</code> for required columns and takes one <code>:&lt;field&gt;Provided</code> parameter per clearable column (<code>column = CASE WHEN :fieldProvided = true THEN :field ELSE column END</code>); a bound null that Postgres cannot type is
+  wrapped in <code>CAST(... AS type)</code>; the domain repository method, its adapter and the Spring Data method change together. (6) Tests of each job: the record&rsquo;s <code>toCommand</code> (value, null, omitted), a real-binder GraphQL slice test that proves the field through the schema, the use-case tests (existing ones updated), and for a changed SQL statement a <code>@RepositoryTest</code> (Docker, <code>integrationTest</code>) with omitted, null and value.
+  (7) Vietnamese comments in the code a job edits are translated to English. (8) Create paths and the REST API keep their behavior; the one REST record that builds an affected command sets the flag from <code>value != null</code>.</p>
+</div>
+
+<!-- ===================== PHASE 12 ===================== -->
+<div class="phase" id="phase-12" data-status="todo">
+  <h3><span class="title">Phase 12 &ndash; Assessment policy and scoring rule inputs (full-replace today)</span>
+    <span class="tag">medium &middot; behavior change &middot; needs D8, D9</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> an update that omits <code>passingScore</code>, <code>strictness</code>, <code>effectiveTo</code> or a rule <code>description</code> keeps them, and an explicit null clears them. <strong>Depends on:</strong> phase 2 (the pattern is proven there), D8, D9.</p>
+  <ul class="jobs">
+    <li class="job" id="job-12-1" data-status="todo">
+      <span class="title">12.1 UpdateAssessmentPolicyInput (input/assessmentpolicysystem)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>passingScore</code>, <code>strictness</code> and <code>effectiveTo</code> are <code>ArgumentValue</code>; <code>UpdateAssessmentPolicyCommand</code> carries <code>passingScoreProvided</code>, <code>strictnessProvided</code> and <code>effectiveToProvided</code>; both overloads of <code>toUpdateAssessmentPolicyCommand</code> set them; <code>UpdateSystemAssessmentPolicyUseCase</code> and <code>UpdateSchoolAssessmentPolicyUseCase</code> keep the stored value for an omitted field, clear <code>passingScore</code> and <code>effectiveTo</code> on null, store <code>STANDARD</code> for a null <code>strictness</code>, and compare <code>effectiveFrom</code> with the effective <code>effectiveTo</code> for the existing &ldquo;from is after to&rdquo; rule. Proven through the real binder for both update-policy mutations (an input with only the two required fields leaves the three values alone; <code>passingScore: null</code> clears it) and by the use-case tests. <strong>Files:</strong> the input, <code>UpdateAssessmentPolicyCommand</code>, the 2 use cases, their tests, 1 slice test.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-12-2" data-status="todo">
+      <span class="title">12.2 UpdateScoringRuleInput (input/scoringrule)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>description</code> is <code>ArgumentValue</code>; <code>UpdateScoringRuleCommand</code> and <code>UpdateSchoolScoringRuleCommand</code> carry <code>descriptionProvided</code>; both <code>toUpdate...ScoringRuleCommand</code> methods set it; <code>UpdateSystemScoringRuleUseCase</code> (line 96) and <code>UpdateSchoolScoringRuleUseCase</code> (line 113) assign the description only when it is provided; a real-binder test proves omitted keeps and null clears. The other fields are required in the schema and stay plain. <strong>Files:</strong> the input, 2 commands, 2 use cases, their tests, 1 slice test.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests '*AssessmentPolicy*' --tests '*ScoringRule*' --tests '*GraphQL*'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ===================== PHASE 13 ===================== -->
+<div class="phase" id="phase-13" data-status="todo">
+  <h3><span class="title">Phase 13 &ndash; Framework inputs</span>
+    <span class="tag">medium &middot; behavior change &middot; needs D8, D9</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> the three full-replace framework inputs keep an omitted field and clear on null; the criterion-band descriptor can be cleared. <strong>Depends on:</strong> phase 12 (same rules, no shared code).</p>
+  <ul class="jobs">
+    <li class="job" id="job-13-1" data-status="todo">
+      <span class="title">13.1 UpdateFrameworkVersionInput (input/framework)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>description</code> and <code>effectiveTo</code> are <code>ArgumentValue</code>; <code>UpdateFrameworkVersionCommand</code> carries <code>descriptionProvided</code> and <code>effectiveToProvided</code>; <code>UpdateFrameworkVersionUseCase</code> builds the updated version from the stored value for an omitted field and from the command otherwise; the &ldquo;effective to must be after effective from&rdquo; check in <code>toCommand</code> (its message stays Vietnamese: it is user-facing text) and in the use case compares only values that are present; a real-binder test proves omitted keeps and null clears both fields. <strong>Files:</strong> the input, the command, the use case, tests.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-13-2" data-status="todo">
+      <span class="title">13.2 UpdateFrameworkCriterionInput and UpdateFrameworkResultBandInput (input/framework)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> both inputs type <code>description</code> as <code>ArgumentValue</code>; <code>UpdateFrameworkCriterionCommand</code> and <code>UpdateFrameworkResultBandCommand</code> carry <code>descriptionProvided</code>; <code>UpdateFrameworkCriterionUseCase</code> (line 97) and <code>UpdateFrameworkResultBandUseCase</code> (line 96) call <code>setDescription</code> only when provided; one real-binder test per input proves omitted keeps and null clears. <strong>Files:</strong> 2 inputs, 2 commands, 2 use cases, tests.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-13-3" data-status="todo">
+      <span class="title">13.3 UpdateFrameworkCriterionBandInput (input/framework)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>descriptor</code> is <code>ArgumentValue</code> and <code>UpdateFrameworkCriterionBandCommand</code> carries <code>descriptorProvided</code>; <code>UpdateFrameworkCriterionBandUseCase.updateCriterionBand</code> clears the descriptor on an explicit null, keeps it when omitted and keeps today&rsquo;s rule for a blank or non-null text; <code>positiveSignals</code> and <code>negativeSignals</code> are <code>ArgumentValue</code> in the record but behave exactly as today (null or empty list keeps them); the command has no existing test, so the use case gets its first tests here. <strong>Files:</strong> the input, the command, the use case, new tests.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests '*Framework*' --tests '*GraphQL*'</code></p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ===================== PHASE 14 ===================== -->
+<div class="phase" id="phase-14" data-status="todo">
+  <h3><span class="title">Phase 14 &ndash; Rubric inputs (system and school)</span>
+    <span class="tag">large &middot; behavior change &middot; SQL &middot; needs D8, D9</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> the four rubric update inputs can clear their nullable columns, for both the system and the school use cases that share the same atomic SQL. <strong>Depends on:</strong> phase 12.</p>
+  <ul class="jobs">
+    <li class="job" id="job-14-1" data-status="todo">
+      <span class="title">14.1 UpdateRubricInput (input/rubricsystem)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>name</code> and <code>description</code> are <code>ArgumentValue</code>; <code>UpdateSystemRubricCommand</code> and <code>UpdateSchoolRubricCommand</code> carry <code>descriptionProvided</code>; <code>updateRubricAtomic</code> (domain <code>RubricRepository</code>, <code>RubricRepositoryImpl</code>, <code>SpringDataRubricRepository</code>) clears <code>description</code> when asked and still uses <code>COALESCE</code> for <code>name</code>; the 2 use cases pass the flag (the comment &ldquo;blank = keep&rdquo; stays true and is translated); <code>UpdateSystemRubricRequest</code> (REST) sets the flag from <code>description != null</code> so the REST API keeps &ldquo;null means keep&rdquo;; a <code>@RepositoryTest</code> proves omitted, null and value for the statement. <strong>Files:</strong> the input, 2 commands, 2 use cases, 3 repository files, <code>UpdateSystemRubricRequest</code>, tests.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-14-2" data-status="todo">
+      <span class="title">14.2 UpdateRubricVersionInput (input/rubricsystem)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the 7 optional components are <code>ArgumentValue</code>; both version commands carry <code>descriptionProvided</code> and <code>effectiveToProvided</code>; <code>updateRubricVersionAtomic</code> clears <code>description</code> and <code>effective_to</code> when asked; <code>finalEffectiveTo</code> in both use cases (system line 97, school line 124) becomes null on an explicit null and the &ldquo;from after to&rdquo; check skips a null end; a real-binder test and a <code>@RepositoryTest</code> prove omitted, null and value. <strong>Files:</strong> the input, 2 commands, 2 use cases, 3 repository files, tests.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-14-3" data-status="todo">
+      <span class="title">14.3 UpdateRubricCriterionInput (input/rubricsystem)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the 8 optional components are <code>ArgumentValue</code>; both criterion commands carry <code>descriptionProvided</code> and <code>examplesJsonProvided</code>; <code>updateCriterionAtomic</code> clears <code>description</code> and <code>examples_json</code> when asked and keeps <code>COALESCE</code> for the 6 required columns; the 2 use cases pass the flags; tests prove omitted, null and value through the binder and the repository. <strong>Files:</strong> the input, 2 commands, 2 use cases, 3 repository files, tests.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-14-4" data-status="todo">
+      <span class="title">14.4 UpdateRubricResultBandInput (input/rubricsystem)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the 5 optional components are <code>ArgumentValue</code>; both result-band commands carry <code>descriptionProvided</code>; <code>updateResultBandAtomic</code> clears <code>description</code> when asked; the 2 use cases pass the flag; tests prove omitted, null and value through the binder and the repository. <strong>Files:</strong> the input, 2 commands, 2 use cases, 3 repository files, tests.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests '*Rubric*' --tests '*GraphQL*' --tests '*RestRubric*'</code>, <code>./gradlew integrationTest --tests '*Rubric*'</code> (needs Docker)</p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ===================== PHASE 15 ===================== -->
+<div class="phase" id="phase-15" data-status="todo">
+  <h3><span class="title">Phase 15 &ndash; School-area inputs</span>
+    <span class="tag">medium &middot; behavior change &middot; SQL &middot; needs D8, D9</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> school, room, grade and grade-level updates can clear their nullable columns. <strong>Depends on:</strong> phase 12.</p>
+  <ul class="jobs">
+    <li class="job" id="job-15-1" data-status="todo">
+      <span class="title">15.1 UpdateSchoolRequest (input/school)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the 7 optional components are <code>ArgumentValue</code>; <code>UpdateSchoolCommand</code> carries <code>descriptionProvided</code> and <code>domainProvided</code>; <code>updateSchoolAtomic</code> clears <code>description</code> and <code>domain</code> when asked and keeps <code>COALESCE</code> for the 5 required columns; <code>UpdateSchoolUseCase</code> skips the domain normalization for a cleared domain (it checks only phone and email for duplicates); a real-binder test and a <code>@RepositoryTest</code> prove omitted, null and value; the Vietnamese comments in the edited statement and use case are translated. <strong>Files:</strong> the input, the command, the use case, 3 repository files, tests.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-15-2" data-status="todo">
+      <span class="title">15.2 UpdateSchoolRoomRequest, UpdateSchoolGradeRequest and UpdateGradeLevelRequest (input/schoolroom, input/schoolgrade, input/gradelevel)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> each input types its optional components as <code>ArgumentValue</code>; <code>UpdateSchoolRoomCommand</code>, <code>UpdateSchoolGradeCommand</code> and <code>UpdateGradeLevelCommand</code> carry <code>descriptionProvided</code>; <code>updateSchoolRoomAtomic</code>, <code>updateSchoolGradeAtomic</code> and <code>updateGradeLevelAtomic</code> clear <code>description</code> when asked; the 3 use cases pass the flag (grade level keeps its <code>validateOrder</code> and unique-order conflict handling); tests prove omitted, null and value through the binder and the repository. <strong>Files:</strong> 3 inputs, 3 commands, 3 use cases, 9 repository files, tests.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests '*School*' --tests '*GradeLevel*' --tests '*GraphQL*'</code>, <code>./gradlew integrationTest --tests '*School*' --tests '*GradeLevel*'</code> (needs Docker)</p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ===================== PHASE 16 ===================== -->
+<div class="phase" id="phase-16" data-status="todo">
+  <h3><span class="title">Phase 16 &ndash; Schedule, interest dimension and subscription plan inputs</span>
+    <span class="tag">medium &middot; behavior change &middot; needs D8, D9</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> the last three inputs follow the same rules. <strong>Depends on:</strong> phase 12.</p>
+  <ul class="jobs">
+    <li class="job" id="job-16-1" data-status="todo">
+      <span class="title">16.1 UpdateAssessmentScheduleInput (input/assessmentschedule)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the 3 components are <code>ArgumentValue</code>; <code>UpdateAssessmentScheduleCommand</code> carries <code>schoolRoomIdProvided</code>; in <code>UpdateAssessmentScheduleUseCase</code> the effective room is null when the room is cleared, the room-ownership check runs only for a non-null room, and the room-overlap check is skipped for a null room (a test proves clearing the room neither throws nor queries overlaps for a null room); both write paths clear the room (<code>save</code> for class tests, <code>AssessmentScheduleRepository.updateAtomic</code> with the new flag); the existing status and window rules still run on the effective values; <code>startDate</code> and <code>endDate</code> treat null as not given as today. Tests: real binder, use case (both paths), <code>@RepositoryTest</code> for <code>updateAtomic</code>. <strong>Files:</strong> the input, the command, the use case, 3 repository files, tests.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-16-2" data-status="todo">
+      <span class="title">16.2 UpsertInterestDimensionInput (input/interestdimension)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the 5 optional components are <code>ArgumentValue</code>; <code>UpsertInterestDimensionCommand</code> carries <code>descriptionProvided</code>; the one input serves both <code>createInterestDimension</code> and <code>updateInterestDimension</code>, so the conversion moves from the private <code>toCommand</code> of <code>GraphQLInterestDimensionController</code> into the record as a static <code>toCommand</code> (AGENTS.md: the request record converts itself) and sets the flag for both; <code>ManageInterestDimensionUseCase.update</code> keeps the description when it is not provided and clears it on null, <code>create</code> ignores the flag (a null description still means none); tests prove omitted, null and value for <code>updateInterestDimension</code> and that <code>createInterestDimension</code> is unchanged. <strong>Files:</strong> the input, the command, the use case, <code>GraphQLInterestDimensionController</code>, tests.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-16-3" data-status="todo">
+      <span class="title">16.3 UpdateSubscriptionPlanInput (input/subscription)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the 6 optional components are <code>ArgumentValue</code> and <code>toCommand</code> flattens them with <code>.value()</code>; <code>UpdateSubscriptionPlanCommand</code>, the use case and SQL are unchanged (every column is <code>NOT NULL</code>); a real-binder test proves that an omitted field, an explicit null and an absent <code>quotas</code> all leave the plan alone and that an empty <code>quotas</code> list behaves as it does today; the comment on <code>quotas</code> (null versus empty list) stays accurate. <strong>Files:</strong> the input, 1 slice test.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests '*AssessmentSchedule*' --tests '*InterestDimension*' --tests '*SubscriptionPlan*' --tests '*GraphQL*'</code>, <code>./gradlew integrationTest --tests '*AssessmentSchedule*'</code> (needs Docker)</p>
+  <ul class="status-log"></ul>
+</div>
+
+<!-- ===================== PHASE 17 ===================== -->
+<div class="phase" id="phase-17" data-status="todo">
+  <h3><span class="title">Phase 17 &ndash; Guards and documentation</span>
+    <span class="tag">small &middot; applies D2, D6</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> the new layout and the loader rules are enforced by a test and written in AGENTS.md. <strong>Depends on:</strong> phases 1&ndash;16, D2, D6, D8, D9.</p>
+  <ul class="jobs">
+    <li class="job" id="job-17-1" data-status="todo">
+      <span class="title">17.1 GraphQLDataLoaderConventionTests</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the test scans <code>src/main/java</code> and fails on (a) <code>getDataLoader(</code> outside <code>GraphQLDataLoaders</code>, (b) a <code>forName(</code> argument that is not a constant of the same config, (c) two registrations of one name, (d) a name that does not match
+         <code>&lt;result&gt;By&lt;KeyField&gt;</code>; it has a self-test for each rule that feeds it a violating snippet (like <code>InterfacesStructureConventionTests</code>), and it is green on the final tree.
+         <strong>Files:</strong> <code>src/test/java/com/sep/vox/architecture/GraphQLDataLoaderConventionTests.java</code> (new).</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-17-2" data-status="todo">
+      <span class="title">17.2 Update AGENTS.md</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> AGENTS.md says: (1) the layer table row for <code>interfaces</code> lists REST request DTOs in <code>rest/dto/request/&lt;feature&gt;/</code>, GraphQL inputs in <code>graphql/input/&lt;feature&gt;/</code>, loaders in <code>graphql/dataloader</code>,
+         keys in <code>graphql/key</code>, scalars in <code>graphql/scalar</code>; (2) &ldquo;Where things go&rdquo; item 5 drops &ldquo;the GraphQL <code>Map</code> mappers&rdquo; and states that a GraphQL input field the client may omit is an <code>ArgumentValue&lt;T&gt;</code> and never a <code>Map</code>; an update field whose column is nullable carries a
+         <code>&lt;field&gt;Provided</code> flag in its command (omitted keeps the stored value, an explicit null clears it, any other value behaves as before) and an explicit null on a required column means &ldquo;not given&rdquo;;
+         (3) a new convention bullet gives the loader rules (config per schema file, name <code>&lt;result&gt;By&lt;KeyField&gt;</code> as a constant, called only through <code>GraphQLDataLoaders.require</code>, key plus per-parent windowed repository method for lists that can exceed 20 rows per parent);
+         (4) the Testing bullet on <code>InterfacesStructureConventionTests</code> names <code>graphql/input</code>, and a bullet describes <code>GraphQLDataLoaderConventionTests</code>. The user confirms the diff before it is committed (AGENTS.md: changing it needs confirmation).
+         <strong>Files:</strong> <code>AGENTS.md</code>.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew test --tests '*GraphQLDataLoaderConventionTests' --tests '*InterfacesStructureConventionTests' --tests '*LayeredArchitectureTests' --tests '*LombokUsageConventionTests'</code>, then <code>./gradlew test</code>.</p>
+  <ul class="status-log"></ul>
+</div>
+
+<h2 id="risks">4. Risks</h2>
+<ul>
+  <li><strong>Omitted versus null drifts in the four inputs.</strong> This is the one semantic the Map existed to protect (<code>avatarUrl: null</code> removes an avatar). Each job in phase 2 proves it through the real binder for the fields that matter, and job 2.1 runs first because
+  it has the most existing coverage; if spring-graphql 2.0.4 does not bind <code>ArgumentValue</code> in a record the way the 2.0.5 source reads, the phase stops there and the plan is revised.</li>
+  <li><strong>A missed loader rename fails only when a client resolves that field.</strong> The constants (D5) make it a compile error, and the guard test plus <code>GraphQLDataLoaders.require</code> catch a literal or an unregistered name.</li>
+  <li><strong>Slice tests lose a loader.</strong> Moving a loader to another config means a slice test that imported the old config no longer registers it (for example <code>AssessmentGraphQLTests</code> after the school-room loader moves). Compilation will not show it; the jobs name the slice tests to run, and the rule
+  &ldquo;a slice test imports the config that owns the loader&rdquo; is in every loader job.</li>
+  <li><strong>Merged loaders share one cache and batch.</strong> One DataLoader now serves what three did, so a request makes fewer queries and one user is loaded once; the repository call and mapper were identical, so results do not change. The guard in <code>schoolDataLoader</code> for an empty id set is dropped because a DataLoader never calls its batch function with no keys.</li>
+  <li><strong>A new pattern (D4).</strong> <code>@PostConstruct</code> registration is not used elsewhere in the repository; job 6.1 is the first use, so a problem shows early.</li>
+  <li><strong>Behavior change for existing clients (D8).</strong> Two things now behave differently for the same request: a client that omits a group-2 field (<code>passingScore</code>, <code>strictness</code>, <code>effectiveTo</code>, a framework or scoring-rule <code>description</code>) now keeps it instead of clearing it,
+  and a client that sends an explicit <code>null</code> for one of the 14 clearable group-1 fields (1.4) now clears it instead of keeping it. A form that sends <code>null</code> for an untouched field would wipe data after the release. The plan cannot make old and new clients both safe; table 1.4 is the checklist for the frontend, and phases 12&ndash;16 are independent so each can be held back.</li>
+  <li><strong>SQL with an optional clear.</strong> <code>CASE WHEN :fieldProvided ... :field</code> with a null parameter can fail on Postgres (&ldquo;could not determine data type of parameter&rdquo;) and the 9 statements bypass auditing (they set <code>updated_at</code>/<code>updated_by</code> themselves). The <code>@RepositoryTest</code>s catch the first (they need Docker and run in <code>integrationTest</code>, not in <code>./gradlew test</code>); each job keeps the existing audit columns in its statement.</li>
+  <li><strong>Wider commands.</strong> 21 commands gain 1&ndash;3 flags each; tests that construct them positionally stop compiling, which is how the missing updates show up. A flag that no use case reads is a bug, so rule (4) in phases 12&ndash;16 requires a test per flag.</li>
+  <li><strong>The REST rubric update.</strong> <code>UpdateSystemRubricRequest</code> is the only REST record that builds an affected command; if it forgets to set the flag, REST starts clearing descriptions on a plain null. Job 14.1 names it and tests it.</li>
+  <li><strong>The candidate loader&rsquo;s &ldquo;first&rdquo; becomes deterministic.</strong> Today <code>findByAssessmentIdIn</code> has no <code>ORDER BY</code>, so which candidate comes first is up to the database; the new method orders by <code>assigned_at, id</code>. If every candidate of an assessment is in the same class (the loader&rsquo;s premise) the result is unchanged; if classes are mixed, it now picks the earliest assigned one consistently.</li>
+  <li><strong>Money and security areas.</strong> Order, invoice, payment and subscription loaders are renamed and re-registered, nothing more. No payment, quota, balance, JWT or security configuration is touched; <code>@PreAuthorize</code> annotations on controller methods are left as they are.</li>
+  <li><strong>Large diff.</strong> 50 files move (27 inputs, 8 keys, 15 config files), 17 controllers and at least 7 test files change for the loaders, 12 configs are rewritten, and phases 12&ndash;16 touch 21 commands, 22 use cases, 9 SQL statements, 17 input records and every test that builds those commands. Every phase leaves the build green and is reviewable alone; moves use <code>git mv</code> so review can follow them.</li>
+</ul>
+
+<h2 id="scope">5. Out of scope</h2>
+<ul>
+  <li>The 4 Map-input commands keep their <code>value</code> + <code>valueProvided</code> pairs (only the Javadoc that names a mapper changes). The 21 commands of phases 12&ndash;16 gain flags only for clearable fields; commands and use cases of the 42 required fields stay as they are (D9).</li>
+  <li>Not added by phases 12&ndash;16: an &ldquo;at least one field must be provided&rdquo; rule, clearing the criterion-band signal lists (null or empty keeps them, as today), treating a blank string as a clear, and any new 400 for an explicit null on a required field.</li>
+  <li>Create mutations and create paths (for example interest dimension create) and the REST API (apart from keeping <code>UpdateSystemRubricRequest</code> on its old semantics).</li>
+  <li>The names of the 27 existing input records (<code>UpdateSchoolRequest</code>, <code>UpdateRubricInput</code>, ...) and the REST side (<code>rest/dto/request</code>, <code>rest/mapper</code>) are untouched; only the GraphQL package name changes.</li>
+  <li>No GraphQL schema change (no <code>!</code> added or removed) and no change to an authorization rule or a DTO; use cases change only in phases 12&ndash;16, for the fields in 1.4. Paging <code>Assessment.schedules</code> and <code>Assessment.members</code> (D7 option B) is not done: it would change the contract and break the scheduling progress bar; the other 16 unpaged loaders stay unpaged because their parents are bounded by the model.</li>
+  <li><code>UserRolesKey</code> (a key that carries only a user id) and the unused <code>SchoolClassUsersKey</code> are moved, not removed or reshaped.</li>
+  <li>A new loader of the shape <code>usersByUserIds</code>: no schema field needs it (see D1).</li>
+  <li>Noticed while reading, not fixed: field resolvers that query once per parent and therefore are N+1 &ndash; <code>GraphQLUserController.userSchool</code> (also injects two repositories into a controller),
+  <code>GraphQLAssessmentScheduleController.proctors</code> and <code>.candidateCount</code>. They are candidates for loaders in a later plan; this is not an audit of every controller.</li>
+  <li>Vietnamese comments in files touched only on an import line, and in the 12 controllers that have Vietnamese text but no loader or input change.</li>
+</ul>
+
+<h2 id="verify">6. Verification</h2>
+<p>After phase 17, run the <code>verify-plan</code> skill. The plan is finished when all of these hold:</p>
+<ul>
+  <li><code>./gradlew compileJava compileTestJava</code> and <code>./gradlew test</code> are green; <code>./gradlew integrationTest</code> is green if Docker is available (state plainly if it was not run).</li>
+  <li><code>ls src/main/java/com/sep/vox/interfaces/graphql</code> lists <code>controller dataloader exception input key scalar</code> (no <code>config</code>, <code>dto</code>, <code>mapper</code>); <code>src/main/java/com/sep/vox/application/port/input/query/key</code> does not exist.</li>
+  <li><code>grep -rn '@Argument(name = "input") Map' src/main/java</code> prints nothing; <code>grep -rn 'getDataLoader(' src/main/java</code> prints only <code>GraphQLDataLoaders</code>; <code>grep -rh 'forName(' src/main/java/com/sep/vox/interfaces/graphql/dataloader | wc -l</code> prints 51.</li>
+  <li><code>git diff --stat default -- src/main/resources/graphql</code> prints nothing (the schema is unchanged).</li>
+  <li>Each of the 21 flagged fields of 1.4 behaves as stated in the rules of phases 12&ndash;16 (omitted keeps, null clears, value sets), proven by the tests of its job; <code>./gradlew integrationTest --tests '*Repository*'</code> is green for the 9 changed statements if Docker is available; <code>git diff --stat default -- src/main/resources/graphql</code> still prints nothing.</li>
+  <li>No method of a changed config is longer than 25 lines; every Vietnamese comment in code the plan edited is English; <code>InterfacesStructureConventionTests</code>&rsquo; mapper allow-list lost exactly the 4 graphql mappers.</li>
+</ul>
+
+<h2 id="changelog">7. Change log</h2>
+<div class="table-scroll"><table>
+  <thead><tr><th>Date</th><th>Change</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>2026-11-24</td><td>Plan written (Draft)</td><td>First version</td></tr>
+    <tr><td>2026-11-24</td><td>D2&ndash;D7 answered (all recommended options). Jobs 11.2 and 11.3 (paged schedules and members) removed; &ldquo;if D&hellip; = B&rdquo; conditions removed from phases 6, 11, 12, the risks and the verification list</td><td>D7 = A keeps the GraphQL contract unchanged; the other options were not chosen</td></tr>
+    <tr><td>2026-11-24</td><td>Audit of the other 27 GraphQL inputs added (1.3) and decision D8 opened</td><td>The user asked to check whether other inputs also need <code>ArgumentValue</code>; approval is held until D8 is answered</td></tr>
+    <tr><td>2026-11-24</td><td>D8 answered: all 17 nullable update inputs; D9 added and answered: explicit null on a required field means not given. Section 1.4 and phases 12&ndash;16 added (jobs 12.1&ndash;16.3); the guards and documentation phase renumbered 12 &rarr; 17 (jobs 17.1, 17.2); goal, risks, out of scope and verification updated</td><td>D8 = C widens the plan to the 21 clearable fields measured in 1.4; D9 keeps required columns as they are</td></tr>
+    <tr><td>2026-11-24</td><td>Approved</td><td>The user approved the plan as written after all nine decisions were answered</td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="notes">8. Implementation notes</h2>
+<p>Filled in by <code>implement-plan</code>: deviations from the plan, results of <code>verify-plan</code>, and
+problems noticed but not fixed.</p>
+<ul id="notes-list"></ul>
+
+</div>
+<script>
+  (function () {
+    var labels = { todo: "Not started", progress: "In progress", done: "Done", blocked: "Blocked", skipped: "Deferred" };
+    var body = document.getElementById("overview-body");
+    var summary = document.getElementById("overview-summary");
+    var phaseCounts = {};
+    document.querySelectorAll(".phase[data-status], .job[data-status]").forEach(function (element) {
+      var status = element.getAttribute("data-status");
+      if (element.classList.contains("phase")) { phaseCounts[status] = (phaseCounts[status] || 0) + 1; }
+      var row = body.insertRow();
+      var nameCell = row.insertCell();
+      if (element.classList.contains("job")) { nameCell.className = "indent"; }
+      var link = document.createElement("a");
+      link.href = "#" + element.id;
+      link.textContent = element.querySelector(".title").textContent;
+      nameCell.appendChild(link);
+      var pill = document.createElement("span");
+      pill.className = "status " + status;
+      pill.textContent = labels[status] || status;
+      row.insertCell().appendChild(pill);
+    });
+    var parts = Object.keys(labels).filter(function (key) { return phaseCounts[key]; })
+      .map(function (key) { return phaseCounts[key] + " " + labels[key].toLowerCase(); });
+    summary.textContent = parts.length ? "Phases: " + parts.join(" · ") : "";
+  })();
+</script>
+</body>
+</html>

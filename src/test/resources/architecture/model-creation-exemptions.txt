@@ -2,7 +2,6 @@
 application/port/input/service/DistributeQuotaToUsersService.java
 application/port/input/service/InterestVectorService.java
 application/port/input/service/KeywordTopicPersistenceService.java
-application/port/input/service/MissingResponseBackfillService.java
 application/port/input/service/PracticePaperPersistenceService.java
 application/port/input/service/PracticeQuestionGenerationService.java
 application/port/input/service/ProvisionSchoolService.java
@@ -10,7 +9,6 @@ application/port/input/service/QuestionImportCommitHandler.java
 application/port/input/service/QuestionTopicImportCommitHandler.java
 application/port/input/service/QuotaPricingCalibrationService.java
 application/port/input/service/ResolveNextPracticeQuestionPersistenceService.java
-application/port/input/service/ResultStatusHistoryRecorder.java
 application/port/input/service/SchoolClassUserImportCommitHandler.java
 application/port/input/service/SchoolDebtNotificationService.java
 application/port/input/service/SchoolGradeImportCommitHandler.java
@@ -18,10 +16,6 @@ application/port/input/service/SchoolRoomImportCommitHandler.java
 application/port/input/service/SchoolUserImportCommitHandler.java
 application/port/input/service/StartPracticeSessionPersistenceService.java
 application/port/input/service/TopicSuggestionService.java
-application/port/input/usecase/assessmentevaluation/RecordAssessmentAttemptEvaluationUseCase.java
-application/port/input/usecase/assessmentgrading/BulkFinalizeAssessmentResultsUseCase.java
-application/port/input/usecase/assessmentgrading/RegradeResultUseCase.java
-application/port/input/usecase/assessmentitemresponse/RecordAnswerTurnUseCase.java
 application/port/input/usecase/framework/CreateFrameworkCriteriaUseCase.java
 application/port/input/usecase/framework/CreateFrameworkCriterionBandsUseCase.java
 application/port/input/usecase/framework/CreateFrameworkResultBandsUseCase.java

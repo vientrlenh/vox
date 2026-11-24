@@ -107,6 +107,23 @@ public class AssessmentItemResponseTurn {
         this.createdAt = createdAt;
     }
 
+    public static AssessmentItemResponseTurn answered(UUID assessmentItemResponseId, int turnOrder,
+                                                      TurnType turnType, String promptText, String audioUrl,
+                                                      String transcript, Integer durationSeconds, Integer wordCount,
+                                                      Instant answeredAt) {
+        return builder()
+                .assessmentItemResponseId(assessmentItemResponseId)
+                .turnOrder(turnOrder)
+                .turnType(turnType)
+                .promptText(promptText)
+                .audioUrl(audioUrl)
+                .transcript(transcript)
+                .durationSeconds(durationSeconds)
+                .wordCount(wordCount)
+                .answeredAt(answeredAt)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

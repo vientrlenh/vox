@@ -465,27 +465,27 @@
   <ul class="status-log"><li>2026-11-24 &middot; Done &middot; Both jobs done and verify passes. Evidence: `./gradlew compileJava compileTestJava` clean; `./gradlew test --tests` for Assessment, ClassTest, Recording, Proctor, ZeroScore, ModelCreationConventionTests, LayeredArchitectureTests, MethodSizeConventionTests, ModelAndEntityConventionTests BUILD SUCCESSFUL.</li></ul>
 </div>
 
-<div class="phase" id="phase-7" data-status="todo">
+<div class="phase" id="phase-7" data-status="done">
   <h3><span class="title">Phase 7 &ndash; Model methods: Responses, evaluations and result history</span>
     <span class="tag">medium · needs D4</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> Application code stops calling <code>builder()</code> for 6 models (13 calls in 6 files); the models gain the methods that build them. <strong>Depends on:</strong> Phase 1, D4. Comments in the edited code follow the rule of D1.</p>
   <ul class="jobs">
-    <li class="job" id="job-7-1" data-status="todo">
-      <span class="title">7.1 Add the methods to the models (domain)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-7-1" data-status="done">
+      <span class="title">7.1 Add the methods to the models (domain)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> Each of <code>AssessmentItemEvaluation</code> (4), <code>AssessmentItemEvaluationTurn</code> (1), <code>AssessmentItemCriterionScore</code> (2), <code>AssessmentItemResponse</code> (2), <code>AssessmentItemResponseTurn</code> (1), <code>AssessmentResultStatusHistory</code> (3) has the public static factories and instance methods its call sites need (names per D4): one method per distinct set of fields among the call sites, defaults (counters, initial status, nulls spelled out by callers) set inside the model, built through the model's own <code>builder()</code>; each method has a unit test in <code>src/test/java/com/sep/vox/domain/model/</code> that asserts the defaults and the arguments it sets; <code>LayeredArchitectureTests</code> still passes (<code>domain</code> stays plain Java).
          <strong>Files:</strong> <code>domain/model/...</code> for the 6 models above, one new <code>*Tests</code> per model in the mirrored test package</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-24 &middot; Done &middot; 9 factories on the 6 models: AssessmentItemEvaluation.zeroScoredWithoutRecording/autoGraded/humanGraded, AssessmentItemEvaluationTurn.recorded, AssessmentItemCriterionScore.scored/scoredWithoutBand, AssessmentItemResponse.answered/withoutRecording, AssessmentItemResponseTurn.answered, AssessmentResultStatusHistory.transition. One *Tests class per model in domain/model/assessment. Evidence: AssessmentItemEvaluationTests, AssessmentItemEvaluationTurnTests, AssessmentItemCriterionScoreTests, AssessmentItemResponseTests, AssessmentItemResponseTurnTests, AssessmentResultStatusHistoryTests; LayeredArchitectureTests and MethodSizeConventionTests pass.</li></ul>
     </li>
-    <li class="job" id="job-7-2" data-status="todo">
-      <span class="title">7.2 Replace the call sites in application</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-7-2" data-status="done">
+      <span class="title">7.2 Replace the call sites in application</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 13 calls in these 6 files use the new methods; <code>grep -rnE '(AssessmentItemEvaluation|AssessmentItemEvaluationTurn|AssessmentItemCriterionScore|AssessmentItemResponse|AssessmentItemResponseTurn|AssessmentResultStatusHistory)\.builder\(\)' src/main/java/com/sep/vox/application</code> prints nothing; a file leaves the <code>ModelCreationConventionTests</code> exemptions when its last builder call is gone; unused imports and locals the change orphaned are removed; Vietnamese comments in the edited lines are in English; the use case tests of these classes are updated and pass.
          <strong>Files:</strong> <code>BulkFinalizeAssessmentResultsUseCase</code>, <code>MissingResponseBackfillService</code>, <code>RecordAnswerTurnUseCase</code>, <code>RecordAssessmentAttemptEvaluationUseCase</code>, <code>RegradeResultUseCase</code>, <code>ResultStatusHistoryRecorder</code>; their tests; <code>ModelCreationConventionTests</code> exemptions</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-24 &middot; Done &middot; 13 builder calls in 6 files replaced; orphaned imports removed (BigDecimal, AssessmentEvaluationEngineType, AssessmentItemEvaluationStatus from MissingResponseBackfillService; AssessmentEvaluationEngineType from RegradeResultUseCase). The 6 files left model-creation-exemptions.txt; MissingResponseBackfillService.recordSilentAnswer (now 25 lines or fewer) left method-size-exemptions.txt. The reason comment of RegradeResultUseCase moved into AssessmentItemEvaluation.humanGraded. Evidence: grep for builder() of the 6 models in application prints nothing; ./gradlew test BUILD SUCCESSFUL.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*Evaluation*' --tests '*Grading*' --tests '*ItemResponse*' --tests '*ModelCreationConventionTests' --tests '*LayeredArchitectureTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-24 &middot; Done &middot; Both jobs done and verify passes. Evidence: `./gradlew compileJava compileTestJava` clean; full `./gradlew test` BUILD SUCCESSFUL.</li></ul>
 </div>
 
 <div class="phase" id="phase-8" data-status="todo">

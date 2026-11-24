@@ -50,7 +50,6 @@ application/port/input/service/InterestVectorService.java#recordSessionOutcome(U
 application/port/input/service/KeywordTopicPersistenceService.java#createTopicAndRecordRequest(UUID,String,String,String,String,String)
 application/port/input/service/LearnerProfileCommandService.java#submitQuiz(UUID,List<QuizAnswer>)
 application/port/input/service/MissingResponseBackfillService.java#backfill(UUID,UUID)
-application/port/input/service/MissingResponseBackfillService.java#recordSilentAnswer(UUID,UUID)
 application/port/input/service/OrderSettlementService.java#activateSubscription(Order,Instant)
 application/port/input/service/OrderSettlementService.java#carryForwardUserAllocations(UUID,UUID,UUID,Map<QuotaType,BigDecimal>)
 application/port/input/service/OrderSettlementService.java#creditBalance(Order,Instant)

@@ -115,6 +115,26 @@ public class AssessmentItemEvaluationTurn {
         this.wordFeedbackJson = wordFeedbackJson;
     }
 
+    public static AssessmentItemEvaluationTurn recorded(UUID evaluationId, int turnOrder, TurnType turnType,
+                                                        String promptText, String audioUrl, String transcript,
+                                                        int wordCount, Integer durationSeconds, Double asrConfidence,
+                                                        String pronunciationOverallJson, String wordFeedbackJson) {
+        return builder()
+                .id(UUID.randomUUID())
+                .evaluationId(evaluationId)
+                .turnOrder(turnOrder)
+                .turnType(turnType)
+                .promptText(promptText)
+                .audioUrl(audioUrl)
+                .transcript(transcript)
+                .wordCount(wordCount)
+                .durationSeconds(durationSeconds)
+                .asrConfidence(asrConfidence)
+                .pronunciationOverallJson(pronunciationOverallJson)
+                .wordFeedbackJson(wordFeedbackJson)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

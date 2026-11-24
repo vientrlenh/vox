@@ -16,6 +16,9 @@ import org.springframework.graphql.test.tester.GraphQlTester;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import com.sep.vox.application.port.input.command.rubricsystem.UpdateSystemRubricCommand;
+import com.sep.vox.application.port.input.command.rubricsystem.UpdateSystemRubricCriterionCommand;
+import com.sep.vox.application.port.input.command.rubricsystem.UpdateSystemRubricResultBandCommand;
 import com.sep.vox.application.port.input.command.rubricsystem.UpdateSystemRubricVersionCommand;
 import com.sep.vox.application.port.input.query.rubricsystem.ViewSystemRubricVersionsQuery;
 import com.sep.vox.application.port.input.usecase.rubricschool.SearchSchoolRubricCriteriaUseCase;
@@ -70,8 +73,8 @@ import com.sep.vox.support.GraphQLControllerTest;
     SearchSchoolRubricsUseCase.class, SearchSystemRubricCriteriaUseCase.class, SearchSystemRubricResultBandsUseCase.class,
     SearchSystemRubricVersionsUseCase.class, SearchSystemRubricsUseCase.class, SearchTeacherRubricsUseCase.class,
     UpdateSchoolRubricCriterionUseCase.class, UpdateSchoolRubricResultBandUseCase.class, UpdateSchoolRubricUseCase.class,
-    UpdateSchoolRubricVersionUseCase.class, UpdateSystemRubricCriterionUseCase.class, UpdateSystemRubricResultBandUseCase.class,
-    UpdateSystemRubricUseCase.class, ViewSchoolRubricCriteriaUseCase.class, ViewSchoolRubricCriterionDetailsUseCase.class,
+    UpdateSchoolRubricVersionUseCase.class,
+    ViewSchoolRubricCriteriaUseCase.class, ViewSchoolRubricCriterionDetailsUseCase.class,
     ViewSchoolRubricDetailsUseCase.class, ViewSchoolRubricResultBandDetailsUseCase.class, ViewSchoolRubricResultBandsUseCase.class,
     ViewSchoolRubricVersionDetailsUseCase.class, ViewSchoolRubricVersionsUseCase.class, ViewSchoolRubricsUseCase.class,
     ViewSystemRubricCriterionDetailsUseCase.class, ViewSystemRubricDetailsUseCase.class, ViewSystemRubricResultBandDetailsUseCase.class,
@@ -89,6 +92,12 @@ class RubricGraphQLTests {
     private ViewSystemRubricVersionsUseCase viewSystemRubricVersionsUseCase;
     @MockitoBean
     private UpdateSystemRubricVersionUseCase updateSystemRubricVersionUseCase;
+    @MockitoBean
+    private UpdateSystemRubricUseCase updateSystemRubricUseCase;
+    @MockitoBean
+    private UpdateSystemRubricResultBandUseCase updateSystemRubricResultBandUseCase;
+    @MockitoBean
+    private UpdateSystemRubricCriterionUseCase updateSystemRubricCriterionUseCase;
     @MockitoBean
     private ViewSystemRubricCriteriaUseCase viewSystemRubricCriteriaUseCase;
     @MockitoBean
@@ -172,8 +181,8 @@ class RubricGraphQLTests {
             .variable("effectiveFrom", "2026-09-01T00:00:00+07:00").variable("method", "SUM").execute()
             .errors().verify();
 
-        verify(updateSystemRubricVersionUseCase).execute(new UpdateSystemRubricVersionCommand(VERSION_ID, null, null,
-            Instant.parse("2026-08-31T17:00:00Z"), null, null, null, RubricTotalScoreMethod.SUM));
+        verify(updateSystemRubricVersionUseCase).execute(new UpdateSystemRubricVersionCommand(VERSION_ID, null, null, false,
+            Instant.parse("2026-08-31T17:00:00Z"), null, false, null, null, RubricTotalScoreMethod.SUM));
     }
 
     @Test
@@ -196,5 +205,68 @@ class RubricGraphQLTests {
             .verify();
 
         verifyNoInteractions(updateSystemRubricVersionUseCase);
+    }
+
+    @Test
+    @WithMockUser(roles = "SYSTEM_ADMIN")
+    void update_rubric_should_distinguish_omitted_null_and_value_description() {
+        when(updateSystemRubricUseCase.execute(any())).thenReturn(RUBRIC_ID);
+        String mutation = "mutation { updateSystemRubric(id: \"%s\", input: { name: \"Rubric\" %s }) }";
+
+        graphQlTester.document(mutation.formatted(RUBRIC_ID, "")).execute().errors().verify();
+        graphQlTester.document(mutation.formatted(RUBRIC_ID, ", description: null")).execute().errors().verify();
+        graphQlTester.document(mutation.formatted(RUBRIC_ID, ", description: \"Text\"")).execute().errors().verify();
+
+        verify(updateSystemRubricUseCase).execute(new UpdateSystemRubricCommand(RUBRIC_ID, "Rubric", null, false));
+        verify(updateSystemRubricUseCase).execute(new UpdateSystemRubricCommand(RUBRIC_ID, "Rubric", null, true));
+        verify(updateSystemRubricUseCase).execute(new UpdateSystemRubricCommand(RUBRIC_ID, "Rubric", "Text", true));
+    }
+
+    @Test
+    @WithMockUser(roles = "SYSTEM_ADMIN")
+    void update_version_should_distinguish_omitted_null_and_value_for_description_and_effective_to() {
+        when(updateSystemRubricVersionUseCase.execute(any())).thenReturn(VERSION_ID);
+        String mutation = "mutation { updateSystemRubricVersion(versionId: \"%s\", input: { %s }) }";
+
+        graphQlTester.document(mutation.formatted(VERSION_ID, "name: \"V\"")).execute().errors().verify();
+        graphQlTester.document(mutation.formatted(VERSION_ID, "description: null, effectiveTo: null")).execute().errors().verify();
+        graphQlTester.document(mutation.formatted(VERSION_ID, "description: \"Text\", effectiveTo: \"2027-01-01T00:00:00Z\"")).execute().errors().verify();
+
+        verify(updateSystemRubricVersionUseCase).execute(new UpdateSystemRubricVersionCommand(VERSION_ID, "V", null, false, null, null, false, null, null, null));
+        verify(updateSystemRubricVersionUseCase).execute(new UpdateSystemRubricVersionCommand(VERSION_ID, null, null, true, null, null, true, null, null, null));
+        verify(updateSystemRubricVersionUseCase).execute(new UpdateSystemRubricVersionCommand(VERSION_ID, null, "Text", true, null,
+            Instant.parse("2027-01-01T00:00:00Z"), true, null, null, null));
+    }
+
+    @Test
+    @WithMockUser(roles = "SYSTEM_ADMIN")
+    void update_criterion_should_distinguish_omitted_null_and_value_for_description_and_examples() {
+        UUID criterionId = UUID.randomUUID();
+        when(updateSystemRubricCriterionUseCase.execute(any())).thenReturn(criterionId);
+        String mutation = "mutation { updateSystemRubricCriterion(criterionId: \"%s\", input: { %s }) }";
+
+        graphQlTester.document(mutation.formatted(criterionId, "name: \"C\"")).execute().errors().verify();
+        graphQlTester.document(mutation.formatted(criterionId, "description: null, examplesJson: null")).execute().errors().verify();
+        graphQlTester.document(mutation.formatted(criterionId, "description: \"Text\", examplesJson: \"[]\", order: 2")).execute().errors().verify();
+
+        verify(updateSystemRubricCriterionUseCase).execute(new UpdateSystemRubricCriterionCommand(criterionId, "C", null, false, null, false, null, null, null, null, null));
+        verify(updateSystemRubricCriterionUseCase).execute(new UpdateSystemRubricCriterionCommand(criterionId, null, null, true, null, true, null, null, null, null, null));
+        verify(updateSystemRubricCriterionUseCase).execute(new UpdateSystemRubricCriterionCommand(criterionId, null, "Text", true, "[]", true, null, null, null, 2, null));
+    }
+
+    @Test
+    @WithMockUser(roles = "SYSTEM_ADMIN")
+    void update_result_band_should_distinguish_omitted_null_and_value_description() {
+        UUID bandId = UUID.randomUUID();
+        when(updateSystemRubricResultBandUseCase.execute(any())).thenReturn(bandId);
+        String mutation = "mutation { updateSystemRubricResultBand(resultBandId: \"%s\", input: { name: \"B\" %s }) }";
+
+        graphQlTester.document(mutation.formatted(bandId, "")).execute().errors().verify();
+        graphQlTester.document(mutation.formatted(bandId, ", description: null")).execute().errors().verify();
+        graphQlTester.document(mutation.formatted(bandId, ", description: \"Text\"")).execute().errors().verify();
+
+        verify(updateSystemRubricResultBandUseCase).execute(new UpdateSystemRubricResultBandCommand(bandId, "B", null, false, null, null, null));
+        verify(updateSystemRubricResultBandUseCase).execute(new UpdateSystemRubricResultBandCommand(bandId, "B", null, true, null, null, null));
+        verify(updateSystemRubricResultBandUseCase).execute(new UpdateSystemRubricResultBandCommand(bandId, "B", "Text", true, null, null, null));
     }
 }

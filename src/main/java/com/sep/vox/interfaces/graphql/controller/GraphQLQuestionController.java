@@ -1,5 +1,7 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import com.sep.vox.interfaces.graphql.dataloader.GraphQLDataLoaders;
+import com.sep.vox.interfaces.graphql.dataloader.UserGraphQLDataLoaderConfig;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -35,6 +37,7 @@ import com.sep.vox.domain.model.question.QuestionSharing;
 import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.model.question.QuestionType;
 import com.sep.vox.interfaces.shared.PageArguments;
+import com.sep.vox.interfaces.graphql.dataloader.QuestionGraphQLDataLoaderConfig;
 
 @Controller
 @RequiredArgsConstructor
@@ -133,7 +136,7 @@ public class GraphQLQuestionController {
 
     @SchemaMapping(typeName = "Question", field = "bank")
     public CompletableFuture<QuestionBankDto> bank(QuestionDto source, DataFetchingEnvironment env) {
-        DataLoader<UUID, QuestionBankDto> loader = env.getDataLoader("questionBankById");
+        DataLoader<UUID, QuestionBankDto> loader = GraphQLDataLoaders.require(env, QuestionGraphQLDataLoaderConfig.QUESTION_BANK_BY_QUESTION_BANK_ID);
         return loader.load(source.questionBankId());
     }
 
@@ -142,31 +145,31 @@ public class GraphQLQuestionController {
         if (source.questionTopicId() == null) {
             return CompletableFuture.completedFuture(null);
         }
-        DataLoader<UUID, QuestionTopicDto> loader = env.getDataLoader("questionTopicById");
+        DataLoader<UUID, QuestionTopicDto> loader = GraphQLDataLoaders.require(env, QuestionGraphQLDataLoaderConfig.QUESTION_TOPIC_BY_QUESTION_TOPIC_ID);
         return loader.load(source.questionTopicId());
     }
 
     @SchemaMapping(typeName = "QuestionTopic", field = "bank")
     public CompletableFuture<QuestionBankDto> topicBank(QuestionTopicDto source, DataFetchingEnvironment env) {
-        DataLoader<UUID, QuestionBankDto> loader = env.getDataLoader("questionBankById");
+        DataLoader<UUID, QuestionBankDto> loader = GraphQLDataLoaders.require(env, QuestionGraphQLDataLoaderConfig.QUESTION_BANK_BY_QUESTION_BANK_ID);
         return loader.load(source.questionBankId());
     }
 
     @SchemaMapping(typeName = "Question", field = "assets")
     public CompletableFuture<List<QuestionAssetDto>> assets(QuestionDto source, DataFetchingEnvironment env) {
-        DataLoader<UUID, List<QuestionAssetDto>> loader = env.getDataLoader("questionAssetsByQuestionId");
+        DataLoader<UUID, List<QuestionAssetDto>> loader = GraphQLDataLoaders.require(env, QuestionGraphQLDataLoaderConfig.QUESTION_ASSETS_BY_QUESTION_ID);
         return loader.load(source.id());
     }
 
     @SchemaMapping(typeName = "Question", field = "evaluationGuide")
     public CompletableFuture<QuestionEvaluationGuideDto> evaluationGuide(QuestionDto source, DataFetchingEnvironment env) {
-        DataLoader<UUID, QuestionEvaluationGuideDto> loader = env.getDataLoader("questionEvaluationGuideByQuestionId");
+        DataLoader<UUID, QuestionEvaluationGuideDto> loader = GraphQLDataLoaders.require(env, QuestionGraphQLDataLoaderConfig.QUESTION_EVALUATION_GUIDE_BY_QUESTION_ID);
         return loader.load(source.id());
     }
 
     @SchemaMapping(typeName = "Question", field = "collaborators")
     public CompletableFuture<List<QuestionCollaboratorDto>> collaborators(QuestionDto source, DataFetchingEnvironment env) {
-        DataLoader<UUID, List<QuestionCollaboratorDto>> loader = env.getDataLoader("questionCollaboratorsByQuestionId");
+        DataLoader<UUID, List<QuestionCollaboratorDto>> loader = GraphQLDataLoaders.require(env, QuestionGraphQLDataLoaderConfig.QUESTION_COLLABORATORS_BY_QUESTION_ID);
         return loader.load(source.id());
     }
 
@@ -176,7 +179,7 @@ public class GraphQLQuestionController {
         if (currentUserId.equals(source.createdBy()) || QuestionSharing.SCHOOL_SHARED.name().equals(source.sharing())) {
             return CompletableFuture.completedFuture(true);
         }
-        DataLoader<UUID, List<QuestionCollaboratorDto>> loader = env.getDataLoader("questionCollaboratorsByQuestionId");
+        DataLoader<UUID, List<QuestionCollaboratorDto>> loader = GraphQLDataLoaders.require(env, QuestionGraphQLDataLoaderConfig.QUESTION_COLLABORATORS_BY_QUESTION_ID);
         return loader.load(source.id()).thenApply(collaborators -> collaborators.stream()
             .filter(collaborator -> collaborator.userId().equals(currentUserId))
             .findFirst()
@@ -189,13 +192,13 @@ public class GraphQLQuestionController {
         if (source.createdBy() == null) {
             return CompletableFuture.completedFuture(null);
         }
-        DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
+        DataLoader<UUID, UserDto> loader = GraphQLDataLoaders.require(env, UserGraphQLDataLoaderConfig.USER_BY_USER_ID);
         return loader.load(source.createdBy());
     }
 
     @SchemaMapping(typeName = "QuestionCollaborator", field = "user")
     public CompletableFuture<UserDto> collaboratorUser(QuestionCollaboratorDto source, DataFetchingEnvironment env) {
-        DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
+        DataLoader<UUID, UserDto> loader = GraphQLDataLoaders.require(env, UserGraphQLDataLoaderConfig.USER_BY_USER_ID);
         return loader.load(source.userId());
     }
 }

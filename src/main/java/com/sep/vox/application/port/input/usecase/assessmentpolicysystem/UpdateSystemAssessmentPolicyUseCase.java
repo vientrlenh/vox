@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -33,7 +34,7 @@ public class UpdateSystemAssessmentPolicyUseCase implements IUseCase<UpdateAsses
     @Override
     @Transactional
     public UUID execute(UpdateAssessmentPolicyCommand command) {
-        // 1. Kiểm tra tài khoản System Admin
+        // 1. Check the System Admin account
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
@@ -41,43 +42,47 @@ public class UpdateSystemAssessmentPolicyUseCase implements IUseCase<UpdateAsses
             throw new UnauthorizedException("Tài khoản đã bị khóa.");
         }
 
-        // 2. Lấy Assessment Policy
+        // 2. Load the Assessment Policy
         AssessmentPolicy policy = assessmentPolicyRepository.findById(command.policyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
 
-        // 3. Check quyền SYSTEM
+        // 3. Check the SYSTEM permission
         if (policy.getSchoolId() != null) {
             throw new ForbiddenException("Hành động bị từ chối: Không thể can thiệp vào Assessment Policy của trường học.");
         }
 
-        // 4. Chỉ được sửa khi đang DRAFT
+        // 4. It can only be edited while it is DRAFT
         if (policy.getStatus() != AssessmentPolicyStatus.DRAFT) {
             throw new IllegalArgumentException("Chỉ có thể cập nhật Assessment Policy khi đang ở trạng thái DRAFT.");
         }
 
-        // 5. Kiểm tra Band mục tiêu (frameworkVersionId giữ nguyên, không cho đổi)
+        // 5. Check the target Band (frameworkVersionId stays the same and cannot be changed)
         FrameworkResultBand targetBand = frameworkResultBandRepository.findById(command.targetFrameworkBandId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Band mục tiêu (targetFrameworkBandId)."));
         if (!targetBand.getFrameworkVersionId().equals(policy.getFrameworkVersionId())) {
             throw new IllegalArgumentException("Band mục tiêu phải thuộc đúng Phiên bản Khung tiêu chuẩn của Policy này.");
         }
 
-        // 6. Kiểm tra khoảng thời gian hiệu lực
+        // 6. Validate the effective period against the end date that will be stored (omitted keeps the stored one)
         if (command.effectiveFrom() == null) {
             throw new IllegalArgumentException("Ngày bắt đầu hiệu lực (effectiveFrom) không được để trống.");
         }
-        if (command.effectiveTo() != null && command.effectiveFrom().isAfter(command.effectiveTo())) {
+        Instant effectiveTo = command.effectiveToProvided() ? command.effectiveTo() : policy.getEffectiveTo();
+        if (effectiveTo != null && command.effectiveFrom().isAfter(effectiveTo)) {
             throw new IllegalArgumentException("Ngày bắt đầu hiệu lực không được sau ngày kết thúc hiệu lực.");
         }
 
         // 7. Update the business fields (frameworkVersionId/rubricVersionId/languageId/scope do not change)
-        AssessmentPolicyStrictness strictness = command.strictness() != null ? command.strictness() : AssessmentPolicyStrictness.STANDARD;
-
+        // An omitted passingScore/strictness keeps the stored value; an explicit null clears passingScore and stores STANDARD.
         policy.setTargetFrameworkBandId(command.targetFrameworkBandId());
-        policy.setPassingScore(command.passingScore());
-        policy.setStrictness(strictness);
+        if (command.passingScoreProvided()) {
+            policy.setPassingScore(command.passingScore());
+        }
+        if (command.strictnessProvided()) {
+            policy.setStrictness(command.strictness() != null ? command.strictness() : AssessmentPolicyStrictness.STANDARD);
+        }
         policy.setEffectiveFrom(command.effectiveFrom());
-        policy.setEffectiveTo(command.effectiveTo());
+        policy.setEffectiveTo(effectiveTo);
 
         AssessmentPolicy saved = assessmentPolicyRepository.save(policy);
         return saved.getId();

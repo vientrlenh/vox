@@ -2,7 +2,6 @@ package com.sep.vox.interfaces.graphql.controller;
 
 import com.sep.vox.application.port.input.command.supportedlanguage.UpdateSupportedLanguageCommand;
 import java.util.UUID;
-import java.util.Map;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.graphql.data.method.annotation.Argument;
@@ -19,7 +18,7 @@ import com.sep.vox.application.port.input.usecase.supportedlanguage.ViewSupporte
 import com.sep.vox.application.response.input.supportedlanguage.UpdateSupportedLanguageResponse;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SupportedLanguageDto;
-import com.sep.vox.interfaces.graphql.mapper.UpdateSupportedLanguageCommandMapper;
+import com.sep.vox.interfaces.graphql.input.supportedlanguage.UpdateSupportedLanguageInput;
 import com.sep.vox.interfaces.shared.PageArguments;
 
 @Controller
@@ -51,8 +50,8 @@ public class GraphQLSupportedLanguageController {
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public UpdateSupportedLanguageResponse updateSupportedLanguage(
             @Argument(name = "id") UUID id,
-            @Argument(name = "input") Map<String, Object> input) {
-        UpdateSupportedLanguageCommand command = UpdateSupportedLanguageCommandMapper.fromInput(id, input);
+            @Argument(name = "input") UpdateSupportedLanguageInput input) {
+        UpdateSupportedLanguageCommand command = UpdateSupportedLanguageInput.toCommand(id, input);
         return updateSupportedLanguageUseCase.execute(command);
     }
 }

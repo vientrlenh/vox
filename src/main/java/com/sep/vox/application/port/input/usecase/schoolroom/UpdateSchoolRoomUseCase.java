@@ -34,36 +34,36 @@ public class UpdateSchoolRoomUseCase implements IUseCase<UpdateSchoolRoomCommand
     @Transactional
     public UUID execute(UpdateSchoolRoomCommand command) {
 
-        // 1. Validate User (Tối ưu bằng hàm exists)
+        // 1. Validate the user (optimized with an exists call)
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Tài khoản của bạn không tồn tại hoặc đã bị khóa.");
         }
 
-        // 2. Tìm phòng học cần sửa
+        // 2. Find the room to edit
         SchoolRoom room = schoolRoomRepository.findById(command.id())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phòng học với ID đã cho."));
 
-        // VÒNG BẢO MẬT: KIỂM TRA QUYỀN SCHOOL USER
+        // SECURITY GUARD: check the school user's rights
         Optional<SchoolUser> schoolUserOpt = schoolUserRepository.findByUserId(currentUserId);
         if (schoolUserOpt.isPresent()) {
             SchoolUser schoolUser = schoolUserOpt.get();
             if (!schoolUser.getSchoolId().equals(room.getSchoolId())) {
-                // Sửa lại câu thông báo cho đúng với Phòng học
                 throw new ForbiddenException("BẢO MẬT: Bạn không có quyền sửa thông tin phòng học của trường khác.");
             }
         }
 
-        // 3. Chuẩn hóa & validate dữ liệu đầu vào
+        // 3. Normalize and validate the input
         String safeName = (command.name() != null) ? StringNormalization.trimAndCollapseSpaces(command.name()) : null;
         String safeDesc = (command.description() != null) ? StringNormalization.trimAndCollapseSpaces(command.description()) : null;
 
-        // 4. Thực thi Atomic Update
-        // Hàm Atomic Update ở Repository của bạn đã dùng COALESCE, nên ta cứ truyền thẳng chuỗi đã chuẩn hóa xuống.
+        // 4. Run the atomic update
+        // The repository statement keeps a column when its value is null (COALESCE) and clears the description only when it is provided.
         int updatedRows = schoolRoomRepository.updateSchoolRoomAtomic(
                 command.id(),
                 safeName,
                 safeDesc,
+                command.descriptionProvided(),
                 Instant.now(),
                 currentUserId.toString()
         );
@@ -72,7 +72,7 @@ public class UpdateSchoolRoomUseCase implements IUseCase<UpdateSchoolRoomCommand
             throw new ResourceNotFoundException("Cập nhật thất bại hoặc không có thay đổi nào.");
         }
 
-        // Trả về ID của phòng học vừa được update mới là chuẩn bài
+        // Return the id of the room that was just updated
         return command.id();
     }
 }

@@ -26,6 +26,10 @@ import com.sep.vox.domain.dto.PaymentDto;
 import com.sep.vox.domain.model.order.OrderStatus;
 import com.sep.vox.domain.model.order.OrderType;
 import com.sep.vox.interfaces.shared.PageArguments;
+import com.sep.vox.interfaces.graphql.dataloader.GraphQLDataLoaders;
+import com.sep.vox.interfaces.graphql.dataloader.InvoiceGraphQLDataLoaderConfig;
+import com.sep.vox.interfaces.graphql.dataloader.OrderGraphQLDataLoaderConfig;
+import com.sep.vox.interfaces.graphql.dataloader.PaymentGraphQLDataLoaderConfig;
 
 import graphql.schema.DataFetchingEnvironment;
 
@@ -73,10 +77,7 @@ public class GraphQLOrderController {
 
     @SchemaMapping(typeName = "Order", field = "items")
     public CompletableFuture<List<OrderItemDto>> items(OrderDto order, DataFetchingEnvironment env) {
-        DataLoader<UUID, List<OrderItemDto>> loader = env.getDataLoader("itemsByOrderId");
-        if (loader == null) {
-            throw new IllegalStateException("Không tìm thấy data loader itemsByOrderId");
-        }
+        DataLoader<UUID, List<OrderItemDto>> loader = GraphQLDataLoaders.require(env, OrderGraphQLDataLoaderConfig.ORDER_ITEMS_BY_ORDER_ID);
         return loader.load(order.id());
     }
 
@@ -93,19 +94,13 @@ public class GraphQLOrderController {
      */
     @SchemaMapping(typeName = "Order", field = "invoice")
     public CompletableFuture<InvoiceDto> invoice(OrderDto order, DataFetchingEnvironment env) {
-        DataLoader<UUID, InvoiceDto> loader = env.getDataLoader("invoiceByOrderId");
-        if (loader == null) {
-            throw new IllegalStateException("Không tìm thấy data loader invoiceByOrderId");
-        }
+        DataLoader<UUID, InvoiceDto> loader = GraphQLDataLoaders.require(env, InvoiceGraphQLDataLoaderConfig.INVOICE_BY_ORDER_ID);
         return loader.load(order.id());
     }
 
     @SchemaMapping(typeName = "Order", field = "payments")
     public CompletableFuture<List<PaymentDto>> payments(OrderDto order, DataFetchingEnvironment env) {
-        DataLoader<UUID, List<PaymentDto>> loader = env.getDataLoader("paymentsByOrderId");
-        if (loader == null) {
-            throw new IllegalStateException("Không tìm thấy data loader paymentsByOrderId");
-        }
+        DataLoader<UUID, List<PaymentDto>> loader = GraphQLDataLoaders.require(env, PaymentGraphQLDataLoaderConfig.PAYMENTS_BY_ORDER_ID);
         return loader.load(order.id());
     }
 }

@@ -76,7 +76,7 @@ public interface SpringDataAssessmentScheduleRepository extends JpaRepository<As
   @Modifying
   @Query("""
       UPDATE AssessmentScheduleJpaEntity s SET
-        s.schoolRoomId = COALESCE(:schoolRoomId, s.schoolRoomId),
+        s.schoolRoomId = CASE WHEN :schoolRoomIdProvided = true THEN :schoolRoomId ELSE s.schoolRoomId END,
         s.startDate = COALESCE(:start, s.startDate),
         s.endDate = COALESCE(:end, s.endDate),
         s.updatedAt = :now,
@@ -86,6 +86,7 @@ public interface SpringDataAssessmentScheduleRepository extends JpaRepository<As
   int updateAtomic(
       @Param("id") UUID id,
       @Param("schoolRoomId") UUID schoolRoomId,
+      @Param("schoolRoomIdProvided") boolean schoolRoomIdProvided,
       @Param("start") Instant start,
       @Param("end") Instant end,
       @Param("now") Instant now,

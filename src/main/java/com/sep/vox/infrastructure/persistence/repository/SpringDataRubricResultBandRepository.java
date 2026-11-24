@@ -31,7 +31,7 @@ public interface SpringDataRubricResultBandRepository extends JpaRepository<Rubr
             UPDATE RubricResultBandJpaEntity r SET 
             r.code = COALESCE(:code, r.code),
             r.name = COALESCE(:name, r.name),
-            r.description = COALESCE(:description, r.description),
+            r.description = CASE WHEN :descriptionProvided = true THEN :description ELSE r.description END,
             r.scoreMin = COALESCE(:scoreMin, r.scoreMin),
             r.scoreMax = COALESCE(:scoreMax, r.scoreMax),
             r.order = COALESCE(:order, r.order),
@@ -44,6 +44,7 @@ public interface SpringDataRubricResultBandRepository extends JpaRepository<Rubr
             @Param("code") String code,
             @Param("name") String name,
             @Param("description") String description,
+            @Param("descriptionProvided") boolean descriptionProvided,
             @Param("scoreMin") BigDecimal scoreMin,
             @Param("scoreMax") BigDecimal scoreMax,
             @Param("order") Integer order,

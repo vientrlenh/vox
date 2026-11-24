@@ -105,9 +105,9 @@ public class GradeLevelRepositoryImpl implements GradeLevelRepository {
     }
 
     @Override
-    public int updateGradeLevelAtomic(UUID id, String name, String description, Integer order,
+    public int updateGradeLevelAtomic(UUID id, String name, String description, boolean descriptionProvided, Integer order,
             Instant updatedAt, String updatedBy) {
-        return DataConflictTranslation.translating(() -> gradeLevelRepository.updateGradeLevelAtomic(id, name, description, order, updatedAt, updatedBy));
+        return DataConflictTranslation.translating(() -> gradeLevelRepository.updateGradeLevelAtomic(id, name, description, descriptionProvided, order, updatedAt, updatedBy));
     }
 
     @Override

@@ -57,7 +57,7 @@ class GradeLevelRepositoryImplTests {
         TransactionTemplate transaction = new TransactionTemplate(transactionManager);
 
         assertThatThrownBy(() -> transaction.executeWithoutResult(status -> gradeLevelRepository.updateGradeLevelAtomic(
-            second.getId(), null, null, FIRST_ORDER, Instant.now(), "user")))
+            second.getId(), null, null, false, FIRST_ORDER, Instant.now(), "user")))
             .isInstanceOf(DataConflictException.class);
     }
 

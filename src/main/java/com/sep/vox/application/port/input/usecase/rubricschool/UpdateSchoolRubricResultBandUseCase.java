@@ -47,7 +47,7 @@ public class UpdateSchoolRubricResultBandUseCase implements IUseCase<UpdateSchoo
     @Override
     @Transactional
     public UUID execute(UpdateSchoolRubricResultBandCommand command) {
-        // 1. Xác thực User & Check School Firewall
+        // 1. Authenticate the User & check the School Firewall
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
@@ -65,33 +65,36 @@ public class UpdateSchoolRubricResultBandUseCase implements IUseCase<UpdateSchoo
             throw new ForbiddenException("Trường học này đang bị vô hiệu hóa.");
         }
 
-        // 2. Lấy Result Band
+        // 2. Load the Result Band
         RubricResultBand resultBand = rubricResultBandRepository.findById(command.resultBandId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Dải điểm Kết quả (Result Band) này."));
 
-        // 3. Lấy Version và kiểm tra trạng thái DRAFT
+        // 3. Load the Version and check its DRAFT status
         RubricVersion version = rubricVersionRepository.findById(resultBand.getRubricVersionId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric Version chứa Dải điểm Kết quả này."));
         if (version.getStatus() != RubricStatus.DRAFT) {
             throw new IllegalArgumentException("Chỉ có thể sửa Dải điểm Kết quả khi phiên bản Rubric đang ở trạng thái DRAFT.");
         }
 
-        // 4. Lấy Rubric gốc và kiểm tra quyền SCHOOL & khớp SchoolId
+        // 4. Load the original Rubric and check the SCHOOL permission & that the SchoolId matches
         Rubric rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !rubric.getSchoolId().equals(command.schoolId())) {
             throw new ForbiddenException("Hành động bị từ chối: Dải điểm Kết quả này không thuộc về trường học của bạn.");
         }
 
-        // 5. Chuẩn hóa & Validate Logic (Code không được phép sửa sau khi tạo, luôn giữ nguyên)
+        // 5. Normalize & validate the logic (the code must not change after creation and always stays as it is)
         String safeName = (command.name() != null && !command.name().isBlank()) ? StringNormalization.trimAndCollapseSpaces(command.name()) : null;
-        String safeDesc = (command.description() != null && !command.description().isBlank()) ? StringNormalization.trimAndCollapseSpaces(command.description()) : null;
+        // A blank description keeps the stored one; an explicit null clears it.
+        boolean descriptionBlank = command.description() != null && command.description().isBlank();
+        boolean descriptionProvided = command.descriptionProvided() && !descriptionBlank;
+        String safeDesc = (command.description() != null && !descriptionBlank) ? StringNormalization.trimAndCollapseSpaces(command.description()) : null;
 
         if (command.order() != null && command.order() <= 0) {
             throw new IllegalArgumentException("Thứ tự (order) phải lớn hơn 0.");
         }
 
-        // Check chéo scoreMin <= scoreMax
+        // Cross-check scoreMin <= scoreMax
         BigDecimal finalMinScore = command.scoreMin() != null ? command.scoreMin() : resultBand.getScoreMin();
         BigDecimal finalMaxScore = command.scoreMax() != null ? command.scoreMax() : resultBand.getScoreMax();
 
@@ -99,7 +102,7 @@ public class UpdateSchoolRubricResultBandUseCase implements IUseCase<UpdateSchoo
             throw new IllegalArgumentException("Điểm sàn (scoreMin) không được lớn hơn điểm trần (scoreMax).");
         }
 
-        // Validate không chồng lấn với các band khác trong cùng version
+        // Validate that it does not overlap other bands in the same version
         List<RubricResultBand> siblingBands = rubricResultBandRepository.findByRubricVersionId(resultBand.getRubricVersionId())
                 .stream()
                 .filter(b -> !b.getId().equals(resultBand.getId()))
@@ -107,7 +110,7 @@ public class UpdateSchoolRubricResultBandUseCase implements IUseCase<UpdateSchoo
         String nameForError = safeName != null ? safeName : resultBand.getName();
         RubricResultBandValidator.assertNoOverlap(siblingBands, finalMinScore, finalMaxScore, nameForError);
 
-        // Validate không trùng thứ tự (order) với sibling khác trong cùng version
+        // Validate that the order does not clash with another sibling in the same version
         if (command.order() != null) {
             Set<Integer> siblingOrders = siblingBands.stream()
                     .map(b -> b.getOrder())
@@ -115,7 +118,7 @@ public class UpdateSchoolRubricResultBandUseCase implements IUseCase<UpdateSchoo
             RubricOrderValidator.assertNoDuplicateOrder(siblingOrders, command.order(), nameForError);
         }
 
-        // Validate nằm trong thang điểm tổng của RubricVersion
+        // Validate that it lies within the total score scale of the RubricVersion
         ScoreRangeValidator.assertWithinScale(version.getScoringScaleMin(), version.getScoringScaleMax(),
                 finalMinScore, finalMaxScore, nameForError);
 
@@ -126,6 +129,7 @@ public class UpdateSchoolRubricResultBandUseCase implements IUseCase<UpdateSchoo
                     null,
                     safeName,
                     safeDesc,
+                    descriptionProvided,
                     command.scoreMin(),
                     command.scoreMax(),
                     command.order(),

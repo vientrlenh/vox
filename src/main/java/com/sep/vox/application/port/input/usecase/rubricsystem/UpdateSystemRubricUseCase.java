@@ -30,7 +30,7 @@ public class UpdateSystemRubricUseCase implements IUseCase<UpdateSystemRubricCom
     @Override
     @Transactional
     public UUID execute(UpdateSystemRubricCommand command) {
-        // 1. Xác thực tài khoản System Admin
+        // 1. Authenticate the System Admin account
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
@@ -39,11 +39,11 @@ public class UpdateSystemRubricUseCase implements IUseCase<UpdateSystemRubricCom
             throw new UnauthorizedException("Tài khoản bị khóa.");
         }
 
-        // 2. Lấy bộ Rubric gốc ra (Để kiểm tra sự tồn tại và Quyền)
+        // 2. Load the original Rubric (to check that it exists and the permission)
         Rubric rubric = rubricRepository.findById(command.rubricId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric này."));
 
-        // 3. Chốt chặn an ninh
+        // 3. Security checkpoint
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             throw new ForbiddenException("Rubric này thuộc về Trường học. System Admin không có quyền can thiệp.");
         }
@@ -56,20 +56,23 @@ public class UpdateSystemRubricUseCase implements IUseCase<UpdateSystemRubricCom
             }
         }
 
-        // Để trống (null hoặc rỗng) thì coi như không đổi -- giữ nguyên description cũ (SQL COALESCE),
-        // đồng nhất với UpdateSystemRubricCriterionUseCase/UpdateSystemRubricResultBandUseCase.
-        String finalDesc = (command.description() != null && !command.description().isBlank())
+        // A blank description means keep the stored one (the SQL leaves it untouched); an explicit null clears it.
+        // Same rule as UpdateSystemRubricCriterionUseCase/UpdateSystemRubricResultBandUseCase.
+        boolean descriptionBlank = command.description() != null && command.description().isBlank();
+        boolean descriptionProvided = command.descriptionProvided() && !descriptionBlank;
+        String finalDesc = (command.description() != null && !descriptionBlank)
                 ? StringNormalization.trimAndCollapseSpaces(command.description())
                 : null;
 
-        // 5. ATOMIC UPDATE BẰNG SQL THUẦN (Sử dụng COALESCE)
+        // 5. ATOMIC UPDATE WITH PLAIN SQL (using COALESCE)
         rubricRepository.updateRubricAtomic(
                 command.rubricId(),
                 finalName,
-                finalDesc
+                finalDesc,
+                descriptionProvided
         );
 
-        // 6. Trả về UUID
+        // 6. Return the UUID
         return command.rubricId();
     }
 }

@@ -61,6 +61,7 @@ public class UpdateGradeLevelUseCase implements IUseCase<UpdateGradeLevelCommand
                     command.gradeLevelId(),
                     name,
                     description,
+                    command.descriptionProvided(),
                     command.order(),
                     Instant.now(),
                     currentUserId.toString()

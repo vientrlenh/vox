@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.core.annotation.AliasFor;
 
 import com.sep.vox.config.GraphQLTestSecurityConfiguration;
-import com.sep.vox.interfaces.graphql.config.DateScalarsGraphQLConfig;
+import com.sep.vox.interfaces.graphql.scalar.DateScalarsGraphQLConfig;
 import com.sep.vox.interfaces.graphql.exception.GlobalExceptionResolver;
 
 /**

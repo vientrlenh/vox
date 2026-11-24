@@ -54,7 +54,7 @@ public class UpdateSchoolScoringRuleUseCase implements IUseCase<UpdateSchoolScor
     @Override
     @Transactional
     public UUID execute(UpdateSchoolScoringRuleCommand command) {
-        // 1. Kiểm tra tài khoản School Admin
+        // 1. Check the School Admin account
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
@@ -62,7 +62,7 @@ public class UpdateSchoolScoringRuleUseCase implements IUseCase<UpdateSchoolScor
             throw new UnauthorizedException("Tài khoản đã bị khóa.");
         }
 
-        // 2. Kiểm tra tài khoản thuộc đúng trường học yêu cầu
+        // 2. Check that the account belongs to the requested school
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được phân bổ vào trường học nào."));
         if (!schoolUser.getSchoolId().equals(command.schoolId())) {
@@ -75,23 +75,23 @@ public class UpdateSchoolScoringRuleUseCase implements IUseCase<UpdateSchoolScor
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
         }
 
-        // 3. Kiểm tra Scoring Rule tồn tại
+        // 3. Check that the Scoring Rule exists
         ScoringRule rule = scoringRuleRepository.findById(command.ruleId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Scoring Rule."));
 
-        // 4. BẢO MẬT: policyId trên path phải khớp với policyId thật sự của rule
+        // 4. SECURITY: the policyId on the path must match the rule's real policyId
         if (!rule.getPolicyId().equals(command.policyId())) {
             throw new ForbiddenException("BẢO MẬT: Scoring Rule này không thuộc Assessment Policy đã chỉ định.");
         }
 
-        // 5. Kiểm tra Assessment Policy tồn tại và thuộc đúng trường học
+        // 5. Check that the Assessment Policy exists and belongs to the school
         AssessmentPolicy policy = assessmentPolicyRepository.findById(rule.getPolicyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
         if (policy.getSchoolId() == null || !policy.getSchoolId().equals(command.schoolId())) {
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền can thiệp vào Assessment Policy của trường khác.");
         }
 
-        // 6. Chỉ được sửa Scoring Rule khi Policy còn DRAFT
+        // 6. A Scoring Rule can only be edited while its Policy is still DRAFT
         if (policy.getStatus() != AssessmentPolicyStatus.DRAFT) {
             throw new IllegalArgumentException("Chỉ được sửa Scoring Rule khi Assessment Policy đang ở trạng thái DRAFT.");
         }
@@ -105,12 +105,14 @@ public class UpdateSchoolScoringRuleUseCase implements IUseCase<UpdateSchoolScor
         ScoringRuleConditionParams conditionParams = scoringRuleParamsMapper.toConditionParams(command.conditionType(), command.conditionParams());
         ScoringRuleActionParams actionParams = scoringRuleParamsMapper.toActionParams(command.actionType(), command.actionParams());
 
-        // 8b. Kiểm tra criterionCode/bandCode (nếu có) có thực sự tồn tại trong Rubric Version của Policy
+        // 8b. Check that criterionCode/bandCode (if present) really exist in the Rubric Version of the Policy
         validateCriterionReferences(policy.getRubricVersionId(), policy.getFrameworkVersionId(), conditionParams, actionParams);
 
-        // 9. Cập nhật các field được phép sửa (code và policyId là bất biến, không đụng tới)
+        // 9. Update the fields that may be edited (code and policyId are immutable and are left alone)
         rule.setName(command.name().strip());
-        rule.setDescription(command.description());
+        if (command.descriptionProvided()) {
+            rule.setDescription(command.description());
+        }
         rule.setConditionType(command.conditionType());
         rule.setConditionParams(conditionParams);
         rule.setActionType(command.actionType());

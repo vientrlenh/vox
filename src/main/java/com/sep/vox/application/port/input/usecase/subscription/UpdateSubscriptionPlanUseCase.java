@@ -103,7 +103,7 @@ public class UpdateSubscriptionPlanUseCase implements IUseCase<UpdateSubscriptio
         }
 
         // Quota is not part of SubscriptionPlanDto -- a GraphQL client that needs it selects the quotas field, and the resolver
-        // loads it through the quotasBySubscriptionPlanId DataLoader.
+        // loads it through the subscriptionPlanQuotasBySubscriptionPlanId DataLoader.
         return savedPlan.getId();
     }
 

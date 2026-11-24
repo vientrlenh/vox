@@ -9,5 +9,6 @@ public record UpdateFrameworkCriterionCommand(
         String code,
         String name,
         String description,
+        boolean descriptionProvided,
         int order
 ) {}

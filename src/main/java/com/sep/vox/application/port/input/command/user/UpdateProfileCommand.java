@@ -4,14 +4,14 @@ import com.sep.vox.application.port.input.command.schooluser.UpdateSchoolUserCom
 import java.time.LocalDate;
 
 /**
- * Cập nhật hồ sơ của CHÍNH người gọi. Cố ý KHÔNG có {@code userId}: id luôn lấy từ
- * {@code UserContextPort}, nên không tồn tại đường sửa hồ sơ người khác qua mutation này. Sửa hồ sơ
- * người khác đi {@code updateSchoolUser} (school admin, đã chặn trong phạm vi trường của mình).
+ * Updates the profile of the CALLER ONLY. It deliberately has no {@code userId}: the id always comes from
+ * {@code UserContextPort}, so this mutation has no path to edit another person's profile. Editing someone
+ * else's profile goes through {@code updateSchoolUser} (school admin, restricted to their own school).
  *
- * <p>Cặp {@code x} + {@code xProvided} là quy ước PATCH của repo -- xem {@link UpdateSchoolUserCommand}
- * và mapper tương ứng. GraphQL không phân biệt được "không gửi trường" với "gửi null", nên mapper
- * đọc {@code input.containsKey(...)}. Nhờ vậy {@code avatarUrl: null} mang nghĩa XÓA ảnh, còn không
- * gửi {@code avatarUrl} thì giữ nguyên -- không phải đẻ thêm mutation removeAvatar chỉ để xóa.
+ * <p>The {@code x} + {@code xProvided} pair is the repo's PATCH convention -- see {@link UpdateSchoolUserCommand}.
+ * The GraphQL input tells "the client did not send the field" from "the client sent null", so
+ * {@code avatarUrl: null} means REMOVE the avatar while not sending {@code avatarUrl} keeps it -- no
+ * removeAvatar mutation is needed just to delete one.
  */
 public record UpdateProfileCommand(
         String fullName,

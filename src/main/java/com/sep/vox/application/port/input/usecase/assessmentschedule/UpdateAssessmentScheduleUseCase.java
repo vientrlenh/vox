@@ -47,9 +47,9 @@ public class UpdateAssessmentScheduleUseCase implements IUseCase<UpdateAssessmen
     @Override
     @Transactional
     public UUID execute(UpdateAssessmentScheduleCommand input) {
-        // Khoá hàng ca ngay từ đầu: ba luật chống trùng dưới đây đều soát khung giờ MỚI, nên nếu
-        // một luồng khác đang xếp người vào chính ca này thì hai bên phải nối đuôi chứ không được
-        // cùng đọc một trạng thái cũ.
+        // Lock the schedule row first: the three overlap rules below all check the NEW window, so if another
+        // thread is assigning people to this very schedule the two must run one after the other instead of
+        // both reading the same stale state.
         AssessmentSchedule schedule = assessmentScheduleRepository.findByIdForUpdate(input.id())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi"));
         Assessment assessment = assessmentRepository.findById(schedule.getAssessmentId())
@@ -65,8 +65,8 @@ public class UpdateAssessmentScheduleUseCase implements IUseCase<UpdateAssessmen
             throw new IllegalArgumentException("Chỉ có thể sửa ca thi khi đang ở trạng thái nháp");
         }
 
-        // Giá trị hiệu dụng: dùng giá trị mới nếu được cung cấp, ngược lại giữ giá trị hiện tại.
-        UUID effectiveRoomId = input.schoolRoomId() != null ? input.schoolRoomId() : schedule.getSchoolRoomId();
+        // Effective values: the new value when provided (a provided null room clears it), otherwise the current one.
+        UUID effectiveRoomId = input.schoolRoomIdProvided() ? input.schoolRoomId() : schedule.getSchoolRoomId();
         Instant effectiveStart = input.startDate() != null ? input.startDate() : schedule.getStartDate();
         Instant effectiveEnd = input.endDate() != null ? input.endDate() : schedule.getEndDate();
 
@@ -76,9 +76,9 @@ public class UpdateAssessmentScheduleUseCase implements IUseCase<UpdateAssessmen
         if (assessment.isScheduleWindowShorterThanAssessmentTime(effectiveStart, effectiveEnd)) {
             throw new IllegalArgumentException(AssessmentScheduleWindowMessages.tooShortForAssessmentTime(assessment));
         }
-        // Chỉ ràng buộc với kỳ thi thường: ca thi phải nằm trong khung mở/đóng đã định của kỳ thi.
-        // CLASS_TEST đi chiều ngược lại -- openAt/closeAt được ghi lại theo ca thi ở dưới, nên so
-        // với khung cũ rồi chặn sẽ khiến không dời được lịch bài kiểm tra trên lớp.
+        // Only for a regular assessment: the schedule must lie inside the assessment's open/close window.
+        // CLASS_TEST goes the other way -- openAt/closeAt are written back from the schedule below, so
+        // comparing with the old window and blocking would make it impossible to move a class test.
         if (!isClassTest && assessment.isScheduleWindowOutsideAssessmentWindow(effectiveStart, effectiveEnd)) {
             throw new IllegalArgumentException(AssessmentScheduleWindowMessages.outsideAssessmentWindow(assessment));
         }
@@ -87,15 +87,17 @@ public class UpdateAssessmentScheduleUseCase implements IUseCase<UpdateAssessmen
             assessmentScheduleRoomValidator.requireRoomOfAssessmentSchool(input.schoolRoomId(), assessment);
         }
 
-        assessmentScheduleRoomValidator.requireNoOverlap(
-            effectiveRoomId, effectiveStart, effectiveEnd, schedule.getId());
+        if (effectiveRoomId != null) {
+            assessmentScheduleRoomValidator.requireNoOverlap(
+                effectiveRoomId, effectiveStart, effectiveEnd, schedule.getId());
+        }
 
-        // Dời giờ ca cũng phải soát giám thị, nếu không thì luật "không gác hai ca trùng giờ" bị
-        // lách bằng cách gán lúc hai ca chưa đụng nhau rồi mới kéo chúng chồng lên.
+        // Moving a schedule must also check proctors, otherwise the "no proctoring two overlapping schedules"
+        // rule is bypassed by assigning while the schedules do not touch and then dragging them on top of each other.
         assessmentScheduleProctorConflictValidator.requireProctorsFreeForNewWindow(
             schedule.getId(), effectiveStart, effectiveEnd);
-        // Cùng lý do, đổi trục sang thí sinh: xếp học sinh lúc hai ca chưa đụng nhau rồi kéo giờ
-        // cho chúng chồng lên là lối lách y hệt.
+        // Same reason on the candidate axis: assigning students while two schedules do not touch and then moving
+        // them to overlap is the identical bypass.
         assessmentScheduleCandidateConflictValidator.requireCandidatesFreeForNewWindow(
             schedule.getId(), effectiveStart, effectiveEnd);
 
@@ -120,6 +122,7 @@ public class UpdateAssessmentScheduleUseCase implements IUseCase<UpdateAssessmen
             int updated = assessmentScheduleRepository.updateAtomic(
                 schedule.getId(),
                 input.schoolRoomId(),
+                input.schoolRoomIdProvided(),
                 input.startDate(),
                 input.endDate(),
                 now,

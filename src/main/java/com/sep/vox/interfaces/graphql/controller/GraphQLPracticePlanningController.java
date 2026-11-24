@@ -36,7 +36,7 @@ import com.sep.vox.application.response.input.practiceplanning.PracticePlanningR
 import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticeTopicOffer;
 import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.TopicSearchResult;
 import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.PracticeDashboardStats;
-import com.sep.vox.interfaces.graphql.dto.request.practiceplanning.StartPracticeSessionInput;
+import com.sep.vox.interfaces.graphql.input.practiceplanning.StartPracticeSessionInput;
 
 @Controller
 public class GraphQLPracticePlanningController {

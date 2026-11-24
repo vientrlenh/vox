@@ -48,7 +48,7 @@ public class UpdateSystemScoringRuleUseCase implements IUseCase<UpdateScoringRul
     @Override
     @Transactional
     public UUID execute(UpdateScoringRuleCommand command) {
-        // 1. Kiểm tra tài khoản System Admin
+        // 1. Check the System Admin account
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
@@ -56,25 +56,25 @@ public class UpdateSystemScoringRuleUseCase implements IUseCase<UpdateScoringRul
             throw new UnauthorizedException("Tài khoản đã bị khóa.");
         }
 
-        // 2. Kiểm tra Scoring Rule tồn tại
+        // 2. Check that the Scoring Rule exists
         ScoringRule rule = scoringRuleRepository.findById(command.ruleId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Scoring Rule."));
 
-        // 3. BẢO MẬT: policyId trên path phải khớp với policyId thật sự của rule
-        // (tránh trường hợp Client cố tình gửi nhầm/gửi giả policyId khác trên URL để sửa rule của Policy khác)
+        // 3. SECURITY: the policyId on the path must match the rule's real policyId
+        // (prevents a Client from sending the wrong or a forged policyId in the URL in order to edit a rule of another Policy)
         if (!rule.getPolicyId().equals(command.policyId())) {
             throw new ForbiddenException("BẢO MẬT: Scoring Rule này không thuộc Assessment Policy đã chỉ định.");
         }
 
-        // 4. Kiểm tra Assessment Policy tồn tại và thuộc phạm vi toàn hệ thống
+        // 4. Check that the Assessment Policy exists and is in the system-wide scope
         AssessmentPolicy policy = assessmentPolicyRepository.findById(rule.getPolicyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
         if (policy.getSchoolId() != null) {
             throw new ForbiddenException("Không thể can thiệp vào Assessment Policy của trường học.");
         }
 
-        // 5. Chỉ được sửa Scoring Rule khi Policy còn DRAFT (lý do giống hệt khi tạo mới:
-        // tránh thay đổi luật chấm điểm ngầm dưới 1 Policy đã PUBLISHED đang chấm bài thi thật)
+        // 5. A Scoring Rule can only be edited while its Policy is still DRAFT (exactly the same reason as when creating one:
+        // avoid silently changing the scoring rules under a PUBLISHED Policy that is grading real exams)
         if (policy.getStatus() != AssessmentPolicyStatus.DRAFT) {
             throw new IllegalArgumentException("Chỉ được sửa Scoring Rule khi Assessment Policy đang ở trạng thái DRAFT.");
         }
@@ -88,12 +88,14 @@ public class UpdateSystemScoringRuleUseCase implements IUseCase<UpdateScoringRul
         ScoringRuleConditionParams conditionParams = scoringRuleParamsMapper.toConditionParams(command.conditionType(), command.conditionParams());
         ScoringRuleActionParams actionParams = scoringRuleParamsMapper.toActionParams(command.actionType(), command.actionParams());
 
-        // 7b. Kiểm tra criterionCode/bandCode (nếu có) có thực sự tồn tại trong Rubric Version của Policy
+        // 7b. Check that criterionCode/bandCode (if present) really exist in the Rubric Version of the Policy
         validateCriterionReferences(policy.getRubricVersionId(), policy.getFrameworkVersionId(), conditionParams, actionParams);
 
-        // 8. Cập nhật các field được phép sửa (code và policyId là bất biến, không đụng tới)
+        // 8. Update the fields that may be edited (code and policyId are immutable and are left alone)
         rule.setName(command.name().strip());
-        rule.setDescription(command.description());
+        if (command.descriptionProvided()) {
+            rule.setDescription(command.description());
+        }
         rule.setConditionType(command.conditionType());
         rule.setConditionParams(conditionParams);
         rule.setActionType(command.actionType());

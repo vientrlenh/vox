@@ -1,5 +1,9 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import com.sep.vox.interfaces.graphql.dataloader.SchoolGraphQLDataLoaderConfig;
+import com.sep.vox.interfaces.graphql.dataloader.SupportedLanguageGraphQLDataLoaderConfig;
+import com.sep.vox.interfaces.graphql.dataloader.GraphQLDataLoaders;
+import com.sep.vox.interfaces.graphql.dataloader.UserGraphQLDataLoaderConfig;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -15,7 +19,7 @@ import org.springframework.stereotype.Controller;
 import com.sep.vox.application.port.input.query.schoolclass.ViewMyClassDetailsQuery;
 import com.sep.vox.application.port.input.query.schoolclass.ViewMyClassMembersQuery;
 import com.sep.vox.application.port.input.query.schoolclass.ViewMyClassesQuery;
-import com.sep.vox.application.port.input.query.key.UserRolesKey;
+import com.sep.vox.interfaces.graphql.key.UserRolesKey;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewMyClassDetailsUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewMyClassMembersUseCase;
 import com.sep.vox.application.port.input.usecase.schoolclass.ViewMyClassesUseCase;
@@ -80,35 +84,35 @@ public class GraphQLMyClassController {
     @SchemaMapping(typeName = "MyClass", field = "schoolGrade")
     @PreAuthorize("hasRole('TEACHER')")
     public CompletableFuture<SchoolGradeDto> myClassSchoolGrade(SchoolClassDto schoolClass, DataFetchingEnvironment env) {
-        DataLoader<UUID, SchoolGradeDto> loader = env.getDataLoader("schoolGradeByClass");
+        DataLoader<UUID, SchoolGradeDto> loader = GraphQLDataLoaders.require(env, SchoolGraphQLDataLoaderConfig.SCHOOL_GRADE_BY_SCHOOL_GRADE_ID);
         return loader.load(schoolClass.schoolGradeId());
     }
 
     @SchemaMapping(typeName = "MyClass", field = "language")
     @PreAuthorize("hasRole('TEACHER')")
     public CompletableFuture<SupportedLanguageDto> myClassLanguage(SchoolClassDto schoolClass, DataFetchingEnvironment env) {
-        DataLoader<UUID, SupportedLanguageDto> loader = env.getDataLoader("supportedLanguageByClass");
+        DataLoader<UUID, SupportedLanguageDto> loader = GraphQLDataLoaders.require(env, SupportedLanguageGraphQLDataLoaderConfig.SUPPORTED_LANGUAGE_BY_SUPPORTED_LANGUAGE_ID);
         return loader.load(schoolClass.languageId());
     }
 
     @SchemaMapping(typeName = "MyClass", field = "activeMemberCount")
     @PreAuthorize("hasRole('TEACHER')")
     public CompletableFuture<Integer> myClassActiveMemberCount(SchoolClassDto schoolClass, DataFetchingEnvironment env) {
-        DataLoader<UUID, Integer> loader = env.getDataLoader("activeMemberCountByClass");
+        DataLoader<UUID, Integer> loader = GraphQLDataLoaders.require(env, SchoolGraphQLDataLoaderConfig.ACTIVE_MEMBER_COUNT_BY_SCHOOL_CLASS_ID);
         return loader.load(schoolClass.id());
     }
 
     @SchemaMapping(typeName = "MyClassMember", field = "user")
     @PreAuthorize("hasRole('TEACHER')")
     public CompletableFuture<UserDto> myClassMemberUser(SchoolClassUserDto member, DataFetchingEnvironment env) {
-        DataLoader<UUID, UserDto> loader = env.getDataLoader("userBySchoolClassUser");
+        DataLoader<UUID, UserDto> loader = GraphQLDataLoaders.require(env, UserGraphQLDataLoaderConfig.USER_BY_USER_ID);
         return loader.load(member.userId());
     }
 
     @SchemaMapping(typeName = "MyClassMemberUser", field = "roleCodes")
     @PreAuthorize("hasRole('TEACHER')")
     public CompletableFuture<List<String>> myClassMemberUserRoleCodes(UserDto user, DataFetchingEnvironment env) {
-        DataLoader<UserRolesKey, List<RoleDto>> loader = env.getDataLoader("rolesByUser");
+        DataLoader<UserRolesKey, List<RoleDto>> loader = GraphQLDataLoaders.require(env, UserGraphQLDataLoaderConfig.ROLES_BY_USER_ID);
         return loader.load(new UserRolesKey(user.id()))
             .thenApply(roles -> roles.stream().map(role -> role.code()).toList());
     }

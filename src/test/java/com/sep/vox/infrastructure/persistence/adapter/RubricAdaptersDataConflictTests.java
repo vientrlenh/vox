@@ -40,19 +40,19 @@ class RubricAdaptersDataConflictTests {
     void rubricCriterion_translatesTheConstraintViolation() {
         RubricCriterionRepositoryImpl adapter = new RubricCriterionRepositoryImpl(repositoryRejectingEveryCall(SpringDataRubricCriterionRepository.class));
         assertCarrier(() -> adapter.saveAll(List.of(RubricCriterion.builder().build())));
-        assertCarrier(() -> adapter.updateCriterionAtomic(UUID.randomUUID(), null, "name", "description", null, BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.TEN, 1, true, Instant.now(), "user"));
+        assertCarrier(() -> adapter.updateCriterionAtomic(UUID.randomUUID(), null, "name", "description", true, null, true, BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.TEN, 1, true, Instant.now(), "user"));
     }
 
     @Test
     void rubricResultBand_translatesTheConstraintViolation() {
         RubricResultBandRepositoryImpl adapter = new RubricResultBandRepositoryImpl(repositoryRejectingEveryCall(SpringDataRubricResultBandRepository.class));
         assertCarrier(() -> adapter.saveAll(List.of(RubricResultBand.builder().build())));
-        assertCarrier(() -> adapter.updateResultBandAtomic(UUID.randomUUID(), null, "name", "description", BigDecimal.ZERO, BigDecimal.TEN, 1, Instant.now(), "user"));
+        assertCarrier(() -> adapter.updateResultBandAtomic(UUID.randomUUID(), null, "name", "description", true, BigDecimal.ZERO, BigDecimal.TEN, 1, Instant.now(), "user"));
     }
 
     @Test
     void rubricVersion_translatesTheConstraintViolation() {
         RubricVersionRepositoryImpl adapter = new RubricVersionRepositoryImpl(repositoryRejectingEveryCall(SpringDataRubricVersionRepository.class));
-        assertCarrier(() -> adapter.updateRubricVersionAtomic(UUID.randomUUID(), null, "name", "description", Instant.now(), null, BigDecimal.ZERO, BigDecimal.TEN, "AVERAGE", Instant.now(), "user"));
+        assertCarrier(() -> adapter.updateRubricVersionAtomic(UUID.randomUUID(), null, "name", "description", true, Instant.now(), null, true, BigDecimal.ZERO, BigDecimal.TEN, "AVERAGE", Instant.now(), "user"));
     }
 }

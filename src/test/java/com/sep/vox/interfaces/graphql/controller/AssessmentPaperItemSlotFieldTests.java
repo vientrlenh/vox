@@ -27,6 +27,7 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.AssessmentBlueprintSlotDto;
 import com.sep.vox.domain.dto.AssessmentPaperItemDto;
 import com.sep.vox.domain.dto.QuestionSelectionSpecDto;
+import com.sep.vox.interfaces.graphql.dataloader.AssessmentGraphQLDataLoaderConfig;
 
 import graphql.schema.DataFetchingEnvironment;
 
@@ -63,7 +64,7 @@ class AssessmentPaperItemSlotFieldTests {
     void should_expose_the_slot_type_of_a_blueprint_backed_item() {
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader loader = mock(DataLoader.class);
-        when(env.<UUID, AssessmentBlueprintSlotDto>getDataLoader("assessmentBlueprintSlotById")).thenReturn(loader);
+        when(env.<UUID, AssessmentBlueprintSlotDto>getDataLoader(AssessmentGraphQLDataLoaderConfig.ASSESSMENT_BLUEPRINT_SLOT_BY_ASSESSMENT_BLUEPRINT_SLOT_ID)).thenReturn(loader);
         when(loader.load(SLOT_ID)).thenReturn(CompletableFuture.completedFuture(slot(AssessmentBlueprintSlotType.SELECTION, null)));
 
         CompletableFuture<AssessmentBlueprintSlotType> result = controller.assessmentPaperItemSlotType(item(SLOT_ID), env);
@@ -77,7 +78,7 @@ class AssessmentPaperItemSlotFieldTests {
         QuestionSelectionSpecDto spec = new QuestionSelectionSpecDto("READ_ALOUD", null, null, null, UUID.randomUUID());
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader loader = mock(DataLoader.class);
-        when(env.<UUID, AssessmentBlueprintSlotDto>getDataLoader("assessmentBlueprintSlotById")).thenReturn(loader);
+        when(env.<UUID, AssessmentBlueprintSlotDto>getDataLoader(AssessmentGraphQLDataLoaderConfig.ASSESSMENT_BLUEPRINT_SLOT_BY_ASSESSMENT_BLUEPRINT_SLOT_ID)).thenReturn(loader);
         when(loader.load(SLOT_ID)).thenReturn(CompletableFuture.completedFuture(slot(AssessmentBlueprintSlotType.SELECTION, spec)));
 
         CompletableFuture<QuestionSelectionSpecDto> result = controller.assessmentPaperItemSelectionSpec(item(SLOT_ID), env);
@@ -108,7 +109,7 @@ class AssessmentPaperItemSlotFieldTests {
     void should_return_null_slot_type_when_the_slot_row_is_missing() {
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader loader = mock(DataLoader.class);
-        when(env.<UUID, AssessmentBlueprintSlotDto>getDataLoader("assessmentBlueprintSlotById")).thenReturn(loader);
+        when(env.<UUID, AssessmentBlueprintSlotDto>getDataLoader(AssessmentGraphQLDataLoaderConfig.ASSESSMENT_BLUEPRINT_SLOT_BY_ASSESSMENT_BLUEPRINT_SLOT_ID)).thenReturn(loader);
         when(loader.load(SLOT_ID)).thenReturn(CompletableFuture.completedFuture(null));
 
         CompletableFuture<AssessmentBlueprintSlotType> result = controller.assessmentPaperItemSlotType(item(SLOT_ID), env);

@@ -2,11 +2,13 @@ package com.sep.vox.interfaces.graphql.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -20,6 +22,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import com.sep.vox.application.mapper.scoringrule.ScoringRuleParamsMapper;
+import com.sep.vox.application.port.input.command.scoringrule.UpdateSchoolScoringRuleCommand;
 import com.sep.vox.application.port.input.command.scoringrule.UpdateScoringRuleCommand;
 import com.sep.vox.application.port.input.usecase.scoringrule.SearchSchoolScoringRuleUseCase;
 import com.sep.vox.application.port.input.usecase.scoringrule.SearchSystemScoringRuleUseCase;
@@ -119,6 +122,55 @@ class ScoringRuleGraphQLTests {
 
     @Test
     @WithMockUser(roles = "SYSTEM_ADMIN")
+    void update_should_keep_the_description_when_omitted_and_clear_it_on_explicit_null() {
+        when(updateSystemScoringRuleUseCase.execute(any())).thenReturn(RULE_ID);
+        Map<String, Object> omitted = updateInput("DURATION_LESS_THAN", "CAP_FINAL_SCORE", "BLOCKING");
+        Map<String, Object> explicitNull = new HashMap<>(omitted);
+        explicitNull.put("description", null);
+
+        executeSystemUpdate(omitted);
+        executeSystemUpdate(explicitNull);
+
+        ArgumentCaptor<UpdateScoringRuleCommand> command = ArgumentCaptor.forClass(UpdateScoringRuleCommand.class);
+        verify(updateSystemScoringRuleUseCase, times(2)).execute(command.capture());
+        assertThat(command.getAllValues()).extracting(c -> c.descriptionProvided())
+            .containsExactly(false, true);
+        assertThat(command.getAllValues().get(1).description()).isNull();
+    }
+
+    @Test
+    @WithMockUser(roles = "SYSTEM_ADMIN")
+    void update_should_pass_a_given_description_as_provided() {
+        when(updateSystemScoringRuleUseCase.execute(any())).thenReturn(RULE_ID);
+        Map<String, Object> input = new HashMap<>(updateInput("DURATION_LESS_THAN", "CAP_FINAL_SCORE", "BLOCKING"));
+        input.put("description", "Too short");
+
+        executeSystemUpdate(input);
+
+        ArgumentCaptor<UpdateScoringRuleCommand> command = ArgumentCaptor.forClass(UpdateScoringRuleCommand.class);
+        verify(updateSystemScoringRuleUseCase).execute(command.capture());
+        assertThat(command.getValue().descriptionProvided()).isTrue();
+        assertThat(command.getValue().description()).isEqualTo("Too short");
+    }
+
+    @Test
+    @WithMockUser(roles = "SCHOOL_ADMIN")
+    void school_update_should_keep_the_description_when_omitted_and_clear_it_on_explicit_null() {
+        when(updateSchoolScoringRuleUseCase.execute(any())).thenReturn(RULE_ID);
+        Map<String, Object> explicitNull = new HashMap<>(updateInput("DURATION_LESS_THAN", "CAP_FINAL_SCORE", "BLOCKING"));
+
+        executeSchoolUpdate(explicitNull);
+        explicitNull.put("description", null);
+        executeSchoolUpdate(explicitNull);
+
+        ArgumentCaptor<UpdateSchoolScoringRuleCommand> command = ArgumentCaptor.forClass(UpdateSchoolScoringRuleCommand.class);
+        verify(updateSchoolScoringRuleUseCase, times(2)).execute(command.capture());
+        assertThat(command.getAllValues()).extracting(c -> c.descriptionProvided())
+            .containsExactly(false, true);
+    }
+
+    @Test
+    @WithMockUser(roles = "SYSTEM_ADMIN")
     void update_should_reject_an_unknown_severity_as_a_validation_error() {
         graphQlTester.document("""
                 mutation($input: UpdateScoringRuleInput!) {
@@ -130,6 +182,22 @@ class ScoringRuleGraphQLTests {
             .verify();
 
         verifyNoInteractions(updateSystemScoringRuleUseCase);
+    }
+
+    private void executeSystemUpdate(Map<String, Object> input) {
+        graphQlTester.document("""
+                mutation($input: UpdateScoringRuleInput!) {
+                    updateSystemScoringRule(policyId: "%s", ruleId: "%s", input: $input)
+                }""".formatted(POLICY_ID, RULE_ID))
+            .variable("input", input).execute().errors().verify();
+    }
+
+    private void executeSchoolUpdate(Map<String, Object> input) {
+        graphQlTester.document("""
+                mutation($input: UpdateScoringRuleInput!) {
+                    updateSchoolScoringRule(schoolId: "%s", policyId: "%s", ruleId: "%s", input: $input)
+                }""".formatted(UUID.randomUUID(), POLICY_ID, RULE_ID))
+            .variable("input", input).execute().errors().verify();
     }
 
     private static Map<String, Object> updateInput(String conditionType, String actionType, String severity) {

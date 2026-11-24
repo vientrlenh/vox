@@ -9,6 +9,8 @@ public record UpdateFrameworkVersionCommand(
     String code,
     String name,
     String description,
+    boolean descriptionProvided,
     Instant effectiveFrom,
-    Instant effectiveTo
+    Instant effectiveTo,
+    boolean effectiveToProvided
 ) {}

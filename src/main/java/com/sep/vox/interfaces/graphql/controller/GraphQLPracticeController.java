@@ -27,7 +27,7 @@ import com.sep.vox.application.response.input.learnerprofile.LearnerProfileRespo
 import com.sep.vox.application.response.input.learnerprofile.LearnerProfileResponses.PracticeBandOption;
 import com.sep.vox.application.response.input.learnerprofile.LearnerProfileResponses.PracticeFrameworkOption;
 import com.sep.vox.domain.model.personalization.QuizAnswer;
-import com.sep.vox.interfaces.graphql.dto.request.learnerprofile.SubmitInterestQuizInput;
+import com.sep.vox.interfaces.graphql.input.learnerprofile.SubmitInterestQuizInput;
 
 @Controller
 public class GraphQLPracticeController {

@@ -7,11 +7,14 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record UpdateAssessmentPolicyCommand(
-        UUID schoolId, // null cho System Admin
+        UUID schoolId, // null for System Admin
         UUID policyId,
         UUID targetFrameworkBandId,
         BigDecimal passingScore,
+        boolean passingScoreProvided,
         AssessmentPolicyStrictness strictness,
+        boolean strictnessProvided,
         Instant effectiveFrom,
-        Instant effectiveTo
+        Instant effectiveTo,
+        boolean effectiveToProvided
 ) {}

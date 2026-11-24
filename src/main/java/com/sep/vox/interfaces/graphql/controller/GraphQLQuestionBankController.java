@@ -1,5 +1,7 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import com.sep.vox.interfaces.graphql.dataloader.SchoolGraphQLDataLoaderConfig;
+import com.sep.vox.interfaces.graphql.dataloader.GraphQLDataLoaders;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -24,6 +26,7 @@ import com.sep.vox.domain.dto.SchoolGradeDto;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.model.question.QuestionBankStatus;
 import com.sep.vox.interfaces.shared.PageArguments;
+import com.sep.vox.interfaces.graphql.dataloader.QuestionGraphQLDataLoaderConfig;
 
 @Controller
 @RequiredArgsConstructor
@@ -55,13 +58,13 @@ public class GraphQLQuestionBankController {
 
     @SchemaMapping(typeName = "QuestionBank", field = "grades")
     public CompletableFuture<List<QuestionBankGradeDto>> grades(QuestionBankDto source, DataFetchingEnvironment env) {
-        DataLoader<UUID, List<QuestionBankGradeDto>> loader = env.getDataLoader("questionBankGradesByBankId");
+        DataLoader<UUID, List<QuestionBankGradeDto>> loader = GraphQLDataLoaders.require(env, QuestionGraphQLDataLoaderConfig.QUESTION_BANK_GRADES_BY_QUESTION_BANK_ID);
         return loader.load(source.id());
     }
 
     @SchemaMapping(typeName = "QuestionBankGrade", field = "schoolGrade")
     public CompletableFuture<SchoolGradeDto> schoolGrade(QuestionBankGradeDto source, DataFetchingEnvironment env) {
-        DataLoader<UUID, SchoolGradeDto> loader = env.getDataLoader("schoolGradeById");
+        DataLoader<UUID, SchoolGradeDto> loader = GraphQLDataLoaders.require(env, SchoolGraphQLDataLoaderConfig.SCHOOL_GRADE_BY_SCHOOL_GRADE_ID);
         return loader.load(source.schoolGradeId());
     }
 }

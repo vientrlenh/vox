@@ -1,5 +1,6 @@
 package com.sep.vox.application.usecase.framework;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -58,10 +59,52 @@ class UpdateFrameworkCriterionUseCaseTests {
         when(frameworkCriterionRepository.save(any(FrameworkCriterion.class)))
             .thenThrow(new DataConflictException("unique violation", null));
         UpdateFrameworkCriterionCommand command = new UpdateFrameworkCriterionCommand(
-            frameworkId, versionId, criterionId, "FLUENCY", "Fluency", "Speaks smoothly", 1);
+            frameworkId, versionId, criterionId, "FLUENCY", "Fluency", "Speaks smoothly", true, 1);
 
         assertThatThrownBy(() -> useCase.execute(command))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessage("Mã tiêu chí đã tồn tại");
+    }
+
+    private FrameworkCriterion storedCriterion() {
+        FrameworkVersion draftVersion = FrameworkVersion.builder()
+            .id(versionId).frameworkId(frameworkId).status(FrameworkVersionStatus.DRAFT).build();
+        FrameworkCriterion criterion = FrameworkCriterion.builder()
+            .id(criterionId).frameworkVersionId(versionId).code("FLUENCY").name("Fluency")
+            .description("Stored").order(1).build();
+        when(frameworkVersionRepository.findById(versionId)).thenReturn(Optional.of(draftVersion));
+        when(frameworkCriterionRepository.findById(criterionId)).thenReturn(Optional.of(criterion));
+        when(frameworkCriterionRepository.findByFrameworkVersionId(versionId)).thenReturn(List.of(criterion));
+        return criterion;
+    }
+
+    @Test
+    void execute_keepsTheDescriptionWhenItIsNotProvided() {
+        FrameworkCriterion criterion = storedCriterion();
+
+        useCase.execute(new UpdateFrameworkCriterionCommand(
+            frameworkId, versionId, criterionId, "FLUENCY", "Fluency", null, false, 1));
+
+        assertThat(criterion.getDescription()).isEqualTo("Stored");
+    }
+
+    @Test
+    void execute_clearsTheDescriptionWhenNullIsProvided() {
+        FrameworkCriterion criterion = storedCriterion();
+
+        useCase.execute(new UpdateFrameworkCriterionCommand(
+            frameworkId, versionId, criterionId, "FLUENCY", "Fluency", null, true, 1));
+
+        assertThat(criterion.getDescription()).isNull();
+    }
+
+    @Test
+    void execute_storesTheNormalizedDescriptionWhenATextIsProvided() {
+        FrameworkCriterion criterion = storedCriterion();
+
+        useCase.execute(new UpdateFrameworkCriterionCommand(
+            frameworkId, versionId, criterionId, "FLUENCY", "Fluency", "  New   text ", true, 1));
+
+        assertThat(criterion.getDescription()).isEqualTo("New text");
     }
 }

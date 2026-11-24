@@ -32,7 +32,7 @@ public interface SpringDataSchoolRoomRepository extends JpaRepository<SchoolRoom
     @Query("""
             UPDATE SchoolRoomJpaEntity r SET
             r.name = COALESCE(:name, r.name),
-            r.description = COALESCE(:description, r.description),
+            r.description = CASE WHEN :descriptionProvided = true THEN :description ELSE r.description END,
             r.updatedAt = :updatedAt,
             r.updatedBy = :updatedBy
             WHERE r.id = :id
@@ -41,6 +41,7 @@ public interface SpringDataSchoolRoomRepository extends JpaRepository<SchoolRoom
             @Param("id") UUID id,
             @Param("name") String name,
             @Param("description") String description,
+            @Param("descriptionProvided") boolean descriptionProvided,
             @Param("updatedAt") Instant updatedAt,
             @Param("updatedBy") String updatedBy
     );

@@ -19,7 +19,8 @@ import org.springframework.stereotype.Controller;
 
 import graphql.schema.DataFetchingEnvironment;
 
-import com.sep.vox.application.exception.ResourceNotFoundException;
+import com.sep.vox.interfaces.graphql.dataloader.FrameworkGraphQLDataLoaderConfig;
+import com.sep.vox.interfaces.graphql.dataloader.GraphQLDataLoaders;
 import com.sep.vox.application.port.input.query.framework.ViewFrameworkCriteriaQuery;
 import com.sep.vox.application.port.input.query.framework.ViewFrameworkCriterionDetailsQuery;
 import com.sep.vox.application.port.input.query.framework.ViewFrameworkDetailsQuery;
@@ -47,10 +48,10 @@ import com.sep.vox.domain.dto.FrameworkDto;
 import com.sep.vox.domain.dto.FrameworkResultBandDto;
 import com.sep.vox.domain.dto.FrameworkVersionDto;
 import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
-import com.sep.vox.interfaces.graphql.dto.request.framework.UpdateFrameworkCriterionBandInput;
-import com.sep.vox.interfaces.graphql.dto.request.framework.UpdateFrameworkCriterionInput;
-import com.sep.vox.interfaces.graphql.dto.request.framework.UpdateFrameworkResultBandInput;
-import com.sep.vox.interfaces.graphql.dto.request.framework.UpdateFrameworkVersionInput;
+import com.sep.vox.interfaces.graphql.input.framework.UpdateFrameworkCriterionBandInput;
+import com.sep.vox.interfaces.graphql.input.framework.UpdateFrameworkCriterionInput;
+import com.sep.vox.interfaces.graphql.input.framework.UpdateFrameworkResultBandInput;
+import com.sep.vox.interfaces.graphql.input.framework.UpdateFrameworkVersionInput;
 import com.sep.vox.interfaces.shared.PageArguments;
 
 @Controller
@@ -203,23 +204,20 @@ public class GraphQLFrameworkController {
     @SchemaMapping(typeName = "FrameworkVersion", field = "criteria")
     public CompletableFuture<List<FrameworkCriterionDto>> criteria(
             FrameworkVersionDto version, DataFetchingEnvironment env) {
-        DataLoader<UUID, List<FrameworkCriterionDto>> loader = env.getDataLoader("criteriaByFrameworkVersion");
+        DataLoader<UUID, List<FrameworkCriterionDto>> loader = GraphQLDataLoaders.require(env, FrameworkGraphQLDataLoaderConfig.FRAMEWORK_CRITERIA_BY_FRAMEWORK_VERSION_ID);
         return loader.load(version.id());
     }
 
     @SchemaMapping(typeName = "FrameworkVersion", field = "resultBands")
     public CompletableFuture<List<FrameworkResultBandDto>> resultBands(
             FrameworkVersionDto version, DataFetchingEnvironment env) {
-        DataLoader<UUID, List<FrameworkResultBandDto>> loader = env.getDataLoader("resultBandsByFrameworkVersion");
+        DataLoader<UUID, List<FrameworkResultBandDto>> loader = GraphQLDataLoaders.require(env, FrameworkGraphQLDataLoaderConfig.FRAMEWORK_RESULT_BANDS_BY_FRAMEWORK_VERSION_ID);
         return loader.load(version.id());
     }
 
     @SchemaMapping(typeName = "FrameworkCriterion", field = "bands")
     public CompletableFuture<List<FrameworkCriterionBandDto>> criterionBands(FrameworkCriterionDto criterion, DataFetchingEnvironment env) {
-        DataLoader<UUID, List<FrameworkCriterionBandDto>> loader = env.getDataLoader("criterionBandsByFrameworkCriterion");
-        if (loader == null) {
-            throw new ResourceNotFoundException("Không tìm thấy criterionBandsByFrameworkCriterion schema mapping");
-        }
+        DataLoader<UUID, List<FrameworkCriterionBandDto>> loader = GraphQLDataLoaders.require(env, FrameworkGraphQLDataLoaderConfig.FRAMEWORK_CRITERION_BANDS_BY_FRAMEWORK_CRITERION_ID);
         return loader.load(criterion.id());
     }
 }

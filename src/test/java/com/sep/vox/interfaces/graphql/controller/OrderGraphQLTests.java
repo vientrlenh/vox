@@ -35,9 +35,9 @@ import com.sep.vox.domain.model.payment.PaymentStatus;
 import com.sep.vox.domain.repository.InvoiceRepository;
 import com.sep.vox.domain.repository.OrderItemRepository;
 import com.sep.vox.domain.repository.PaymentRecordRepository;
-import com.sep.vox.interfaces.graphql.config.InvoiceGraphQLDataLoaderConfig;
-import com.sep.vox.interfaces.graphql.config.OrderGraphQLDataLoaderConfig;
-import com.sep.vox.interfaces.graphql.config.PaymentGraphQLDataLoaderConfig;
+import com.sep.vox.interfaces.graphql.dataloader.InvoiceGraphQLDataLoaderConfig;
+import com.sep.vox.interfaces.graphql.dataloader.OrderGraphQLDataLoaderConfig;
+import com.sep.vox.interfaces.graphql.dataloader.PaymentGraphQLDataLoaderConfig;
 import com.sep.vox.support.GraphQLControllerTest;
 
 /**

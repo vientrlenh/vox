@@ -41,7 +41,7 @@ import com.sep.vox.domain.repository.AssessmentScheduleRepository;
 import com.sep.vox.domain.repository.AssessmentSecurePoolRepository;
 import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.repository.SchoolRoomRepository;
-import com.sep.vox.interfaces.graphql.config.AssessmentGraphQLDataLoaderConfig;
+import com.sep.vox.interfaces.graphql.dataloader.AssessmentGraphQLDataLoaderConfig;
 import com.sep.vox.support.GraphQLControllerTest;
 
 /**

@@ -1,5 +1,8 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import com.sep.vox.interfaces.graphql.dataloader.GraphQLDataLoaders;
+import com.sep.vox.interfaces.graphql.dataloader.UserGraphQLDataLoaderConfig;
+import com.sep.vox.interfaces.graphql.dataloader.AssessmentGraphQLDataLoaderConfig;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -64,7 +67,7 @@ public class GraphQLAssessmentCandidateController {
 
     @SchemaMapping(typeName = "AssessmentCandidate", field = "student")
     public CompletableFuture<UserDto> student(AssessmentCandidateDto source, DataFetchingEnvironment env) {
-        DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
+        DataLoader<UUID, UserDto> loader = GraphQLDataLoaders.require(env, UserGraphQLDataLoaderConfig.USER_BY_USER_ID);
         return loader.load(source.studentId());
     }
 
@@ -73,7 +76,7 @@ public class GraphQLAssessmentCandidateController {
         if (source.assignedPaperId() == null) {
             return CompletableFuture.completedFuture(null);
         }
-        DataLoader<UUID, AssessmentPaperDto> loader = env.getDataLoader("assessmentPaperById");
+        DataLoader<UUID, AssessmentPaperDto> loader = GraphQLDataLoaders.require(env, AssessmentGraphQLDataLoaderConfig.ASSESSMENT_PAPER_BY_ASSESSMENT_PAPER_ID);
         return loader.load(source.assignedPaperId());
     }
 
@@ -82,20 +85,20 @@ public class GraphQLAssessmentCandidateController {
         if (source.scheduleId() == null) {
             return CompletableFuture.completedFuture(null);
         }
-        DataLoader<UUID, AssessmentScheduleDto> loader = env.getDataLoader("assessmentScheduleById");
+        DataLoader<UUID, AssessmentScheduleDto> loader = GraphQLDataLoaders.require(env, AssessmentGraphQLDataLoaderConfig.ASSESSMENT_SCHEDULE_BY_ASSESSMENT_SCHEDULE_ID);
         return loader.load(source.scheduleId());
     }
 
     @SchemaMapping(typeName = "AssessmentCandidate", field = "assessment")
     public CompletableFuture<AssessmentDto> assessment(AssessmentCandidateDto source, DataFetchingEnvironment env) {
-        DataLoader<UUID, AssessmentDto> loader = env.getDataLoader("assessmentById");
+        DataLoader<UUID, AssessmentDto> loader = GraphQLDataLoaders.require(env, AssessmentGraphQLDataLoaderConfig.ASSESSMENT_BY_ASSESSMENT_ID);
         return loader.load(source.assessmentId());
     }
 
     @SchemaMapping(typeName = "AssessmentCandidate", field = "latestSessionId")
     public CompletableFuture<UUID> latestSessionId(AssessmentCandidateDto source, DataFetchingEnvironment env) {
         DataLoader<UUID, AssessmentCandidateAttempts> loader =
-            env.getDataLoader("assessmentCandidateAttemptsByCandidateId");
+            GraphQLDataLoaders.require(env, AssessmentGraphQLDataLoaderConfig.ASSESSMENT_CANDIDATE_ATTEMPTS_BY_ASSESSMENT_CANDIDATE_ID);
         return loader.load(source.id())
             .thenApply(result -> result == null || result.attempts().isEmpty() ? null : result.attempts().get(0).sessionId());
     }
@@ -105,7 +108,7 @@ public class GraphQLAssessmentCandidateController {
             AssessmentCandidateDto source,
             DataFetchingEnvironment env) {
         DataLoader<UUID, AssessmentCandidateAttempts> loader =
-            env.getDataLoader("assessmentCandidateAttemptsByCandidateId");
+            GraphQLDataLoaders.require(env, AssessmentGraphQLDataLoaderConfig.ASSESSMENT_CANDIDATE_ATTEMPTS_BY_ASSESSMENT_CANDIDATE_ID);
         return loader.load(source.id())
             .thenApply(result -> result == null ? List.of() : result.attempts());
     }
@@ -115,7 +118,7 @@ public class GraphQLAssessmentCandidateController {
             AssessmentCandidateDto source,
             DataFetchingEnvironment env) {
         DataLoader<UUID, AssessmentCandidateAttempts> loader =
-            env.getDataLoader("assessmentCandidateAttemptsByCandidateId");
+            GraphQLDataLoaders.require(env, AssessmentGraphQLDataLoaderConfig.ASSESSMENT_CANDIDATE_ATTEMPTS_BY_ASSESSMENT_CANDIDATE_ID);
         return loader.load(source.id())
             .thenApply(result -> result == null ? null : result.officialAttempt());
     }
@@ -125,7 +128,7 @@ public class GraphQLAssessmentCandidateController {
             AssessmentCandidateDto source,
             DataFetchingEnvironment env) {
         DataLoader<UUID, AssessmentCandidateAttempts> loader =
-            env.getDataLoader("assessmentCandidateAttemptsByCandidateId");
+            GraphQLDataLoaders.require(env, AssessmentGraphQLDataLoaderConfig.ASSESSMENT_CANDIDATE_ATTEMPTS_BY_ASSESSMENT_CANDIDATE_ID);
         return loader.load(source.id())
             .thenApply(result -> result == null ? null : result.officialScore());
     }

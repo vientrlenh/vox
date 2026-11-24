@@ -15,6 +15,7 @@ public record UpdateScoringRuleCommand(
         UUID policyId,
         String name,
         String description,
+        boolean descriptionProvided,
         ScoringRuleConditionType conditionType,
         Map<String, Object> conditionParams,
         ScoringRuleActionType actionType,

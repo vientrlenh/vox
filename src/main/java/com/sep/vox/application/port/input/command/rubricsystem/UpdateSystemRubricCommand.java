@@ -5,5 +5,6 @@ import java.util.UUID;
 public record UpdateSystemRubricCommand(
         UUID rubricId,
         String name,
-        String description
+        String description,
+        boolean descriptionProvided
 ) {}

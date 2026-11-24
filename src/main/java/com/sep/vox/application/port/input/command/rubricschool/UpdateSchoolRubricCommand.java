@@ -6,5 +6,6 @@ public record UpdateSchoolRubricCommand(
         UUID schoolId,
         UUID rubricId,
         String name,
-        String description
+        String description,
+        boolean descriptionProvided
 ) {}

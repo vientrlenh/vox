@@ -67,6 +67,16 @@ public class AssessmentCandidateRepositoryImpl implements AssessmentCandidateRep
     }
 
     @Override
+    public List<AssessmentCandidate> findFirstCandidateByAssessmentIdIn(Collection<UUID> assessmentIds) {
+        if (assessmentIds.isEmpty()) {
+            return List.of();
+        }
+        return springDataAssessmentCandidateRepository.findFirstCandidateByAssessmentIdIn(assessmentIds).stream()
+            .map(AssessmentCandidateMapper::toDomain)
+            .toList();
+    }
+
+    @Override
     public long countByAssessmentId(UUID assessmentId) {
         return springDataAssessmentCandidateRepository.countByAssessmentId(assessmentId);
     }

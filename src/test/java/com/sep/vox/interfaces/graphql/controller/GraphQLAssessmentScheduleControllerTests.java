@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import com.sep.vox.interfaces.graphql.dataloader.SchoolGraphQLDataLoaderConfig;
 import com.sep.vox.domain.model.assessment.AssessmentScheduleStatus;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -89,7 +90,7 @@ class GraphQLAssessmentScheduleControllerTests {
             (java.util.Set<UUID> keys, org.dataloader.BatchLoaderEnvironment env) ->
                 CompletableFuture.completedFuture(Map.<UUID, SchoolRoomFromDto>of()));
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
-        when(env.<UUID, SchoolRoomFromDto>getDataLoader("schoolRoomById")).thenReturn(loader);
+        when(env.<UUID, SchoolRoomFromDto>getDataLoader(SchoolGraphQLDataLoaderConfig.SCHOOL_ROOM_BY_SCHOOL_ROOM_ID)).thenReturn(loader);
 
         CompletableFuture<SchoolRoomFromDto> result = controller.room(dto, env);
 
@@ -104,7 +105,7 @@ class GraphQLAssessmentScheduleControllerTests {
         SchoolRoomFromDto room = room(roomId);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader loader = mock(DataLoader.class);
-        when(env.<UUID, SchoolRoomFromDto>getDataLoader("schoolRoomById")).thenReturn(loader);
+        when(env.<UUID, SchoolRoomFromDto>getDataLoader(SchoolGraphQLDataLoaderConfig.SCHOOL_ROOM_BY_SCHOOL_ROOM_ID)).thenReturn(loader);
         when(loader.load(roomId)).thenReturn(CompletableFuture.completedFuture(room));
 
         CompletableFuture<SchoolRoomFromDto> result = controller.room(dto, env);

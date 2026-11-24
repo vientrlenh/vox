@@ -29,7 +29,7 @@ import com.sep.vox.application.port.input.usecase.scoringrule.ViewSchoolScoringR
 import com.sep.vox.application.port.input.usecase.scoringrule.ViewSystemScoringRuleDetailUseCase;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.ScoringRuleDto;
-import com.sep.vox.interfaces.graphql.dto.request.scoringrule.UpdateScoringRuleInput;
+import com.sep.vox.interfaces.graphql.input.scoringrule.UpdateScoringRuleInput;
 import com.sep.vox.interfaces.shared.PageArguments;
 
 

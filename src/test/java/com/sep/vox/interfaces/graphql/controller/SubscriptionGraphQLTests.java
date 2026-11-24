@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -11,11 +12,13 @@ import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.graphql.test.tester.GraphQlTester;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import com.sep.vox.application.port.input.command.subscription.UpdateSubscriptionPlanCommand;
 import com.sep.vox.application.port.input.query.subscription.ViewSchoolSubscriptionsQuery;
 import com.sep.vox.application.port.input.usecase.subscription.PreviewSchoolSubscriptionRenewalUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.UpdateSubscriptionPlanUseCase;
@@ -35,6 +38,7 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.SchoolSubscriptionDto;
 import com.sep.vox.domain.dto.SubscriptionPlanDto;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionStatus;
+import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.subscription.SubscriptionPlanPeriod;
 import com.sep.vox.domain.model.subscription.SubscriptionPlanStatus;
 import com.sep.vox.support.GraphQLControllerTest;
@@ -166,6 +170,52 @@ class SubscriptionGraphQLTests {
     private static SchoolSubscriptionDto subscription() {
         return new SchoolSubscriptionDto(UUID.randomUUID(), SCHOOL_ID, PLAN_ID, START, END,
             SchoolSubscriptionStatus.ACTIVE, new BigDecimal("1000000"), null, START, null, null, null);
+    }
+
+    private UpdateSubscriptionPlanCommand sendUpdateAndCaptureCommand(String inputFields) {
+        when(updateSubscriptionPlanUseCase.execute(any())).thenReturn(PLAN_ID);
+        graphQlTester.document("mutation { updateSubscriptionPlan(id: \"%s\", input: { %s }) }".formatted(PLAN_ID, inputFields))
+            .execute().errors().verify();
+        ArgumentCaptor<UpdateSubscriptionPlanCommand> command = ArgumentCaptor.forClass(UpdateSubscriptionPlanCommand.class);
+        verify(updateSubscriptionPlanUseCase).execute(command.capture());
+        return command.getValue();
+    }
+
+    @Test
+    @WithMockUser(roles = "SYSTEM_ADMIN")
+    void update_plan_should_leave_everything_alone_for_an_empty_input() {
+        UpdateSubscriptionPlanCommand command = sendUpdateAndCaptureCommand("");
+
+        assertThat(command).isEqualTo(new UpdateSubscriptionPlanCommand(PLAN_ID, null, null, null, null, null, null));
+    }
+
+    @Test
+    @WithMockUser(roles = "SYSTEM_ADMIN")
+    void update_plan_should_treat_explicit_nulls_as_not_given() {
+        UpdateSubscriptionPlanCommand command = sendUpdateAndCaptureCommand(
+            "name: null, tagline: null, priceVnd: null, periodCount: null, maxTimePerAttemptMin: null, quotas: null");
+
+        assertThat(command).isEqualTo(new UpdateSubscriptionPlanCommand(PLAN_ID, null, null, null, null, null, null));
+    }
+
+    @Test
+    @WithMockUser(roles = "SYSTEM_ADMIN")
+    void update_plan_should_deliver_values_and_flatten_the_quotas() {
+        UpdateSubscriptionPlanCommand command = sendUpdateAndCaptureCommand(
+            "name: \"Pro\", periodCount: 3, quotas: [{ quotaType: PRACTICE, includedAmountVnd: 5000 }]");
+
+        assertThat(command.name()).isEqualTo("Pro");
+        assertThat(command.periodCount()).isEqualTo(3);
+        assertThat(command.quotas()).extracting(c -> c.quotaType())
+            .containsExactly(QuotaType.PRACTICE);
+    }
+
+    @Test
+    @WithMockUser(roles = "SYSTEM_ADMIN")
+    void update_plan_should_pass_an_empty_quota_list_unchanged() {
+        UpdateSubscriptionPlanCommand command = sendUpdateAndCaptureCommand("quotas: []");
+
+        assertThat(command.quotas()).isNotNull().isEmpty();
     }
 
     private static SubscriptionPlanDto plan() {

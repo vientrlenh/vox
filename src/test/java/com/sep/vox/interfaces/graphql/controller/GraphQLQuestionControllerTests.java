@@ -1,5 +1,6 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import com.sep.vox.interfaces.graphql.dataloader.UserGraphQLDataLoaderConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -59,7 +60,7 @@ class GraphQLQuestionControllerTests {
             null, null, null, null, null, null);
         DataFetchingEnvironment env = mock(DataFetchingEnvironment.class);
         DataLoader loader = mock(DataLoader.class);
-        when(env.<UUID, UserDto>getDataLoader("userById")).thenReturn(loader);
+        when(env.<UUID, UserDto>getDataLoader(UserGraphQLDataLoaderConfig.USER_BY_USER_ID)).thenReturn(loader);
         when(loader.load(createdById)).thenReturn(CompletableFuture.completedFuture(user));
 
         CompletableFuture<UserDto> result = controller.createdByUser(dto, env);

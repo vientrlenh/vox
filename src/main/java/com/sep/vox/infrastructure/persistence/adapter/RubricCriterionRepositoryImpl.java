@@ -60,8 +60,8 @@ public class RubricCriterionRepositoryImpl implements RubricCriterionRepository 
     }
 
     @Override
-    public void updateCriterionAtomic(UUID id, String code, String name, String description, String examplesJson, BigDecimal weight, BigDecimal minScore, BigDecimal maxScore, Integer order, Boolean isRequired, Instant updatedAt, String updatedBy) {
-        DataConflictTranslation.translating(() -> springDataRubricCriterionRepository.updateCriterionAtomic(id, code, name, description, examplesJson, weight, minScore, maxScore, order, isRequired, updatedAt, updatedBy));
+    public void updateCriterionAtomic(UUID id, String code, String name, String description, boolean descriptionProvided, String examplesJson, boolean examplesJsonProvided, BigDecimal weight, BigDecimal minScore, BigDecimal maxScore, Integer order, Boolean isRequired, Instant updatedAt, String updatedBy) {
+        DataConflictTranslation.translating(() -> springDataRubricCriterionRepository.updateCriterionAtomic(id, code, name, description, descriptionProvided, examplesJson, examplesJsonProvided, weight, minScore, maxScore, order, isRequired, updatedAt, updatedBy));
     }
 
     @Override

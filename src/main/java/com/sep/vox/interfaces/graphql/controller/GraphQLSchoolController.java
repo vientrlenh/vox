@@ -1,5 +1,9 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import com.sep.vox.interfaces.graphql.dataloader.SchoolGraphQLDataLoaderConfig;
+import com.sep.vox.interfaces.graphql.dataloader.SupportedLanguageGraphQLDataLoaderConfig;
+import com.sep.vox.interfaces.graphql.dataloader.GraphQLDataLoaders;
+import com.sep.vox.interfaces.graphql.dataloader.UserGraphQLDataLoaderConfig;
 import com.sep.vox.application.port.input.command.gradelevel.UpdateGradeLevelCommand;
 import com.sep.vox.application.port.input.command.schoolclass.UpdateSchoolClassCommand;
 import com.sep.vox.application.port.input.command.school.UpdateSchoolCommand;
@@ -7,7 +11,6 @@ import com.sep.vox.application.port.input.command.schoolgrade.UpdateSchoolGradeC
 import com.sep.vox.application.port.input.command.schoolroom.UpdateSchoolRoomCommand;
 import com.sep.vox.application.port.input.command.schooluser.UpdateSchoolUserCommand;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -39,8 +42,8 @@ import com.sep.vox.application.port.input.query.schooluser.ViewSchoolTeachersByS
 import com.sep.vox.application.port.input.query.schooluser.ViewSchoolUserDetailsQuery;
 import com.sep.vox.application.port.input.query.schooluser.ViewSchoolUsersBySchoolQuery;
 import com.sep.vox.application.port.input.query.school.ViewSchoolsQuery;
-import com.sep.vox.application.port.input.query.key.SchoolClassesKey;
-import com.sep.vox.application.port.input.query.key.SchoolUsersKey;
+import com.sep.vox.interfaces.graphql.key.SchoolClassesKey;
+import com.sep.vox.interfaces.graphql.key.SchoolUsersKey;
 import com.sep.vox.application.port.input.usecase.school.ListSchoolsWithOnGoingAssessmentUseCase;
 import com.sep.vox.application.port.input.usecase.school.UpdateSchoolUseCase;
 import com.sep.vox.application.port.input.usecase.school.ViewSchoolsUseCase;
@@ -86,12 +89,12 @@ import com.sep.vox.domain.model.gradelevel.GradeLevelStatus;
 import com.sep.vox.domain.model.school.SchoolClassStatus;
 import com.sep.vox.domain.model.school.SchoolGradeStatus;
 import com.sep.vox.domain.model.user.UserStatus;
-import com.sep.vox.interfaces.graphql.dto.request.gradelevel.UpdateGradeLevelRequest;
-import com.sep.vox.interfaces.graphql.dto.request.schoolgrade.UpdateSchoolGradeRequest;
-import com.sep.vox.interfaces.graphql.dto.request.school.UpdateSchoolRequest;
-import com.sep.vox.interfaces.graphql.dto.request.schoolroom.UpdateSchoolRoomRequest;
-import com.sep.vox.interfaces.graphql.mapper.UpdateSchoolClassCommandMapper;
-import com.sep.vox.interfaces.graphql.mapper.UpdateSchoolUserCommandMapper;
+import com.sep.vox.interfaces.graphql.input.gradelevel.UpdateGradeLevelRequest;
+import com.sep.vox.interfaces.graphql.input.schoolgrade.UpdateSchoolGradeRequest;
+import com.sep.vox.interfaces.graphql.input.school.UpdateSchoolRequest;
+import com.sep.vox.interfaces.graphql.input.schoolroom.UpdateSchoolRoomRequest;
+import com.sep.vox.interfaces.graphql.input.schoolclass.UpdateSchoolClassInput;
+import com.sep.vox.interfaces.graphql.input.schooluser.UpdateSchoolUserInput;
 import com.sep.vox.interfaces.shared.PageArguments;
 
 import graphql.schema.DataFetchingEnvironment;
@@ -150,7 +153,7 @@ public class GraphQLSchoolController {
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public CompletableFuture<List<SchoolClassDto>> classes(SchoolDto school, @Argument(name = "page") Integer page, @Argument(name = "size") Integer size, DataFetchingEnvironment env) {
         PageArguments.validate(page, size);
-        DataLoader<SchoolClassesKey, List<SchoolClassDto>> loader = env.getDataLoader("schoolClassesBySchool");
+        DataLoader<SchoolClassesKey, List<SchoolClassDto>> loader = GraphQLDataLoaders.require(env, SchoolGraphQLDataLoaderConfig.SCHOOL_CLASSES_BY_SCHOOL_ID);
         return loader.load(new SchoolClassesKey(school.id(), page, size));
     }
 
@@ -159,7 +162,7 @@ public class GraphQLSchoolController {
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public CompletableFuture<List<SchoolUserDto>> schoolUsers(SchoolDto school, @Argument(name = "page") Integer page, @Argument(name = "size") Integer size, DataFetchingEnvironment env) {
         PageArguments.validate(page, size);
-        DataLoader<SchoolUsersKey, List<SchoolUserDto>> loader = env.getDataLoader("schoolUsersBySchool");
+        DataLoader<SchoolUsersKey, List<SchoolUserDto>> loader = GraphQLDataLoaders.require(env, SchoolGraphQLDataLoaderConfig.SCHOOL_USERS_BY_SCHOOL_ID);
         return loader.load(new SchoolUsersKey(school.id(), page, size));
     }
 
@@ -247,21 +250,21 @@ public class GraphQLSchoolController {
     @SchemaMapping(typeName = "SchoolClass", field = "school")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public CompletableFuture<SchoolDto> school(SchoolClassDto schoolClass, DataFetchingEnvironment env) {
-        DataLoader<UUID, SchoolDto> loader = env.getDataLoader("schoolByClass");
+        DataLoader<UUID, SchoolDto> loader = GraphQLDataLoaders.require(env, SchoolGraphQLDataLoaderConfig.SCHOOL_BY_SCHOOL_ID);
         return loader.load(schoolClass.schoolId());
     }
 
     @SchemaMapping(typeName = "SchoolClass", field = "schoolGrade")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public CompletableFuture<SchoolGradeDto> schoolGrade(SchoolClassDto schoolClass, DataFetchingEnvironment env) {
-        DataLoader<UUID, SchoolGradeDto> loader = env.getDataLoader("schoolGradeByClass");
+        DataLoader<UUID, SchoolGradeDto> loader = GraphQLDataLoaders.require(env, SchoolGraphQLDataLoaderConfig.SCHOOL_GRADE_BY_SCHOOL_GRADE_ID);
         return loader.load(schoolClass.schoolGradeId());
     }
 
     @SchemaMapping(typeName = "SchoolClass", field = "language")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public CompletableFuture<SupportedLanguageDto> language(SchoolClassDto schoolClass, DataFetchingEnvironment env) {
-        DataLoader<UUID, SupportedLanguageDto> loader = env.getDataLoader("supportedLanguageByClass");
+        DataLoader<UUID, SupportedLanguageDto> loader = GraphQLDataLoaders.require(env, SupportedLanguageGraphQLDataLoaderConfig.SUPPORTED_LANGUAGE_BY_SUPPORTED_LANGUAGE_ID);
         return loader.load(schoolClass.languageId());
     }
 
@@ -301,14 +304,14 @@ public class GraphQLSchoolController {
     @SchemaMapping(typeName = "SchoolClassUser", field = "user")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public CompletableFuture<UserDto> user(SchoolClassUserDto schoolClassUser, DataFetchingEnvironment env) {
-        DataLoader<UUID, UserDto> loader = env.getDataLoader("userBySchoolClassUser");
+        DataLoader<UUID, UserDto> loader = GraphQLDataLoaders.require(env, UserGraphQLDataLoaderConfig.USER_BY_USER_ID);
         return loader.load(schoolClassUser.userId());
     }
 
     @SchemaMapping(typeName = "SchoolUser", field = "user")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER')")
     public CompletableFuture<UserDto> schoolUserUser(SchoolUserDto schoolUser, DataFetchingEnvironment env) {
-        DataLoader<UUID, UserDto> loader = env.getDataLoader("userBySchoolUser");
+        DataLoader<UUID, UserDto> loader = GraphQLDataLoaders.require(env, UserGraphQLDataLoaderConfig.USER_BY_USER_ID);
         return loader.load(schoolUser.userId());
     }
 
@@ -316,8 +319,8 @@ public class GraphQLSchoolController {
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public UpdateSchoolClassResponse updateSchoolClass(
             @Argument(name = "id") UUID id,
-            @Argument(name = "input") Map<String, Object> input) {
-        UpdateSchoolClassCommand command = UpdateSchoolClassCommandMapper.fromInput(id, input);
+            @Argument(name = "input") UpdateSchoolClassInput input) {
+        UpdateSchoolClassCommand command = UpdateSchoolClassInput.toCommand(id, input);
         return updateSchoolClassUseCase.execute(command);
     }
 
@@ -327,8 +330,8 @@ public class GraphQLSchoolController {
     public UpdateSchoolUserResponse updateSchoolUser(
             @Argument(name = "schoolId") UUID schoolId,
             @Argument(name = "userId") UUID userId,
-            @Argument(name = "input") Map<String, Object> input) {
-        UpdateSchoolUserCommand command = UpdateSchoolUserCommandMapper.fromInput(schoolId, userId, input);
+            @Argument(name = "input") UpdateSchoolUserInput input) {
+        UpdateSchoolUserCommand command = UpdateSchoolUserInput.toCommand(schoolId, userId, input);
         return updateSchoolUserUseCase.execute(command);
     }
 

@@ -1,5 +1,8 @@
 package com.sep.vox.interfaces.graphql.controller;
 
+import com.sep.vox.interfaces.graphql.dataloader.SchoolGraphQLDataLoaderConfig;
+import com.sep.vox.interfaces.graphql.dataloader.GraphQLDataLoaders;
+import com.sep.vox.interfaces.graphql.dataloader.UserGraphQLDataLoaderConfig;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -43,13 +46,14 @@ import com.sep.vox.domain.dto.SubscriptionPlanDto;
 import com.sep.vox.domain.dto.SubscriptionPlanQuotaDto;
 import com.sep.vox.domain.dto.SchoolSubscriptionQuotaRecordDto;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionStatus;
-import com.sep.vox.interfaces.graphql.dto.request.subscription.UpdateSubscriptionPlanInput;
+import com.sep.vox.interfaces.graphql.input.subscription.UpdateSubscriptionPlanInput;
 import com.sep.vox.application.port.input.query.subscription.ViewQuotaUserAllocationsQuery;
 import com.sep.vox.application.port.input.usecase.subscription.ViewAssessmentQuotaUserAllocationsUseCase;
 import com.sep.vox.application.port.input.usecase.subscription.ViewPracticeQuotaUserAllocationsUseCase;
 import com.sep.vox.application.response.input.subscription.QuotaUserAllocationPageResponse;
 import com.sep.vox.domain.dto.UserDto;
 import com.sep.vox.interfaces.shared.PageArguments;
+import com.sep.vox.interfaces.graphql.dataloader.SubscriptionGraphQLDataLoaderConfig;
 
 @Controller
 @RequiredArgsConstructor
@@ -151,24 +155,19 @@ public class GraphQLSubscriptionController {
 
     @SchemaMapping(typeName = "SchoolSubscription", field = "plan")
     public CompletableFuture<SubscriptionPlanDto> plan(SchoolSubscriptionDto source, DataFetchingEnvironment env) {
-        DataLoader<UUID, SubscriptionPlanDto> loader = env.getDataLoader("subscriptionPlanById");
+        DataLoader<UUID, SubscriptionPlanDto> loader = GraphQLDataLoaders.require(env, SubscriptionGraphQLDataLoaderConfig.SUBSCRIPTION_PLAN_BY_SUBSCRIPTION_PLAN_ID);
         return loader.load(source.subscriptionPlanId());
     }
 
     @SchemaMapping(typeName = "SubscriptionPlan", field = "quotas")
     public CompletableFuture<List<SubscriptionPlanQuotaDto>> subscriptionPlanQuotas(SubscriptionPlanDto plan, DataFetchingEnvironment env) {
-        DataLoader<UUID, List<SubscriptionPlanQuotaDto>> loader = env.getDataLoader("quotasBySubscriptionPlanId");
-        if (loader == null) 
-            throw new IllegalStateException("Không tìm thấy data loader quotasBySubscriptionPlanId");
+        DataLoader<UUID, List<SubscriptionPlanQuotaDto>> loader = GraphQLDataLoaders.require(env, SubscriptionGraphQLDataLoaderConfig.SUBSCRIPTION_PLAN_QUOTAS_BY_SUBSCRIPTION_PLAN_ID);
         return loader.load(plan.id());
     }
 
     @SchemaMapping(typeName = "SchoolSubscription", field = "school")
     public CompletableFuture<SchoolDto> schoolFromSchoolSubscription(SchoolSubscriptionDto dto, DataFetchingEnvironment env) {
-        DataLoader<UUID, SchoolDto> loader = env.getDataLoader("schoolBySchoolSubscription");
-        if (loader == null) {
-            throw new IllegalStateException("Không tìm thấy dataloader schoolBySchoolSubscription");
-        }
+        DataLoader<UUID, SchoolDto> loader = GraphQLDataLoaders.require(env, SchoolGraphQLDataLoaderConfig.SCHOOL_BY_SCHOOL_ID);
         return loader.load(dto.schoolId());
     }
 
@@ -197,16 +196,16 @@ public class GraphQLSubscriptionController {
     }
 
     /**
-     * Nối tên người dùng vào từng dòng phân bổ.
+     * Attaches the user's name to each allocation row.
      *
-     * <p>Qua data loader nên cả trang gom lại thành ĐÚNG MỘT truy vấn users, không phải một truy vấn
-     * mỗi dòng. Đây là chỗ sửa lỗi cột "Họ tên" luôn hiện dấu gạch: đường REST cũ trả về dòng phân bổ
-     * không kèm tên, còn client thì khai sẵn một trường fullName không bao giờ được điền.
+     * <p>Going through the data loader, the whole page is gathered into EXACTLY ONE users query, not one query
+     * per row. This is where the bug of the "Full name" column always showing a dash is fixed: the old REST path returned allocation rows
+     * without the name, while the client declared a fullName field that was never filled in.
      */
     @SchemaMapping(typeName = "SchoolQuotaUserAllocation", field = "user")
     public CompletableFuture<UserDto> allocationUser(
             QuotaUserAllocationPageResponse.Row row, DataFetchingEnvironment env) {
-        DataLoader<UUID, UserDto> loader = env.getDataLoader("userById");
+        DataLoader<UUID, UserDto> loader = GraphQLDataLoaders.require(env, UserGraphQLDataLoaderConfig.USER_BY_USER_ID);
         return loader.load(row.userId());
     }
 }

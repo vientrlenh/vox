@@ -10,6 +10,7 @@ public record UpdateFrameworkCriterionBandCommand(
         UUID criterionId,
         UUID bandId,
         String descriptor,
+        boolean descriptorProvided,
         FrameworkCriterionSignals positiveSignals,
         FrameworkCriterionSignals negativeSignals
 ) {}

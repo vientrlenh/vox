@@ -62,7 +62,7 @@ public interface SpringDataSchoolGradeRepository extends JpaRepository<SchoolGra
 
             UPDATE SchoolGradeJpaEntity g SET
         g.name = COALESCE(:name, g.name),
-        g.description = COALESCE(:description, g.description),
+        g.description = CASE WHEN :descriptionProvided = true THEN :description ELSE g.description END,
         g.startDate = COALESCE(:startDate, g.startDate),
         g.endDate = COALESCE(:endDate, g.endDate),
         g.updatedAt = :updatedAt,
@@ -73,6 +73,7 @@ public interface SpringDataSchoolGradeRepository extends JpaRepository<SchoolGra
             @Param("id") UUID id,
             @Param("name") String name,
             @Param("description") String description,
+            @Param("descriptionProvided") boolean descriptionProvided,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate,
             @Param("updatedAt") Instant updatedAt,

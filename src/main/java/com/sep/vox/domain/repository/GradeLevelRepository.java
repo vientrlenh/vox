@@ -24,7 +24,7 @@ public interface GradeLevelRepository {
     List<GradeLevel> findByNameIn(Collection<String> names);
     List<GradeLevel> findByIdIn(Collection<UUID> ids);
     GradeLevel save(GradeLevel gradeLevel);
-    int updateGradeLevelAtomic(UUID id, String name, String description, Integer order,
+    int updateGradeLevelAtomic(UUID id, String name, String description, boolean descriptionProvided, Integer order,
             Instant updatedAt, String updatedBy);
     boolean existsByCode(String code);
     boolean existsByOrder(int order);

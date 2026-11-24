@@ -44,7 +44,7 @@ infrastructure (persistence, security...) -/
 | domain | `domain/{model,repository,service,valueobject,dto,common}` | Plain-Java models and rules, repository **interfaces**. No Spring/JPA. |
 | application | `application/port/input/{usecase,command,query,service}`, `application/port/output`, `application/query`, `application/event`, `application/response` | One use case per class, commands/queries, ports the app needs from the outside world |
 | infrastructure | `infrastructure/{persistence,security,config,worker,event,client,service}` | JPA entities, repository implementations, Kafka/Redis/S3/PayOS/Firebase adapters, scheduled jobs |
-| interfaces | `interfaces/{rest,graphql,grpc,kafka}` | Controllers (`RestXxxController`, `GraphQLXxxController`), request DTOs in `dto/request/<feature>/`, consumers |
+| interfaces | `interfaces/{rest,graphql,grpc,kafka}` | Controllers (`RestXxxController`, `GraphQLXxxController`), REST request DTOs in `rest/dto/request/<feature>/`, GraphQL inputs in `graphql/input/<feature>/`, DataLoader configs in `graphql/dataloader`, loader keys in `graphql/key`, scalars in `graphql/scalar`, consumers |
 
 Hard rules (`src/test/.../architecture/LayeredArchitectureTests.java` fails the build on violation):
 
@@ -76,8 +76,11 @@ Hard rules (`src/test/.../architecture/LayeredArchitectureTests.java` fails the 
    and/or `GraphQLXxxController` + schema (`interfaces/graphql`, `src/main/resources/graphql/*.graphqls`). The request
    record turns itself into the command or query with a static `toCommand` or `toQuery` (a record with several
    conversions names each `to<CommandClassName>`; a list is `toCommands`). A separate mapper class is only for
-   conversions that hold logic (multipart files, `ViewMyAssessmentsQueryMapper`, the GraphQL `Map` mappers, Kafka mappers);
+   conversions that hold logic (multipart files, `ViewMyAssessmentsQueryMapper`, Kafka mappers);
    the allowed classes are listed in `InterfacesStructureConventionTests` and the list may only shrink.
+   A GraphQL input field the client may omit is an `ArgumentValue<T>`, never a `Map`. An update field whose column is
+   nullable carries a `<field>Provided` flag in its command: omitted keeps the stored value, an explicit null clears it,
+   any other value behaves as before. An explicit null on a field whose column is required means "not given".
 6. Schema change -> a new Flyway migration (see Database).
 
 Look at an existing feature end to end before writing a new one (e.g. `CreateAssessmentUseCase`, `RestAssessmentController`,
@@ -107,6 +110,12 @@ Look at an existing feature end to end before writing a new one (e.g. `CreateAss
   not by  editing `V1`. Outgoing events are written to an outbox table and relayed to Kafka by `OutboxEventScheduler`
   (disabled in tests via `app.outbox.scheduler.enabled=false`). The topic is set with the `@ExternalEventTopic` annotation
   on the event class. Kafka consumers live in `interfaces/kafka/consumer`.
+- **GraphQL DataLoaders.** One config per schema file (`graphql/dataloader/<Schema>GraphQLDataLoaderConfig`) holds every
+  loader whose result type is defined in that file. A loader name is `<result>By<KeyField>` (`userByUserId`), declared as
+  a `public static final String` constant of its config and registered with `forName(CONSTANT)`. A controller looks a
+  loader up only through `GraphQLDataLoaders.require(environment, Config.CONSTANT)`, never `getDataLoader(` and never a
+  string literal. A loader that can return more than 20 rows per parent takes a key record (in `graphql/key`) with page
+  and size, and a repository method that windows per parent. A slice test imports the config that owns the loader.
 - **Dependency injection**: constructor injection with `private final` fields. A constructor that only assigns its
   parameters is written as `@RequiredArgsConstructor` in `application`, `infrastructure` and `interfaces` (never in
   `domain`). An explicit constructor stays only when it does more than assign, when a parameter carries `@Value` or
@@ -190,8 +199,11 @@ Look at an existing feature end to end before writing a new one (e.g. `CreateAss
   `src/main/java` and on any assignment-only constructor in `application`, `infrastructure` and `interfaces`; the
   constructor exemption set may only shrink.
 - `InterfacesStructureConventionTests` guards the interfaces layout: `Rest`/`GraphQL` controller prefixes, the spelling
-  `GraphQL`, no class directly in `port/input/command`, `port/input/query` or a `dto/request` package, the mapper
+  `GraphQL`, no class directly in `port/input/command`, `port/input/query` or a `dto/request` or `graphql/input` package, the mapper
   allow-list, and the return type of `toCommand`/`toQuery`.
+- `GraphQLDataLoaderConventionTests` guards the loader rules above by scanning source text: `getDataLoader(` only in
+  `GraphQLDataLoaders`, every `forName(` argument a constant of the same config, no name registered twice, and every name
+  matching `<result>By<KeyField>`. Each rule has a self-test with a violating snippet.
 - Tests marked as architecture rules (`src/test/.../architecture`) are guardrails: fix the code, never loosen the rule to get green.
 
 ## Scope
@@ -237,6 +249,23 @@ Look at an existing feature end to end before writing a new one (e.g. `CreateAss
   deprecated APIs.
 - **New dependencies** must be the latest release, or the version managed by the Spring Boot BOM (leave the version out when
   the BOM manages it). Adding one needs approval first (see Ask first).
+
+## Unused code and imports
+
+Before reporting a task done, check every file you created or edited for unused code, and remove what you find.
+
+- **Check** imports, local variables, parameters, private fields and private methods that your change left without a
+  reader. `./gradlew compileJava compileTestJava` plus the IDE or `-Xlint` warnings are the first source; also search
+  for the name when the compiler cannot tell (a private method whose last caller you removed).
+- **Remove** each unused import, variable, parameter, field and method, including the ones your own change orphaned
+  (an import left by a deleted line, a helper whose only caller was rewritten).
+- **Keep** an unused element only when the code needs it to run or compile: a parameter required by an interface, an
+  override or a framework callback signature, a field or method that reflection, JPA, Jackson or a test scan reaches by
+  name, or a fixture that a test inspects but never calls (for example the static methods of `SampleRequest` in
+  `InterfacesStructureConventionTests`, which carry `@SuppressWarnings("unused")`). Mark it with the narrowest
+  `@SuppressWarnings("unused")` and say why in a short comment when the reason is not obvious.
+- Do not remove unused code in files you are not otherwise touching, and do not add `@SuppressWarnings` to hide code that
+  can simply be deleted. Report unused code you notice elsewhere instead of fixing it (see Scope).
 
 ## Ask first
 

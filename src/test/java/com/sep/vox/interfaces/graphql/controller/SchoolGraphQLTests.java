@@ -20,7 +20,11 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import com.sep.vox.application.port.input.command.schoolclass.UpdateSchoolClassCommand;
+import com.sep.vox.application.port.input.command.gradelevel.UpdateGradeLevelCommand;
+import com.sep.vox.application.port.input.command.school.UpdateSchoolCommand;
 import com.sep.vox.application.port.input.command.schoolgrade.UpdateSchoolGradeCommand;
+import com.sep.vox.application.port.input.command.schoolroom.UpdateSchoolRoomCommand;
+import com.sep.vox.application.port.input.command.schooluser.UpdateSchoolUserCommand;
 import com.sep.vox.application.port.input.query.gradelevel.ViewGradeLevelsQuery;
 import com.sep.vox.application.port.input.query.schoolclass.ViewSchoolClassesQuery;
 import com.sep.vox.application.port.input.query.schoolgrade.ViewSchoolGradesQuery;
@@ -53,6 +57,7 @@ import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUserDetai
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUsersBySchoolUseCase;
 import com.sep.vox.application.port.input.usecase.schooluser.ViewSchoolUsersForRequesterUseCase;
 import com.sep.vox.application.response.input.schoolclass.UpdateSchoolClassResponse;
+import com.sep.vox.application.response.input.schooluser.UpdateSchoolUserResponse;
 import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.dto.GradeLevelDto;
 import com.sep.vox.domain.dto.SchoolClassDto;
@@ -77,9 +82,9 @@ import com.sep.vox.support.GraphQLControllerTest;
 @MockitoBean(types = {
     ViewSchoolClassesByUserUseCase.class, ViewMySchoolClassesUseCase.class, ViewSchoolClassDetailsUseCase.class,
     ViewSchoolStudentsBySchoolUseCase.class, ViewSchoolTeachersBySchoolUseCase.class,
-    ViewSchoolUsersForRequesterUseCase.class, ViewSchoolUserDetailsUseCase.class, UpdateSchoolUserUseCase.class,
-    UpdateSchoolUseCase.class, ViewSchoolRoomsUseCase.class, UpdateSchoolRoomUseCase.class,
-    ViewSchoolGradeDetailsUseCase.class, ViewGradeLevelDetailsUseCase.class, UpdateGradeLevelUseCase.class,
+    ViewSchoolUsersForRequesterUseCase.class, ViewSchoolUserDetailsUseCase.class,
+    ViewSchoolRoomsUseCase.class,
+    ViewSchoolGradeDetailsUseCase.class, ViewGradeLevelDetailsUseCase.class,
     ViewSchoolDirectoryCursorPageUseCase.class, ViewSchoolDirectoryDetailsUseCase.class,
     ListSchoolsWithOnGoingAssessmentUseCase.class })
 class SchoolGraphQLTests {
@@ -99,6 +104,8 @@ class SchoolGraphQLTests {
     @MockitoBean
     private UpdateSchoolClassUseCase updateSchoolClassUseCase;
     @MockitoBean
+    private UpdateSchoolUserUseCase updateSchoolUserUseCase;
+    @MockitoBean
     private ViewSchoolUsersBySchoolUseCase viewSchoolUsersBySchoolUseCase;
     @MockitoBean
     private ViewSchoolRoomDetailsUseCase viewSchoolRoomDetailsUseCase;
@@ -106,6 +113,12 @@ class SchoolGraphQLTests {
     private ViewSchoolGradesUseCase viewSchoolGradesUseCase;
     @MockitoBean
     private UpdateSchoolGradeUseCase updateSchoolGradeUseCase;
+    @MockitoBean
+    private UpdateSchoolUseCase updateSchoolUseCase;
+    @MockitoBean
+    private UpdateSchoolRoomUseCase updateSchoolRoomUseCase;
+    @MockitoBean
+    private UpdateGradeLevelUseCase updateGradeLevelUseCase;
     @MockitoBean
     private ViewGradeLevelsUseCase viewGradeLevelsUseCase;
     @MockitoBean
@@ -174,6 +187,56 @@ class SchoolGraphQLTests {
 
         verify(updateSchoolClassUseCase).execute(
             new UpdateSchoolClassCommand(ID, null, false, null, false, SchoolClassStatus.INACTIVE, true));
+    }
+
+    @Test
+    @WithMockUser(roles = "SCHOOL_ADMIN")
+    void update_school_class_should_tell_an_explicit_null_description_from_an_absent_one() {
+        when(updateSchoolClassUseCase.execute(any())).thenReturn(new UpdateSchoolClassResponse(ID));
+
+        graphQlTester.document("mutation { updateSchoolClass(id: \"%s\", input: { description: null }) { schoolClassId } }".formatted(ID))
+            .execute().errors().verify();
+        graphQlTester.document("mutation { updateSchoolClass(id: \"%s\", input: { name: \"English 02\" }) { schoolClassId } }".formatted(ID))
+            .execute().errors().verify();
+
+        verify(updateSchoolClassUseCase).execute(
+            new UpdateSchoolClassCommand(ID, null, false, null, true, null, false));
+        verify(updateSchoolClassUseCase).execute(
+            new UpdateSchoolClassCommand(ID, "English 02", true, null, false, null, false));
+    }
+
+    @Test
+    @WithMockUser(roles = "SCHOOL_ADMIN")
+    void update_school_user_should_tell_an_explicit_null_avatar_from_an_absent_one() {
+        when(updateSchoolUserUseCase.execute(any())).thenReturn(new UpdateSchoolUserResponse(ID));
+
+        executeUpdateSchoolUser("{ avatarUrl: null }");
+        executeUpdateSchoolUser("{ phone: \"0911000001\" }");
+
+        verify(updateSchoolUserUseCase).execute(new UpdateSchoolUserCommand(
+            ID, ID, null, false, null, false, null, false, null, false, null, true));
+        verify(updateSchoolUserUseCase).execute(new UpdateSchoolUserCommand(
+            ID, ID, null, false, "0911000001", true, null, false, null, false, null, false));
+    }
+
+    @Test
+    @WithMockUser(roles = "SCHOOL_ADMIN")
+    void update_school_user_should_deliver_the_date_of_birth_as_a_local_date() {
+        when(updateSchoolUserUseCase.execute(any())).thenReturn(new UpdateSchoolUserResponse(ID));
+
+        executeUpdateSchoolUser("{ dateOfBirth: \"2008-05-01\" }");
+
+        verify(updateSchoolUserUseCase).execute(new UpdateSchoolUserCommand(
+            ID, ID, null, false, null, false, null, false, LocalDate.of(2008, 5, 1), true, null, false));
+    }
+
+    /**
+     * The payload is not selected: {@code UpdateSchoolUserResponse} exposes {@code id} while the schema type
+     * declares {@code schoolUserId}, so selecting it would fail on an unrelated mismatch.
+     */
+    private void executeUpdateSchoolUser(String input) {
+        graphQlTester.document("mutation { updateSchoolUser(schoolId: \"%s\", userId: \"%s\", input: %s) { __typename } }"
+            .formatted(ID, ID, input)).execute().errors().verify();
     }
 
     @Test
@@ -311,5 +374,65 @@ class SchoolGraphQLTests {
             .path("schoolDirectoryPage.content[0].origin").entity(String.class).isEqualTo("ADMIN_CREATED")
             .path("schoolDirectoryPage.content[0].createdAt").entity(String.class).isEqualTo("2026-07-28T02:30:00Z")
             .path("schoolDirectoryPage.content[0].updatedAt").entity(String.class).isEqualTo("2026-07-28T02:30:00Z");
+    }
+
+    @Test
+    @WithMockUser(roles = "SCHOOL_ADMIN")
+    void update_school_should_distinguish_omitted_null_and_value_for_description_and_domain() {
+        when(updateSchoolUseCase.execute(any())).thenReturn(ID);
+        String mutation = "mutation { updateSchool(id: \"%s\", input: { name: \"N\" %s }) }";
+
+        graphQlTester.document(mutation.formatted(ID, "")).execute().errors().verify();
+        graphQlTester.document(mutation.formatted(ID, ", description: null, domain: null")).execute().errors().verify();
+        graphQlTester.document(mutation.formatted(ID, ", description: \"Text\", domain: \"vox.edu.vn\"")).execute().errors().verify();
+
+        verify(updateSchoolUseCase).execute(new UpdateSchoolCommand(ID, "N", null, false, null, null, null, false, null, null));
+        verify(updateSchoolUseCase).execute(new UpdateSchoolCommand(ID, "N", null, true, null, null, null, true, null, null));
+        verify(updateSchoolUseCase).execute(new UpdateSchoolCommand(ID, "N", "Text", true, null, null, "vox.edu.vn", true, null, null));
+    }
+
+    @Test
+    @WithMockUser(roles = "SCHOOL_ADMIN")
+    void update_school_room_should_distinguish_omitted_null_and_value_description() {
+        when(updateSchoolRoomUseCase.execute(any())).thenReturn(ID);
+        String mutation = "mutation { updateSchoolRoom(id: \"%s\", input: { name: \"N\" %s }) }";
+
+        graphQlTester.document(mutation.formatted(ID, "")).execute().errors().verify();
+        graphQlTester.document(mutation.formatted(ID, ", description: null")).execute().errors().verify();
+        graphQlTester.document(mutation.formatted(ID, ", description: \"Text\"")).execute().errors().verify();
+
+        verify(updateSchoolRoomUseCase).execute(new UpdateSchoolRoomCommand(ID, "N", null, false));
+        verify(updateSchoolRoomUseCase).execute(new UpdateSchoolRoomCommand(ID, "N", null, true));
+        verify(updateSchoolRoomUseCase).execute(new UpdateSchoolRoomCommand(ID, "N", "Text", true));
+    }
+
+    @Test
+    @WithMockUser(roles = "SCHOOL_ADMIN")
+    void update_school_grade_should_distinguish_omitted_null_and_value_description() {
+        when(updateSchoolGradeUseCase.execute(any())).thenReturn(ID);
+        String mutation = "mutation { updateSchoolGrade(id: \"%s\", input: { name: \"N\" %s }) }";
+
+        graphQlTester.document(mutation.formatted(ID, "")).execute().errors().verify();
+        graphQlTester.document(mutation.formatted(ID, ", description: null")).execute().errors().verify();
+        graphQlTester.document(mutation.formatted(ID, ", description: \"Text\"")).execute().errors().verify();
+
+        verify(updateSchoolGradeUseCase).execute(new UpdateSchoolGradeCommand(ID, "N", null, false, null, null));
+        verify(updateSchoolGradeUseCase).execute(new UpdateSchoolGradeCommand(ID, "N", null, true, null, null));
+        verify(updateSchoolGradeUseCase).execute(new UpdateSchoolGradeCommand(ID, "N", "Text", true, null, null));
+    }
+
+    @Test
+    @WithMockUser(roles = "SYSTEM_ADMIN")
+    void update_grade_level_should_distinguish_omitted_null_and_value_description() {
+        when(updateGradeLevelUseCase.execute(any())).thenReturn(ID);
+        String mutation = "mutation { updateGradeLevel(gradeLevelId: \"%s\", input: { name: \"N\" %s }) }";
+
+        graphQlTester.document(mutation.formatted(ID, "")).execute().errors().verify();
+        graphQlTester.document(mutation.formatted(ID, ", description: null")).execute().errors().verify();
+        graphQlTester.document(mutation.formatted(ID, ", description: \"Text\"")).execute().errors().verify();
+
+        verify(updateGradeLevelUseCase).execute(new UpdateGradeLevelCommand(ID, "N", null, false, null));
+        verify(updateGradeLevelUseCase).execute(new UpdateGradeLevelCommand(ID, "N", null, true, null));
+        verify(updateGradeLevelUseCase).execute(new UpdateGradeLevelCommand(ID, "N", "Text", true, null));
     }
 }

@@ -28,70 +28,38 @@ public class UpdateSchoolUseCase implements IUseCase<UpdateSchoolCommand, UUID> 
 
     private final SchoolRepository schoolRepository;
     private final UserRepository userRepository;
-    private final SchoolUserRepository schoolUserRepository; // Added this repository
+    private final SchoolUserRepository schoolUserRepository;
     private final UserContextPort userContextPort;
 
     @Override
     @Transactional
     public UUID execute(UpdateSchoolCommand command) {
-        // 1. Validate sự tồn tại của trường học
+        // 1. Validate that the school exists
         School school = schoolRepository.findById(command.id())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
 
-        // 2. Validate User bằng hàm exists cho tối ưu hiệu năng
+        // 2. Validate the user with an exists call for performance
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Tài khoản không tồn tại hoặc đã bị khóa.");
         }
+        requireSameSchoolForSchoolUser(currentUserId, school);
 
-        // VÒNG BẢO MẬT: KIỂM TRA BẰNG SCHOOL USER
-        Optional<SchoolUser> schoolUserOpt = schoolUserRepository.findByUserId(currentUserId);
+        // 3. Normalize the data before sending it to the database
+        String phone = normalizedUniquePhone(command);
+        String email = normalizedUniqueEmail(command);
 
-        // Nếu user có liên kết với một trường học (tức là School Admin)
-        if (schoolUserOpt.isPresent()) {
-            SchoolUser schoolUser = schoolUserOpt.get();
-            if (!schoolUser.getSchoolId().equals(school.getId())) {
-                throw new ForbiddenException("BẢO MẬT: Bạn không có quyền sửa thông tin trường học của đơn vị khác.");
-            }
-        }
-
-
-        // 3. Chuẩn hóa dữ liệu trước khi gửi xuống DB
-        String name = (command.name() != null) ? StringNormalization.trimAndCollapseSpaces(command.name()) : null;
-        String description = (command.description() != null) ? StringNormalization.trimAndCollapseSpaces(command.description()) : null;
-        String address = (command.address() != null) ? StringNormalization.trimAndCollapseSpaces(command.address()) : null;
-
-        String phone = null;
-        if (command.contactPhone() != null) {
-            phone = StringNormalization.normalizePhone(command.contactPhone());
-            if (schoolRepository.existsByContactPhoneAndIdNot(phone, command.id())) {
-                throw new ResourceDuplicatedException("Số điện thoại này đã được sử dụng.");
-            }
-        }
-
-        String email = null;
-        if (command.contactEmail() != null) {
-            email = StringNormalization.normalizeEmail(command.contactEmail());
-            if (schoolRepository.existsByContactEmailAndIdNot(email, command.id())) {
-                throw new ResourceDuplicatedException("Email này đã được sử dụng.");
-            }
-        }
-
-        String domain = null;
-        if (command.domain() != null) {
-            domain = StringNormalization.normalizeDomain(command.domain());
-
-        }
-
-        // 4. Thực thi Atomic Update
+        // 4. Run the atomic update
         int updatedRows = schoolRepository.updateSchoolAtomic(
                 command.id(),
-                name,
-                description,
+                normalizedText(command.name()),
+                normalizedText(command.description()),
+                command.descriptionProvided(),
                 phone,
                 email,
-                domain,
-                address,
+                command.domain() != null ? StringNormalization.normalizeDomain(command.domain()) : null,
+                command.domainProvided(),
+                normalizedText(command.address()),
                 command.studentCount(),
                 Instant.now(),
                 currentUserId.toString()
@@ -102,5 +70,39 @@ public class UpdateSchoolUseCase implements IUseCase<UpdateSchoolCommand, UUID> 
         }
 
         return command.id();
+    }
+
+    private void requireSameSchoolForSchoolUser(UUID currentUserId, School school) {
+        // SECURITY GUARD: a user linked to a school (a school admin) may only edit their own school
+        Optional<SchoolUser> schoolUserOpt = schoolUserRepository.findByUserId(currentUserId);
+        if (schoolUserOpt.isPresent() && !schoolUserOpt.get().getSchoolId().equals(school.getId())) {
+            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền sửa thông tin trường học của đơn vị khác.");
+        }
+    }
+
+    private String normalizedText(String value) {
+        return value != null ? StringNormalization.trimAndCollapseSpaces(value) : null;
+    }
+
+    private String normalizedUniquePhone(UpdateSchoolCommand command) {
+        if (command.contactPhone() == null) {
+            return null;
+        }
+        String phone = StringNormalization.normalizePhone(command.contactPhone());
+        if (schoolRepository.existsByContactPhoneAndIdNot(phone, command.id())) {
+            throw new ResourceDuplicatedException("Số điện thoại này đã được sử dụng.");
+        }
+        return phone;
+    }
+
+    private String normalizedUniqueEmail(UpdateSchoolCommand command) {
+        if (command.contactEmail() == null) {
+            return null;
+        }
+        String email = StringNormalization.normalizeEmail(command.contactEmail());
+        if (schoolRepository.existsByContactEmailAndIdNot(email, command.id())) {
+            throw new ResourceDuplicatedException("Email này đã được sử dụng.");
+        }
+        return email;
     }
 }

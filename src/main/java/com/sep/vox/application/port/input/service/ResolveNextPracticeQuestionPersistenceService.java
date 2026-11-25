@@ -25,7 +25,6 @@ public class ResolveNextPracticeQuestionPersistenceService {
             UUID practicePaperId,
             PracticeQuestionSelectionService.NextQuestionSelection selection) {
         paperItemRepository.save(PracticePaperItem.builder()
-                .id(UUID.randomUUID())
                 .practicePaperId(practicePaperId)
                 .practiceQuestionId(selection.question().getId())
                 .slotOrder(selection.slot())

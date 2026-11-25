@@ -41,7 +41,6 @@ public class TopicInterestScoreRepositoryImpl
         Instant now = Instant.now();
         repository.saveAll(scores.stream()
             .map(entry -> TopicInterestScoreJpaEntity.builder()
-                    .id(UUID.randomUUID())
                     .studentId(studentId)
                     .practiceTopicId(entry.getTopicId())
                     .score(BigDecimal.valueOf(entry.getScore()))

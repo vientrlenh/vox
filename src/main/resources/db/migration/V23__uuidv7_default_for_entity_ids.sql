@@ -1,0 +1,16 @@
+ALTER TABLE assessment_item_evaluation_turns ALTER COLUMN id SET DEFAULT uuidv7();
+ALTER TABLE assessment_item_responses ALTER COLUMN id SET DEFAULT uuidv7();
+ALTER TABLE assessment_item_response_turns ALTER COLUMN id SET DEFAULT uuidv7();
+ALTER TABLE practice_criterion_scores ALTER COLUMN id SET DEFAULT uuidv7();
+ALTER TABLE practice_item_evaluations ALTER COLUMN id SET DEFAULT uuidv7();
+ALTER TABLE practice_item_responses ALTER COLUMN id SET DEFAULT uuidv7();
+ALTER TABLE practice_paper_items ALTER COLUMN id SET DEFAULT uuidv7();
+ALTER TABLE practice_papers ALTER COLUMN id SET DEFAULT uuidv7();
+ALTER TABLE practice_response_turns ALTER COLUMN id SET DEFAULT uuidv7();
+ALTER TABLE practice_sessions ALTER COLUMN id SET DEFAULT uuidv7();
+ALTER TABLE saved_topics ALTER COLUMN id SET DEFAULT uuidv7();
+ALTER TABLE topic_interest_events ALTER COLUMN id SET DEFAULT uuidv7();
+ALTER TABLE topic_interest_scores ALTER COLUMN id SET DEFAULT uuidv7();
+ALTER TABLE topic_suggestions ALTER COLUMN id SET DEFAULT uuidv7();
+ALTER TABLE turn_corrections ALTER COLUMN id SET DEFAULT uuidv7();
+ALTER TABLE student_question_exposures ALTER COLUMN id SET DEFAULT uuidv7();

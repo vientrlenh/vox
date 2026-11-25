@@ -9,6 +9,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.UuidGenerator;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -30,6 +31,7 @@ import lombok.experimental.SuperBuilder;
 public class TopicInterestEventJpaEntity {
 
     @Id
+    @UuidGenerator(style = UuidGenerator.Style.VERSION_7)
     @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
 

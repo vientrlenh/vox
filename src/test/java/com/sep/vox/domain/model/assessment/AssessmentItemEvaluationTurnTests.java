@@ -8,13 +8,13 @@ import org.junit.jupiter.api.Test;
 class AssessmentItemEvaluationTurnTests {
 
     @Test
-    void recordedGeneratesAnIdAndSetsTheGivenValues() {
+    void recordedLeavesTheIdNullAndSetsTheGivenValues() {
         UUID evaluationId = UUID.randomUUID();
 
         AssessmentItemEvaluationTurn turn = AssessmentItemEvaluationTurn.recorded(
                 evaluationId, 2, TurnType.FOLLOWUP, "Prompt", "audio.mp3", "Hello", 1, 12, 0.8, "{}", "[]");
 
-        assertThat(turn.getId()).isNotNull();
+        assertThat(turn.getId()).isNull();
         assertThat(turn.getEvaluationId()).isEqualTo(evaluationId);
         assertThat(turn.getTurnOrder()).isEqualTo(2);
         assertThat(turn.getTurnType()).isEqualTo(TurnType.FOLLOWUP);
@@ -29,14 +29,10 @@ class AssessmentItemEvaluationTurnTests {
     }
 
     @Test
-    void recordedGeneratesADifferentIdForEachTurn() {
-        UUID evaluationId = UUID.randomUUID();
+    void recordedLeavesTheIdNullSoPersistenceCanGenerateIt() {
+        AssessmentItemEvaluationTurn turn = AssessmentItemEvaluationTurn.recorded(
+                UUID.randomUUID(), 1, TurnType.MAIN, null, "", "", 0, null, null, null, null);
 
-        AssessmentItemEvaluationTurn first = AssessmentItemEvaluationTurn.recorded(
-                evaluationId, 1, TurnType.MAIN, null, "", "", 0, null, null, null, null);
-        AssessmentItemEvaluationTurn second = AssessmentItemEvaluationTurn.recorded(
-                evaluationId, 1, TurnType.MAIN, null, "", "", 0, null, null, null, null);
-
-        assertThat(first.getId()).isNotEqualTo(second.getId());
+        assertThat(turn.getId()).isNull();
     }
 }

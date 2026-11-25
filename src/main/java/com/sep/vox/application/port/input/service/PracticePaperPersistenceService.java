@@ -74,7 +74,6 @@ public class PracticePaperPersistenceService {
         String resolvedOrigin = origin == null ? "SELECTED" : origin;
         Instant now = Instant.now();
         return paperRepository.save(com.sep.vox.domain.model.personalization.PracticePaper.builder()
-            .id(UUID.randomUUID())
             .studentId(studentId)
             .practiceTopicId(topicId)
             .targetFrameworkBandId(targetFrameworkBandId)
@@ -103,7 +102,6 @@ public class PracticePaperPersistenceService {
             UUID paperId,
             PracticeQuestionSelectionService.NextQuestionSelection selection) {
         paperItemRepository.save(PracticePaperItem.builder()
-                .id(UUID.randomUUID())
                 .practicePaperId(paperId)
                 .practiceQuestionId(selection.question().getId())
                 .slotOrder(selection.slot())

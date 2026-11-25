@@ -31,7 +31,6 @@ public class PracticeCriterionScoreRepositoryImpl implements PracticeCriterionSc
         BigDecimal scoreValue = BigDecimal.valueOf(finalScore);
         if (existing == null) {
             repository.save(PracticeCriterionScoreJpaEntity.builder()
-                    .id(UUID.randomUUID())
                     .practiceEvaluationId(practiceEvaluationId)
                     .criterionCode(criterionCode)
                     .finalScore(scoreValue)

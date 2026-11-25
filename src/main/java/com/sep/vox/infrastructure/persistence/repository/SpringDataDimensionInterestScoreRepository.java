@@ -29,13 +29,12 @@ public interface SpringDataDimensionInterestScoreRepository
     @Modifying
     @Query(value = """
         INSERT INTO dimension_interest_scores (
-            id, learner_profile_id, dimension, score
-        ) VALUES (:id, :profileId, :dimension, :score)
+            learner_profile_id, dimension, score
+        ) VALUES (:profileId, :dimension, :score)
         ON CONFLICT (learner_profile_id, dimension)
         DO UPDATE SET score = EXCLUDED.score
         """, nativeQuery = true)
     void upsertScore(
-        @Param("id") UUID id,
         @Param("profileId") UUID profileId,
         @Param("dimension") String dimension,
         @Param("score") java.math.BigDecimal score

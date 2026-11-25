@@ -2,6 +2,8 @@ package com.sep.vox.infrastructure.persistence.entity.assessment;
 
 import java.util.UUID;
 
+import org.hibernate.annotations.UuidGenerator;
+
 import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -21,6 +23,7 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class AssessmentItemEvaluationTurnJpaEntity {
     @Id
+    @UuidGenerator(style = UuidGenerator.Style.VERSION_7)
     @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
 

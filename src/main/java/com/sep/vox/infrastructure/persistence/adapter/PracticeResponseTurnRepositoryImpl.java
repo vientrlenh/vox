@@ -38,7 +38,6 @@ public class PracticeResponseTurnRepositoryImpl implements PracticeResponseTurnR
             return new TurnWrite(existing.get().getId(), false);
         }
         PracticeResponseTurnJpaEntity saved = repository.save(PracticeResponseTurnJpaEntity.builder()
-                .id(UUID.randomUUID())
                 .practiceResponseId(practiceResponseId)
                 .turnOrder(turnOrder)
                 .turnType(turnType)

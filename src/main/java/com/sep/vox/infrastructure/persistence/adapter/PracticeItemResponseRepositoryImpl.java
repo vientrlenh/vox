@@ -52,7 +52,6 @@ public class PracticeItemResponseRepositoryImpl implements PracticeItemResponseR
             return repository.save(existing).getId();
         }
         PracticeItemResponseJpaEntity saved = repository.save(PracticeItemResponseJpaEntity.builder()
-                .id(UUID.randomUUID())
                 .practiceSessionId(sessionId)
                 .practiceQuestionId(questionId)
                 .audioUrl(audioUrl)

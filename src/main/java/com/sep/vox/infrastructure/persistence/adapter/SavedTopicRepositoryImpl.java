@@ -26,7 +26,6 @@ public class SavedTopicRepositoryImpl implements SavedTopicRepository {
     @Transactional
     public void save(UUID studentId, UUID topicId) {
         repository.save(SavedTopicJpaEntity.builder()
-                .id(UUID.randomUUID())
                 .studentId(studentId)
                 .practiceTopicId(topicId)
                 .savedAt(Instant.now())

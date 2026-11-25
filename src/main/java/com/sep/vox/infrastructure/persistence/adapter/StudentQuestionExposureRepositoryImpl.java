@@ -25,7 +25,6 @@ public class StudentQuestionExposureRepositoryImpl implements StudentQuestionExp
             .orElse(null);
         if (exposure == null) {
             repository.save(StudentQuestionExposureJpaEntity.builder()
-                    .id(UUID.randomUUID())
                     .studentId(studentId)
                     .practiceQuestionId(questionId)
                     .seenAt(Instant.now())

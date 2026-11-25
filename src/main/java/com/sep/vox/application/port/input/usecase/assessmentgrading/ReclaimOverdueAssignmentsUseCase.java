@@ -65,12 +65,42 @@ public class ReclaimOverdueAssignmentsUseCase
         assessmentGradingAccessService.authorizeSchoolAdmin(schoolId, currentUserId);
 
         Instant now = Instant.now();
-        if (command.newDeadlineAt() != null && command.newDeadlineAt().isBefore(now)) {
-            throw new IllegalArgumentException("Hạn chấm mới phải ở tương lai.");
+        requireFutureDeadline(command.newDeadlineAt(), now);
+        List<UUID> teacherIds = requireReplacementTeachers(command.reassignToTeacherIds(), schoolId);
+
+        OverdueBatch batch = selectOverdue(command, schoolId, currentUserId, now);
+        List<AssessmentGradingAssignment> overdue = batch.assignments();
+        if (overdue.isEmpty()) {
+            return ReclaimOverdueResponse.empty();
         }
 
-        List<UUID> teacherIds = command.reassignToTeacherIds() == null
-            ? List.<UUID>of() : command.reassignToTeacherIds();
+        rejectConflictedReplacements(overdue, teacherIds);
+        List<UUID> reclaimedIds = declineOverdue(overdue, now);
+        if (teacherIds.isEmpty()) {
+            releaseAppeals(overdue);
+            return new ReclaimOverdueResponse(reclaimedIds, List.of(), batch.hasMore());
+        }
+
+        List<UUID> reassignedIds = reopenForReplacements(overdue, teacherIds, command, currentUserId, now);
+        return new ReclaimOverdueResponse(reclaimedIds, reassignedIds, batch.hasMore());
+    }
+
+    /**
+     * Used when there is no replacement: the appeal must be released, otherwise it stays stuck in
+     * GRADING with no open assignment left to continue grading it.
+     */
+    private void releaseAppeals(List<AssessmentGradingAssignment> overdue) {
+        overdue.forEach(this::releaseAppeal);
+    }
+
+    private void requireFutureDeadline(Instant newDeadlineAt, Instant now) {
+        if (newDeadlineAt != null && newDeadlineAt.isBefore(now)) {
+            throw new IllegalArgumentException("Hạn chấm mới phải ở tương lai.");
+        }
+    }
+
+    private List<UUID> requireReplacementTeachers(List<UUID> requestedTeacherIds, UUID schoolId) {
+        List<UUID> teacherIds = requestedTeacherIds == null ? List.<UUID>of() : requestedTeacherIds;
         if (!teacherIds.isEmpty()) {
             if (new HashSet<>(teacherIds).size() != teacherIds.size()) {
                 throw new ResourceDuplicatedException("Không được chọn trùng giáo viên.");
@@ -80,29 +110,24 @@ public class ReclaimOverdueAssignmentsUseCase
                 throw new IllegalArgumentException("Người chấm phải là giáo viên thuộc cùng trường với bài thi.");
             }
         }
+        return teacherIds;
+    }
 
-        OverdueBatch batch = selectOverdue(command, schoolId, currentUserId, now);
-        List<AssessmentGradingAssignment> overdue = batch.assignments();
-        if (overdue.isEmpty()) {
-            return ReclaimOverdueResponse.empty();
-        }
-
-        rejectConflictedReplacements(overdue, teacherIds);
-
+    private List<UUID> declineOverdue(List<AssessmentGradingAssignment> overdue, Instant now) {
         for (AssessmentGradingAssignment assignment : overdue) {
             assignment.complete(GradingOutcome.DECLINED, RECLAIM_REASON, now);
             assessmentGradingAssignmentRepository.save(assignment);
         }
-        List<UUID> reclaimedIds = overdue.stream().map(assignment -> assignment.getId()).toList();
-        if (teacherIds.isEmpty()) {
-            // Không có người thay: đơn phúc khảo phải được nhả ra, nếu không nó kẹt ở
-            // GRADING mà chẳng còn phân công nào đang mở để chấm tiếp.
-            overdue.forEach(this::releaseAppeal);
-            return new ReclaimOverdueResponse(reclaimedIds, List.of(), batch.hasMore());
-        }
+        return overdue.stream().map(assignment -> assignment.getId()).toList();
+    }
 
-        // Tải được đọc SAU khi đóng dòng cũ, nên người vừa bị thu hồi không còn bị tính
-        // là đang giữ những bài đó — chia lại mới công bằng.
+    /**
+     * The load is read AFTER the old rows are closed, so a person who has just been reclaimed is no
+     * longer counted as holding those attempts -- redistributing is only fair that way.
+     */
+    private List<UUID> reopenForReplacements(
+            List<AssessmentGradingAssignment> overdue, List<UUID> teacherIds,
+            ReclaimOverdueAssignmentsCommand command, UUID currentUserId, Instant now) {
         Map<UUID, Long> loads = assessmentGradingQueryRepository.assignedLoadByTeacherIds(teacherIds);
         List<UUID> workItems = overdue.stream().map(assignment -> assignment.getCandidateResultId()).toList();
         List<UUID> picked = roundRobinLoadBalancer.distribute(workItems, teacherIds, loads);
@@ -121,10 +146,9 @@ public class ReclaimOverdueAssignmentsUseCase
                 command.newDeadlineAt()
             ));
         }
-        List<UUID> reassignedIds = assessmentGradingAssignmentRepository.saveAll(reopened).stream()
+        return assessmentGradingAssignmentRepository.saveAll(reopened).stream()
             .map(assignment -> assignment.getId())
             .toList();
-        return new ReclaimOverdueResponse(reclaimedIds, reassignedIds, batch.hasMore());
     }
 
     /**
@@ -216,17 +240,23 @@ public class ReclaimOverdueAssignmentsUseCase
     private OverdueBatch selectOverdue(
             ReclaimOverdueAssignmentsCommand command, UUID schoolId, UUID currentUserId, Instant now) {
         List<UUID> assignmentIds = command.assignmentIds() == null ? List.<UUID>of() : command.assignmentIds();
-        if (assignmentIds.isEmpty()) {
-            List<AssessmentGradingAssignment> found = assessmentGradingAssignmentRepository.findOverdueInSchool(
-                now, schoolId, command.assessmentId(), MAX_RECLAIM_BATCH + 1);
-            // Nhánh "thu hồi cả trường": LỌC BỎ bài trên lớp chứ không ném. Ném ở đây là
-            // một bài trên lớp quá hạn chặn đứng nút thu hồi của cả trường.
-            found = excludeClassTest(found);
-            return found.size() > MAX_RECLAIM_BATCH
-                ? new OverdueBatch(found.subList(0, MAX_RECLAIM_BATCH), true)
-                : new OverdueBatch(found, false);
-        }
+        return assignmentIds.isEmpty()
+            ? selectOverdueInSchool(command, schoolId, now)
+            : selectNamedAssignments(assignmentIds, currentUserId, now);
+    }
 
+    private OverdueBatch selectOverdueInSchool(ReclaimOverdueAssignmentsCommand command, UUID schoolId, Instant now) {
+        List<AssessmentGradingAssignment> found = assessmentGradingAssignmentRepository.findOverdueInSchool(
+            now, schoolId, command.assessmentId(), MAX_RECLAIM_BATCH + 1);
+        // The "reclaim the whole school" branch: FILTER OUT class tests instead of throwing. Throwing here
+        // would let one overdue class test block the reclaim button of the whole school.
+        found = excludeClassTest(found);
+        return found.size() > MAX_RECLAIM_BATCH
+            ? new OverdueBatch(found.subList(0, MAX_RECLAIM_BATCH), true)
+            : new OverdueBatch(found, false);
+    }
+
+    private OverdueBatch selectNamedAssignments(List<UUID> assignmentIds, UUID currentUserId, Instant now) {
         List<AssessmentGradingAssignment> selected = new ArrayList<AssessmentGradingAssignment>();
         for (UUID assignmentId : assignmentIds) {
             AssessmentGradingAccessService.GradingContext context = assessmentGradingAccessService.load(assignmentId);
@@ -236,8 +266,8 @@ public class ReclaimOverdueAssignmentsUseCase
             }
             selected.add(context.assignment());
         }
-        // Ngược lại với nhánh trên: admin tick đích danh từng dòng, nên im lặng bỏ qua
-        // là để họ tưởng đã thu hồi. Ở đây phải nói thẳng.
+        // The opposite of the branch above: the admin ticked each row explicitly, so silently skipping
+        // would let them believe it was reclaimed. Here it must be said out loud.
         assessmentGradingAccessService.rejectClassTestCoordination(
             selected.stream().map(assignment -> assignment.getCandidateResultId()).toList());
         return new OverdueBatch(selected, false);

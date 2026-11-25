@@ -45,15 +45,21 @@ public class SearchPracticeTopicsSemanticUseCase
         }
 
         UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
-        // HYDRATE từ Postgres. Không dùng tên trong vector store: đó là bản chụp lúc index, tên
-        // có thể đã đổi và chủ đề có thể đã bị tắt. Query cũng lọc luôn `active = true`.
+        // HYDRATE from Postgres. The name in the vector store is not used: it is a snapshot taken at
+        // index time, the name may have changed and the topic may have been deactivated. The query
+        // also filters on `active = true`.
         List<TopicSearchRowInfo> rows = practiceTopicQueryRepository.findActiveByIds(
             studentId,
             hits.stream().map(hit -> hit.topicId()).toList()
         );
+        return rankBySimilarity(rows, hits, studentId);
+    }
 
-        // Giữ THỨ TỰ theo độ tương đồng, không theo thứ tự Postgres trả về -- xếp hạng là toàn
-        // bộ giá trị của đường này.
+    private List<PracticeTopicOffer> rankBySimilarity(List<TopicSearchRowInfo> rows,
+                                                      List<TopicGenerationPort.TopicSearchHit> hits,
+                                                      UUID studentId) {
+        // Keep the ORDER by similarity, not the order Postgres returned the rows in -- the ranking
+        // is the whole value of this path.
         Map<UUID, Double> rankByTopicId = new java.util.HashMap<java.util.UUID, Double>();
         for (TopicGenerationPort.TopicSearchHit hit : hits) {
             rankByTopicId.put(hit.topicId(), hit.similarity());
@@ -64,21 +70,25 @@ public class SearchPracticeTopicsSemanticUseCase
                 (com.sep.vox.application.query.dto.TopicSearchRowInfo row) ->
                     -rankByTopicId.getOrDefault(row.getId(), 0.0)
             ))
-            .map(row -> new PracticeTopicOffer(
-                row.getId(),
-                row.getName(),
-                row.getInterestDimension(),
-                row.getSavedByMe(),
-                // matchPercent = độ tương đồng ngữ nghĩa, để client hiện nhãn "gần nghĩa" và
-                // người dùng hiểu vì sao dòng này xuất hiện dù tên không chứa từ khoá.
-                (int) Math.round(rankByTopicId.getOrDefault(row.getId(), 0.0) * 100),
-                minutes,
-                null,
-                List.of()
-            ))
-            // Cắt SAU khi đã xếp theo độ tương đồng -- cắt trước là vứt mất chính những chủ đề
-            // gần nhất chỉ vì Postgres trả chúng về sau.
+            .map(row -> toOffer(row, rankByTopicId.getOrDefault(row.getId(), 0.0), minutes))
+            // Cut AFTER sorting by similarity -- cutting first would drop the closest topics
+            // just because Postgres returned them later.
             .limit(SEMANTIC_RESULT_LIMIT)
             .toList();
+    }
+
+    private PracticeTopicOffer toOffer(TopicSearchRowInfo row, double similarity, int minutes) {
+        return new PracticeTopicOffer(
+            row.getId(),
+            row.getName(),
+            row.getInterestDimension(),
+            row.getSavedByMe(),
+            // matchPercent = semantic similarity, so the client can show a "similar meaning" label and
+            // the user understands why this row appears even though its name lacks the keyword.
+            (int) Math.round(similarity * 100),
+            minutes,
+            null,
+            List.of()
+        );
     }
 }

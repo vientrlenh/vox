@@ -43,25 +43,44 @@ public class PracticeSessionClosedHandler {
     private final JsonSerializationPort jsonSerializationPort;
 
     /**
-     * Chạy trong TRANSACTION RIÊNG của từng phiên, không dùng chung với transaction gọi tới.
+     * Runs in its OWN TRANSACTION per session, not shared with the calling transaction.
      *
-     * Hai lý do, cả hai đều đã hỏng thật khi dùng chung:
+     * <p>Two reasons, both of which really broke when it was shared:
+     * <ol>
+     *   <li>{@code InterestVectorService.recordSessionOutcome} -> {@code replaceForStudent} does a DELETE and then an
+     *       INSERT. That is only right when each transaction calls it once. The cleanup job handles many sessions in
+     *       one loop, so the second call's delete does not reach its target (the first call's rows are still waiting
+     *       to flush) and the insert then overwrites itself -> duplicate key on
+     *       {@code uq_topic_interest_score_student_topic}.</li>
+     *   <li>Postgres ABORTS the whole transaction as soon as one statement fails. Catching the exception on the Java side
+     *       does NOT clear that state -- every later statement returns "current transaction is aborted". So a
+     *       try/catch below on its own is not enough for "one broken session does not drag down the whole batch"; the
+     *       transaction must be separated for the isolation to be real.</li>
+     * </ol>
+     * Measured: a single error made the whole cleanup job throw, and NO session got closed --
+     * they stayed IN_PROGRESS indefinitely across many runs.
      *
-     * 1. {@code InterestVectorService.recordSessionOutcome} -> {@code replaceForStudent} làm
-     *    XOÁ rồi CHÈN. Chỉ đúng khi mỗi transaction gọi một lần. Job dọn xử lý nhiều phiên
-     *    trong một vòng lặp, nên lần gọi thứ hai xoá không tới nơi (bản ghi lần đầu còn chờ
-     *    flush) rồi chèn đè lên chính nó -> duplicate key trên
-     *    {@code uq_topic_interest_score_student_topic}.
+     * <p>There is NO try/catch around the body here. Catching an exception INSIDE a @Transactional does not clear the
+     * rollback-only flag that Spring put on the transaction when the exception crossed the inner
+     * @Transactional boundary (recordSessionOutcome). After swallowing it the method returns normally, and at commit
+     * time Spring throws UnexpectedRollbackException -- "Transaction silently rolled back because it has been marked
+     * as rollback-only". Really measured: a catch placed here still killed the whole cleanup job.
      *
-     * 2. Postgres ABORT cả transaction ngay khi một câu lệnh lỗi. Bắt exception phía Java
-     *    KHÔNG gỡ được trạng thái đó -- mọi câu lệnh sau đều trả "current transaction is
-     *    aborted". Nên try/catch bên dưới một mình không đủ để "một phiên hỏng không kéo theo
-     *    cả loạt"; phải tách transaction thì mới thật sự cô lập.
+     * <p>Let it throw: this REQUIRES_NEW transaction rolls back cleanly, and the CALLER (outside the transaction
+     * boundary) is the place that can really catch it.
      *
-     * Đã đo: một lỗi duy nhất làm cả job dọn ném exception, và KHÔNG phiên nào được đóng --
-     * chúng nằm IN_PROGRESS vô thời hạn qua nhiều lượt chạy.
+     * <p>Releasing the undelivered question comes BEFORE recordSessionOutcome, in its own transaction (REQUIRES_NEW), on
+     * purpose: it is resource cleanup, not learning from the session just ended. If it fails it must not drag the interest score
+     * down with it; conversely, if the interest score fails the question must still be returned.
      *
-     * @param diagnosis chẩn đoán bỏ dở (null nếu học sinh có nói) -- xem SessionDiagnosisPolicy.
+     * <p>The topic backfill runs IN THE BACKGROUND after EVERY session, not waiting for the list to drop below 3.
+     * Why: the old condition "only generate when sparse" forced the student to practise a bored-of topic until it was
+     * EXHAUSTED before seeing another -- a topic only leaves the list when it runs out of questions. For a session
+     * just graded as BORED that is the worst thing to do. It runs AFTER recordSessionOutcome on purpose: the interest
+     * score has just been updated, so this round of suggestions sees the latest picture instead of the picture before
+     * the session.
+     *
+     * @param diagnosis the abandonment diagnosis (null if the student spoke) -- see SessionDiagnosisPolicy.
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void afterClosed(UUID studentId, UUID sessionId, String status, String diagnosis) {
@@ -69,25 +88,21 @@ public class PracticeSessionClosedHandler {
         if (row == null) {
             return;
         }
-        // KHÔNG try/catch ở đây. Bắt exception BÊN TRONG một @Transactional không gỡ được cờ
-        // rollback-only mà Spring đã đóng lên transaction lúc exception đi qua ranh giới
-        // @Transactional bên trong (recordSessionOutcome). Nuốt xong thì method trả về bình
-        // thường, rồi tới lúc commit Spring ném UnexpectedRollbackException -- "Transaction
-        // silently rolled back because it has been marked as rollback-only". Đo được thật:
-        // chốt bắt lỗi đặt ở đây vẫn làm cả job dọn chết.
-        //
-        // Để nó ném ra: transaction REQUIRES_NEW này rollback gọn gàng, và NƠI GỌI (ngoài ranh
-        // giới transaction) mới là chỗ bắt được thật.
-        // Trả về kho câu đã CHỌN mà học sinh chưa bao giờ trả lời.
-        //
-        // Đặt TRƯỚC recordSessionOutcome và trong transaction riêng (REQUIRES_NEW) là cố ý: đây
-        // là việc dọn tài nguyên, không phải việc học từ buổi vừa rồi. Nó hỏng thì không được
-        // kéo theo điểm quan tâm; ngược lại điểm quan tâm hỏng thì câu vẫn phải được trả về.
-        //
-        // Hai nguồn sinh ra câu thừa: học sinh đóng app ngay khi vừa nhận câu, và -- từ khi
-        // Python nạp trước câu tiếp theo trong lúc còn follow-up -- một câu sinh sẵn chưa kịp
-        // dùng. Không dọn thì `student_question_exposures` đánh dấu "đã gặp" vĩnh viễn và câu đó
-        // biến mất khỏi kho của em ấy dù chưa từng nhìn thấy.
+        releaseUndeliveredQuestionQuietly(studentId, sessionId, row);
+        recordSessionOutcome(studentId, sessionId, status, diagnosis, row);
+        topicOfferBackfillService.backfillAsync(studentId);
+        publishSessionEnded(studentId, sessionId);
+    }
+
+    /**
+     * Returns to the bank the questions that were CHOSEN but the student never answered.
+     *
+     * <p>Two sources produce a leftover question: the student closes the app right after receiving a question, and -- since
+     * Python pre-loads the next question while the follow-up is still running -- a generated question that was not used in time.
+     * Without cleanup, `student_question_exposures` marks it "seen" forever and the question
+     * disappears from their bank although they never looked at it.
+     */
+    private void releaseUndeliveredQuestionQuietly(UUID studentId, UUID sessionId, SessionRowInfo row) {
         try {
             undeliveredQuestionCleanupService.releaseUndeliveredQuestion(
                 studentId, sessionId, row.getPracticePaperId()
@@ -95,6 +110,10 @@ public class PracticeSessionClosedHandler {
         } catch (RuntimeException exception) {
             log.warn("Không trả được câu chưa dùng về kho cho phiên {}.", sessionId, exception);
         }
+    }
+
+    private void recordSessionOutcome(
+            UUID studentId, UUID sessionId, String status, String diagnosis, SessionRowInfo row) {
         interestVectorService.recordSessionOutcome(
             studentId,
             row.getChosenPracticeTopicId(),
@@ -106,26 +125,23 @@ public class PracticeSessionClosedHandler {
             offeredTopicIds(row.getOfferedTopicIdsJson(), "current"),
             offeredTopicIds(row.getOfferedTopicIdsJson(), "previous")
         );
-        // Bổ sung chủ đề chạy NỀN sau MỖI phiên, không đợi danh sách tụt xuống dưới 3.
-        //
-        // Vì sao: điều kiện cũ "thưa thì mới sinh" buộc học sinh phải luyện CẠN một chủ đề
-        // chán trước khi thấy chủ đề khác -- chủ đề chỉ rời danh sách khi hết câu hỏi. Với
-        // một buổi vừa bị chấm là BORED thì đó đúng là điều tệ nhất có thể làm.
-        //
-        // Chạy SAU recordSessionOutcome là cố ý: điểm quan tâm vừa cập nhật xong, nên lượt
-        // đề xuất này nhìn thấy bức tranh mới nhất thay vì bức tranh trước buổi học.
-        topicOfferBackfillService.backfillAsync(studentId);
-        // WARNING: since 2026-08-06 nobody listens to this event any more. The two old listeners,
-        // WeaknessSnapshotRefreshJob (removed together with the weakness profile) and
-        // TopicSuggestionSessionListener (removed together with the transcript read path), are gone.
-        // It is kept as a hook for later work; if nobody listens by the time of the next cleanup,
-        // delete PracticeSessionEndedEvent as well.
+    }
+
+    /**
+     * WARNING: since 2026-08-06 nobody listens to this event any more. The two old listeners,
+     * WeaknessSnapshotRefreshJob (removed together with the weakness profile) and
+     * TopicSuggestionSessionListener (removed together with the transcript read path), are gone.
+     * It is kept as a hook for later work; if nobody listens by the time of the next cleanup,
+     * delete PracticeSessionEndedEvent as well.
+     */
+    private void publishSessionEnded(UUID studentId, UUID sessionId) {
         eventPublisherPort.publish(new PracticeSessionEndedEvent(studentId, sessionId));
     }
 
-    // KHÔNG thêm một method "afterClosedQuietly" bọc try/catch ở đây: gọi afterClosed từ chính
-    // bean này là TỰ GỌI, đi thẳng không qua proxy Spring, nên @Transactional(REQUIRES_NEW)
-    // mất tác dụng và ta quay lại đúng bài toán ban đầu. Nơi gọi (bean khác) tự bắt lỗi.
+    // Do NOT add an "afterClosedQuietly" method wrapping a try/catch here: calling afterClosed from this very
+    // bean is a SELF-INVOCATION, which goes straight through without the Spring proxy, so
+    // @Transactional(REQUIRES_NEW) stops working and we are back at the original problem. The caller (another bean)
+    // catches the error itself.
 
     private List<UUID> offeredTopicIds(String json, String field) {
         return jsonSerializationPort.toStringListField(json, field).stream()

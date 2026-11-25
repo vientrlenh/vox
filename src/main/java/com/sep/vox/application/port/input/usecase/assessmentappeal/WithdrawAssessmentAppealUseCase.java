@@ -55,12 +55,17 @@ public class WithdrawAssessmentAppealUseCase implements IUseCase<UUID, UUID> {
         appeal.setResolvedAt(now);
         appeal.setResolvedBy(currentUserId);
         assessmentResultAppealRepository.save(appeal);
+        releaseResultIfStillAppealed(context.candidateResult(), currentUserId);
 
-        // Chỉ trả bài về RELEASED khi nó đang thật sự đứng ở trạng thái phúc khảo.
-        // Bài đã đi tiếp (FINAL, PASSED/FAILED, INVALID...) thì rút đơn không được
-        // phép kéo ngược trạng thái — nếu không, một thao tác của học sinh mở lại
-        // được kết quả đã chốt sổ.
-        AssessmentCandidateResult candidateResult = context.candidateResult();
+        return appeal.getId();
+    }
+
+    /**
+     * Returns the result to RELEASED only while it really sits in an appeal status. A result that moved on (FINAL,
+     * PASSED/FAILED, INVALID...) must not be pulled back by a withdrawal, otherwise one student action would
+     * reopen a closed result.
+     */
+    private void releaseResultIfStillAppealed(AssessmentCandidateResult candidateResult, UUID currentUserId) {
         AssessmentCandidateResultStatus status = candidateResult.getStatus();
         if (status == AssessmentCandidateResultStatus.APPEALED || status == AssessmentCandidateResultStatus.RE_GRADING) {
             ResultStatusHistoryRecorder.Snapshot before = resultStatusHistoryRecorder.snapshot(candidateResult);
@@ -70,7 +75,5 @@ public class WithdrawAssessmentAppealUseCase implements IUseCase<UUID, UUID> {
                 before, candidateResult, ResultStatusChangeSource.SYSTEM, currentUserId,
                 "Học sinh rút đơn phúc khảo.");
         }
-
-        return appeal.getId();
     }
 }

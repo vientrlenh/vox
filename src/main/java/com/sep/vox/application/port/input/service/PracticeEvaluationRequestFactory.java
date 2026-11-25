@@ -44,7 +44,17 @@ public class PracticeEvaluationRequestFactory {
             UUID questionId) {
         QuestionEvaluationInfo question = practiceQuestionQueryRepository.findQuestionWithTopic(questionId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi luyện."));
-        List<AssessmentAttemptEvaluationRequestedExternalEvent.TurnInput> turns = practiceResponseTurnRepository
+        List<AssessmentAttemptEvaluationRequestedExternalEvent.TurnInput> turns = loadTurns(responseId);
+        return new PracticeAttemptEvaluationRequestedExternalEvent(
+            sessionId.toString(),
+            responseId.toString(),
+            questionId.toString(),
+            buildPayload(sessionId, question, turns)
+        );
+    }
+
+    private List<AssessmentAttemptEvaluationRequestedExternalEvent.TurnInput> loadTurns(UUID responseId) {
+        return practiceResponseTurnRepository
             .findByPracticeResponseIdOrderByTurnOrder(responseId).stream()
             .map(record -> new AssessmentAttemptEvaluationRequestedExternalEvent.TurnInput(
                 record.turnOrder(),
@@ -55,13 +65,27 @@ public class PracticeEvaluationRequestFactory {
                 record.durationSeconds()
             ))
             .toList();
-        AssessmentAttemptEvaluationRequestedExternalEvent.Payload payload = new AssessmentAttemptEvaluationRequestedExternalEvent.Payload(
+    }
+
+    /**
+     * The question type is the REAL one (V13). It used to send "SPEAKING" -- not part of the QuestionType enum
+     * on the Python side, so the validator silently swallowed it into null, which made
+     * get_expected_min_words fall into the default branch and expect EXACTLY 10 WORDS for every
+     * question, even a 45-second one. With the real type it runs the right branch: DESCRIPTION 45s
+     * expects 35 words instead of 10.
+     *
+     * <p>mode: "unscripted" exactly like the assessment path. It used to send "practice" -- the wrong AXIS:
+     * SpeakingMode on the Python side is scripted/unscripted (speaking from a given text or speaking
+     * freely), not assessment/practice. The enum has no 'practice' so
+     * SpeakingMode(request_payload.mode) threw ValueError, failed all 3 retries and then
+     * ended with AssessmentAttemptEvaluationFailedEvent -- the practice grading chain never ran.
+     */
+    private AssessmentAttemptEvaluationRequestedExternalEvent.Payload buildPayload(
+            UUID sessionId,
+            QuestionEvaluationInfo question,
+            List<AssessmentAttemptEvaluationRequestedExternalEvent.TurnInput> turns) {
+        return new AssessmentAttemptEvaluationRequestedExternalEvent.Payload(
             question.questionText(),
-            // Dạng bài THẬT (V13). Trước đây gửi "SPEAKING" -- không thuộc enum QuestionType
-            // bên Python nên bị validator nuốt về null trong im lặng, khiến
-            // get_expected_min_words rơi xuống nhánh mặc định và kỳ vọng ĐÚNG 10 TỪ cho mọi
-            // câu, kể cả câu 45 giây. Có dạng bài rồi thì nó chạy đúng nhánh: DESCRIPTION 45s
-            // kỳ vọng 35 từ chứ không phải 10.
             question.questionType(),
             null,
             turns.stream().mapToInt(turn -> turn.durationSeconds()).sum(),
@@ -71,22 +95,11 @@ public class PracticeEvaluationRequestFactory {
             question.topicName(),
             question.topicDescription(),
             evaluationGuide(question.evaluationGuideJson()),
-            // mode: "unscripted" exactly like the assessment path. It used to send "practice" -- the wrong AXIS:
-            // SpeakingMode on the Python side is scripted/unscripted (speaking from a given text or speaking
-            // freely), not assessment/practice. The enum has no 'practice' so
-            // SpeakingMode(request_payload.mode) threw ValueError, failed all 3 retries and then
-            // ended with AssessmentAttemptEvaluationFailedEvent -- the practice grading chain never ran.
             "unscripted",
             null,
             "en-US",
             criteriaFrameworks(sessionId),
             turns
-        );
-        return new PracticeAttemptEvaluationRequestedExternalEvent(
-            sessionId.toString(),
-            responseId.toString(),
-            questionId.toString(),
-            payload
         );
     }
 
@@ -108,44 +121,58 @@ public class PracticeEvaluationRequestFactory {
         for (CriterionFrameworkInfo row : rows) {
             grouped.computeIfAbsent(row.getCriterionId(), ignored -> new ArrayList<>()).add(row);
         }
-        return grouped.values().stream().map(group -> {
-            CriterionFrameworkInfo first = group.get(0);
-            List<AssessmentAttemptEvaluationRequestedExternalEvent.FrameworkBand> bands = group.stream()
-                .map(row -> new AssessmentAttemptEvaluationRequestedExternalEvent.FrameworkBand(
-                    row.getBandCode(),
-                    row.getBandLabel(),
-                    row.getMinScore(),
-                    row.getMaxScore(),
-                    row.getDescriptor(),
-                    List.of(),
-                    List.of(),
-                    row.getBandOrder()
-                ))
-                .toList();
-            String criterionKey = first.getCriterionCode().trim().toLowerCase(Locale.ROOT);
-            if ("discourse".equals(criterionKey)) {
-                criterionKey = "coherence";
-            }
-            return new AssessmentAttemptEvaluationRequestedExternalEvent.CriterionFramework(
-                criterionKey,
-                first.getFrameworkCode(),
-                first.getFrameworkName(),
-                first.getFrameworkDescription(),
-                first.getTargetBandId(),
-                first.getTargetBandCode(),
-                first.getTargetBandLabel(),
-                // targetBandOnly = true: luyện tập chỉ gửi ĐÚNG bậc học sinh chọn, và Python
-                // đã có sẵn nhánh cho nó -- "assign a score within {range} for how fully this
-                // answer satisfies the TARGET band's descriptor".
-                true,
-                // Trọng số: null. Python không đọc trường này (grep agents/src ra 0 chỗ), và
-                // điểm câu là trung bình cộng 5 tiêu chí ở RecordPracticeAttemptEvaluationUseCase
-                // -- tức 20% mỗi tiêu chí, đã đúng sẵn không cần trọng số nào.
-                null,
-                first.getMinScore(),
-                first.getMaxScore(),
-                bands
-            );
-        }).toList();
+        return grouped.values().stream().map(group -> toCriterionFramework(group)).toList();
+    }
+
+    /**
+     * targetBandOnly = true: practice sends EXACTLY the band the student chose, and Python
+     * already has a branch for it -- "assign a score within {range} for how fully this
+     * answer satisfies the TARGET band's descriptor".
+     *
+     * <p>Weight: null. Python does not read this field (grep agents/src finds 0 places), and
+     * the question score is the arithmetic mean of the 5 criteria in RecordPracticeAttemptEvaluationUseCase
+     * -- i.e. 20% per criterion, already right without any weight.
+     */
+    private AssessmentAttemptEvaluationRequestedExternalEvent.CriterionFramework toCriterionFramework(
+            List<CriterionFrameworkInfo> group) {
+        CriterionFrameworkInfo first = group.get(0);
+        return new AssessmentAttemptEvaluationRequestedExternalEvent.CriterionFramework(
+            criterionKeyOf(first),
+            first.getFrameworkCode(),
+            first.getFrameworkName(),
+            first.getFrameworkDescription(),
+            first.getTargetBandId(),
+            first.getTargetBandCode(),
+            first.getTargetBandLabel(),
+            true,
+            null,
+            first.getMinScore(),
+            first.getMaxScore(),
+            toFrameworkBands(group)
+        );
+    }
+
+    private String criterionKeyOf(CriterionFrameworkInfo first) {
+        String criterionKey = first.getCriterionCode().trim().toLowerCase(Locale.ROOT);
+        if ("discourse".equals(criterionKey)) {
+            criterionKey = "coherence";
+        }
+        return criterionKey;
+    }
+
+    private List<AssessmentAttemptEvaluationRequestedExternalEvent.FrameworkBand> toFrameworkBands(
+            List<CriterionFrameworkInfo> group) {
+        return group.stream()
+            .map(row -> new AssessmentAttemptEvaluationRequestedExternalEvent.FrameworkBand(
+                row.getBandCode(),
+                row.getBandLabel(),
+                row.getMinScore(),
+                row.getMaxScore(),
+                row.getDescriptor(),
+                List.of(),
+                List.of(),
+                row.getBandOrder()
+            ))
+            .toList();
     }
 }

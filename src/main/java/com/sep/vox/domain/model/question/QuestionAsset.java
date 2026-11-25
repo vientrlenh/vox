@@ -96,6 +96,26 @@ public class QuestionAsset {
         this.altText = altText;
     }
 
+    public static QuestionAsset attachedTo(UUID questionId, String title, Integer durationSeconds, String altText,
+                                           QuestionAssetType type, String url, String transcript, String description,
+                                           int order) {
+        return builder()
+                .questionId(questionId)
+                .title(title)
+                .durationSeconds(durationSeconds)
+                .altText(altText)
+                .type(type)
+                .url(url)
+                .transcript(transcript)
+                .description(description)
+                .order(order)
+                .build();
+    }
+
+    public QuestionAsset copyTo(UUID targetQuestionId) {
+        return attachedTo(targetQuestionId, title, durationSeconds, altText, type, url, transcript, description, order);
+    }
+
     public static Builder builder() {
         return new Builder();
     }

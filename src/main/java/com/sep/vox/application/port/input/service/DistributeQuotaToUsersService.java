@@ -68,29 +68,41 @@ public class DistributeQuotaToUsersService {
         SchoolSubscription subscription = findActiveSubscription(schoolId);
         SchoolSubscriptionQuotaRecord pool = findPool(subscription.getId(), quotaType);
         Role role = findRole(roleCode);
-        List<UUID> eligibleUserIds = fetchEligibleUserIds(schoolId, role.getId());
-        if (eligibleUserIds.isEmpty()) {
-            throw new IllegalArgumentException("Trường chưa có giáo viên/học sinh phù hợp để phân bổ hạn mức");
-        }
+        List<UUID> eligibleUserIds = requireEligibleUserIds(schoolId, role.getId());
 
         Map<UUID, SchoolSubscriptionQuotaUserAllocation> existing = fetchExistingAllocationsByUserId(subscription.getId(), quotaType);
-
-        // Trần phân phối áp cho CẢ HAI chế độ, không riêng chia đều: nếu chỉ chặn ở AUTO thì quản
-        // trị viên đi vòng qua bằng cách sửa tay từng người -- mà sửa tay chính là đường thường dùng
-        // sau khi màn chia hạn mức chuyển sang hộp thoại từng người. Một trần đi vòng được không phải
-        // là trần.
-        SchoolQuotaPolicy policy = schoolQuotaPolicyRepository.findBySchoolIdAndQuotaType(schoolId, quotaType);
-        BigDecimal distributableVnd = policy.distributableAmountOf(orZero(pool.getTotalAllocatedAmountVnd()));
+        BigDecimal distributableVnd = distributableAmountVnd(schoolId, quotaType, pool);
 
         Map<UUID, BigDecimal> targetAmounts = mode == DistributionMode.AUTO
             ? computeAutoSplit(eligibleUserIds, distributableVnd, existing)
             : computeManualAmounts(allocations, eligibleUserIds, existing, distributableVnd,
                 walletHeadroomVnd(schoolId), confirmWalletDraw);
 
-        targetAmounts.forEach((userId, amount) ->
-            subscriptionQuotaUserAllocationRepository.upsertAllocation(subscription.getId(), quotaType, userId, amount));
+        saveAllocations(subscription.getId(), quotaType, targetAmounts);
 
         return buildSummary(subscription.getId(), quotaType, pool, eligibleUserIds);
+    }
+
+    private List<UUID> requireEligibleUserIds(UUID schoolId, UUID roleId) {
+        List<UUID> eligibleUserIds = fetchEligibleUserIds(schoolId, roleId);
+        if (eligibleUserIds.isEmpty()) {
+            throw new IllegalArgumentException("Trường chưa có giáo viên/học sinh phù hợp để phân bổ hạn mức");
+        }
+        return eligibleUserIds;
+    }
+
+    // The distribution ceiling applies to BOTH modes, not only the even split: if it only blocked AUTO, the school
+    // administrator would walk around it by editing people by hand one at a time -- and manual editing is exactly the
+    // usual path since the quota distribution screen moved to a per-person dialog. A ceiling that can be walked
+    // around is not a ceiling.
+    private BigDecimal distributableAmountVnd(UUID schoolId, QuotaType quotaType, SchoolSubscriptionQuotaRecord pool) {
+        SchoolQuotaPolicy policy = schoolQuotaPolicyRepository.findBySchoolIdAndQuotaType(schoolId, quotaType);
+        return policy.distributableAmountOf(orZero(pool.getTotalAllocatedAmountVnd()));
+    }
+
+    private void saveAllocations(UUID subscriptionId, QuotaType quotaType, Map<UUID, BigDecimal> targetAmounts) {
+        targetAmounts.forEach((userId, amount) ->
+            subscriptionQuotaUserAllocationRepository.upsertAllocation(subscriptionId, quotaType, userId, amount));
     }
 
     /**
@@ -107,15 +119,15 @@ public class DistributeQuotaToUsersService {
     }
 
     /**
-     * MỘT TRANG của danh sách chia hạn mức, kèm tổng đã chia trên toàn bộ tập.
+     * ONE PAGE of the quota distribution list, with the total already distributed over the whole set.
      *
-     * <p>Đây là đường đọc DUY NHẤT của màn chia hạn mức. Bản không phân trang trước đây gom mọi người
-     * đủ điều kiện trong một lượt (tới {@value #MAX_ELIGIBLE_USERS_PAGE_SIZE} người), mà một trường
-     * vài nghìn học sinh thì đó là vài nghìn dòng cho mỗi lần mở trang -- nó đã bị bỏ cùng với hai
-     * endpoint REST gọi tới nó.
+     * <p>This is the ONLY read path of the quota distribution screen. The previous unpaged version gathered every
+     * eligible person in one pass (up to {@value #MAX_ELIGIBLE_USERS_PAGE_SIZE} people), which for a school with a few
+     * thousand students means a few thousand rows every time the page opens -- it was dropped together with the two
+     * REST endpoints that called it.
      *
-     * <p>Phân trang và tìm kiếm đẩy xuống tận truy vấn người dùng, không cắt trong bộ nhớ: cắt ở
-     * tầng Java vẫn phải đọc đủ mọi người trước đã, tức là không tiết kiệm được gì.
+     * <p>Paging and search are pushed all the way down to the user query, not cut in memory: cutting at the Java
+     * layer still has to read everybody first, so it saves nothing.
      */
     public QuotaUserAllocationPageResponse viewPage(
             UUID schoolId, QuotaType quotaType, String roleCode, String search, int page, int size) {
@@ -128,36 +140,15 @@ public class DistributeQuotaToUsersService {
         PageResult<SchoolUser> userPage = schoolUserRepository.findBySchoolId(
             schoolId, blankToNull(search), role.getId(), UserStatus.ACTIVE.name(), null, false, page, size);
 
-        Map<UUID, SchoolSubscriptionQuotaUserAllocation> existing = fetchExistingAllocationsByUserId(subscription.getId(), quotaType);
+        return buildAllocationPage(subscription.getId(), quotaType, pool, schoolId, role.getId(), userPage);
+    }
 
-        // null (không phải 0) cho người CHƯA có dòng phân bổ: hai trạng thái đó cho hành vi ngược
-        // nhau ở cửa chặn, nên gộp chúng thành cùng một số 0 là giấu mất thông tin mà quản trị trường
-        // cần nhất -- xem javadoc của Row.
-        List<QuotaUserAllocationPageResponse.Row> rows = userPage.content().stream()
-            .map(schoolUser -> schoolUser.getUserId())
-            .map(userId -> {
-                SchoolSubscriptionQuotaUserAllocation allocation = existing.get(userId);
-                return new QuotaUserAllocationPageResponse.Row(
-                    userId,
-                    allocation == null ? null : orZero(allocation.getAllocatedAmountVnd()),
-                    allocation == null ? BigDecimal.ZERO : orZero(allocation.getUsedAmountVnd()));
-            })
-            .toList();
-
-        // Tổng trên TOÀN BỘ tập, không phải trang đang xem -- giao diện dùng nó để biết còn chia được
-        // bao nhiêu, mà cộng cột của một trang thì ra số sai ngay từ trang thứ hai.
-        //
-        // Cộng ở DB chứ không cộng `existing` trong bộ nhớ: phép cộng phải loại người không còn đủ
-        // điều kiện (xem sumAllocatedForEligibleUsers), mà lọc được ở tầng Java thì phải nạp trước
-        // toàn bộ danh sách người đủ điều kiện của trường -- đúng cái mà việc phân trang màn này sinh
-        // ra để tránh.
-        BigDecimal distributed = subscriptionQuotaUserAllocationRepository.sumAllocatedForEligibleUsers(
-            subscription.getId(), quotaType, schoolId, role.getId(), UserStatus.ACTIVE.name());
-        BigDecimal orphaned = subscriptionQuotaUserAllocationRepository
-            .sumAllocated(subscription.getId(), quotaType)
-            .subtract(distributed)
-            .max(BigDecimal.ZERO);
-
+    private QuotaUserAllocationPageResponse buildAllocationPage(UUID subscriptionId, QuotaType quotaType,
+            SchoolSubscriptionQuotaRecord pool, UUID schoolId, UUID roleId, PageResult<SchoolUser> userPage) {
+        Map<UUID, SchoolSubscriptionQuotaUserAllocation> existing = fetchExistingAllocationsByUserId(subscriptionId, quotaType);
+        List<QuotaUserAllocationPageResponse.Row> rows = toAllocationRows(userPage, existing);
+        BigDecimal distributed = distributedToEligibleUsers(subscriptionId, quotaType, schoolId, roleId);
+        BigDecimal orphaned = orphanedAllocation(subscriptionId, quotaType, distributed);
         SchoolQuotaPolicy policy = schoolQuotaPolicyRepository.findBySchoolIdAndQuotaType(schoolId, quotaType);
 
         return new QuotaUserAllocationPageResponse(
@@ -174,6 +165,41 @@ public class DistributeQuotaToUsersService {
             userPage.totalElements(),
             userPage.totalPages()
         );
+    }
+
+    // null (not 0) for people who have NO allocation row yet: those two states behave oppositely at the
+    // blocking gate, so merging them into the same 0 hides the information the school administrator needs most
+    // -- see the javadoc of Row.
+    private List<QuotaUserAllocationPageResponse.Row> toAllocationRows(
+            PageResult<SchoolUser> userPage, Map<UUID, SchoolSubscriptionQuotaUserAllocation> existing) {
+        return userPage.content().stream()
+            .map(schoolUser -> schoolUser.getUserId())
+            .map(userId -> {
+                SchoolSubscriptionQuotaUserAllocation allocation = existing.get(userId);
+                return new QuotaUserAllocationPageResponse.Row(
+                    userId,
+                    allocation == null ? null : orZero(allocation.getAllocatedAmountVnd()),
+                    allocation == null ? BigDecimal.ZERO : orZero(allocation.getUsedAmountVnd()));
+            })
+            .toList();
+    }
+
+    // Total over the WHOLE set, not the page being viewed -- the UI uses it to know how much can still be
+    // distributed, and adding up the column of one page gives a wrong number from page two on.
+    //
+    // Summed in the DB rather than summing `existing` in memory: the sum must exclude people who are no longer
+    // eligible (see sumAllocatedForEligibleUsers), and filtering that at the Java layer would require loading the
+    // school's whole eligible list first -- exactly what paging this screen was created to avoid.
+    private BigDecimal distributedToEligibleUsers(UUID subscriptionId, QuotaType quotaType, UUID schoolId, UUID roleId) {
+        return subscriptionQuotaUserAllocationRepository.sumAllocatedForEligibleUsers(
+            subscriptionId, quotaType, schoolId, roleId, UserStatus.ACTIVE.name());
+    }
+
+    private BigDecimal orphanedAllocation(UUID subscriptionId, QuotaType quotaType, BigDecimal distributed) {
+        return subscriptionQuotaUserAllocationRepository
+            .sumAllocated(subscriptionId, quotaType)
+            .subtract(distributed)
+            .max(BigDecimal.ZERO);
     }
 
     /**
@@ -249,6 +275,19 @@ public class DistributeQuotaToUsersService {
         }
 
         Set<UUID> eligibleSet = new HashSet<>(eligibleUserIds);
+        Map<UUID, BigDecimal> result = collectRequestedAmounts(allocations, eligibleSet, existing);
+
+        BigDecimal sumInRequest = result.values().stream().reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
+        BigDecimal sumOthers = sumAllocatedToOtherEligibleUsers(existing, result, eligibleSet);
+
+        requireWithinDistributableOrConfirmedWalletDraw(
+            sumInRequest.add(sumOthers).subtract(distributableVnd), walletHeadroomVnd, confirmWalletDraw);
+
+        return result;
+    }
+
+    private Map<UUID, BigDecimal> collectRequestedAmounts(List<AllocateUserQuotaAmountCommand> allocations,
+            Set<UUID> eligibleSet, Map<UUID, SchoolSubscriptionQuotaUserAllocation> existing) {
         Map<UUID, BigDecimal> result = new LinkedHashMap<UUID, BigDecimal>();
 
         for (AllocateUserQuotaAmountCommand item : allocations) {
@@ -267,28 +306,32 @@ public class DistributeQuotaToUsersService {
             }
             result.put(item.userId(), item.amountVnd());
         }
+        return result;
+    }
 
-        BigDecimal sumInRequest = result.values().stream().reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
-        // Chỉ cộng phần của những người CÒN đủ điều kiện. Dòng phân bổ không bị xoá khi giáo viên
-        // nghỉ việc hay học sinh ra trường, nên cộng cả những dòng đó là để một khoản không ai với
-        // tới được chiếm chỗ trong trần -- mà chủ trường thì không thấy nó ở bất kỳ trang nào của
-        // bảng để mà thu bớt. Đủ nhiều dòng như thế là mọi lần chia đều bị từ chối với một câu báo
-        // lỗi không khớp gì với những con số đang hiện trên màn hình.
-        //
-        // Cùng phép lọc với fetchEligibleUserIds, và cũng chính là tập mà viewPage cộng để ra
-        // distributedAmountVnd -- hai bên phải đếm cùng một tập, nếu không thì con số giao diện dùng
-        // để tính "còn chia được" sẽ không phải con số backend dùng để từ chối.
-        BigDecimal sumOthers = existing.entrySet().stream()
-            .filter(e -> !result.containsKey(e.getKey()))
+    // Only sums the share of people who are STILL eligible. Allocation rows are not deleted when a teacher leaves or
+    // a student graduates, so counting those rows would let an amount nobody can reach occupy room under the ceiling --
+    // and the school owner sees it on no page of the table, so cannot reclaim it. Enough such rows and every even
+    // split is rejected with an error message that matches nothing in the numbers shown on screen.
+    //
+    // Same filter as fetchEligibleUserIds, and also exactly the set that viewPage sums to get distributedAmountVnd --
+    // both sides must count the same set, otherwise the number the UI uses to compute "still distributable" would not
+    // be the number the backend rejects with.
+    private BigDecimal sumAllocatedToOtherEligibleUsers(Map<UUID, SchoolSubscriptionQuotaUserAllocation> existing,
+            Map<UUID, BigDecimal> requestedAmounts, Set<UUID> eligibleSet) {
+        return existing.entrySet().stream()
+            .filter(e -> !requestedAmounts.containsKey(e.getKey()))
             .filter(e -> eligibleSet.contains(e.getKey()))
             .map(e -> orZero(e.getValue().getAllocatedAmountVnd()))
             .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
+    }
 
-        // Exceeding distributableVnd is no longer rejected outright: the excess may eat into the school's self-topped-up wallet (school_balances) --
-        // it only loosens the CEILING and holds no money, exactly like ConsumeQuotaService already
-        // draws from the wallet automatically when real spending exceeds the pool. confirmWalletDraw is required because that wallet is shared by both
-        // ASSESSMENT and PRACTICE, and the administrator must know they are eating into that shared part.
-        BigDecimal overDistributableVnd = sumInRequest.add(sumOthers).subtract(distributableVnd);
+    // Exceeding distributableVnd is no longer rejected outright: the excess may eat into the school's self-topped-up wallet (school_balances) --
+    // it only loosens the CEILING and holds no money, exactly like ConsumeQuotaService already
+    // draws from the wallet automatically when real spending exceeds the pool. confirmWalletDraw is required because that wallet is shared by both
+    // ASSESSMENT and PRACTICE, and the administrator must know they are eating into that shared part.
+    private void requireWithinDistributableOrConfirmedWalletDraw(BigDecimal overDistributableVnd,
+            BigDecimal walletHeadroomVnd, boolean confirmWalletDraw) {
         if (overDistributableVnd.signum() > 0) {
             if (overDistributableVnd.compareTo(walletHeadroomVnd) > 0) {
                 throw new IllegalArgumentException(
@@ -299,8 +342,6 @@ public class DistributeQuotaToUsersService {
                     walletDrawConfirmationMessage(overDistributableVnd, walletHeadroomVnd));
             }
         }
-
-        return result;
     }
 
     private static String walletDrawConfirmationMessage(BigDecimal walletDrawVnd, BigDecimal walletBalanceVnd) {
@@ -333,13 +374,7 @@ public class DistributeQuotaToUsersService {
         // the DB): the quota distribution screen must also show people who currently have 0 so that the school admin can see who
         // has not been given a share yet.
         List<SchoolSubscriptionQuotaUserAllocationDto> allocationDtos = eligibleUserIds.stream()
-            .map(userId -> existing.getOrDefault(userId, SchoolSubscriptionQuotaUserAllocation.builder()
-                .schoolSubscriptionId(subscriptionId)
-                .quotaType(quotaType)
-                .userId(userId)
-                .allocatedAmountVnd(BigDecimal.ZERO)
-                .usedAmountVnd(BigDecimal.ZERO)
-                .build()))
+            .map(userId -> existing.getOrDefault(userId, SchoolSubscriptionQuotaUserAllocation.unallocated(subscriptionId, quotaType, userId)))
             .map(SchoolSubscriptionQuotaUserAllocationDto::toDto)
             .toList();
 

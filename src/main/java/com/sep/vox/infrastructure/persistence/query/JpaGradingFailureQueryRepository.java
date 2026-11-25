@@ -23,11 +23,12 @@ import jakarta.persistence.PersistenceContext;
 public class JpaGradingFailureQueryRepository implements GradingFailureQueryRepository {
 
     /**
-     * Tập phiên lỗi trong cửa sổ, kèm vừa đủ cột để cả ba câu bên dưới dùng chung MỘT định nghĩa.
+     * The set of failed sessions in the window, with just enough columns for all three statements below to share ONE
+     * definition.
      *
-     * <p>Viết một lần rồi nối vào từng câu, thay vì chép lại mệnh đề WHERE ba lần: thẻ tóm tắt, thẻ
-     * nhóm và danh sách phiên phải đếm đúng cùng một tập, và ba bản sao của cùng một điều kiện chỉ
-     * cần lệch một chi tiết là ba con số trên cùng màn hình nói ba chuyện khác nhau.
+     * <p>Written once and prepended to each statement, instead of copying the WHERE clause three times: the summary
+     * card, the group card and the session list must count exactly the same set, and with three copies of the same
+     * condition a single drifting detail is enough for three numbers on the same screen to tell three different stories.
      */
     private static final String FAILED_SESSIONS_CTE = """
         WITH failed AS (
@@ -48,13 +49,38 @@ public class JpaGradingFailureQueryRepository implements GradingFailureQueryRepo
         )
         """;
 
+    private static final String FAILED_SESSION_ROWS_SQL = """
+        SELECT
+            f.session_id,
+            f.school_id,
+            sc.name,
+            sc.code,
+            f.assessment_id,
+            e.name,
+            u.full_name,
+            f.failed_at,
+            f.retry_count,
+            f.error,
+            f.retryable,
+            EXISTS (SELECT 1 FROM assessment_candidate_results r WHERE r.session_id = f.session_id)
+        FROM failed f
+        JOIN assessments e ON e.id = f.assessment_id
+        JOIN assessment_sessions s ON s.id = f.session_id
+        JOIN assessment_candidates c ON c.id = s.candidate_id
+        LEFT JOIN schools sc ON sc.id = f.school_id
+        LEFT JOIN users u ON u.id = c.student_id
+        WHERE f.signature IS NOT DISTINCT FROM :signature
+        ORDER BY f.failed_at DESC, f.session_id ASC
+        LIMIT :pageSize OFFSET :offset
+        """;
+
     @PersistenceContext
     private EntityManager em;
 
     /**
-     * {@code COUNT(DISTINCT signature)} BỎ QUA NULL, nên nhóm "không rõ nguyên nhân" phải cộng tay —
-     * thiếu nó thì một hệ thống mà mọi phiên đều hỏng qua đường DLT sẽ báo "0 nguyên nhân" trong khi
-     * màn hình bên dưới đang hiện một nhóm.
+     * {@code COUNT(DISTINCT signature)} IGNORES NULL, so the "unknown cause" group has to be added by hand --
+     * without it a system where every session failed through the DLT path would report "0 causes" while the
+     * screen below is showing a group.
      */
     @Override
     public GradingFailureTotalsDto countTotals(Instant from, Instant to) {
@@ -75,9 +101,9 @@ public class JpaGradingFailureQueryRepository implements GradingFailureQueryRepo
     }
 
     /**
-     * {@code array_agg(...)[1]} lấy thông điệp thô của phiên hỏng GẦN NHẤT làm mẫu đại diện. Nhóm
-     * đứng tên bằng chữ ký đã chuẩn hóa (đã thay uuid và số bằng chỗ trống), mà thứ đó không đọc
-     * được — người trực cần thấy một câu lỗi thật.
+     * {@code array_agg(...)[1]} takes the raw message of the MOST RECENT failed session as the representative sample.
+     * The group is named by the normalized signature (uuids and numbers replaced by placeholders), which is not
+     * readable -- the person on call needs to see a real error sentence.
      */
     @Override
     @SuppressWarnings("unchecked")
@@ -102,17 +128,19 @@ public class JpaGradingFailureQueryRepository implements GradingFailureQueryRepo
             .setParameter("maxGroups", limit)
             .getResultList();
 
-        return rows.stream()
-            .map(row -> new GradingFailureGroupDto(
-                (String) row[0],
-                (String) row[1],
-                toLong(row[2]),
-                toLong(row[3]),
-                toLong(row[4]),
-                toInstant(row[5]),
-                toInstant(row[6]),
-                toLong(row[7])))
-            .toList();
+        return rows.stream().map(JpaGradingFailureQueryRepository::toFailureGroup).toList();
+    }
+
+    private static GradingFailureGroupDto toFailureGroup(Object[] row) {
+        return new GradingFailureGroupDto(
+            (String) row[0],
+            (String) row[1],
+            toLong(row[2]),
+            toLong(row[3]),
+            toLong(row[4]),
+            toInstant(row[5]),
+            toInstant(row[6]),
+            toLong(row[7]));
     }
 
     /**
@@ -125,69 +153,56 @@ public class JpaGradingFailureQueryRepository implements GradingFailureQueryRepo
      * repeat a session on one page and drop one on another.
      */
     @Override
-    @SuppressWarnings("unchecked")
     public PageResult<GradingFailureSessionDto> findSessions(
             Instant from, Instant to, String signature, int page, int size) {
-        long total = toLong(em.createNativeQuery(FAILED_SESSIONS_CTE + """
+        long total = countFailedSessions(from, to, signature);
+
+        if (total == 0) {
+            return new PageResult<>(List.of(), page, size, 0, 0);
+        }
+
+        List<GradingFailureSessionDto> content = findFailedSessionRows(from, to, signature, page, size).stream()
+            .map(JpaGradingFailureQueryRepository::toFailureSession)
+            .toList();
+
+        return new PageResult<>(content, page, size, total, (int) Math.ceil((double) total / size));
+    }
+
+    private long countFailedSessions(Instant from, Instant to, String signature) {
+        return toLong(em.createNativeQuery(FAILED_SESSIONS_CTE + """
             SELECT COUNT(*) FROM failed WHERE signature IS NOT DISTINCT FROM :signature
             """)
             .setParameter("fromInstant", from)
             .setParameter("toInstant", to)
             .setParameter("signature", signature)
             .getSingleResult());
+    }
 
-        if (total == 0) {
-            return new PageResult<>(List.of(), page, size, 0, 0);
-        }
-
-        List<Object[]> rows = em.createNativeQuery(FAILED_SESSIONS_CTE + """
-            SELECT
-                f.session_id,
-                f.school_id,
-                sc.name,
-                sc.code,
-                f.assessment_id,
-                e.name,
-                u.full_name,
-                f.failed_at,
-                f.retry_count,
-                f.error,
-                f.retryable,
-                EXISTS (SELECT 1 FROM assessment_candidate_results r WHERE r.session_id = f.session_id)
-            FROM failed f
-            JOIN assessments e ON e.id = f.assessment_id
-            JOIN assessment_sessions s ON s.id = f.session_id
-            JOIN assessment_candidates c ON c.id = s.candidate_id
-            LEFT JOIN schools sc ON sc.id = f.school_id
-            LEFT JOIN users u ON u.id = c.student_id
-            WHERE f.signature IS NOT DISTINCT FROM :signature
-            ORDER BY f.failed_at DESC, f.session_id ASC
-            LIMIT :pageSize OFFSET :offset
-            """)
+    @SuppressWarnings("unchecked")
+    private List<Object[]> findFailedSessionRows(Instant from, Instant to, String signature, int page, int size) {
+        return em.createNativeQuery(FAILED_SESSIONS_CTE + FAILED_SESSION_ROWS_SQL)
             .setParameter("fromInstant", from)
             .setParameter("toInstant", to)
             .setParameter("signature", signature)
             .setParameter("pageSize", size)
             .setParameter("offset", OneBasedPaging.toOffset(page, size))
             .getResultList();
+    }
 
-        List<GradingFailureSessionDto> content = rows.stream()
-            .map(row -> new GradingFailureSessionDto(
-                toUuid(row[0]),
-                toUuid(row[1]),
-                (String) row[2],
-                (String) row[3],
-                toUuid(row[4]),
-                (String) row[5],
-                (String) row[6],
-                toInstant(row[7]),
-                row[8] == null ? null : ((Number) row[8]).intValue(),
-                (String) row[9],
-                Boolean.TRUE.equals(row[10]),
-                Boolean.TRUE.equals(row[11])))
-            .toList();
-
-        return new PageResult<>(content, page, size, total, (int) Math.ceil((double) total / size));
+    private static GradingFailureSessionDto toFailureSession(Object[] row) {
+        return new GradingFailureSessionDto(
+            toUuid(row[0]),
+            toUuid(row[1]),
+            (String) row[2],
+            (String) row[3],
+            toUuid(row[4]),
+            (String) row[5],
+            (String) row[6],
+            toInstant(row[7]),
+            row[8] == null ? null : ((Number) row[8]).intValue(),
+            (String) row[9],
+            Boolean.TRUE.equals(row[10]),
+            Boolean.TRUE.equals(row[11]));
     }
 
 }

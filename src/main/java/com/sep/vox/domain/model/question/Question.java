@@ -161,6 +161,53 @@ public class Question extends BaseModel {
         this.securePoolId = securePoolId;
     }
 
+    public static Question draft(UUID questionBankId, UUID questionTopicId, String code, String instructionText,
+                                 String questionText, String promptText, String preparationText, QuestionType type,
+                                 int preparationTimeSeconds, int minResponseSeconds, int maxResponseSeconds,
+                                 QuestionSharing sharing) {
+        return builder()
+                .questionBankId(questionBankId)
+                .questionTopicId(questionTopicId)
+                .code(code)
+                .instructionText(instructionText)
+                .questionText(questionText)
+                .promptText(promptText)
+                .preparationText(preparationText)
+                .type(type)
+                .preparationTimeSeconds(preparationTimeSeconds)
+                .minResponseSeconds(minResponseSeconds)
+                .maxResponseSeconds(maxResponseSeconds)
+                .sharing(sharing)
+                .sourceQuestionId(null)
+                .locked(false)
+                .confidentiality(QuestionConfidentiality.OPEN)
+                .securePoolId(null)
+                .status(QuestionStatus.DRAFT)
+                .build();
+    }
+
+    public Question draftCopyWithCode(String copyCode) {
+        return builder()
+                .questionBankId(questionBankId)
+                .questionTopicId(questionTopicId)
+                .code(copyCode)
+                .instructionText(instructionText)
+                .questionText(questionText)
+                .promptText(promptText)
+                .preparationText(preparationText)
+                .type(type)
+                .preparationTimeSeconds(preparationTimeSeconds)
+                .minResponseSeconds(minResponseSeconds)
+                .maxResponseSeconds(maxResponseSeconds)
+                .sharing(sharing)
+                .sourceQuestionId(getId())
+                .locked(false)
+                .confidentiality(confidentiality)
+                .securePoolId(securePoolId)
+                .status(QuestionStatus.DRAFT)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

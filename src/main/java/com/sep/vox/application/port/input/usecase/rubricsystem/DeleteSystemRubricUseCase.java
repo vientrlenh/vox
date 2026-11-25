@@ -38,7 +38,21 @@ public class DeleteSystemRubricUseCase implements IUseCase<DeleteSystemRubricCom
     @Override
     @Transactional
     public Void execute(DeleteSystemRubricCommand command) {
-        // 1. Xác thực tài khoản Admin
+        requireActiveCurrentUser();
+        Rubric rubric = loadSystemOwnedRubric(command.rubricId());
+
+        List<RubricVersion> versions = rubricVersionRepository.findByRubricId(rubric.getId());
+        requireAllVersionsDraft(versions);
+
+        // Every version is DRAFT (never used), so deleting the whole tree is safe.
+        deleteVersionsWithChildren(versions);
+
+        rubricRepository.deleteById(rubric.getId());
+
+        return null;
+    }
+
+    private void requireActiveCurrentUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
@@ -46,40 +60,35 @@ public class DeleteSystemRubricUseCase implements IUseCase<DeleteSystemRubricCom
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
         }
+    }
 
-        // 2. Lấy Rubric
-        Rubric rubric = rubricRepository.findById(command.rubricId())
+    private Rubric loadSystemOwnedRubric(UUID rubricId) {
+        Rubric rubric = rubricRepository.findById(rubricId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric hệ thống này."));
 
-        // 3. THIẾT QUÂN LUẬT: System Admin tuyệt đối không được xóa Rubric của Trường
+        // Hard rule: a System Admin must never delete a school's rubric.
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             throw new ForbiddenException("Hành động bị từ chối: System Admin không thể can thiệp vào Rubric của các trường học.");
         }
+        return rubric;
+    }
 
-        // 4. Quét các Version con xem có bản nào đang hoạt động không
-        List<RubricVersion> versions = rubricVersionRepository.findByRubricId(rubric.getId());
+    private void requireAllVersionsDraft(List<RubricVersion> versions) {
         boolean hasLockedVersion = versions.stream()
                 .anyMatch(v -> v.getStatus() != RubricStatus.DRAFT);
 
         if (hasLockedVersion) {
             throw new IllegalArgumentException("Không thể xóa Rubric này vì bên trong đang có phiên bản đã được Ban hành (PUBLISHED) hoặc Lưu trữ (ARCHIVED).");
         }
+    }
 
-        // 5. XÓA SẠCH SẼ (CASCADE DELETE)
-        // Vì tất cả các version đều là DRAFT (chưa được sử dụng), ta có thể an toàn xóa sạch rác
+    private void deleteVersionsWithChildren(List<RubricVersion> versions) {
         if (!versions.isEmpty()) {
             for (RubricVersion version : versions) {
-                // Xóa lá (Tiêu chí, Thang điểm)
                 rubricCriterionRepository.deleteByRubricVersionId(version.getId());
                 rubricResultBandRepository.deleteByRubricVersionId(version.getId());
-                // Xóa cành (Version)
                 rubricVersionRepository.deleteById(version.getId());
             }
         }
-
-        // 6. Xóa Gốc (Rubric)
-        rubricRepository.deleteById(rubric.getId());
-
-        return null;
     }
 }

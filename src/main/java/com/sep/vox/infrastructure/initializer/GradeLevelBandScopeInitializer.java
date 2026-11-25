@@ -99,6 +99,10 @@ public class GradeLevelBandScopeInitializer implements ApplicationRunner {
             return;
         }
 
+        seedScopes(frameworkVersion);
+    }
+
+    private void seedScopes(FrameworkVersion frameworkVersion) {
         FrameworkResultBand defaultTargetBand = frameworkResultBandRepository
             .findByVersionIdAndCode(frameworkVersion.getId(), BAND_CODE_DEFAULT_TARGET).orElse(null);
         FrameworkResultBand hardMaxBand = frameworkResultBandRepository
@@ -109,15 +113,34 @@ public class GradeLevelBandScopeInitializer implements ApplicationRunner {
             return;
         }
 
-        // An invariant the DB cannot express (it needs a join to framework_result_bands) and that
-        // GradeLevelBandScopeGuardService guards at runtime. Also checked here so that a wrong constant above
-        // breaks at startup, instead of producing an upside-down configuration that only shows up when a
-        // school creates a policy.
+        requireDefaultBandNotAboveHardMax(defaultTargetBand, hardMaxBand);
+
+        int created = createMissingScopes(frameworkVersion, defaultTargetBand, hardMaxBand);
+
+        if (created == 0) {
+            log.info("Trần bậc theo khối trên phiên bản khung {} đã đầy đủ. Bỏ qua", frameworkVersion.getCode());
+            return;
+        }
+        log.info("Đã khởi tạo {} trần bậc theo khối trên phiên bản khung {} (CENTRALIZE {}, CLASS_TEST {})",
+            created, frameworkVersion.getCode(), BAND_CODE_DEFAULT_TARGET, BAND_CODE_HARD_MAX);
+    }
+
+    /**
+     * An invariant the DB cannot express (it needs a join to framework_result_bands) and that
+     * GradeLevelBandScopeGuardService guards at runtime. Also checked here so that a wrong constant above
+     * breaks at startup, instead of producing an upside-down configuration that only shows up when a
+     * school creates a policy.
+     */
+    private void requireDefaultBandNotAboveHardMax(FrameworkResultBand defaultTargetBand,
+            FrameworkResultBand hardMaxBand) {
         if (defaultTargetBand.getOrder() > hardMaxBand.getOrder()) {
             throw new IllegalStateException("Bậc mặc định " + BAND_CODE_DEFAULT_TARGET
                 + " đang cao hơn bậc trần " + BAND_CODE_HARD_MAX + " trong khung " + FRAMEWORK_CODE + ".");
         }
+    }
 
+    private int createMissingScopes(FrameworkVersion frameworkVersion, FrameworkResultBand defaultTargetBand,
+            FrameworkResultBand hardMaxBand) {
         int created = 0;
         for (String gradeLevelCode : GRADE_LEVEL_CODES) {
             GradeLevel gradeLevel = gradeLevelRepository.findByCode(gradeLevelCode).orElse(null);
@@ -139,13 +162,7 @@ public class GradeLevelBandScopeInitializer implements ApplicationRunner {
                 .build());
             created++;
         }
-
-        if (created == 0) {
-            log.info("Trần bậc theo khối trên phiên bản khung {} đã đầy đủ. Bỏ qua", frameworkVersion.getCode());
-            return;
-        }
-        log.info("Đã khởi tạo {} trần bậc theo khối trên phiên bản khung {} (CENTRALIZE {}, CLASS_TEST {})",
-            created, frameworkVersion.getCode(), BAND_CODE_DEFAULT_TARGET, BAND_CODE_HARD_MAX);
+        return created;
     }
 
     private FrameworkVersion latestPublishedVersion(UUID frameworkId) {

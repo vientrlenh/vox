@@ -19,16 +19,42 @@ import jakarta.persistence.TypedQuery;
 public class JpaMonitoredAssessmentQueryRepository implements MonitoredAssessmentQueryRepository {
 
     /**
-     * Ca có thể có gì đó để giám sát.
+     * Sessions that may have something to monitor.
      *
-     * <p>Loại DRAFT (chưa công bố thì chưa ai thi được), CANCELLED, và cả DELETED/MOVED. Giữ
-     * COMPLETED vì cửa sổ thời gian bên dưới đã lọc hộ rồi: một ca vừa bị đánh dấu hoàn thành trong
-     * lúc học viên còn đang phát thì vẫn phải mở xem được, và ở màn giám sát thì bỏ sót một phòng
-     * đang chạy tệ hơn nhiều so với hiện thừa một dòng.
+     * <p>Excludes DRAFT (nobody can sit an unpublished one), CANCELLED, and also DELETED/MOVED. COMPLETED is kept
+     * because the time window below already filters for it: a session just marked completed while students are
+     * still talking must still be openable, and on the monitoring screen missing a room that is running badly is
+     * far worse than showing one extra row.
      */
     private static final Set<String> MONITORABLE_STATUSES = Set.of(
         AssessmentScheduleStatus.PUBLISHED.name(),
         AssessmentScheduleStatus.COMPLETED.name());
+
+    private static final String MONITORED_SELECT = """
+        SELECT NEW com.sep.vox.application.query.dto.MonitoredAssessmentSummary(
+            assessment.id,
+            assessment.code,
+            assessment.name,
+            assessment.kind,
+            assessment.status,
+            MIN(sch.startDate),
+            MAX(sch.endDate),
+            SUM(CASE WHEN sch.startDate <= :now AND sch.endDate > :now THEN 1L ELSE 0L END)
+        )
+        FROM AssessmentScheduleJpaEntity sch
+        JOIN AssessmentJpaEntity assessment ON assessment.id = sch.assessmentId
+        """;
+
+    private static final String MONITORED_FILTER = """
+        WHERE sch.status IN :statuses
+          AND assessment.status <> 'DRAFT'
+          AND (:assessmentId IS NULL OR assessment.id = :assessmentId)
+        """;
+
+    private static final String MONITORED_GROUPING = """
+        GROUP BY assessment.id, assessment.code, assessment.name, assessment.kind, assessment.status
+        ORDER BY MIN(sch.startDate)
+        """;
 
     @PersistenceContext
     private EntityManager em;
@@ -89,31 +115,11 @@ public class JpaMonitoredAssessmentQueryRepository implements MonitoredAssessmen
      *                 it passes both compilation and Hibernate's translation of JPQL to SQL.
      */
     private String select(String accessJoin, String accessWhere, boolean windowed) {
-        return """
-            SELECT NEW com.sep.vox.application.query.dto.MonitoredAssessmentSummary(
-                assessment.id,
-                assessment.code,
-                assessment.name,
-                assessment.kind,
-                assessment.status,
-                MIN(sch.startDate),
-                MAX(sch.endDate),
-                SUM(CASE WHEN sch.startDate <= :now AND sch.endDate > :now THEN 1L ELSE 0L END)
-            )
-            FROM AssessmentScheduleJpaEntity sch
-            JOIN AssessmentJpaEntity assessment ON assessment.id = sch.assessmentId
-            """
+        return MONITORED_SELECT
             + accessJoin
-            + """
-            WHERE sch.status IN :statuses
-              AND assessment.status <> 'DRAFT'
-              AND (:assessmentId IS NULL OR assessment.id = :assessmentId)
-            """
+            + MONITORED_FILTER
             + (windowed ? "  AND sch.startDate <= :leadUntil AND sch.endDate > :now\n" : "")
             + accessWhere
-            + """
-            GROUP BY assessment.id, assessment.code, assessment.name, assessment.kind, assessment.status
-            ORDER BY MIN(sch.startDate)
-            """;
+            + MONITORED_GROUPING;
     }
 }

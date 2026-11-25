@@ -52,7 +52,41 @@ public class IssueMonitorTokenUseCase implements IUseCase<IssueMonitorTokenComma
         UUID schoolId = userContextPort.getCurrentSchoolId();
         Instant now = Instant.now();
 
-        Assessment assessment = assessmentRepository.findById(input.assessmentId())
+        Assessment assessment = findMonitorableAssessment(input.assessmentId(), schoolId);
+        List<AssessmentSchedule> activeSchedules = findActiveSchedules(assessment, now);
+        List<UUID> requestedIds = normalizeScheduleIds(input.scheduleIds());
+        List<AssessmentSchedule> selectedSchedules = selectRequestedSchedules(activeSchedules, requestedIds);
+
+        MonitorAccess access = resolveMonitorAccess(assessment, selectedSchedules, requestedIds, userId);
+
+        if (access.schedules().isEmpty()) {
+            throw new ForbiddenException("Bạn không được phân công vào ca thi đang diễn ra nào");
+        }
+
+        return generateMonitorToken(userId, schoolId, assessment, access, now);
+    }
+
+    private String generateMonitorToken(
+            UUID userId, UUID schoolId, Assessment assessment, MonitorAccess access, Instant now) {
+        List<String> scheduleIds = access.schedules().stream()
+            .map(s -> s.getId().toString())
+            .distinct()
+            .toList();
+
+        return streamTokenProvider.generateMonitorToken(
+            userId.toString(),
+            schoolId.toString(),
+            assessment.getId().toString(),
+            access.scope(),
+            scheduleIds,
+            List.of(access.role()),
+            now.minusSeconds(CLOCK_SKEW_SECONDS),
+            tokenExpiry(access.schedules(), now)
+        );
+    }
+
+    private Assessment findMonitorableAssessment(UUID assessmentId, UUID schoolId) {
+        Assessment assessment = assessmentRepository.findById(assessmentId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kỳ thi"));
 
         if (schoolId == null || !assessment.getSchoolId().equals(schoolId)) {
@@ -62,63 +96,53 @@ public class IssueMonitorTokenUseCase implements IUseCase<IssueMonitorTokenComma
         if (assessment.getRequiredStreamType() == null) {
             throw new IllegalArgumentException("Kỳ thi không hỗ trợ chức năng giám sát stream");
         }
+        return assessment;
+    }
 
+    private List<AssessmentSchedule> findActiveSchedules(Assessment assessment, Instant now) {
         List<AssessmentSchedule> activeSchedules = assessmentScheduleRepository.findByAssessmentIdAndInSchedule(assessment.getId(), now);
 
         if (activeSchedules.isEmpty()) {
             throw new ResourceNotFoundException("Kỳ thi đang không có ca thi diễn ra");
         }
+        return activeSchedules;
+    }
 
-        List<UUID> requestedIds = normalizeScheduleIds(input.scheduleIds());
-
+    private List<AssessmentSchedule> selectRequestedSchedules(
+            List<AssessmentSchedule> activeSchedules, List<UUID> requestedIds) {
+        if (requestedIds.isEmpty()) {
+            return activeSchedules;
+        }
         Map<UUID, AssessmentSchedule> activeScheduleByIds = activeSchedules.stream()
             .collect(Collectors.toMap(s -> s.getId(), s -> s));
-
-        List<AssessmentSchedule> selectedSchedules;
-
-        if (requestedIds.isEmpty()) {
-            selectedSchedules = activeSchedules;
-        } else {
-            if (!activeScheduleByIds.keySet().containsAll(requestedIds)) {
-                throw new IllegalArgumentException("Một hoặc nhiều ca thi không hợp lệ, không thuộc kỳ thi hoặc không đang diễn ra");
-            }
-            selectedSchedules = requestedIds.stream()
-                .map(activeScheduleByIds::get)
-                .toList();
+        if (!activeScheduleByIds.keySet().containsAll(requestedIds)) {
+            throw new IllegalArgumentException("Một hoặc nhiều ca thi không hợp lệ, không thuộc kỳ thi hoặc không đang diễn ra");
         }
+        return requestedIds.stream()
+            .map(activeScheduleByIds::get)
+            .toList();
+    }
 
-        String monitorScope;
-        String role;
-
+    private MonitorAccess resolveMonitorAccess(
+            Assessment assessment, List<AssessmentSchedule> selectedSchedules, List<UUID> requestedIds, UUID userId) {
         if (userContextPort.isSchoolAdmin()) {
-            monitorScope = SCOPE_SCHOOL_ADMIN;
-            role = "SCHOOL_ADMIN";
-        } else if (userContextPort.isTeacher()) {
-            role = "TEACHER";
-
-            boolean isChair = assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessment.getId(), userId, AssessmentMemberRole.CHAIR);
-
-            if (isChair) {
-                monitorScope = SCOPE_ASSESSMENT_CHAIR;
-            } else {
-                monitorScope = SCOPE_SCHEDULE_PROCTOR;
-
-                selectedSchedules = restrictToProctoredSchedules(selectedSchedules, requestedIds, userId);
-            }
-        } else {
+            return new MonitorAccess(SCOPE_SCHOOL_ADMIN, "SCHOOL_ADMIN", selectedSchedules);
+        }
+        if (!userContextPort.isTeacher()) {
             throw new ForbiddenException("Vai trò hiện tại không được phép giám sát thi");
         }
 
-        if (selectedSchedules.isEmpty()) {
-            throw new ForbiddenException("Bạn không được phân công vào ca thi đang diễn ra nào");
+        boolean isChair = assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessment.getId(), userId, AssessmentMemberRole.CHAIR);
+
+        if (isChair) {
+            return new MonitorAccess(SCOPE_ASSESSMENT_CHAIR, "TEACHER", selectedSchedules);
         }
+        return new MonitorAccess(
+            SCOPE_SCHEDULE_PROCTOR, "TEACHER", restrictToProctoredSchedules(selectedSchedules, requestedIds, userId));
+    }
 
-        List<String> scheduleIds = selectedSchedules.stream()
-            .map(s -> s.getId().toString())
-            .distinct()
-            .toList();
-
-        Instant tokenExpiry = selectedSchedules.stream()
+    private Instant tokenExpiry(List<AssessmentSchedule> schedules, Instant now) {
+        Instant tokenExpiry = schedules.stream()
             .map(s -> s.getEndDate())
             .max(Comparator.naturalOrder())
             .orElseThrow();
@@ -127,17 +151,10 @@ public class IssueMonitorTokenUseCase implements IUseCase<IssueMonitorTokenComma
         if (tokenExpiry.isAfter(ttlExpiry)) {
             tokenExpiry = ttlExpiry;
         }
+        return tokenExpiry;
+    }
 
-        return streamTokenProvider.generateMonitorToken(
-            userId.toString(), 
-            schoolId.toString(), 
-            assessment.getId().toString(), 
-            monitorScope, 
-            scheduleIds, 
-            List.of(role), 
-            now.minusSeconds(CLOCK_SKEW_SECONDS), 
-            tokenExpiry
-        );
+    private record MonitorAccess(String scope, String role, List<AssessmentSchedule> schedules) {
     }
 
     private List<AssessmentSchedule> restrictToProctoredSchedules(List<AssessmentSchedule> schedules, List<UUID> explicityRequestedIds, UUID teacherId) {

@@ -37,26 +37,10 @@ public class SearchSchoolRubricResultBandsUseCase implements IUseCase<SearchScho
     @Override
     @Transactional(readOnly = true)
     public PageResult<RubricResultBandDto> execute(SearchSchoolRubricResultBandsQuery query) {
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
-
-        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId).orElseThrow(() -> new ForbiddenException("Không thuộc trường nào."));
-        if (!schoolUser.getSchoolId().equals(query.schoolId()))
-            throw new ForbiddenException("BẢO MẬT: Xâm phạm trường học khác.");
-
-        School school = schoolRepository.findById(query.schoolId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường."));
-        if (!school.isActive()) throw new ForbiddenException("Trường học đang bị khóa.");
-
-        RubricVersion version = rubricVersionRepository.findById(query.versionId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản."));
-        Rubric rubric = rubricRepository.findById(version.getRubricId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric."));
-
-        if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || rubric.getSchoolId() == null || !rubric.getSchoolId().equals(query.schoolId())) {
-            throw new ForbiddenException("BẢO MẬT: Thang điểm này không thuộc trường của bạn.");
-        }
+        requireActiveSchoolMember(query.schoolId());
+        requireSchoolOwnedVersion(query);
 
         PageResult<RubricResultBand> pageResult = rubricResultBandRepository.searchRubricResultBands(query.versionId(), query.keyword(), query.page(), query.size());
-
         return new PageResult<>(
                 pageResult.content()
                         .stream()
@@ -64,5 +48,24 @@ public class SearchSchoolRubricResultBandsUseCase implements IUseCase<SearchScho
                         .toList(),
                 pageResult.page(), pageResult.size(), pageResult.totalElements(), pageResult.totalPages()
         );
+    }
+
+    private void requireActiveSchoolMember(UUID schoolId) {
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId).orElseThrow(() -> new ForbiddenException("Không thuộc trường nào."));
+        if (!schoolUser.getSchoolId().equals(schoolId))
+            throw new ForbiddenException("BẢO MẬT: Xâm phạm trường học khác.");
+        School school = schoolRepository.findById(schoolId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường."));
+        if (!school.isActive()) throw new ForbiddenException("Trường học đang bị khóa.");
+    }
+
+    private void requireSchoolOwnedVersion(SearchSchoolRubricResultBandsQuery query) {
+        RubricVersion version = rubricVersionRepository.findById(query.versionId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản."));
+        Rubric rubric = rubricRepository.findById(version.getRubricId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric."));
+        if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || rubric.getSchoolId() == null || !rubric.getSchoolId().equals(query.schoolId())) {
+            throw new ForbiddenException("BẢO MẬT: Thang điểm này không thuộc trường của bạn.");
+        }
     }
 }

@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.usecase.question;
 
 import com.sep.vox.domain.model.question.Question;
-import com.sep.vox.domain.model.question.QuestionBank;
 import java.util.UUID;
 
 import lombok.RequiredArgsConstructor;
@@ -9,21 +8,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.question.UpdateQuestionAssetCommand;
+import com.sep.vox.application.port.input.service.QuestionEditAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.QuestionAssetDto;
 import com.sep.vox.domain.mapper.QuestionAssetDtoMapper;
 import com.sep.vox.domain.model.question.QuestionAsset;
 import com.sep.vox.domain.model.question.QuestionAssetType;
-import com.sep.vox.domain.model.question.QuestionBankOwnerType;
-import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
-import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.repository.QuestionAssetRepository;
-import com.sep.vox.domain.repository.QuestionBankRepository;
-import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 
 @Service
@@ -31,9 +25,8 @@ import com.sep.vox.domain.repository.QuestionRepository;
 public class UpdateQuestionAssetUseCase implements IUseCase<UpdateQuestionAssetCommand, QuestionAssetDto> {
 
     private final QuestionRepository questionRepository;
-    private final QuestionBankRepository questionBankRepository;
-    private final QuestionCollaboratorRepository questionCollaboratorRepository;
     private final QuestionAssetRepository questionAssetRepository;
+    private final QuestionEditAccessService questionEditAccessService;
     private final QuestionCloneService questionCloneService;
     private final UserContextPort userContextPort;
 
@@ -45,43 +38,56 @@ public class UpdateQuestionAssetUseCase implements IUseCase<UpdateQuestionAssetC
 
         Question question = questionRepository.findById(command.questionId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi"));
-        QuestionAsset sourceAsset = questionAssetRepository.findById(command.assetId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài nguyên câu hỏi"));
-        if (!sourceAsset.getQuestionId().equals(question.getId())) {
-            throw new ForbiddenException("Tài nguyên không thuộc câu hỏi này");
+        QuestionAsset sourceAsset = questionEditAccessService.requireAssetOf(question, command.assetId());
+        boolean immutable = questionEditAccessService.authorizeEditing(question, currentUserId);
+
+        QuestionAsset targetAsset = resolveTargetAsset(question, sourceAsset, immutable, currentUserId);
+
+        applyProvidedFields(targetAsset, command);
+        applyOrderIfProvided(targetAsset, command.order());
+
+        sanitizeForType(targetAsset);
+        validateContent(targetAsset);
+        return saveAsDto(targetAsset);
+    }
+
+    private QuestionAsset resolveTargetAsset(
+            Question question, QuestionAsset sourceAsset, boolean immutable, UUID currentUserId) {
+        if (!immutable) {
+            return sourceAsset;
         }
+        Question clonedQuestion = questionCloneService.cloneAsDraftWithDetails(question, currentUserId);
+        return questionCloneService.findClonedAsset(clonedQuestion.getId(), sourceAsset.getOrder());
+    }
 
-        QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+    private QuestionAssetDto saveAsDto(QuestionAsset targetAsset) {
+        // File/type replace no longer auto-clears transcript/description -- per the simplified
+        // rule, existing content (whether AI-written or manually typed) always sticks unless the
+        // teacher explicitly blanks the field or uses "Tạo lại bằng AI" to force regeneration.
+        QuestionAsset saved = questionAssetRepository.save(targetAsset);
+        // Auto-publishing the AI asset-analysis request is switched off for now so that saving an asset
+        // stays independent and stable. It will be turned back on in a separate task about AI asset updates.
+        // questionAssetAnalysisRequestPublisher.publishIfNeeded(targetQuestion, saved);
+        return QuestionAssetDtoMapper.toDto(saved);
+    }
 
-        boolean owner = question.isCreatedBy(currentUserId);
-        boolean editorCollaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId)
-            .filter(collaborator -> collaborator.getPermission() == QuestionCollaboratorPermission.CAN_EDIT)
-            .isPresent();
-        boolean systemAdminOnSystemBank = userContextPort.isSystemAdmin()
-            && bank.getOwnerType() == QuestionBankOwnerType.SYSTEM;
-        if (!systemAdminOnSystemBank && !owner && !editorCollaborator) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+    private void applyOrderIfProvided(QuestionAsset targetAsset, Integer order) {
+        if (order != null) {
+            validateAssetOrder(targetAsset.getQuestionId(), order, targetAsset.getId());
+            targetAsset.setOrder(order);
         }
+    }
 
-        boolean immutable = question.getStatus() == QuestionStatus.PUBLISHED
-            || question.isLocked()
-            || questionRepository.existsUsedInAssessment(question.getId());
-        if (!systemAdminOnSystemBank
-                && owner
-                && !immutable
-                && question.getStatus() != QuestionStatus.DRAFT
-                && question.getStatus() != QuestionStatus.REVISION_REQUESTED) {
-            throw new ForbiddenException("Chỉ được sửa câu hỏi của mình khi ở trạng thái DRAFT hoặc REVISION_REQUESTED");
-        }
+    private void validateContent(QuestionAsset asset) {
+        QuestionAssetContentValidator.validate(
+            asset.getType(),
+            asset.getUrl(),
+            asset.getTranscript(),
+            asset.getDescription(),
+            asset.getAltText());
+    }
 
-        Question targetQuestion = immutable
-            ? questionCloneService.cloneAsDraftWithDetails(question, currentUserId)
-            : question;
-        QuestionAsset targetAsset = immutable
-            ? resolveClonedAsset(targetQuestion.getId(), sourceAsset.getOrder())
-            : sourceAsset;
-
+    private void applyProvidedFields(QuestionAsset targetAsset, UpdateQuestionAssetCommand command) {
         if (command.title() != null) {
             targetAsset.setTitle(command.title());
         }
@@ -103,34 +109,6 @@ public class UpdateQuestionAssetUseCase implements IUseCase<UpdateQuestionAssetC
         if (command.description() != null) {
             targetAsset.setDescription(command.description());
         }
-        if (command.order() != null) {
-            validateAssetOrder(targetQuestion.getId(), command.order(), targetAsset.getId());
-            targetAsset.setOrder(command.order());
-        }
-
-        sanitizeForType(targetAsset);
-        QuestionAssetContentValidator.validate(
-            targetAsset.getType(),
-            targetAsset.getUrl(),
-            targetAsset.getTranscript(),
-            targetAsset.getDescription(),
-            targetAsset.getAltText());
-
-        // File/type replace no longer auto-clears transcript/description -- per the simplified
-        // rule, existing content (whether AI-written or manually typed) always sticks unless the
-        // teacher explicitly blanks the field or uses "Tạo lại bằng AI" to force regeneration.
-        QuestionAsset saved = questionAssetRepository.save(targetAsset);
-        // Tạm thời bỏ auto-publish yêu cầu AI phân tích asset để luồng lưu asset
-        // luôn độc lập và ổn định. Sẽ bật lại ở task riêng về AI update asset sau.
-        // questionAssetAnalysisRequestPublisher.publishIfNeeded(targetQuestion, saved);
-        return QuestionAssetDtoMapper.toDto(saved);
-    }
-
-    private QuestionAsset resolveClonedAsset(UUID questionId, int order) {
-        return questionAssetRepository.findByQuestionId(questionId).stream()
-            .filter(asset -> asset.getOrder() == order)
-            .findFirst()
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài nguyên câu hỏi trong bản nháp mới"));
     }
 
     private void validateAssetOrder(UUID questionId, int order, UUID currentAssetId) {

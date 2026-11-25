@@ -33,13 +33,7 @@ public class UpdateGradeLevelUseCase implements IUseCase<UpdateGradeLevelCommand
     @Override
     @Transactional
     public UUID execute(UpdateGradeLevelCommand command) {
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Tài khoản không tồn tại hoặc đã bị khóa.");
-        }
-        if (!userContextPort.isSystemAdmin()) {
-            throw new ForbiddenException("Chỉ quản trị hệ thống mới được sửa khối học.");
-        }
+        requireActiveSystemAdmin();
 
         if (gradeLevelRepository.findById(command.gradeLevelId()).isEmpty()) {
             throw new ResourceNotFoundException("Không tìm thấy khối học.");
@@ -53,10 +47,29 @@ public class UpdateGradeLevelUseCase implements IUseCase<UpdateGradeLevelCommand
         validateDescription(description);
         validateOrder(command.order());
 
-        // Atomic update (null = keep the current value)
-        int updatedRows;
+        int updatedRows = updateAtomically(command, name, description);
+
+        if (updatedRows == 0) {
+            throw new ResourceNotFoundException("Không tìm thấy khối học.");
+        }
+
+        return command.gradeLevelId();
+    }
+
+    private void requireActiveSystemAdmin() {
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
+            throw new UnauthorizedException("Tài khoản không tồn tại hoặc đã bị khóa.");
+        }
+        if (!userContextPort.isSystemAdmin()) {
+            throw new ForbiddenException("Chỉ quản trị hệ thống mới được sửa khối học.");
+        }
+    }
+
+    // Atomic update (null = keep the current value)
+    private int updateAtomically(UpdateGradeLevelCommand command, String name, String description) {
         try {
-            updatedRows = gradeLevelRepository.updateGradeLevelAtomic(
+            return gradeLevelRepository.updateGradeLevelAtomic(
                     command.gradeLevelId(),
                     name,
                     description,
@@ -66,12 +79,6 @@ public class UpdateGradeLevelUseCase implements IUseCase<UpdateGradeLevelCommand
         } catch (DataConflictException e) {
             throw new ResourceDuplicatedException("Thứ tự khối học đã được sử dụng.");
         }
-
-        if (updatedRows == 0) {
-            throw new ResourceNotFoundException("Không tìm thấy khối học.");
-        }
-
-        return command.gradeLevelId();
     }
 
     private void validateName(String name) {

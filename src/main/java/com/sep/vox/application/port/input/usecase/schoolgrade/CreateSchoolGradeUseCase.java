@@ -9,7 +9,6 @@ import com.sep.vox.application.port.input.command.schoolgrade.CreateSchoolGradeC
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.school.SchoolGrade;
-import com.sep.vox.domain.model.school.SchoolGradeStatus;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.model.gradelevel.GradeLevelStatus;
 import com.sep.vox.domain.repository.GradeLevelRepository;
@@ -82,16 +81,14 @@ public class CreateSchoolGradeUseCase implements IUseCase<CreateSchoolGradeComma
     }
 
     private UUID saveNewGrade(CreateSchoolGradeCommand command, String code, UUID creatorId) {
-        SchoolGrade newGrade = SchoolGrade.builder()
-            .schoolId(command.schoolId())
-            .gradeLevelId(command.gradeLevelId())
-            .code(code)
-            .name(StringNormalization.trimAndCollapseSpaces(command.name()))
-            .description(command.description() != null ? StringNormalization.trimAndCollapseSpaces(command.description()) : null)
-            .startDate(command.startDate())
-            .endDate(command.endDate())
-            .status(SchoolGradeStatus.ACTIVE)
-            .build();
+        SchoolGrade newGrade = SchoolGrade.opened(
+            command.schoolId(),
+            command.gradeLevelId(),
+            code,
+            StringNormalization.trimAndCollapseSpaces(command.name()),
+            command.description() != null ? StringNormalization.trimAndCollapseSpaces(command.description()) : null,
+            command.startDate(),
+            command.endDate());
         try {
             return schoolGradeRepository.save(newGrade).getId();
         } catch (DataConflictException e) {

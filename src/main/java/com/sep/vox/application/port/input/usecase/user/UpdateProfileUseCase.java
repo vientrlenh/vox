@@ -46,13 +46,7 @@ public class UpdateProfileUseCase implements IUseCase<UpdateProfileCommand, User
     @Override
     @Transactional
     public UserDto execute(UpdateProfileCommand input) {
-        if (!input.fullNameProvided()
-                && !input.phoneProvided()
-                && !input.addressProvided()
-                && !input.dateOfBirthProvided()
-                && !input.avatarUrlProvided()) {
-            throw new IllegalArgumentException("Cần cung cấp ít nhất một trường để cập nhật");
-        }
+        requireAtLeastOneField(input);
 
         UUID callerId = userContextPort.getCurrentAuthenticatedUserId();
 
@@ -62,24 +56,34 @@ public class UpdateProfileUseCase implements IUseCase<UpdateProfileCommand, User
             throw new ForbiddenException("Tài khoản không ở trạng thái hoạt động");
         }
 
+        applyProvidedFields(target, input);
+
+        try {
+            userRepository.saveAndFlush(target);
+        } catch (DataConflictException e) {
+            throw new ResourceDuplicatedException("Số điện thoại đã tồn tại");
+        }
+
+        return UserDtoMapper.toUserDto(target);
+    }
+
+    private void requireAtLeastOneField(UpdateProfileCommand input) {
+        if (!input.fullNameProvided()
+                && !input.phoneProvided()
+                && !input.addressProvided()
+                && !input.dateOfBirthProvided()
+                && !input.avatarUrlProvided()) {
+            throw new IllegalArgumentException("Cần cung cấp ít nhất một trường để cập nhật");
+        }
+    }
+
+    private void applyProvidedFields(User target, UpdateProfileCommand input) {
         if (input.fullNameProvided()) {
-            String normalized = StringNormalization.trimAndCollapseSpaces(input.fullName());
-            if (normalized == null || normalized.isBlank()) {
-                throw new IllegalArgumentException("Họ tên không được để trống");
-            }
-            target.setFullName(new FullName(normalized));
+            applyFullName(target, input);
         }
 
         if (input.phoneProvided()) {
-            String normalized = StringNormalization.normalizePhone(input.phone());
-            if (normalized == null || normalized.isBlank()) {
-                throw new IllegalArgumentException("Số điện thoại không được để trống");
-            }
-            Optional<User> existing = userRepository.findByPhone(normalized);
-            if (existing.isPresent() && !existing.get().getId().equals(target.getId())) {
-                throw new ResourceDuplicatedException("Số điện thoại đã tồn tại");
-            }
-            target.setPhone(new Phone(normalized));
+            applyPhone(target, input);
         }
 
         if (input.addressProvided()) {
@@ -93,14 +97,26 @@ public class UpdateProfileUseCase implements IUseCase<UpdateProfileCommand, User
         if (input.avatarUrlProvided()) {
             target.setAvatarUrl(resolveAvatarUrl(input.avatarUrl()));
         }
+    }
 
-        try {
-            userRepository.saveAndFlush(target);
-        } catch (DataConflictException e) {
+    private void applyFullName(User target, UpdateProfileCommand input) {
+        String normalized = StringNormalization.trimAndCollapseSpaces(input.fullName());
+        if (normalized == null || normalized.isBlank()) {
+            throw new IllegalArgumentException("Họ tên không được để trống");
+        }
+        target.setFullName(new FullName(normalized));
+    }
+
+    private void applyPhone(User target, UpdateProfileCommand input) {
+        String normalized = StringNormalization.normalizePhone(input.phone());
+        if (normalized == null || normalized.isBlank()) {
+            throw new IllegalArgumentException("Số điện thoại không được để trống");
+        }
+        Optional<User> existing = userRepository.findByPhone(normalized);
+        if (existing.isPresent() && !existing.get().getId().equals(target.getId())) {
             throw new ResourceDuplicatedException("Số điện thoại đã tồn tại");
         }
-
-        return UserDtoMapper.toUserDto(target);
+        target.setPhone(new Phone(normalized));
     }
 
     /**

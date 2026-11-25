@@ -44,6 +44,15 @@ public class Framework extends BaseModel {
         this.isActive = isActive;
     }
 
+    public static Framework registered(FrameworkCode code, String name, String description) {
+        return builder()
+                .code(code)
+                .name(name)
+                .description(description)
+                .active(false)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

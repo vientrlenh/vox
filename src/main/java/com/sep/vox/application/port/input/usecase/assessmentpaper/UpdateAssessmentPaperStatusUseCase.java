@@ -60,59 +60,15 @@ public class UpdateAssessmentPaperStatusUseCase implements IUseCase<UpdateAssess
     @Override
     @Transactional
     public AssessmentPaperDto execute(UpdateAssessmentPaperStatusCommand input) {
-        UpdateAssessmentPaperStatusCommand command = new UpdateAssessmentPaperStatusCommand(
-            input.paperId(),
-            StringNormalization.normalizeCode(input.action()),
-            StringNormalization.trimAndCollapseSpaces(input.note())
-        );
+        UpdateAssessmentPaperStatusCommand command = normalize(input);
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         AssessmentPaper paper = assessmentPaperRepository.findById(command.paperId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đề thi"));
         Assessment assessment = assessmentRepository.findById(paper.getAssessmentId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
-        AssessmentPaperAuthoringAccessService.PaperActor actor = assessmentPaperAuthoringAccessService.resolve(assessment, currentUserId);
+        PaperActor actor = assessmentPaperAuthoringAccessService.resolve(assessment, currentUserId);
 
-        switch (command.action()) {
-            case "SUBMIT" -> {
-                requireCanAuthor(actor);
-                requireAllSlotsAssigned(paper, "Đề thi còn ô câu hỏi chưa được gán, không thể nộp duyệt");
-                requirePaperWithinPlan(assessment, paper);
-                requireTransition(paper, AssessmentPaperStatus.DRAFT, AssessmentPaperStatus.IN_REVIEW);
-            }
-            case "APPROVE" -> {
-                requireCanReview(actor);
-                requireNotAuthor(paper, currentUserId);
-                requirePaperWithinPlan(assessment, paper);
-                requireTransition(paper, AssessmentPaperStatus.IN_REVIEW, AssessmentPaperStatus.APPROVED);
-            }
-            case "REQUEST_REVISION" -> {
-                requireCanReview(actor);
-                requireNotAuthor(paper, currentUserId);
-                if (command.note() == null || command.note().isBlank()) {
-                    throw new IllegalArgumentException("Yêu cầu sửa lại bắt buộc phải có góp ý");
-                }
-                requireTransition(paper, AssessmentPaperStatus.IN_REVIEW, AssessmentPaperStatus.DRAFT);
-            }
-            case "LOCK" -> {
-                requireCanDecide(actor);
-                requirePaperWithinPlan(assessment, paper);
-                if (isOneStepLock(assessment, paper, currentUserId)) {
-                    requireAllSlotsAssigned(paper, "Mã đề còn ô câu hỏi chưa được gán, không thể khoá");
-                    requireTransition(paper, AssessmentPaperStatus.DRAFT, AssessmentPaperStatus.LOCKED);
-                } else {
-                    requireNotAuthor(paper, currentUserId);
-                    requireTransition(paper, AssessmentPaperStatus.APPROVED, AssessmentPaperStatus.LOCKED);
-                }
-            }
-            case "REOPEN" -> {
-                // Không có requireNotAuthor ở đây: người vừa đi đường tắt DRAFT → LOCKED phải mở lại
-                // được chính mã đề của mình, nếu không họ tự khoá mình ra ngoài và mã đề kẹt vĩnh viễn.
-                requireCanDecide(actor);
-                requireTransition(paper, AssessmentPaperStatus.LOCKED, AssessmentPaperStatus.DRAFT);
-                unassignCandidatesOf(paper, currentUserId);
-            }
-            default -> throw new IllegalArgumentException("Action không hợp lệ");
-        }
+        applyAction(command, paper, assessment, actor, currentUserId);
 
         Instant now = Instant.now();
         AssessmentPaper saved = assessmentPaperRepository.save(paper);
@@ -123,6 +79,73 @@ public class UpdateAssessmentPaperStatusUseCase implements IUseCase<UpdateAssess
             assessmentPaperAutoAssigner.backfillAssessment(assessment, now, currentUserId);
         }
         return AssessmentPaperDtoMapper.toDto(saved);
+    }
+
+    private UpdateAssessmentPaperStatusCommand normalize(UpdateAssessmentPaperStatusCommand input) {
+        return new UpdateAssessmentPaperStatusCommand(
+            input.paperId(),
+            StringNormalization.normalizeCode(input.action()),
+            StringNormalization.trimAndCollapseSpaces(input.note())
+        );
+    }
+
+    private void applyAction(
+            UpdateAssessmentPaperStatusCommand command,
+            AssessmentPaper paper,
+            Assessment assessment,
+            PaperActor actor,
+            UUID currentUserId) {
+        switch (command.action()) {
+            case "SUBMIT" -> submit(paper, assessment, actor);
+            case "APPROVE" -> approve(paper, assessment, actor, currentUserId);
+            case "REQUEST_REVISION" -> requestRevision(command, paper, actor, currentUserId);
+            case "LOCK" -> lock(paper, assessment, actor, currentUserId);
+            case "REOPEN" -> reopen(paper, actor, currentUserId);
+            default -> throw new IllegalArgumentException("Action không hợp lệ");
+        }
+    }
+
+    private void submit(AssessmentPaper paper, Assessment assessment, PaperActor actor) {
+        requireCanAuthor(actor);
+        requireAllSlotsAssigned(paper, "Đề thi còn ô câu hỏi chưa được gán, không thể nộp duyệt");
+        requirePaperWithinPlan(assessment, paper);
+        requireTransition(paper, AssessmentPaperStatus.DRAFT, AssessmentPaperStatus.IN_REVIEW);
+    }
+
+    private void approve(AssessmentPaper paper, Assessment assessment, PaperActor actor, UUID currentUserId) {
+        requireCanReview(actor);
+        requireNotAuthor(paper, currentUserId);
+        requirePaperWithinPlan(assessment, paper);
+        requireTransition(paper, AssessmentPaperStatus.IN_REVIEW, AssessmentPaperStatus.APPROVED);
+    }
+
+    private void requestRevision(UpdateAssessmentPaperStatusCommand command, AssessmentPaper paper, PaperActor actor, UUID currentUserId) {
+        requireCanReview(actor);
+        requireNotAuthor(paper, currentUserId);
+        if (command.note() == null || command.note().isBlank()) {
+            throw new IllegalArgumentException("Yêu cầu sửa lại bắt buộc phải có góp ý");
+        }
+        requireTransition(paper, AssessmentPaperStatus.IN_REVIEW, AssessmentPaperStatus.DRAFT);
+    }
+
+    private void lock(AssessmentPaper paper, Assessment assessment, PaperActor actor, UUID currentUserId) {
+        requireCanDecide(actor);
+        requirePaperWithinPlan(assessment, paper);
+        if (isOneStepLock(assessment, paper, currentUserId)) {
+            requireAllSlotsAssigned(paper, "Mã đề còn ô câu hỏi chưa được gán, không thể khoá");
+            requireTransition(paper, AssessmentPaperStatus.DRAFT, AssessmentPaperStatus.LOCKED);
+        } else {
+            requireNotAuthor(paper, currentUserId);
+            requireTransition(paper, AssessmentPaperStatus.APPROVED, AssessmentPaperStatus.LOCKED);
+        }
+    }
+
+    private void reopen(AssessmentPaper paper, PaperActor actor, UUID currentUserId) {
+        // No requireNotAuthor here: someone who just took the DRAFT -> LOCKED shortcut must be able to reopen
+        // their own paper variant, otherwise they lock themselves out and the paper variant is stuck forever.
+        requireCanDecide(actor);
+        requireTransition(paper, AssessmentPaperStatus.LOCKED, AssessmentPaperStatus.DRAFT);
+        unassignCandidatesOf(paper, currentUserId);
     }
 
     /**

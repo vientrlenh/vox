@@ -67,53 +67,62 @@ public class PracticeQuestionSelectionService {
     private final JsonSerializationPort jsonSerializationPort;
 
     /**
-     * Tiêu chí/sub-attribute trọng tâm của học sinh -- dùng chung bởi BuildPracticePaperUseCase
-     * (câu đầu tiên) và ResolveNextPracticeQuestionUseCase (các câu sau trong phiên).
+     * The student's focus criterion/sub-attribute -- shared by BuildPracticePaperUseCase
+     * (the first question) and ResolveNextPracticeQuestionUseCase (the later questions in the session).
+     *
+     * <p>An empty Map = "practise this criterion in general" in EVERY slot. The sub_attribute_priority table was
+     * removed together with the weakness profile, so no source is left that can say which sub-label deserves
+     * practice. PracticeFocusInfo.subAttributeForSlot returns null when the key is missing, and both Java and
+     * Python already tolerated null before (SubAttributePolicy.plannedSubAttribute,
+     * CandidateFilterNode.rule_violations).
+     *
+     * <p>Narrowing beyond the criterion is now the job of target_tense -- see §8 of
+     * task/implement/ke-hoach-bo-diem-yeu-va-ep-thi.md.
      */
     public PracticeFocusInfo resolveFocus(UUID studentId, String forcedSubAttribute) {
-        //Code này đã bỏ dead code chưa xóa
         if (forcedSubAttribute != null) {
-            String forcedCriterion = SubAttributePolicy.criterionForSubAttribute(forcedSubAttribute);
-            if (forcedCriterion == null) {
-                throw new IllegalArgumentException("Sub-attribute không thuộc taxonomy luyện tập.");
-            }
-            // Học sinh bấm "luyện lại lỗi này" -- ép đúng một tiêu chí, KHÔNG xen lẫn. Đây là
-            // lựa chọn có chủ đích của người học, không phải chỗ để hệ thống tự cân đối.
-            return new PracticeFocusInfo(
-                List.of(forcedCriterion),
-                Map.of(forcedCriterion, List.of(forcedSubAttribute))
-            );
+            return forcedFocus(forcedSubAttribute);
         }
-        //hết code bỏ dead code
 
-        // Tiêu chí điểm THẤP nhất luyện trước. Nguồn là điểm đã chấm, không còn là hồ sơ điểm
-        // yếu (đã gỡ khỏi hệ thống) -- xem CriterionScoreAverageRepository để biết đổi những gì.
+        // The LOWEST-scoring criterion is practised first. The source is the graded scores, no longer the weakness
+        // profile (removed from the system) -- see CriterionScoreAverageRepository for what changed.
         List<String> scored = criterionScoreRepository.findCriterionCodesOrderedByLowestAverageScore(studentId);
+        return new PracticeFocusInfo(List.copyOf(withUnscoredCriteriaAppended(scored)), Map.of());
+    }
 
-        // BÙ cho đủ năm tiêu chí. Query chỉ trả về tiêu chí ĐÃ có điểm; nếu lấy nguyên danh sách
-        // đó thì hai chỗ hỏng cùng lúc:
-        //   1. học sinh chưa được chấm lần nào -> danh sách rỗng -> criterionForSlot ném
-        //      IndexOutOfBounds ngay câu đầu tiên
-        //   2. học sinh mới chấm đúng một tiêu chí -> chu kỳ 4 ô xoay quanh mỗi tiêu chí đó,
-        //      nên bốn tiêu chí còn lại vĩnh viễn không có điểm mới, nên vĩnh viễn không lọt
-        //      vào danh sách. Đúng kiểu bế tắc tự khoá đã gặp ở nhánh sub-attribute cũ.
-        // Chưa đo được thì xếp SAU (không tuyên bố là yếu), nhưng phải có mặt để còn được hỏi tới.
+    private PracticeFocusInfo forcedFocus(String forcedSubAttribute) {
+        String forcedCriterion = SubAttributePolicy.criterionForSubAttribute(forcedSubAttribute);
+        if (forcedCriterion == null) {
+            throw new IllegalArgumentException("Sub-attribute không thuộc taxonomy luyện tập.");
+        }
+        // The student pressed "practise this mistake again" -- force exactly one criterion, with NO mixing. This is a
+        // deliberate choice of the learner, not a place for the system to balance things on its own.
+        return new PracticeFocusInfo(
+            List.of(forcedCriterion),
+            Map.of(forcedCriterion, List.of(forcedSubAttribute))
+        );
+    }
+
+    /**
+     * COMPENSATES so that all five criteria are present. The query only returns criteria that ALREADY have a score;
+     * taking that list as is breaks two things at once:
+     * <ol>
+     *   <li>a student who has never been graded -> empty list -> criterionForSlot throws IndexOutOfBounds on
+     *       the very first question</li>
+     *   <li>a student who has been graded on exactly one criterion -> the 4-slot cycle revolves around that one
+     *       criterion, so the other four never get a new score, so they never enter the list. The same
+     *       self-locking deadlock seen in the old sub-attribute branch.</li>
+     * </ol>
+     * A criterion not yet measured goes AFTER (it is not declared weak), but must be present so it still gets asked about.
+     */
+    private List<String> withUnscoredCriteriaAppended(List<String> scored) {
         List<String> ordered = new ArrayList<String>(scored);
         for (String criterion : ALL_PRACTICE_CRITERIA) {
             if (!ordered.contains(criterion)) {
                 ordered.add(criterion);
             }
         }
-
-        // Map rỗng = "luyện tiêu chí này nói chung" ở MỌI ô. Bảng sub_attribute_priority đã bị
-        // xoá cùng hồ sơ điểm yếu, nên không còn nguồn nào nói được nhãn con nào đáng luyện.
-        // PracticeFocusInfo.subAttributeForSlot trả null khi thiếu khoá, và cả Java lẫn Python
-        // đều đã chịu được null từ trước (SubAttributePolicy.plannedSubAttribute,
-        // CandidateFilterNode.rule_violations).
-        //
-        // Việc nhắm hẹp hơn tiêu chí giờ do target_tense đảm nhiệm -- xem §8 của
-        // task/implement/ke-hoach-bo-diem-yeu-va-ep-thi.md.
-        return new PracticeFocusInfo(List.copyOf(ordered), Map.of());
+        return ordered;
     }
 
     /** Câu đã chọn + toàn bộ metadata slot đi kèm -- để caller ghi PracticePaperItem không phải tự suy lại tiêu chí/rank theo slot. */
@@ -121,65 +130,36 @@ public class PracticeQuestionSelectionService {
         PracticeQuestion question, int slot, String criterion, String subAttribute, int targetRank) {
     }
 
+    /**
+     * 4-slot cycle: weakest, weakest, second weakest, then rotate over the rest -- see
+     * PracticeFocusInfo.criterionForSlot. The previous version had only two criteria and cut hard at the 2nd slot,
+     * so from the third slot on every question aimed at exactly one criterion.
+     *
+     * <p>The band ceiling ({@code bandCount}) is passed down by the CALLER, taken from the framework of the very band the
+     * student chose -- the "currently effective framework" is no longer looked up here. Since the practice screen lets the
+     * student pick a framework, two students may be on frameworks with different band counts (6 for KNLNNVN/CEFR,
+     * 9 for IELTS), and the band count goes straight into the difficulty clamp below and into TensePolicy.
+     *
+     * <p>The target tense of this slot: speak first about the topic (a historical topic locks the past), a MIXED topic
+     * rotates by slot so one session covers several time frames. The band has veto power -- see
+     * TensePolicy, tense and difficulty are NOT independent.
+     *
+     * <p>Every slot uses the same band: the band the student CHOSE. Previously from the 4th slot on the band was raised
+     * by one by itself -- meaning difficulty drifted in the middle of a session, by a rule the student cannot see.
+     */
     public Optional<NextQuestionSelection> resolveNextQuestion(
-            PracticeTopic topic,
-            UUID studentId,
-            PracticeFocusInfo focus,
-            int targetRank,
-            int bandCount,
-            UUID frameworkVersionId,
-            List<PracticeQuestion> alreadyChosenInSession) {
+            PracticeTopic topic, UUID studentId, PracticeFocusInfo focus, int targetRank, int bandCount,
+            UUID frameworkVersionId, List<PracticeQuestion> alreadyChosenInSession) {
         int slotIndex = alreadyChosenInSession.size();
-        // Chu kỳ 4 ô: yếu nhất, yếu nhất, yếu nhì, xoay vòng phần còn lại -- xem
-        // PracticeFocusInfo.criterionForSlot. Bản trước chỉ có hai tiêu chí và cắt cứng ở ô
-        // thứ 2, nên từ ô thứ ba trở đi mọi câu đều nhắm đúng một tiêu chí.
         String criterion = focus.criterionForSlot(slotIndex);
-        String subAttribute = SubAttributePolicy.plannedSubAttribute(
-            criterion,
-            focus.subAttributeForSlot(slotIndex)
-        );
-        // Trần bậc do NƠI GỌI truyền xuống, lấy từ khung của chính bậc học sinh đã chọn --
-        // không tự tra "khung đang hiệu lực" nữa. Từ khi màn luyện tập cho chọn khung, hai học
-        // sinh có thể đang ở hai khung khác số bậc (6 với KNLNNVN/CEFR, 9 với IELTS), mà số bậc
-        // đi thẳng vào phép kẹp độ khó dưới đây và vào TensePolicy.
-        // Thì đích của ô này: chủ đề nói trước (chủ đề lịch sử thì khoá quá khứ), chủ đề MIXED
-        // thì xoay vòng theo ô để một buổi phủ nhiều khung thời gian. Bậc có quyền phủ quyết --
-        // xem TensePolicy, thì và độ khó KHÔNG độc lập.
-        String tense = TensePolicy.forSlot(
-            topic.getTemporalAffordance(), slotIndex, targetRank, bandCount
-        );
-        // Mọi ô cùng một bậc: bậc học sinh CHỌN. Trước đây ô thứ 4 trở đi tự nâng thêm một
-        // bậc -- nghĩa là độ khó trôi ngay giữa phiên, theo một luật học sinh không nhìn thấy.
+        String subAttribute = SubAttributePolicy.plannedSubAttribute(criterion, focus.subAttributeForSlot(slotIndex));
+        String tense = TensePolicy.forSlot(topic.getTemporalAffordance(), slotIndex, targetRank, bandCount);
         List<UUID> excludeIds = alreadyChosenInSession.stream().map(question -> question.getId()).toList();
 
-        // Hai bậc đọc DB trước (rẻ), CHƯA sinh mới.
-        List<PracticeQuestion> candidates = ladderCandidatesForOneQuestion(
-            topic, studentId, criterion, tense, targetRank, excludeIds, bandCount
+        Optional<PracticeQuestion> chosen = chooseWithFallbacks(
+            topic, studentId, criterion, subAttribute, tense, targetRank, bandCount,
+            frameworkVersionId, alreadyChosenInSession, excludeIds
         );
-        // Ba nước, đắt dần. Điều kiện đi tiếp là KHÔNG CHỌN ĐƯỢC CÂU DÙNG ĐƯỢC -- không phải
-        // "thang leo không trả về dòng nào". Lẫn lộn hai thứ đó đã giết phiên luyện sau đúng
-        // một câu: thang leo trả về 1 câu, pickOne loại nó vì trùng kiểu lập luận với câu vừa
-        // hỏi (kho chủ đề có 12/14 câu cùng kiểu 'description'), thế là hết câu để hỏi trong
-        // khi bậc sinh không bao giờ chạy vì "đã tìm được 1 dòng rồi".
-        Optional<PracticeQuestion> chosen = pickOne(candidates, alreadyChosenInSession, tense, targetRank, false);
-        if (chosen.isEmpty()) {
-            // Nới ĐÚNG luật đa dạng kiểu lập luận, GIỮ NGUYÊN luật gần-trùng-nội-dung. Hai luật
-            // này không cùng hạng: hỏi hai câu cùng kiểu lập luận chỉ là kém phong phú, còn hỏi
-            // lại một câu gần y hệt thì học sinh thấy rõ là bị lặp.
-            chosen = pickOne(candidates, alreadyChosenInSession, tense, targetRank, true);
-        }
-        if (chosen.isEmpty()) {
-            // Chỉ tới đây mới trả giá LLM 10-40 giây với học sinh đang ngồi chờ -- khi kho thật
-            // sự không còn gì hỏi được, chứ không phải mỗi lần pool chưa đủ 4 câu như bản gốc.
-            List<PracticeQuestion> generated = generateThenReload(
-                topic, studentId, criterion, subAttribute, tense, targetRank, excludeIds,
-                bandCount, frameworkVersionId
-            );
-            chosen = pickOne(generated, alreadyChosenInSession, tense, targetRank, true);
-        }
-        if (chosen.isEmpty()) {
-            return Optional.empty();
-        }
         chosen.ifPresent(question -> questionRepository.incrementUsageCount(question.getId()));
         return chosen.map(question -> new NextQuestionSelection(
             question, slotIndex + 1, criterion, subAttribute, targetRank
@@ -187,18 +167,52 @@ public class PracticeQuestionSelectionService {
     }
 
     /**
-     * @param relaxReasoning bỏ luật "không hỏi hai câu liền cùng kiểu lập luận". Chỉ bật ở nước
-     *     dự phòng của {@link #resolveNextQuestion}: luật đa dạng là thứ tốt-nếu-có, để nó kết
-     *     thúc buổi luyện khi hạn mức vẫn còn thì hại hơn nhiều so với hai câu hơi giống nhau.
-     *     Luật gần-trùng-nội-dung (0.85) KHÔNG bao giờ được nới -- hỏi lại một câu gần y hệt là
-     *     thứ học sinh nhận ra ngay.
+     * Two DB-reading rungs first (cheap), NOT generating anything new yet.
+     *
+     * <p>Three moves, increasingly expensive. The condition to go on is "COULD NOT PICK A USABLE QUESTION" -- not
+     * "the ladder returned no row". Mixing the two up killed a practice session after exactly one question: the
+     * ladder returned 1 question, pickOne dropped it because it repeated the reasoning type of the question just asked
+     * (the topic bank has 12 of 14 questions of the same 'description' type), and then there was nothing left to ask
+     * while the generating rung never ran because "a row was already found".
+     *
+     * <p>The second move relaxes EXACTLY the reasoning-type diversity rule and KEEPS the near-duplicate-content rule.
+     * The two rules are not of the same rank: asking two questions of the same reasoning type is only less varied,
+     * while asking again a nearly identical question is plainly a repeat to the student.
+     *
+     * <p>The third move pays the LLM cost of 10-40 seconds with the student sitting and waiting only here -- when the bank
+     * truly has nothing left to ask, not every time the pool has fewer than 4 questions as in the original version.
+     */
+    private Optional<PracticeQuestion> chooseWithFallbacks(
+            PracticeTopic topic, UUID studentId, String criterion, String subAttribute, String tense,
+            int targetRank, int bandCount, UUID frameworkVersionId,
+            List<PracticeQuestion> alreadyChosenInSession, List<UUID> excludeIds) {
+        List<PracticeQuestion> candidates = ladderCandidatesForOneQuestion(
+            topic, studentId, criterion, tense, targetRank, excludeIds, bandCount
+        );
+        Optional<PracticeQuestion> chosen = pickOne(candidates, alreadyChosenInSession, tense, targetRank, false);
+        if (chosen.isEmpty()) {
+            chosen = pickOne(candidates, alreadyChosenInSession, tense, targetRank, true);
+        }
+        if (chosen.isEmpty()) {
+            List<PracticeQuestion> generated = generateThenReload(
+                topic, studentId, criterion, subAttribute, tense, targetRank, excludeIds,
+                bandCount, frameworkVersionId
+            );
+            chosen = pickOne(generated, alreadyChosenInSession, tense, targetRank, true);
+        }
+        return chosen;
+    }
+
+    /**
+     * @param relaxReasoning drops the rule "do not ask two consecutive questions of the same reasoning type". Only turned on
+     *     at the fallback move of {@link #resolveNextQuestion}: the diversity rule is nice-to-have, and letting it
+     *     end the practice session while quota remains does far more harm than two slightly similar questions.
+     *     The near-duplicate-content rule (0.85) must NEVER be relaxed -- asking again a nearly identical question is
+     *     something the student notices immediately.
      */
     private Optional<PracticeQuestion> pickOne(
-            List<PracticeQuestion> candidates,
-            List<PracticeQuestion> alreadyChosen,
-            String tense,
-            int targetRank,
-            boolean relaxReasoning) {
+            List<PracticeQuestion> candidates, List<PracticeQuestion> alreadyChosen,
+            String tense, int targetRank, boolean relaxReasoning) {
         if (candidates.isEmpty()) {
             return Optional.empty();
         }
@@ -247,21 +261,20 @@ public class PracticeQuestionSelectionService {
     }
 
     /**
-     * HAI nước đọc kho, rộng dần -- trước là ba, xem lý do bỏ nước Chroma ở cuối hàm.
+     * TWO moves of reading the bank, widening step by step -- it used to be three, see the reason for dropping the Chroma move at the end of the method.
      *
-     * <p>Bản trước nữa có bốn: nước đầu tìm ĐÚNG {@code rank = targetRank},
-     * nước hai mới nới {@code ±1}. Gộp lại được vì phép sắp xếp
-     * ({@link #rankThenSubAttribute}) đã tự đẩy câu đúng bậc lên đầu -- giữ hai truy vấn chỉ
-     * khác nhau ở khoảng bậc là làm cùng một việc hai lần.
+     * <p>The version before that had four: the first move looked for EXACTLY {@code rank = targetRank},
+     * the second widened to {@code ±1}. They merge because the sort
+     * ({@link #rankThenSubAttribute}) already pushes questions of the exact band to the top -- keeping two queries that
+     * differ only in the band range does the same job twice.
+     *
+     * <p>Relax the TENSE first, the criterion second. This order is not arbitrary: asking two questions of the same
+     * time frame is only less varied, while asking a question that aims at the wrong criterion means that slot does not
+     * practise what needs practising.
      */
     private List<PracticeQuestion> ladderCandidatesForOneQuestion(
-            PracticeTopic topic,
-            UUID studentId,
-            String criterion,
-            String tense,
-            int targetRank,
-            List<UUID> excludeIds,
-            int bandCount) {
+            PracticeTopic topic, UUID studentId, String criterion, String tense, int targetRank,
+            List<UUID> excludeIds, int bandCount) {
         LinkedHashMap<UUID, PracticeQuestion> selected = new LinkedHashMap<UUID, PracticeQuestion>();
         int rankMin = Math.max(1, targetRank - 1);
         int rankMax = Math.min(bandCount, targetRank + 1);
@@ -269,9 +282,6 @@ public class PracticeQuestionSelectionService {
         questions(topic.getId(), studentId, criterion, tense, rankMin, rankMax)
             .forEach(question -> putIfNotExcluded(selected, question, excludeIds));
 
-        // Nới THÌ trước, nới tiêu chí sau. Thứ tự này không tuỳ tiện: hỏi hai câu cùng khung
-        // thời gian chỉ là kém phong phú, còn hỏi câu nhắm sai tiêu chí thì ô đó không luyện
-        // đúng thứ đang cần luyện.
         if (selected.size() < generationConfig.paperTargetQuestionCount()) {
             questions(topic.getId(), studentId, criterion, null, rankMin, rankMax)
                 .forEach(question -> putIfNotExcluded(selected, question, excludeIds));
@@ -286,45 +296,18 @@ public class PracticeQuestionSelectionService {
     }
 
     /**
-     * Bậc 4: nhờ LLM sinh câu mới rồi đọc lại kho. Tách khỏi ba bậc đọc DB ở trên vì điều kiện
-     * kích hoạt khác hẳn -- xem {@link #resolveNextQuestion}.
+     * Rung 4: ask the LLM to generate new questions, then read the bank again. Kept apart from the three DB-reading rungs above
+     * because its trigger condition is entirely different -- see {@link #resolveNextQuestion}.
      */
     private List<PracticeQuestion> generateThenReload(
-            PracticeTopic topic,
-            UUID studentId,
-            String criterion,
-            String subAttribute,
-            String tense,
-            int targetRank,
-            List<UUID> excludeIds,
-            int bandCount,
-            UUID frameworkVersionId) {
+            PracticeTopic topic, UUID studentId, String criterion, String subAttribute, String tense,
+            int targetRank, List<UUID> excludeIds, int bandCount, UUID frameworkVersionId) {
         LinkedHashMap<UUID, PracticeQuestion> selected = new LinkedHashMap<UUID, PracticeQuestion>();
         try {
-            generationService.generateAndStore(
-                topic.getId(),
-                criterion,
-                subAttribute,
-                tense,
-                targetRank,
-                generationConfig.onlineCandidateCount(),
-                generationConfig.onlineBudget(),
-                bandCount,
-                // Thang bậc của ĐÚNG khung học sinh đang luyện. Lấy frameworkBandLadder() không
-                // tham số là lấy khung đang hiệu lực toàn hệ -- prompt sinh câu sẽ mô tả một
-                // thang khác với thang em ấy chọn, và không có lỗi nào báo ra.
-                frameworkVersionId == null
-                    ? enrichmentService.frameworkBandLadder()
-                    : enrichmentService.frameworkBandLadder(frameworkVersionId),
-                // Câu đã chết vĩnh viễn với CHÍNH học sinh này. Không gửi xuống thì cổng chặn
-                // trùng bên Python so bản nháp mới với cả kho -- kể cả những câu em ấy không
-                // bao giờ được thấy lại -- rồi vứt sạch vì "giống câu đã có", và chủ đề khoá
-                // cứng ở pool_exhausted mãi mãi.
-                questionRepository.findPermanentlyExhaustedIds(topic.getId(), studentId)
-            );
-            // Đọc lại KHÔNG lọc theo thì: vừa nhờ sinh đúng thì đó rồi, nhưng nếu evaluator
-            // loại bản nháp vì mốc thời gian chưa ép được thì đích thì lô mới có thể mang thì
-            // khác -- lọc tiếp ở đây là vứt luôn thứ vừa trả tiền để sinh ra.
+            generateQuestions(topic, studentId, criterion, subAttribute, tense, targetRank, bandCount, frameworkVersionId);
+            // Reload WITHOUT filtering by tense: we just asked for exactly that tense, but if the evaluator
+            // rejects a draft because the time anchor could not be enforced, the new batch may carry a different
+            // tense -- filtering again here would throw away what we just paid to generate.
             questions(
                 topic.getId(),
                 studentId,
@@ -337,6 +320,35 @@ public class PracticeQuestionSelectionService {
             log.warn("Hết bậc sinh trực tiếp cho câu tiếp theo trong phiên.", exception);
         }
         return List.copyOf(selected.values());
+    }
+
+    /**
+     * The band ladder is the one of the EXACT framework the student is practising. Taking the no-argument frameworkBandLadder()
+     * takes the framework currently effective system-wide -- the question-generation prompt would describe a different scale
+     * from the one the student chose, and no error would be reported.
+     *
+     * <p>The excluded ids are the questions already dead for good for THIS very student. If they were not sent down, the
+     * duplicate gate on the Python side would compare the new draft against the whole bank -- including questions the
+     * student will never see again -- then throw everything away as "similar to an existing question", and the topic would be
+     * locked at pool_exhausted forever.
+     */
+    private void generateQuestions(
+            PracticeTopic topic, UUID studentId, String criterion, String subAttribute, String tense,
+            int targetRank, int bandCount, UUID frameworkVersionId) {
+        generationService.generateAndStore(
+            topic.getId(),
+            criterion,
+            subAttribute,
+            tense,
+            targetRank,
+            generationConfig.onlineCandidateCount(),
+            generationConfig.onlineBudget(),
+            bandCount,
+            frameworkVersionId == null
+                ? enrichmentService.frameworkBandLadder()
+                : enrichmentService.frameworkBandLadder(frameworkVersionId),
+            questionRepository.findPermanentlyExhaustedIds(topic.getId(), studentId)
+        );
     }
 
     private static void putIfNotExcluded(

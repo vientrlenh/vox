@@ -35,30 +35,37 @@ public class ViewSystemScoringRuleDetailUseCase implements IUseCase<ViewScoringR
     @Override
     @Transactional(readOnly = true)
     public ScoringRuleDto execute(ViewScoringRuleDetailQuery query) {
-        // 1. Kiểm tra tài khoản System Admin
+        requireActiveAccount();
+        ScoringRule rule = requireRuleOfPolicy(query.ruleId(), query.policyId());
+        requireSystemPolicy(rule.getPolicyId());
+
+        return scoringRuleDtoMapper.toDto(rule);
+    }
+
+    private void requireActiveAccount() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("Tài khoản đã bị khóa.");
         }
+    }
 
-        // 2. Kiểm tra Scoring Rule tồn tại
-        ScoringRule rule = scoringRuleRepository.findById(query.ruleId())
+    private ScoringRule requireRuleOfPolicy(UUID ruleId, UUID policyId) {
+        ScoringRule rule = scoringRuleRepository.findById(ruleId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Scoring Rule."));
-
-        // 3. BẢO MẬT: policyId trên path phải khớp với policyId thật sự của rule
-        if (!rule.getPolicyId().equals(query.policyId())) {
+        if (!rule.getPolicyId().equals(policyId)) {
             throw new ForbiddenException("BẢO MẬT: Scoring Rule này không thuộc Assessment Policy đã chỉ định.");
         }
+        return rule;
+    }
 
-        // 4. Kiểm tra Assessment Policy tồn tại và thuộc phạm vi toàn hệ thống
-        AssessmentPolicy policy = assessmentPolicyRepository.findById(rule.getPolicyId())
+    private void requireSystemPolicy(UUID policyId) {
+        AssessmentPolicy policy = assessmentPolicyRepository.findById(policyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
         if (policy.getSchoolId() != null) {
             throw new ForbiddenException("Không thể xem Scoring Rule của Assessment Policy thuộc trường học.");
         }
-
-        return scoringRuleDtoMapper.toDto(rule);
     }
+
 }

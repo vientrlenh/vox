@@ -47,39 +47,61 @@ public class PreviewSystemRubricCriterionImportFromFileUseCase implements IUseCa
     @Override
     @Transactional
     public PreviewRubricCriterionImportResponse execute(PreviewRubricCriterionImportCommand command) {
+        UUID currentUserId = requireActiveCurrentUser();
+        requireSchoolMemberWhenSchoolScoped(command, currentUserId);
+        requireOwnedRubricVersion(command);
+
+        ParseImportFileResult parsedResult = parseNonEmptyFile(command);
+        Instant expiresAt = Instant.now().plus(1, ChronoUnit.DAYS);
+
+        UUID generatedSessionId = saveSessionWithRows(command, parsedResult, expiresAt);
+
+        return new PreviewRubricCriterionImportResponse(
+                generatedSessionId, command.file().fileName(), parsedResult.originalHeaders(),
+                parsedResult.suggestedMapping(), parsedResult.sampleRows(), parsedResult.totalRows(), expiresAt
+        );
+    }
+
+    private UUID requireActiveCurrentUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
+        return currentUserId;
+    }
 
-        //  Phân luồng bảo mật School vs System
+    // Security: a school-scoped call must come from a member of that same school.
+    private void requireSchoolMemberWhenSchoolScoped(PreviewRubricCriterionImportCommand command, UUID currentUserId) {
         if (command.schoolId() != null) {
             SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId).orElseThrow(() -> new ForbiddenException("Không thuộc trường học nào."));
             if (!schoolUser.getSchoolId().equals(command.schoolId())) throw new ForbiddenException("Xâm nhập dữ liệu trường khác bị từ chối.");
         }
+    }
 
-        //  Dò ngược từ Version -> Rubric
+    // Security: without a school id the rubric must be a SYSTEM rubric; with one it must belong to that school.
+    private void requireOwnedRubricVersion(PreviewRubricCriterionImportCommand command) {
         RubricVersion version = rubricVersionRepository.findById(command.rubricVersionId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản (Version) yêu cầu."));
         Rubric rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
 
-        //  Chốt chặn Owner Type
         if (command.schoolId() == null && rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             throw new ForbiddenException("System Admin không được phép can thiệp vào Rubric của Trường học.");
         }
         if (command.schoolId() != null && (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !rubric.getSchoolId().equals(command.schoolId()))) {
             throw new ForbiddenException("Bộ Rubric này không thuộc sở hữu của trường bạn.");
         }
+    }
 
-        // Bóc tách Excel
+    private ParseImportFileResult parseNonEmptyFile(PreviewRubricCriterionImportCommand command) {
         ParseImportFileResult parsedResult = fileProcessingPort.parse(command.file(), ImportType.RUBRIC_CRITERION);
         if (parsedResult.rows() == null || parsedResult.rows().isEmpty()) {
             throw new IllegalArgumentException("File tải lên rỗng hoặc không có dữ liệu hợp lệ.");
         }
+        return parsedResult;
+    }
 
-        Instant now = Instant.now();
-        Instant expiresAt = now.plus(1, ChronoUnit.DAYS);
-
+    private UUID saveSessionWithRows(PreviewRubricCriterionImportCommand command, ParseImportFileResult parsedResult,
+                                     Instant expiresAt) {
         ImportSession session = ImportSession.previewedForEntity(
             command.schoolId(),
             ImportType.RUBRIC_CRITERION,
@@ -100,10 +122,6 @@ public class PreviewSystemRubricCriterionImportFromFileUseCase implements IUseCa
                     jsonSerializationPort.toJson(parsedResult.rows().get(i)))).toList();
 
         importRowRepository.saveAll(importRows);
-
-        return new PreviewRubricCriterionImportResponse(
-                generatedSessionId, command.file().fileName(), parsedResult.originalHeaders(),
-                parsedResult.suggestedMapping(), parsedResult.sampleRows(), parsedResult.totalRows(), expiresAt
-        );
+        return generatedSessionId;
     }
 }

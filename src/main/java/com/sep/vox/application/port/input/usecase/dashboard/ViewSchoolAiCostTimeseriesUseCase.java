@@ -57,13 +57,17 @@ public class ViewSchoolAiCostTimeseriesUseCase
         return new SchoolAiCostTimeseriesResponse(
             input.granularity(),
             DecimalText.of(total),
-            buckets.stream()
-                .map(bucket -> new SchoolAiCostTimeseriesResponse.AiCostPointResponse(
-                    bucket.bucket(),
-                    bucket.quotaType(),
-                    DecimalText.of(bucket.costVnd())))
-                .toList(),
+            toPoints(buckets),
             recordedFrom
         );
+    }
+
+    private List<SchoolAiCostTimeseriesResponse.AiCostPointResponse> toPoints(List<AiCostBucketDto> buckets) {
+        return buckets.stream()
+            .map(bucket -> new SchoolAiCostTimeseriesResponse.AiCostPointResponse(
+                bucket.bucket(),
+                bucket.quotaType(),
+                DecimalText.of(bucket.costVnd())))
+            .toList();
     }
 }

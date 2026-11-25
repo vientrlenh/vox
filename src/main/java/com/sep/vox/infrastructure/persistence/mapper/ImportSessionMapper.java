@@ -10,7 +10,7 @@ public final class ImportSessionMapper {
     private ImportSessionMapper() {}
 
     public static ImportSession toDomain(ImportSessionJpaEntity jpa) {
-        return ImportSession.builder()
+        ImportSession.Builder builder = ImportSession.builder()
             .id(jpa.getId())
             .schoolId(jpa.getSchoolId())
             .type(typeFromString(jpa.getType()))
@@ -26,7 +26,13 @@ public final class ImportSessionMapper {
             .failureReason(jpa.getFailureReason())
             .status(statusFromString(jpa.getStatus()))
             .importedEntityId(jpa.getImportedEntityId())
-            .expiresAt(jpa.getExpiresAt())
+            .expiresAt(jpa.getExpiresAt());
+        applyClaimAndAuditFields(builder, jpa);
+        return builder.build();
+    }
+
+    private static void applyClaimAndAuditFields(ImportSession.Builder builder, ImportSessionJpaEntity jpa) {
+        builder
             .claimedAt(jpa.getClaimedAt())
             .claimedBy(jpa.getClaimedBy())
             .leaseExpiresAt(jpa.getLeaseExpiresAt())
@@ -34,12 +40,11 @@ public final class ImportSessionMapper {
             .createdAt(jpa.getCreatedAt())
             .updatedAt(jpa.getUpdatedAt())
             .createdBy(jpa.getCreatedBy())
-            .updatedBy(jpa.getUpdatedBy())
-            .build();
+            .updatedBy(jpa.getUpdatedBy());
     }
 
     public static ImportSessionJpaEntity toJpa(ImportSession session) {
-        return ImportSessionJpaEntity.builder()
+        ImportSessionJpaEntity entity = ImportSessionJpaEntity.builder()
             .id(session.getId())
             .schoolId(session.getSchoolId())
             .type(valueOf(session.getType()))
@@ -56,15 +61,20 @@ public final class ImportSessionMapper {
             .status(valueOf(session.getStatus()))
             .importedEntityId(session.getImportedEntityId())
             .expiresAt(session.getExpiresAt())
-            .claimedAt(session.getClaimedAt())
-            .claimedBy(session.getClaimedBy())
-            .leaseExpiresAt(session.getLeaseExpiresAt())
-            .attempts(session.getAttempts())
-            .createdAt(session.getCreatedAt())
-            .updatedAt(session.getUpdatedAt())
-            .createdBy(session.getCreatedBy())
-            .updatedBy(session.getUpdatedBy())
-            .build();
+                .build();
+        copyClaimAndAuditFields(entity, session);
+        return entity;
+    }
+
+    private static void copyClaimAndAuditFields(ImportSessionJpaEntity entity, ImportSession session) {
+        entity.setClaimedAt(session.getClaimedAt());
+        entity.setClaimedBy(session.getClaimedBy());
+        entity.setLeaseExpiresAt(session.getLeaseExpiresAt());
+        entity.setAttempts(session.getAttempts());
+        entity.setCreatedAt(session.getCreatedAt());
+        entity.setUpdatedAt(session.getUpdatedAt());
+        entity.setCreatedBy(session.getCreatedBy());
+        entity.setUpdatedBy(session.getUpdatedBy());
     }
 
     private static ImportType typeFromString(String type) {

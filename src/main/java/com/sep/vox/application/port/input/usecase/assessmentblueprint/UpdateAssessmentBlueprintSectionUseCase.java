@@ -1,59 +1,38 @@
 package com.sep.vox.application.port.input.usecase.assessmentblueprint;
 
-import com.sep.vox.domain.model.assessment.AssessmentBlueprint;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSection;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersion;
 import java.math.BigDecimal;
 
 import java.util.List;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.assessmentblueprint.UpdateAssessmentBlueprintSectionCommand;
+import com.sep.vox.application.port.input.service.AssessmentBlueprintEditAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.AssessmentBlueprintSectionDto;
 import com.sep.vox.domain.mapper.AssessmentBlueprintSectionDtoMapper;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersionStatus;
-import com.sep.vox.domain.repository.AssessmentBlueprintRepository;
 import com.sep.vox.domain.repository.AssessmentBlueprintSectionRepository;
-import com.sep.vox.domain.repository.AssessmentBlueprintVersionRepository;
-import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
 @RequiredArgsConstructor
 public class UpdateAssessmentBlueprintSectionUseCase implements IUseCase<UpdateAssessmentBlueprintSectionCommand, AssessmentBlueprintSectionDto> {
 
     private final AssessmentBlueprintSectionRepository assessmentBlueprintSectionRepository;
-    private final AssessmentBlueprintVersionRepository assessmentBlueprintVersionRepository;
-    private final AssessmentBlueprintRepository assessmentBlueprintRepository;
-    private final SchoolUserRepository schoolUserRepository;
-    private final UserContextPort userContextPort;
+    private final AssessmentBlueprintEditAccessService assessmentBlueprintEditAccessService;
 
     @Override
     @Transactional
     public AssessmentBlueprintSectionDto execute(UpdateAssessmentBlueprintSectionCommand input) {
         UpdateAssessmentBlueprintSectionCommand command = normalize(input);
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
-            .map(schoolUser -> schoolUser.getSchoolId())
-            .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
-
-        AssessmentBlueprintSection section = assessmentBlueprintSectionRepository.findById(command.sectionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy section"));
-        AssessmentBlueprintVersion version = assessmentBlueprintVersionRepository.findById(section.getBlueprintVersionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy version blueprint"));
-        AssessmentBlueprint blueprint = assessmentBlueprintRepository.findById(version.getBlueprintId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy blueprint đề thi"));
-        if (!assessmentBlueprintRepository.canEditBlueprint(blueprint.getId(), currentUserId, currentSchoolId)) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
-        }
-
+        AssessmentBlueprintEditAccessService.EditableSection editable =
+            assessmentBlueprintEditAccessService.requireEditableSection(command.sectionId());
+        AssessmentBlueprintSection section = editable.section();
+        AssessmentBlueprintVersion version = editable.version();
         if (version.getStatus() != AssessmentBlueprintVersionStatus.DRAFT) {
             throw new IllegalArgumentException("Chỉ được sửa section khi version đang DRAFT");
         }

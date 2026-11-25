@@ -1,6 +1,7 @@
 package com.sep.vox.domain.common;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 public final class EventTypeConstant {
 
@@ -47,6 +48,11 @@ public final class EventTypeConstant {
     public static final String REGISTER_VERIFICATION_OTP_REQUESTED = "RegisterVerificationOtpRequested";
 
     public static List<String> all() {
+        return Stream.concat(registrationAndAssessmentTypes().stream(), billingSchoolAndOtpTypes().stream())
+            .toList();
+    }
+
+    private static List<String> registrationAndAssessmentTypes() {
         return List.of(
             REGISTER_FORM_REJECTED,
             USER_CREATED,
@@ -62,7 +68,12 @@ public final class EventTypeConstant {
             GRADING_ASSIGNMENT_DECLINED,
             ASSESSMENT_BLUEPRINT_VERSION_PUBLISHED,
             ASSESSMENT_HUMAN_GRADING_REQUIRED,
-            GRADING_ASSIGNMENT_OPENED,
+            GRADING_ASSIGNMENT_OPENED
+        );
+    }
+
+    private static List<String> billingSchoolAndOtpTypes() {
+        return List.of(
             INVOICE_PAID,
             SCHOOL_DEBT_CAP_EXCEEDED,
             SCHOOL_LOCKED_DUE_TO_DEBT,

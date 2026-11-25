@@ -40,13 +40,12 @@ public class CreateFrameworkCriteriaUseCase
 
         List<FrameworkCriterion> criteriaToSave = new ArrayList<>(command.criteria().size());
         for (CreateFrameworkCriteriaCommand.CriterionItemCommand criterionCmd : command.criteria()) {
-            criteriaToSave.add(FrameworkCriterion.builder()
-                .frameworkVersionId(command.versionId())
-                .code(StringNormalization.normalizeCode(criterionCmd.code()))
-                .name(StringNormalization.trimAndCollapseSpaces(criterionCmd.name()))
-                .description(StringNormalization.trimAndCollapseSpaces(criterionCmd.description()))
-                .order(criterionCmd.order())
-                .build());
+            criteriaToSave.add(FrameworkCriterion.forVersion(
+                command.versionId(),
+                StringNormalization.normalizeCode(criterionCmd.code()),
+                StringNormalization.trimAndCollapseSpaces(criterionCmd.name()),
+                StringNormalization.trimAndCollapseSpaces(criterionCmd.description()),
+                criterionCmd.order()));
         }
 
         try {
@@ -65,35 +64,47 @@ public class CreateFrameworkCriteriaUseCase
     }
 
     private void validateRequest(CreateFrameworkCriteriaCommand command, FrameworkVersion version) {
-        if (!version.getFrameworkId().equals(command.frameworkId()))
-            throw new IllegalArgumentException("Phiên bản không thuộc khung năng lực này");
-
-        if (version.getStatus() != FrameworkVersionStatus.DRAFT)
-            throw new IllegalArgumentException("Chỉ có thể thêm tiêu chí khi phiên bản đang ở trạng thái DRAFT");
+        requireDraftVersionOfFramework(command, version);
 
         Set<String> requestCodes = new HashSet<>();
         Set<Integer> allOrders = frameworkCriterionRepository.findByFrameworkVersionId(command.versionId())
                 .stream().map(fc ->fc.getOrder()).collect(Collectors.toCollection(HashSet::new));
         for (CreateFrameworkCriteriaCommand.CriterionItemCommand criterionCmd : command.criteria()) {
-            String safeCode = StringNormalization.normalizeCode(criterionCmd.code());
-            if (!FrameworkCriterionCode.ALLOWED_CODES.contains(safeCode)) {
-                throw new IllegalArgumentException("Mã tiêu chí không hợp lệ: " + safeCode);
-            }
-            if (!requestCodes.add(safeCode)) {
-                throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp mã tiêu chí: " + safeCode);
-            }
-            if (!allOrders.add(criterionCmd.order())) {
-                throw new IllegalArgumentException("Thứ tự tiêu chí bị trùng lặp: " + criterionCmd.order());
-            }
+            requireUniqueValidCriterion(criterionCmd, requestCodes, allOrders);
         }
-        int expectedOrder = allOrders.size();
-        for (int i = 1; i <= expectedOrder; i++) {
+        requireOrdersContinuousFromOne(allOrders);
+
+        if (frameworkCriterionRepository.existsByFrameworkVersionIdAndCodeIn(command.versionId(), requestCodes))
+            throw new IllegalArgumentException("Mã tiêu chí đã tồn tại");
+    }
+
+    private void requireDraftVersionOfFramework(CreateFrameworkCriteriaCommand command, FrameworkVersion version) {
+        if (!version.getFrameworkId().equals(command.frameworkId()))
+            throw new IllegalArgumentException("Phiên bản không thuộc khung năng lực này");
+
+        if (version.getStatus() != FrameworkVersionStatus.DRAFT)
+            throw new IllegalArgumentException("Chỉ có thể thêm tiêu chí khi phiên bản đang ở trạng thái DRAFT");
+    }
+
+    private void requireUniqueValidCriterion(CreateFrameworkCriteriaCommand.CriterionItemCommand criterionCmd,
+                                             Set<String> requestCodes, Set<Integer> allOrders) {
+        String safeCode = StringNormalization.normalizeCode(criterionCmd.code());
+        if (!FrameworkCriterionCode.ALLOWED_CODES.contains(safeCode)) {
+            throw new IllegalArgumentException("Mã tiêu chí không hợp lệ: " + safeCode);
+        }
+        if (!requestCodes.add(safeCode)) {
+            throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp mã tiêu chí: " + safeCode);
+        }
+        if (!allOrders.add(criterionCmd.order())) {
+            throw new IllegalArgumentException("Thứ tự tiêu chí bị trùng lặp: " + criterionCmd.order());
+        }
+    }
+
+    private void requireOrdersContinuousFromOne(Set<Integer> allOrders) {
+        for (int i = 1; i <= allOrders.size(); i++) {
             if (!allOrders.contains(i)) {
                 throw new IllegalArgumentException("Thứ tự tiêu chí phải tăng dần liên tục từ 1, không được bỏ số");
             }
         }
-
-        if (frameworkCriterionRepository.existsByFrameworkVersionIdAndCodeIn(command.versionId(), requestCodes))
-            throw new IllegalArgumentException("Mã tiêu chí đã tồn tại");
     }
 }

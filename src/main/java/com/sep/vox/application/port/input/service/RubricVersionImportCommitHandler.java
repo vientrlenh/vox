@@ -36,179 +36,233 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
 
     @Override
     public ImportCommitResult commit(ImportSession session, List<ImportRow> rows) {
-        UUID rubricId = session.getImportedEntityId();
-        Rubric rubric = rubricRepository.findById(rubricId)
+        Rubric rubric = rubricRepository.findById(session.getImportedEntityId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc khi xử lý ngầm."));
-
-        // Lấy bộ từ điển map cột
-        Map<String, String> mapping = new HashMap<>();
-        if (session.getConfirmedMappingJson() != null && !session.getConfirmedMappingJson().isBlank()) {
-            mapping = jsonSerializationPort.toStringMap(session.getConfirmedMappingJson());
-        } else if (session.getSuggestedMappingJson() != null && !session.getSuggestedMappingJson().isBlank()) {
-            mapping = jsonSerializationPort.toStringMap(session.getSuggestedMappingJson());
-        }
-
-        // Tích hợp UPSERT: Lấy toàn bộ Version cũ dưới DB lên lưu vào Map để đối chiếu
-        List<RubricVersion> existingVersionsList = rubricVersionRepository.findByRubricId(rubricId);
-        Map<Integer, RubricVersion> existingVersionMap = existingVersionsList.stream()
-                .collect(Collectors.toMap(rv -> rv.getVersion(), v -> v, (u, v) -> u));
+        CommitRun run = buildCommitRun(rubric, resolveMapping(session));
 
         List<RubricVersion> versionsToSave = new ArrayList<>();
         long importedCount = 0;
         long invalidCount = 0;
-        Instant now = Instant.now();
 
-        // Chống trùng số Version ngay trong cùng một file Excel đầu vào
-        Set<Integer> versionsInThisFile = new HashSet<>();
-
-        // Bóc tách từng dòng Excel
         for (ImportRow row : rows) {
             if (row.getStatus() != ImportRowStatus.PENDING) continue;
-
-            List<Map<String, String>> errors = new ArrayList<>();
-            Map<String, String> rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
-
-            Map<String, String> mappedData = new HashMap<>();
-            for (Map.Entry<String, String> entry : rawData.entrySet()) {
-                String sysField = mapping.get(entry.getKey());
-                if (sysField != null) {
-                    mappedData.put(sysField, entry.getValue());
-                }
-            }
-
-            try {
-                String versionStr = mappedData.get("version");
-                String nameStr = mappedData.get("name");
-                String descriptionStr = mappedData.get("description");
-                String minStr = mappedData.get("scoringScaleMin");
-                String maxStr = mappedData.get("scoringScaleMax");
-                String methodStr = mappedData.get("totalScoreMethod");
-                String fromStr = mappedData.get("effectiveFrom");
-                String toStr = mappedData.get("effectiveTo");
-
-                if (versionStr == null || versionStr.isBlank()) errors.add(error("version", "Thiếu số Version."));
-                if (minStr == null || minStr.isBlank()) errors.add(error("scoringScaleMin", "Thiếu điểm sàn (Min Score)."));
-                if (maxStr == null || maxStr.isBlank()) errors.add(error("scoringScaleMax", "Thiếu điểm trần (Max Score)."));
-                if (methodStr == null || methodStr.isBlank()) errors.add(error("totalScoreMethod", "Thiếu phương pháp tính điểm tổng."));
-
-                int versionNum = 0;
-                if (errors.isEmpty()) {
-                    String safeVersionStr = versionStr == null ? "" : versionStr.trim();
-                    try {
-                        versionNum = Integer.parseInt(safeVersionStr);
-                        if (versionNum <= 0) errors.add(error("version", "Version phải lớn hơn 0."));
-
-                        if (!versionsInThisFile.add(versionNum)) {
-                            errors.add(error("version", "Bị trùng số Version " + versionNum + " ngay trong file Excel."));
-                        }
-                    } catch (NumberFormatException e) {
-                        errors.add(error("version", "Số Version không hợp lệ (Phải là số nguyên)."));
-                    }
-                }
-
-                RubricVersion targetVersion = errors.isEmpty() ? existingVersionMap.get(versionNum) : null;
-                if (targetVersion != null && targetVersion.getStatus() != RubricStatus.DRAFT) {
-                    errors.add(error("version", "Chỉ có thể sửa Version " + versionNum + " qua import khi đang ở trạng thái DRAFT."));
-                }
-
-                BigDecimal minScore = null;
-                BigDecimal maxScore = null;
-                if (errors.isEmpty()) {
-                    String safeMinStr = minStr == null ? "" : minStr.trim();
-                    String safeMaxStr = maxStr == null ? "" : maxStr.trim();
-                    try {
-                        minScore = new BigDecimal(safeMinStr);
-                        maxScore = new BigDecimal(safeMaxStr);
-                        if (minScore.compareTo(maxScore) > 0) errors.add(error("scoringScaleMin", "Điểm sàn không được lớn hơn điểm trần."));
-                    } catch (NumberFormatException e) {
-                        errors.add(error("scoringScaleMin", "Điểm sàn hoặc điểm trần không đúng định dạng số."));
-                    }
-                }
-
-                RubricTotalScoreMethod method = null;
-                if (errors.isEmpty()) {
-                    String safeMethodStr = methodStr == null ? "" : methodStr.trim();
-                    try {
-                        method = RubricTotalScoreMethod.valueOf(safeMethodStr.toUpperCase(Locale.ROOT));
-                    } catch (Exception e) {
-                        errors.add(error("totalScoreMethod", "Phương pháp tính điểm không hợp lệ (Chỉ nhận SUM hoặc WEIGHTED_AVERAGE)."));
-                    }
-                }
-
-                Instant effectiveFrom = now;
-                Instant effectiveTo = null;
-                if (errors.isEmpty()) {
-                    try {
-                        if (fromStr != null && !fromStr.isBlank()) {
-                            effectiveFrom = DateMapper.toImportedInstant(fromStr.trim(), DateMapper.DEFAULT_INPUT_ZONE);
-                        }
-                        if (toStr != null && !toStr.isBlank()) {
-                            effectiveTo = DateMapper.toImportedInstant(toStr.trim(), DateMapper.DEFAULT_INPUT_ZONE);
-                        }
-
-                        if (effectiveFrom == null) effectiveFrom = now;
-                        if (effectiveTo != null && effectiveTo.isBefore(effectiveFrom)) {
-                            errors.add(error("effectiveTo", "Ngày kết thúc không được trước ngày bắt đầu."));
-                        }
-                    } catch (Exception e) {
-                        errors.add(error("effectiveFrom", "Định dạng ngày tháng không hợp lệ."));
-                    }
-                }
-
-                if (!errors.isEmpty()) {
-                    row.setStatus(ImportRowStatus.INVALID);
-                    row.setErrorsJson(jsonSerializationPort.toJson(errors));
-                    invalidCount++;
-                } else {
-                    // CƠ CHẾ UPSERT Lõi
-                    if (targetVersion != null) {
-                        // UPDATE (Đã tồn tại Version này -> Cập nhật thông tin mới)
-                        if (nameStr != null && !nameStr.isBlank()) {
-                            targetVersion.setName(nameStr.trim());
-                        }
-                        if (descriptionStr != null && !descriptionStr.isBlank()) {
-                            targetVersion.setDescription(descriptionStr.trim());
-                        }
-                        targetVersion.setScoringScaleMin(minScore);
-                        targetVersion.setScoringScaleMax(maxScore);
-                        targetVersion.setTotalScoreMethod(method);
-                        targetVersion.setEffectiveFrom(effectiveFrom);
-                        targetVersion.setEffectiveTo(effectiveTo);
-
-                        versionsToSave.add(targetVersion);
-                    } else {
-                        // INSERT (Tạo Version mới hoàn toàn)
-                        String safeCode = rubric.getCode() + "_V" + versionNum;
-                        String safeName = (nameStr != null && !nameStr.isBlank())
-                                ? nameStr.trim()
-                                : rubric.getName() + " - Version " + versionNum;
-                        String safeDescription = (descriptionStr != null && !descriptionStr.isBlank())
-                                ? descriptionStr.trim()
-                                : rubric.getDescription();
-
-                        targetVersion = RubricVersion.draft(
-                                rubricId, versionNum, safeCode, safeName, safeDescription,
-                                effectiveFrom, effectiveTo, minScore, maxScore, method);
-                        versionsToSave.add(targetVersion);
-                    }
-
-                    row.setStatus(ImportRowStatus.IMPORTED);
-                    row.setMappedDataJson(jsonSerializationPort.toJson(mappedData));
-                    importedCount++;
-                }
-            } catch (Exception ex) {
-                errors.add(error("general", "Lỗi xử lý luồng ngầm: " + ex.getMessage()));
-                row.setStatus(ImportRowStatus.INVALID);
-                row.setErrorsJson(jsonSerializationPort.toJson(errors));
+            if (commitRow(row, run, versionsToSave)) {
+                importedCount++;
+            } else {
                 invalidCount++;
             }
         }
 
-        // Lưu thông qua Spring Data JPA (Tự động Update nếu ID cũ, Insert nếu ID mới)
         if (!versionsToSave.isEmpty()) rubricVersionRepository.saveAll(versionsToSave);
 
-        // Trả kết quả thống kê về cho ImportCommitService (Không gọi save Session ở đây nữa)
+        // The session itself is saved by ImportCommitService, not here.
         return new ImportCommitResult(importedCount, 0, 0, invalidCount);
+    }
+
+    private Map<String, String> resolveMapping(ImportSession session) {
+        if (session.getConfirmedMappingJson() != null && !session.getConfirmedMappingJson().isBlank()) {
+            return jsonSerializationPort.toStringMap(session.getConfirmedMappingJson());
+        } else if (session.getSuggestedMappingJson() != null && !session.getSuggestedMappingJson().isBlank()) {
+            return jsonSerializationPort.toStringMap(session.getSuggestedMappingJson());
+        }
+        return new HashMap<>();
+    }
+
+    private record CommitRun(
+            Rubric rubric,
+            Map<String, String> mapping,
+            Map<Integer, RubricVersion> existingVersionMap,
+            Set<Integer> versionsInThisFile,
+            Instant now) {}
+
+    private CommitRun buildCommitRun(Rubric rubric, Map<String, String> mapping) {
+        Map<Integer, RubricVersion> existingVersionMap = rubricVersionRepository.findByRubricId(rubric.getId()).stream()
+                .collect(Collectors.toMap(rv -> rv.getVersion(), v -> v, (u, v) -> u));
+        return new CommitRun(rubric, mapping, existingVersionMap, new HashSet<>(), Instant.now());
+    }
+
+    private record RowFields(String version, String name, String description, String scoringScaleMin,
+                             String scoringScaleMax, String totalScoreMethod, String effectiveFrom,
+                             String effectiveTo) {}
+
+    private record ScoreScale(BigDecimal min, BigDecimal max) {
+        static final ScoreScale DEFAULT = new ScoreScale(null, null);
+    }
+
+    private record EffectivePeriod(Instant from, Instant to) {}
+
+    private record ValidatedRow(RowFields fields, int versionNum, RubricVersion targetVersion, ScoreScale scale,
+                                RubricTotalScoreMethod method, EffectivePeriod period) {}
+
+    /** Returns true when the row was imported, false when it was marked invalid. */
+    private boolean commitRow(ImportRow row, CommitRun run, List<RubricVersion> versionsToSave) {
+        List<Map<String, String>> errors = new ArrayList<>();
+        Map<String, String> mappedData = mapRow(row, run.mapping());
+        try {
+            ValidatedRow validated = validateRow(run, mappedData, errors);
+            if (!errors.isEmpty()) {
+                markInvalid(row, errors);
+                return false;
+            }
+            versionsToSave.add(applyToVersion(run, validated));
+            row.setStatus(ImportRowStatus.IMPORTED);
+            row.setMappedDataJson(jsonSerializationPort.toJson(mappedData));
+            return true;
+        } catch (Exception ex) {
+            errors.add(error("general", "Lỗi xử lý luồng ngầm: " + ex.getMessage()));
+            markInvalid(row, errors);
+            return false;
+        }
+    }
+
+    private Map<String, String> mapRow(ImportRow row, Map<String, String> mapping) {
+        Map<String, String> rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
+        Map<String, String> mappedData = new HashMap<>();
+        for (Map.Entry<String, String> entry : rawData.entrySet()) {
+            String sysField = mapping.get(entry.getKey());
+            if (sysField != null) {
+                mappedData.put(sysField, entry.getValue());
+            }
+        }
+        return mappedData;
+    }
+
+    private void markInvalid(ImportRow row, List<Map<String, String>> errors) {
+        row.setStatus(ImportRowStatus.INVALID);
+        row.setErrorsJson(jsonSerializationPort.toJson(errors));
+    }
+
+    private ValidatedRow validateRow(CommitRun run, Map<String, String> mappedData, List<Map<String, String>> errors) {
+        RowFields fields = new RowFields(
+                mappedData.get("version"), mappedData.get("name"), mappedData.get("description"),
+                mappedData.get("scoringScaleMin"), mappedData.get("scoringScaleMax"),
+                mappedData.get("totalScoreMethod"), mappedData.get("effectiveFrom"), mappedData.get("effectiveTo"));
+        addMissingFieldErrors(fields, errors);
+        int versionNum = parseVersionNumber(fields, run, errors);
+        RubricVersion targetVersion = errors.isEmpty() ? run.existingVersionMap().get(versionNum) : null;
+        if (targetVersion != null && targetVersion.getStatus() != RubricStatus.DRAFT) {
+            errors.add(error("version", "Chỉ có thể sửa Version " + versionNum + " qua import khi đang ở trạng thái DRAFT."));
+        }
+        ScoreScale scale = parseScoreScale(fields, errors);
+        RubricTotalScoreMethod method = parseTotalScoreMethod(fields, errors);
+        EffectivePeriod period = parseEffectivePeriod(fields, run.now(), errors);
+        return new ValidatedRow(fields, versionNum, targetVersion, scale, method, period);
+    }
+
+    private static void addMissingFieldErrors(RowFields fields, List<Map<String, String>> errors) {
+        if (fields.version() == null || fields.version().isBlank()) errors.add(error("version", "Thiếu số Version."));
+        if (fields.scoringScaleMin() == null || fields.scoringScaleMin().isBlank()) errors.add(error("scoringScaleMin", "Thiếu điểm sàn (Min Score)."));
+        if (fields.scoringScaleMax() == null || fields.scoringScaleMax().isBlank()) errors.add(error("scoringScaleMax", "Thiếu điểm trần (Max Score)."));
+        if (fields.totalScoreMethod() == null || fields.totalScoreMethod().isBlank()) errors.add(error("totalScoreMethod", "Thiếu phương pháp tính điểm tổng."));
+    }
+
+    private static int parseVersionNumber(RowFields fields, CommitRun run, List<Map<String, String>> errors) {
+        if (!errors.isEmpty()) {
+            return 0;
+        }
+        String safeVersionStr = fields.version() == null ? "" : fields.version().trim();
+        int versionNum = 0;
+        try {
+            versionNum = Integer.parseInt(safeVersionStr);
+            if (versionNum <= 0) errors.add(error("version", "Version phải lớn hơn 0."));
+
+            if (!run.versionsInThisFile().add(versionNum)) {
+                errors.add(error("version", "Bị trùng số Version " + versionNum + " ngay trong file Excel."));
+            }
+        } catch (NumberFormatException e) {
+            errors.add(error("version", "Số Version không hợp lệ (Phải là số nguyên)."));
+        }
+        return versionNum;
+    }
+
+    private static ScoreScale parseScoreScale(RowFields fields, List<Map<String, String>> errors) {
+        if (!errors.isEmpty()) {
+            return ScoreScale.DEFAULT;
+        }
+        String safeMinStr = fields.scoringScaleMin() == null ? "" : fields.scoringScaleMin().trim();
+        String safeMaxStr = fields.scoringScaleMax() == null ? "" : fields.scoringScaleMax().trim();
+        try {
+            BigDecimal minScore = new BigDecimal(safeMinStr);
+            BigDecimal maxScore = new BigDecimal(safeMaxStr);
+            if (minScore.compareTo(maxScore) > 0) errors.add(error("scoringScaleMin", "Điểm sàn không được lớn hơn điểm trần."));
+            return new ScoreScale(minScore, maxScore);
+        } catch (NumberFormatException e) {
+            errors.add(error("scoringScaleMin", "Điểm sàn hoặc điểm trần không đúng định dạng số."));
+            return ScoreScale.DEFAULT;
+        }
+    }
+
+    private static RubricTotalScoreMethod parseTotalScoreMethod(RowFields fields, List<Map<String, String>> errors) {
+        if (!errors.isEmpty()) {
+            return null;
+        }
+        String safeMethodStr = fields.totalScoreMethod() == null ? "" : fields.totalScoreMethod().trim();
+        try {
+            return RubricTotalScoreMethod.valueOf(safeMethodStr.toUpperCase(Locale.ROOT));
+        } catch (Exception e) {
+            errors.add(error("totalScoreMethod", "Phương pháp tính điểm không hợp lệ (Chỉ nhận SUM hoặc WEIGHTED_AVERAGE)."));
+            return null;
+        }
+    }
+
+    private static EffectivePeriod parseEffectivePeriod(RowFields fields, Instant now, List<Map<String, String>> errors) {
+        Instant effectiveFrom = now;
+        Instant effectiveTo = null;
+        if (!errors.isEmpty()) {
+            return new EffectivePeriod(effectiveFrom, effectiveTo);
+        }
+        try {
+            if (fields.effectiveFrom() != null && !fields.effectiveFrom().isBlank()) {
+                effectiveFrom = DateMapper.toImportedInstant(fields.effectiveFrom().trim(), DateMapper.DEFAULT_INPUT_ZONE);
+            }
+            if (fields.effectiveTo() != null && !fields.effectiveTo().isBlank()) {
+                effectiveTo = DateMapper.toImportedInstant(fields.effectiveTo().trim(), DateMapper.DEFAULT_INPUT_ZONE);
+            }
+
+            if (effectiveFrom == null) effectiveFrom = now;
+            if (effectiveTo != null && effectiveTo.isBefore(effectiveFrom)) {
+                errors.add(error("effectiveTo", "Ngày kết thúc không được trước ngày bắt đầu."));
+            }
+        } catch (Exception e) {
+            errors.add(error("effectiveFrom", "Định dạng ngày tháng không hợp lệ."));
+        }
+        return new EffectivePeriod(effectiveFrom, effectiveTo);
+    }
+
+    private RubricVersion applyToVersion(CommitRun run, ValidatedRow validated) {
+        RowFields fields = validated.fields();
+        RubricVersion targetVersion = validated.targetVersion();
+        if (targetVersion == null) {
+            return insertVersion(run.rubric(), validated);
+        }
+        if (fields.name() != null && !fields.name().isBlank()) {
+            targetVersion.setName(fields.name().trim());
+        }
+        if (fields.description() != null && !fields.description().isBlank()) {
+            targetVersion.setDescription(fields.description().trim());
+        }
+        targetVersion.setScoringScaleMin(validated.scale().min());
+        targetVersion.setScoringScaleMax(validated.scale().max());
+        targetVersion.setTotalScoreMethod(validated.method());
+        targetVersion.setEffectiveFrom(validated.period().from());
+        targetVersion.setEffectiveTo(validated.period().to());
+        return targetVersion;
+    }
+
+    private RubricVersion insertVersion(Rubric rubric, ValidatedRow validated) {
+        RowFields fields = validated.fields();
+        int versionNum = validated.versionNum();
+        String safeCode = rubric.getCode() + "_V" + versionNum;
+        String safeName = (fields.name() != null && !fields.name().isBlank())
+                ? fields.name().trim()
+                : rubric.getName() + " - Version " + versionNum;
+        String safeDescription = (fields.description() != null && !fields.description().isBlank())
+                ? fields.description().trim()
+                : rubric.getDescription();
+        return RubricVersion.draft(
+                rubric.getId(), versionNum, safeCode, safeName, safeDescription,
+                validated.period().from(), validated.period().to(), validated.scale().min(), validated.scale().max(),
+                validated.method());
     }
 
     private static Map<String, String> error(String field, String message) {

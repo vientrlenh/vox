@@ -41,13 +41,12 @@ public class CreateFrameworkResultBandsUseCase
         for (CreateFrameworkResultBandsCommand.ResultBandItemCommand bandCmd : command.bands()) {
             String safeCode = StringNormalization.normalizeCode(bandCmd.code());
             String safeLabel = StringNormalization.trimAndCollapseSpaces(bandCmd.label());
-            bandsToSave.add(FrameworkResultBand.builder()
-                .frameworkVersionId(command.versionId())
-                .code(safeCode)
-                .label(safeLabel)
-                .description(StringNormalization.trimAndCollapseSpaces(bandCmd.description()))
-                .order(bandCmd.order())
-                .build());
+            bandsToSave.add(FrameworkResultBand.forVersion(
+                command.versionId(),
+                safeCode,
+                safeLabel,
+                StringNormalization.trimAndCollapseSpaces(bandCmd.description()),
+                bandCmd.order()));
         }
 
         try {
@@ -64,41 +63,53 @@ public class CreateFrameworkResultBandsUseCase
     }
 
     private void validateRequest(CreateFrameworkResultBandsCommand command, FrameworkVersion version) {
-        if (!version.getFrameworkId().equals(command.frameworkId()))
-            throw new IllegalArgumentException("Phiên bản không thuộc khung năng lực này");
-
-        if (version.getStatus() != FrameworkVersionStatus.DRAFT)
-            throw new IllegalArgumentException("Chỉ có thể thêm mức kết quả khi phiên bản đang ở trạng thái DRAFT");
+        requireDraftVersionOfFramework(command, version);
 
         Set<String> requestCodes = new HashSet<>();
         Set<String> requestLabels = new HashSet<>();
         Set<Integer> allOrders = frameworkResultBandRepository.findByFrameworkVersionId(command.versionId())
                 .stream().map(frb -> frb.getOrder()).collect(Collectors.toCollection(HashSet::new));
         for (CreateFrameworkResultBandsCommand.ResultBandItemCommand bandCmd : command.bands()) {
-            String safeCode = StringNormalization.normalizeCode(bandCmd.code());
-            String safeLabel = StringNormalization.trimAndCollapseSpaces(bandCmd.label());
-
-            if (!requestCodes.add(safeCode)) {
-                throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp mã kết quả: " + safeCode);
-            }
-            if (!requestLabels.add(safeLabel)) {
-                throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp nhãn kết quả: " + safeLabel);
-            }
-            if (!allOrders.add(bandCmd.order())) {
-                throw new IllegalArgumentException("Thứ tự mức kết quả bị trùng lặp: " + bandCmd.order());
-            }
+            requireUniqueBand(bandCmd, requestCodes, requestLabels, allOrders);
         }
-        int expectedOrder = allOrders.size();
-        for (int i = 1; i <= expectedOrder; i++) {
-            if (!allOrders.contains(i)) {
-                throw new IllegalArgumentException("Thứ tự mức kết quả phải tăng dần liên tục từ 1, không được bỏ số");
-            }
-        }
+        requireOrdersContinuousFromOne(allOrders);
 
         if (frameworkResultBandRepository.existsByFrameworkVersionIdAndCodeIn(command.versionId(), requestCodes))
             throw new IllegalArgumentException("Mã kết quả đã tồn tại");
 
         if (frameworkResultBandRepository.existsByFrameworkVersionIdAndLabelIn(command.versionId(), requestLabels))
             throw new IllegalArgumentException("Nhãn kết quả đã tồn tại");
+    }
+
+    private void requireDraftVersionOfFramework(CreateFrameworkResultBandsCommand command, FrameworkVersion version) {
+        if (!version.getFrameworkId().equals(command.frameworkId()))
+            throw new IllegalArgumentException("Phiên bản không thuộc khung năng lực này");
+
+        if (version.getStatus() != FrameworkVersionStatus.DRAFT)
+            throw new IllegalArgumentException("Chỉ có thể thêm mức kết quả khi phiên bản đang ở trạng thái DRAFT");
+    }
+
+    private void requireUniqueBand(CreateFrameworkResultBandsCommand.ResultBandItemCommand bandCmd,
+                                   Set<String> requestCodes, Set<String> requestLabels, Set<Integer> allOrders) {
+        String safeCode = StringNormalization.normalizeCode(bandCmd.code());
+        String safeLabel = StringNormalization.trimAndCollapseSpaces(bandCmd.label());
+
+        if (!requestCodes.add(safeCode)) {
+            throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp mã kết quả: " + safeCode);
+        }
+        if (!requestLabels.add(safeLabel)) {
+            throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp nhãn kết quả: " + safeLabel);
+        }
+        if (!allOrders.add(bandCmd.order())) {
+            throw new IllegalArgumentException("Thứ tự mức kết quả bị trùng lặp: " + bandCmd.order());
+        }
+    }
+
+    private void requireOrdersContinuousFromOne(Set<Integer> allOrders) {
+        for (int i = 1; i <= allOrders.size(); i++) {
+            if (!allOrders.contains(i)) {
+                throw new IllegalArgumentException("Thứ tự mức kết quả phải tăng dần liên tục từ 1, không được bỏ số");
+            }
+        }
     }
 }

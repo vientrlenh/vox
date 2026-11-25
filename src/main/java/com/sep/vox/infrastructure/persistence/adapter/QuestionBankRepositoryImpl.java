@@ -62,15 +62,7 @@ public class QuestionBankRepositoryImpl implements QuestionBankRepository {
     public PageResult<QuestionBank> findAll(int pageNumber, int size) {
         PageRequest pageable = OneBasedPaging.toPageRequest(pageNumber, size);
         Page<QuestionBankJpaEntity> page = springDataQuestionBankRepository.findAll(pageable);
-        return new PageResult<>(
-            page.getContent().stream()
-                .map(QuestionBankMapper::toDomain)
-                .toList(),
-            pageNumber,
-            size,
-            page.getTotalElements(),
-            page.getTotalPages()
-        );
+        return toPageResult(page, pageNumber, size);
     }
 
     @Override
@@ -100,6 +92,10 @@ public class QuestionBankRepositoryImpl implements QuestionBankRepository {
             StringNormalization.toLikePattern(keyword),
             pageable
         );
+        return toPageResult(page, pageNumber, size);
+    }
+
+    private PageResult<QuestionBank> toPageResult(Page<QuestionBankJpaEntity> page, int pageNumber, int size) {
         return new PageResult<>(
             page.getContent().stream()
                 .map(QuestionBankMapper::toDomain)

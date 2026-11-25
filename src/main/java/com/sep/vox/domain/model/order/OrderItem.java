@@ -74,6 +74,17 @@ public class OrderItem {
 
     
 
+    public static OrderItem forSubscriptionPlan(UUID orderId, UUID subscriptionPlanId, BigDecimal priceVnd) {
+        return builder()
+                .orderId(orderId)
+                .type(OrderItemType.SUBSCRIPTION)
+                .itemId(subscriptionPlanId)
+                .unitPriceVnd(priceVnd)
+                .amountVnd(priceVnd)
+                .quantity(1)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

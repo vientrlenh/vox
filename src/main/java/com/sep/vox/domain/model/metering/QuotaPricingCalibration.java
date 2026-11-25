@@ -116,6 +116,23 @@ public class QuotaPricingCalibration {
         this.pricingSource = pricingSource;
     }
 
+    public static QuotaPricingCalibration computed(
+            Instant computedAt, int windowDays, int sessionCount, BigDecimal totalCostUsd, long totalAnsweredSeconds,
+            BigDecimal rawRateUsdPerSecond, BigDecimal appliedRateUsdPerSecond, String note,
+            QuotaPricingSource pricingSource) {
+        return builder()
+                .computedAt(computedAt)
+                .windowDays(windowDays)
+                .sessionCount(sessionCount)
+                .totalCostUsd(totalCostUsd)
+                .totalAnsweredSeconds(totalAnsweredSeconds)
+                .rawRateUsdPerSecond(rawRateUsdPerSecond)
+                .appliedRateUsdPerSecond(appliedRateUsdPerSecond)
+                .note(note)
+                .pricingSource(pricingSource)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

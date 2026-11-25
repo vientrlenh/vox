@@ -108,9 +108,10 @@ public class ResolveNextPracticeQuestionUseCase {
     private final JsonSerializationPort jsonSerializationPort;
 
     public Result execute(UUID sessionId) {
-        // Cổng TRONG: khoá JVM. Giữ lại dù đã có khoá Redis vì hai lời gọi trùng CÙNG pod chặn
-        // nhau ngay tại đây, không tốn một vòng mạng nào -- mà từ khi bật sticky session thì đa số
-        // trùng lặp đúng là cùng pod. Hành vi trong phạm vi một pod vì vậy giống hệt bản cũ.
+        // INNER gate: the JVM lock. Kept even though the Redis lock exists, because two duplicate calls on
+        // the SAME pod block each other right here without a network round trip -- and since sticky
+        // sessions were enabled, most duplicates are on the same pod. Behaviour within one pod is
+        // therefore identical to the old version.
         ReentrantLock lock = sessionLocks.computeIfAbsent(sessionId, ignored -> new ReentrantLock());
         lock.lock();
         try {
@@ -134,30 +135,38 @@ public class ResolveNextPracticeQuestionUseCase {
      */
     private Result executeWithClusterLock(UUID sessionId) {
         String key = CLUSTER_LOCK_KEY_PREFIX + sessionId;
-        // Token riêng mỗi lượt để lúc nhả còn chứng minh được quyền sở hữu.
+        // A token of its own per attempt so that the release can prove ownership.
         String token = UUID.randomUUID().toString();
         Duration ttl = clusterLockTtl();
         Instant deadline = Instant.now().plus(ttl).plusSeconds(5);
 
         while (true) {
             if (token.equals(cacheManagerPort.saveIfAbsentAndGet(key, token, ttl))) {
-                try {
-                    return doExecute(sessionId);
-                } finally {
-                    cacheManagerPort.deleteIfValueMatches(key, token);
-                }
+                return executeHoldingClusterLock(sessionId, key, token);
             }
             if (Instant.now().isAfter(deadline)) {
-                // Quá cả TTL mà vẫn không lấy được nghĩa là chủ khoá coi như đã chết (khoá không
-                // sống lâu hơn TTL được). Chạy tiếp không khoá thay vì ném lỗi: tới nước này ném
-                // lỗi là kết thúc phiên luyện của học sinh, còn nguy cơ sinh trùng thì đã rất nhỏ.
-                log.warn(
-                    "Chờ quá {} mà không lấy được khoá {} -- chạy tiếp không khoá.", ttl, key
-                );
-                return doExecute(sessionId);
+                return executeAfterLockWaitTimedOut(sessionId, key, ttl);
             }
             sleepQuietly();
         }
+    }
+
+    private Result executeHoldingClusterLock(UUID sessionId, String key, String token) {
+        try {
+            return doExecute(sessionId);
+        } finally {
+            cacheManagerPort.deleteIfValueMatches(key, token);
+        }
+    }
+
+    private Result executeAfterLockWaitTimedOut(UUID sessionId, String key, Duration ttl) {
+        // Still not acquired after a whole TTL means the lock owner is considered dead (a lock cannot
+        // outlive its TTL). Carry on without the lock instead of throwing: at this point throwing ends the
+        // student's practice session, while the risk of generating a duplicate is already very small.
+        log.warn(
+            "Chờ quá {} mà không lấy được khoá {} -- chạy tiếp không khoá.", ttl, key
+        );
+        return doExecute(sessionId);
     }
 
     /**
@@ -183,6 +192,15 @@ public class ResolveNextPracticeQuestionUseCase {
 
     private Result doExecute(UUID sessionId) {
         ResolveNextPracticeQuestionClaimService.Claim claim = claimService.claim(sessionId);
+        Result resultWithoutSelection = resultWithoutSelection(claim);
+        if (resultWithoutSelection != null) {
+            return resultWithoutSelection;
+        }
+        return selectAndPersistNextQuestion(claim);
+    }
+
+    /** Result for a claim that needs no new selection (idempotent retry or early exit), otherwise null. */
+    private Result resultWithoutSelection(ResolveNextPracticeQuestionClaimService.Claim claim) {
         if (claim.idempotentQuestion() != null) {
             return Result.ok(
                 toPayload(
@@ -199,7 +217,15 @@ public class ResolveNextPracticeQuestionUseCase {
                 claim.earlyExitReason(), claim.spokenSeconds(), claim.budgetSeconds()
             );
         }
+        return null;
+    }
 
+    /**
+     * The budget check is no longer here: it moved up to ResolveNextPracticeQuestionClaimService and
+     * runs BEFORE resolveNextQuestion. Placing it after, as before, could generate a question with the
+     * LLM (10-40 seconds) and then throw it away because the budget is exhausted.
+     */
+    private Result selectAndPersistNextQuestion(ResolveNextPracticeQuestionClaimService.Claim claim) {
         PracticeQuestionSelectionService.NextQuestionSelection selection = selectionService
             .resolveNextQuestion(
                 claim.topic(), claim.studentId(), claim.focus(),
@@ -212,12 +238,7 @@ public class ResolveNextPracticeQuestionUseCase {
                 "pool_exhausted", claim.spokenSeconds(), claim.budgetSeconds()
             );
         }
-
-        // Không còn chốt ngân sách ở đây: nó đã chuyển lên ResolveNextPracticeQuestionClaimService,
-        // chạy TRƯỚC resolveNextQuestion. Đặt sau như cũ nghĩa là có thể sinh câu bằng LLM
-        // (10-40 giây) rồi vứt đi vì hết ngân sách.
         PracticeQuestion question = selection.question();
-
         persistenceService.persist(claim.studentId(), claim.practicePaperId(), selection);
         return Result.ok(
             toPayload(question, selection.slot(), claim.budgetSeconds() - claim.spokenSeconds()),

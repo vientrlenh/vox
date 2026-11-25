@@ -15,7 +15,7 @@ public class RegisterVerificationCleanUpListener {
     private final CacheManagerPort cacheManagerPort;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handle(RegisterVerificationConsumedEvent event) {
+    public void deleteConsumedVerificationEntry(RegisterVerificationConsumedEvent event) {
         cacheManagerPort.delete(event.key());
     }
 }

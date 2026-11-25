@@ -63,9 +63,32 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
         UUID currentUserId = assessmentGradingAccessService.requireActiveUserId();
         GradingRoundType roundType = requireNotAppealRound(command.roundType());
         Instant deadlineAt = validateDeadline(command.deadlineAt());
+        List<AssignGradingCommand.AssignmentItem> items = requireAssignmentItems(command.assignments());
+        List<UUID> candidateResultIds = items.stream()
+            .map(item -> item.candidateResultId()).toList();
+        if (new HashSet<>(candidateResultIds).size() != candidateResultIds.size()) {
+            throw new ResourceDuplicatedException("Không được phân công trùng bài thi.");
+        }
 
-        List<AssignGradingCommand.AssignmentItem> items = command.assignments() == null
-            ? List.<AssignGradingCommand.AssignmentItem>of() : command.assignments();
+        AssignmentLookups lookups = loadLookups(items, candidateResultIds, currentUserId);
+        Instant now = Instant.now();
+        List<AssessmentGradingAssignment> assignments =
+            buildAssignments(items, roundType, lookups, now, currentUserId, deadlineAt);
+
+        List<AssessmentGradingAssignment> saved = assessmentGradingAssignmentRepository.saveAll(assignments);
+
+        // After saveAll: the notification needs the id of the assignment row to lead the teacher to the right attempt.
+        gradingAssignmentNotificationService.publishAssigned(saved, now);
+
+        return saved.stream()
+            .map(assignment -> assignment.getId())
+            .toList();
+    }
+
+    private List<AssignGradingCommand.AssignmentItem> requireAssignmentItems(
+            List<AssignGradingCommand.AssignmentItem> requestedItems) {
+        List<AssignGradingCommand.AssignmentItem> items = requestedItems == null
+            ? List.<AssignGradingCommand.AssignmentItem>of() : requestedItems;
         if (items.isEmpty()) {
             throw new IllegalArgumentException("Phải chọn ít nhất một bài thi để phân công.");
         }
@@ -74,13 +97,23 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
                 throw new IllegalArgumentException("Thiếu bài thi hoặc giáo viên cần phân công.");
             }
         }
-        List<UUID> candidateResultIds = items.stream()
-            .map(item -> item.candidateResultId()).toList();
-        if (new HashSet<>(candidateResultIds).size() != candidateResultIds.size()) {
-            throw new ResourceDuplicatedException("Không được phân công trùng bài thi.");
-        }
+        return items;
+    }
 
-        // ---- nạp theo lô: kết quả -> kỳ thi -> trường ----
+    private AssignmentLookups loadLookups(
+            List<AssignGradingCommand.AssignmentItem> items, List<UUID> candidateResultIds, UUID currentUserId) {
+        Map<UUID, AssessmentCandidateResult> resultsById = loadResultsById(candidateResultIds);
+        Map<UUID, UUID> schoolIdByResultId = schoolIdByResultId(resultsById);
+        Set<UUID> distinctSchoolIds = new HashSet<>(schoolIdByResultId.values());
+        authorizeAssigner(distinctSchoolIds, candidateResultIds, currentUserId);
+        return new AssignmentLookups(
+            resultsById,
+            openAssignedResultIds(candidateResultIds),
+            schoolIdByResultId,
+            validTeachersBySchool(items, distinctSchoolIds));
+    }
+
+    private Map<UUID, AssessmentCandidateResult> loadResultsById(List<UUID> candidateResultIds) {
         Map<UUID, AssessmentCandidateResult> resultsById = assessmentCandidateResultRepository.findByIdIn(candidateResultIds).stream()
             .collect(Collectors.toMap(result -> result.getId(), Function.identity(), (left, right) -> left));
         for (UUID candidateResultId : candidateResultIds) {
@@ -88,11 +121,14 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
                 throw new ResourceNotFoundException("Không tìm thấy kết quả bài thi.");
             }
         }
+        return resultsById;
+    }
+
+    /** The school of each attempt; also the distinct school set used for authorization and teacher filtering. */
+    private Map<UUID, UUID> schoolIdByResultId(Map<UUID, AssessmentCandidateResult> resultsById) {
         Map<UUID, UUID> schoolIdByAssessmentId = assessmentRepository.findByIdIn(
                 resultsById.values().stream().map(result -> result.getAssessmentId()).distinct().toList()).stream()
             .collect(Collectors.toMap(assessment -> assessment.getId(), assessment -> assessment.getSchoolId(), (left, right) -> left));
-
-        // Trường của mỗi bài; đồng thời là tập trường phân biệt để phân quyền + lọc giáo viên.
         Map<UUID, UUID> schoolIdByResultId = new HashMap<UUID, UUID>();
         for (AssessmentCandidateResult result : resultsById.values()) {
             UUID schoolId = schoolIdByAssessmentId.get(result.getAssessmentId());
@@ -101,22 +137,29 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
             }
             schoolIdByResultId.put(result.getId(), schoolId);
         }
-        Set<UUID> distinctSchoolIds = new HashSet<>(schoolIdByResultId.values());
+        return schoolIdByResultId;
+    }
 
-        // ---- phân quyền: một lần / trường phân biệt (thường là một) ----
+    /** Authorization runs once per distinct school (usually one). */
+    private void authorizeAssigner(Set<UUID> distinctSchoolIds, List<UUID> candidateResultIds, UUID currentUserId) {
         for (UUID schoolId : distinctSchoolIds) {
             assessmentGradingAccessService.authorizeSchoolAdmin(schoolId, currentUserId);
         }
-        // Bài trên lớp đi đường riêng: chủ bài tự nhận qua /class-tests/{id}/grading/claim.
+        // A class test takes its own path: its owner claims it through /class-tests/{id}/grading/claim.
         assessmentGradingAccessService.rejectClassTestCoordination(candidateResultIds);
+    }
 
-        // ---- đã có phân công ĐANG MỞ? một query cho cả lô ----
-        Set<UUID> alreadyAssigned = assessmentGradingAssignmentRepository
+    /** Results that already have an OPEN assignment: one query for the whole batch. */
+    private Set<UUID> openAssignedResultIds(List<UUID> candidateResultIds) {
+        return assessmentGradingAssignmentRepository
             .findOpenByCandidateResultIdIn(candidateResultIds).stream()
             .map(assignment -> assignment.getCandidateResultId())
             .collect(Collectors.toSet());
+    }
 
-        // ---- giáo viên hợp lệ theo từng trường, một query / trường ----
+    /** The valid teachers of each school, one query per school. */
+    private Map<UUID, Set<UUID>> validTeachersBySchool(
+            List<AssignGradingCommand.AssignmentItem> items, Set<UUID> distinctSchoolIds) {
         List<UUID> teacherIds = items.stream()
             .map(item -> item.teacherId()).distinct().toList();
         Map<UUID, Set<UUID>> validTeachersBySchool = new HashMap<UUID, Set<UUID>>();
@@ -124,27 +167,19 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
             validTeachersBySchool.put(schoolId,
                 assessmentGradingQueryRepository.findTeacherIdsInSchool(schoolId, teacherIds));
         }
+        return validTeachersBySchool;
+    }
 
-        Instant now = Instant.now();
+    private List<AssessmentGradingAssignment> buildAssignments(List<AssignGradingCommand.AssignmentItem> items,
+            GradingRoundType roundType, AssignmentLookups lookups, Instant now, UUID currentUserId,
+            Instant deadlineAt) {
         List<AssessmentGradingAssignment> assignments = new ArrayList<AssessmentGradingAssignment>();
         for (AssignGradingCommand.AssignmentItem item : items) {
-            AssessmentCandidateResult result = resultsById.get(item.candidateResultId());
-            if (!GradingRoundPolicy.isAssignable(roundType, result.getStatus())) {
-                throw new IllegalArgumentException(
-                    "Bài thi không ở trạng thái phù hợp với vòng chấm " + roundType.name() + ".");
-            }
-            // Pre-check để báo lỗi tiếng Việt thay vì để unique index ném
-            // DataIntegrityViolation; index vẫn là chốt cuối khi có race.
-            if (alreadyAssigned.contains(item.candidateResultId())) {
-                throw new ResourceDuplicatedException("Bài thi này đang được một giáo viên chấm.");
-            }
-            UUID schoolId = schoolIdByResultId.get(item.candidateResultId());
-            if (!validTeachersBySchool.getOrDefault(schoolId, Set.of()).contains(item.teacherId())) {
-                throw new IllegalArgumentException("Người chấm phải là giáo viên thuộc cùng trường với bài thi.");
-            }
-
-            // scoreBefore chụp NGAY LÚC GIAO: đây là mốc để đo "AI/vòng trước lệch bao
-            // nhiêu" sau khi giáo viên chấm xong. Lấy sau thì đã bị chính họ sửa mất.
+            AssessmentCandidateResult result = lookups.resultsById().get(item.candidateResultId());
+            requireAssignable(item, result, roundType, lookups);
+            // scoreBefore is captured RIGHT AT ASSIGNMENT: it is the reference point for measuring "how far
+            // the AI / previous round was off" after the teacher finishes grading. Taken later, it would
+            // already have been changed by the teacher themself.
             assignments.add(AssessmentGradingAssignment.open(
                 item.candidateResultId(),
                 item.teacherId(),
@@ -156,15 +191,27 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
                 deadlineAt
             ));
         }
+        return assignments;
+    }
 
-        List<AssessmentGradingAssignment> saved = assessmentGradingAssignmentRepository.saveAll(assignments);
-
-        // Sau saveAll: thông báo cần id của dòng phân công để dẫn giáo viên vào đúng bài.
-        gradingAssignmentNotificationService.publishAssigned(saved, now);
-
-        return saved.stream()
-            .map(assignment -> assignment.getId())
-            .toList();
+    private void requireAssignable(
+            AssignGradingCommand.AssignmentItem item,
+            AssessmentCandidateResult result,
+            GradingRoundType roundType,
+            AssignmentLookups lookups) {
+        if (!GradingRoundPolicy.isAssignable(roundType, result.getStatus())) {
+            throw new IllegalArgumentException(
+                "Bài thi không ở trạng thái phù hợp với vòng chấm " + roundType.name() + ".");
+        }
+        // Pre-check so the error message is in Vietnamese instead of letting the unique index throw
+        // DataIntegrityViolation; the index remains the last safeguard when there is a race.
+        if (lookups.alreadyAssigned().contains(item.candidateResultId())) {
+            throw new ResourceDuplicatedException("Bài thi này đang được một giáo viên chấm.");
+        }
+        UUID schoolId = lookups.schoolIdByResultId().get(item.candidateResultId());
+        if (!lookups.validTeachersBySchool().getOrDefault(schoolId, Set.of()).contains(item.teacherId())) {
+            throw new IllegalArgumentException("Người chấm phải là giáo viên thuộc cùng trường với bài thi.");
+        }
     }
 
     private GradingRoundType requireNotAppealRound(GradingRoundType roundType) {
@@ -180,5 +227,13 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
             throw new IllegalArgumentException("Hạn chấm phải ở tương lai.");
         }
         return deadlineAt;
+    }
+
+    private record AssignmentLookups(
+        Map<UUID, AssessmentCandidateResult> resultsById,
+        Set<UUID> alreadyAssigned,
+        Map<UUID, UUID> schoolIdByResultId,
+        Map<UUID, Set<UUID>> validTeachersBySchool
+    ) {
     }
 }

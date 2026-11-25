@@ -59,16 +59,33 @@ public class ViewPlatformOperationalHealthUseCase
             ? to.atZone(zone).toLocalDate().minusDays(DEFAULT_WINDOW_DAYS - 1L).atStartOfDay(zone).toInstant()
             : input.dateFrom();
 
-        // Khoảng rỗng hoặc ngược: ảnh chụp hiện tại vẫn đúng nên cứ trả, còn chuỗi ngày thì rỗng --
-        // một khoảng rỗng thì thật sự không có ngày nào, và đó là câu trả lời trung thực hơn là 0%.
         if (!from.isBefore(to)) {
-            return new PlatformOperationalHealthResponse(
-                live.sessionsInProgress(), live.assessmentsInProgress(), live.gradingQueueDepth(),
-                0L, 0L, null, List.of());
+            return snapshotWithoutDays(live);
         }
 
-        // Ngày cuối lấy theo khoảnh khắc CUỐI CÙNG còn nằm trong khoảng, vì `to` là mốc mở: khi
-        // `to` rơi đúng 00:00 giờ VN thì ngày của chính nó không có phút nào thuộc cửa sổ.
+        GradingWindow window = clampWindow(from, to, zone);
+        Map<LocalDate, GradingOutcomeBucketDto> byDay = platformOperationalHealthQueryRepository.findGradingOutcomeByDay(window.queryFrom(), to, zone).stream()
+            .collect(Collectors.toMap(dto -> dto.day(), Function.identity()));
+
+        DailyOutcomes outcomes = fillDailyOutcomes(byDay, window);
+
+        return new PlatformOperationalHealthResponse(
+            live.sessionsInProgress(), live.assessmentsInProgress(), live.gradingQueueDepth(),
+            outcomes.graded(), outcomes.failed(), successRatePercent(outcomes.graded(), outcomes.failed()),
+            List.copyOf(outcomes.daily()));
+    }
+
+    // Empty or reversed range: the current snapshot is still right so it is returned, while the day series is
+    // empty -- an empty range really has no days, and that is a more honest answer than 0%.
+    private PlatformOperationalHealthResponse snapshotWithoutDays(LiveSessionCountsDto live) {
+        return new PlatformOperationalHealthResponse(
+            live.sessionsInProgress(), live.assessmentsInProgress(), live.gradingQueueDepth(),
+            0L, 0L, null, List.of());
+    }
+
+    private GradingWindow clampWindow(Instant from, Instant to, ZoneId zone) {
+        // The last day is taken from the LAST instant still inside the range, because `to` is an open bound: when
+        // `to` falls exactly on 00:00 Vietnam time, its own day has no minute inside the window.
         LocalDate lastDay = to.minusMillis(1).atZone(zone).toLocalDate();
         LocalDate firstDay = from.atZone(zone).toLocalDate();
         Instant queryFrom = from;
@@ -76,14 +93,14 @@ public class ViewPlatformOperationalHealthUseCase
             firstDay = lastDay.minusDays(MAX_WINDOW_DAYS - 1L);
             queryFrom = firstDay.atStartOfDay(zone).toInstant();
         }
+        return new GradingWindow(firstDay, lastDay, queryFrom);
+    }
 
-        Map<LocalDate, GradingOutcomeBucketDto> byDay = platformOperationalHealthQueryRepository.findGradingOutcomeByDay(queryFrom, to, zone).stream()
-            .collect(Collectors.toMap(dto -> dto.day(), Function.identity()));
-
+    private DailyOutcomes fillDailyOutcomes(Map<LocalDate, GradingOutcomeBucketDto> byDay, GradingWindow window) {
         List<GradingOutcomeBucketResponse> daily = new ArrayList<GradingOutcomeBucketResponse>();
         long graded = 0L;
         long failed = 0L;
-        for (LocalDate day = firstDay; !day.isAfter(lastDay); day = day.plusDays(1)) {
+        for (LocalDate day = window.firstDay(); !day.isAfter(window.lastDay()); day = day.plusDays(1)) {
             GradingOutcomeBucketDto bucket = byDay.get(day);
             long dayGraded = bucket == null ? 0L : bucket.graded();
             long dayFailed = bucket == null ? 0L : bucket.failed();
@@ -91,10 +108,13 @@ public class ViewPlatformOperationalHealthUseCase
             failed += dayFailed;
             daily.add(new GradingOutcomeBucketResponse(day, dayGraded, dayFailed));
         }
+        return new DailyOutcomes(daily, graded, failed);
+    }
 
-        return new PlatformOperationalHealthResponse(
-            live.sessionsInProgress(), live.assessmentsInProgress(), live.gradingQueueDepth(),
-            graded, failed, successRatePercent(graded, failed), List.copyOf(daily));
+    private record GradingWindow(LocalDate firstDay, LocalDate lastDay, Instant queryFrom) {
+    }
+
+    private record DailyOutcomes(List<GradingOutcomeBucketResponse> daily, long graded, long failed) {
     }
 
     /** Làm tròn 1 chữ số thập phân: 98,7% đọc được, còn 98,66666% thì không thêm thông tin gì. */

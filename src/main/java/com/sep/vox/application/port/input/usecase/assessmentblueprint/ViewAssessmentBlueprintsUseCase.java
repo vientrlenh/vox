@@ -41,7 +41,17 @@ public class ViewAssessmentBlueprintsUseCase implements IUseCase<ViewAssessmentB
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        PageResult<AssessmentBlueprint> result = assessmentBlueprintRepository.findAccessible(
+        PageResult<AssessmentBlueprint> result = findAccessible(input, currentUserId, currentSchoolId, systemAdmin, schoolAdmin);
+        return AssessmentBlueprintDtoMapper.toDtoPage(result);
+    }
+
+    private PageResult<AssessmentBlueprint> findAccessible(
+            ViewAssessmentBlueprintsQuery input,
+            UUID currentUserId,
+            UUID currentSchoolId,
+            boolean systemAdmin,
+            boolean schoolAdmin) {
+        return assessmentBlueprintRepository.findAccessible(
             currentUserId,
             currentSchoolId,
             systemAdmin,
@@ -54,6 +64,5 @@ public class ViewAssessmentBlueprintsUseCase implements IUseCase<ViewAssessmentB
             input.page(),
             input.size()
         );
-        return AssessmentBlueprintDtoMapper.toDtoPage(result);
     }
 }

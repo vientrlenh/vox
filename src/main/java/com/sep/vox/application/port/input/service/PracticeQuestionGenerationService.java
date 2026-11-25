@@ -37,52 +37,48 @@ public class PracticeQuestionGenerationService {
     // (saveGenerated, findTopicById via topicDetails) still gets its own short-lived
     // transaction from Spring Data's repository proxy -- no atomicity is lost.
     /**
-     * @param bandCount số bậc của thang đang áp. Gửi xuống Python để nó ánh xạ
-     *                  {@code difficulty_rank} theo đúng thang đó và dựng ladder mô tả bậc từ
-     *                  dữ liệu thật, thay vì mặc định thang 6 bậc kiểu VSTEP.
+     * @param bandCount the number of bands of the scale in use. Sent down to Python so it maps
+     *                  {@code difficulty_rank} onto exactly that scale and builds the band-describing ladder from
+     *                  real data, instead of defaulting to a 6-band VSTEP-style scale.
      */
     public int generateAndStore(
-            UUID topicId,
-            String criterionCode,
-            String subAttribute,
-            String targetTense,
-            int targetRank,
-            int count,
-            Duration timeout,
-            int bandCount,
-            List<FrameworkResultBand> bandLadder,
+            UUID topicId, String criterionCode, String subAttribute, String targetTense, int targetRank,
+            int count, Duration timeout, int bandCount, List<FrameworkResultBand> bandLadder,
             List<UUID> excludeQuestionIds) {
         List<PracticeQuestionGenerationPort.GeneratedQuestion> generated = questionGenerationPort.generate(
-            topicDetails(topicId),
-            criterionCode,
-            SubAttributePolicy.plannedSubAttribute(criterionCode, subAttribute),
-            targetTense,
-            targetRank,
-            count,
-            timeout,
-            bandCount,
-            bandLadder,
-            excludeQuestionIds
+            topicDetails(topicId), criterionCode, SubAttributePolicy.plannedSubAttribute(criterionCode, subAttribute),
+            targetTense, targetRank, count, timeout, bandCount, bandLadder, excludeQuestionIds
         );
         if (generated.isEmpty()) {
-            // Python tra 200 kem mang rong la che do hong TE NHAT: vong lap ben duoi khong
-            // chay, khong exception, khong log -- roi caller bao "chu de chua co cau luyen
-            // phu hop" ma khong ai biet vi sao. Da mat nhieu gio truy nguoc dung ca nay
-            // (sub-attribute null bi CandidateFilterNode loai sach). Log ro tai day de lan
-            // sau nhin phat ra ngay.
-            log.warn(
-                "Pipeline sinh cau tra ve 0 cau (HTTP 2xx) cho topic={} criterion={} "
-                    + "subAttribute={} targetRank={} bandCount={} -- khong co gi de luu.",
-                topicId,
-                criterionCode,
-                subAttribute,
-                targetRank,
-                bandCount
-            );
+            warnNothingGenerated(topicId, criterionCode, subAttribute, targetRank, bandCount);
         }
         for (PracticeQuestionGenerationPort.GeneratedQuestion question : generated) {
             practiceQuestionRepository.saveGenerated(toPracticeQuestion(question));
         }
+        indexGeneratedQuestions(generated);
+        return generated.size();
+    }
+
+    /**
+     * Python returning 200 with an empty array is the WORST failure mode: the loop in the caller does not
+     * run, there is no exception and no log -- then the caller reports "the topic has no suitable practice question yet"
+     * and nobody knows why. Many hours were lost tracing back exactly this case (a null sub-attribute
+     * wiped out cleanly by CandidateFilterNode). Log clearly here so next time it is seen right away.
+     */
+    private void warnNothingGenerated(
+            UUID topicId, String criterionCode, String subAttribute, int targetRank, int bandCount) {
+        log.warn(
+            "Pipeline sinh cau tra ve 0 cau (HTTP 2xx) cho topic={} criterion={} "
+                + "subAttribute={} targetRank={} bandCount={} -- khong co gi de luu.",
+            topicId,
+            criterionCode,
+            subAttribute,
+            targetRank,
+            bandCount
+        );
+    }
+
+    private void indexGeneratedQuestions(List<PracticeQuestionGenerationPort.GeneratedQuestion> generated) {
         for (PracticeQuestionGenerationPort.GeneratedQuestion question : generated) {
             try {
                 questionGenerationPort.index(question);
@@ -94,7 +90,6 @@ public class PracticeQuestionGenerationService {
                 );
             }
         }
-        return generated.size();
     }
 
     private TopicDetails topicDetails(UUID topicId) {
@@ -110,25 +105,21 @@ public class PracticeQuestionGenerationService {
     }
 
     private PracticeQuestion toPracticeQuestion(GeneratedQuestion question) {
-        return PracticeQuestion.builder()
-                .id(question.id())
-                .practiceTopicId(question.topicId())
-                .questionText(question.questionText())
-                .targetCriterionCode(question.criterionCode())
-                .targetSubAttribute(question.subAttribute())
-                .targetTense(question.targetTense())
-                .difficultyRank(question.difficultyRank())
-                .difficultyFeaturesJson(question.difficultyFeaturesJson())
-                .evaluationGuideJson(question.evaluationGuideJson())
-                .suggestedIdeasJson(question.suggestedIdeasJson())
-                .questionType(question.questionType())
-                .maxResponseSeconds(question.maxResponseSeconds())
-                .minResponseSeconds(question.minResponseSeconds())
-                .vstepPart(question.vstepPart())
-                .source(null)
-                .usageCount(0)
-                .active(true)
-                .createdAt(Instant.now())
-                .build();
+        return PracticeQuestion.generated(
+                question.id(),
+                question.topicId(),
+                question.questionText(),
+                question.criterionCode(),
+                question.subAttribute(),
+                question.targetTense(),
+                question.difficultyRank(),
+                question.difficultyFeaturesJson(),
+                question.evaluationGuideJson(),
+                question.suggestedIdeasJson(),
+                question.questionType(),
+                question.maxResponseSeconds(),
+                question.minResponseSeconds(),
+                question.vstepPart(),
+                Instant.now());
     }
 }

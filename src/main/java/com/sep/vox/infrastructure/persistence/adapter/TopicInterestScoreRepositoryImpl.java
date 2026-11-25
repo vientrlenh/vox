@@ -23,9 +23,15 @@ public class TopicInterestScoreRepositoryImpl
 
     @Override
     @Transactional
-    public void replaceForStudent(
-            UUID studentId,
-            List<TopicInterestScoreEntry> scores) {
+    public void replaceForStudent(UUID studentId, List<TopicInterestScoreEntry> scores) {
+        deleteScoresAndFlush(studentId);
+        Instant now = Instant.now();
+        repository.saveAll(scores.stream()
+            .map(entry -> toNewEntity(studentId, entry, now))
+            .toList());
+    }
+
+    private void deleteScoresAndFlush(UUID studentId) {
         repository.deleteByStudentId(studentId);
         // PUSH THE DELETE STATEMENT DOWN TO THE DB BEFORE INSERTING.
         //
@@ -38,16 +44,16 @@ public class TopicInterestScoreRepositoryImpl
         // is nothing to collide with. That is exactly why it stayed hidden for so long -- recordSessionOutcome
         // used to run only when the student pressed "Complete", which happened exactly once.
         repository.flush();
-        Instant now = Instant.now();
-        repository.saveAll(scores.stream()
-            .map(entry -> TopicInterestScoreJpaEntity.builder()
-                    .studentId(studentId)
-                    .practiceTopicId(entry.getTopicId())
-                    .score(BigDecimal.valueOf(entry.getScore()))
-                    .sessionsMentioned(entry.getSessionCount())
-                    .lastMentionedAt(entry.getLastEventAt())
-                    .computedAt(now)
-                    .build())
-            .toList());
+    }
+
+    private TopicInterestScoreJpaEntity toNewEntity(UUID studentId, TopicInterestScoreEntry entry, Instant computedAt) {
+        return TopicInterestScoreJpaEntity.builder()
+            .studentId(studentId)
+            .practiceTopicId(entry.getTopicId())
+            .score(BigDecimal.valueOf(entry.getScore()))
+            .sessionsMentioned(entry.getSessionCount())
+            .lastMentionedAt(entry.getLastEventAt())
+            .computedAt(computedAt)
+            .build();
     }
 }

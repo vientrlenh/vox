@@ -100,148 +100,17 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
     @Override
     public ImportCommitResult commit(ImportSession session, List<ImportRow> rows) {
         UUID schoolId = session.getSchoolId();
-        boolean isSchoolScoped = schoolId != null;
-        Map<String, String> mapping = resolveMapping(session);
-
-        List<ImportRow> pendingRows = new ArrayList<>();
-        List<Map<String, String>> mappedDataList = new ArrayList<>();
-        for (ImportRow row : rows) {
-            if (row.getStatus() != ImportRowStatus.PENDING) continue;
-            Map<String, String> rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
-            pendingRows.add(row);
-            mappedDataList.add(applyMapping(mapping, rawData));
-        }
+        PendingRows pending = collectPendingRows(rows, resolveMapping(session));
+        CommitRun run = buildCommitRun(schoolId, pending.mappedDataList());
 
         List<AssessmentPolicy> policiesToSave = new ArrayList<>();
         long importedCount = 0;
         long invalidCount = 0;
 
-        Set<ScopeKey> scopesClaimedInFile = new HashSet<>();
-        Map<VersionScopeKey, Integer> nextVersionByScope = new HashMap<>();
-
-        // Prefetch DUY NHẤT 1 lần toàn bộ Assessment Policy (mọi trạng thái) trong phạm vi schoolId này
-        // (schoolId cố định suốt 1 lượt commit), rồi tự tính trong memory ở dưới thay vì gọi
-        // existsActiveForScope/findMaxVersionForScope riêng lẻ cho từng dòng/từng scope trong file Excel.
-        List<AssessmentPolicy> existingPolicies = assessmentPolicyRepository.findAllForOwner(schoolId);
-
-        // Scope đang DRAFT/PUBLISHED -> dùng để chặn tạo trùng scope
-        Set<ScopeKey> existingActiveScopes = existingPolicies.stream()
-                .filter(p -> p.getStatus() == AssessmentPolicyStatus.DRAFT || p.getStatus() == AssessmentPolicyStatus.PUBLISHED)
-                .map(p -> new ScopeKey(p.getSchoolId(), p.getLanguageId(), p.getFrameworkVersionId(),
-                        p.getGradeLevelId(), p.getSchoolGradeId(), p.getSchoolClassId()))
-                .collect(Collectors.toSet());
-
-        // Version lớn nhất đã từng tồn tại theo từng scope (kể cả ARCHIVED) -> dùng để phát version kế tiếp,
-        // đúng ý nghĩa gốc của AssessmentPolicyRepository#findMaxVersionForScope nhưng tính 1 lần trong memory.
-        Map<VersionScopeKey, Integer> maxVersionByScope = existingPolicies.stream()
-                .collect(Collectors.groupingBy(
-                        p -> new VersionScopeKey(p.getSchoolId(), p.getLanguageId(), p.getFrameworkVersionId(),
-                                p.getGradeLevelId(), p.getSchoolGradeId(), p.getSchoolClassId()),
-                        Collectors.reducing(0, policy -> policy.getVersion(), (a, b) -> Integer.max(a, b))));
-
-        // Prefetch toàn bộ dữ liệu tham chiếu (ngôn ngữ/khung/rubric/scope/band) bằng số query CỐ ĐỊNH,
-        // rồi Phase 2 (loop chính) chỉ resolve trong memory, không còn gọi DB theo từng dòng/giá trị distinct nữa.
-        LookupContext lookup = prefetchLookups(schoolId, isSchoolScoped, mappedDataList);
-
-        // Trần bậc không nằm trong LookupContext vì nó tra theo Khối ĐÃ SUY RA từ phạm vi của
-        // từng dòng, chưa biết trước lúc prefetch. Batch nhớ lại theo từng giá trị khác nhau nên
-        // vẫn không thành N+1 với file nhiều dòng.
-        GradeLevelBandScopeGuardService.Batch bandScopeBatch = gradeLevelBandScopeGuardService.newBatch();
-
-        for (int i = 0; i < pendingRows.size(); i++) {
-            ImportRow row = pendingRows.get(i);
-            Map<String, String> mappedData = mappedDataList.get(i);
-            List<Map<String, String>> errors = new ArrayList<>();
-
-            try {
-                validateRequiredFields(mappedData, errors);
-
-                UUID languageId = errors.isEmpty()
-                        ? resolveLanguage(mappedData.get("language"), errors, lookup)
-                        : null;
-
-                FrameworkVersion frameworkVersion = errors.isEmpty()
-                        ? resolveFrameworkVersion(mappedData.get("frameworkVersion"), errors, lookup)
-                        : null;
-                UUID frameworkVersionId = frameworkVersion != null ? frameworkVersion.getId() : null;
-
-                UUID rubricVersionId = errors.isEmpty()
-                        ? resolveRubricVersion(mappedData.get("rubricVersion"), frameworkVersion, schoolId, isSchoolScoped, errors, lookup)
-                        : null;
-
-                ScopeIds scopeIds = (errors.isEmpty() && isSchoolScoped)
-                        ? resolveScope(mappedData.get("schoolClass"), mappedData.get("schoolGrade"), mappedData.get("schoolGradeLevel"), errors, lookup)
-                        : ScopeIds.EMPTY;
-
-                BandIds bandIds = errors.isEmpty()
-                        ? resolveBands(frameworkVersionId, mappedData.get("targetFrameworkBand"), errors, lookup)
-                        : BandIds.EMPTY;
-
-                // Trần bậc theo Khối. Guard ném IllegalArgumentException cho luồng API, nhưng ở đây
-                // một dòng sai chỉ được đánh INVALID -- không kéo đổ cả file import.
-                if (errors.isEmpty() && isSchoolScoped && bandIds.targetBand() != null) {
-                    try {
-                        bandScopeBatch.assertWithinScope(
-                                scopeIds.gradeLevelId(), scopeIds.schoolGradeId(), scopeIds.schoolClassId(),
-                                frameworkVersionId, bandIds.targetBand());
-                    } catch (IllegalArgumentException e) {
-                        errors.add(error("targetFrameworkBand", e.getMessage()));
-                    }
-                }
-
-                BigDecimal passingScore = errors.isEmpty()
-                        ? parsePassingScore(mappedData.get("passingScore"), errors)
-                        : null;
-
-                AssessmentPolicyStrictness strictness = errors.isEmpty()
-                        ? parseStrictness(mappedData.get("strictness"), errors)
-                        : AssessmentPolicyStrictness.STANDARD;
-
-                EffectivePeriod effectivePeriod = errors.isEmpty()
-                        ? parseEffectivePeriod(mappedData.get("effectiveFrom"), mappedData.get("effectiveTo"), errors)
-                        : EffectivePeriod.EMPTY;
-
-                ScopeKey scopeKey = null;
-                if (errors.isEmpty()) {
-                    scopeKey = new ScopeKey(schoolId, languageId, frameworkVersionId,
-                            scopeIds.gradeLevelId(), scopeIds.schoolGradeId(), scopeIds.schoolClassId());
-                    if (!scopesClaimedInFile.add(scopeKey)) {
-                        errors.add(error("scope", "Bị trùng phạm vi áp dụng ngay trong file Excel."));
-                    } else if (existingActiveScopes.contains(scopeKey)) {
-                        errors.add(error("scope", "Đã tồn tại một Quy chế (DRAFT/PUBLISHED) khác cho cùng phạm vi này. Vui lòng lưu trữ (ARCHIVE) bản cũ."));
-                    }
-
-                    // Dùng lại 1 Phiên bản Rubric ở nhiều dòng là HỢP LỆ từ V44: nhiều lớp khác
-                    // nhau chấm bằng cùng một bộ tiêu chí. Ràng buộc còn hiệu lực là trùng phạm vi,
-                    // đã kiểm ngay bên trên.
-                }
-
-                if (!errors.isEmpty()) {
-                    row.setStatus(ImportRowStatus.INVALID);
-                    row.setErrorsJson(jsonSerializationPort.toJson(errors));
-                    invalidCount++;
-                    continue;
-                }
-
-                VersionScopeKey versionScopeKey = new VersionScopeKey(schoolId, languageId, frameworkVersionId,
-                        scopeIds.gradeLevelId(), scopeIds.schoolGradeId(), scopeIds.schoolClassId());
-                int nextVersion = nextVersionByScope.computeIfAbsent(versionScopeKey, key ->
-                        maxVersionByScope.getOrDefault(key, 0) + 1);
-                nextVersionByScope.put(versionScopeKey, nextVersion + 1);
-
-                AssessmentPolicy newPolicy = AssessmentPolicy.draftForScope(schoolId, scopeIds.gradeLevelId(),
-                    scopeIds.schoolGradeId(), scopeIds.schoolClassId(), languageId, frameworkVersionId, rubricVersionId,
-                    bandIds.targetBandId(), passingScore, strictness, nextVersion,
-                    effectivePeriod.from(), effectivePeriod.to());
-                policiesToSave.add(newPolicy);
-
-                row.setStatus(ImportRowStatus.IMPORTED);
-                row.setMappedDataJson(jsonSerializationPort.toJson(mappedData));
+        for (int i = 0; i < pending.rows().size(); i++) {
+            if (commitRow(pending.rows().get(i), pending.mappedDataList().get(i), run, policiesToSave)) {
                 importedCount++;
-            } catch (Exception ex) {
-                errors.add(error("general", "Lỗi xử lý luồng ngầm: " + ex.getMessage()));
-                row.setStatus(ImportRowStatus.INVALID);
-                row.setErrorsJson(jsonSerializationPort.toJson(errors));
+            } else {
                 invalidCount++;
             }
         }
@@ -253,76 +122,271 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
         return new ImportCommitResult(importedCount, 0, 0, invalidCount);
     }
 
-    // Gom toàn bộ input thô (distinct) của các dòng PENDING rồi query 1 lần/nhóm (findByCodeIn/findByNameIn)
-    // thay vì query lười theo từng giá trị distinct trong loop chính (Phase 2). Band phụ thuộc frameworkVersionId
-    // đã resolve (không phải input thô) nên gom theo FrameworkVersion tìm được rồi query findByFrameworkVersionIdIn.
-    private LookupContext prefetchLookups(UUID schoolId, boolean isSchoolScoped, List<Map<String, String>> mappedDataList) {
-        Set<String> languageInputs = new HashSet<>();
-        Set<String> frameworkInputs = new HashSet<>();
-        Set<String> rubricInputs = new HashSet<>();
-        Set<String> classInputs = new HashSet<>();
-        Set<String> gradeInputs = new HashSet<>();
-        Set<String> gradeLevelInputs = new HashSet<>();
+    private record PendingRows(List<ImportRow> rows, List<Map<String, String>> mappedDataList) {}
 
-        for (Map<String, String> mappedData : mappedDataList) {
-            addTrimmed(languageInputs, mappedData.get("language"));
-            addTrimmed(frameworkInputs, mappedData.get("frameworkVersion"));
-            addTrimmed(rubricInputs, mappedData.get("rubricVersion"));
-            if (isSchoolScoped) {
-                addTrimmed(classInputs, mappedData.get("schoolClass"));
-                addTrimmed(gradeInputs, mappedData.get("schoolGrade"));
-                addTrimmed(gradeLevelInputs, mappedData.get("schoolGradeLevel"));
+    private PendingRows collectPendingRows(List<ImportRow> rows, Map<String, String> mapping) {
+        List<ImportRow> pendingRows = new ArrayList<>();
+        List<Map<String, String>> mappedDataList = new ArrayList<>();
+        for (ImportRow row : rows) {
+            if (row.getStatus() != ImportRowStatus.PENDING) continue;
+            Map<String, String> rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
+            pendingRows.add(row);
+            mappedDataList.add(applyMapping(mapping, rawData));
+        }
+        return new PendingRows(pendingRows, mappedDataList);
+    }
+
+    private record CommitRun(
+            UUID schoolId,
+            boolean isSchoolScoped,
+            LookupContext lookup,
+            GradeLevelBandScopeGuardService.Batch bandScopeBatch,
+            Set<ScopeKey> scopesClaimedInFile,
+            Map<VersionScopeKey, Integer> nextVersionByScope,
+            Set<ScopeKey> existingActiveScopes,
+            Map<VersionScopeKey, Integer> maxVersionByScope) {}
+
+    // Fetches EVERY Assessment Policy (any status) of this schoolId ONCE (schoolId is fixed for the whole
+    // commit) and computes in memory, instead of calling existsActiveForScope/findMaxVersionForScope per
+    // row/scope of the Excel file. The reference data (language/framework/rubric/scope/band) is prefetched
+    // with a FIXED number of queries, so the main loop only resolves in memory and never calls the DB per row.
+    // The band ceiling is not in LookupContext because it looks up the grade level DERIVED from each row's
+    // scope, unknown at prefetch time. The batch remembers per distinct value, so it is still not N+1.
+    private CommitRun buildCommitRun(UUID schoolId, List<Map<String, String>> mappedDataList) {
+        boolean isSchoolScoped = schoolId != null;
+        List<AssessmentPolicy> existingPolicies = assessmentPolicyRepository.findAllForOwner(schoolId);
+        LookupContext lookup = prefetchLookups(schoolId, isSchoolScoped, mappedDataList);
+        return new CommitRun(schoolId, isSchoolScoped, lookup, gradeLevelBandScopeGuardService.newBatch(),
+                new HashSet<>(), new HashMap<>(), collectActiveScopes(existingPolicies),
+                collectMaxVersionByScope(existingPolicies));
+    }
+
+    // Scopes in DRAFT/PUBLISHED -> used to block creating a duplicate scope
+    private Set<ScopeKey> collectActiveScopes(List<AssessmentPolicy> existingPolicies) {
+        return existingPolicies.stream()
+                .filter(p -> p.getStatus() == AssessmentPolicyStatus.DRAFT || p.getStatus() == AssessmentPolicyStatus.PUBLISHED)
+                .map(p -> new ScopeKey(p.getSchoolId(), p.getLanguageId(), p.getFrameworkVersionId(),
+                        p.getGradeLevelId(), p.getSchoolGradeId(), p.getSchoolClassId()))
+                .collect(Collectors.toSet());
+    }
+
+    // Highest version that ever existed per scope (ARCHIVED included) -> used to issue the next version,
+    // the original meaning of AssessmentPolicyRepository#findMaxVersionForScope but computed once in memory.
+    private Map<VersionScopeKey, Integer> collectMaxVersionByScope(List<AssessmentPolicy> existingPolicies) {
+        return existingPolicies.stream()
+                .collect(Collectors.groupingBy(
+                        p -> new VersionScopeKey(p.getSchoolId(), p.getLanguageId(), p.getFrameworkVersionId(),
+                                p.getGradeLevelId(), p.getSchoolGradeId(), p.getSchoolClassId()),
+                        Collectors.reducing(0, policy -> policy.getVersion(), (a, b) -> Integer.max(a, b))));
+    }
+
+    /** Returns true when the row was imported, false when it was marked invalid. */
+    private boolean commitRow(ImportRow row, Map<String, String> mappedData, CommitRun run,
+            List<AssessmentPolicy> policiesToSave) {
+        List<Map<String, String>> errors = new ArrayList<>();
+        try {
+            ResolvedReferences references = resolveReferences(mappedData, run, errors);
+            ParsedValues values = parseValues(mappedData, errors);
+            claimScope(run, references, errors);
+
+            if (!errors.isEmpty()) {
+                markInvalid(row, errors);
+                return false;
+            }
+
+            policiesToSave.add(buildPolicy(run, references, values));
+            row.setStatus(ImportRowStatus.IMPORTED);
+            row.setMappedDataJson(jsonSerializationPort.toJson(mappedData));
+            return true;
+        } catch (Exception ex) {
+            errors.add(error("general", "Lỗi xử lý luồng ngầm: " + ex.getMessage()));
+            markInvalid(row, errors);
+            return false;
+        }
+    }
+
+    private void markInvalid(ImportRow row, List<Map<String, String>> errors) {
+        row.setStatus(ImportRowStatus.INVALID);
+        row.setErrorsJson(jsonSerializationPort.toJson(errors));
+    }
+
+    private record ResolvedReferences(UUID languageId, UUID frameworkVersionId, UUID rubricVersionId,
+                                      ScopeIds scopeIds, BandIds bandIds) {}
+
+    private record ParsedValues(BigDecimal passingScore, AssessmentPolicyStrictness strictness,
+                                EffectivePeriod effectivePeriod) {}
+
+    private ResolvedReferences resolveReferences(Map<String, String> mappedData, CommitRun run,
+            List<Map<String, String>> errors) {
+        validateRequiredFields(mappedData, errors);
+        UUID languageId = errors.isEmpty() ? resolveLanguage(mappedData.get("language"), errors, run.lookup()) : null;
+        FrameworkVersion frameworkVersion = errors.isEmpty()
+                ? resolveFrameworkVersion(mappedData.get("frameworkVersion"), errors, run.lookup()) : null;
+        UUID frameworkVersionId = frameworkVersion != null ? frameworkVersion.getId() : null;
+        UUID rubricVersionId = errors.isEmpty() ? resolveRubricVersion(mappedData.get("rubricVersion"),
+                frameworkVersion, run.schoolId(), run.isSchoolScoped(), errors, run.lookup()) : null;
+        ScopeIds scopeIds = (errors.isEmpty() && run.isSchoolScoped()) ? resolveScope(mappedData.get("schoolClass"),
+                mappedData.get("schoolGrade"), mappedData.get("schoolGradeLevel"), errors, run.lookup()) : ScopeIds.EMPTY;
+        BandIds bandIds = errors.isEmpty()
+                ? resolveBands(frameworkVersionId, mappedData.get("targetFrameworkBand"), errors, run.lookup())
+                : BandIds.EMPTY;
+        assertBandWithinGradeScope(run, scopeIds, frameworkVersionId, bandIds, errors);
+        return new ResolvedReferences(languageId, frameworkVersionId, rubricVersionId, scopeIds, bandIds);
+    }
+
+    // Band ceiling per grade level. The guard throws IllegalArgumentException for the API flow, but here
+    // a bad row is only marked INVALID -- it must not bring down the whole import file.
+    private void assertBandWithinGradeScope(CommitRun run, ScopeIds scopeIds, UUID frameworkVersionId,
+            BandIds bandIds, List<Map<String, String>> errors) {
+        if (errors.isEmpty() && run.isSchoolScoped() && bandIds.targetBand() != null) {
+            try {
+                run.bandScopeBatch().assertWithinScope(
+                        scopeIds.gradeLevelId(), scopeIds.schoolGradeId(), scopeIds.schoolClassId(),
+                        frameworkVersionId, bandIds.targetBand());
+            } catch (IllegalArgumentException e) {
+                errors.add(error("targetFrameworkBand", e.getMessage()));
             }
         }
+    }
 
-        // *ByCode dùng key đã UPPERCASE (khớp với DB đã lọc UPPER() ở tầng Impl) để việc tra cứu không phân biệt
-        // hoa/thường ("en"/"En"/"EN" đều khớp). *ByName giữ nguyên case gốc vì tên hiển thị không bị ép quy ước.
-        Map<String, SupportedLanguage> languageByCode = indexBy(languageRepository.findByCodeIn(languageInputs), l -> l.getCode().value().toUpperCase());
-        Map<String, SupportedLanguage> languageByName = indexBy(languageRepository.findByNameIn(languageInputs), language -> language.getName());
+    private ParsedValues parseValues(Map<String, String> mappedData, List<Map<String, String>> errors) {
+        BigDecimal passingScore = errors.isEmpty()
+                ? parsePassingScore(mappedData.get("passingScore"), errors)
+                : null;
+        AssessmentPolicyStrictness strictness = errors.isEmpty()
+                ? parseStrictness(mappedData.get("strictness"), errors)
+                : AssessmentPolicyStrictness.STANDARD;
+        EffectivePeriod effectivePeriod = errors.isEmpty()
+                ? parseEffectivePeriod(mappedData.get("effectiveFrom"), mappedData.get("effectiveTo"), errors)
+                : EffectivePeriod.EMPTY;
+        return new ParsedValues(passingScore, strictness, effectivePeriod);
+    }
 
-        Map<String, FrameworkVersion> frameworkVersionByCode = indexBy(frameworkVersionRepository.findByCodeIn(frameworkInputs), v -> v.getCode().toUpperCase());
-        Map<String, FrameworkVersion> frameworkVersionByName = indexBy(frameworkVersionRepository.findByNameIn(frameworkInputs), version -> version.getName());
+    // Reusing one Rubric Version in several rows is VALID since V44: many different classes are graded
+    // with the same set of criteria. The constraint still in force is a duplicate scope, checked here.
+    private void claimScope(CommitRun run, ResolvedReferences references, List<Map<String, String>> errors) {
+        if (!errors.isEmpty()) {
+            return;
+        }
+        ScopeKey scopeKey = new ScopeKey(run.schoolId(), references.languageId(), references.frameworkVersionId(),
+                references.scopeIds().gradeLevelId(), references.scopeIds().schoolGradeId(),
+                references.scopeIds().schoolClassId());
+        if (!run.scopesClaimedInFile().add(scopeKey)) {
+            errors.add(error("scope", "Bị trùng phạm vi áp dụng ngay trong file Excel."));
+        } else if (run.existingActiveScopes().contains(scopeKey)) {
+            errors.add(error("scope", "Đã tồn tại một Quy chế (DRAFT/PUBLISHED) khác cho cùng phạm vi này. Vui lòng lưu trữ (ARCHIVE) bản cũ."));
+        }
+    }
 
-        Map<String, RubricVersion> rubricVersionByCode = indexBy(rubricVersionRepository.findByCodeIn(rubricInputs), v -> v.getCode().toUpperCase());
-        Map<String, RubricVersion> rubricVersionByName = indexBy(rubricVersionRepository.findByNameIn(rubricInputs), version -> version.getName());
+    private AssessmentPolicy buildPolicy(CommitRun run, ResolvedReferences references, ParsedValues values) {
+        ScopeIds scopeIds = references.scopeIds();
+        VersionScopeKey versionScopeKey = new VersionScopeKey(run.schoolId(), references.languageId(),
+                references.frameworkVersionId(), scopeIds.gradeLevelId(), scopeIds.schoolGradeId(),
+                scopeIds.schoolClassId());
+        int nextVersion = run.nextVersionByScope().computeIfAbsent(versionScopeKey, key ->
+                run.maxVersionByScope().getOrDefault(key, 0) + 1);
+        run.nextVersionByScope().put(versionScopeKey, nextVersion + 1);
 
+        return AssessmentPolicy.draftForScope(run.schoolId(), scopeIds.gradeLevelId(),
+            scopeIds.schoolGradeId(), scopeIds.schoolClassId(), references.languageId(),
+            references.frameworkVersionId(), references.rubricVersionId(),
+            references.bandIds().targetBandId(), values.passingScore(), values.strictness(), nextVersion,
+            values.effectivePeriod().from(), values.effectivePeriod().to());
+    }
+
+    // Collects every distinct raw input of the PENDING rows and queries once per group (findByCodeIn/findByNameIn)
+    // instead of lazy per-distinct-value queries in the main loop (Phase 2). Bands depend on the already
+    // resolved frameworkVersionId (not a raw input), so they are grouped by the FrameworkVersions found and
+    // queried with findByFrameworkVersionIdIn.
+    private LookupContext prefetchLookups(UUID schoolId, boolean isSchoolScoped, List<Map<String, String>> mappedDataList) {
+        LookupInputs inputs = collectLookupInputs(isSchoolScoped, mappedDataList);
+
+        // *ByCode uses UPPERCASE keys (matching the DB, which filters with UPPER() in the Impl layer) so the
+        // lookup is case-insensitive ("en"/"En"/"EN" all match). *ByName keeps the original case because
+        // display names are not forced into a convention.
+        Map<String, SupportedLanguage> languageByCode = indexBy(languageRepository.findByCodeIn(inputs.languages()), l -> l.getCode().value().toUpperCase());
+        Map<String, SupportedLanguage> languageByName = indexBy(languageRepository.findByNameIn(inputs.languages()), language -> language.getName());
+        Map<String, FrameworkVersion> frameworkVersionByCode = indexBy(frameworkVersionRepository.findByCodeIn(inputs.frameworks()), v -> v.getCode().toUpperCase());
+        Map<String, FrameworkVersion> frameworkVersionByName = indexBy(frameworkVersionRepository.findByNameIn(inputs.frameworks()), version -> version.getName());
+        Map<String, RubricVersion> rubricVersionByCode = indexBy(rubricVersionRepository.findByCodeIn(inputs.rubrics()), v -> v.getCode().toUpperCase());
+        Map<String, RubricVersion> rubricVersionByName = indexBy(rubricVersionRepository.findByNameIn(inputs.rubrics()), version -> version.getName());
+        Map<UUID, Rubric> rubricById = loadRubricsOfVersions(rubricVersionByCode, rubricVersionByName);
+        SchoolScopeLookups schoolScope = isSchoolScoped ? loadSchoolScopeLookups(schoolId, inputs) : SchoolScopeLookups.EMPTY;
+        BandLookups bands = loadBandLookups(frameworkVersionByCode, frameworkVersionByName);
+
+        return new LookupContext(languageByCode, languageByName, frameworkVersionByCode, frameworkVersionByName,
+                rubricVersionByCode, rubricVersionByName, rubricById,
+                schoolScope.classByCode(), schoolScope.classByName(), schoolScope.gradeByCode(), schoolScope.gradeByName(),
+                schoolScope.gradeLevelByCode(), schoolScope.gradeLevelByName(), bands.byVersionAndCode(), bands.byVersionAndLabel());
+    }
+
+    private record LookupInputs(Set<String> languages, Set<String> frameworks, Set<String> rubrics,
+                                Set<String> classes, Set<String> grades, Set<String> gradeLevels) {}
+
+    private LookupInputs collectLookupInputs(boolean isSchoolScoped, List<Map<String, String>> mappedDataList) {
+        LookupInputs inputs = new LookupInputs(new HashSet<>(), new HashSet<>(), new HashSet<>(),
+                new HashSet<>(), new HashSet<>(), new HashSet<>());
+        for (Map<String, String> mappedData : mappedDataList) {
+            addTrimmed(inputs.languages(), mappedData.get("language"));
+            addTrimmed(inputs.frameworks(), mappedData.get("frameworkVersion"));
+            addTrimmed(inputs.rubrics(), mappedData.get("rubricVersion"));
+            if (isSchoolScoped) {
+                addTrimmed(inputs.classes(), mappedData.get("schoolClass"));
+                addTrimmed(inputs.grades(), mappedData.get("schoolGrade"));
+                addTrimmed(inputs.gradeLevels(), mappedData.get("schoolGradeLevel"));
+            }
+        }
+        return inputs;
+    }
+
+    private Map<UUID, Rubric> loadRubricsOfVersions(Map<String, RubricVersion> rubricVersionByCode,
+            Map<String, RubricVersion> rubricVersionByName) {
         Set<UUID> rubricIds = new HashSet<>();
         rubricVersionByCode.values().forEach(v -> rubricIds.add(v.getRubricId()));
         rubricVersionByName.values().forEach(v -> rubricIds.add(v.getRubricId()));
-        Map<UUID, Rubric> rubricById = indexBy(rubricRepository.findByIdIn(rubricIds), r -> r.getId());
+        return indexBy(rubricRepository.findByIdIn(rubricIds), r -> r.getId());
+    }
 
-        Map<String, SchoolClass> schoolClassByCode = Map.of();
-        Map<String, SchoolClass> schoolClassByName = Map.of();
-        Map<String, SchoolGrade> schoolGradeByCode = Map.of();
-        Map<String, SchoolGrade> schoolGradeByName = Map.of();
-        Map<String, GradeLevel> schoolGradeLevelByCode = Map.of();
-        Map<String, GradeLevel> schoolGradeLevelByName = Map.of();
-        if (isSchoolScoped) {
-            schoolClassByCode = indexBy(schoolClassRepository.findBySchoolIdAndCodeIn(schoolId, classInputs), c -> c.getCode().value().toUpperCase());
-            schoolClassByName = indexBy(schoolClassRepository.findBySchoolIdAndNameIn(schoolId, classInputs), c -> c.getName());
-            schoolGradeByCode = indexBy(schoolGradeRepository.findBySchoolIdAndCodeIn(schoolId, gradeInputs), g -> g.getCode().toUpperCase());
-            schoolGradeByName = indexBy(schoolGradeRepository.findBySchoolIdAndNameIn(schoolId, gradeInputs), g -> g.getName());
-            schoolGradeLevelByCode = indexBy(gradeLevelRepository.findByCodeIn(gradeLevelInputs), l -> l.getCode().toUpperCase());
-            schoolGradeLevelByName = indexBy(gradeLevelRepository.findByNameIn(gradeLevelInputs), level -> level.getName());
-        }
+    private record SchoolScopeLookups(
+            Map<String, SchoolClass> classByCode,
+            Map<String, SchoolClass> classByName,
+            Map<String, SchoolGrade> gradeByCode,
+            Map<String, SchoolGrade> gradeByName,
+            Map<String, GradeLevel> gradeLevelByCode,
+            Map<String, GradeLevel> gradeLevelByName) {
+        static final SchoolScopeLookups EMPTY = new SchoolScopeLookups(
+                Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
+    }
 
+    private SchoolScopeLookups loadSchoolScopeLookups(UUID schoolId, LookupInputs inputs) {
+        return new SchoolScopeLookups(
+                indexBy(schoolClassRepository.findBySchoolIdAndCodeIn(schoolId, inputs.classes()), c -> c.getCode().value().toUpperCase()),
+                indexBy(schoolClassRepository.findBySchoolIdAndNameIn(schoolId, inputs.classes()), c -> c.getName()),
+                indexBy(schoolGradeRepository.findBySchoolIdAndCodeIn(schoolId, inputs.grades()), g -> g.getCode().toUpperCase()),
+                indexBy(schoolGradeRepository.findBySchoolIdAndNameIn(schoolId, inputs.grades()), g -> g.getName()),
+                indexBy(gradeLevelRepository.findByCodeIn(inputs.gradeLevels()), l -> l.getCode().toUpperCase()),
+                indexBy(gradeLevelRepository.findByNameIn(inputs.gradeLevels()), level -> level.getName()));
+    }
+
+    private record BandLookups(
+            Map<UUID, Map<String, FrameworkResultBand>> byVersionAndCode,
+            Map<UUID, Map<String, FrameworkResultBand>> byVersionAndLabel) {}
+
+    private BandLookups loadBandLookups(Map<String, FrameworkVersion> frameworkVersionByCode,
+            Map<String, FrameworkVersion> frameworkVersionByName) {
         Set<UUID> frameworkVersionIds = new HashSet<>();
         frameworkVersionByCode.values().forEach(v -> frameworkVersionIds.add(v.getId()));
         frameworkVersionByName.values().forEach(v -> frameworkVersionIds.add(v.getId()));
         List<FrameworkResultBand> bands = frameworkVersionIds.isEmpty()
                 ? List.of()
                 : frameworkResultBandRepository.findByFrameworkVersionIdIn(frameworkVersionIds);
-        Map<UUID, Map<String, FrameworkResultBand>> bandByVersionAndCode = new HashMap<>();
-        Map<UUID, Map<String, FrameworkResultBand>> bandByVersionAndLabel = new HashMap<>();
+        Map<UUID, Map<String, FrameworkResultBand>> byVersionAndCode = new HashMap<>();
+        Map<UUID, Map<String, FrameworkResultBand>> byVersionAndLabel = new HashMap<>();
         for (FrameworkResultBand band : bands) {
-            bandByVersionAndCode.computeIfAbsent(band.getFrameworkVersionId(), k -> new HashMap<>()).put(band.getCode().toUpperCase(), band);
-            bandByVersionAndLabel.computeIfAbsent(band.getFrameworkVersionId(), k -> new HashMap<>()).put(band.getLabel(), band);
+            byVersionAndCode.computeIfAbsent(band.getFrameworkVersionId(), k -> new HashMap<>()).put(band.getCode().toUpperCase(), band);
+            byVersionAndLabel.computeIfAbsent(band.getFrameworkVersionId(), k -> new HashMap<>()).put(band.getLabel(), band);
         }
-
-        return new LookupContext(languageByCode, languageByName, frameworkVersionByCode, frameworkVersionByName,
-                rubricVersionByCode, rubricVersionByName, rubricById,
-                schoolClassByCode, schoolClassByName, schoolGradeByCode, schoolGradeByName,
-                schoolGradeLevelByCode, schoolGradeLevelByName, bandByVersionAndCode, bandByVersionAndLabel);
+        return new BandLookups(byVersionAndCode, byVersionAndLabel);
     }
 
     private static void addTrimmed(Set<String> set, String value) {
@@ -407,35 +471,51 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
             return null;
         }
 
-        // Cùng luật với hai use case tạo tay (Create{School,System}AssessmentPolicyUseCase): chặn
-        // ARCHIVED chứ không chặn PUBLISHED. Import mà khắt khe hơn đường tạo tay thì cùng một file
-        // Excel lúc chạy được lúc không, tùy phiên bản Rubric đã ban hành hay chưa.
+        // Same rule as the two manual-create use cases (Create{School,System}AssessmentPolicyUseCase): block
+        // ARCHIVED but not PUBLISHED. An import stricter than the manual path would make the same Excel file
+        // sometimes work and sometimes not, depending on whether the Rubric version has been published yet.
         if (rubricVersion.getStatus() == RubricStatus.ARCHIVED) {
             errors.add(error("rubricVersion", "Phiên bản Rubric này đã được lưu trữ (ARCHIVED), không thể tạo Assessment Policy mới cho phiên bản này."));
             return null;
         }
-        Rubric rubric = lookup.rubricById().get(rubricVersion.getRubricId());
-        if (rubric == null) {
-            errors.add(error("rubricVersion", "Không tìm thấy Rubric gốc."));
-        } else if (isSchoolScoped) {
-            if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !schoolId.equals(rubric.getSchoolId())) {
-                errors.add(error("rubricVersion", "Rubric Version không thuộc quyền quản lý của trường bạn."));
-            } else if (!rubric.getFrameworkId().equals(frameworkVersion.getFrameworkId())) {
-                errors.add(error("rubricVersion", "Rubric và Khung năng lực không khớp nhau."));
-            }
-        } else {
-            if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
-                errors.add(error("rubricVersion", "Chỉ được dùng Rubric SYSTEM cho luồng System Admin."));
-            } else if (!rubric.getFrameworkId().equals(frameworkVersion.getFrameworkId())) {
-                errors.add(error("rubricVersion", "Rubric và Khung năng lực không khớp nhau."));
-            }
-        }
+        addRubricOwnershipErrors(lookup.rubricById().get(rubricVersion.getRubricId()), frameworkVersion, schoolId,
+                isSchoolScoped, errors);
         return rubricVersion.getId();
     }
 
-    // Phải điền ít nhất 1 trong 3: Lớp, Khối năm học (schoolGrade), Khối (schoolGradeLevel).
-    // Nếu điền nhiều hơn 1, ưu tiên theo thứ tự: Khối (schoolGradeLevel) -> Khối năm học (schoolGrade) -> Lớp (schoolClass)
-    // — khác với CreateSchoolAssessmentPolicyUseCase (tạo tay vẫn bắt buộc chọn CHÍNH XÁC 1, không có fallback này).
+    private static void addRubricOwnershipErrors(Rubric rubric, FrameworkVersion frameworkVersion, UUID schoolId,
+            boolean isSchoolScoped, List<Map<String, String>> errors) {
+        if (rubric == null) {
+            errors.add(error("rubricVersion", "Không tìm thấy Rubric gốc."));
+        } else if (isSchoolScoped) {
+            addSchoolRubricErrors(rubric, frameworkVersion, schoolId, errors);
+        } else {
+            addSystemRubricErrors(rubric, frameworkVersion, errors);
+        }
+    }
+
+    private static void addSchoolRubricErrors(Rubric rubric, FrameworkVersion frameworkVersion, UUID schoolId,
+            List<Map<String, String>> errors) {
+        if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !schoolId.equals(rubric.getSchoolId())) {
+            errors.add(error("rubricVersion", "Rubric Version không thuộc quyền quản lý của trường bạn."));
+        } else if (!rubric.getFrameworkId().equals(frameworkVersion.getFrameworkId())) {
+            errors.add(error("rubricVersion", "Rubric và Khung năng lực không khớp nhau."));
+        }
+    }
+
+    private static void addSystemRubricErrors(Rubric rubric, FrameworkVersion frameworkVersion,
+            List<Map<String, String>> errors) {
+        if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
+            errors.add(error("rubricVersion", "Chỉ được dùng Rubric SYSTEM cho luồng System Admin."));
+        } else if (!rubric.getFrameworkId().equals(frameworkVersion.getFrameworkId())) {
+            errors.add(error("rubricVersion", "Rubric và Khung năng lực không khớp nhau."));
+        }
+    }
+
+    // At least 1 of the 3 must be filled: Class, school grade (schoolGrade), Grade level (schoolGradeLevel).
+    // If more than one is filled, the priority is: Grade level (schoolGradeLevel) -> school grade (schoolGrade)
+    // -> Class (schoolClass) -- unlike CreateSchoolAssessmentPolicyUseCase (manual creation still requires
+    // EXACTLY 1, with no such fallback).
     private static ScopeIds resolveScope(String classInput, String gradeInput, String gradeLevelInput,
             List<Map<String, String>> errors, LookupContext lookup) {
         boolean hasClass = classInput != null && !classInput.isBlank();
@@ -446,29 +526,41 @@ public class AssessmentPolicyImportCommitHandler implements ImportCommitHandler 
             errors.add(error("scope", "Phải điền ít nhất 1 phạm vi áp dụng: Lớp, Khối năm học, HOẶC Khối."));
             return ScopeIds.EMPTY;
         }
-
         if (hasGradeLevel) {
-            String cleanInput = gradeLevelInput == null ? "" : gradeLevelInput.trim();
-            GradeLevel schoolGradeLevel = lookup.schoolGradeLevelByCode().get(cleanInput.toUpperCase());
-            if (schoolGradeLevel == null) schoolGradeLevel = lookup.schoolGradeLevelByName().get(cleanInput);
-            if (schoolGradeLevel == null) {
-                errors.add(error("schoolGradeLevel", "Không tìm thấy Khối '" + cleanInput + "'."));
-                return ScopeIds.EMPTY;
-            }
-            return new ScopeIds(null, null, schoolGradeLevel.getId());
+            return resolveGradeLevelScope(gradeLevelInput, errors, lookup);
         }
-
         if (hasGrade) {
-            String cleanInput = gradeInput == null ? "" : gradeInput.trim();
-            SchoolGrade schoolGrade = lookup.schoolGradeByCode().get(cleanInput.toUpperCase());
-            if (schoolGrade == null) schoolGrade = lookup.schoolGradeByName().get(cleanInput);
-            if (schoolGrade == null) {
-                errors.add(error("schoolGrade", "Không tìm thấy Khối năm học '" + cleanInput + "'."));
-                return ScopeIds.EMPTY;
-            }
-            return new ScopeIds(null, schoolGrade.getId(), null);
+            return resolveSchoolGradeScope(gradeInput, errors, lookup);
         }
+        return resolveSchoolClassScope(classInput, errors, lookup);
+    }
 
+    private static ScopeIds resolveGradeLevelScope(String gradeLevelInput, List<Map<String, String>> errors,
+            LookupContext lookup) {
+        String cleanInput = gradeLevelInput == null ? "" : gradeLevelInput.trim();
+        GradeLevel schoolGradeLevel = lookup.schoolGradeLevelByCode().get(cleanInput.toUpperCase());
+        if (schoolGradeLevel == null) schoolGradeLevel = lookup.schoolGradeLevelByName().get(cleanInput);
+        if (schoolGradeLevel == null) {
+            errors.add(error("schoolGradeLevel", "Không tìm thấy Khối '" + cleanInput + "'."));
+            return ScopeIds.EMPTY;
+        }
+        return new ScopeIds(null, null, schoolGradeLevel.getId());
+    }
+
+    private static ScopeIds resolveSchoolGradeScope(String gradeInput, List<Map<String, String>> errors,
+            LookupContext lookup) {
+        String cleanInput = gradeInput == null ? "" : gradeInput.trim();
+        SchoolGrade schoolGrade = lookup.schoolGradeByCode().get(cleanInput.toUpperCase());
+        if (schoolGrade == null) schoolGrade = lookup.schoolGradeByName().get(cleanInput);
+        if (schoolGrade == null) {
+            errors.add(error("schoolGrade", "Không tìm thấy Khối năm học '" + cleanInput + "'."));
+            return ScopeIds.EMPTY;
+        }
+        return new ScopeIds(null, schoolGrade.getId(), null);
+    }
+
+    private static ScopeIds resolveSchoolClassScope(String classInput, List<Map<String, String>> errors,
+            LookupContext lookup) {
         String cleanInput = classInput == null ? "" : classInput.trim();
         SchoolClass schoolClass = lookup.schoolClassByCode().get(cleanInput.toUpperCase());
         if (schoolClass == null) schoolClass = lookup.schoolClassByName().get(cleanInput);

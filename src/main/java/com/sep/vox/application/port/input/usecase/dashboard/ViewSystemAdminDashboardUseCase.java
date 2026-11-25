@@ -61,13 +61,7 @@ public class ViewSystemAdminDashboardUseCase implements IUseCase<Void, SystemAdm
         long totalSchools = schoolRepository.countAll();
         long activeSchools = schoolRepository.countByIsActiveTrue();
 
-        // Cộng dồn ở DB chứ không nạp đơn về đếm: đây là con số TỪ TRƯỚC TỚI NAY, danh sách đứng sau
-        // nó chỉ có tăng. Mốc dưới là EPOCH vì "tất cả" -- khoảng nửa mở [from, to) nên mốc trên là
-        // now, tức tính tới đúng thời điểm mở màn hình.
-        BigDecimal totalRevenue = orderRepository.sumTotalAmountByStatusInRange(OrderStatus.SUCCESS, Instant.EPOCH, now);
-
-        long activeFrameworkCount = frameworkRepository.findAllActive(1, 1).totalElements();
-        long systemRubricCount = rubricRepository.findAllByOwnerType(RubricOwnerType.SYSTEM, 1, 1).totalElements();
+        BigDecimal totalRevenue = totalRevenueUntil(now);
 
         return new SystemAdminDashboardSummaryResponse(
             totalSchools,
@@ -77,14 +71,22 @@ public class ViewSystemAdminDashboardUseCase implements IUseCase<Void, SystemAdm
             oldestPendingRegistrationDays(now),
             registerFormRepository.countByCreatedAtAfter(now.minus(30, ChronoUnit.DAYS)),
             registerFormRepository.countByCreatedAtAfter(now.minus(90, ChronoUnit.DAYS)),
-            totalRevenue != null ? totalRevenue : BigDecimal.ZERO,
+            totalRevenue,
             buildMonthlyRevenue(now),
             countUsersByRole(STUDENT_CODE),
             countUsersByRole(TEACHER_CODE),
             countUsersByRole(SCHOOL_ADMIN_CODE),
-            activeFrameworkCount,
-            systemRubricCount
+            frameworkRepository.findAllActive(1, 1).totalElements(),
+            rubricRepository.findAllByOwnerType(RubricOwnerType.SYSTEM, 1, 1).totalElements()
         );
+    }
+
+    // Summed in the DB instead of loading the orders to count them: this is an ALL-TIME figure, and the list behind
+    // it only grows. The lower bound is EPOCH because it means "everything"; the interval is half-open [from, to),
+    // so the upper bound is now, i.e. up to the moment the screen is opened.
+    private BigDecimal totalRevenueUntil(Instant now) {
+        BigDecimal totalRevenue = orderRepository.sumTotalAmountByStatusInRange(OrderStatus.SUCCESS, Instant.EPOCH, now);
+        return totalRevenue != null ? totalRevenue : BigDecimal.ZERO;
     }
 
     /**

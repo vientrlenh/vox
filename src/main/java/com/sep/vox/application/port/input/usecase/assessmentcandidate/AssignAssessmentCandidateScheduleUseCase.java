@@ -49,36 +49,37 @@ public class AssignAssessmentCandidateScheduleUseCase
         UUID currentUserId = assessmentScheduleManageAccessService.requireCanManage(assessment);
         AssessmentEditingGuard.requireScheduleEditable(assessment);
 
-        AssessmentCandidate candidate = assessmentCandidateRepository.findById(input.candidateId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thí sinh"));
-        if (!candidate.getAssessmentId().equals(assessment.getId())) {
-            throw new ResourceNotFoundException("Không tìm thấy thí sinh");
-        }
-
+        AssessmentCandidate candidate = requireCandidateOf(assessment, input.candidateId());
         Instant now = Instant.now();
 
-        // Bỏ gán khỏi ca luôn được phép, kể cả khi thí sinh đã không có ca (no-op).
+        // Removing the assignment from a schedule is always allowed, even when the candidate has no schedule (no-op).
         if (input.scheduleId() == null) {
             candidate.unassignFromSchedule(now, currentUserId);
             return AssessmentCandidateDtoMapper.toDto(assessmentCandidateRepository.save(candidate));
         }
 
-        // Gán lại đúng ca hiện tại: short-circuit, không kiểm tra lại sức chứa (tránh tự-đếm-chính-mình).
+        // Assigning the current schedule again short-circuits and skips the capacity check (avoids counting itself).
         if (input.scheduleId().equals(candidate.getScheduleId())) {
             return AssessmentCandidateDtoMapper.toDto(candidate);
         }
 
-        AssessmentSchedule schedule = assessmentScheduleRepository.findByIdForUpdate(input.scheduleId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi"));
-        if (!schedule.getAssessmentId().equals(assessment.getId())) {
-            throw new ResourceNotFoundException("Không tìm thấy ca thi");
-        }
-        if (!ASSIGNABLE_STATUSES.contains(schedule.getStatus())) {
-            throw new IllegalArgumentException("Chỉ có thể xếp thí sinh vào ca ở trạng thái nháp hoặc đã công bố");
-        }
+        return assignToSchedule(assessment, candidate, input.scheduleId(), now, currentUserId);
+    }
 
-        // Ca hiện tại của chính thí sinh này được validator tự loại, nên đổi ca trong cùng một kỳ
-        // thi (kể cả khi hai ca chồng giờ) vẫn chạy được.
+    private AssessmentCandidate requireCandidateOf(Assessment assessment, UUID candidateId) {
+        AssessmentCandidate candidate = assessmentCandidateRepository.findById(candidateId)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thí sinh"));
+        if (!candidate.getAssessmentId().equals(assessment.getId())) {
+            throw new ResourceNotFoundException("Không tìm thấy thí sinh");
+        }
+        return candidate;
+    }
+
+    private AssessmentCandidateDto assignToSchedule(
+        Assessment assessment, AssessmentCandidate candidate, UUID scheduleId, Instant now, UUID currentUserId) {
+        AssessmentSchedule schedule = requireAssignableSchedule(assessment, scheduleId);
+        // The candidate's own current schedule is excluded by the validator, so changing schedule inside the same
+        // assessment (even when the two schedules overlap) still works.
         assessmentScheduleCandidateConflictValidator.requireCandidatesFree(
             List.of(candidate), schedule.getStartDate(), schedule.getEndDate());
 
@@ -87,5 +88,16 @@ public class AssignAssessmentCandidateScheduleUseCase
         // are not locked yet it is left empty, and AssessmentPaperAutoAssigner.backfillAssessment will assign when the last paper variant is locked.
         assessmentPaperAutoAssigner.assignPapersIfNeeded(assessment, List.of(candidate), now, currentUserId);
         return AssessmentCandidateDtoMapper.toDto(assessmentCandidateRepository.save(candidate));
+    }
+    private AssessmentSchedule requireAssignableSchedule(Assessment assessment, UUID scheduleId) {
+        AssessmentSchedule schedule = assessmentScheduleRepository.findByIdForUpdate(scheduleId)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi"));
+        if (!schedule.getAssessmentId().equals(assessment.getId())) {
+            throw new ResourceNotFoundException("Không tìm thấy ca thi");
+        }
+        if (!ASSIGNABLE_STATUSES.contains(schedule.getStatus())) {
+            throw new IllegalArgumentException("Chỉ có thể xếp thí sinh vào ca ở trạng thái nháp hoặc đã công bố");
+        }
+        return schedule;
     }
 }

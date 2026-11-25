@@ -36,25 +36,8 @@ public class AcceptSchoolAssessmentPolicyImportUseCase implements IUseCase<Accep
     @Override
     @Transactional
     public AcceptAssessmentPolicyImportResponse execute(AcceptSchoolAssessmentPolicyImportCommand command) {
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
-
-        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Không thuộc trường học nào."));
-        if (!schoolUser.getSchoolId().equals(command.schoolId()))
-            throw new ForbiddenException("BẢO MẬT: Mã bảo mật trường học không trùng khớp.");
-
-        ImportSession session = importSessionRepository.findById(command.sessionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên làm việc Import."));
-
-        if (session.getType() != ImportType.ASSESSMENT_POLICY || session.getSchoolId() == null
-                || !session.getSchoolId().equals(command.schoolId())) {
-            throw new IllegalArgumentException("Dữ liệu phiên làm việc không thuộc trường học của bạn hoặc sai cấu trúc định dạng.");
-        }
-        if (session.getStatus() != ImportSessionStatus.PREVIEWED) {
-            throw new IllegalArgumentException("Trạng thái phiên làm việc không hợp lệ để phê duyệt.");
-        }
+        requireSchoolMember(command);
+        ImportSession session = loadPreviewedSession(command);
 
         if (command.confirmedMapping() != null) {
             String mappingJson = jsonSerializationPort.toJson(command.confirmedMapping());
@@ -72,5 +55,30 @@ public class AcceptSchoolAssessmentPolicyImportUseCase implements IUseCase<Accep
                 0, 0, 0,
                 session.getStatus().name()
         );
+    }
+
+    private void requireSchoolMember(AcceptSchoolAssessmentPolicyImportCommand command) {
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
+
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
+                .orElseThrow(() -> new ForbiddenException("Không thuộc trường học nào."));
+        if (!schoolUser.getSchoolId().equals(command.schoolId()))
+            throw new ForbiddenException("BẢO MẬT: Mã bảo mật trường học không trùng khớp.");
+    }
+
+    private ImportSession loadPreviewedSession(AcceptSchoolAssessmentPolicyImportCommand command) {
+        ImportSession session = importSessionRepository.findById(command.sessionId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên làm việc Import."));
+
+        if (session.getType() != ImportType.ASSESSMENT_POLICY || session.getSchoolId() == null
+                || !session.getSchoolId().equals(command.schoolId())) {
+            throw new IllegalArgumentException("Dữ liệu phiên làm việc không thuộc trường học của bạn hoặc sai cấu trúc định dạng.");
+        }
+        if (session.getStatus() != ImportSessionStatus.PREVIEWED) {
+            throw new IllegalArgumentException("Trạng thái phiên làm việc không hợp lệ để phê duyệt.");
+        }
+        return session;
     }
 }

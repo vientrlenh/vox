@@ -77,20 +77,45 @@ public class FundQuotaFromBalanceUseCase implements IUseCase<FundQuotaFromBalanc
         BigDecimal amountVnd = requirePositiveAmount(input.amountVnd());
         UUID actorId = userContextPort.getCurrentAuthenticatedUserId();
 
-        SchoolSubscription subscription = schoolSubscriptionRepository.findActiveBySchoolId(input.schoolId())
+        SchoolSubscription subscription = requireActiveSubscription(input.schoolId());
+        SchoolSubscriptionQuotaRecord pool = requirePool(subscription.getId(), quotaType);
+        requireSchoolNotInDebt(input.schoolId());
+
+        BigDecimal balanceAfterVnd = withdrawFromBalance(input, subscription, amountVnd, actorId);
+
+        // After the entry, and in the same transaction: the money leaving the wallet and the money entering the quota
+        // wallet live or die together. One statement adds both total and funded -- see addFundingFromBalance.
+        quotaRecordRepository.addFundingFromBalance(pool.getId(), amountVnd);
+
+        log.info("Trường {} nạp {}đ từ ví tự nạp vào hạn mức {} (kỳ {}), số dư còn {}đ, người thực hiện {}",
+            input.schoolId(), amountVnd, quotaType, subscription.getId(), balanceAfterVnd, actorId);
+
+        return fundingResponse(pool.getId(), amountVnd, balanceAfterVnd);
+    }
+
+    private SchoolSubscription requireActiveSubscription(UUID schoolId) {
+        return schoolSubscriptionRepository.findActiveBySchoolId(schoolId)
             .orElseThrow(() -> new ResourceNotFoundException("Trường chưa có gói subscription đang hoạt động"));
-        SchoolSubscriptionQuotaRecord pool = quotaRecordRepository
-            .findBySchoolSubscriptionIdAndQuotaType(subscription.getId(), quotaType)
+    }
+
+    private SchoolSubscriptionQuotaRecord requirePool(UUID subscriptionId, QuotaType quotaType) {
+        return quotaRecordRepository
+            .findBySchoolSubscriptionIdAndQuotaType(subscriptionId, quotaType)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hạn mức của gói đăng ký"));
+    }
 
-        // Trường đang nợ thì chặn ở đây, TRƯỚC khi soi số dư -- nợ nghĩa là số dư âm, nên phép so
-        // "đủ tiền không" bên dưới cũng sẽ từ chối, nhưng với câu "không đủ số dư" thay vì câu nói
-        // đúng vấn đề. Cùng lý do mà ClassTestTokenQuotaGuardService kẹp số dư âm về 0 rồi để
-        // SchoolSubscriptionDebtGuardService trả lời riêng: báo sai lý do là chỉ sai cách khắc phục.
-        schoolSubscriptionDebtGuardService.requireSchoolNotLocked(input.schoolId());
+    // A school in debt is blocked here, BEFORE looking at the balance -- debt means a negative balance, so the "enough
+    // money?" comparison in withdrawFromBalance would also reject, but with the sentence "insufficient balance" instead of
+    // one that names the real problem. Same reason ClassTestTokenQuotaGuardService clamps a negative balance to 0 and lets
+    // SchoolSubscriptionDebtGuardService answer separately: reporting the wrong reason only points to the wrong remedy.
+    private void requireSchoolNotInDebt(UUID schoolId) {
+        schoolSubscriptionDebtGuardService.requireSchoolNotLocked(schoolId);
+    }
 
+    private BigDecimal withdrawFromBalance(
+            FundQuotaFromBalanceCommand input, SchoolSubscription subscription, BigDecimal amountVnd, UUID actorId) {
         Instant now = Instant.now();
-        // Khóa dòng số dư. Mọi thứ bên dưới đọc/ghi trên bản ghi đang giữ khóa này.
+        // Lock the balance row. Everything below reads/writes the record holding this lock.
         SchoolBalance balance = schoolBalanceRepository.findBySchoolIdForUpdateOrCreate(input.schoolId(), now);
 
         if (balance.getBalanceVnd().compareTo(amountVnd) < 0) {
@@ -99,23 +124,19 @@ public class FundQuotaFromBalanceUseCase implements IUseCase<FundQuotaFromBalanc
                     + balance.getBalanceVnd() + "đ");
         }
 
-        // balanceAfterVnd lấy từ chính apply() chứ không tự trừ lại ở đây: bút toán và số dư tổng hợp
-        // buộc phải là một con số, và tính lại là mở đúng cửa cho chúng trôi khỏi nhau (xem
+        // balanceAfterVnd comes from apply() itself rather than subtracting again here: the entry and the aggregate
+        // balance must be one number, and recomputing opens exactly the door for them to drift apart (see
         // SchoolBalance.apply).
         BigDecimal balanceAfterVnd = balance.apply(amountVnd.negate(), now);
         schoolBalanceRepository.save(balance);
         schoolBalanceEntryRepository.save(SchoolBalanceEntry.forQuotaFunding(
-            input.schoolId(), subscription.getId(), quotaType, amountVnd, balanceAfterVnd,
+            input.schoolId(), subscription.getId(), input.quotaType(), amountVnd, balanceAfterVnd,
             actorId, blankToNull(input.reason()), now));
+        return balanceAfterVnd;
+    }
 
-        // Sau bút toán, và trong cùng transaction: tiền rời ví và tiền vào ví hạn mức cùng sống hoặc
-        // cùng chết. Một câu lệnh cộng cả total lẫn funded -- xem addFundingFromBalance.
-        quotaRecordRepository.addFundingFromBalance(pool.getId(), amountVnd);
-
-        log.info("Trường {} nạp {}đ từ ví tự nạp vào hạn mức {} (kỳ {}), số dư còn {}đ, người thực hiện {}",
-            input.schoolId(), amountVnd, quotaType, subscription.getId(), balanceAfterVnd, actorId);
-
-        SchoolSubscriptionQuotaRecord funded = quotaRecordRepository.findById(pool.getId())
+    private QuotaFundingResponse fundingResponse(UUID poolId, BigDecimal amountVnd, BigDecimal balanceAfterVnd) {
+        SchoolSubscriptionQuotaRecord funded = quotaRecordRepository.findById(poolId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hạn mức của gói đăng ký"));
         return new QuotaFundingResponse(
             SchoolSubscriptionQuotaRecordDto.toDto(funded), amountVnd, balanceAfterVnd);

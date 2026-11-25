@@ -1,5 +1,6 @@
 package com.sep.vox.domain.model.personalization;
 
+import com.sep.vox.domain.service.personalization.TensePolicy;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -114,6 +115,44 @@ public class PracticeTopic {
 
     public void setSourceQuestionTopicId(UUID sourceQuestionTopicId) {
         this.sourceQuestionTopicId = sourceQuestionTopicId;
+    }
+
+    public static PracticeTopic generatedFromName(String source, String name, String normalizedName,
+                                                  String interestDimension, String curriculumGroup,
+                                                  String temporalAffordance, Instant createdAt) {
+        return builder()
+                .id(null)
+                .name(name)
+                .normalizedName(normalizedName)
+                .description(name)
+                .source(source)
+                .interestDimension(interestDimension)
+                .curriculumGroup(curriculumGroup == null ? "OUT_OF_CURRICULUM" : curriculumGroup)
+                .active(true)
+                .createdAt(createdAt)
+                .sourceQuestionTopicId(null)
+                .temporalAffordance(temporalAffordance == null ? TensePolicy.AFFORDANCE_MIXED : temporalAffordance)
+                .build();
+    }
+
+    public static PracticeTopic fromAssessmentQuestionTopic(UUID sourceQuestionTopicId, String name,
+                                                            String normalizedName, String description,
+                                                            String interestDimension, String curriculumGroup,
+                                                            Instant createdAt) {
+        return builder()
+                .name(name)
+                .normalizedName(normalizedName)
+                .description(description)
+                .source("ASSESSMENT_QUESTION_BANK")
+                .interestDimension(interestDimension)
+                .curriculumGroup(curriculumGroup)
+                .active(true)
+                .createdAt(createdAt)
+                .sourceQuestionTopicId(sourceQuestionTopicId)
+                // The topic comes from the school's question bank: nobody assigned a tense, and guessing from the
+                // topic name has no basis. MIXED lets the rotating scale spread the tenses itself.
+                .temporalAffordance(TensePolicy.AFFORDANCE_MIXED)
+                .build();
     }
 
     public static Builder builder() {

@@ -52,6 +52,17 @@ public class FrameworkCriterion extends BaseModel {
         this.order = order;
     }
 
+    public static FrameworkCriterion forVersion(UUID frameworkVersionId, String code, String name,
+                                                String description, int order) {
+        return builder()
+                .frameworkVersionId(frameworkVersionId)
+                .code(code)
+                .name(name)
+                .description(description)
+                .order(order)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

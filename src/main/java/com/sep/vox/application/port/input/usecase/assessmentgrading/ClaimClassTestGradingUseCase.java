@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.usecase.assessmentgrading;
 
 import com.sep.vox.domain.model.assessment.AssessmentCandidateResult;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -55,60 +56,86 @@ public class ClaimClassTestGradingUseCase
         assessmentGradingAccessService.authorizeClassTestChair(command.assessmentId(), currentUserId);
 
         GradingRoundType roundType = requireNotAppealRound(command.roundType());
-        List<UUID> candidateResultIds = command.candidateResultIds() == null
-            ? List.<UUID>of() : command.candidateResultIds();
+        List<UUID> candidateResultIds = requireCandidateResultIds(command.candidateResultIds());
+        List<AssessmentGradingAssignment> assignments =
+            buildClaims(command.assessmentId(), roundType, candidateResultIds, currentUserId);
+
+        return assessmentGradingAssignmentRepository.saveAll(assignments).stream()
+            .map(assignment -> assignment.getId())
+            .toList();
+    }
+
+    private List<UUID> requireCandidateResultIds(List<UUID> requestedIds) {
+        List<UUID> candidateResultIds = requestedIds == null ? List.<UUID>of() : requestedIds;
         if (candidateResultIds.isEmpty()) {
             throw new IllegalArgumentException("Phải chọn ít nhất một bài để nhận chấm.");
         }
         if (new HashSet<>(candidateResultIds).size() != candidateResultIds.size()) {
             throw new ResourceDuplicatedException("Không được chọn trùng bài.");
         }
+        return candidateResultIds;
+    }
 
+    private List<AssessmentGradingAssignment> buildClaims(
+            UUID assessmentId, GradingRoundType roundType, List<UUID> candidateResultIds, UUID currentUserId) {
         Map<UUID, AssessmentCandidateResult> resultsById = assessmentCandidateResultRepository.findByIdIn(candidateResultIds).stream()
             .collect(Collectors.toMap(result -> result.getId(), Function.identity(), (left, right) -> left));
+        Set<UUID> alreadyOpen = openAssignedResultIds(candidateResultIds);
 
-        // Một query cho cả lô — pre-check để báo lỗi tiếng Việt thay vì để unique index
-        // ném DataIntegrityViolation; index vẫn là chốt cuối khi có race.
-        Set<UUID> alreadyOpen = assessmentGradingAssignmentRepository
+        Instant now = Instant.now();
+        List<AssessmentGradingAssignment> assignments = new ArrayList<AssessmentGradingAssignment>();
+        for (UUID candidateResultId : candidateResultIds) {
+            AssessmentCandidateResult result = requireClaimable(
+                assessmentId, roundType, resultsById.get(candidateResultId), alreadyOpen.contains(candidateResultId));
+            assignments.add(openClaim(result, candidateResultId, roundType, currentUserId, now));
+        }
+        return assignments;
+    }
+
+    /**
+     * One query for the whole batch -- a pre-check so the error message is in Vietnamese instead of letting the
+     * unique index throw DataIntegrityViolation; the index remains the last safeguard when there is a race.
+     */
+    private Set<UUID> openAssignedResultIds(List<UUID> candidateResultIds) {
+        return assessmentGradingAssignmentRepository
             .findOpenByCandidateResultIdIn(candidateResultIds).stream()
             .map(assignment -> assignment.getCandidateResultId())
             .collect(Collectors.toSet());
+    }
 
-        Instant now = Instant.now();
-        List<AssessmentGradingAssignment> assignments = new java.util.ArrayList<AssessmentGradingAssignment>();
-        for (UUID candidateResultId : candidateResultIds) {
-            AssessmentCandidateResult result = resultsById.get(candidateResultId);
-            if (result == null) {
-                throw new ResourceNotFoundException("Không tìm thấy kết quả bài thi.");
-            }
-            // Blocks claiming an attempt of another test -- the assessmentId in the URL is the thing that has passed the permission check.
-            if (!command.assessmentId().equals(result.getAssessmentId())) {
-                throw new ResourceNotFoundException("Bài thi không thuộc bài kiểm tra này.");
-            }
-            if (!GradingRoundPolicy.isAssignable(roundType, result.getStatus())) {
-                throw new IllegalArgumentException(
-                    "Bài thi không ở trạng thái phù hợp với vòng chấm " + roundType.name() + ".");
-            }
-            if (alreadyOpen.contains(candidateResultId)) {
-                throw new ResourceDuplicatedException("Bài thi này đang được chấm.");
-            }
-
-            // scoreBefore chụp NGAY LÚC NHẬN — mốc đo độ lệch so với vòng trước.
-            assignments.add(AssessmentGradingAssignment.open(
-                candidateResultId,
-                currentUserId,
-                roundType,
-                null,
-                result.getTotalScore(),
-                now,
-                currentUserId,
-                null
-            ));
+    private AssessmentCandidateResult requireClaimable(
+            UUID assessmentId, GradingRoundType roundType, AssessmentCandidateResult result, boolean alreadyOpen) {
+        if (result == null) {
+            throw new ResourceNotFoundException("Không tìm thấy kết quả bài thi.");
         }
+        // Blocks claiming an attempt of another test -- the assessmentId in the URL is the thing that has passed the permission check.
+        if (!assessmentId.equals(result.getAssessmentId())) {
+            throw new ResourceNotFoundException("Bài thi không thuộc bài kiểm tra này.");
+        }
+        if (!GradingRoundPolicy.isAssignable(roundType, result.getStatus())) {
+            throw new IllegalArgumentException(
+                "Bài thi không ở trạng thái phù hợp với vòng chấm " + roundType.name() + ".");
+        }
+        if (alreadyOpen) {
+            throw new ResourceDuplicatedException("Bài thi này đang được chấm.");
+        }
+        return result;
+    }
 
-        return assessmentGradingAssignmentRepository.saveAll(assignments).stream()
-            .map(assignment -> assignment.getId())
-            .toList();
+    /** scoreBefore is captured RIGHT AT CLAIM -- the reference point for measuring the deviation from the previous round. */
+    private AssessmentGradingAssignment openClaim(
+            AssessmentCandidateResult result, UUID candidateResultId, GradingRoundType roundType,
+            UUID currentUserId, Instant now) {
+        return AssessmentGradingAssignment.open(
+            candidateResultId,
+            currentUserId,
+            roundType,
+            null,
+            result.getTotalScore(),
+            now,
+            currentUserId,
+            null
+        );
     }
 
     private GradingRoundType requireNotAppealRound(GradingRoundType roundType) {

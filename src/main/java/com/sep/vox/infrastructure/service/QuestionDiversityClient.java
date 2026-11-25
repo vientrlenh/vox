@@ -44,45 +44,21 @@ public class QuestionDiversityClient implements QuestionDiversityPort {
     }
 
     @Override
-    public Map<UUID, Double> maxSimilarities(
-            List<UUID> candidateIds,
-            List<UUID> selectedIds) {
+    public Map<UUID, Double> maxSimilarities(List<UUID> candidateIds, List<UUID> selectedIds) {
         if (selectedIds.isEmpty()) {
             Map<UUID, Double> result = new HashMap<UUID, Double>();
             candidateIds.forEach(id -> result.put(id, 0.0));
             return result;
         }
         try {
-            String body = jsonMapper.writeValueAsString(Map.of(
-                "candidate_ids",
-                candidateIds.stream().map(id -> id.toString()).toList(),
-                "selected_ids",
-                selectedIds.stream().map(id -> id.toString()).toList()
-            ));
-            HttpRequest request = HttpRequest.newBuilder(endpoint)
-                .timeout(Duration.ofSeconds(5))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(body))
-                .build();
-            HttpResponse<String> response = httpClient.send(
-                request,
-                HttpResponse.BodyHandlers.ofString()
-            );
+            HttpRequest request = buildSimilarityRequest(candidateIds, selectedIds);
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() / 100 != 2) {
                 throw new IllegalStateException(
                     "Similarity endpoint returned " + response.statusCode() + ": " + response.body()
                 );
             }
-            JsonNode values = jsonMapper.readTree(response.body())
-                .path("max_similarity");
-            Map<UUID, Double> result = new HashMap<UUID, Double>();
-            for (Map.Entry<String, JsonNode> entry : values.properties()) {
-                result.put(
-                    UUID.fromString(entry.getKey()),
-                    entry.getValue().asDouble(1.0)
-                );
-            }
-            return result;
+            return readMaxSimilarities(response.body());
         } catch (IOException | InterruptedException | RuntimeException exception) {
             log.warn(
                 "Question similarity endpoint unavailable; "
@@ -91,6 +67,33 @@ public class QuestionDiversityClient implements QuestionDiversityPort {
             );
             return Map.of();
         }
+    }
+
+    private HttpRequest buildSimilarityRequest(List<UUID> candidateIds, List<UUID> selectedIds) {
+        String body = jsonMapper.writeValueAsString(Map.of(
+            "candidate_ids",
+            candidateIds.stream().map(id -> id.toString()).toList(),
+            "selected_ids",
+            selectedIds.stream().map(id -> id.toString()).toList()
+        ));
+        return HttpRequest.newBuilder(endpoint)
+            .timeout(Duration.ofSeconds(5))
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(body))
+            .build();
+    }
+
+    private Map<UUID, Double> readMaxSimilarities(String responseBody) {
+        JsonNode values = jsonMapper.readTree(responseBody)
+            .path("max_similarity");
+        Map<UUID, Double> result = new HashMap<UUID, Double>();
+        for (Map.Entry<String, JsonNode> entry : values.properties()) {
+            result.put(
+                UUID.fromString(entry.getKey()),
+                entry.getValue().asDouble(1.0)
+            );
+        }
+        return result;
     }
 
 }

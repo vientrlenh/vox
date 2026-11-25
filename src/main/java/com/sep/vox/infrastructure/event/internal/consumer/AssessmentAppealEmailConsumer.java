@@ -88,26 +88,39 @@ public class AssessmentAppealEmailConsumer {
         String eventType = KafkaEventHeaders.readEventType(record);
         Mail mail = renderMail(eventType, eventId, record.value());
 
-        // If the student has been deleted, resending any number of times will never find a recipient: mark
-        // it processed and skip, do not let the message run the whole retry cycle and end up in the DLT.
         if (mail == null) {
-            markProcessed(eventId);
-            log.warn("Skip mail, recipient not found: eventId={}, eventType={}", eventId, eventType);
-            ack.acknowledge();
+            skipMissingRecipient(eventId, eventType, ack);
             return;
         }
 
+        deliverMail(mail, eventId, eventType);
+        ack.acknowledge();
+    }
+
+    /**
+     * If the student has been deleted, resending any number of times will never find a recipient: mark
+     * it processed and skip, do not let the message run the whole retry cycle and end up in the DLT.
+     */
+    private void skipMissingRecipient(UUID eventId, String eventType, Acknowledgment ack) {
+        markProcessed(eventId);
+        log.warn("Skip mail, recipient not found: eventId={}, eventType={}", eventId, eventType);
+        ack.acknowledge();
+    }
+
+    private void deliverMail(Mail mail, UUID eventId, String eventType) {
+        sendMail(mail, eventId);
+        markProcessed(eventId);
+
+        log.info("Assessment appeal mail sent: eventId={}, eventType={}, to={}", eventId, eventType, mail.to());
+    }
+
+    private void sendMail(Mail mail, UUID eventId) {
         try {
             mailSendingPort.sendHtml(mail.to(), mail.subject(), mail.html());
         } catch (Exception e) {
             log.error("Send mail error: eventId={}, to={}", eventId, mail.to(), e);
             throw new IllegalStateException("Gửi mail phúc khảo thất bại: eventId=" + eventId, e);
         }
-
-        markProcessed(eventId);
-
-        log.info("Assessment appeal mail sent: eventId={}, eventType={}, to={}", eventId, eventType, mail.to());
-        ack.acknowledge();
     }
 
     /** @return {@code null} when no recipient can be found */
@@ -164,7 +177,7 @@ public class AssessmentAppealEmailConsumer {
     }
 
     @DltHandler
-    public void handleDlt(ConsumerRecord<String, String> record) {
+    public void logDeadLetteredRecord(ConsumerRecord<String, String> record) {
         UUID eventId = KafkaEventHeaders.readEventIdOrNull(record);
         log.error("assessment-appeal event sent to DLT: eventId={}, topic={}, partition={}, offset={}, payload={}",
             eventId, record.topic(), record.partition(), record.offset(), record.value());

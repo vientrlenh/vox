@@ -10,7 +10,7 @@ import com.sep.vox.infrastructure.persistence.entity.question.QuestionJpaEntity;
 public final class QuestionMapper {
 
     public static Question toDomain(QuestionJpaEntity jpa) {
-        return Question.builder()
+        Question.Builder builder = Question.builder()
                 .id(jpa.getId())
                 .questionBankId(jpa.getQuestionBankId())
                 .questionTopicId(jpa.getQuestionTopicId())
@@ -22,7 +22,13 @@ public final class QuestionMapper {
                 .type(QuestionType.valueOf(jpa.getType()))
                 .preparationTimeSeconds(jpa.getPreparationTimeSeconds())
                 .minResponseSeconds(jpa.getMinResponseSeconds())
-                .maxResponseSeconds(jpa.getMaxResponseSeconds())
+                .maxResponseSeconds(jpa.getMaxResponseSeconds());
+        applySharingAndAuditFields(builder, jpa);
+        return builder.build();
+    }
+
+    private static void applySharingAndAuditFields(Question.Builder builder, QuestionJpaEntity jpa) {
+        builder
                 .sharing(sharingFromString(jpa.getSharing()))
                 .sourceQuestionId(jpa.getSourceQuestionId())
                 .locked(jpa.isLocked())
@@ -32,12 +38,11 @@ public final class QuestionMapper {
                 .createdAt(jpa.getCreatedAt())
                 .updatedAt(jpa.getUpdatedAt())
                 .createdBy(jpa.getCreatedBy())
-                .updatedBy(jpa.getUpdatedBy())
-                .build();
+                .updatedBy(jpa.getUpdatedBy());
     }
 
     public static QuestionJpaEntity toJpa(Question question) {
-        return QuestionJpaEntity.builder()
+        QuestionJpaEntity entity = QuestionJpaEntity.builder()
                 .id(question.getId())
                 .questionBankId(question.getQuestionBankId())
                 .questionTopicId(question.getQuestionTopicId())
@@ -50,17 +55,22 @@ public final class QuestionMapper {
                 .preparationTimeSeconds(question.getPreparationTimeSeconds())
                 .minResponseSeconds(question.getMinResponseSeconds())
                 .maxResponseSeconds(question.getMaxResponseSeconds())
-                .sharing(valueOf(question.getSharing()))
-                .sourceQuestionId(question.getSourceQuestionId())
-                .locked(question.isLocked())
-                .confidentiality(question.getConfidentiality().name())
-                .securePoolId(question.getSecurePoolId())
-                .status(question.getStatus().name())
-                .createdAt(question.getCreatedAt())
-                .updatedAt(question.getUpdatedAt())
-                .createdBy(question.getCreatedBy())
-                .updatedBy(question.getUpdatedBy())
                 .build();
+        copySharingAndAuditFields(entity, question);
+        return entity;
+    }
+
+    private static void copySharingAndAuditFields(QuestionJpaEntity entity, Question question) {
+        entity.setSharing(valueOf(question.getSharing()));
+        entity.setSourceQuestionId(question.getSourceQuestionId());
+        entity.setLocked(question.isLocked());
+        entity.setConfidentiality(question.getConfidentiality().name());
+        entity.setSecurePoolId(question.getSecurePoolId());
+        entity.setStatus(question.getStatus().name());
+        entity.setCreatedAt(question.getCreatedAt());
+        entity.setUpdatedAt(question.getUpdatedAt());
+        entity.setCreatedBy(question.getCreatedBy());
+        entity.setUpdatedBy(question.getUpdatedBy());
     }
 
     private static String valueOf(QuestionSharing sharing) {

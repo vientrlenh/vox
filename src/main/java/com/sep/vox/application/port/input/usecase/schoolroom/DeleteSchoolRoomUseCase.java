@@ -32,44 +32,42 @@ public class DeleteSchoolRoomUseCase implements IUseCase<DeleteSchoolRoomCommand
     @Transactional
     public Void execute(DeleteSchoolRoomCommand command) {
 
-        // 1. Validate User (Tối ưu bằng hàm exists)
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Tài khoản của bạn không tồn tại hoặc đã bị khóa.");
-        }
+        requireCallerMayDeleteRoomsOf(command.schoolId());
 
-        // VÒNG BẢO MẬT 1: KIỂM TRA QUYỀN SCHOOL USER
-        Optional<SchoolUser> schoolUserOpt = schoolUserRepository.findByUserId(currentUserId);
-        if (schoolUserOpt.isPresent()) {
-            SchoolUser schoolUser = schoolUserOpt.get();
-            if (!schoolUser.getSchoolId().equals(command.schoolId())) {
-                // Sửa lại câu báo lỗi cho đúng ngữ cảnh Phòng học
-                throw new ForbiddenException("BẢO MẬT: Bạn không có quyền xóa phòng học của trường khác.");
-            }
-        }
-
-
-        // 2. Tìm phòng học cần xóa
         SchoolRoom room = schoolRoomRepository.findById(command.id())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phòng học với ID đã cho."));
 
-        // VÒNG BẢO MẬT 2: KIỂM TRA PHÒNG HỌC CÓ ĐÚNG CỦA TRƯỜNG NÀY KHÔNG
+        // SECURITY GUARD 2: the room must really belong to this school
         if (!room.getSchoolId().equals(command.schoolId())) {
             throw new ForbiddenException("BẢO MẬT: Phòng học này không thuộc về trường học đã chỉ định.");
         }
 
-
-        // 3. THỰC HIỆN XÓA MỀM (SOFT DELETE)
+        // Soft delete
         if (!room.isActive()) {
             throw new IllegalArgumentException("Phòng học này đã bị xóa (vô hiệu hóa) từ trước rồi.");
         }
 
         room.setActive(false); // Switch the status to false
 
-        // 4. LƯU LẠI VÀO DB
         schoolRoomRepository.save(room);
 
-        // 5. Trả về dữ liệu mới
         return null;
+    }
+
+    private void requireCallerMayDeleteRoomsOf(UUID schoolId) {
+        // exists call instead of loading the user, for performance
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
+            throw new UnauthorizedException("Tài khoản của bạn không tồn tại hoặc đã bị khóa.");
+        }
+
+        // SECURITY GUARD 1: check the school user's rights
+        Optional<SchoolUser> schoolUserOpt = schoolUserRepository.findByUserId(currentUserId);
+        if (schoolUserOpt.isPresent()) {
+            SchoolUser schoolUser = schoolUserOpt.get();
+            if (!schoolUser.getSchoolId().equals(schoolId)) {
+                throw new ForbiddenException("BẢO MẬT: Bạn không có quyền xóa phòng học của trường khác.");
+            }
+        }
     }
 }

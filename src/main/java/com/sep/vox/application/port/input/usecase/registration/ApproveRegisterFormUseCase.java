@@ -39,15 +39,24 @@ public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormC
 
         RegisterForm registerForm = registerFormRepository.findById(command.registerFormId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn đăng ký theo yêu cầu"));
-        
+
         int updatedRows = registerFormRepository.updateApprovedRegisterForm(command.registerFormId(), currentUserId);
         if (updatedRows == 0) {
             throw new IllegalArgumentException("Đơn đăng ký không ở trạng thái chờ hoặc không tồn tại");
         }
 
         SchoolDirectory schoolDirectory = resolveSchoolDirectory(registerForm, command);
+        provisionSchoolService.provision(toProvisionSchoolCommand(registerForm, schoolDirectory, command, now));
+        return null;
+    }
 
-        provisionSchoolService.provision(new ProvisionSchoolCommand(
+    private ProvisionSchoolCommand toProvisionSchoolCommand(
+        RegisterForm registerForm,
+        SchoolDirectory schoolDirectory,
+        ApproveRegisterFormCommand command,
+        Instant now
+    ) {
+        return new ProvisionSchoolCommand(
             schoolDirectory.getCode(),
             schoolDirectory.getName(),
             command.description(),
@@ -60,25 +69,32 @@ public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormC
             registerForm.getDateOfBirth().value(),
             registerForm.getContactAddress(),
             null,
-            now)
-        );
-
-        return null;
+            now);
     }
 
     private SchoolDirectory resolveSchoolDirectory(RegisterForm registerForm, ApproveRegisterFormCommand command) {
-        // Đơn từ danh mục: trường đã có entry sẵn -> dùng lại, xác minh nếu chưa
+        // A form from the directory already has an entry: reuse it and verify it if needed
         if (registerForm.getSchoolDirectoryId() != null) {
-            SchoolDirectory directory = schoolDirectoryRepository.findById(registerForm.getSchoolDirectoryId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục trường theo yêu cầu"));
-            if (!directory.isVerified()) {
-                directory.verify();
-                schoolDirectoryRepository.save(directory);
-            }
-            return directory;
+            return verifyExistingSchoolDirectory(registerForm.getSchoolDirectoryId());
         }
+        return createVerifiedUserSubmittedDirectory(registerForm, command);
+    }
 
-        // Đơn tự khai: chưa có trong danh mục -> tạo entry USER_SUBMITTED rồi xác minh
+    private SchoolDirectory verifyExistingSchoolDirectory(UUID schoolDirectoryId) {
+        SchoolDirectory directory = schoolDirectoryRepository.findById(schoolDirectoryId)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục trường theo yêu cầu"));
+        if (!directory.isVerified()) {
+            directory.verify();
+            schoolDirectoryRepository.save(directory);
+        }
+        return directory;
+    }
+
+    // A self-declared form is not in the directory yet: create a USER_SUBMITTED entry, then verify it
+    private SchoolDirectory createVerifiedUserSubmittedDirectory(
+        RegisterForm registerForm,
+        ApproveRegisterFormCommand command
+    ) {
         if (schoolDirectoryRepository.existsByCode(command.schoolCode())) {
             throw new ResourceDuplicatedException("Danh mục trường với mã yêu cầu đã tồn tại");
         }

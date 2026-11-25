@@ -42,7 +42,41 @@ public class CreateAssessmentUseCase implements IUseCase<CreateAssessmentCommand
     @Transactional
     public AssessmentDto execute(CreateAssessmentCommand input) {
         CreateAssessmentCommand command = normalize(input);
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID currentSchoolId = requireSchoolAdminSchoolId(userContextPort.getCurrentAuthenticatedUserId());
+
+        if (command.blueprintId() != null) {
+            requireBlueprintInSchool(command.blueprintId(), currentSchoolId);
+        }
+
+        // May be left empty at creation (a centralized assessment chooses its policy later), but once sent it must be a
+        // published policy of the current school -- a wrong one only shows up after the assessment has run, as no result
+        // can be generated for grading.
+        assessmentPolicyValidator.validateIfPresent(command.assessmentPolicyId(), currentSchoolId);
+
+        AssessmentStreamConfigResolver.StreamConfig streamConfig = assessmentStreamConfigResolver.resolve(
+            command.requiredStreamTypes(), command.streamTypePermission());
+
+        validateOpenClose(command.openAt(), command.closeAt(), currentSchoolId);
+
+        return AssessmentDtoMapper.toDto(assessmentRepository.save(
+            buildCentralizedDraft(command, currentSchoolId, streamConfig)));
+    }
+
+    private Assessment buildCentralizedDraft(
+            CreateAssessmentCommand command,
+            UUID currentSchoolId,
+            AssessmentStreamConfigResolver.StreamConfig streamConfig) {
+        Assessment assessment = Assessment.centralizedDraft(command.blueprintId(), assessmentCodeOf(command.code()),
+            command.name(), command.description(), currentSchoolId, command.languageId());
+        assessment.configure(command.deliveryMode(), command.maxAttempt(), command.assessmentTimeDurationSecond(),
+            command.resultDecisionMethod(), command.requiresOtp());
+        assessment.scheduleBetween(command.openAt(), command.closeAt(), command.assessmentPolicyId());
+        assessment.useStreamProctoring(streamConfig.requiredStreamType(), streamConfig.streamTypePermission(),
+            command.aiConfidenceThresholdPercent());
+        return assessment;
+    }
+
+    private UUID requireSchoolAdminSchoolId(UUID currentUserId) {
         UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
@@ -52,33 +86,15 @@ public class CreateAssessmentUseCase implements IUseCase<CreateAssessmentCommand
         if (!schoolAdmin || currentSchoolId == null) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
+        return currentSchoolId;
+    }
 
-        if (command.blueprintId() != null) {
-            AssessmentBlueprint blueprint = assessmentBlueprintRepository.findById(command.blueprintId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy blueprint đề thi"));
-            if (!currentSchoolId.equals(blueprint.getSchoolId())) {
-                throw new ForbiddenException("Blueprint không thuộc trường hiện tại");
-            }
+    private void requireBlueprintInSchool(UUID blueprintId, UUID currentSchoolId) {
+        AssessmentBlueprint blueprint = assessmentBlueprintRepository.findById(blueprintId)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy blueprint đề thi"));
+        if (!currentSchoolId.equals(blueprint.getSchoolId())) {
+            throw new ForbiddenException("Blueprint không thuộc trường hiện tại");
         }
-
-        // Bỏ trống được ở bước tạo (kỳ thi tập trung chọn policy sau), nhưng đã gửi lên thì phải là
-        // policy đã xuất bản và thuộc trường hiện tại — gắn nhầm thì bài chạy xong mới lộ ra là không
-        // sinh được kết quả nào để chấm.
-        assessmentPolicyValidator.validateIfPresent(command.assessmentPolicyId(), currentSchoolId);
-
-        AssessmentStreamConfigResolver.StreamConfig streamConfig = assessmentStreamConfigResolver.resolve(
-            command.requiredStreamTypes(), command.streamTypePermission());
-
-        validateOpenClose(command.openAt(), command.closeAt(), currentSchoolId);
-
-        Assessment assessment = Assessment.centralizedDraft(command.blueprintId(), assessmentCodeOf(command.code()),
-            command.name(), command.description(), currentSchoolId, command.languageId());
-        assessment.configure(command.deliveryMode(), command.maxAttempt(), command.assessmentTimeDurationSecond(),
-            command.resultDecisionMethod(), command.requiresOtp());
-        assessment.scheduleBetween(command.openAt(), command.closeAt(), command.assessmentPolicyId());
-        assessment.useStreamProctoring(streamConfig.requiredStreamType(), streamConfig.streamTypePermission(),
-            command.aiConfidenceThresholdPercent());
-        return AssessmentDtoMapper.toDto(assessmentRepository.save(assessment));
     }
 
     private CreateAssessmentCommand normalize(CreateAssessmentCommand input) {

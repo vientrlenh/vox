@@ -56,6 +56,15 @@ public class UpdateAssessmentDeliveryModeUseCase implements IUseCase<UpdateAsses
 
         authorize(assessment, currentUserId, currentSchoolId, schoolAdmin);
 
+        requireDeliveryModeChangeable(assessment, deliveryMode);
+
+        assessment.setDeliveryMode(deliveryMode);
+
+        Assessment saved = assessmentRepository.save(assessment);
+        return AssessmentDtoMapper.toDto(saved, papersLocked(saved.getId()));
+    }
+
+    private void requireDeliveryModeChangeable(Assessment assessment, AssessmentDeliveryMode deliveryMode) {
         if (assessment.getStatus() != AssessmentStatus.DRAFT && assessment.getStatus() != AssessmentStatus.SCHEDULED) {
             throw new IllegalArgumentException("Không thể đổi hình thức làm bài khi bài kiểm tra đã bắt đầu hoặc kết thúc");
         }
@@ -64,11 +73,6 @@ public class UpdateAssessmentDeliveryModeUseCase implements IUseCase<UpdateAsses
             throw new IllegalArgumentException(
                 "Không thể đổi hình thức làm bài khi đã có thí sinh được xếp vào ca thi — hãy gỡ hết thí sinh khỏi ca thi trước");
         }
-
-        assessment.setDeliveryMode(deliveryMode);
-
-        Assessment saved = assessmentRepository.save(assessment);
-        return AssessmentDtoMapper.toDto(saved, papersLocked(saved.getId()));
     }
 
     private void authorize(Assessment assessment, UUID currentUserId, UUID currentSchoolId, boolean schoolAdmin) {

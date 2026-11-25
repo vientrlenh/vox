@@ -71,10 +71,14 @@ public class DeleteAssessmentUseCase implements IUseCase<DeleteAssessmentCommand
 
         authorizeDelete(assessment.getId(), assessment.getSchoolId(), assessment.getKind(), currentUserId, currentSchoolId, schoolAdmin);
 
+        return deleteOrCancelByStatus(assessment, currentUserId);
+    }
+
+    private DeleteAssessmentResponse deleteOrCancelByStatus(Assessment assessment, UUID currentUserId) {
         return switch (assessment.getStatus()) {
             case RESULTS_PUBLISHED ->
                 throw new IllegalArgumentException("Không thể xoá kỳ thi đã công bố kết quả");
-            // Đã huỷ rồi thì bấm xoá lần nữa không có gì để làm: trả đúng kết quả cũ thay vì ném lỗi.
+            // Already cancelled: pressing delete again has nothing to do, so return the same result instead of throwing.
             case CANCELLED -> new DeleteAssessmentResponse(false, true);
             case DRAFT -> {
                 cascadeDelete(assessment.getId(), currentUserId);
@@ -95,14 +99,24 @@ public class DeleteAssessmentUseCase implements IUseCase<DeleteAssessmentCommand
     }
 
     /**
-     * Xoá con trước cha. Không có FK nào chặn nên sai thứ tự hay bỏ sót bảng đều không báo lỗi —
-     * chỉ lặng lẽ để lại dòng mồ côi.
+     * Deletes children before the parent. No FK blocks a wrong order or a missed table, so a mistake raises no
+     * error -- it silently leaves orphan rows behind.
      */
     private void cascadeDelete(UUID assessmentId, UUID currentUserId) {
         // Locked questions point into the assessment_secure_pools of the assessment: deleting the pool and forgetting to unlock leaves the questions
         // in the question bank in a permanently locked state.
         assessmentQuestionSecureLockService.releaseAllForAssessment(assessmentId, currentUserId);
 
+        deletePapersWithContent(assessmentId);
+        deleteScheduleProctors(assessmentId);
+        assessmentCandidateRepository.deleteByAssessmentId(assessmentId);
+        assessmentScheduleRepository.deleteByAssessmentId(assessmentId);
+
+        assessmentMemberRepository.deleteByAssessmentId(assessmentId);
+        assessmentRepository.deleteById(assessmentId);
+    }
+
+    private void deletePapersWithContent(UUID assessmentId) {
         List<UUID> paperIds = assessmentPaperRepository.findByAssessmentId(assessmentId).stream()
             .map(paper -> paper.getId())
             .toList();
@@ -111,18 +125,15 @@ public class DeleteAssessmentUseCase implements IUseCase<DeleteAssessmentCommand
             assessmentPaperSectionRepository.deleteByPaperIdIn(paperIds);
             assessmentPaperRepository.deleteByAssessmentId(assessmentId);
         }
+    }
 
+    private void deleteScheduleProctors(UUID assessmentId) {
         // Deliberately uses findAllIdsByAssessmentId rather than findByAssessmentId: the latter filters out soft-deleted sessions,
         // and the proctors of those sessions have to be cleaned up too.
         List<UUID> scheduleIds = assessmentScheduleRepository.findAllIdsByAssessmentId(assessmentId);
         if (!scheduleIds.isEmpty()) {
             assessmentScheduleProctorRepository.deleteByScheduleIdIn(scheduleIds);
         }
-        assessmentCandidateRepository.deleteByAssessmentId(assessmentId);
-        assessmentScheduleRepository.deleteByAssessmentId(assessmentId);
-
-        assessmentMemberRepository.deleteByAssessmentId(assessmentId);
-        assessmentRepository.deleteById(assessmentId);
     }
 
     private void authorizeDelete(

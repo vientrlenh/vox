@@ -12,15 +12,14 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.mapper.question.UpdateQuestionResponseMapper;
 import com.sep.vox.application.port.input.command.question.UpdateQuestionCommand;
+import com.sep.vox.application.port.input.service.QuestionEditAccessService;
+import com.sep.vox.application.port.input.service.QuestionEditAccessService.EditAccess;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.question.UpdateQuestionResponse;
 import com.sep.vox.domain.model.question.Question;
-import com.sep.vox.domain.model.question.QuestionBankOwnerType;
-import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
 import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.repository.QuestionBankRepository;
-import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 
 @Service
@@ -29,7 +28,7 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Up
 
     private final QuestionRepository questionRepository;
     private final QuestionBankRepository questionBankRepository;
-    private final QuestionCollaboratorRepository questionCollaboratorRepository;
+    private final QuestionEditAccessService questionEditAccessService;
     private final UserContextPort userContextPort;
 
     @Override
@@ -40,52 +39,56 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Up
 
         Question question = questionRepository.findById(command.id())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi"));
-        QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+        EditAccess access = requireEditAccess(question, currentUserId);
 
-        boolean owner = question.isCreatedBy(currentUserId);
-        boolean editorCollaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId)
-            .filter(collaborator -> collaborator.getPermission() == QuestionCollaboratorPermission.CAN_EDIT)
-            .isPresent();
-        boolean systemAdminOnSystemBank = userContextPort.isSystemAdmin()
-            && bank.getOwnerType() == QuestionBankOwnerType.SYSTEM;
-
-        if (!systemAdminOnSystemBank && !editorCollaborator && !owner) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
-        }
-
-        // sharing là cài đặt riêng tư, không phải nội dung — được chỉnh bất kỳ lúc nào
+        // Sharing is a private setting, not content -- it can be changed at any time.
         if (command.sharing() != null) {
             question.setSharing(command.sharing());
         }
 
-        boolean hasContentUpdate = command.instructionText() != null || command.questionText() != null
-                || command.promptText() != null || command.preparationText() != null
-                || command.questionType() != null || command.preparationTimeSeconds() != null
-                || command.minResponseSeconds() != null || command.maxResponseSeconds() != null;
-
-        if (hasContentUpdate) {
-            boolean usedInAssessment = questionRepository.existsUsedInAssessment(question.getId());
-            boolean immutable = question.getStatus() == QuestionStatus.PUBLISHED || question.isLocked() || usedInAssessment;
-            if (immutable) {
-                throw new IllegalArgumentException(
-                    "Câu hỏi đã publish hoặc đã dùng trong bài kiểm tra, không thể sửa trực tiếp — dùng nút Nhân bản để tạo bản có thể sửa");
-            }
-            if (!systemAdminOnSystemBank
-                    && (owner || editorCollaborator)
-                    && question.getStatus() != QuestionStatus.DRAFT
-                    && question.getStatus() != QuestionStatus.REVISION_REQUESTED) {
-                throw new ForbiddenException("Chỉ được sửa câu hỏi khi ở trạng thái DRAFT hoặc REVISION_REQUESTED");
-            }
-            if (command.preparationTimeSeconds() == null || command.minResponseSeconds() == null || command.maxResponseSeconds() == null) {
-                throw new IllegalArgumentException("Phải nhập đầy đủ thời gian chuẩn bị, thời gian trả lời tối thiểu và tối đa");
-            }
+        if (hasContentUpdate(command)) {
+            requireContentEditable(question, command, access);
             applyContentUpdates(question, command, currentUserId);
         }
 
         questionRepository.save(question);
 
         return UpdateQuestionResponseMapper.toResponse(question);
+    }
+
+    private EditAccess requireEditAccess(Question question, UUID currentUserId) {
+        QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+        EditAccess access = questionEditAccessService.resolveEditAccess(question, bank, currentUserId);
+        if (!access.allowed()) {
+            throw new ForbiddenException("Quyền truy cập bị từ chối");
+        }
+        return access;
+    }
+
+    private boolean hasContentUpdate(UpdateQuestionCommand command) {
+        return command.instructionText() != null || command.questionText() != null
+                || command.promptText() != null || command.preparationText() != null
+                || command.questionType() != null || command.preparationTimeSeconds() != null
+                || command.minResponseSeconds() != null || command.maxResponseSeconds() != null;
+    }
+
+    private void requireContentEditable(Question question, UpdateQuestionCommand command, EditAccess access) {
+        boolean usedInAssessment = questionRepository.existsUsedInAssessment(question.getId());
+        boolean immutable = question.getStatus() == QuestionStatus.PUBLISHED || question.isLocked() || usedInAssessment;
+        if (immutable) {
+            throw new IllegalArgumentException(
+                "Câu hỏi đã publish hoặc đã dùng trong bài kiểm tra, không thể sửa trực tiếp — dùng nút Nhân bản để tạo bản có thể sửa");
+        }
+        if (!access.systemAdminOnSystemBank()
+                && (access.owner() || access.editorCollaborator())
+                && question.getStatus() != QuestionStatus.DRAFT
+                && question.getStatus() != QuestionStatus.REVISION_REQUESTED) {
+            throw new ForbiddenException("Chỉ được sửa câu hỏi khi ở trạng thái DRAFT hoặc REVISION_REQUESTED");
+        }
+        if (command.preparationTimeSeconds() == null || command.minResponseSeconds() == null || command.maxResponseSeconds() == null) {
+            throw new IllegalArgumentException("Phải nhập đầy đủ thời gian chuẩn bị, thời gian trả lời tối thiểu và tối đa");
+        }
     }
 
     private void applyContentUpdates(Question question, UpdateQuestionCommand command, UUID currentUserId) {

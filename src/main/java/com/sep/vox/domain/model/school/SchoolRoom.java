@@ -53,6 +53,16 @@ public class SchoolRoom extends BaseModel {
         this.isActive = isActive;
     }
 
+    public static SchoolRoom registered(UUID schoolId, String code, String name, String description) {
+        return builder()
+                .schoolId(schoolId)
+                .code(code)
+                .name(name)
+                .description(description)
+                .active(true)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

@@ -7,6 +7,7 @@ import java.util.function.Supplier;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.exception.ForbiddenException;
@@ -53,93 +54,107 @@ public class CreatePaymentCheckoutUrlUseCase
     private final RequiresNewTransactionPort requiresNewTransactionPort;
 
     /**
-     * KHÔNG có {@code @Transactional} ở đây, và đó là điểm chính của cả class.
+     * There is NO {@code @Transactional} here, and that is the main point of this whole class.
      *
-     * <p>Bản trước bọc cả hàm trong MỘT transaction, nên hai chuyện cùng sai:
+     * <p>The previous version wrapped the whole function in ONE transaction, so two things went wrong together:
      *
      * <ul>
-     *   <li>Việc "ghi dòng payment_records TRƯỚC khi gọi cổng" chỉ trước trong phạm vi transaction.
-     *   Cổng dựng phiên xong nhưng phản hồi rơi (timeout) là rollback, xóa luôn dòng mang
-     *   provider_order_ref -- trong khi trang thanh toán bên cổng vẫn sống. Trường trả vào đó thì
-     *   callback tra ngược không ra lần thử nào (UNKNOWN_PAYMENT), job đối soát cũng không thấy gì để
-     *   hỏi. Tiền về, không giao gì, không còn dấu vết nào ở phía mình.</li>
-     *   <li>Khóa FOR UPDATE trên dòng đơn bị giữ suốt HAI lượt gọi mạng. Cổng chậm là dòng đơn kẹt
-     *   theo, và {@code OrderSettlementService.settlePaid} -- cũng mở đầu bằng findByIdForUpdate --
-     *   phải xếp hàng sau nó. Cổng lỗi thì chính đường ghi nhận tiền về bị chặn.</li>
+     *   <li>"Write the payment_records row BEFORE calling the gateway" was only "before" within the transaction's
+     *   scope. The gateway built the session but the response was lost (timeout) -> rollback, which also erased the
+     *   row carrying provider_order_ref -- while the payment page on the gateway side was still alive. If the school
+     *   paid into it, the callback's reverse lookup found no attempt (UNKNOWN_PAYMENT), and the reconciliation job had
+     *   nothing to ask about. Money arrived, nothing delivered, and no trace left on our side.</li>
+     *   <li>The FOR UPDATE lock on the order row was held across TWO network calls. A slow gateway keeps the order row
+     *   stuck, and {@code OrderSettlementService.settlePaid} -- which also opens with findByIdForUpdate -- must queue
+     *   behind it. A failing gateway then blocks the very path that records incoming money.</li>
      * </ul>
      *
-     * <p>Nên chia thành các transaction NGẮN, mỗi cái ĐÓNG LẠI trước khi ra mạng. Dòng PENDING vì thế
-     * được commit thật trước lúc gọi tạo link: gọi hỏng thì nó nằm lại, và lần bấm sau đi vào đúng
-     * nhánh {@code resolvePendingAttempt} để hỏi cổng xem mã đó đã ra tiền chưa.
+     * <p>So it is split into SHORT transactions, each CLOSED before going out to the network. The PENDING row is
+     * therefore really committed before the create-link call: if that call fails the row stays, and the next press
+     * goes down the {@code resolvePendingAttempt} branch to ask the gateway whether that code brought in money.
      *
-     * <p>KHÔNG sửa được bằng cách chỉ bọc riêng phần ghi dòng PENDING trong REQUIRES_NEW mà vẫn giữ
-     * transaction ngoài: INSERT vào payment_records có khóa ngoại trỏ orders nên Postgres lấy
-     * {@code FOR KEY SHARE} trên đúng dòng đơn mà transaction ngoài đang giữ {@code FOR UPDATE}. Hai
-     * chế độ đó xung khắc, nên transaction trong chờ transaction ngoài, mà ngoài thì đang chờ trong
-     * -- tự khóa chính mình tới khi hết lock_timeout.
+     * <p>It can NOT be fixed by wrapping only the PENDING-row write in REQUIRES_NEW while keeping the outer
+     * transaction: the INSERT into payment_records has a foreign key pointing at orders, so Postgres takes
+     * {@code FOR KEY SHARE} on exactly the order row that the outer transaction holds {@code FOR UPDATE}. Those two
+     * modes conflict, so the inner transaction waits for the outer one while the outer one is waiting for the
+     * inner -- locking itself until lock_timeout.
      */
     @Override
     public PaymentCheckoutResponse execute(CreatePaymentCheckoutUrlCommand input) {
         PaymentProvider provider = input.provider();
+        requireProviderConfigured(provider);
 
-        // Chặn TRƯỚC mọi transaction, và đây là chỗ duy nhất chặn được.
-        //
-        // openAttempt COMMIT dòng payment_records rồi mới gọi ra cổng -- cố ý, để lời gọi hỏng giữa
-        // chừng vẫn còn dấu vết đối soát. Nhưng nếu cổng thiếu cấu hình thì lời gọi đó chắc chắn
-        // chết, và dòng PENDING ở lại vĩnh viễn: hủy đơn phải hỏi cổng nên hỏng theo, phát link mới
-        // cũng phải hỏi cổng nên hỏng theo, còn expireIfOverdue thì từ chối đóng đơn khi còn lần thử
-        // treo. Đơn kẹt PENDING mãi mãi và trường không đặt được đơn đăng ký nào khác.
-        //
-        // Đường phục hồi có sẵn (cổng trả NOT_FOUND -> canRetireOnGatewayNotFound) không cứu được ca
-        // này vì nó cần cổng TRẢ LỜI. Thiếu cấu hình là ca duy nhất biết chắc trước khi gọi, nên nó
-        // phải dừng ở đây chứ không phải để lại một dòng không ai dọn được.
+        PaymentCheckoutResponse reusable = reusePendingAttempt(input.orderId());
+        if (reusable != null) {
+            return reusable;
+        }
+
+        // The PENDING row is COMMITTED here, before the second network trip.
+        PreparedAttempt prepared = inTransaction(() -> openAttempt(input.orderId(), provider));
+        PaymentCheckoutResult result = createPaymentLink(provider, prepared);
+        storeCheckoutData(prepared, result);
+
+        return PaymentCheckoutResponse.from(
+            input.orderId(), prepared.paymentId(), prepared.providerOrderRef(), provider, result);
+    }
+
+    // Block BEFORE any transaction, and this is the only place it can be blocked.
+    //
+    // openAttempt COMMITS the payment_records row and only then calls out to the gateway -- deliberately, so a call that
+    // fails midway still leaves a reconciliation trace. But if the gateway is missing configuration that call is certain
+    // to die, and the PENDING row stays forever: cancelling the order has to ask the gateway and so fails too, issuing a
+    // new link has to ask the gateway and fails too, and expireIfOverdue refuses to close an order while an attempt is
+    // hanging. The order is stuck PENDING forever and the school cannot place any other subscription order.
+    //
+    // The existing recovery path (gateway answers NOT_FOUND -> canRetireOnGatewayNotFound) cannot save this case because
+    // it needs the gateway to ANSWER. Missing configuration is the only case known for sure before calling, so it must
+    // stop here rather than leave a row nobody can clean up.
+    private void requireProviderConfigured(PaymentProvider provider) {
         if (!paymentProcessResolver.resolve(provider).isConfigured()) {
             throw new IllegalArgumentException(
                 "Cổng thanh toán " + provider + " chưa được cấu hình trên hệ thống. Vui lòng chọn cổng khác hoặc liên hệ hỗ trợ.");
         }
+    }
 
-        PaymentRecord pending = inTransaction(() -> loadPendingAttempt(input.orderId()));
-        if (pending != null) {
-            // Gọi cổng NGOÀI mọi transaction: đây là lượt mạng thứ nhất.
-            PaymentLinkRemoteStatus remoteStatus = paymentProcessResolver.resolve(pending.getProvider())
-                .getPaymentLinkStatus(pending.getProviderOrderRef())
-                .status();
-
-            PaymentCheckoutResponse reusable = inTransaction(() -> resolvePendingAttempt(input.orderId(), pending, remoteStatus));
-            if (reusable != null) {
-                return reusable;
-            }
+    private @Nullable PaymentCheckoutResponse reusePendingAttempt(UUID orderId) {
+        PaymentRecord pending = inTransaction(() -> loadPendingAttempt(orderId));
+        if (pending == null) {
+            return null;
         }
+        // Call the gateway OUTSIDE every transaction: this is the first network trip.
+        PaymentLinkRemoteStatus remoteStatus = paymentProcessResolver.resolve(pending.getProvider())
+            .getPaymentLinkStatus(pending.getProviderOrderRef())
+            .status();
 
-        // Dòng PENDING được COMMIT ở đây, trước lượt mạng thứ hai.
-        PreparedAttempt prepared = inTransaction(() -> openAttempt(input.orderId(), provider));
+        return inTransaction(() -> resolvePendingAttempt(orderId, pending, remoteStatus));
+    }
 
-        PaymentCheckoutResult result = paymentProcessResolver.resolve(provider).createPaymentLink(new CreatePaymentLinkCommand(
+    private PaymentCheckoutResult createPaymentLink(PaymentProvider provider, PreparedAttempt prepared) {
+        return paymentProcessResolver.resolve(provider).createPaymentLink(new CreatePaymentLinkCommand(
             prepared.providerOrderRef(),
             prepared.amountVnd(),
             "VOX-" + prepared.providerOrderRef(),
-            // Hạn của link lấy từ ĐƠN, không phải hằng số của adapter: link không được sống lâu hơn
-            // đơn (trả tiền cho đơn đã chết) và đơn không được sống lâu hơn link (đơn khóa chỗ mà
-            // không còn cách nào trả).
+            // The link's expiry comes from the ORDER, not from an adapter constant: the link must not outlive the order
+            // (paying for a dead order) and the order must not outlive the link (an order holding a slot with no way
+            // left to pay).
             prepared.expiresAt()
         ));
+    }
 
-        // Lưu lại thứ dựng lại được lần thử này.
-        //
-        // REDIRECT/QR: giữ checkout_url. Với FORM_POST thì KHÔNG -- actionUrl của nó là một endpoint
-        // CỐ ĐỊNH dùng chung cho mọi đơn, còn thứ nhận dạng phiên nằm hết ở bộ field mang chữ ký,
-        // thứ cố ý không lưu. Lưu mỗi cái URL đó rồi lần sau redirect thẳng tới nó là ném trường vào
-        // một trang init trống, không phải phiên của họ.
-        //
-        // QR: lưu thêm chuỗi mã và thông tin chuyển khoản. Hỏi trạng thái chỉ trả về TRẠNG THÁI, cổng
-        // không phát lại mã -- không lưu ở đây thì không còn chỗ nào lấy lại được.
+    // Store what lets this attempt be rebuilt.
+    //
+    // REDIRECT/QR: keep checkout_url. For FORM_POST do NOT -- its actionUrl is a FIXED endpoint shared by every order,
+    // while everything that identifies the session sits in the signed field set, which is deliberately not stored.
+    // Storing only that URL and redirecting straight to it next time would throw the school onto an empty init page,
+    // not their session.
+    //
+    // QR: also store the code string and the transfer details. Asking for the status only returns the STATUS, the
+    // gateway does not re-issue the code -- not stored here, there is nowhere left to get it back.
+    private void storeCheckoutData(PreparedAttempt prepared, PaymentCheckoutResult result) {
         if (result.action() != CheckoutAction.FORM_POST) {
             inTransaction(() -> attachCheckoutData(
                 prepared.paymentId(), result.actionUrl(), qrPayloadJson(result)));
         }
-
-        return PaymentCheckoutResponse.from(
-            input.orderId(), prepared.paymentId(), prepared.providerOrderRef(), provider, result);
     }
 
     /**
@@ -155,18 +170,18 @@ public class CreatePaymentCheckoutUrlUseCase
     }
 
     /**
-     * Xử lý lần thử ĐANG TREO trước khi nghĩ tới việc phát cái mới, vì
-     * uq_payment_records_one_pending_per_order chỉ cho phép một lần thử treo trên mỗi đơn.
+     * Handles the PENDING attempt FIRST, before thinking of issuing a new one, because
+     * uq_payment_records_one_pending_per_order only allows one pending attempt per order.
      *
-     * <p>Phải ĐI HỎI CỔNG chứ không tự suy từ dữ liệu của mình -- việc đó đã làm ở
-     * {@code execute}, ngoài transaction. Dòng còn PENDING chỉ nói rằng chưa ai báo về cho ta, không
-     * nói rằng trường chưa trả; bỏ qua bước hỏi rồi phát link mới là mở đúng cánh cửa thu tiền hai
-     * lần mà mọi ràng buộc trong V2 đang cố đóng lại.
+     * <p>It must GO AND ASK THE GATEWAY rather than infer from our own data -- that was already done in
+     * {@code execute}, outside the transaction. A row that is still PENDING only says nobody has reported back to us
+     * yet, not that the school has not paid; skipping the ask and issuing a new link opens exactly the door to
+     * collecting twice that every constraint in V2 is trying to close.
      *
-     * <p>Trả về response nếu lần thử cũ còn dùng lại được, trả null nếu đã chốt xong và được phép phát
-     * lần thử mới.
+     * <p>Returns a response if the old attempt can be reused, returns null if it is settled and a new attempt may be
+     * issued.
      */
-    private PaymentCheckoutResponse resolvePendingAttempt(
+    private @Nullable PaymentCheckoutResponse resolvePendingAttempt(
             UUID orderId, PaymentRecord pending, PaymentLinkRemoteStatus remoteStatus) {
         Order order = requirePayableOrder(orderId);
 
@@ -175,54 +190,61 @@ public class CreatePaymentCheckoutUrlUseCase
                 "Đơn hàng này đã được thanh toán, hệ thống đang ghi nhận. Vui lòng đợi trong giây lát.");
 
             case CANCELLED, EXPIRED, FAILED, NOT_FOUND -> {
-                // Ân hạn cho NOT_FOUND: lần thử treo có thể là của MỘT TAB KHÁC vừa commit dòng
-                // PENDING và đang đợi createPaymentLink trả về. Chốt hỏng nó lúc ấy là đánh hỏng một
-                // lần thử sắp sống -- xem PaymentRecord.canRetireOnGatewayNotFound.
-                if (remoteStatus == PaymentLinkRemoteStatus.NOT_FOUND
-                        && !pending.canRetireOnGatewayNotFound(Instant.now())) {
-                    throw new IllegalArgumentException(
-                        "Đơn hàng vừa mở một phiên thanh toán mà cổng chưa xác nhận. "
-                            + "Vui lòng thử lại sau vài phút.");
-                }
-                // Cổng đã xác nhận lần thử này KHÔNG ra tiền -- chốt nó lại để nhường chỗ cho lần mới.
-                // Chỉ được chốt SAU khi có xác nhận đó: đánh hỏng một lần thử còn sống nghĩa là lúc
-                // trường trả vào link cũ sẽ không còn dòng nào đang chờ khoản tiền đó.
-                //
-                // NOT_FOUND nằm chung nhóm này vì nó là hệ quả trực tiếp của việc commit dòng PENDING
-                // trước khi gọi cổng: lời gọi tạo link hỏng TRƯỚC lúc cổng kịp dựng phiên sẽ để lại
-                // một dòng mang mã mà bên cổng chưa từng thấy. Không có nhánh này thì lần thử đó treo
-                // tới lúc đơn hết hạn và trường không xin được link mới. An toàn vì cổng khẳng định
-                // không có phiên nào mang mã đó -- khác hẳn "hỏi không được", thứ mà adapter ném ra
-                // ngoài chứ không quy về đây.
-                pending.setStatus(PaymentStatus.FAILED);
-                paymentRecordRepository.save(pending);
+                failDeadAttempt(pending, remoteStatus);
                 return null;
             }
 
-            // Cổng nói vẫn đang chờ trả: trả lại ĐÚNG link cũ thay vì phát link mới. Phát mới thì link
-            // cũ vẫn trả được nhưng không còn dòng PENDING nào ứng với nó.
+            // The gateway says it is still waiting for payment: return EXACTLY the old link instead of issuing a new
+            // one. Issuing a new one leaves the old link payable with no PENDING row matching it.
             default -> {
-                // Cổng có QR: dựng lại mã từ payload đã lưu. Đây là đường đi BÌNH THƯỜNG chứ không
-                // phải ca hiếm -- quét QR nghĩa là rời trang sang app ngân hàng rồi quay lại.
-                StoredQrPayload qr = readQrPayload(pending);
-                if (qr != null) {
-                    return PaymentCheckoutResponse.qrFor(
-                        order.getId(), pending.getId(), pending.getProviderOrderRef(),
-                        pending.getProvider(), qr.qrCode(), qr.transfer(), pending.getCheckoutUrl());
-                }
-
-                if (pending.getCheckoutUrl() == null) {
-                    // FORM_POST gateway: the signed field set is deliberately not stored and cannot be rebuilt
-                    // here. Making the school wait for the old attempt to expire is better than issuing a
-                    // second parallel link.
-                    throw new IllegalArgumentException(
-                        "Đơn hàng đang có một phiên thanh toán chờ xử lý. Vui lòng hoàn tất phiên đó hoặc thử lại sau.");
-                }
-                return PaymentCheckoutResponse.redirectTo(
-                    order.getId(), pending.getId(), pending.getProviderOrderRef(),
-                    pending.getProvider(), pending.getCheckoutUrl());
+                return reuseStillPendingAttempt(order, pending);
             }
         }
+    }
+
+    private void failDeadAttempt(PaymentRecord pending, PaymentLinkRemoteStatus remoteStatus) {
+        // Grace period for NOT_FOUND: the pending attempt may belong to ANOTHER TAB that has just committed the PENDING
+        // row and is waiting for createPaymentLink to return. Failing it at that moment spoils an attempt about to come
+        // alive -- see PaymentRecord.canRetireOnGatewayNotFound.
+        if (remoteStatus == PaymentLinkRemoteStatus.NOT_FOUND
+                && !pending.canRetireOnGatewayNotFound(Instant.now())) {
+            throw new IllegalArgumentException(
+                "Đơn hàng vừa mở một phiên thanh toán mà cổng chưa xác nhận. "
+                    + "Vui lòng thử lại sau vài phút.");
+        }
+        // The gateway has confirmed this attempt does NOT bring in money -- settle it to make room for the new one.
+        // It may only be settled AFTER that confirmation: failing an attempt that is still alive means that when the
+        // school pays into the old link there is no row left waiting for that money.
+        //
+        // NOT_FOUND is in this group because it is a direct consequence of committing the PENDING row before calling
+        // the gateway: a create-link call that fails BEFORE the gateway built the session leaves a row carrying a code
+        // the gateway has never seen. Without this branch that attempt would hang until the order expires and the
+        // school could not get a new link. Safe because the gateway asserts that no session carries that code -- very
+        // different from "could not ask", which the adapter throws out rather than mapping to here.
+        pending.setStatus(PaymentStatus.FAILED);
+        paymentRecordRepository.save(pending);
+    }
+
+    private PaymentCheckoutResponse reuseStillPendingAttempt(Order order, PaymentRecord pending) {
+        // Gateway with QR: rebuild the code from the stored payload. This is the NORMAL path, not a rare case --
+        // scanning a QR means leaving the page for the banking app and coming back.
+        StoredQrPayload qr = readQrPayload(pending);
+        if (qr != null) {
+            return PaymentCheckoutResponse.qrFor(
+                order.getId(), pending.getId(), pending.getProviderOrderRef(),
+                pending.getProvider(), qr.qrCode(), qr.transfer(), pending.getCheckoutUrl());
+        }
+
+        if (pending.getCheckoutUrl() == null) {
+            // FORM_POST gateway: the signed field set is deliberately not stored and cannot be rebuilt
+            // here. Making the school wait for the old attempt to expire is better than issuing a
+            // second parallel link.
+            throw new IllegalArgumentException(
+                "Đơn hàng đang có một phiên thanh toán chờ xử lý. Vui lòng hoàn tất phiên đó hoặc thử lại sau.");
+        }
+        return PaymentCheckoutResponse.redirectTo(
+            order.getId(), pending.getId(), pending.getProviderOrderRef(),
+            pending.getProvider(), pending.getCheckoutUrl());
     }
 
     /**

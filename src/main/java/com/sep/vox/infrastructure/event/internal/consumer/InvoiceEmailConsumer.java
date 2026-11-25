@@ -8,12 +8,14 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.kafka.annotation.BackOff;
 import org.springframework.kafka.annotation.DltHandler;
@@ -93,20 +95,47 @@ public class InvoiceEmailConsumer {
         InvoicePaidPayloadV1 payload = parse(record.value(), eventId);
 
         if (payload.schoolAdminIds() == null || payload.schoolAdminIds().isEmpty()) {
-            log.warn("Skip mail, trường không còn admin nào: eventId={}, schoolId={}",
-                eventId, payload.schoolId());
-            markProcessed(eventId);
-            ack.acknowledge();
+            skipWithoutSchoolAdmins(payload, eventId, ack);
             return;
         }
 
+        deliverInvoice(payload, eventId);
+        ack.acknowledge();
+    }
+
+    private void skipWithoutSchoolAdmins(InvoicePaidPayloadV1 payload, UUID eventId, Acknowledgment ack) {
+        log.warn("Skip mail, trường không còn admin nào: eventId={}, schoolId={}",
+            eventId, payload.schoolId());
+        markProcessed(eventId);
+        ack.acknowledge();
+    }
+
+    private void deliverInvoice(InvoicePaidPayloadV1 payload, UUID eventId) {
         String html = renderHtml(payload, eventId);
         String subject = "Hóa đơn thanh toán #" + payload.invoiceNumber();
 
-        // One bad address must not block the others: collect the errors and throw ONCE at the
-        // end. The retry will resend to the whole group, but a duplicate mail is better than a missing one.
+        int failed = sendToSchoolAdmins(payload.schoolAdminIds(), subject, html, eventId);
+
+        if (failed > 0) {
+            throw new IllegalStateException(
+                "Gửi mail hóa đơn thất bại cho " + failed + " người nhận: eventId=" + eventId);
+        }
+
+        markProcessed(eventId);
+
+        log.info("Invoice mail sent: eventId={}, invoiceNumber={}, recipients={}",
+            eventId, payload.invoiceNumber(), payload.schoolAdminIds().size());
+    }
+
+    /**
+     * One bad address must not block the others: collect the errors and let the caller throw ONCE at the
+     * end. The retry will resend to the whole group, but a duplicate mail is better than a missing one.
+     *
+     * @return the number of recipients the mail could not be sent to
+     */
+    private int sendToSchoolAdmins(List<UUID> recipientIds, String subject, String html, UUID eventId) {
         int failed = 0;
-        for (UUID recipientId : payload.schoolAdminIds()) {
+        for (UUID recipientId : recipientIds) {
             User recipient = userRepository.findById(recipientId).orElse(null);
             if (recipient == null) {
                 log.warn("Bỏ qua người nhận không còn tồn tại: eventId={}, userId={}", eventId, recipientId);
@@ -119,17 +148,7 @@ public class InvoiceEmailConsumer {
                 log.error("Send mail error: eventId={}, to={}", eventId, recipient.getEmail().value(), e);
             }
         }
-
-        if (failed > 0) {
-            throw new IllegalStateException(
-                "Gửi mail hóa đơn thất bại cho " + failed + " người nhận: eventId=" + eventId);
-        }
-
-        markProcessed(eventId);
-
-        log.info("Invoice mail sent: eventId={}, invoiceNumber={}, recipients={}",
-            eventId, payload.invoiceNumber(), payload.schoolAdminIds().size());
-        ack.acknowledge();
+        return failed;
     }
 
     private String renderHtml(InvoicePaidPayloadV1 payload, UUID eventId) {
@@ -137,7 +156,21 @@ public class InvoiceEmailConsumer {
             .orElseThrow(() -> new IllegalStateException(
                 "Không tìm thấy trường: eventId=" + eventId + ", schoolId=" + payload.schoolId()));
         boolean isTopUp = payload.sourceType() == InvoiceSourceType.TOPUP;
+        SchoolSubscription subscription = findSubscription(payload, isTopUp, eventId);
+        String itemTitle = resolveItemTitle(isTopUp, subscription, eventId);
 
+        DecimalFormat amountFormatter = new DecimalFormat("#,###", DecimalFormatSymbols.getInstance(Locale.of("vi", "VN")));
+        String amountLabel = amountFormatter.format(payload.amount()) + " ₫";
+        String paidAtLabel = payload.paidAt() == null ? "-" : PAID_AT_FORMATTER.format(payload.paidAt());
+        String validUntilLabel = subscription == null || subscription.getEndDate() == null
+            ? "-" : VALID_UNTIL_FORMATTER.format(subscription.getEndDate());
+
+        return mailTemplatePort.renderInvoicePaidEmail(
+            school.getName(), payload.invoiceNumber(), itemTitle,
+            amountLabel, paidAtLabel, validUntilLabel);
+    }
+
+    private @Nullable SchoolSubscription findSubscription(InvoicePaidPayloadV1 payload, boolean isTopUp, UUID eventId) {
         // A quota top-up NOT tied to any subscription period: a school that has never bought a plan can still top up,
         // and then the publisher sends a null subscriptionId (see OrderSettlementService
         // .creditBalance). Insisting on a period here would throw, the message would run the whole retry cycle
@@ -151,29 +184,20 @@ public class InvoiceEmailConsumer {
         if (subscription == null && !isTopUp) {
             throw new IllegalStateException("Không tìm thấy gói đăng ký: eventId=" + eventId);
         }
+        return subscription;
+    }
 
-        String itemTitle;
+    private String resolveItemTitle(boolean isTopUp, @Nullable SchoolSubscription subscription, UUID eventId) {
         if (isTopUp) {
-            itemTitle = "Mua thêm hạn mức";
-        } else {
-            // The subscription null check is required here, the analyzer flags subscription.getSubscriptionPlanId() as a possible null reference
-            if (subscription == null) {
-                throw new IllegalStateException("Không tìm thấy gói đăng ký: eventId=" + eventId);
-            }
-            SubscriptionPlan plan = subscriptionPlanRepository.findById(subscription.getSubscriptionPlanId())
-                .orElseThrow(() -> new IllegalStateException("Không tìm thấy gói: eventId=" + eventId));
-            itemTitle = "Gói " + plan.getName();
+            return "Mua thêm hạn mức";
         }
-
-        DecimalFormat amountFormatter = new DecimalFormat("#,###", DecimalFormatSymbols.getInstance(Locale.of("vi", "VN")));
-        String amountLabel = amountFormatter.format(payload.amount()) + " ₫";
-        String paidAtLabel = payload.paidAt() == null ? "-" : PAID_AT_FORMATTER.format(payload.paidAt());
-        String validUntilLabel = subscription == null || subscription.getEndDate() == null
-            ? "-" : VALID_UNTIL_FORMATTER.format(subscription.getEndDate());
-
-        return mailTemplatePort.renderInvoicePaidEmail(
-            school.getName(), payload.invoiceNumber(), itemTitle,
-            amountLabel, paidAtLabel, validUntilLabel);
+        // The subscription null check is required here, the analyzer flags subscription.getSubscriptionPlanId() as a possible null reference
+        if (subscription == null) {
+            throw new IllegalStateException("Không tìm thấy gói đăng ký: eventId=" + eventId);
+        }
+        SubscriptionPlan plan = subscriptionPlanRepository.findById(subscription.getSubscriptionPlanId())
+            .orElseThrow(() -> new IllegalStateException("Không tìm thấy gói: eventId=" + eventId));
+        return "Gói " + plan.getName();
     }
 
     private InvoicePaidPayloadV1 parse(String value, UUID eventId) {
@@ -186,7 +210,7 @@ public class InvoiceEmailConsumer {
     }
 
     @DltHandler
-    public void handleDlt(ConsumerRecord<String, String> record) {
+    public void logDeadLetteredRecord(ConsumerRecord<String, String> record) {
         UUID eventId = KafkaEventHeaders.readEventIdOrNull(record);
         log.error("invoice event sent to DLT: eventId={}, topic={}, partition={}, offset={}, payload={}",
             eventId, record.topic(), record.partition(), record.offset(), record.value());

@@ -40,38 +40,41 @@ public class ViewTeacherRubricVersionsUseCase implements IUseCase<ViewTeacherRub
     @Override
     @Transactional(readOnly = true)
     public PageResult<RubricVersionDto> execute(ViewTeacherRubricVersionsQuery query) {
-        // 1. Xác thực User
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
-        }
+        SchoolUser schoolUser = loadSchoolUserOfCurrentTeacherInActiveSchool();
+        requireRubricOfSchool(query.rubricId(), schoolUser.getSchoolId());
 
-        // 2. Suy ra trường học của Teacher từ SchoolUser (không nhận schoolId từ client)
-        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Tài khoản chưa liên kết với trường học."));
-
-        School school = schoolRepository.findById(schoolUser.getSchoolId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
-        if (!school.isActive()) {
-            throw new ForbiddenException("Trường học này đang bị vô hiệu hóa.");
-        }
-
-        // 3. Lấy Rubric gốc và kiểm tra nó thuộc về trường học của Teacher
-        Rubric rubric = rubricRepository.findById(query.rubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
-
-        if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !rubric.getSchoolId().equals(schoolUser.getSchoolId())) {
-            throw new ForbiddenException("Hành động bị từ chối: Bộ Rubric này không thuộc về trường học của bạn.");
-        }
-
-        // 4. Teacher chỉ được xem các version đã PUBLISHED
+        // A teacher may only view PUBLISHED versions.
         PageResult<RubricVersion> versionPage = rubricVersionRepository.findAllByRubricIdAndStatus(
                 query.rubricId(),
                 RubricStatus.PUBLISHED.name(),
                 query.page(),
                 query.size()
         );
-
         return RubricVersionDtoMapper.toRubricVersionPage(versionPage);
+    }
+
+    // The teacher's school comes from SchoolUser; the client never sends a schoolId.
+    private SchoolUser loadSchoolUserOfCurrentTeacherInActiveSchool() {
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
+            throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
+        }
+
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
+                .orElseThrow(() -> new ForbiddenException("Tài khoản chưa liên kết với trường học."));
+        School school = schoolRepository.findById(schoolUser.getSchoolId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
+        if (!school.isActive()) {
+            throw new ForbiddenException("Trường học này đang bị vô hiệu hóa.");
+        }
+        return schoolUser;
+    }
+
+    private void requireRubricOfSchool(UUID rubricId, UUID schoolId) {
+        Rubric rubric = rubricRepository.findById(rubricId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
+        if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !rubric.getSchoolId().equals(schoolId)) {
+            throw new ForbiddenException("Hành động bị từ chối: Bộ Rubric này không thuộc về trường học của bạn.");
+        }
     }
 }

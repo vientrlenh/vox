@@ -12,45 +12,39 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.mapper.question.CreateQuestionResponseMapper;
 import com.sep.vox.application.port.input.command.question.CreateQuestionAssetCommand;
 import com.sep.vox.application.port.input.command.question.CreateQuestionEvaluationGuideCommand;
 import com.sep.vox.application.port.input.command.question.CreateSystemQuestionBankQuestionCommand;
+import com.sep.vox.application.port.input.service.QuestionEditAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.question.CreateQuestionResponse;
 import com.sep.vox.domain.mapper.QuestionAssetDtoMapper;
 import com.sep.vox.domain.mapper.QuestionEvaluationGuideDtoMapper;
 import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionAsset;
-import com.sep.vox.domain.model.question.QuestionBankOwnerType;
-import com.sep.vox.domain.model.question.QuestionConfidentiality;
 import com.sep.vox.domain.model.question.QuestionEvaluationGuide;
 import com.sep.vox.domain.model.question.QuestionSharing;
-import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.model.question.QuestionTopicStatus;
 import com.sep.vox.domain.repository.QuestionAssetRepository;
 import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.QuestionEvaluationGuideRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.QuestionTopicRepository;
-import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
 @RequiredArgsConstructor
 public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateSystemQuestionBankQuestionCommand, CreateQuestionResponse> {
 
-    private final SchoolUserRepository schoolUserRepository;
     private final QuestionRepository questionRepository;
     private final QuestionAssetRepository questionAssetRepository;
     private final QuestionEvaluationGuideRepository questionEvaluationGuideRepository;
     private final QuestionTopicRepository questionTopicRepository;
     private final QuestionBankRepository questionBankRepository;
     private final UserContextPort userContextPort;
-    private final UserRoleQueryRepository userRoleQueryRepository;
+    private final QuestionEditAccessService questionEditAccessService;
 
     @Override
     @Transactional
@@ -58,12 +52,24 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
         CreateSystemQuestionBankQuestionCommand command = normalize(input);
 
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
-            .map(schoolUser -> schoolUser.getSchoolId())
-            .orElse(null);
-        boolean teacher = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "TEACHER".equals(role.roleCode()));
+        QuestionBank questionBank = loadBankOfPublishedTopic(command);
+        questionEditAccessService.requireCreationAccess(questionBank, currentUserId);
 
+        validateResponseDurationRange(command);
+        validateAssetOrders(command.assets());
+
+        Question savedQuestion = questionRepository.save(buildDraftQuestion(command));
+        List<QuestionAsset> savedAssets = createAssets(savedQuestion.getId(), command.assets());
+        QuestionEvaluationGuide savedEvaluationGuide = createEvaluationGuide(savedQuestion.getId(), command.evaluationGuide());
+
+        return CreateQuestionResponseMapper.toResponse(
+            savedQuestion,
+            QuestionAssetDtoMapper.toDtoList(savedAssets),
+            savedEvaluationGuide == null ? null : QuestionEvaluationGuideDtoMapper.toDto(savedEvaluationGuide)
+        );
+    }
+
+    private QuestionBank loadBankOfPublishedTopic(CreateSystemQuestionBankQuestionCommand command) {
         QuestionBank questionBank = questionBankRepository.findById(command.questionBankId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
         QuestionTopic questionTopic = questionTopicRepository.findById(command.questionTopicId())
@@ -75,48 +81,24 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
         if (questionTopic.getStatus() != QuestionTopicStatus.PUBLISHED) {
             throw new IllegalArgumentException("Chỉ được tạo câu hỏi trong chủ đề đã PUBLISHED");
         }
+        return questionBank;
+    }
 
-        if (questionBank.getOwnerType() == QuestionBankOwnerType.SYSTEM) {
-            if (!userContextPort.isSystemAdmin()) {
-                throw new ForbiddenException("Quyền truy cập bị từ chối");
-            }
-        } else if (!teacher || currentSchoolId == null || !currentSchoolId.equals(questionBank.getSchoolId())) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
-        }
-
-        validateResponseDurationRange(command);
-        validateAssetOrders(command.assets());
-
+    private Question buildDraftQuestion(CreateSystemQuestionBankQuestionCommand command) {
         QuestionSharing sharing = command.sharing() == null ? QuestionSharing.PRIVATE : command.sharing();
-        Question question = Question.builder()
-                .questionBankId(command.questionBankId())
-                .questionTopicId(command.questionTopicId())
-                .code(questionCodeOf(command))
-                .instructionText(command.instructionText())
-                .questionText(command.questionText())
-                .promptText(command.promptText())
-                .preparationText(command.preparationText())
-                .type(command.type())
-                .preparationTimeSeconds(command.preparationTimeSeconds())
-                .minResponseSeconds(command.minResponseSeconds())
-                .maxResponseSeconds(command.maxResponseSeconds())
-                .sharing(sharing)
-                .sourceQuestionId(null)
-                .locked(false)
-                .confidentiality(QuestionConfidentiality.OPEN)
-                .securePoolId(null)
-                .status(QuestionStatus.DRAFT)
-                .build();
-
-        Question savedQuestion = questionRepository.save(question);
-        List<QuestionAsset> savedAssets = createAssets(savedQuestion.getId(), command.assets());
-        QuestionEvaluationGuide savedEvaluationGuide = createEvaluationGuide(savedQuestion.getId(), command.evaluationGuide());
-
-        return CreateQuestionResponseMapper.toResponse(
-            savedQuestion,
-            QuestionAssetDtoMapper.toDtoList(savedAssets),
-            savedEvaluationGuide == null ? null : QuestionEvaluationGuideDtoMapper.toDto(savedEvaluationGuide)
-        );
+        return Question.draft(
+                command.questionBankId(),
+                command.questionTopicId(),
+                questionCodeOf(command),
+                command.instructionText(),
+                command.questionText(),
+                command.promptText(),
+                command.preparationText(),
+                command.type(),
+                command.preparationTimeSeconds(),
+                command.minResponseSeconds(),
+                command.maxResponseSeconds(),
+                sharing);
     }
 
     private CreateSystemQuestionBankQuestionCommand normalize(CreateSystemQuestionBankQuestionCommand input) {
@@ -192,15 +174,14 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
             return null;
         }
 
-        QuestionEvaluationGuide evaluationGuide = QuestionEvaluationGuide.builder()
-                .questionId(questionId)
-                .expectedContent(command.expectedContent())
-                .keyPoints(command.keyPoints())
-                .acceptableResponses(command.acceptableResponses())
-                .offTopicExamples(command.offTopicExamples())
-                .scoringHints(command.scoringHints())
-                .commonMistakes(command.commonMistakes())
-                .build();
+        QuestionEvaluationGuide evaluationGuide = QuestionEvaluationGuide.forQuestion(
+                questionId,
+                command.expectedContent(),
+                command.keyPoints(),
+                command.acceptableResponses(),
+                command.offTopicExamples(),
+                command.scoringHints(),
+                command.commonMistakes());
         return questionEvaluationGuideRepository.save(evaluationGuide);
     }
 
@@ -220,17 +201,16 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
         }
 
         List<QuestionAsset> assets = assetCommands.stream()
-            .map(asset -> QuestionAsset.builder()
-                    .questionId(questionId)
-                    .title(asset.title())
-                    .durationSeconds(asset.durationSeconds())
-                    .altText(asset.altText())
-                    .type(asset.type())
-                    .url(asset.url())
-                    .transcript(asset.transcript())
-                    .description(asset.description())
-                    .order(asset.order())
-                    .build())
+            .map(asset -> QuestionAsset.attachedTo(
+                    questionId,
+                    asset.title(),
+                    asset.durationSeconds(),
+                    asset.altText(),
+                    asset.type(),
+                    asset.url(),
+                    asset.transcript(),
+                    asset.description(),
+                    asset.order()))
             .toList();
         return questionAssetRepository.saveAll(assets);
     }

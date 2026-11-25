@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.school.School;
 import java.time.LocalDate;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -73,19 +74,37 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
         Map<String, String> mapping = jsonSerializationPort.toStringMap(session.getConfirmedMappingJson());
         School school = schoolRepository.findById(schoolId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học"));
-        return processRows(rows, mapping, schoolId, school.getName());
+        return commitRowsAndCountOutcomes(rows, mapping, schoolId, school.getName());
     }
 
-    private ImportCommitResult processRows(List<ImportRow> rows, Map<String, String> confirmedMapping,
+    private ImportCommitResult commitRowsAndCountOutcomes(List<ImportRow> rows, Map<String, String> confirmedMapping,
             UUID schoolId, String schoolName) {
-        long createdRows = 0L;
-        long updatedRows = 0L;
-        long invalidRows = 0L;
-        Set<String> seenEmails = new HashSet<String>();
-        List<RowContext> rowContexts = new ArrayList<RowContext>();
         Set<String> emails = new HashSet<String>();
         Set<String> roleCodes = new HashSet<String>();
+        List<RowContext> rowContexts = prepareRowContexts(rows, confirmedMapping, emails, roleCodes);
 
+        Map<String, User> existingUsersByEmail = findUsersByEmail(emails);
+        Map<String, Role> rolesByCode = findRolesByCode(roleCodes);
+        RowLookups lookups = new RowLookups(schoolId, schoolName, existingUsersByEmail, rolesByCode,
+                findMembershipsByUserId(existingUsersByEmail.values()), new HashSet<String>());
+        Map<RowOutcome, Long> outcomeCounts = new EnumMap<RowOutcome, Long>(RowOutcome.class);
+        for (RowContext rowContext : rowContexts) {
+            outcomeCounts.merge(commitRow(rowContext, lookups), 1L, Long::sum);
+        }
+        return toResult(outcomeCounts);
+    }
+
+    private ImportCommitResult toResult(Map<RowOutcome, Long> outcomeCounts) {
+        return new ImportCommitResult(
+                outcomeCounts.getOrDefault(RowOutcome.CREATED, 0L),
+                outcomeCounts.getOrDefault(RowOutcome.UPDATED, 0L),
+                0L,
+                outcomeCounts.getOrDefault(RowOutcome.INVALID, 0L));
+    }
+
+    private List<RowContext> prepareRowContexts(List<ImportRow> rows, Map<String, String> confirmedMapping,
+            Set<String> emails, Set<String> roleCodes) {
+        List<RowContext> rowContexts = new ArrayList<RowContext>();
         for (ImportRow row : rows) {
             Map<String, String> rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
             Map<String, String> mappedData = mapRawData(rawData, confirmedMapping);
@@ -95,63 +114,65 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
             addIfPresent(emails, normalized.get("email"));
             addIfPresent(roleCodes, normalized.get("roleCode"));
         }
+        return rowContexts;
+    }
 
-        Map<String, User> existingUsersByEmail = findUsersByEmail(emails);
-        Map<String, Role> rolesByCode = findRolesByCode(roleCodes);
-        Map<UUID, SchoolUser> membershipsByUserId = findMembershipsByUserId(existingUsersByEmail.values());
+    private RowOutcome commitRow(RowContext rowContext, RowLookups lookups) {
+        ImportRow row = rowContext.row();
+        Map<String, String> normalized = rowContext.normalized();
+        List<Map<String, String>> errors = validateRow(normalized, lookups.seenEmails(), lookups.rolesByCode());
 
-        for (RowContext rowContext : rowContexts) {
-            ImportRow row = rowContext.row();
-            Map<String, String> normalized = rowContext.normalized();
-            List<Map<String, String>> errors = validateRow(normalized, seenEmails, rolesByCode);
-
-            if (!errors.isEmpty()) {
-                row.setErrorsJson(jsonSerializationPort.toJson(errors));
-                row.setStatus(ImportRowStatus.INVALID);
-                invalidRows++;
-                continue;
-            }
-
-            String email = normalized.get("email");
-            String roleCode = normalized.get("roleCode");
-            User existingUser = existingUsersByEmail.get(email);
-            Role role = rolesByCode.get(roleCode);
-
-            // 1 user = 1 trường: nếu email đã thuộc user của trường khác thì từ chối,
-            // không ghi đè hồ sơ và không gắn user đó vào trường hiện tại.
-            if (existingUser != null) {
-                SchoolUser membership = membershipsByUserId.get(existingUser.getId());
-                if (membership != null && !Objects.equals(membership.getSchoolId(), schoolId)) {
-                    row.setErrorsJson(jsonSerializationPort.toJson(
-                            List.of(error("email", "Email đã được sử dụng bởi người dùng ở trường khác"))));
-                    row.setStatus(ImportRowStatus.INVALID);
-                    invalidRows++;
-                    continue;
-                }
-            }
-
-            try {
-                if (existingUser != null) {
-                    requiresNewTransactionPort.runInNewTransaction(() ->
-                            updateUser(existingUser, normalized, schoolId, membershipsByUserId, roleCode));
-                    updatedRows++;
-                } else {
-                    requiresNewTransactionPort.runInNewTransaction(() ->
-                            createUser(normalized, role, schoolId, schoolName));
-                    createdRows++;
-                }
-            } catch (DataConflictException | IllegalArgumentException e) {
-                row.setErrorsJson(jsonSerializationPort.toJson(List.of(error("email", "Email hoặc số điện thoại đã tồn tại hoặc dữ liệu không hợp lệ"))));
-                row.setStatus(ImportRowStatus.FAILED);
-                invalidRows++;
-                continue;
-            }
-
-            row.setErrorsJson(null);
-            row.setStatus(ImportRowStatus.IMPORTED);
+        if (!errors.isEmpty()) {
+            row.setErrorsJson(jsonSerializationPort.toJson(errors));
+            row.setStatus(ImportRowStatus.INVALID);
+            return RowOutcome.INVALID;
         }
 
-        return new ImportCommitResult(createdRows, updatedRows, 0L, invalidRows);
+        User existingUser = lookups.existingUsersByEmail().get(normalized.get("email"));
+        if (belongsToAnotherSchool(existingUser, lookups)) {
+            row.setErrorsJson(jsonSerializationPort.toJson(
+                    List.of(error("email", "Email đã được sử dụng bởi người dùng ở trường khác"))));
+            row.setStatus(ImportRowStatus.INVALID);
+            return RowOutcome.INVALID;
+        }
+
+        return importRow(row, existingUser, normalized, lookups);
+    }
+
+    private RowOutcome importRow(ImportRow row, User existingUser, Map<String, String> normalized, RowLookups lookups) {
+        try {
+            RowOutcome outcome = saveInNewTransaction(existingUser, normalized, lookups);
+            row.setErrorsJson(null);
+            row.setStatus(ImportRowStatus.IMPORTED);
+            return outcome;
+        } catch (DataConflictException | IllegalArgumentException e) {
+            row.setErrorsJson(jsonSerializationPort.toJson(List.of(error("email", "Email hoặc số điện thoại đã tồn tại hoặc dữ liệu không hợp lệ"))));
+            row.setStatus(ImportRowStatus.FAILED);
+            return RowOutcome.INVALID;
+        }
+    }
+
+    // One user = one school: if the email already belongs to a user of another school, reject the row;
+    // do not overwrite the profile and do not attach that user to the current school.
+    private boolean belongsToAnotherSchool(User existingUser, RowLookups lookups) {
+        if (existingUser == null) {
+            return false;
+        }
+        SchoolUser membership = lookups.membershipsByUserId().get(existingUser.getId());
+        return membership != null && !Objects.equals(membership.getSchoolId(), lookups.schoolId());
+    }
+
+    private RowOutcome saveInNewTransaction(User existingUser, Map<String, String> normalized, RowLookups lookups) {
+        if (existingUser != null) {
+            String roleCode = normalized.get("roleCode");
+            requiresNewTransactionPort.runInNewTransaction(() ->
+                    updateUser(existingUser, normalized, lookups.schoolId(), lookups.membershipsByUserId(), roleCode));
+            return RowOutcome.UPDATED;
+        }
+        Role role = lookups.rolesByCode().get(normalized.get("roleCode"));
+        requiresNewTransactionPort.runInNewTransaction(() ->
+                createUser(normalized, role, lookups.schoolId(), lookups.schoolName()));
+        return RowOutcome.CREATED;
     }
 
     private UUID createUser(Map<String, String> data, Role role, UUID schoolId, String schoolName) {
@@ -159,20 +180,20 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
         User user = User.create(data.get("email"), data.get("phone"), data.get("fullName"),
                 parseDate(data.get("dateOfBirth")), data.get("address"), null);
         User savedUser = userRepository.save(user);
-        userRoleRepository.save(UserRole.builder()
-                .userId(savedUser.getId())
-                .roleId(role.getId())
-                .createdAt(ts)
-                .build());
+        userRoleRepository.save(UserRole.assigned(savedUser.getId(), role.getId(), ts));
         if (SchoolRoleCodes.STUDENT.equals(role.getCode().value())) {
-            Instant startOffset = parseDate(data.get("startDate")).atStartOfDay(DateMapper.DEFAULT_INPUT_ZONE).toInstant();
-            Instant endOffset = parseDate(data.get("endDate")).atStartOfDay(DateMapper.DEFAULT_INPUT_ZONE).toInstant();
-            schoolUserRepository.save(SchoolUser.create(savedUser.getId(), schoolId, startOffset, endOffset));
+            schoolUserRepository.save(SchoolUser.create(savedUser.getId(), schoolId,
+                    startOfDayInstant(data.get("startDate")), startOfDayInstant(data.get("endDate"))));
         } else if (SchoolRoleCodes.TEACHER.equals(role.getCode().value())) {
             schoolUserRepository.save(SchoolUser.create(savedUser.getId(), schoolId, ts, null));
         }
-        // The consumer generates the password set-up token right before it sends the mail, so the token is never
-        // stored as plaintext in the outboxes table or in the Kafka topic.
+        saveUserCreatedOutbox(savedUser, data, schoolName, ts);
+        return savedUser.getId();
+    }
+
+    // The consumer generates the password set-up token right before it sends the mail, so the token is never
+    // stored as plaintext in the outboxes table or in the Kafka topic.
+    private void saveUserCreatedOutbox(User savedUser, Map<String, String> data, String schoolName, Instant ts) {
         UserCreatedPayloadV1 event = new UserCreatedPayloadV1(
             savedUser.getId(),
             data.get("email"),
@@ -182,15 +203,17 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
         );
         String payload = jsonSerializationPort.toJson(event);
         Outbox outbox = Outbox.create(
-            AggregateTypeConstant.USER, 
-            savedUser.getId(), 
-            EventTypeConstant.USER_CREATED, 
-            payload, 
+            AggregateTypeConstant.USER,
+            savedUser.getId(),
+            EventTypeConstant.USER_CREATED,
+            payload,
             ts
         );
         outboxRepository.save(outbox);
-        
-        return savedUser.getId();
+    }
+
+    private Instant startOfDayInstant(String date) {
+        return parseDate(date).atStartOfDay(DateMapper.DEFAULT_INPUT_ZONE).toInstant();
     }
 
     private UUID updateUser(User existing, Map<String, String> data, UUID schoolId,
@@ -202,8 +225,8 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
         existing.setAddress(data.get("address"));
         userRepository.save(existing);
         if (SchoolRoleCodes.STUDENT.equals(roleCode)) {
-            Instant startOffset = parseDate(data.get("startDate")).atStartOfDay(DateMapper.DEFAULT_INPUT_ZONE).toInstant();
-            Instant endOffset = parseDate(data.get("endDate")).atStartOfDay(DateMapper.DEFAULT_INPUT_ZONE).toInstant();
+            Instant startOffset = startOfDayInstant(data.get("startDate"));
+            Instant endOffset = startOfDayInstant(data.get("endDate"));
             SchoolUser schoolUser = membershipsByUserId.get(existing.getId());
             if (schoolUser != null) {
                 schoolUser.setStartDate(startOffset);
@@ -270,43 +293,15 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
     private List<Map<String, String>> validateRow(Map<String, String> data, Set<String> seenEmails,
             Map<String, Role> rolesByCode) {
         List<Map<String, String>> errors = new ArrayList<Map<String, String>>();
-
-        addMissingError(errors, data, "email", "Email không được để trống");
-        addMissingError(errors, data, "fullName", "Họ tên không được để trống");
-        addMissingError(errors, data, "roleCode", "Vai trò không được để trống");
-        addMissingError(errors, data, "phone", "Số điện thoại không được để trống");
-        addMissingError(errors, data, "dateOfBirth", "Ngày sinh không được để trống");
-        addMissingError(errors, data, "address", "Địa chỉ không được để trống");
-
-        String roleCodeForDates = data.get("roleCode");
-        if (SchoolRoleCodes.STUDENT.equals(roleCodeForDates)) {
-            addMissingError(errors, data, "startDate", "Ngày bắt đầu không được để trống");
-            addMissingError(errors, data, "endDate", "Ngày kết thúc không được để trống");
-        }
-
-        String email = data.get("email");
-        if (isPresent(email)) {
-            if (!email.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
-                errors.add(error("email", "Email không hợp lệ"));
-            } else if (!seenEmails.add(email)) {
-                errors.add(error("email", "Email bị trùng trong file import"));
-            }
-        }
-
-        String roleCode = data.get("roleCode");
-        if (isPresent(roleCode)) {
-            if (!SchoolRoleCodes.ALL.contains(roleCode)) {
-                errors.add(error("roleCode", "Vai trò không hợp lệ, chỉ chấp nhận STUDENT hoặc TEACHER"));
-            } else if (rolesByCode.get(roleCode) == null) {
-                errors.add(error("roleCode", "Không tìm thấy vai trò"));
-            }
-        }
+        addRequiredFieldErrors(errors, data);
+        addEmailErrors(errors, data.get("email"), seenEmails);
+        addRoleErrors(errors, data.get("roleCode"), rolesByCode);
 
         validateDateField(errors, data, "dateOfBirth", "Ngày sinh không hợp lệ");
         validateDateField(errors, data, "startDate", "Ngày bắt đầu không hợp lệ");
         validateDateField(errors, data, "endDate", "Ngày kết thúc không hợp lệ");
 
-        if (SchoolRoleCodes.STUDENT.equals(roleCodeForDates)) {
+        if (SchoolRoleCodes.STUDENT.equals(data.get("roleCode"))) {
             LocalDate start = parseDate(data.get("startDate"));
             LocalDate end = parseDate(data.get("endDate"));
             if (start != null && end != null && !start.isBefore(end)) {
@@ -315,6 +310,42 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
         }
 
         return errors;
+    }
+
+    private void addRequiredFieldErrors(List<Map<String, String>> errors, Map<String, String> data) {
+        addMissingError(errors, data, "email", "Email không được để trống");
+        addMissingError(errors, data, "fullName", "Họ tên không được để trống");
+        addMissingError(errors, data, "roleCode", "Vai trò không được để trống");
+        addMissingError(errors, data, "phone", "Số điện thoại không được để trống");
+        addMissingError(errors, data, "dateOfBirth", "Ngày sinh không được để trống");
+        addMissingError(errors, data, "address", "Địa chỉ không được để trống");
+
+        if (SchoolRoleCodes.STUDENT.equals(data.get("roleCode"))) {
+            addMissingError(errors, data, "startDate", "Ngày bắt đầu không được để trống");
+            addMissingError(errors, data, "endDate", "Ngày kết thúc không được để trống");
+        }
+    }
+
+    private void addEmailErrors(List<Map<String, String>> errors, String email, Set<String> seenEmails) {
+        if (!isPresent(email)) {
+            return;
+        }
+        if (!email.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
+            errors.add(error("email", "Email không hợp lệ"));
+        } else if (!seenEmails.add(email)) {
+            errors.add(error("email", "Email bị trùng trong file import"));
+        }
+    }
+
+    private void addRoleErrors(List<Map<String, String>> errors, String roleCode, Map<String, Role> rolesByCode) {
+        if (!isPresent(roleCode)) {
+            return;
+        }
+        if (!SchoolRoleCodes.ALL.contains(roleCode)) {
+            errors.add(error("roleCode", "Vai trò không hợp lệ, chỉ chấp nhận STUDENT hoặc TEACHER"));
+        } else if (rolesByCode.get(roleCode) == null) {
+            errors.add(error("roleCode", "Không tìm thấy vai trò"));
+        }
     }
 
     private void validateDateField(List<Map<String, String>> errors, Map<String, String> data,
@@ -360,6 +391,16 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
     private Map<String, String> error(String field, String message) {
         return Map.of("field", field, "message", message);
     }
+
+    private enum RowOutcome { CREATED, UPDATED, INVALID }
+
+    private record RowLookups(
+            UUID schoolId,
+            String schoolName,
+            Map<String, User> existingUsersByEmail,
+            Map<String, Role> rolesByCode,
+            Map<UUID, SchoolUser> membershipsByUserId,
+            Set<String> seenEmails) {}
 
     private record RowContext(ImportRow row, Map<String, String> normalized) {}
 }

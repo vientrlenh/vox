@@ -8,73 +8,69 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.port.input.command.registration.RegisterBySelfDeclaredCommand;
+import com.sep.vox.application.port.input.service.RegistrationContactDuplicateGuardService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.model.registerform.RegisterForm;
 import com.sep.vox.domain.model.registerform.RegisterFormDocument;
-import com.sep.vox.domain.model.registerform.RegisterFormStatus;
 import com.sep.vox.domain.repository.RegisterFormDocumentRepository;
 import com.sep.vox.domain.repository.RegisterFormRepository;
-import com.sep.vox.domain.repository.UserRepository;
 
 @Service
 @RequiredArgsConstructor
 public class RegisterBySelfDeclaredUseCase implements IUseCase<RegisterBySelfDeclaredCommand, Void> {
 
     private final RegisterFormRepository registerFormRepository;
-    private final UserRepository userRepository;
     private final RegisterFormDocumentRepository registerFormDocumentRepository;
+    private final RegistrationContactDuplicateGuardService registrationContactDuplicateGuardService;
 
     @Override
     @Transactional
     public Void execute(RegisterBySelfDeclaredCommand input) {
         RegisterBySelfDeclaredCommand command = normalize(input);
 
-        // KHÔNG chặn theo tên miền nữa: một trường nhiều cơ sở dùng chung 1 tên miền là chuyện
-        // bình thường (vd Phổ thông Năng Khiếu có 2 cơ sở trên ptnk.edu.vn), mà mỗi cơ sở là một
-        // School độc lập. Chặn theo tên miền thì cơ sở nộp đơn sau vĩnh viễn không đăng ký được --
-        // blockingFormStatuses cũ tính cả APPROVED nên không phải chờ hết hạn gì cả. Danh tính
-        // thật của trường là MÃ TRƯỜNG, và mã vẫn được ProvisionSchoolService chống trùng.
-        boolean formAlreadyPendingByContactInfo = registerFormRepository.existsByContactEmailAndStatus(command.contactEmail(), RegisterFormStatus.PENDING) || registerFormRepository.existsByContactPhoneAndStatus(command.contactPhone(), RegisterFormStatus.PENDING);
-
-        if (formAlreadyPendingByContactInfo) {
-            throw new ResourceDuplicatedException("Thông tin yêu cầu đang tồn tại đơn đăng ký cần được phê duyệt");
-        }
-
-        boolean alreadyUser = userRepository.existsByEmail(command.contactEmail()) || userRepository.existsByPhone(command.contactPhone());
-
-        if (alreadyUser) {
-            throw new ResourceDuplicatedException("Email hoặc số điện thoại yêu cầu đã được đăng ký");
-        }
-
-        if (command.documentUrls() == null || command.documentUrls().isEmpty()) {
-            throw new IllegalArgumentException("Cần gửi tài liệu để xác thực");
-        }
+        rejectDuplicateOrIncompleteRegistration(command);
 
         Instant now = Instant.now();
-        RegisterForm registerForm = RegisterForm.selfDeclared(
-            command.schoolName(), 
-            command.schoolDomain(), 
-            command.schoolAddress(), 
-            command.schoolProvince(), 
-            command.schoolDistrict(), 
-            command.contactFullName(), 
-            command.identityNumber(), 
-            command.contactEmail(), 
-            command.contactPhone(), 
-            command.dateOfBirth(), 
-            command.contactAddress(), 
-            command.postalCode(), 
-            command.position(), 
-            command.studentCount(), 
-            now
-        );
+        RegisterForm registerForm = toSelfDeclaredForm(command, now);
 
         RegisterForm savedForm = registerFormRepository.save(registerForm);
         List<RegisterFormDocument> documents = RegisterFormDocument.createMany(savedForm.getId(), command.documentUrls(), now);
         registerFormDocumentRepository.saveAll(documents);
         return null;
+    }
+
+    private RegisterForm toSelfDeclaredForm(RegisterBySelfDeclaredCommand command, Instant now) {
+        return RegisterForm.selfDeclared(
+            command.schoolName(),
+            command.schoolDomain(),
+            command.schoolAddress(),
+            command.schoolProvince(),
+            command.schoolDistrict(),
+            command.contactFullName(),
+            command.identityNumber(),
+            command.contactEmail(),
+            command.contactPhone(),
+            command.dateOfBirth(),
+            command.contactAddress(),
+            command.postalCode(),
+            command.position(),
+            command.studentCount(),
+            now
+        );
+    }
+
+    private void rejectDuplicateOrIncompleteRegistration(RegisterBySelfDeclaredCommand command) {
+        // Do NOT block by domain any more: several campuses of one school sharing a single domain is normal
+        // (e.g. Phổ thông Năng Khiếu has 2 campuses on ptnk.edu.vn), and each campus is an independent School.
+        // Blocking by domain would make the campus that applies later unable to register for good -- the old
+        // blockingFormStatuses also counted APPROVED, so there was no expiry to wait for. The real identity of a
+        // school is the SCHOOL CODE, and ProvisionSchoolService still guards the code against duplicates.
+        registrationContactDuplicateGuardService.requireContactNotInUse(command.contactEmail(), command.contactPhone());
+
+        if (command.documentUrls() == null || command.documentUrls().isEmpty()) {
+            throw new IllegalArgumentException("Cần gửi tài liệu để xác thực");
+        }
     }
 
     private RegisterBySelfDeclaredCommand normalize(RegisterBySelfDeclaredCommand input) {

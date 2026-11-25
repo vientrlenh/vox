@@ -7,6 +7,8 @@ import java.math.RoundingMode;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.jspecify.annotations.Nullable;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -75,11 +77,7 @@ public class ClassTestTokenQuotaGuardService {
     private final SchoolSubscriptionDebtGuardService schoolSubscriptionDebtGuardService;
 
     public void requireWithinTokenQuota(Assessment assessment) {
-        // If the attempt duration cannot be computed yet (no paper variant/questions yet), the estimate is 0 tokens and there is nothing
-        // to check. Both null and 0 are accepted because they mean the same thing -- same idiom as
-        // Assessment.isScheduleWindowShorterThanAssessmentTime and AssessmentTimeQuotaGuardService. Dropping the 0 branch would make an
-        // assessment without a paper variant blocked from scheduling just because the school has not configured a quota, over a number that is 0.
-        if (assessment.getAssessmentTimeDurationSecond() == null || assessment.getAssessmentTimeDurationSecond() <= 0) {
+        if (hasNoAttemptDuration(assessment)) {
             return;
         }
         BigDecimal estimatedCostVnd = computeEstimatedCostVnd(assessment);
@@ -88,29 +86,37 @@ public class ClassTestTokenQuotaGuardService {
             .orElseThrow(() -> new BusinessRuleViolationException(
                 "Trường chưa có gói subscription đang hoạt động, không thể lên lịch kỳ thi"));
 
-        // Trường đang nợ (số dư ví tự nạp âm) thì chặn luôn ở đây, trước cả khi soi ước lượng
-        // worst-case -- xem SchoolSubscriptionDebtGuardService.
+        // A school in debt (negative self-top-up wallet balance) is blocked right here, even before the
+        // worst-case estimate is looked at -- see SchoolSubscriptionDebtGuardService.
         schoolSubscriptionDebtGuardService.requireSchoolNotLocked(subscription.getSchoolId());
 
         requireSchoolFunds(subscription.getId(), assessment.getSchoolId(), QuotaType.ASSESSMENT, estimatedCostVnd);
 
-        // Kỳ thi tập trung do nhà trường tổ chức nên không tính vào túi riêng của ai; chỉ bài kiểm
-        // tra trên lớp mới đụng tới hạn mức cá nhân mà trường cấp cho giáo viên ra đề.
+        // A centralized assessment is organised by the school, so it counts against nobody's personal pocket; only a
+        // class test touches the personal quota the school grants the teacher who authored it.
         if (assessment.getKind() == AssessmentKind.CLASS_TEST) {
             requireWithinUserAllocation(subscription.getId(), assessment.createdByUserId().orElse(null), estimatedCostVnd);
         }
     }
 
+    // If the attempt duration cannot be computed yet (no paper variant/questions yet), the estimate is 0 tokens and there is nothing
+    // to check. Both null and 0 are accepted because they mean the same thing -- same idiom as
+    // Assessment.isScheduleWindowShorterThanAssessmentTime and AssessmentTimeQuotaGuardService. Dropping the 0 branch would make an
+    // assessment without a paper variant blocked from scheduling just because the school has not configured a quota, over a number that is 0.
+    private boolean hasNoAttemptDuration(Assessment assessment) {
+        return assessment.getAssessmentTimeDurationSecond() == null || assessment.getAssessmentTimeDurationSecond() <= 0;
+    }
+
     /**
-     * 0 nếu chưa có mã đề (duration null/0) -- không throw, dùng lại được cho cả requireWithinTokenQuota
-     * (chặn) và estimateTokenQuota (chỉ hiển thị cảnh báo, không chặn).
+     * 0 when there is no paper variant yet (duration null/0) -- does not throw, so it is reusable by both
+     * requireWithinTokenQuota (blocks) and estimateTokenQuota (only shows a warning, does not block).
      *
-     * <p>Quy đổi sang VND ngay ở đây, một lần: giá/giây do QuotaPricingPort niêm yết bằng USD, còn
-     * mọi thứ mà con số này sẽ được đem so (hạn mức, số dư, và cả khoản sẽ bị trừ thật lúc chấm xong)
-     * đều là VND. Để phép nhân tỷ giá cho từng chỗ gọi tự làm là chừa sẵn chỗ để quên đúng một chỗ.
+     * <p>Converted to VND right here, once: the per-second price listed by QuotaPricingPort is in USD, while
+     * everything this number will be compared with (quota, balance, and the amount really deducted when grading
+     * finishes) is VND. Leaving the exchange-rate multiplication to every caller leaves room to forget it in exactly one place.
      */
     public BigDecimal computeEstimatedCostVnd(Assessment assessment) {
-        if (assessment.getAssessmentTimeDurationSecond() == null || assessment.getAssessmentTimeDurationSecond() <= 0) {
+        if (hasNoAttemptDuration(assessment)) {
             return BigDecimal.ZERO;
         }
         long candidateCount = assessmentCandidateRepository.countByAssessmentId(assessment.getId());
@@ -122,13 +128,13 @@ public class ClassTestTokenQuotaGuardService {
     }
 
     /**
-     * Ước lượng chi phí + khả năng chi trả còn lại để hiển thị CẢNH BÁO ngay lúc tạo/sửa bài (trước
-     * khi publish) -- KHÔNG throw, kể cả khi trường chưa có subscription active hoặc chưa cấu hình
-     * hạn mức (trả về remaining = null cho trường hợp đó thay vì lỗi).
+     * Estimated cost + remaining spending ability, shown as a WARNING right when the assessment is created/edited (before
+     * publishing) -- does NOT throw, even when the school has no active subscription or no configured
+     * quota (returns remaining = null for that case instead of an error).
      *
-     * <p>Dùng CHUNG hai hàm tính với đường chặn ({@link #computeEstimatedCostVnd},
-     * {@link #spendableSchoolFundsVnd}) chứ không tự tính lại: cảnh báo mà lệch khỏi cửa chặn thì
-     * hoặc dọa người dùng về một khoản vẫn publish được, hoặc để họ bấm publish rồi mới ăn lỗi.
+     * <p>Shares the two calculations of the blocking path ({@link #computeEstimatedCostVnd},
+     * {@link #spendableSchoolFundsVnd}) instead of recomputing: a warning that drifts from the gate either
+     * scares the user about an amount that can still be published, or lets them press publish and only then hit the error.
      */
     public AssessmentTokenEstimateResponse estimateTokenQuota(Assessment assessment) {
         BigDecimal estimatedCostVnd = computeEstimatedCostVnd(assessment);
@@ -141,30 +147,39 @@ public class ClassTestTokenQuotaGuardService {
         UUID subscriptionId = subscription.get().getId();
         BigDecimal remainingAssessment = spendableSchoolFundsVnd(subscriptionId, assessment.getSchoolId(), QuotaType.ASSESSMENT);
         boolean wouldExceedAssessment = remainingAssessment != null && estimatedCostVnd.compareTo(remainingAssessment) > 0;
-
-        // Cặp thứ hai giờ là hạn mức CÁ NHÂN của giáo viên chủ bài, không còn là ví CLASS_TEST cấp
-        // trường. Vẫn giữ hai cảnh báo riêng vì hai bên chặn vì hai lý do khác nhau và cách xử lý
-        // cũng khác: hết tiền cấp trường thì phải nạp thêm/nâng gói, còn hết hạn mức cá nhân thì chỉ
-        // cần xin quản trị trường cấp thêm.
-        BigDecimal remainingMyClassTest = null;
-        boolean wouldExceedMyClassTest = false;
-        if (assessment.getKind() == AssessmentKind.CLASS_TEST) {
-            remainingMyClassTest = remainingUserAllocation(subscriptionId, assessment.createdByUserId().orElse(null));
-            wouldExceedMyClassTest = remainingMyClassTest != null
-                && estimatedCostVnd.compareTo(remainingMyClassTest) > 0;
-        }
-
-        // Kỳ thi tập trung không có hạn mức cá nhân (nhánh trên) nên tiêu bao nhiêu cũng ăn thẳng vào
-        // ví chung -- ngược lại với CLASS_TEST, người bấm lên lịch (SCHOOL_ADMIN/CHAIR) không tự thấy
-        // hệ quả lên các giáo viên khác đang có hạn mức cá nhân riêng. Chỉ tính cho CENTRALIZED, đúng
-        // phạm vi vấn đề -- xem computeSharedPoolInsight.
-        SharedPoolInsight sharedPoolInsight = assessment.getKind() == AssessmentKind.CENTRALIZED
-            ? computeSharedPoolInsight(subscriptionId, estimatedCostVnd)
-            : SharedPoolInsight.NOT_APPLICABLE;
+        PersonalAllocationEstimate personalAllocation = personalAllocationEstimate(assessment, subscriptionId, estimatedCostVnd);
+        SharedPoolInsight sharedPoolInsight = sharedPoolInsightFor(assessment, subscriptionId, estimatedCostVnd);
 
         return new AssessmentTokenEstimateResponse(
-            estimatedCostVnd, remainingAssessment, remainingMyClassTest, wouldExceedAssessment, wouldExceedMyClassTest,
-            schoolLocked, sharedPoolInsight.usageRatio(), sharedPoolInsight.teachersWithUnusedAllocation());
+            estimatedCostVnd, remainingAssessment, personalAllocation.remaining(), wouldExceedAssessment,
+            personalAllocation.wouldExceed(), schoolLocked, sharedPoolInsight.usageRatio(),
+            sharedPoolInsight.teachersWithUnusedAllocation());
+    }
+
+    private record PersonalAllocationEstimate(@Nullable BigDecimal remaining, boolean wouldExceed) {
+    }
+
+    // The second pair is now the PERSONAL quota of the teacher who owns the assessment, no longer a school-level CLASS_TEST
+    // wallet. The two warnings stay separate because the two sides block for different reasons and are handled
+    // differently: when the school's money runs out it must top up/upgrade the plan, while when the personal quota runs out
+    // it only needs to ask the school admin for more.
+    private PersonalAllocationEstimate personalAllocationEstimate(
+            Assessment assessment, UUID subscriptionId, BigDecimal estimatedCostVnd) {
+        if (assessment.getKind() != AssessmentKind.CLASS_TEST) {
+            return new PersonalAllocationEstimate(null, false);
+        }
+        BigDecimal remaining = remainingUserAllocation(subscriptionId, assessment.createdByUserId().orElse(null));
+        return new PersonalAllocationEstimate(remaining, remaining != null && estimatedCostVnd.compareTo(remaining) > 0);
+    }
+
+    // A centralized assessment has no personal quota (branch above), so whatever it spends comes straight out of the
+    // shared wallet -- unlike CLASS_TEST, the person who presses schedule (SCHOOL_ADMIN/CHAIR) does not see by themselves
+    // the effect on the other teachers who have their own personal quota. Computed only for CENTRALIZED, exactly the
+    // scope of the problem -- see computeSharedPoolInsight.
+    private SharedPoolInsight sharedPoolInsightFor(Assessment assessment, UUID subscriptionId, BigDecimal estimatedCostVnd) {
+        return assessment.getKind() == AssessmentKind.CENTRALIZED
+            ? computeSharedPoolInsight(subscriptionId, estimatedCostVnd)
+            : SharedPoolInsight.NOT_APPLICABLE;
     }
 
     private record SharedPoolInsight(BigDecimal usageRatio, Integer teachersWithUnusedAllocation) {

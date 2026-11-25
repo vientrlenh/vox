@@ -37,29 +37,31 @@ public class ViewSystemRubricCriterionDetailsUseCase implements IUseCase<ViewSys
     @Override
     @Transactional(readOnly = true)
     public RubricCriterionDto execute(ViewSystemRubricCriterionDetailsQuery query) {
-        // 1. Xác thực tài khoản
+        requireActiveCurrentUser();
+
+        RubricCriterion criterion = rubricCriterionRepository.findById(query.criterionId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Tiêu chí (Criterion) này."));
+        requireSystemOwnedCriterion(criterion);
+
+        return rubricCriterionDtoMapper.toDto(criterion);
+    }
+
+    private void requireActiveCurrentUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
         }
+    }
 
-        // 2. Lấy Criterion ra
-        RubricCriterion criterion = rubricCriterionRepository.findById(query.criterionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Tiêu chí (Criterion) này."));
-
-        // 3. Lấy Version
+    private void requireSystemOwnedCriterion(RubricCriterion criterion) {
         RubricVersion version = rubricVersionRepository.findById(criterion.getRubricVersionId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric Version chứa tiêu chí này."));
 
-        // 4. Lấy Rubric gốc và kiểm tra phải là SYSTEM
         Rubric rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             throw new ForbiddenException("Hành động bị từ chối: Tiêu chí này thuộc về Trường học, không phải của Hệ thống.");
         }
-
-        // 5. Map to a DTO and return
-        return rubricCriterionDtoMapper.toDto(criterion);
     }
 }

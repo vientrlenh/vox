@@ -51,6 +51,16 @@ public class GradeLevel extends BaseModel {
         this.status = status;
     }
 
+    public static GradeLevel registered(String code, String name, String description, int order) {
+        return builder()
+                .code(code)
+                .name(name)
+                .description(description)
+                .order(order)
+                .status(GradeLevelStatus.ACTIVE)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

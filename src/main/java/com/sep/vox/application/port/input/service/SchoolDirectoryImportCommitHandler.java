@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.service;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -43,18 +44,32 @@ public class SchoolDirectoryImportCommitHandler implements ImportCommitHandler {
     @Override
     public ImportCommitResult commit(ImportSession session, List<ImportRow> rows) {
         Map<String, String> mapping = jsonSerializationPort.toStringMap(session.getConfirmedMappingJson());
-        return processRows(rows, mapping);
+        return commitRowsAndCountOutcomes(rows, mapping);
     }
 
-    private ImportCommitResult processRows(List<ImportRow> rows, Map<String, String> confirmedMapping) {
-        long createdRows = 0L;
-        long updatedRows = 0L;
-        long skippedRows = 0L;
-        long invalidRows = 0L;
-        Set<String> seenCodes = new HashSet<String>();
-        List<RowContext> rowContexts = new ArrayList<RowContext>();
+    private ImportCommitResult commitRowsAndCountOutcomes(List<ImportRow> rows, Map<String, String> confirmedMapping) {
         Set<String> codes = new HashSet<String>();
+        List<RowContext> rowContexts = prepareRowContexts(rows, confirmedMapping, codes);
+        Map<String, SchoolDirectory> existingByCode = findByCode(codes);
+        Set<String> seenCodes = new HashSet<String>();
+        Map<RowOutcome, Long> outcomeCounts = new EnumMap<RowOutcome, Long>(RowOutcome.class);
+        for (RowContext rowContext : rowContexts) {
+            outcomeCounts.merge(commitRow(rowContext, existingByCode, seenCodes), 1L, Long::sum);
+        }
+        return toResult(outcomeCounts);
+    }
 
+    private ImportCommitResult toResult(Map<RowOutcome, Long> outcomeCounts) {
+        return new ImportCommitResult(
+                outcomeCounts.getOrDefault(RowOutcome.CREATED, 0L),
+                outcomeCounts.getOrDefault(RowOutcome.UPDATED, 0L),
+                outcomeCounts.getOrDefault(RowOutcome.SKIPPED, 0L),
+                outcomeCounts.getOrDefault(RowOutcome.INVALID, 0L));
+    }
+
+    private List<RowContext> prepareRowContexts(List<ImportRow> rows, Map<String, String> confirmedMapping,
+            Set<String> codes) {
+        List<RowContext> rowContexts = new ArrayList<RowContext>();
         for (ImportRow row : rows) {
             Map<String, String> rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
             Map<String, String> mappedData = mapRawData(rawData, confirmedMapping);
@@ -63,52 +78,53 @@ public class SchoolDirectoryImportCommitHandler implements ImportCommitHandler {
             rowContexts.add(new RowContext(row, normalized));
             addIfPresent(codes, normalized.get("code"));
         }
+        return rowContexts;
+    }
 
-        Map<String, SchoolDirectory> existingByCode = findByCode(codes);
+    private RowOutcome commitRow(RowContext rowContext, Map<String, SchoolDirectory> existingByCode,
+            Set<String> seenCodes) {
+        ImportRow row = rowContext.row();
+        Map<String, String> normalized = rowContext.normalized();
+        List<Map<String, String>> errors = validateRow(normalized, seenCodes);
 
-        for (RowContext rowContext : rowContexts) {
-            ImportRow row = rowContext.row();
-            Map<String, String> normalized = rowContext.normalized();
-            List<Map<String, String>> errors = validateRow(normalized, seenCodes);
-
-            if (!errors.isEmpty()) {
-                row.setErrorsJson(jsonSerializationPort.toJson(errors));
-                row.setStatus(ImportRowStatus.INVALID);
-                invalidRows++;
-                continue;
-            }
-
-            SchoolDirectory existing = existingByCode.get(normalized.get("code"));
-            
-            if (existing != null && existing.isCurated()) {
-                row.setErrorsJson(null);
-                row.setStatus(ImportRowStatus.SKIPPED);
-                skippedRows++;
-                continue;
-            }
-
-            try {
-                if (existing != null) {
-                    requiresNewTransactionPort.runInNewTransaction(() ->
-                            updateDirectory(existing, normalized));
-                    updatedRows++;
-                } else {
-                    requiresNewTransactionPort.runInNewTransaction(() ->
-                            createDirectory(normalized));
-                    createdRows++;
-                }
-            } catch (DataConflictException e) {
-                row.setErrorsJson(jsonSerializationPort.toJson(List.of(error("code", "Mã trường đã tồn tại"))));
-                row.setStatus(ImportRowStatus.FAILED);
-                invalidRows++;
-                continue;
-            }
-
-            row.setErrorsJson(null);
-            row.setStatus(ImportRowStatus.IMPORTED);
+        if (!errors.isEmpty()) {
+            row.setErrorsJson(jsonSerializationPort.toJson(errors));
+            row.setStatus(ImportRowStatus.INVALID);
+            return RowOutcome.INVALID;
         }
 
-        return new ImportCommitResult(createdRows, updatedRows, skippedRows, invalidRows);
+        SchoolDirectory existing = existingByCode.get(normalized.get("code"));
+        if (existing != null && existing.isCurated()) {
+            row.setErrorsJson(null);
+            row.setStatus(ImportRowStatus.SKIPPED);
+            return RowOutcome.SKIPPED;
+        }
+
+        return importRow(row, existing, normalized);
+    }
+
+    private RowOutcome importRow(ImportRow row, SchoolDirectory existing, Map<String, String> normalized) {
+        try {
+            RowOutcome outcome = saveInNewTransaction(existing, normalized);
+            row.setErrorsJson(null);
+            row.setStatus(ImportRowStatus.IMPORTED);
+            return outcome;
+        } catch (DataConflictException e) {
+            row.setErrorsJson(jsonSerializationPort.toJson(List.of(error("code", "Mã trường đã tồn tại"))));
+            row.setStatus(ImportRowStatus.FAILED);
+            return RowOutcome.INVALID;
+        }
+    }
+
+    private RowOutcome saveInNewTransaction(SchoolDirectory existing, Map<String, String> normalized) {
+        if (existing != null) {
+            requiresNewTransactionPort.runInNewTransaction(() ->
+                    updateDirectory(existing, normalized));
+            return RowOutcome.UPDATED;
+        }
+        requiresNewTransactionPort.runInNewTransaction(() ->
+                createDirectory(normalized));
+        return RowOutcome.CREATED;
     }
 
     private void createDirectory(Map<String, String> data) {
@@ -214,6 +230,8 @@ public class SchoolDirectoryImportCommitHandler implements ImportCommitHandler {
     private Map<String, String> error(String field, String message) {
         return Map.of("field", field, "message", message);
     }
+
+    private enum RowOutcome { CREATED, UPDATED, SKIPPED, INVALID }
 
     private record RowContext(ImportRow row, Map<String, String> normalized) {}
 }

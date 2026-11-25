@@ -50,36 +50,43 @@ public class IssueStudentStreamTokenUseCase implements IUseCase<IssueStudentStre
         Assessment assessment = assessmentRepository.findById(assessmentSession.getAssessmentId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
 
+        AssessmentCandidate candidate = findOwnCandidate(assessmentSession, userId);
+
+        AssessmentSchedule schedule = assessmentScheduleRepository.findByIdAndInSchedule(candidate.getScheduleId(), now)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lịch thi"));
+
+        // After the whole authentication step, not before: this step WRITES to the assessment session (it fixes
+        // the stream type), so if it ran earlier, someone who does not own the session could still fix the
+        // stream type on its behalf before being stopped by the permission check above.
+        List<String> streamTypes = resolveStreamTypes(assessment, assessmentSession, command.streamType());
+
+        String token = generateStreamToken(userId, candidate, schedule, assessment, assessmentSession, streamTypes);
+
+        return new IssueStudentStreamTokenResponse(token, schedule.getId(), assessmentSession.getId(), streamTypes, schedule.getEndDate());
+    }
+
+    private AssessmentCandidate findOwnCandidate(AssessmentSession assessmentSession, UUID userId) {
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(assessmentSession.getCandidateId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy học viên thi"));
 
         if (!candidate.getStudentId().equals(userId)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
+        return candidate;
+    }
 
-        AssessmentSchedule schedule = assessmentScheduleRepository.findByIdAndInSchedule(candidate.getScheduleId(), now)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lịch thi"));
-
-        // Sau toàn bộ khâu xác thực, không phải trước: bước này GHI vào phiên thi (chốt loại
-        // stream), nên nếu chạy sớm hơn thì một người không sở hữu phiên thi vẫn kịp chốt hộ
-        // loại stream trước khi bị chặn ở kiểm tra quyền bên trên.
-        List<String> streamTypes = resolveStreamTypes(assessment, assessmentSession, command.streamType());
-
-        Instant windowStart = schedule.getStartDate();
-        Instant windowEnd = schedule.getEndDate();
-
-        String token = streamTokenProvider.generateStreamToken(
+    private String generateStreamToken(UUID userId, AssessmentCandidate candidate, AssessmentSchedule schedule,
+            Assessment assessment, AssessmentSession assessmentSession, List<String> streamTypes) {
+        return streamTokenProvider.generateStreamToken(
             userId.toString(),
-            candidate.getId().toString(), 
-            schedule.getId().toString(),  
-            assessment.getId().toString(), 
+            candidate.getId().toString(),
+            schedule.getId().toString(),
+            assessment.getId().toString(),
             assessmentSession.getId().toString(),
-            streamTypes, 
-            windowStart, 
-            windowEnd
+            streamTypes,
+            schedule.getStartDate(),
+            schedule.getEndDate()
         );
-
-        return new IssueStudentStreamTokenResponse(token, schedule.getId(), assessmentSession.getId(), streamTypes, windowEnd);
     }
 
 
@@ -112,8 +119,8 @@ public class IssueStudentStreamTokenUseCase implements IUseCase<IssueStudentStre
     }
 
     /**
-     * Ghi lựa chọn xuống phiên thi. Nếu thua một request song song (0 dòng được cập nhật) thì đọc
-     * lại giá trị đã thắng thay vì ghi đè - phía gọi sẽ đối chiếu giá trị đó với yêu cầu ban đầu.
+     * Writes the choice to the assessment session. If a parallel request wins (0 rows updated), the winning value
+     * is read back instead of being overwritten - the caller compares that value with the original request.
      */
     private AssessmentRequiredStreamType lockChosenStreamType(AssessmentSession assessmentSession, AssessmentRequiredStreamType chosenStreamType) {
         if (assessmentSessionRepository.lockChosenStreamType(assessmentSession.getId(), chosenStreamType) > 0) {

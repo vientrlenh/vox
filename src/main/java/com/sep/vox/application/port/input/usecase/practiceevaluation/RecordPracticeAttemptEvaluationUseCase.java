@@ -30,6 +30,18 @@ public class RecordPracticeAttemptEvaluationUseCase implements IUseCase<RecordPr
     @Override
     @Transactional
     public Void execute(RecordPracticeAttemptEvaluationCommand input) {
+        UUID evaluationId = upsertItemEvaluation(input);
+        upsertCriterionScores(evaluationId, input);
+
+        // Same transaction as the evaluation upsert above, so the status and the evaluation can NEVER
+        // disagree. With two separate writes there would be moments when a graded row still carries
+        // the GRADING label, i.e. the data would lie to anyone reading the table.
+        responseRepository.markGraded(input.practiceResponseId());
+        refreshSessionScore(input.practiceResponseId());
+        return null;
+    }
+
+    private UUID upsertItemEvaluation(RecordPracticeAttemptEvaluationCommand input) {
         boolean markedInvalid = !input.validForScoring();
         double itemScore = input.criteria().stream()
             .mapToDouble(criterion -> {
@@ -42,13 +54,15 @@ public class RecordPracticeAttemptEvaluationUseCase implements IUseCase<RecordPr
             ? Instant.now()
             : Instant.parse(input.evaluatedAt());
 
-        UUID evaluationId = evaluationRepository.upsert(
+        return evaluationRepository.upsert(
             input.practiceResponseId(),
             itemScore,
             markedInvalid,
             evaluatedAt
         );
+    }
 
+    private void upsertCriterionScores(UUID evaluationId, RecordPracticeAttemptEvaluationCommand input) {
         for (PracticeCriterionScoreInput criterion : input.criteria()) {
             String code = criterion.criterionCode() == null
                 ? ""
@@ -67,13 +81,6 @@ public class RecordPracticeAttemptEvaluationUseCase implements IUseCase<RecordPr
                 score == null ? 0 : score
             );
         }
-
-        // Cùng transaction với upsert bản chấm ở trên -- nên trạng thái và bản chấm KHÔNG THỂ
-        // lệch nhau. Nếu tách ra hai lượt ghi thì sẽ có lúc tồn tại dòng đã chấm mà vẫn mang
-        // nhãn GRADING, tức dữ liệu nói dối với bất kỳ ai đọc bảng.
-        responseRepository.markGraded(input.practiceResponseId());
-        refreshSessionScore(input.practiceResponseId());
-        return null;
     }
 
     private void refreshSessionScore(UUID responseId) {

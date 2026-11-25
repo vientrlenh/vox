@@ -44,6 +44,34 @@ public class UpdateSchoolUserUseCase implements IUseCase<UpdateSchoolUserCommand
             throw new IllegalArgumentException("Cần cung cấp ít nhất một trường để cập nhật");
         }
 
+        requireCallerBelongsToSchool(input);
+
+        User target = findLockedTargetInSchool(input);
+
+        applyProvidedFields(target, input);
+
+        try {
+            userRepository.saveAndFlush(target);
+        } catch (DataConflictException e) {
+            throw new ResourceDuplicatedException("Số điện thoại đã tồn tại");
+        }
+
+        return new UpdateSchoolUserResponse(target.getId());
+    }
+
+    private User findLockedTargetInSchool(UpdateSchoolUserCommand input) {
+        User target = userRepository.findByIdForUpdate(input.userId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
+
+        SchoolUser targetSchoolUser = schoolUserRepository.findByUserId(input.userId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
+        if (!input.schoolId().equals(targetSchoolUser.getSchoolId())) {
+            throw new ResourceNotFoundException("Không tìm thấy người dùng");
+        }
+        return target;
+    }
+
+    private void requireCallerBelongsToSchool(UpdateSchoolUserCommand input) {
         UUID callerId = userContextPort.getCurrentAuthenticatedUserId();
 
         User caller = userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)
@@ -54,34 +82,15 @@ public class UpdateSchoolUserUseCase implements IUseCase<UpdateSchoolUserCommand
         if (!input.schoolId().equals(callerSchoolUser.getSchoolId())) {
             throw new IllegalArgumentException("Không có quyền thực hiện thao tác này");
         }
+    }
 
-        User target = userRepository.findByIdForUpdate(input.userId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
-
-        SchoolUser targetSchoolUser = schoolUserRepository.findByUserId(input.userId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
-        if (!input.schoolId().equals(targetSchoolUser.getSchoolId())) {
-            throw new ResourceNotFoundException("Không tìm thấy người dùng");
-        }
-
+    private void applyProvidedFields(User target, UpdateSchoolUserCommand input) {
         if (input.fullNameProvided()) {
-            String normalized = StringNormalization.trimAndCollapseSpaces(input.fullName());
-            if (normalized == null || normalized.isBlank()) {
-                throw new IllegalArgumentException("Họ tên không được để trống");
-            }
-            target.setFullName(new FullName(normalized));
+            applyFullName(target, input);
         }
 
         if (input.phoneProvided()) {
-            String normalized = StringNormalization.normalizePhone(input.phone());
-            if (normalized == null || normalized.isBlank()) {
-                throw new IllegalArgumentException("Số điện thoại không được để trống");
-            }
-            Optional<User> existing = userRepository.findByPhone(normalized);
-            if (existing.isPresent() && !existing.get().getId().equals(target.getId())) {
-                throw new ResourceDuplicatedException("Số điện thoại đã tồn tại");
-            }
-            target.setPhone(new Phone(normalized));
+            applyPhone(target, input);
         }
 
         if (input.addressProvided()) {
@@ -92,21 +101,37 @@ public class UpdateSchoolUserUseCase implements IUseCase<UpdateSchoolUserCommand
             target.setDateOfBirth(input.dateOfBirth() != null ? new DateOfBirth(input.dateOfBirth()) : null);
         }
 
-        // This is the ONLY way to set a student's avatar: UpdateProfileUseCase rejects students changing their own
-        // photo, because in this product the portrait is identity data used by proctors for roll call. When a school
-        // admin sets it on their behalf, someone is accountable for the photo.
-        // The URL is still checked even though the caller is a school admin: accepting a URL on a foreign host
-        // would make every teacher who opens the grading list call out to that host. See AvatarUrlPolicy.
         if (input.avatarUrlProvided()) {
-            target.setAvatarUrl(AvatarUrlPolicy.normalizeOrThrow(avatarConfigPort.allowedHosts(), input.avatarUrl()));
+            applyAvatarUrl(target, input);
         }
+    }
 
-        try {
-            userRepository.saveAndFlush(target);
-        } catch (DataConflictException e) {
+    // This is the ONLY way to set a student's avatar: UpdateProfileUseCase rejects students changing their own
+    // photo, because in this product the portrait is identity data used by proctors for roll call. When a school
+    // admin sets it on their behalf, someone is accountable for the photo.
+    // The URL is still checked even though the caller is a school admin: accepting a URL on a foreign host
+    // would make every teacher who opens the grading list call out to that host. See AvatarUrlPolicy.
+    private void applyAvatarUrl(User target, UpdateSchoolUserCommand input) {
+        target.setAvatarUrl(AvatarUrlPolicy.normalizeOrThrow(avatarConfigPort.allowedHosts(), input.avatarUrl()));
+    }
+
+    private void applyFullName(User target, UpdateSchoolUserCommand input) {
+        String normalized = StringNormalization.trimAndCollapseSpaces(input.fullName());
+        if (normalized == null || normalized.isBlank()) {
+            throw new IllegalArgumentException("Họ tên không được để trống");
+        }
+        target.setFullName(new FullName(normalized));
+    }
+
+    private void applyPhone(User target, UpdateSchoolUserCommand input) {
+        String normalized = StringNormalization.normalizePhone(input.phone());
+        if (normalized == null || normalized.isBlank()) {
+            throw new IllegalArgumentException("Số điện thoại không được để trống");
+        }
+        Optional<User> existing = userRepository.findByPhone(normalized);
+        if (existing.isPresent() && !existing.get().getId().equals(target.getId())) {
             throw new ResourceDuplicatedException("Số điện thoại đã tồn tại");
         }
-
-        return new UpdateSchoolUserResponse(target.getId());
+        target.setPhone(new Phone(normalized));
     }
 }

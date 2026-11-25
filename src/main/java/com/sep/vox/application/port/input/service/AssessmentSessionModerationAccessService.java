@@ -35,21 +35,8 @@ public class AssessmentSessionModerationAccessService {
             return;
         }
 
-        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
-            .map(schoolUser -> schoolUser.getSchoolId())
-            .orElse(null);
-        boolean schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
-        if (schoolAdmin && currentSchoolId != null && currentSchoolId.equals(assessment.getSchoolId())) {
-            return;
-        }
-
-        Boolean allowedAssessmentRole = assessmentMemberRepository.findByAssessmentIdAndUserId(assessment.getId(), currentUserId)
-            .map(member -> member.getRole() == AssessmentMemberRole.CHAIR
-                || member.getRole() == AssessmentMemberRole.AUTHOR
-                || member.getRole() == AssessmentMemberRole.REVIEWER)
-            .orElse(false);
-        if (allowedAssessmentRole) {
+        if (isSchoolAdminOfAssessmentSchool(currentUserId, assessment)
+                || isMemberWithAccess(assessment, currentUserId)) {
             return;
         }
 
@@ -59,5 +46,22 @@ public class AssessmentSessionModerationAccessService {
         }
 
         throw new ForbiddenException("Quyền truy cập bị từ chối");
+    }
+
+    private boolean isSchoolAdminOfAssessmentSchool(UUID currentUserId, Assessment assessment) {
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+            .map(schoolUser -> schoolUser.getSchoolId())
+            .orElse(null);
+        boolean schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
+        return schoolAdmin && currentSchoolId != null && currentSchoolId.equals(assessment.getSchoolId());
+    }
+
+    private boolean isMemberWithAccess(Assessment assessment, UUID currentUserId) {
+        return assessmentMemberRepository.findByAssessmentIdAndUserId(assessment.getId(), currentUserId)
+            .map(member -> member.getRole() == AssessmentMemberRole.CHAIR
+                || member.getRole() == AssessmentMemberRole.AUTHOR
+                || member.getRole() == AssessmentMemberRole.REVIEWER)
+            .orElse(false);
     }
 }

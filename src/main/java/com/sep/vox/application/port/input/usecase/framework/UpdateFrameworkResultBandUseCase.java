@@ -65,6 +65,11 @@ public class UpdateFrameworkResultBandUseCase
         if (!band.getFrameworkVersionId().equals(command.versionId()))
             throw new IllegalArgumentException("Mức kết quả không thuộc phiên bản này");
 
+        requireUniqueCodeAndLabel(command);
+        requireOrderKeepsSequenceContinuous(command);
+    }
+
+    private void requireUniqueCodeAndLabel(UpdateFrameworkResultBandCommand command) {
         String safeCode = StringNormalization.normalizeCode(command.code());
         String safeLabel = StringNormalization.trimAndCollapseSpaces(command.label());
         if (frameworkResultBandRepository.existsByFrameworkVersionIdAndCodeAndIdNot(command.versionId(), safeCode, command.bandId())) {
@@ -73,7 +78,9 @@ public class UpdateFrameworkResultBandUseCase
         if (frameworkResultBandRepository.existsByFrameworkVersionIdAndLabelAndIdNot(command.versionId(), safeLabel, command.bandId())) {
             throw new IllegalArgumentException("Nhãn kết quả đã tồn tại");
         }
+    }
 
+    private void requireOrderKeepsSequenceContinuous(UpdateFrameworkResultBandCommand command) {
         Set<Integer> otherOrders = frameworkResultBandRepository.findByFrameworkVersionId(command.versionId())
                 .stream()
                 .filter(frb -> !frb.getId().equals(command.bandId()))

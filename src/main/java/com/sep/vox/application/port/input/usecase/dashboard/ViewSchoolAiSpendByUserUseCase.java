@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -42,19 +43,24 @@ public class ViewSchoolAiSpendByUserUseCase
         BigDecimal schoolWide = schoolAiCostQueryRepository.sumSchoolWideCost(schoolId, from, to, quotaType);
 
         return new SchoolAiSpendByUserPageResponse(
-            page.content().stream()
-                .map(row -> new SchoolAiSpendByUserPageResponse.UserAiSpendResponse(
-                    row.userId(),
-                    row.fullName(),
-                    row.quotaType(),
-                    DecimalText.of(row.spentVnd()),
-                    DecimalText.of(row.allocatedAmountVnd())))
-                .toList(),
+            toUserSpendResponses(page),
             page.page(),
             page.size(),
             page.totalElements(),
             page.totalPages(),
             DecimalText.orZero(schoolWide)
         );
+    }
+
+    private List<SchoolAiSpendByUserPageResponse.UserAiSpendResponse> toUserSpendResponses(
+            PageResult<UserAiSpendDto> page) {
+        return page.content().stream()
+            .map(row -> new SchoolAiSpendByUserPageResponse.UserAiSpendResponse(
+                row.userId(),
+                row.fullName(),
+                row.quotaType(),
+                DecimalText.of(row.spentVnd()),
+                DecimalText.of(row.allocatedAmountVnd())))
+            .toList();
     }
 }

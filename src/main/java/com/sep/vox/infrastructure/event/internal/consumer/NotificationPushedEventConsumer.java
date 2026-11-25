@@ -54,6 +54,7 @@ import com.sep.vox.application.event.SchoolSubscriptionUnsuspendedPayloadV1;
 import com.sep.vox.application.port.output.PushNotificationPort;
 import com.sep.vox.application.response.output.PushMessage;
 import com.sep.vox.domain.common.EventTypeConstant;
+import com.sep.vox.domain.model.assessment.AssessmentKind;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.notification.Notification;
 import com.sep.vox.domain.model.notification.NotificationCategory;
@@ -169,16 +170,14 @@ public class NotificationPushedEventConsumer {
             return;
         }
 
+        notifyAndAcknowledge(record, eventId, ack);
+    }
+
+    private void notifyAndAcknowledge(ConsumerRecord<String, String> record, UUID eventId, Acknowledgment ack) {
         String eventType = KafkaEventHeaders.readEventType(record);
 
-        // An unknown eventType means a new event was added without declaring its category. Mark it processed
-        // and skip: running the whole retry cycle cannot change the outcome, and letting it fall into the DLT
-        // only creates noise. The real safety net is NotificationCategoryMappingValidator,
-        // which blocks at startup.
         if (!NotificationCategory.isMapped(eventType)) {
-            log.warn("Skip notification, eventType chưa ánh xạ category: eventId={}, eventType={}",
-                eventId, eventType);
-            markProcessed(eventId);
+            skipUnmappedEventType(eventId, eventType);
             ack.acknowledge();
             return;
         }
@@ -186,16 +185,59 @@ public class NotificationPushedEventConsumer {
         List<Draft> drafts = renderDrafts(eventType, eventId, record.value());
 
         if (drafts.isEmpty()) {
-            // The payload names no recipient. For a fan-out event that means no active
-            // admin is left; for a single-recipient event the payload is missing an id. Neither
-            // can be fixed by running it again.
-            log.warn("Skip notification, không có người nhận: eventId={}, eventType={}",
-                eventId, eventType);
-            markProcessed(eventId);
+            skipWithoutRecipients(eventId, eventType);
             ack.acknowledge();
             return;
         }
 
+        notifyRecipients(drafts, eventId, eventType);
+        ack.acknowledge();
+    }
+
+    /**
+     * An unknown eventType means a new event was added without declaring its category. Mark it processed
+     * and skip: running the whole retry cycle cannot change the outcome, and letting it fall into the DLT
+     * only creates noise. The real safety net is NotificationCategoryMappingValidator,
+     * which blocks at startup.
+     */
+    private void skipUnmappedEventType(UUID eventId, String eventType) {
+        log.warn("Skip notification, eventType chưa ánh xạ category: eventId={}, eventType={}",
+            eventId, eventType);
+        markProcessed(eventId);
+    }
+
+    /**
+     * The payload names no recipient. For a fan-out event that means no active
+     * admin is left; for a single-recipient event the payload is missing an id. Neither
+     * can be fixed by running it again.
+     */
+    private void skipWithoutRecipients(UUID eventId, String eventType) {
+        log.warn("Skip notification, không có người nhận: eventId={}, eventType={}",
+            eventId, eventType);
+        markProcessed(eventId);
+    }
+
+    private void notifyRecipients(List<Draft> drafts, UUID eventId, String eventType) {
+        List<Pushable> pushable = saveNotifications(drafts, eventId, eventType);
+
+        if (pushable.isEmpty()) {
+            // uk_notifications_user_event blocked everything: the message was fully processed before but
+            // markProcessed had not run yet (crash between the two steps). Do not push a second time.
+            log.info("Notification đã tồn tại cho cả {} người nhận, bỏ qua push: eventId={}",
+                drafts.size(), eventId);
+            markProcessed(eventId);
+            return;
+        }
+
+        submitPushes(pushable, eventId);
+
+        markProcessed(eventId);
+
+        log.info("Notification created: eventId={}, eventType={}, recipients={}, pushable={}",
+            eventId, eventType, drafts.size(), pushable.size());
+    }
+
+    private List<Pushable> saveNotifications(List<Draft> drafts, UUID eventId, String eventType) {
         // Durable step: write the table before anything else. One Instant for the whole batch so that every
         // recipient of an event has the same createdAt -- the pagination cursor sorts by id
         // so it is not affected, but a difference of a few dozen ms between rows of the same event only causes
@@ -203,16 +245,7 @@ public class NotificationPushedEventConsumer {
         Instant now = Instant.now();
         List<Pushable> pushable = new ArrayList<Pushable>();
         for (Draft draft : drafts) {
-            Optional<Notification> saved = notificationRepository.saveIfAbsent(Notification.builder()
-                    .userId(draft.userId())
-                    .eventId(eventId)
-                    .eventType(eventType)
-                    .title(draft.title())
-                    .body(draft.body())
-                    .payload(writePayload(draft.data()))
-                    .readAt(null)
-                    .createdAt(now)
-                    .build());
+            Optional<Notification> saved = saveDraft(draft, eventId, eventType, now);
 
             // The decision to push must be made PER RECIPIENT, not for the whole
             // message: a crash midway last time may have already created 30 of 50 rows, and this
@@ -221,52 +254,56 @@ public class NotificationPushedEventConsumer {
                 pushable.add(new Pushable(draft, saved.get().getId()));
             }
         }
+        return pushable;
+    }
 
-        if (pushable.isEmpty()) {
-            // uk_notifications_user_event blocked everything: the message was fully processed before but
-            // markProcessed had not run yet (crash between the two steps). Do not push a second time.
-            log.info("Notification đã tồn tại cho cả {} người nhận, bỏ qua push: eventId={}",
-                drafts.size(), eventId);
-            markProcessed(eventId);
-            ack.acknowledge();
-            return;
-        }
+    private Optional<Notification> saveDraft(Draft draft, UUID eventId, String eventType, Instant now) {
+        return notificationRepository.saveIfAbsent(Notification.builder()
+                .userId(draft.userId())
+                .eventId(eventId)
+                .eventType(eventType)
+                .title(draft.title())
+                .body(draft.body())
+                .payload(writePayload(draft.data()))
+                .readAt(null)
+                .createdAt(now)
+                .build());
+    }
 
-        // Swallowing errors in both places below is INTENTIONAL, unlike the SmtpEmailSendingService case: the
-        // notifications row has already been written above, so losing one push only loses the alert layer, the
-        // user still sees everything when opening the app. Letting the error propagate would rerun the whole retry cycle for
-        // work that is actually already done.
+    /**
+     * Swallowing errors here and in {@link #pushAll} is INTENTIONAL, unlike the SmtpEmailSendingService case: the
+     * notifications row has already been written, so losing one push only loses the alert layer, the
+     * user still sees everything when opening the app. Letting the error propagate would rerun the whole retry cycle for
+     * work that is actually already done.
+     */
+    private void submitPushes(List<Pushable> pushable, UUID eventId) {
         try {
             // The whole batch goes in ONE task, not one task per recipient: pushExecutor uses
             // AbortPolicy, so N tasks for one fan-out event would fill the queue and drop the
             // pushes of other events that are waiting.
-            executor.execute(() -> {
-                for (Pushable entry : pushable) {
-                    try {
-                        pushBestEffort(entry, eventId);
-                    } catch (Exception e) {
-                        // Runs on a pool thread: without logging here the exception falls into the thread's uncaught
-                        // handler and never reaches the log file. Caught inside the loop so that one failing
-                        // recipient does not cut off the pushes of the remaining ones.
-                        log.error("Push failed outside consumer thread: eventId={}, userId={}",
-                            eventId, entry.draft().userId(), e);
-                    }
-                }
-            });
+            executor.execute(() -> pushAll(pushable, eventId));
         } catch (RejectedExecutionException e) {
             log.warn("Push queue is full, skipping push: eventId={}, recipients={}",
                 eventId, pushable.size());
         }
+    }
 
-        markProcessed(eventId);
-
-        log.info("Notification created: eventId={}, eventType={}, recipients={}, pushable={}",
-            eventId, eventType, drafts.size(), pushable.size());
-        ack.acknowledge();
+    private void pushAll(List<Pushable> pushable, UUID eventId) {
+        for (Pushable entry : pushable) {
+            try {
+                pushBestEffort(entry, eventId);
+            } catch (Exception e) {
+                // Runs on a pool thread: without logging here the exception falls into the thread's uncaught
+                // handler and never reaches the log file. Caught inside the loop so that one failing
+                // recipient does not cut off the pushes of the remaining ones.
+                log.error("Push failed outside consumer thread: eventId={}, userId={}",
+                    eventId, entry.draft().userId(), e);
+            }
+        }
     }
 
     @DltHandler
-    public void handleDlt(ConsumerRecord<String, String> record) {
+    public void logDeadLetteredRecord(ConsumerRecord<String, String> record) {
         log.error("Notification event vào DLT: topic={}, partition={}, offset={}, payload={}",
             record.topic(), record.partition(), record.offset(), record.value());
     }
@@ -296,6 +333,11 @@ public class NotificationPushedEventConsumer {
             return;
         }
 
+        sendPush(pushable, installationIds, eventId);
+    }
+
+    private void sendPush(Pushable pushable, List<String> installationIds, UUID eventId) {
+        Draft draft = pushable.draft();
         PushDispatchResult result = pushNotificationPort.send(
             new PushMessage(draft.title(), draft.body(), pushData(pushable)), installationIds);
 
@@ -323,228 +365,291 @@ public class NotificationPushedEventConsumer {
      *         recipient at all -- the caller skips the message instead of pushing it into retry.
      */
     private List<Draft> renderDrafts(String eventType, UUID eventId, String value) {
-        NotificationCategory category = NotificationCategory.of(eventType);
+        IncomingEvent event = new IncomingEvent(value, eventType, eventId, NotificationCategory.of(eventType));
 
         return switch (eventType) {
-            case EventTypeConstant.ASSESSMENT_RESULT_RELEASED -> {
-                AssessmentResultReleasedPayloadV1 payload = parse(value, AssessmentResultReleasedPayloadV1.class, eventType, eventId);
-                yield one(payload.studentId(), category,
-                    "Điểm thi của bạn đã có",
-                    "%s: %s điểm".formatted(orPlaceholder(payload.assessmentName()), formatScore(payload.totalScore())),
-                    data(eventType)
-                        .with("candidateResultId", payload.candidateResultId())
-                        .with("sessionId", payload.sessionId())
-                        .with("assessmentKind", payload.assessmentKind())
-                        .with("assessmentName", payload.assessmentName())
-                        .build());
-            }
-            case EventTypeConstant.ASSESSMENT_RESULT_REGRADED -> {
-                AssessmentResultRegradedPayloadV1 payload = parse(value, AssessmentResultRegradedPayloadV1.class, eventType, eventId);
-                yield one(payload.studentId(), category,
-                    "Điểm thi của bạn đã thay đổi",
-                    "%s: %s -> %s điểm".formatted(orPlaceholder(payload.assessmentName()),
-                        formatScore(payload.scoreBefore()), formatScore(payload.scoreAfter())),
-                    data(eventType)
-                        .with("candidateResultId", payload.candidateResultId())
-                        .with("sessionId", payload.sessionId())
-                        .with("assessmentKind", payload.assessmentKind())
-                        .with("assessmentName", payload.assessmentName())
-                        .build());
-            }
-            case EventTypeConstant.ASSESSMENT_RESULT_INVALIDATED -> {
-                AssessmentResultInvalidatedPayloadV1 payload = parse(value, AssessmentResultInvalidatedPayloadV1.class, eventType, eventId);
-                yield one(payload.studentId(), category,
-                    "Bài thi của bạn đã bị vô hiệu",
-                    "%s: %s".formatted(orPlaceholder(payload.assessmentName()), orPlaceholder(payload.reason())),
-                    data(eventType)
-                        .with("candidateResultId", payload.candidateResultId())
-                        .with("sessionId", payload.sessionId())
-                        .with("assessmentKind", payload.assessmentKind())
-                        .with("assessmentName", payload.assessmentName())
-                        .build());
-            }
-            case EventTypeConstant.ASSESSMENT_RESULT_INVALID_CLEARED -> {
-                AssessmentResultInvalidClearedPayloadV1 payload = parse(value, AssessmentResultInvalidClearedPayloadV1.class, eventType, eventId);
-                yield one(payload.studentId(), category,
-                    "Bài thi của bạn đã được khôi phục",
-                    "%s: %s".formatted(orPlaceholder(payload.assessmentName()), orPlaceholder(payload.reason())),
-                    data(eventType)
-                        .with("candidateResultId", payload.candidateResultId())
-                        .with("sessionId", payload.sessionId())
-                        .with("assessmentKind", payload.assessmentKind())
-                        .with("assessmentName", payload.assessmentName())
-                        .build());
-            }
-            case EventTypeConstant.ASSESSMENT_RESULT_OUTCOME_DECIDED -> {
-                AssessmentResultOutcomeDecidedPayloadV1 payload = parse(value, AssessmentResultOutcomeDecidedPayloadV1.class, eventType, eventId);
-                yield one(payload.studentId(), category,
-                    "Kết quả cuối cùng của bạn",
-                    "%s: %s".formatted(orPlaceholder(payload.assessmentName()), orPlaceholder(payload.outcome())),
-                    data(eventType)
-                        .with("candidateResultId", payload.candidateResultId())
-                        .with("sessionId", payload.sessionId())
-                        .with("assessmentKind", payload.assessmentKind())
-                        .with("assessmentName", payload.assessmentName())
-                        .build());
-            }
-
-            case EventTypeConstant.ASSESSMENT_APPEAL_PUBLISHED -> {
-                AssessmentAppealPublishedPayloadV1 payload = parse(value, AssessmentAppealPublishedPayloadV1.class, eventType, eventId);
-                yield one(payload.studentId(), category,
-                    "Kết quả phúc khảo đã được công bố",
-                    "%s: %s -> %s điểm".formatted(orPlaceholder(payload.assessmentName()),
-                        formatScore(payload.scoreBefore()), formatScore(payload.scoreAfter())),
-                    data(eventType).with("appealId", payload.appealId()).build());
-            }
-            case EventTypeConstant.ASSESSMENT_APPEAL_REJECTED -> {
-                AssessmentAppealRejectedPayloadV1 payload = parse(value, AssessmentAppealRejectedPayloadV1.class, eventType, eventId);
-                yield one(payload.studentId(), category,
-                    "Đơn phúc khảo không được chấp nhận",
-                    "%s: %s".formatted(orPlaceholder(payload.assessmentName()), orPlaceholder(payload.reason())),
-                    data(eventType).with("appealId", payload.appealId()).build());
-            }
-            case EventTypeConstant.ASSESSMENT_APPEAL_APPROVED -> {
-                AssessmentAppealApprovedPayloadV1 payload = parse(value, AssessmentAppealApprovedPayloadV1.class, eventType, eventId);
-                yield one(payload.studentId(), category,
-                    "Đơn phúc khảo của bạn đã được duyệt",
-                    "%s -- dự kiến có kết quả trước %s".formatted(
-                        orPlaceholder(payload.assessmentName()), formatDeadline(payload.deadline())),
-                    data(eventType).with("appealId", payload.appealId()).build());
-            }
-
-            case EventTypeConstant.GRADING_DEADLINE_REMINDER -> {
-                GradingDeadlineReminderPayloadV1 payload = parse(value, GradingDeadlineReminderPayloadV1.class, eventType, eventId);
-                yield one(payload.teacherId(), category,
-                    "Sắp tới hạn chấm bài",
-                    "%s -- hạn %s".formatted(orPlaceholder(payload.assessmentName()),
-                        formatDeadline(payload.deadlineAt())),
-                    data(eventType)
-                        .with("assignmentId", payload.assignmentId())
-                        .with("assessmentId", payload.assessmentId())
-                        .with("assessmentKind", payload.assessmentKind())
-                        .build());
-            }
-            case EventTypeConstant.GRADING_ASSIGNMENT_DECLINED -> {
-                GradingAssignmentDeclinedPayloadV1 payload = parse(value, GradingAssignmentDeclinedPayloadV1.class, eventType, eventId);
-                // The recipient is the admin who assigned the work, not the teacher who returned it.
-                yield one(payload.assignedBy(), category,
-                    "Có người trả lại phân công chấm",
-                    "%s: %s".formatted(orPlaceholder(payload.assessmentName()), orPlaceholder(payload.reason())),
-                    data(eventType)
-                        .with("assignmentId", payload.assignmentId())
-                        .with("assessmentId", payload.assessmentId())
-                        .with("assessmentKind", payload.assessmentKind())
-                        .build());
-            }
-
-            case EventTypeConstant.GRADING_ASSIGNMENT_OPENED -> {
-                GradingAssignmentOpenedPayloadV1 payload = parse(value, GradingAssignmentOpenedPayloadV1.class, eventType, eventId);
-                yield one(payload.teacherId(), category,
-                    "Bạn được giao chấm bài",
-                    // candidateLabel was already chosen by the anonymity rule at publish time: the student's name
-                    // for a class test, the attempt code for a centralized assessment. Do NOT re-derive it here.
-                    "%s - %s: %s".formatted(
-                        orPlaceholder(payload.assessmentName()),
-                        roundLabel(payload.roundType()),
-                        orPlaceholder(payload.candidateLabel())),
-                    data(eventType)
-                        .with("assignmentId", payload.assignmentId())
-                        .with("assessmentId", payload.assessmentId())
-                        .with("assessmentKind", payload.assessmentKind())
-                        .build());
-            }
-
-            case EventTypeConstant.ASSESSMENT_HUMAN_GRADING_REQUIRED -> {
-                AssessmentHumanGradingRequiredPayloadV1 payload = parse(value, AssessmentHumanGradingRequiredPayloadV1.class, eventType, eventId);
-                yield fanOut(payload.recipientIds(), category,
-                    "Có bài chờ soát điểm AI",
-                    "%s: %d bài cần chấm tay".formatted(
-                        orPlaceholder(payload.assessmentName()), payload.pendingCount()),
-                    data(eventType)
-                        .with("assessmentId", payload.assessmentId())
-                        .with("assessmentKind", payload.assessmentKind())
-                        .build());
-            }
-
-            case EventTypeConstant.INVOICE_PAID -> {
-                InvoicePaidPayloadV1 payload = parse(value, InvoicePaidPayloadV1.class, eventType, eventId);
-                yield fanOut(payload.schoolAdminIds(), category,
-                    "Hóa đơn đã được thanh toán",
-                    "Hóa đơn #%s -- %s".formatted(orPlaceholder(payload.invoiceNumber()),
-                        formatAmount(payload.amount())),
-                    data(eventType).with("invoiceNumber", payload.invoiceNumber()).build());
-            }
-
-            // Same fan-out shape as InvoicePaid: when a blueprint is published, EVERY school
-            // admin of the school needs to know.
-            case EventTypeConstant.ASSESSMENT_BLUEPRINT_VERSION_PUBLISHED -> {
-                AssessmentBlueprintVersionPublishedEvent payload = parse(value, AssessmentBlueprintVersionPublishedEvent.class, eventType, eventId);
-                yield fanOut(payload.schoolAdminIds(), category,
-                    "Blueprint đề thi đã sẵn sàng",
-                    "%s (%s)".formatted(orPlaceholder(payload.blueprintName()),
-                        orPlaceholder(payload.blueprintCode())),
-                    data(eventType)
-                        .with("blueprintId", payload.blueprintId())
-                        .with("versionId", payload.versionId())
-                        .build());
-            }
-
-            case EventTypeConstant.SCHOOL_DEBT_CAP_EXCEEDED -> {
-                SchoolDebtCapExceededPayloadV1 payload = parse(value, SchoolDebtCapExceededPayloadV1.class, eventType, eventId);
-                yield fanOut(payload.systemAdminIds(), category,
-                    "Cảnh báo: nợ hạn mức AI vượt trần",
-                    "%s -- nợ %s vượt trần cảnh báo %s".formatted(quotaLabel(payload.quotaType()),
-                        formatAmount(payload.overageVnd()), formatAmount(payload.capVnd())),
-                    data(eventType).with("schoolId", payload.schoolId()).build());
-            }
-
-            case EventTypeConstant.SCHOOL_LOCKED_DUE_TO_DEBT -> {
-                SchoolLockedDueToDebtPayloadV1 payload = parse(value, SchoolLockedDueToDebtPayloadV1.class, eventType, eventId);
-                yield fanOut(payload.schoolAdminIds(), category,
-                    "Trường đang bị khóa do nợ hạn mức AI",
-                    "Chi phí AI thực tế đã vượt hạn mức -- thanh toán hoặc gia hạn/nâng cấp gói để tiếp tục tổ chức thi",
-                    data(eventType).with("schoolId", payload.schoolId()).build());
-            }
-
-            case EventTypeConstant.SCHOOL_QUOTA_USAGE_WARNING -> {
-                SchoolQuotaUsageWarningPayloadV1 payload = parse(value, SchoolQuotaUsageWarningPayloadV1.class, eventType, eventId);
-                BigDecimal percent = payload.usedAmountVnd()
-                    .multiply(BigDecimal.valueOf(100))
-                    .divide(payload.totalAllocatedVnd(), 0, RoundingMode.HALF_UP);
-                yield fanOut(payload.schoolAdminIds(), category,
-                    "Cảnh báo: sắp hết hạn mức AI",
-                    "%s đã dùng %s%% hạn mức -- cân nhắc gia hạn/nâng cấp gói để tránh gián đoạn"
-                        .formatted(quotaLabel(payload.quotaType()), percent),
-                    data(eventType).with("schoolId", payload.schoolId()).build());
-            }
-
-            case EventTypeConstant.SCHOOL_DEBT_CLEARED -> {
-                SchoolDebtClearedPayloadV1 payload = parse(value, SchoolDebtClearedPayloadV1.class, eventType, eventId);
-                yield fanOut(payload.schoolAdminIds(), category,
-                    "Trường đã hết nợ hạn mức AI",
-                    "Đã đủ hạn mức trở lại -- có thể tổ chức thi bình thường",
-                    data(eventType).with("schoolId", payload.schoolId()).build());
-            }
-
-            case EventTypeConstant.SCHOOL_SUBSCRIPTION_SUSPENDED -> {
-                SchoolSubscriptionSuspendedPayloadV1 payload = parse(value, SchoolSubscriptionSuspendedPayloadV1.class, eventType, eventId);
-                yield fanOut(payload.schoolAdminIds(), category,
-                    "Gói subscription bị đình chỉ",
-                    "Lý do: %s".formatted(orPlaceholder(payload.reason())),
-                    data(eventType).with("schoolId", payload.schoolId()).build());
-            }
-
-            case EventTypeConstant.SCHOOL_SUBSCRIPTION_UNSUSPENDED -> {
-                SchoolSubscriptionUnsuspendedPayloadV1 payload = parse(value, SchoolSubscriptionUnsuspendedPayloadV1.class, eventType, eventId);
-                yield fanOut(payload.schoolAdminIds(), category,
-                    "Gói subscription đã được gỡ đình chỉ",
-                    "Trường có thể sử dụng bình thường trở lại",
-                    data(eventType).with("schoolId", payload.schoolId()).build());
-            }
-
-            default -> throw new IllegalStateException(
-                "eventType không được xử lý: eventId=" + eventId + ", eventType=" + eventType);
+            case EventTypeConstant.ASSESSMENT_RESULT_RELEASED, EventTypeConstant.ASSESSMENT_RESULT_REGRADED,
+                EventTypeConstant.ASSESSMENT_RESULT_INVALIDATED, EventTypeConstant.ASSESSMENT_RESULT_INVALID_CLEARED,
+                EventTypeConstant.ASSESSMENT_RESULT_OUTCOME_DECIDED -> renderResultDrafts(event);
+            case EventTypeConstant.ASSESSMENT_APPEAL_PUBLISHED, EventTypeConstant.ASSESSMENT_APPEAL_REJECTED,
+                EventTypeConstant.ASSESSMENT_APPEAL_APPROVED -> renderAppealDrafts(event);
+            case EventTypeConstant.GRADING_DEADLINE_REMINDER, EventTypeConstant.GRADING_ASSIGNMENT_DECLINED,
+                EventTypeConstant.GRADING_ASSIGNMENT_OPENED, EventTypeConstant.ASSESSMENT_HUMAN_GRADING_REQUIRED ->
+                renderGradingDrafts(event);
+            case EventTypeConstant.INVOICE_PAID, EventTypeConstant.ASSESSMENT_BLUEPRINT_VERSION_PUBLISHED ->
+                renderSchoolAdminDrafts(event);
+            case EventTypeConstant.SCHOOL_DEBT_CAP_EXCEEDED, EventTypeConstant.SCHOOL_LOCKED_DUE_TO_DEBT,
+                EventTypeConstant.SCHOOL_QUOTA_USAGE_WARNING, EventTypeConstant.SCHOOL_DEBT_CLEARED,
+                EventTypeConstant.SCHOOL_SUBSCRIPTION_SUSPENDED, EventTypeConstant.SCHOOL_SUBSCRIPTION_UNSUSPENDED ->
+                renderSchoolDrafts(event);
+            default -> throw unhandledEventType(event);
         };
+    }
+
+    private IllegalStateException unhandledEventType(IncomingEvent event) {
+        return new IllegalStateException(
+            "eventType không được xử lý: eventId=" + event.eventId() + ", eventType=" + event.eventType());
+    }
+
+    private List<Draft> renderResultDrafts(IncomingEvent event) {
+        return switch (event.eventType()) {
+            case EventTypeConstant.ASSESSMENT_RESULT_RELEASED -> renderResultReleased(event);
+            case EventTypeConstant.ASSESSMENT_RESULT_REGRADED -> renderResultRegraded(event);
+            case EventTypeConstant.ASSESSMENT_RESULT_INVALIDATED -> renderResultInvalidated(event);
+            case EventTypeConstant.ASSESSMENT_RESULT_INVALID_CLEARED -> renderResultInvalidCleared(event);
+            case EventTypeConstant.ASSESSMENT_RESULT_OUTCOME_DECIDED -> renderResultOutcomeDecided(event);
+            default -> throw unhandledEventType(event);
+        };
+    }
+
+    private List<Draft> renderResultReleased(IncomingEvent event) {
+        AssessmentResultReleasedPayloadV1 payload = parse(event, AssessmentResultReleasedPayloadV1.class);
+        return one(payload.studentId(), event.category(),
+            "Điểm thi của bạn đã có",
+            "%s: %s điểm".formatted(orPlaceholder(payload.assessmentName()), formatScore(payload.totalScore())),
+            resultNavigation(event, payload.candidateResultId(), payload.sessionId(),
+                payload.assessmentKind(), payload.assessmentName()));
+    }
+
+    private List<Draft> renderResultRegraded(IncomingEvent event) {
+        AssessmentResultRegradedPayloadV1 payload = parse(event, AssessmentResultRegradedPayloadV1.class);
+        return one(payload.studentId(), event.category(),
+            "Điểm thi của bạn đã thay đổi",
+            "%s: %s -> %s điểm".formatted(orPlaceholder(payload.assessmentName()),
+                formatScore(payload.scoreBefore()), formatScore(payload.scoreAfter())),
+            resultNavigation(event, payload.candidateResultId(), payload.sessionId(),
+                payload.assessmentKind(), payload.assessmentName()));
+    }
+
+    private List<Draft> renderResultInvalidated(IncomingEvent event) {
+        AssessmentResultInvalidatedPayloadV1 payload = parse(event, AssessmentResultInvalidatedPayloadV1.class);
+        return one(payload.studentId(), event.category(),
+            "Bài thi của bạn đã bị vô hiệu",
+            "%s: %s".formatted(orPlaceholder(payload.assessmentName()), orPlaceholder(payload.reason())),
+            resultNavigation(event, payload.candidateResultId(), payload.sessionId(),
+                payload.assessmentKind(), payload.assessmentName()));
+    }
+
+    private List<Draft> renderResultInvalidCleared(IncomingEvent event) {
+        AssessmentResultInvalidClearedPayloadV1 payload = parse(event, AssessmentResultInvalidClearedPayloadV1.class);
+        return one(payload.studentId(), event.category(),
+            "Bài thi của bạn đã được khôi phục",
+            "%s: %s".formatted(orPlaceholder(payload.assessmentName()), orPlaceholder(payload.reason())),
+            resultNavigation(event, payload.candidateResultId(), payload.sessionId(),
+                payload.assessmentKind(), payload.assessmentName()));
+    }
+
+    private List<Draft> renderResultOutcomeDecided(IncomingEvent event) {
+        AssessmentResultOutcomeDecidedPayloadV1 payload = parse(event, AssessmentResultOutcomeDecidedPayloadV1.class);
+        return one(payload.studentId(), event.category(),
+            "Kết quả cuối cùng của bạn",
+            "%s: %s".formatted(orPlaceholder(payload.assessmentName()), orPlaceholder(payload.outcome())),
+            resultNavigation(event, payload.candidateResultId(), payload.sessionId(),
+                payload.assessmentKind(), payload.assessmentName()));
+    }
+
+    private Map<String, String> resultNavigation(IncomingEvent event, UUID candidateResultId, UUID sessionId,
+            AssessmentKind assessmentKind, String assessmentName) {
+        return navigationData(event.eventType())
+            .with("candidateResultId", candidateResultId)
+            .with("sessionId", sessionId)
+            .with("assessmentKind", assessmentKind)
+            .with("assessmentName", assessmentName)
+            .build();
+    }
+
+    private List<Draft> renderAppealDrafts(IncomingEvent event) {
+        return switch (event.eventType()) {
+            case EventTypeConstant.ASSESSMENT_APPEAL_PUBLISHED -> renderAppealPublished(event);
+            case EventTypeConstant.ASSESSMENT_APPEAL_REJECTED -> renderAppealRejected(event);
+            case EventTypeConstant.ASSESSMENT_APPEAL_APPROVED -> renderAppealApproved(event);
+            default -> throw unhandledEventType(event);
+        };
+    }
+
+    private List<Draft> renderAppealPublished(IncomingEvent event) {
+        AssessmentAppealPublishedPayloadV1 payload = parse(event, AssessmentAppealPublishedPayloadV1.class);
+        return one(payload.studentId(), event.category(),
+            "Kết quả phúc khảo đã được công bố",
+            "%s: %s -> %s điểm".formatted(orPlaceholder(payload.assessmentName()),
+                formatScore(payload.scoreBefore()), formatScore(payload.scoreAfter())),
+            navigationData(event.eventType()).with("appealId", payload.appealId()).build());
+    }
+
+    private List<Draft> renderAppealRejected(IncomingEvent event) {
+        AssessmentAppealRejectedPayloadV1 payload = parse(event, AssessmentAppealRejectedPayloadV1.class);
+        return one(payload.studentId(), event.category(),
+            "Đơn phúc khảo không được chấp nhận",
+            "%s: %s".formatted(orPlaceholder(payload.assessmentName()), orPlaceholder(payload.reason())),
+            navigationData(event.eventType()).with("appealId", payload.appealId()).build());
+    }
+
+    private List<Draft> renderAppealApproved(IncomingEvent event) {
+        AssessmentAppealApprovedPayloadV1 payload = parse(event, AssessmentAppealApprovedPayloadV1.class);
+        return one(payload.studentId(), event.category(),
+            "Đơn phúc khảo của bạn đã được duyệt",
+            "%s -- dự kiến có kết quả trước %s".formatted(
+                orPlaceholder(payload.assessmentName()), formatDeadline(payload.deadline())),
+            navigationData(event.eventType()).with("appealId", payload.appealId()).build());
+    }
+
+    private List<Draft> renderGradingDrafts(IncomingEvent event) {
+        return switch (event.eventType()) {
+            case EventTypeConstant.GRADING_DEADLINE_REMINDER -> renderGradingDeadlineReminder(event);
+            case EventTypeConstant.GRADING_ASSIGNMENT_DECLINED -> renderGradingAssignmentDeclined(event);
+            case EventTypeConstant.GRADING_ASSIGNMENT_OPENED -> renderGradingAssignmentOpened(event);
+            case EventTypeConstant.ASSESSMENT_HUMAN_GRADING_REQUIRED -> renderHumanGradingRequired(event);
+            default -> throw unhandledEventType(event);
+        };
+    }
+
+    private List<Draft> renderGradingDeadlineReminder(IncomingEvent event) {
+        GradingDeadlineReminderPayloadV1 payload = parse(event, GradingDeadlineReminderPayloadV1.class);
+        return one(payload.teacherId(), event.category(),
+            "Sắp tới hạn chấm bài",
+            "%s -- hạn %s".formatted(orPlaceholder(payload.assessmentName()),
+                formatDeadline(payload.deadlineAt())),
+            gradingNavigation(event, payload.assignmentId(), payload.assessmentId(), payload.assessmentKind()));
+    }
+
+    private List<Draft> renderGradingAssignmentDeclined(IncomingEvent event) {
+        GradingAssignmentDeclinedPayloadV1 payload = parse(event, GradingAssignmentDeclinedPayloadV1.class);
+        // The recipient is the admin who assigned the work, not the teacher who returned it.
+        return one(payload.assignedBy(), event.category(),
+            "Có người trả lại phân công chấm",
+            "%s: %s".formatted(orPlaceholder(payload.assessmentName()), orPlaceholder(payload.reason())),
+            gradingNavigation(event, payload.assignmentId(), payload.assessmentId(), payload.assessmentKind()));
+    }
+
+    private List<Draft> renderGradingAssignmentOpened(IncomingEvent event) {
+        GradingAssignmentOpenedPayloadV1 payload = parse(event, GradingAssignmentOpenedPayloadV1.class);
+        return one(payload.teacherId(), event.category(),
+            "Bạn được giao chấm bài",
+            // candidateLabel was already chosen by the anonymity rule at publish time: the student's name
+            // for a class test, the attempt code for a centralized assessment. Do NOT re-derive it here.
+            "%s - %s: %s".formatted(
+                orPlaceholder(payload.assessmentName()),
+                roundLabel(payload.roundType()),
+                orPlaceholder(payload.candidateLabel())),
+            gradingNavigation(event, payload.assignmentId(), payload.assessmentId(), payload.assessmentKind()));
+    }
+
+    private Map<String, String> gradingNavigation(IncomingEvent event, UUID assignmentId, UUID assessmentId,
+            AssessmentKind assessmentKind) {
+        return navigationData(event.eventType())
+            .with("assignmentId", assignmentId)
+            .with("assessmentId", assessmentId)
+            .with("assessmentKind", assessmentKind)
+            .build();
+    }
+
+    private List<Draft> renderHumanGradingRequired(IncomingEvent event) {
+        AssessmentHumanGradingRequiredPayloadV1 payload = parse(event, AssessmentHumanGradingRequiredPayloadV1.class);
+        return fanOut(payload.recipientIds(), event.category(),
+            "Có bài chờ soát điểm AI",
+            "%s: %d bài cần chấm tay".formatted(
+                orPlaceholder(payload.assessmentName()), payload.pendingCount()),
+            navigationData(event.eventType())
+                .with("assessmentId", payload.assessmentId())
+                .with("assessmentKind", payload.assessmentKind())
+                .build());
+    }
+
+    private List<Draft> renderSchoolAdminDrafts(IncomingEvent event) {
+        return switch (event.eventType()) {
+            case EventTypeConstant.INVOICE_PAID -> renderInvoicePaid(event);
+            case EventTypeConstant.ASSESSMENT_BLUEPRINT_VERSION_PUBLISHED -> renderBlueprintVersionPublished(event);
+            default -> throw unhandledEventType(event);
+        };
+    }
+
+    private List<Draft> renderInvoicePaid(IncomingEvent event) {
+        InvoicePaidPayloadV1 payload = parse(event, InvoicePaidPayloadV1.class);
+        return fanOut(payload.schoolAdminIds(), event.category(),
+            "Hóa đơn đã được thanh toán",
+            "Hóa đơn #%s -- %s".formatted(orPlaceholder(payload.invoiceNumber()),
+                formatAmount(payload.amount())),
+            navigationData(event.eventType()).with("invoiceNumber", payload.invoiceNumber()).build());
+    }
+
+    // Same fan-out shape as InvoicePaid: when a blueprint is published, EVERY school
+    // admin of the school needs to know.
+    private List<Draft> renderBlueprintVersionPublished(IncomingEvent event) {
+        AssessmentBlueprintVersionPublishedEvent payload =
+            parse(event, AssessmentBlueprintVersionPublishedEvent.class);
+        return fanOut(payload.schoolAdminIds(), event.category(),
+            "Blueprint đề thi đã sẵn sàng",
+            "%s (%s)".formatted(orPlaceholder(payload.blueprintName()),
+                orPlaceholder(payload.blueprintCode())),
+            navigationData(event.eventType())
+                .with("blueprintId", payload.blueprintId())
+                .with("versionId", payload.versionId())
+                .build());
+    }
+
+    private List<Draft> renderSchoolDrafts(IncomingEvent event) {
+        return switch (event.eventType()) {
+            case EventTypeConstant.SCHOOL_DEBT_CAP_EXCEEDED -> renderDebtCapExceeded(event);
+            case EventTypeConstant.SCHOOL_LOCKED_DUE_TO_DEBT -> renderLockedDueToDebt(event);
+            case EventTypeConstant.SCHOOL_QUOTA_USAGE_WARNING -> renderQuotaUsageWarning(event);
+            case EventTypeConstant.SCHOOL_DEBT_CLEARED -> renderDebtCleared(event);
+            case EventTypeConstant.SCHOOL_SUBSCRIPTION_SUSPENDED -> renderSubscriptionSuspended(event);
+            case EventTypeConstant.SCHOOL_SUBSCRIPTION_UNSUSPENDED -> renderSubscriptionUnsuspended(event);
+            default -> throw unhandledEventType(event);
+        };
+    }
+
+    private List<Draft> renderDebtCapExceeded(IncomingEvent event) {
+        SchoolDebtCapExceededPayloadV1 payload = parse(event, SchoolDebtCapExceededPayloadV1.class);
+        return fanOut(payload.systemAdminIds(), event.category(),
+            "Cảnh báo: nợ hạn mức AI vượt trần",
+            "%s -- nợ %s vượt trần cảnh báo %s".formatted(quotaLabel(payload.quotaType()),
+                formatAmount(payload.overageVnd()), formatAmount(payload.capVnd())),
+            navigationData(event.eventType()).with("schoolId", payload.schoolId()).build());
+    }
+
+    private List<Draft> renderLockedDueToDebt(IncomingEvent event) {
+        SchoolLockedDueToDebtPayloadV1 payload = parse(event, SchoolLockedDueToDebtPayloadV1.class);
+        return fanOut(payload.schoolAdminIds(), event.category(),
+            "Trường đang bị khóa do nợ hạn mức AI",
+            "Chi phí AI thực tế đã vượt hạn mức -- thanh toán hoặc gia hạn/nâng cấp gói để tiếp tục tổ chức thi",
+            navigationData(event.eventType()).with("schoolId", payload.schoolId()).build());
+    }
+
+    private List<Draft> renderQuotaUsageWarning(IncomingEvent event) {
+        SchoolQuotaUsageWarningPayloadV1 payload = parse(event, SchoolQuotaUsageWarningPayloadV1.class);
+        BigDecimal percent = payload.usedAmountVnd()
+            .multiply(BigDecimal.valueOf(100))
+            .divide(payload.totalAllocatedVnd(), 0, RoundingMode.HALF_UP);
+        return fanOut(payload.schoolAdminIds(), event.category(),
+            "Cảnh báo: sắp hết hạn mức AI",
+            "%s đã dùng %s%% hạn mức -- cân nhắc gia hạn/nâng cấp gói để tránh gián đoạn"
+                .formatted(quotaLabel(payload.quotaType()), percent),
+            navigationData(event.eventType()).with("schoolId", payload.schoolId()).build());
+    }
+
+    private List<Draft> renderDebtCleared(IncomingEvent event) {
+        SchoolDebtClearedPayloadV1 payload = parse(event, SchoolDebtClearedPayloadV1.class);
+        return fanOut(payload.schoolAdminIds(), event.category(),
+            "Trường đã hết nợ hạn mức AI",
+            "Đã đủ hạn mức trở lại -- có thể tổ chức thi bình thường",
+            navigationData(event.eventType()).with("schoolId", payload.schoolId()).build());
+    }
+
+    private List<Draft> renderSubscriptionSuspended(IncomingEvent event) {
+        SchoolSubscriptionSuspendedPayloadV1 payload = parse(event, SchoolSubscriptionSuspendedPayloadV1.class);
+        return fanOut(payload.schoolAdminIds(), event.category(),
+            "Gói subscription bị đình chỉ",
+            "Lý do: %s".formatted(orPlaceholder(payload.reason())),
+            navigationData(event.eventType()).with("schoolId", payload.schoolId()).build());
+    }
+
+    private List<Draft> renderSubscriptionUnsuspended(IncomingEvent event) {
+        SchoolSubscriptionUnsuspendedPayloadV1 payload = parse(event, SchoolSubscriptionUnsuspendedPayloadV1.class);
+        return fanOut(payload.schoolAdminIds(), event.category(),
+            "Gói subscription đã được gỡ đình chỉ",
+            "Trường có thể sử dụng bình thường trở lại",
+            navigationData(event.eventType()).with("schoolId", payload.schoolId()).build());
     }
 
     /**
@@ -587,7 +692,7 @@ public class NotificationPushedEventConsumer {
      * thay vì mười tám eventType. Quan trọng hơn, gắn thêm một event mới vào một target đã
      * có chỉ là thay đổi phía server -- xem {@link NotificationTarget}.
      */
-    private NavigationData data(String eventType) {
+    private NavigationData navigationData(String eventType) {
         return new NavigationData(eventType);
     }
 
@@ -662,12 +767,12 @@ public class NotificationPushedEventConsumer {
         return data == null || data.isEmpty() ? null : jsonMapper.writeValueAsString(data);
     }
 
-    private <T> T parse(String value, Class<T> type, String eventType, UUID eventId) {
+    private <T> T parse(IncomingEvent event, Class<T> type) {
         try {
-            return jsonMapper.readValue(value, type);
+            return jsonMapper.readValue(event.value(), type);
         } catch (Exception e) {
             throw new IllegalStateException(
-                "Payload sai định dạng: eventId=" + eventId + ", eventType=" + eventType, e);
+                "Payload sai định dạng: eventId=" + event.eventId() + ", eventType=" + event.eventType(), e);
         }
     }
 
@@ -723,6 +828,8 @@ public class NotificationPushedEventConsumer {
     private String orPlaceholder(String value) {
         return value == null || value.isBlank() ? "--" : value;
     }
+
+    private record IncomingEvent(String value, String eventType, UUID eventId, NotificationCategory category) {}
 
     private record Draft(
         UUID userId,

@@ -75,44 +75,49 @@ public class CancelOrderUseCase implements IUseCase<CancelOrderCommand, UUID> {
     }
 
     /**
-     * Đảm bảo đơn không còn phiên nào có thể ra tiền, hoặc ném lỗi. Trả về bình thường = an toàn để
-     * đóng đơn.
+     * Makes sure the order has no session left that could bring in money, or throws. Returning normally = safe to
+     * close the order.
      */
     private void closeLivePaymentAttempt(Order order) {
         PaymentRecord attempt = paymentRecordRepository.findPendingByOrderId(order.getId()).orElse(null);
         if (attempt == null) {
             return;
         }
-
         PaymentProcessPort paymentPort = paymentProcessResolver.resolve(attempt.getProvider());
-
-        // Hỏi cổng TRƯỚC khi làm gì khác: dòng còn PENDING chỉ nói rằng chưa ai báo về cho ta, không
-        // nói rằng trường chưa trả.
+        // Ask the gateway BEFORE doing anything else: a row that is still PENDING only says nobody has reported back to
+        // us yet, not that the school has not paid.
         PaymentLinkRemoteStatus remoteStatus = paymentPort.getPaymentLinkStatus(attempt.getProviderOrderRef()).status();
+        requireNotPaidAndNotJustOpened(remoteStatus, attempt);
 
+        // The gateway has confirmed the session is already dead (the school pressed cancel on the gateway page, or the
+        // link expired on its own): no need to call cancel, just settle our own row to match.
+        if (isAlreadyDead(remoteStatus)) {
+            markAttemptFailed(order, attempt.getId());
+            return;
+        }
+        requireGatewayCancelled(paymentPort, attempt);
+        markAttemptFailed(order, attempt.getId());
+    }
+
+    private void requireNotPaidAndNotJustOpened(PaymentLinkRemoteStatus remoteStatus, PaymentRecord attempt) {
         if (remoteStatus == PaymentLinkRemoteStatus.PAID) {
             throw new IllegalArgumentException(
                 "Đơn hàng này đã được thanh toán, hệ thống đang ghi nhận. Không thể hủy.");
         }
 
-        // Lần thử vừa mở mà cổng đã nói không có: nhiều khả năng createPaymentLink của một tab khác
-        // đang bay dở. Bắt đợi hết ân hạn rồi hủy lại -- xem PaymentRecord.canRetireOnGatewayNotFound.
-        // Tách riêng khỏi nhánh dưới để câu báo nói đúng việc phải làm: ca này chỉ cần thử lại sau
-        // vài phút, chứ không phải "đợi đơn hết hạn".
+        // An attempt that was just opened but the gateway says does not exist: most likely another tab's
+        // createPaymentLink is still in flight. Make them wait out the grace period and cancel again -- see
+        // PaymentRecord.canRetireOnGatewayNotFound. Kept separate from the branch below so the message says what
+        // to do: this case only needs a retry in a few minutes, not "wait for the order to expire".
         if (remoteStatus == PaymentLinkRemoteStatus.NOT_FOUND
                 && !attempt.canRetireOnGatewayNotFound(Instant.now())) {
             throw new IllegalArgumentException(
                 "Đơn hàng vừa mở một phiên thanh toán mà cổng chưa xác nhận. Vui lòng thử lại sau vài phút.");
         }
+    }
 
-        // Cổng đã xác nhận phiên chết sẵn (trường bấm hủy trên trang cổng, hoặc link tự hết hạn):
-        // không cần gọi hủy nữa, chỉ chốt lại dòng của mình cho khớp.
-        if (isAlreadyDead(remoteStatus)) {
-            markAttemptFailed(order, attempt.getId());
-            return;
-        }
-
-        // Phiên vẫn sống -> phải đóng được nó ở phía cổng mới dám đóng đơn.
+    // The session is still alive -> it must be closable on the gateway side before the order is dared to be closed.
+    private void requireGatewayCancelled(PaymentProcessPort paymentPort, PaymentRecord attempt) {
         if (!paymentPort.cancelPaymentLink(attempt.getProviderOrderRef(), CANCELLATION_REASON)) {
             // SePay lands here EVERY time because the gateway has no API to cancel an unpaid session -- see
             // PaymentProcessPort.cancelPaymentLink. We accept making the school wait for expiry (at most 24
@@ -121,8 +126,6 @@ public class CancelOrderUseCase implements IUseCase<CancelOrderCommand, UUID> {
                 "Đơn hàng đang có một phiên thanh toán chờ xử lý mà cổng không cho hủy sớm. "
                     + "Vui lòng hoàn tất phiên đó hoặc đợi đơn hết hạn.");
         }
-
-        markAttemptFailed(order, attempt.getId());
     }
 
     /**

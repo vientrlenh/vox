@@ -41,12 +41,7 @@ public class RejectAssessmentAppealUseCase implements IUseCase<RejectAssessmentA
         assessmentAppealAccessService.authorizeSchoolAdminOrClassTestChair(context, currentUserId);
 
         AssessmentResultAppeal appeal = context.appeal();
-        if (appeal.getStatus() != AssessmentAppealStatus.PENDING) {
-            throw new IllegalArgumentException("Chỉ có thể từ chối đơn phúc khảo đang ở trạng thái Chờ duyệt.");
-        }
-        if (command.reason() == null || command.reason().isBlank()) {
-            throw new IllegalArgumentException("Phải nêu lý do từ chối đơn phúc khảo.");
-        }
+        requireRejectable(appeal, command);
 
         Instant now = Instant.now();
         appeal.setStatus(AssessmentAppealStatus.REJECTED);
@@ -54,19 +49,38 @@ public class RejectAssessmentAppealUseCase implements IUseCase<RejectAssessmentA
         appeal.setResolvedBy(currentUserId);
         appeal.setResolvedAt(now);
         assessmentResultAppealRepository.save(appeal);
+        releaseCandidateResult(context.candidateResult());
+        saveAppealRejectedOutbox(appeal, context, command.reason(), now);
 
-        // Đơn bị từ chối: điểm gốc giữ nguyên giá trị, kết quả quay về đã công bố.
-        AssessmentCandidateResult candidateResult = context.candidateResult();
+        return appeal.getId();
+    }
+
+    private void requireRejectable(AssessmentResultAppeal appeal, RejectAssessmentAppealCommand command) {
+        if (appeal.getStatus() != AssessmentAppealStatus.PENDING) {
+            throw new IllegalArgumentException("Chỉ có thể từ chối đơn phúc khảo đang ở trạng thái Chờ duyệt.");
+        }
+        if (command.reason() == null || command.reason().isBlank()) {
+            throw new IllegalArgumentException("Phải nêu lý do từ chối đơn phúc khảo.");
+        }
+    }
+
+    /** A rejected appeal leaves the original score unchanged and the result goes back to released. */
+    private void releaseCandidateResult(AssessmentCandidateResult candidateResult) {
         candidateResult.setStatus(AssessmentCandidateResultStatus.RELEASED);
         assessmentCandidateResultRepository.save(candidateResult);
+    }
 
-        // Ghi outbox trong chính transaction này: mail báo học sinh và quyết định từ chối
-        // cùng sống hoặc cùng chết, không còn cảnh commit xong rồi mất mail vì SMTP lỗi.
+    /**
+     * The outbox row is written inside this transaction so the mail to the student and the rejection live or die
+     * together: no more committing and then losing the mail to an SMTP failure.
+     */
+    private void saveAppealRejectedOutbox(
+        AssessmentResultAppeal appeal, AssessmentAppealAccessService.AppealContext context, String reason, Instant now) {
         AssessmentAppealRejectedPayloadV1 payload = new AssessmentAppealRejectedPayloadV1(
             appeal.getId(),
             context.studentId(),
             context.assessmentName(),
-            command.reason()
+            reason
         );
         outboxRepository.save(Outbox.create(
             AggregateTypeConstant.ASSESSMENT_RESULT_APPEAL,
@@ -75,7 +89,5 @@ public class RejectAssessmentAppealUseCase implements IUseCase<RejectAssessmentA
             jsonSerializationPort.toJson(payload),
             now
         ));
-
-        return appeal.getId();
     }
 }

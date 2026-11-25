@@ -85,83 +85,63 @@ public final class DateMapper {
     }
 
     /**
-     * Đổi một chuỗi thời gian của client thành thời điểm tuyệt đối.
+     * Converts a client date-time string into an absolute instant.
      *
-     * <p>Đường đi mong muốn là input tự mang offset ({@code Z} hoặc {@code ±HH:MM}), vì khi đó
-     * server không phải đoán gì cả và client ở múi giờ nào cũng cho ra đúng khoảnh khắc. Đây là lý do
-     * hàm này gọi thẳng {@link OffsetDateTime#parse} thay vì so với một danh sách pattern:
-     * {@code ISO_OFFSET_DATE_TIME} đã nhận sẵn giây tùy chọn, phần thập phân 0-9 chữ số, {@code Z},
-     * {@code ±HH:MM} và {@code ±HH:MM:SS} — rộng hơn bất kỳ danh sách {@code ofPattern} viết tay nào,
-     * và không thể vô tình bỏ sót dạng mà client thật sự gửi (ví dụ
-     * {@code 2026-07-28T09:30:00.000Z} của {@code new Date().toISOString()}).
+     * <p>The preferred input carries its own offset ({@code Z} or {@code ±HH:MM}): the server then
+     * guesses nothing and a client in any time zone yields the right moment. That is why this method
+     * calls {@link OffsetDateTime#parse} directly instead of matching a list of patterns:
+     * {@code ISO_OFFSET_DATE_TIME} already accepts optional seconds, 0-9 fractional digits, {@code Z},
+     * {@code ±HH:MM} and {@code ±HH:MM:SS}, which is wider than any hand-written {@code ofPattern}
+     * list and cannot miss a shape a real client sends (for example
+     * {@code 2026-07-28T09:30:00.000Z} from {@code new Date().toISOString()}).
      *
-     * <p>Input không mang offset vẫn được nhận tạm qua nhánh tương thích bên dưới, kèm cảnh báo.
+     * <p>Input without an offset is still accepted for now through the compatibility branch in
+     * {@link #resolveWithoutOffsetForApi(String)}.
      *
-     * @return {@code null} nếu input rỗng
-     * @throws IllegalArgumentException nếu không parse được theo bất kỳ dạng nào
+     * @return {@code null} if the input is empty
+     * @throws IllegalArgumentException if the input cannot be parsed in any form
      */
     public static Instant toInstant(String dateTimeString) {
         if (dateTimeString == null || dateTimeString.isBlank()) {
             return null;
         }
         String raw = dateTimeString.strip();
-
-        try {
-            return OffsetDateTime.parse(raw).toInstant();
-        } catch (DateTimeParseException notSelfDescribing) {
-            // Không mang offset -> xuống nhánh tương thích.
+        Instant withOffset = parseWithOffset(raw);
+        if (withOffset != null) {
+            return withOffset;
         }
-
-        // ------------------------------------------------------------------
-        // NHÁNH TƯƠNG THÍCH TẠM THỜI.
-        //
-        // Web client đang gửi date-only từ <input type="date"> (ví dụ "2026-07-28") cho
-        // effectiveFrom/effectiveTo. Bỏ nhánh này ngay bây giờ sẽ làm chết luồng tạo/sửa assessment
-        // policy trên cả REST và GraphQL, nên nó tồn tại để hai bên không phải deploy đúng cùng lúc.
-        //
-        // XÓA nhánh này khi log cảnh báo dưới đây đã sạch: lúc đó input không mang offset sẽ bị từ
-        // chối thẳng, và DEFAULT_INPUT_ZONE chỉ còn được dùng ở đường import file.
-        // ------------------------------------------------------------------
-        Instant fallback = resolveWithoutOffset(raw, DEFAULT_INPUT_ZONE);
-        if (fallback == null) {
-            throw new IllegalArgumentException(
-                    "Thời gian phải kèm múi giờ, ví dụ 2026-07-28T09:30:00+07:00 hoặc 2026-07-28T02:30:00Z");
-        }
-        return fallback;
+        return resolveWithoutOffsetForApi(raw);
     }
 
     /**
-     * Đổi một ô ngày/giờ đọc từ file import thành thời điểm tuyệt đối.
+     * Converts a date/time cell read from an import file into an absolute instant.
      *
-     * <p>Khác {@link #toInstant(String)} ở hai điểm, và cả hai đều có lý do:
+     * <p>It differs from {@link #toInstant(String)} in two ways, both on purpose:
      *
      * <ul>
-     *   <li>Giá trị chỉ có ngày là <b>hợp lệ</b>, không phải nợ kỹ thuật. Người dùng gõ
-     *       {@code 28/07/2026} vào Excel thì ở đó không tồn tại múi giờ nào để lấy, nên không có gì
-     *       để cảnh báo — vì thế hàm này không ghi log như nhánh tương thích của API.
-     *   <li>{@code zone} là tham số <b>bắt buộc</b>. Một ngày lịch tự nó không xác định được thời
-     *       điểm nào cả: "ngày 28/07 bắt đầu lúc nào" phụ thuộc hoàn toàn vào múi giờ. Bắt truyền tay
-     *       là cách duy nhất giữ cho lựa chọn này hiện ra ở call site thay vì nằm ẩn trong bộ parse,
-     *       và là cách để khi {@code School} có cột múi giờ riêng thì grep ra được đúng chỗ cần đổi.
+     *   <li>A date-only value is <b>valid</b>, not technical debt. A user who types
+     *       {@code 28/07/2026} into Excel gives no time zone to read, so there is nothing to warn
+     *       about; this method therefore does not log like the API compatibility branch.
+     *   <li>{@code zone} is a <b>required</b> parameter. A calendar date does not identify a moment:
+     *       when "28/07 starts" depends entirely on the time zone. Passing it by hand keeps the
+     *       choice visible at the call site instead of hidden in the parser, and lets a grep find
+     *       every place to change when {@code School} gets its own time zone column.
      * </ul>
      *
-     * <p>Ô có mang offset thì {@code zone} bị bỏ qua — dữ liệu tự nó đã đủ chính xác.
+     * <p>A cell that carries an offset ignores {@code zone}: the data is already exact.
      *
-     * @return {@code null} nếu ô rỗng
-     * @throws IllegalArgumentException nếu không parse được theo bất kỳ dạng nào
+     * @return {@code null} if the cell is empty
+     * @throws IllegalArgumentException if the cell cannot be parsed in any form
      */
     public static Instant toImportedInstant(String dateTimeString, ZoneId zone) {
         if (dateTimeString == null || dateTimeString.isBlank()) {
             return null;
         }
         String raw = dateTimeString.strip();
-
-        try {
-            return OffsetDateTime.parse(raw).toInstant();
-        } catch (DateTimeParseException e) {
-            // Ô không mang offset -> giải nghĩa theo zone được truyền vào.
+        Instant withOffset = parseWithOffset(raw);
+        if (withOffset != null) {
+            return withOffset;
         }
-
         Instant resolved = resolveWithoutOffset(raw, zone);
         if (resolved == null) {
             throw new IllegalArgumentException("Định dạng ngày yêu cầu không hợp lệ");
@@ -185,6 +165,32 @@ public final class DateMapper {
      */
     public static String toIsoString(Instant instant) {
         return instant == null ? null : instant.toString();
+    }
+
+    private static Instant parseWithOffset(String raw) {
+        try {
+            return OffsetDateTime.parse(raw).toInstant();
+        } catch (DateTimeParseException notSelfDescribing) {
+            return null;
+        }
+    }
+
+    // TEMPORARY COMPATIBILITY BRANCH.
+    //
+    // The web client still sends date-only values from <input type="date"> (for example
+    // "2026-07-28") for effectiveFrom/effectiveTo. Dropping this branch now would break creating and
+    // editing assessment policies on both REST and GraphQL, so it exists to let the two sides deploy
+    // at different times.
+    //
+    // REMOVE it once clients always send an offset: input without an offset will then be rejected
+    // outright, and DEFAULT_INPUT_ZONE is left for the file import path only.
+    private static Instant resolveWithoutOffsetForApi(String raw) {
+        Instant fallback = resolveWithoutOffset(raw, DEFAULT_INPUT_ZONE);
+        if (fallback == null) {
+            throw new IllegalArgumentException(
+                    "Thời gian phải kèm múi giờ, ví dụ 2026-07-28T09:30:00+07:00 hoặc 2026-07-28T02:30:00Z");
+        }
+        return fallback;
     }
 
     /**

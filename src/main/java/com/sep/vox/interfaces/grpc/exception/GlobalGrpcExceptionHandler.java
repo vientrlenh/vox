@@ -20,47 +20,31 @@ public class GlobalGrpcExceptionHandler implements GrpcExceptionHandler{
 
     @Override
     public @Nullable StatusException handleException(Throwable exception) {
-        if (exception instanceof IllegalArgumentException) {
-            return Status.INVALID_ARGUMENT
-                .withDescription(exception.getMessage())
-                .asException();
+        Status status = statusOf(exception);
+        if (status == null) {
+            return null;
         }
-        if (exception instanceof ResourceNotFoundException) {
-            return Status.NOT_FOUND
-                .withDescription(exception.getMessage())
-                .asException();
-        }
-        if (exception instanceof ResourceDuplicatedException) {
-            return Status.ALREADY_EXISTS
-                .withDescription(exception.getMessage())
-                .asException();
-        }
-        if (exception instanceof ForbiddenException) {
-            return Status.PERMISSION_DENIED
-                .withDescription(exception.getMessage())
-                .asException();
-        }
-        if (exception instanceof UnauthorizedException) {
-            return Status.UNAUTHENTICATED
-                .withDescription(exception.getMessage())
-                .asException();
-        }
-        if (exception instanceof BusinessRuleViolationException) {
-            return Status.FAILED_PRECONDITION
-                .withDescription(exception.getMessage())
-                .asException();
-        }
-        if (exception instanceof AccessDeniedException) {
-            return Status.PERMISSION_DENIED
-                .withDescription("Quyền truy cập bị từ chối")
-                .asException();
-        }
-        if (exception instanceof AuthenticationException) {
-            return Status.UNAUTHENTICATED
-                .withDescription("Trạng thái đăng nhập không hợp lệ")
-                .asException();
-        }
-        return null;
+        return status.withDescription(descriptionOf(exception)).asException();
     }
-    
+
+    private @Nullable Status statusOf(Throwable exception) {
+        return switch (exception) {
+            case IllegalArgumentException _ -> Status.INVALID_ARGUMENT;
+            case ResourceNotFoundException _ -> Status.NOT_FOUND;
+            case ResourceDuplicatedException _ -> Status.ALREADY_EXISTS;
+            case ForbiddenException _, AccessDeniedException _ -> Status.PERMISSION_DENIED;
+            case UnauthorizedException _, AuthenticationException _ -> Status.UNAUTHENTICATED;
+            case BusinessRuleViolationException _ -> Status.FAILED_PRECONDITION;
+            default -> null;
+        };
+    }
+
+    private @Nullable String descriptionOf(Throwable exception) {
+        return switch (exception) {
+            case AccessDeniedException _ -> "Quyền truy cập bị từ chối";
+            case AuthenticationException _ -> "Trạng thái đăng nhập không hợp lệ";
+            default -> exception.getMessage();
+        };
+    }
+
 }

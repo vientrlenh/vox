@@ -48,26 +48,9 @@ public class CreateTopUpOrderUseCase implements IUseCase<CreateTopUpOrderCommand
         UUID schoolId = userContextPort.getCurrentSchoolId();
 
         BigDecimal creditAmountVnd = validatedCreditAmount(input.creditAmountVnd());
-
-        // The balance is only spent once the plan's quota is exhausted (OVERAGE_CHARGE), so topping up while no plan is running
-        // puts money where it cannot be spent. The balance DOES survive across renewals -- blocking here blocks topping up TOO
-        // EARLY, it does not attach the money to a plan.
-        boolean hasActiveSubscription = schoolSubscriptionRepository.findActiveBySchoolId(schoolId).isPresent();
-        if (!hasActiveSubscription) {
-            throw new IllegalArgumentException("Trường chưa có gói đăng ký nào đang hoạt động để nạp thêm.");
-        }
-
-        // The service fee is ADDED to the amount to pay, not carved out of the balance: if the school asks for 1,000,000 it
-        // receives exactly 1,000,000 in the wallet and pays 1,200,000. The fee is rounded to whole dong because the column is
-        // numeric(15,0) and the gateway only accepts integers -- rounding here instead of letting Postgres do it, so the stored
-        // number equals the number used to compute the total.
-        BigDecimal serviceFeeVnd = creditAmountVnd
-            .multiply(serviceFeePort.serviceFeeRatio())
-            .setScale(0, RoundingMode.HALF_UP);
-
-        if (creditAmountVnd.add(serviceFeeVnd).compareTo(MAX_TOTAL_AMOUNT_VND) > 0) {
-            throw new IllegalArgumentException("Số tiền nạp vượt quá giới hạn cho phép");
-        }
+        requireActiveSubscription(schoolId);
+        BigDecimal serviceFeeVnd = serviceFeeOf(creditAmountVnd);
+        requireWithinMaxTotal(creditAmountVnd, serviceFeeVnd);
 
         Instant now = Instant.now();
         Order savedOrder = orderRepository.save(Order.forTopUp(
@@ -80,6 +63,32 @@ public class CreateTopUpOrderUseCase implements IUseCase<CreateTopUpOrderCommand
 
         // No order_items are written: see the class Javadoc.
         return savedOrder.getId();
+    }
+
+    // The balance is only spent once the plan's quota is exhausted (OVERAGE_CHARGE), so topping up while no plan is running
+    // puts money where it cannot be spent. The balance DOES survive across renewals -- blocking here blocks topping up TOO
+    // EARLY, it does not attach the money to a plan.
+    private void requireActiveSubscription(UUID schoolId) {
+        boolean hasActiveSubscription = schoolSubscriptionRepository.findActiveBySchoolId(schoolId).isPresent();
+        if (!hasActiveSubscription) {
+            throw new IllegalArgumentException("Trường chưa có gói đăng ký nào đang hoạt động để nạp thêm.");
+        }
+    }
+
+    // The service fee is ADDED to the amount to pay, not carved out of the balance: if the school asks for 1,000,000 it
+    // receives exactly 1,000,000 in the wallet and pays 1,200,000. The fee is rounded to whole dong because the column is
+    // numeric(15,0) and the gateway only accepts integers -- rounding here instead of letting Postgres do it, so the stored
+    // number equals the number used to compute the total.
+    private BigDecimal serviceFeeOf(BigDecimal creditAmountVnd) {
+        return creditAmountVnd
+            .multiply(serviceFeePort.serviceFeeRatio())
+            .setScale(0, RoundingMode.HALF_UP);
+    }
+
+    private static void requireWithinMaxTotal(BigDecimal creditAmountVnd, BigDecimal serviceFeeVnd) {
+        if (creditAmountVnd.add(serviceFeeVnd).compareTo(MAX_TOTAL_AMOUNT_VND) > 0) {
+            throw new IllegalArgumentException("Số tiền nạp vượt quá giới hạn cho phép");
+        }
     }
 
     /**

@@ -45,32 +45,13 @@ public class VerifyRegisterFormOtpUseCase implements IUseCase<VerifyRegisterForm
         if (payload == null) {
             throw new UnauthorizedException("Yêu cầu xác thực thất bại");
         }
-        String otpHash = payload.otpHash();
-
-        String hashedFromRequest = oneTimePasswordPort.hash(command.otp());
-        if (!hashedFromRequest.equals(otpHash)) {
-            throw new UnauthorizedException("Yêu cầu xác thực thất bại");
-        }
+        requireMatchingOtp(payload, command.otp());
 
         SchoolDirectory schoolDirectory = schoolDirectoryRepository.findById(payload.schoolDirectoryId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục trường"));
 
         Instant now = Instant.now();
-        provisionSchoolService.provision(new ProvisionSchoolCommand(
-            schoolDirectory.getCode(), 
-            schoolDirectory.getName(), 
-            null, 
-            schoolDirectory.getDomain(), 
-            schoolDirectory.getAddress(), 
-            payload.studentCount(), 
-            payload.email(), 
-            payload.phone(), 
-            payload.fullName(), 
-            payload.dateOfBirth(), 
-            payload.address(), 
-            null, 
-            now
-        ));
+        provisionSchoolService.provision(toProvisionSchoolCommand(schoolDirectory, payload, now));
 
         RegisterForm registerForm = RegisterForm.fromDirectoryWithVerifiedOtp(payload.schoolDirectoryId(), RegisterFormVerificationMethod.DOMAIN_OTP, payload.fullName(), payload.identityNumber(), payload.email(), payload.phone(), payload.dateOfBirth(), payload.address(), payload.postalCode(), payload.position(), payload.studentCount(), now);
         registerFormRepository.save(registerForm);
@@ -78,6 +59,34 @@ public class VerifyRegisterFormOtpUseCase implements IUseCase<VerifyRegisterForm
         eventPublisherPort.publish(new RegisterVerificationConsumedEvent(key));
 
         return null;
+    }
+
+    private void requireMatchingOtp(CachePayload.RegisterVerificationPayload payload, String otp) {
+        String otpHash = payload.otpHash();
+
+        String hashedFromRequest = oneTimePasswordPort.hash(otp);
+        if (!hashedFromRequest.equals(otpHash)) {
+            throw new UnauthorizedException("Yêu cầu xác thực thất bại");
+        }
+    }
+
+    private ProvisionSchoolCommand toProvisionSchoolCommand(
+            SchoolDirectory schoolDirectory, CachePayload.RegisterVerificationPayload payload, Instant now) {
+        return new ProvisionSchoolCommand(
+            schoolDirectory.getCode(),
+            schoolDirectory.getName(),
+            null,
+            schoolDirectory.getDomain(),
+            schoolDirectory.getAddress(),
+            payload.studentCount(),
+            payload.email(),
+            payload.phone(),
+            payload.fullName(),
+            payload.dateOfBirth(),
+            payload.address(),
+            null,
+            now
+        );
     }
 
     private VerifyRegisterFormOtpCommand normalize(VerifyRegisterFormOtpCommand input) {

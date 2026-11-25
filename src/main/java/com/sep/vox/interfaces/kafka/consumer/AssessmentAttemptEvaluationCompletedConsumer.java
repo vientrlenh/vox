@@ -55,34 +55,7 @@ public class AssessmentAttemptEvaluationCompletedConsumer {
             record.partition(), record.offset(), record.key()
         );
         try {
-            JsonNode payload = jsonMapper.valueToTree(record.value());
-            String eventType = payload.path("eventType").asString();
-
-            if ("AssessmentAttemptEvaluationCompleted".equals(eventType)) {
-                AssessmentAttemptEvaluationCompletedEventDto dto = jsonMapper.treeToValue(payload, AssessmentAttemptEvaluationCompletedEventDto.class);
-                recordAssessmentAttemptEvaluationUseCase.execute(
-                    RecordAssessmentAttemptEvaluationCommandMapper.toCommand(dto)
-                );
-                log.info("Recorded assessment evaluation for answerId={}", dto.answerId());
-            } else if ("AssessmentAttemptEvaluationFailed".equals(eventType)) {
-                AssessmentAttemptEvaluationFailedEventDto failedEvent = jsonMapper.treeToValue(payload, AssessmentAttemptEvaluationFailedEventDto.class);
-                // payload is optional in the DTO: an older producer may send a bare failure event. A missing
-                // payload is handled exactly like the DLT branch -- failed, reason unknown.
-                AssessmentAttemptEvaluationFailedEventDto.PayloadDto failurePayload = failedEvent.payload();
-                updateAssessmentSessionStatusUseCase.execute(UpdateAssessmentSessionStatusCommand.gradingFailed(
-                    UUID.fromString(failedEvent.assessmentAttemptId()),
-                    failurePayload == null ? null : failurePayload.error(),
-                    failurePayload == null ? null : failurePayload.retryCount()
-                ));
-                log.warn(
-                    "Assessment session {} marked GRADING_FAILED: retryCount={} error={}",
-                    failedEvent.assessmentAttemptId(),
-                    failurePayload == null ? null : failurePayload.retryCount(),
-                    failurePayload == null ? null : failurePayload.error()
-                );
-            } else {
-                log.info("Skip unknown assessment evaluation event type={}", eventType);
-            }
+            processEvent(jsonMapper.valueToTree(record.value()));
 
             ack.acknowledge();
         } catch (Exception ex) {
@@ -91,6 +64,44 @@ public class AssessmentAttemptEvaluationCompletedConsumer {
                 ? runtimeException
                 : new IllegalStateException("Failed to process assessment evaluation event", ex);
         }
+    }
+
+    private void processEvent(JsonNode payload) {
+        String eventType = payload.path("eventType").asString();
+
+        if ("AssessmentAttemptEvaluationCompleted".equals(eventType)) {
+            recordCompletedEvaluation(payload);
+        } else if ("AssessmentAttemptEvaluationFailed".equals(eventType)) {
+            markGradingFailed(payload);
+        } else {
+            log.info("Skip unknown assessment evaluation event type={}", eventType);
+        }
+    }
+
+    private void recordCompletedEvaluation(JsonNode payload) {
+        AssessmentAttemptEvaluationCompletedEventDto dto = jsonMapper.treeToValue(payload, AssessmentAttemptEvaluationCompletedEventDto.class);
+        recordAssessmentAttemptEvaluationUseCase.execute(
+            RecordAssessmentAttemptEvaluationCommandMapper.toCommand(dto)
+        );
+        log.info("Recorded assessment evaluation for answerId={}", dto.answerId());
+    }
+
+    private void markGradingFailed(JsonNode payload) {
+        AssessmentAttemptEvaluationFailedEventDto failedEvent = jsonMapper.treeToValue(payload, AssessmentAttemptEvaluationFailedEventDto.class);
+        // payload is optional in the DTO: an older producer may send a bare failure event. A missing
+        // payload is handled exactly like the DLT branch -- failed, reason unknown.
+        AssessmentAttemptEvaluationFailedEventDto.PayloadDto failurePayload = failedEvent.payload();
+        updateAssessmentSessionStatusUseCase.execute(UpdateAssessmentSessionStatusCommand.gradingFailed(
+            UUID.fromString(failedEvent.assessmentAttemptId()),
+            failurePayload == null ? null : failurePayload.error(),
+            failurePayload == null ? null : failurePayload.retryCount()
+        ));
+        log.warn(
+            "Assessment session {} marked GRADING_FAILED: retryCount={} error={}",
+            failedEvent.assessmentAttemptId(),
+            failurePayload == null ? null : failurePayload.retryCount(),
+            failurePayload == null ? null : failurePayload.error()
+        );
     }
 
     @DltHandler

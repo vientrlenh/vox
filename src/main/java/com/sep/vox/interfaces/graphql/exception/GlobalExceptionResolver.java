@@ -32,88 +32,32 @@ public class GlobalExceptionResolver extends DataFetcherExceptionResolverAdapter
         // -- switched to a real logger so INTERNAL_ERROR (the last branch) can be traced after it happens.
         log.error("Unhandled exception resolving field {}", env.getExecutionStepInfo().getPath(), ex);
 
-        if (ex instanceof ResourceNotFoundException) {
-            return GraphQLError.newError()
-                .errorType(ErrorType.NOT_FOUND)
-                .message(ex.getMessage())
-                .path(env.getExecutionStepInfo().getPath())
-                .location(env.getField().getSourceLocation())
-                .build();
-        }
-
-        if (ex instanceof ResourceDuplicatedException) {
-            return GraphQLError.newError()
-                .errorType(ErrorType.BAD_REQUEST)
-                .message(ex.getMessage())
-                .path(env.getExecutionStepInfo().getPath())
-                .location(env.getField().getSourceLocation())
-                .build();
-        }
-
-        if (ex instanceof IllegalArgumentException) {
-            return GraphQLError.newError()
-                .errorType(ErrorType.BAD_REQUEST)
-                .message(ex.getMessage())
-                .path(env.getExecutionStepInfo().getPath())
-                .location(env.getField().getSourceLocation())
-                .build();
-        }
-
-        if (ex instanceof UnauthorizedException) {
-            return GraphQLError.newError()
-                .errorType(ErrorType.UNAUTHORIZED)
-                .message(ex.getMessage())
-                .path(env.getExecutionStepInfo().getPath())
-                .location(env.getField().getSourceLocation())
-                .build();
-        }
-
-        if (ex instanceof AuthenticationException) {
-            return GraphQLError.newError()
-                .errorType(ErrorType.UNAUTHORIZED)
-                .message(ex.getMessage())
-                .path(env.getExecutionStepInfo().getPath())
-                .location(env.getField().getSourceLocation())
-                .build();
-        }
-
-        if (ex instanceof AccessDeniedException) {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            boolean unauthenticated = authentication == null || authentication instanceof AnonymousAuthenticationToken || !authentication.isAuthenticated();
-            return GraphQLError.newError()
-                    .errorType(unauthenticated ? ErrorType.UNAUTHORIZED : ErrorType.FORBIDDEN)
-                    .message(ex.getMessage())
-                    .path(env.getExecutionStepInfo().getPath())
-                    .location(env.getField().getSourceLocation())
-                    .build();
-        }
-
-        if (ex instanceof ForbiddenException) {
-            return GraphQLError.newError()
-                    .errorType(ErrorType.FORBIDDEN)
-                    .message(ex.getMessage())
-                    .path(env.getExecutionStepInfo().getPath())
-                    .location(env.getField().getSourceLocation())
-                    .build();
-        }
-
-        if (ex instanceof BusinessRuleViolationException) {
-            return GraphQLError.newError()
-                    .errorType(ErrorType.BAD_REQUEST)
-                    .message(ex.getMessage())
-                    .extensions(Map.of("code", "BUSINESS_RULE_VIOLATION"))
-                    .path(env.getExecutionStepInfo().getPath())
-                    .location(env.getField().getSourceLocation())
-                    .build();
-        }
-
-
-
-        return GraphQLError.newError()
-            .errorType(ErrorType.INTERNAL_ERROR)
-            .message("Có lỗi xảy ra")
+        ErrorType errorType = errorTypeOf(ex);
+        GraphQLError.Builder<?> error = GraphQLError.newError()
+            .errorType(errorType)
+            .message(errorType == ErrorType.INTERNAL_ERROR ? "Có lỗi xảy ra" : ex.getMessage())
             .path(env.getExecutionStepInfo().getPath())
-            .location(env.getField().getSourceLocation())
-            .build();
+            .location(env.getField().getSourceLocation());
+        if (ex instanceof BusinessRuleViolationException) {
+            error.extensions(Map.of("code", "BUSINESS_RULE_VIOLATION"));
+        }
+        return error.build();
+    }
+
+    private ErrorType errorTypeOf(Throwable ex) {
+        return switch (ex) {
+            case ResourceNotFoundException _ -> ErrorType.NOT_FOUND;
+            case ResourceDuplicatedException _, IllegalArgumentException _, BusinessRuleViolationException _ ->
+                ErrorType.BAD_REQUEST;
+            case UnauthorizedException _, AuthenticationException _ -> ErrorType.UNAUTHORIZED;
+            case AccessDeniedException _ -> isUnauthenticated() ? ErrorType.UNAUTHORIZED : ErrorType.FORBIDDEN;
+            case ForbiddenException _ -> ErrorType.FORBIDDEN;
+            default -> ErrorType.INTERNAL_ERROR;
+        };
+    }
+
+    private boolean isUnauthenticated() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication == null || authentication instanceof AnonymousAuthenticationToken || !authentication.isAuthenticated();
     }
 }

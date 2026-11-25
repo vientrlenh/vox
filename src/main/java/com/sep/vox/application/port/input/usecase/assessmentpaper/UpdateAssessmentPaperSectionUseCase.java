@@ -54,14 +54,18 @@ public class UpdateAssessmentPaperSectionUseCase implements IUseCase<UpdateAsses
         }
         assessmentPaperAuthoringAccessService.requireCanAuthor(assessment, currentUserId);
 
+        applyChanges(section, input);
+        AssessmentPaperSection saved = assessmentPaperSectionRepository.save(section);
+
+        return AssessmentPaperSectionDtoMapper.toDto(saved);
+    }
+
+    private void applyChanges(AssessmentPaperSection section, UpdateAssessmentPaperSectionCommand input) {
         if (input.title() != null) {
             section.setTitle(input.title());
         }
         if (input.instruction() != null) {
             section.setInstruction(input.instruction());
         }
-        AssessmentPaperSection saved = assessmentPaperSectionRepository.save(section);
-
-        return AssessmentPaperSectionDtoMapper.toDto(saved);
     }
 }

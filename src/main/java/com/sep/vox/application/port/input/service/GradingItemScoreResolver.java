@@ -55,10 +55,10 @@ public class GradingItemScoreResolver {
     }
 
     /**
-     * @param enforceFullCoverage khi true (luồng nộp thật): bắt buộc phủ đủ MỌI phần
-     *        thi của bài. Preview để false vì cố tình chấm dở để xem tổng chạy dần.
-     *        Chốt COMPLETED chỉ an toàn khi đã phủ đủ — nộp thiếu phần rồi chốt sẽ
-     *        khóa cứng các phần chưa chấm (không gỡ được bài đã COMPLETED).
+     * @param enforceFullCoverage when true (the real submit flow): every item of the assessment must be
+     *        covered. Preview passes false because it deliberately grades partially to watch the total build up.
+     *        Finalizing as COMPLETED is only safe once everything is covered -- submitting with items missing and then
+     *        finalizing would lock the ungraded items for good (an assessment that is already COMPLETED cannot be reopened).
      */
     @Transactional(readOnly = true)
     public List<ResolvedItem> resolve(
@@ -67,51 +67,72 @@ public class GradingItemScoreResolver {
         if (items.isEmpty()) {
             throw new IllegalArgumentException("Phải chấm điểm cho ít nhất một phần thi.");
         }
+        List<UUID> paperItemIds = requireDistinctPaperItemIds(items);
+
+        Map<UUID, AssessmentItemResponse> responsesByPaperItemId = loadResponsesByPaperItemId(context);
+        if (enforceFullCoverage && !new HashSet<>(paperItemIds).containsAll(responsesByPaperItemId.keySet())) {
+            throw new IllegalArgumentException(
+                "Phải chấm đủ tất cả " + responsesByPaperItemId.size() + " phần thi của bài.");
+        }
+        Map<UUID, RubricCriterion> criteria = loadCriteriaById(context);
+        RubricVersion rubricVersion = rubricVersionRepository.findById(context.candidateResult().getRubricVersionId())
+            .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy rubric version của bài thi."));
+
+        // Grade everything before returning -- one failing item must not leave the earlier items
+        // with a half-finished score.
+        List<ResolvedItem> resolved = new ArrayList<ResolvedItem>();
+        for (SubmitGradingCommand.ItemGrade item : items) {
+            resolved.add(resolveItem(item, responsesByPaperItemId, criteria, rubricVersion));
+        }
+        return resolved;
+    }
+
+    private Map<UUID, AssessmentItemResponse> loadResponsesByPaperItemId(GradingContext context) {
+        return assessmentItemResponseRepository
+            .findBySessionId(context.candidateResult().getSessionId()).stream()
+            .collect(Collectors.toMap(res -> res.getPaperItemId(), Function.identity(),
+                (left, right) -> left));
+    }
+
+    private Map<UUID, RubricCriterion> loadCriteriaById(GradingContext context) {
+        return rubricCriterionRepository
+            .findByRubricVersionId(context.candidateResult().getRubricVersionId()).stream()
+            .collect(Collectors.toMap(criterion -> criterion.getId(), Function.identity(), (left, right) -> left));
+    }
+
+    private List<UUID> requireDistinctPaperItemIds(List<SubmitGradingCommand.ItemGrade> items) {
         List<UUID> paperItemIds = items.stream().map(itemGrade -> itemGrade.paperItemId()).toList();
-        if (paperItemIds.stream().anyMatch(java.util.Objects::isNull)) {
+        if (paperItemIds.stream().anyMatch(Objects::isNull)) {
             throw new IllegalArgumentException("Thiếu phần thi cần chấm.");
         }
         if (new HashSet<>(paperItemIds).size() != paperItemIds.size()) {
             throw new IllegalArgumentException("Không được chấm trùng phần thi.");
         }
+        return paperItemIds;
+    }
 
-        Map<UUID, AssessmentItemResponse> responsesByPaperItemId = assessmentItemResponseRepository
-            .findBySessionId(context.candidateResult().getSessionId()).stream()
-            .collect(Collectors.toMap(res -> res.getPaperItemId(), Function.identity(),
-                (left, right) -> left));
-        if (enforceFullCoverage && !new HashSet<>(paperItemIds).containsAll(responsesByPaperItemId.keySet())) {
-            throw new IllegalArgumentException(
-                "Phải chấm đủ tất cả " + responsesByPaperItemId.size() + " phần thi của bài.");
+    private ResolvedItem resolveItem(
+            SubmitGradingCommand.ItemGrade item,
+            Map<UUID, AssessmentItemResponse> responsesByPaperItemId,
+            Map<UUID, RubricCriterion> criteria,
+            RubricVersion rubricVersion) {
+        AssessmentItemResponse response = responsesByPaperItemId.get(item.paperItemId());
+        if (response == null) {
+            throw new IllegalArgumentException("Phần thi không thuộc bài thi này.");
         }
-        Map<UUID, RubricCriterion> criteria = rubricCriterionRepository
-            .findByRubricVersionId(context.candidateResult().getRubricVersionId()).stream()
-            .collect(Collectors.toMap(criterion -> criterion.getId(), Function.identity(), (left, right) -> left));
-        RubricVersion rubricVersion = rubricVersionRepository.findById(context.candidateResult().getRubricVersionId())
-            .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy rubric version của bài thi."));
-
-        // Chấm xong toàn bộ rồi mới trả về — một phần lỗi không được để lại điểm
-        // nửa vời của các phần trước đó.
-        List<ResolvedItem> resolved = new ArrayList<ResolvedItem>();
-        for (SubmitGradingCommand.ItemGrade item : items) {
-            AssessmentItemResponse response = responsesByPaperItemId.get(item.paperItemId());
-            if (response == null) {
-                throw new IllegalArgumentException("Phần thi không thuộc bài thi này.");
-            }
-            resolved.add(new ResolvedItem(
-                item.paperItemId(),
-                response.getId(),
-                itemScore(item.criterionScores(), criteria, rubricVersion.getTotalScoreMethod(),
-                    rubricVersion.getScoringScaleMin(), rubricVersion.getScoringScaleMax()),
-                item.feedbackSummary(),
-                item.criterionScores(),
-                item.criterionScores().stream()
-                    .map(score -> criteria.get(score.rubricCriterionId()))
-                    .filter(java.util.Objects::nonNull)
-                    .distinct()
-                    .toList()
-            ));
-        }
-        return resolved;
+        return new ResolvedItem(
+            item.paperItemId(),
+            response.getId(),
+            itemScore(item.criterionScores(), criteria, rubricVersion.getTotalScoreMethod(),
+                rubricVersion.getScoringScaleMin(), rubricVersion.getScoringScaleMax()),
+            item.feedbackSummary(),
+            item.criterionScores(),
+            item.criterionScores().stream()
+                .map(score -> criteria.get(score.rubricCriterionId()))
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList()
+        );
     }
 
     /**
@@ -132,6 +153,19 @@ public class GradingItemScoreResolver {
             RubricTotalScoreMethod totalScoreMethod,
             BigDecimal scoringScaleMin,
             BigDecimal scoringScaleMax) {
+        requireSubmittedCriteria(scores, criteria);
+        List<RubricItemScoreFormula.ScoredCriterion> scored = new ArrayList<RubricItemScoreFormula.ScoredCriterion>();
+        for (SubmitGradingCommand.CriterionScoreItem item : scores) {
+            scored.add(scoredCriterion(item, criteria));
+        }
+
+        return RubricItemScoreFormula.compute(
+            scored, scoringScaleMin, scoringScaleMax
+        );
+    }
+
+    private void requireSubmittedCriteria(
+            List<SubmitGradingCommand.CriterionScoreItem> scores, Map<UUID, RubricCriterion> criteria) {
         if (scores == null || scores.isEmpty()) {
             throw new IllegalArgumentException("Phải chấm điểm cho các tiêu chí.");
         }
@@ -152,26 +186,22 @@ public class GradingItemScoreResolver {
             throw new IllegalArgumentException(
                 "Phải chấm đủ các tiêu chí bắt buộc: " + String.join(", ", missingRequired) + ".");
         }
+    }
 
-        List<RubricItemScoreFormula.ScoredCriterion> scored = new ArrayList<RubricItemScoreFormula.ScoredCriterion>();
-        for (SubmitGradingCommand.CriterionScoreItem item : scores) {
-            RubricCriterion criterion = criteria.get(item.rubricCriterionId());
-            if (criterion == null) {
-                throw new IllegalArgumentException("Tiêu chí không thuộc rubric của bài thi này.");
-            }
-            if (item.score() == null) {
-                throw new IllegalArgumentException("Phải chấm điểm cho tiêu chí " + criterion.getName() + ".");
-            }
-            if (item.score().compareTo(criterion.getMinScore()) < 0
-                    || item.score().compareTo(criterion.getMaxScore()) > 0) {
-                throw new IllegalArgumentException("Điểm tiêu chí " + criterion.getName()
-                    + " phải nằm trong khoảng " + criterion.getMinScore() + " - " + criterion.getMaxScore() + ".");
-            }
-            scored.add(new RubricItemScoreFormula.ScoredCriterion(item.score(), criterion.getWeight()));
+    private RubricItemScoreFormula.ScoredCriterion scoredCriterion(
+            SubmitGradingCommand.CriterionScoreItem item, Map<UUID, RubricCriterion> criteria) {
+        RubricCriterion criterion = criteria.get(item.rubricCriterionId());
+        if (criterion == null) {
+            throw new IllegalArgumentException("Tiêu chí không thuộc rubric của bài thi này.");
         }
-
-        return RubricItemScoreFormula.compute(
-            scored, scoringScaleMin, scoringScaleMax
-        );
+        if (item.score() == null) {
+            throw new IllegalArgumentException("Phải chấm điểm cho tiêu chí " + criterion.getName() + ".");
+        }
+        if (item.score().compareTo(criterion.getMinScore()) < 0
+                || item.score().compareTo(criterion.getMaxScore()) > 0) {
+            throw new IllegalArgumentException("Điểm tiêu chí " + criterion.getName()
+                + " phải nằm trong khoảng " + criterion.getMinScore() + " - " + criterion.getMaxScore() + ".");
+        }
+        return new RubricItemScoreFormula.ScoredCriterion(item.score(), criterion.getWeight());
     }
 }

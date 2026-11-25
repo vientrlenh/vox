@@ -33,24 +33,12 @@ public class ViewSystemRubricVersionsUseCase implements IUseCase<ViewSystemRubri
     @Override
     @Transactional(readOnly = true)
     public PageResult<RubricVersionDto> execute(ViewSystemRubricVersionsQuery query) {
-        // 1. Authenticate the user
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
-        }
+        requireActiveCurrentUser();
+        requireSystemOwnedRubric(query.rubricId());
 
-        // 2. Load the root Rubric and check SYSTEM ownership
-        Rubric rubric = rubricRepository.findById(query.rubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
-
-        if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
-            throw new ForbiddenException("Hành động bị từ chối: Bộ Rubric này không thuộc về Hệ thống.");
-        }
-
-        // 3. Resolve safeStatus
         String safeStatus = query.status() == null ? null : query.status().name();
 
-        // 3. Fetch the paged version list from the database (this function already sorts descending, written in the previous task)
+        // This repository function already sorts descending.
         PageResult<RubricVersion> versionPage = rubricVersionRepository.findAllByRubricIdAndStatus(
                 query.rubricId(),
                 safeStatus,
@@ -58,7 +46,22 @@ public class ViewSystemRubricVersionsUseCase implements IUseCase<ViewSystemRubri
                 query.size()
         );
 
-        // 4. Map to DTOs and return
         return RubricVersionDtoMapper.toRubricVersionPage(versionPage);
+    }
+
+    private void requireActiveCurrentUser() {
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
+            throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
+        }
+    }
+
+    private void requireSystemOwnedRubric(UUID rubricId) {
+        Rubric rubric = rubricRepository.findById(rubricId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
+
+        if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
+            throw new ForbiddenException("Hành động bị từ chối: Bộ Rubric này không thuộc về Hệ thống.");
+        }
     }
 }

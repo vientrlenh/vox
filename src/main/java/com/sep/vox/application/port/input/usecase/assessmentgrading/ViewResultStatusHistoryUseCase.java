@@ -50,38 +50,40 @@ public class ViewResultStatusHistoryUseCase implements IUseCase<UUID, List<Resul
         AssessmentCandidateResult result = assessmentCandidateResultRepository.findById(candidateResultId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kết quả bài thi."));
 
-        // Chính chủ bài thi luôn xem được lịch sử của mình — kiểm trước để học sinh
-        // không phải đi qua nhánh phân quyền admin và nhận ForbiddenException.
-        Boolean isOwner = assessmentCandidateRepository.findById(result.getCandidateId())
+        // The owner of the attempt can always see their own history -- checked first so a student does not
+        // go through the admin authorization branch and receive ForbiddenException.
+        boolean isOwner = assessmentCandidateRepository.findById(result.getCandidateId())
             .map(candidate -> currentUserId.equals(candidate.getStudentId()))
             .orElse(false);
-        // Dòng thời gian mang scoreBefore/scoreAfter — với chính chủ nó chính là điểm, nên
-        // nó chịu đúng luật công bố như màn kết quả. Trả rỗng chứ không ném lỗi: đây là
-        // khối phụ trợ, ném lỗi sẽ làm hỏng cả trang chỉ vì một mục bên lề.
+        // The timeline carries scoreBefore/scoreAfter -- for the owner that IS the score, so it follows the same
+        // publication rule as the result screen. Returns empty instead of throwing: this is an auxiliary block,
+        // throwing would break the whole page just because of a side item.
         if (isOwner && !AssessmentCandidateResultStatus.isVisibleToCandidate(result.getStatus())) {
             return List.of();
         }
         if (!isOwner) {
-            if (userContextPort.isSystemAdmin()) {
-                return assessmentResultAuditQueryRepository.findHistory(candidateResultId);
-            }
-            // A teacher who was EVER assigned this attempt: the permission to read the timeline follows the grading
-            // that was done, not the assignment row that is still open. In the appeal round, the grader of the
-            // previous round is the one being asked "why did you grade it this way" -- and by then their assignment
-            // is already COMPLETED, so demanding an open assignment would lock out exactly the person who needs to read it
-            // most. The same rule as listening to the recording in AssessmentRecordingAccessService.
-            //
-            // This is READ permission. Every score WRITE action still goes through
-            // AssessmentGradingAccessService.authorizeAssignedTeacher on the row that is actually open.
-            boolean wasAssignedTeacher = assessmentGradingAssignmentRepository
-                .existsByCandidateResultIdAndTeacherId(candidateResultId, currentUserId);
-            if (wasAssignedTeacher) {
-                return assessmentResultAuditQueryRepository.findHistory(candidateResultId);
-            }
-            Assessment assessment = assessmentRepository.findById(result.getAssessmentId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra."));
-            assessmentGradingAccessService.authorizeSchoolAdmin(assessment.getSchoolId(), currentUserId);
+            requireHistoryReadAccess(result, candidateResultId, currentUserId);
         }
         return assessmentResultAuditQueryRepository.findHistory(candidateResultId);
+    }
+
+    private void requireHistoryReadAccess(AssessmentCandidateResult result, UUID candidateResultId, UUID currentUserId) {
+        if (userContextPort.isSystemAdmin()) {
+            return;
+        }
+        // A teacher who was EVER assigned this attempt: the permission to read the timeline follows the grading
+        // that was done, not the assignment row that is still open. In the appeal round, the grader of the
+        // previous round is the one being asked "why did you grade it this way" -- and by then their assignment
+        // is already COMPLETED, so demanding an open assignment would lock out exactly the person who needs to read it
+        // most. The same rule as listening to the recording in AssessmentRecordingAccessService.
+        //
+        // This is READ permission. Every score WRITE action still goes through
+        // AssessmentGradingAccessService.authorizeAssignedTeacher on the row that is actually open.
+        if (assessmentGradingAssignmentRepository.existsByCandidateResultIdAndTeacherId(candidateResultId, currentUserId)) {
+            return;
+        }
+        Assessment assessment = assessmentRepository.findById(result.getAssessmentId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra."));
+        assessmentGradingAccessService.authorizeSchoolAdmin(assessment.getSchoolId(), currentUserId);
     }
 }

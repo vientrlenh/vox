@@ -44,36 +44,14 @@ public class ForceSuspendSubscriptionUseCase implements IUseCase<ForceSuspendSub
     @Override
     @Transactional
     public UUID execute(ForceSuspendSubscriptionCommand input) {
-        // Quyền đã chặn ở @PreAuthorize("hasRole('SYSTEM_ADMIN')"). Không kiểm lại isSystemAdmin() ở
-        // đây: System Admin không thuộc trường nào nên không có "trường của mình" để đối chiếu, và
-        // vai trò thì controller đã trả lời xong.
-        String reason = StringNormalization.trimAndCollapseSpaces(input.reason());
-        if (reason == null || reason.isBlank()) {
-            throw new IllegalArgumentException("Phải nêu lý do đình chỉ gói đăng ký.");
-        }
-
-        SchoolSubscription subscription = schoolSubscriptionRepository.findById(input.subscriptionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói đăng ký"));
-        if (subscription.getStatus() != SchoolSubscriptionStatus.ACTIVE) {
-            throw new IllegalArgumentException("Chỉ đình chỉ được gói đang ở trạng thái đang hoạt động");
-        }
+        String reason = requireReason(input);
+        SchoolSubscription subscription = requireActiveSubscription(input.subscriptionId());
 
         Instant now = Instant.now();
-        // Cắt quyền giữa ca thi là làm hỏng bài của học sinh đang ngồi trong phòng -- lỗi không thuộc
-        // về các em. Bắt đợi hết ca rồi đình chỉ: chậm vài tiếng, đổi lại không ai mất bài.
-        boolean hasOngoingAssessment = assessmentScheduleRepository.findBySchoolId(subscription.getSchoolId()).stream()
-            .anyMatch(schedule -> schedule.isOngoingAt(now));
-        if (hasOngoingAssessment) {
-            throw new IllegalArgumentException(
-                "Trường đang có ca thi diễn ra, không thể đình chỉ ngay bây giờ. Vui lòng thử lại sau khi ca thi kết thúc.");
-        }
+        requireNoOngoingAssessment(subscription, now);
 
         UUID actorId = userContextPort.getCurrentAuthenticatedUserId();
-        subscription.setStatus(SchoolSubscriptionStatus.SUSPENDED);
-        subscription.setSuspendedAt(now);
-        subscription.setSuspendedReason(reason);
-        subscription.setSuspendedBy(actorId);
-        SchoolSubscription saved = schoolSubscriptionRepository.save(subscription);
+        SchoolSubscription saved = suspend(subscription, reason, now, actorId);
 
         schoolSubscriptionEventRepository.save(SchoolSubscriptionEvent.suspended(
             saved.getSchoolId(), saved.getId(), actorId, reason, now));
@@ -81,5 +59,44 @@ public class ForceSuspendSubscriptionUseCase implements IUseCase<ForceSuspendSub
         suspensionNotificationService.publishSuspended(saved.getId(), saved.getSchoolId(), reason, now);
 
         return saved.getId();
+    }
+
+    // Permission is already blocked at @PreAuthorize("hasRole('SYSTEM_ADMIN')"). Do not re-check isSystemAdmin() here:
+    // a System Admin belongs to no school so there is no "own school" to compare against, and the controller has already
+    // answered the role question.
+    private String requireReason(ForceSuspendSubscriptionCommand input) {
+        String reason = StringNormalization.trimAndCollapseSpaces(input.reason());
+        if (reason == null || reason.isBlank()) {
+            throw new IllegalArgumentException("Phải nêu lý do đình chỉ gói đăng ký.");
+        }
+        return reason;
+    }
+
+    private SchoolSubscription requireActiveSubscription(UUID subscriptionId) {
+        SchoolSubscription subscription = schoolSubscriptionRepository.findById(subscriptionId)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói đăng ký"));
+        if (subscription.getStatus() != SchoolSubscriptionStatus.ACTIVE) {
+            throw new IllegalArgumentException("Chỉ đình chỉ được gói đang ở trạng thái đang hoạt động");
+        }
+        return subscription;
+    }
+
+    // Cutting access mid-exam ruins the work of students sitting in the room -- a fault that is not theirs. Make them
+    // wait until the session ends and then suspend: a few hours late, but nobody loses their work.
+    private void requireNoOngoingAssessment(SchoolSubscription subscription, Instant now) {
+        boolean hasOngoingAssessment = assessmentScheduleRepository.findBySchoolId(subscription.getSchoolId()).stream()
+            .anyMatch(schedule -> schedule.isOngoingAt(now));
+        if (hasOngoingAssessment) {
+            throw new IllegalArgumentException(
+                "Trường đang có ca thi diễn ra, không thể đình chỉ ngay bây giờ. Vui lòng thử lại sau khi ca thi kết thúc.");
+        }
+    }
+
+    private SchoolSubscription suspend(SchoolSubscription subscription, String reason, Instant now, UUID actorId) {
+        subscription.setStatus(SchoolSubscriptionStatus.SUSPENDED);
+        subscription.setSuspendedAt(now);
+        subscription.setSuspendedReason(reason);
+        subscription.setSuspendedBy(actorId);
+        return schoolSubscriptionRepository.save(subscription);
     }
 }

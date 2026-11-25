@@ -57,50 +57,71 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
         Instant now = Instant.now();
         UUID callerId = userContextPort.getCurrentAuthenticatedUserId();
 
+        requireCallerBelongsToSchool(callerId, input.schoolId());
+
+        CreateSchoolUserCommand command = normalize(input);
+        School school = findActiveSchool(command.schoolId());
+        Role role = findAllowedRole(command.roleCode());
+        rejectDuplicateEmailOrPhone(command);
+
+        User savedUser = saveNewUser(command);
+
+        userRoleRepository.save(UserRole.assigned(savedUser.getId(), role.getId(), now));
+
+        linkToSchool(savedUser, command, now);
+        saveUserCreatedEvent(savedUser, command, school, now);
+
+        return new CreateSchoolUserResponse(savedUser.getId());
+    }
+
+    private void requireCallerBelongsToSchool(UUID callerId, UUID schoolId) {
         User caller = userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
         SchoolUser callerSchoolUser = schoolUserRepository.findByUserId(caller.getId())
             .orElseThrow(() -> new IllegalArgumentException("Không có quyền thực hiện thao tác này"));
-        if (!input.schoolId().equals(callerSchoolUser.getSchoolId())) {
+        if (!schoolId.equals(callerSchoolUser.getSchoolId())) {
             throw new IllegalArgumentException("Không có quyền thực hiện thao tác này");
         }
+    }
 
-        CreateSchoolUserCommand command = normalize(input);
-        School school = schoolRepository.findById(command.schoolId())
+    private School findActiveSchool(UUID schoolId) {
+        School school = schoolRepository.findById(schoolId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học"));
         if (!school.isActive()) {
             throw new IllegalArgumentException("Trường học không hoạt động");
         }
+        return school;
+    }
 
-        if (!ALLOWED_ROLE_CODES.contains(command.roleCode())) {
+    private Role findAllowedRole(String roleCode) {
+        if (!ALLOWED_ROLE_CODES.contains(roleCode)) {
             throw new IllegalArgumentException("Vai trò không hợp lệ, chỉ chấp nhận STUDENT hoặc TEACHER");
         }
-        Role role = roleRepository.findByCode(command.roleCode())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vai trò: " + command.roleCode()));
+        return roleRepository.findByCode(roleCode)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vai trò: " + roleCode));
+    }
 
+    private void rejectDuplicateEmailOrPhone(CreateSchoolUserCommand command) {
         if (userRepository.findByEmail(command.email()).isPresent()) {
             throw new ResourceDuplicatedException("Email đã tồn tại");
         }
         if (userRepository.findByPhone(command.phone()).isPresent()) {
             throw new ResourceDuplicatedException("Số điện thoại đã tồn tại");
         }
+    }
 
+    private User saveNewUser(CreateSchoolUserCommand command) {
         User user = User.create(command.email(), command.phone(), command.fullName(),
             command.dateOfBirth(), command.address(), null);
 
-        User savedUser;
         try {
-            savedUser = userRepository.save(user);
+            return userRepository.save(user);
         } catch (DataConflictException e) {
             throw new ResourceDuplicatedException("Email hoặc số điện thoại đã tồn tại");
         }
+    }
 
-        userRoleRepository.save(UserRole.builder()
-            .userId(savedUser.getId())
-            .roleId(role.getId())
-            .createdAt(now)
-            .build());
-
+    private void linkToSchool(User savedUser, CreateSchoolUserCommand command, Instant now) {
         if ("STUDENT".equals(command.roleCode())) {
             if (command.startDate() == null || command.endDate() == null) {
                 throw new IllegalArgumentException("Ngày bắt đầu và ngày kết thúc là bắt buộc đối với học sinh");
@@ -117,7 +138,9 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
                 : now;
             saveSchoolUser(SchoolUser.create(savedUser.getId(), command.schoolId(), startDate, null));
         }
+    }
 
+    private void saveUserCreatedEvent(User savedUser, CreateSchoolUserCommand command, School school, Instant now) {
         // Write the outbox row in the same transaction as the user creation: if the user exists, the event exists.
         // The consumer generates the password set-up token right before it sends the mail, so the token is never
         // stored as plaintext in the outboxes table or in the Kafka topic.
@@ -135,8 +158,6 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
             jsonSerializationPort.toJson(event),
             now
         ));
-
-        return new CreateSchoolUserResponse(savedUser.getId());
     }
 
     private void saveSchoolUser(SchoolUser schoolUser) {

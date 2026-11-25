@@ -77,11 +77,11 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
     private final SchoolWorkloadQueryRepository schoolWorkloadQueryRepository;
 
     /**
-     * MỘT mốc {@code now} cho cả trang.
+     * ONE {@code now} instant for the whole page.
      *
-     * <p>Thẻ tổng và thẻ theo kỳ đọc cùng một tập bài và cùng một phép xét quá hạn, nên hai lần gọi
-     * {@code Instant.now()} riêng có thể xếp cùng một bài vào "đang trong hạn" ở chỗ này và "quá
-     * hạn" ở chỗ kia — hai con số cạnh nhau trên cùng màn hình lệch nhau vì vài mili giây.
+     * <p>The total card and the per-period card read the same set of assessments and the same overdue test, so
+     * two separate {@code Instant.now()} calls could put the same assessment "within the deadline" in one place
+     * and "overdue" in another -- two numbers side by side on the same screen differing by a few milliseconds.
      */
     @Override
     @Transactional(readOnly = true)
@@ -95,7 +95,6 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
         List<Order> paidOrders = fetchPaidOrders(schoolId);
         BigDecimal quotaTotal = assessmentQuota.map(quota -> quota.getTotalAllocatedAmountVnd()).orElse(BigDecimal.ZERO);
         BigDecimal quotaUsed = assessmentQuota.map(quota -> quota.getUsedAmountVnd()).orElse(BigDecimal.ZERO);
-        BigDecimal committedToUsers = committedToUsers(activeSubscription);
 
         return new SchoolAdminDashboardSummaryResponse(
             buildAssessmentStatusCounts(currentUserId, schoolId),
@@ -105,16 +104,29 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
             quotaTotal,
             quotaUsed,
             buildSubscriptionRenewal(activeSubscription),
-            SchoolFundingResponse.of(quotaTotal, quotaUsed, committedToUsers,
-                schoolBalanceRepository.findBySchoolId(schoolId).orElse(null)),
+            fundingResponse(schoolId, activeSubscription, quotaTotal, quotaUsed),
             UnscoredWorkloadResponse.of(schoolWorkloadQueryRepository.countUnscored(schoolId, now), now),
-            schoolWorkloadQueryRepository
-                .findAssessmentsAwaitingPublish(schoolId, now, AWAITING_PUBLISH_LIMIT).stream()
-                .map(AssessmentAwaitingPublishResponse::of)
-                .toList(),
-            BusinessDays.waitedDaysSince(
-                assessmentResultAppealRepository.findOldestPendingRequestedAt(schoolId), now)
+            awaitingPublishResponses(schoolId, now),
+            oldestPendingAppealWaitedDays(schoolId, now)
         );
+    }
+
+    private SchoolFundingResponse fundingResponse(UUID schoolId, Optional<SchoolSubscription> activeSubscription,
+            BigDecimal quotaTotal, BigDecimal quotaUsed) {
+        return SchoolFundingResponse.of(quotaTotal, quotaUsed, committedToUsers(activeSubscription),
+            schoolBalanceRepository.findBySchoolId(schoolId).orElse(null));
+    }
+
+    private List<AssessmentAwaitingPublishResponse> awaitingPublishResponses(UUID schoolId, Instant now) {
+        return schoolWorkloadQueryRepository
+            .findAssessmentsAwaitingPublish(schoolId, now, AWAITING_PUBLISH_LIMIT).stream()
+            .map(AssessmentAwaitingPublishResponse::of)
+            .toList();
+    }
+
+    private Integer oldestPendingAppealWaitedDays(UUID schoolId, Instant now) {
+        return BusinessDays.waitedDaysSince(
+            assessmentResultAppealRepository.findOldestPendingRequestedAt(schoolId), now);
     }
 
     private AssessmentStatusCountResponse buildAssessmentStatusCounts(UUID currentUserId, UUID schoolId) {
@@ -190,36 +202,44 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
     }
 
     /**
-     * Chi tiêu 12 tháng gần nhất (kể cả tháng hiện tại), xếp cũ -> mới, tháng không có đơn nào trả về
-     * 0. Tách riêng phần chi cho gói (đăng ký/gia hạn/nâng cấp) và phần nạp thêm số dư -- gói thường
-     * trả theo năm nên hầu hết các tháng chỉ có nạp thêm (hoặc không có gì); tách hai phần giúp biểu
-     * đồ phân biệt được tháng "chỉ nạp thêm" với tháng "đến kỳ gia hạn gói".
+     * Spending of the last 12 months (including the current month), ordered old -> new; a month with no order
+     * returns 0. Spending on the plan (subscribe/renew/upgrade) and balance top-ups are kept apart -- plans are
+     * usually paid yearly, so most months only have a top-up (or nothing); splitting the two lets the chart tell a
+     * "top-up only" month from a "plan renewal due" month.
      *
-     * <p>Gom theo tháng của {@code createdAt} chứ không phải lúc tiền về: đơn chỉ sống tối đa 24
-     * tiếng (Order.PENDING_TTL) nên hai mốc chỉ lệch nhau khi đơn đặt vào ngày cuối tháng, và đây là
-     * mốc mà {@code sumTotalAmountByStatusInRange} đang dùng -- hai chỗ soi khác mốc thì tổng của
-     * biểu đồ và tổng của màn quản trị sẽ không khớp nhau.
+     * <p>Grouped by the month of {@code createdAt}, not by when the money arrived: an order lives at most 24
+     * hours (Order.PENDING_TTL), so the two instants only differ for an order placed on the last day of a month,
+     * and this is the instant that {@code sumTotalAmountByStatusInRange} uses -- if the two places looked at
+     * different instants, the chart total and the admin screen total would not match.
      *
-     * <p>Quy về giờ Việt Nam trước khi cắt tháng: cắt theo UTC sẽ đẩy 7 giờ đầu tiên của mỗi tháng
-     * sang tháng trước -- xem ZoneConstant.
+     * <p>Converted to Vietnam time before cutting the month: cutting by UTC would push the first 7 hours of each
+     * month into the previous month -- see ZoneConstant.
      */
     private static List<SchoolMonthlySpendingResponse> buildMonthlySpending(List<Order> orders) {
-        YearMonth currentMonth = YearMonth.now(ZoneConstant.BUSINESS_ZONE);
-        Map<YearMonth, BigDecimal> subscriptionByMonth = new LinkedHashMap<YearMonth, BigDecimal>();
-        Map<YearMonth, BigDecimal> topUpByMonth = new LinkedHashMap<YearMonth, BigDecimal>();
-        for (int i = SPENDING_MONTHS - 1; i >= 0; i--) {
-            YearMonth month = currentMonth.minusMonths(i);
-            subscriptionByMonth.put(month, BigDecimal.ZERO);
-            topUpByMonth.put(month, BigDecimal.ZERO);
-        }
+        Map<YearMonth, BigDecimal> subscriptionByMonth = zeroedSpendingMonths();
+        Map<YearMonth, BigDecimal> topUpByMonth = zeroedSpendingMonths();
 
         for (Order order : orders) {
             YearMonth orderMonth = YearMonth.from(order.getCreatedAt().atZone(ZoneConstant.BUSINESS_ZONE));
             Map<YearMonth, BigDecimal> targetMap = order.getType() == OrderType.TOPUP ? topUpByMonth : subscriptionByMonth;
-            // computeIfPresent: đơn cũ hơn cửa sổ 12 tháng bị bỏ qua, không tự sinh thêm cột.
+            // computeIfPresent: an order older than the 12-month window is skipped and does not add a column.
             targetMap.computeIfPresent(orderMonth, (month, total) -> total.add(order.getTotalAmountVnd()));
         }
 
+        return toMonthlySpendingResponses(subscriptionByMonth, topUpByMonth);
+    }
+
+    private static Map<YearMonth, BigDecimal> zeroedSpendingMonths() {
+        YearMonth currentMonth = YearMonth.now(ZoneConstant.BUSINESS_ZONE);
+        Map<YearMonth, BigDecimal> amountByMonth = new LinkedHashMap<YearMonth, BigDecimal>();
+        for (int i = SPENDING_MONTHS - 1; i >= 0; i--) {
+            amountByMonth.put(currentMonth.minusMonths(i), BigDecimal.ZERO);
+        }
+        return amountByMonth;
+    }
+
+    private static List<SchoolMonthlySpendingResponse> toMonthlySpendingResponses(
+            Map<YearMonth, BigDecimal> subscriptionByMonth, Map<YearMonth, BigDecimal> topUpByMonth) {
         return subscriptionByMonth.keySet().stream()
             .map(month -> {
                 BigDecimal subscriptionAmount = subscriptionByMonth.get(month);

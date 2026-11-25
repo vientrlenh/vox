@@ -49,16 +49,37 @@ public class PreviewSystemRubricResultBandImportFromFileUseCase implements IUseC
     @Override
     @Transactional
     public PreviewRubricResultBandImportResponse execute(PreviewRubricResultBandImportCommand command) {
-        // Bước 1: Xác thực tài khoản Admin hệ thống
+        requireActiveCurrentUser();
+        requireSystemOwnedRubricVersion(command.rubricVersionId());
+
+        ParseImportFileResult parsedResult = parseNonEmptyFile(command);
+        Instant expiresAt = Instant.now().plus(1, ChronoUnit.DAYS);
+
+        UUID generatedSessionId = saveSessionWithRows(command, parsedResult, expiresAt);
+
+        return new PreviewRubricResultBandImportResponse(
+                generatedSessionId,
+                command.file().fileName(),
+                parsedResult.originalHeaders(),
+                parsedResult.suggestedMapping(),
+                parsedResult.sampleRows(),
+                parsedResult.totalRows(),
+                expiresAt
+        );
+    }
+
+    private void requireActiveCurrentUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
         }
+    }
 
-        // Bước 2: Bảo mật dữ liệu - Truy ngược kiểm tra quyền sở hữu Rubric
-        RubricVersion version = rubricVersionRepository.findById(command.rubricVersionId())
+    // Security: trace back from the version to its rubric and check that a SYSTEM rubric owns it.
+    private void requireSystemOwnedRubricVersion(UUID rubricVersionId) {
+        RubricVersion version = rubricVersionRepository.findById(rubricVersionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Rubric yêu cầu."));
         Rubric rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc tương ứng."));
@@ -66,16 +87,18 @@ public class PreviewSystemRubricResultBandImportFromFileUseCase implements IUseC
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             throw new ForbiddenException("Bảo mật: Bộ Rubric này thuộc về trường học. System Admin không được can thiệp.");
         }
+    }
 
-        // Bước 3: Đọc và bóc tách dữ liệu file Excel
+    private ParseImportFileResult parseNonEmptyFile(PreviewRubricResultBandImportCommand command) {
         ParseImportFileResult parsedResult = fileProcessingPort.parse(command.file(), ImportType.RUBRIC_RESULT_BAND);
         if (parsedResult.rows() == null || parsedResult.rows().isEmpty()) {
             throw new IllegalArgumentException("File tải lên trống hoặc không chứa dữ liệu hợp lệ.");
         }
+        return parsedResult;
+    }
 
-        Instant now = Instant.now();
-        Instant expiresAt = now.plus(1, ChronoUnit.DAYS);
-
+    private UUID saveSessionWithRows(PreviewRubricResultBandImportCommand command, ParseImportFileResult parsedResult,
+                                     Instant expiresAt) {
         ImportSession session = ImportSession.previewedForEntity(
             null,
             ImportType.RUBRIC_RESULT_BAND,
@@ -96,16 +119,6 @@ public class PreviewSystemRubricResultBandImportFromFileUseCase implements IUseC
                     jsonSerializationPort.toJson(parsedResult.rows().get(i)))).toList();
 
         importRowRepository.saveAll(importRows);
-
-        // Bước 6: Trả thông tin cấu trúc dữ liệu thô về cho UI
-        return new PreviewRubricResultBandImportResponse(
-                generatedSessionId,
-                command.file().fileName(),
-                parsedResult.originalHeaders(),
-                parsedResult.suggestedMapping(),
-                parsedResult.sampleRows(),
-                parsedResult.totalRows(),
-                expiresAt
-        );
+        return generatedSessionId;
     }
 }

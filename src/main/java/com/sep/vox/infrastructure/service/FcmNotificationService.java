@@ -92,10 +92,18 @@ public class FcmNotificationService implements PushNotificationPort {
 
         List<String> stale = new ArrayList<String>();
         List<String> retryable = new ArrayList<String>();
+        sortFailedInstallations(response.getResponses(), batch, stale, retryable);
 
+        log.debug("FCM batch sent: success={}, stale={}, retryable={}",
+            response.getSuccessCount(), stale.size(), retryable.size());
+
+        return new PushDispatchResult(response.getSuccessCount(), stale, retryable);
+    }
+
+    private void sortFailedInstallations(
+            List<SendResponse> responses, List<String> batch, List<String> stale, List<String> retryable) {
         // getResponses() keeps exactly the order of the FID list given to addAllFids, so the index
         // is the only bridge to tell which response belongs to which device.
-        List<SendResponse> responses = response.getResponses();
         for (int i = 0; i < responses.size(); i++) {
             SendResponse sendResponse = responses.get(i);
             if (sendResponse.isSuccessful()) {
@@ -115,11 +123,6 @@ public class FcmNotificationService implements PushNotificationPort {
                     + "kiểm tra lại service account đang dùng");
             }
         }
-
-        log.debug("FCM batch sent: success={}, stale={}, retryable={}",
-            response.getSuccessCount(), stale.size(), retryable.size());
-
-        return new PushDispatchResult(response.getSuccessCount(), stale, retryable);
     }
 
     /**
@@ -141,7 +144,20 @@ public class FcmNotificationService implements PushNotificationPort {
     }
 
     private MulticastMessage buildMessage(PushMessage message, List<String> installationIds) {
-        MulticastMessage.Builder builder = MulticastMessage.builder()
+        MulticastMessage.Builder builder = baseMessageBuilder(message, installationIds);
+
+        String link = webpushLink(message);
+        if (link != null) {
+            builder.setWebpushConfig(WebpushConfig.builder()
+                .setFcmOptions(WebpushFcmOptions.withLink(link))
+                .build());
+        }
+
+        return builder.build();
+    }
+
+    private MulticastMessage.Builder baseMessageBuilder(PushMessage message, List<String> installationIds) {
+        return MulticastMessage.builder()
             // addAllFids instead of addAllTokens: version 9.10.0 has @Deprecated the token branch.
             .addAllFids(installationIds)
             .setNotification(Notification.builder()
@@ -157,15 +173,6 @@ public class FcmNotificationService implements PushNotificationPort {
                     .setSound("default")
                     .build())
                 .build());
-
-        String link = webpushLink(message);
-        if (link != null) {
-            builder.setWebpushConfig(WebpushConfig.builder()
-                .setFcmOptions(WebpushFcmOptions.withLink(link))
-                .build());
-        }
-
-        return builder.build();
     }
 
     /**

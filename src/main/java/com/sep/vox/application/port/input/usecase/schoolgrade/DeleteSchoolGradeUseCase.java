@@ -36,47 +36,52 @@ public class DeleteSchoolGradeUseCase implements IUseCase<DeleteSchoolGradeComma
     @Override
     @Transactional
     public Void execute(DeleteSchoolGradeCommand command) {
-        // 1. Xác định User hiện tại
+        requireCallerBelongsToSchool(command.schoolId());
+
+        SchoolGrade grade = schoolGradeRepository.findById(command.id())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy năm học/khóa học này."));
+
+        // school_grades carries schoolId directly -- the grade level no longer has to serve as a "bridge".
+        if (!grade.getSchoolId().equals(command.schoolId())) {
+            throw new ForbiddenException("BẢO MẬT: Dữ liệu này không thuộc quyền quản lý của trường bạn.");
+        }
+
+        // Already soft-deleted (ARCHIVED) earlier -> treated as non-existent.
+        if (grade.getStatus() == SchoolGradeStatus.ARCHIVED) {
+            throw new ResourceNotFoundException("Năm học/khóa học này đã bị xóa trước đó.");
+        }
+
+        archiveGradeWithClassesAndMemberships(grade);
+
+        return null;
+    }
+
+    private void requireCallerBelongsToSchool(UUID schoolId) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
         }
 
-        //2 kiểm tra bằng school user
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn chưa liên kết với trường học."));
 
-        if (!schoolUser.getSchoolId().equals(command.schoolId())) {
+        if (!schoolUser.getSchoolId().equals(schoolId)) {
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền thao tác trên dữ liệu của trường khác.");
         }
+    }
 
-        // 2. Lấy School Grade (Năm học/Khóa học) cần xóa
-        SchoolGrade grade = schoolGradeRepository.findById(command.id())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy năm học/khóa học này."));
-
-        // 3. school_grades mang schoolId trực tiếp -- không còn phải mượn Khối Lớp làm "cầu nối".
-        if (!grade.getSchoolId().equals(command.schoolId())) {
-            throw new ForbiddenException("BẢO MẬT: Dữ liệu này không thuộc quyền quản lý của trường bạn.");
-        }
-
-        // 4. Nếu đã xóa mềm (ARCHIVED) trước đó → coi như không còn tồn tại.
-        if (grade.getStatus() == SchoolGradeStatus.ARCHIVED) {
-            throw new ResourceNotFoundException("Năm học/khóa học này đã bị xóa trước đó.");
-        }
-
-        // 5. Cascade xóa mềm trong cùng một transaction:
-        //    - Vô hiệu hóa (deactivate) mọi thành viên đang active của các lớp thuộc năm học
-        //      (chỉ tác động membership, KHÔNG đụng tài khoản học sinh/giáo viên).
-        //    - Xóa mềm (ARCHIVED) toàn bộ lớp thuộc năm học.
-        //    - Xóa mềm (ARCHIVED) chính năm học.
-        //    Toàn bộ đều là xóa mềm để giữ lại tham chiếu (bài thi/điểm...).
+    // Soft-delete cascade in one transaction:
+    //  - Deactivate every active member of the classes of the school year (only memberships are touched, the
+    //    student/teacher accounts are NOT).
+    //  - Soft-delete (ARCHIVED) every class of the school year.
+    //  - Soft-delete (ARCHIVED) the school year itself.
+    // Everything is a soft delete so that references (assessments/scores...) are kept.
+    private void archiveGradeWithClassesAndMemberships(SchoolGrade grade) {
         Instant now = Instant.now();
         schoolClassUserRepository.deactivateByGradeId(grade.getId(), now);
         schoolClassRepository.archiveByGradeId(grade.getId());
 
         grade.setStatus(SchoolGradeStatus.ARCHIVED);
         schoolGradeRepository.save(grade);
-
-        return null;
     }
 }

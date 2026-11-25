@@ -45,21 +45,23 @@ public class RejectRegisterFormUseCase implements IUseCase<RejectRegisterFormCom
             throw new IllegalArgumentException("Đơn đăng ký không ở trạng thái chờ hoặc không tồn tại");
         }
         
+        outboxRepository.save(toRejectedOutboxEvent(registerForm, command.reason(), now));
+
+        return null;
+    }
+
+    private Outbox toRejectedOutboxEvent(RegisterForm registerForm, String reason, Instant now) {
         RegisterFormRejectedPayloadV1 event = new RegisterFormRejectedPayloadV1(
-                registerForm.getContactEmail().value(), command.reason());
+                registerForm.getContactEmail().value(), reason);
         String payload = jsonSerializationPort.toJson(event);
 
-        Outbox outboxEvent = Outbox.create(
-            AggregateTypeConstant.REGISTER_FORM, 
-            registerForm.getId(), 
-            EventTypeConstant.REGISTER_FORM_REJECTED, 
-            payload, 
+        return Outbox.create(
+            AggregateTypeConstant.REGISTER_FORM,
+            registerForm.getId(),
+            EventTypeConstant.REGISTER_FORM_REJECTED,
+            payload,
             now
         );
-
-        outboxRepository.save(outboxEvent);
-        
-        return null;
     }
     
     private RejectRegisterFormCommand normalize(RejectRegisterFormCommand input) {

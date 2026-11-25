@@ -38,60 +38,62 @@ public class DeleteSchoolRubricVersionUseCase implements IUseCase<DeleteSchoolRu
     @Override
     @Transactional
     public Void execute(DeleteSchoolRubricVersionCommand command) {
-        // 1. Xác thực tài khoản
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
-
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("Tài khoản đã bị khóa.");
         }
 
-        // 2. Lấy thông tin phiên bản
+        RubricVersion version = loadVersionOwnedBySchool(command, currentUserId);
+        requireActiveSchool(command.schoolId());
+        requireDeletable(version);
+
+        rubricCriterionRepository.deleteByRubricVersionId(version.getId());
+        rubricResultBandRepository.deleteByRubricVersionId(version.getId());
+        rubricVersionRepository.deleteById(version.getId());
+        return null;
+    }
+
+    private RubricVersion loadVersionOwnedBySchool(DeleteSchoolRubricVersionCommand command, UUID currentUserId) {
         RubricVersion version = rubricVersionRepository.findById(command.versionId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản Rubric này."));
 
-        // 3. KIỂM TRA QUYỀN SỞ HỮU BẰNG BẢNG SCHOOL_USER
         Rubric rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
-
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
-
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL ||
                 !rubric.getSchoolId().equals(command.schoolId()) ||
                 !schoolUser.getSchoolId().equals(rubric.getSchoolId())) {
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền can thiệp vào phiên bản của trường khác.");
         }
+        return version;
+    }
 
-        // Kiểm tra xem trường học có đang hoạt động không
-        School school = schoolRepository.findById(command.schoolId())
+    private void requireActiveSchool(UUID schoolId) {
+        School school = schoolRepository.findById(schoolId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
         if (!school.isActive()) {
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
         }
+    }
 
-
-        // 4. Chỉ được xóa cứng khi đang DRAFT, các trạng thái khác dùng chức năng Lưu trữ (Archive) riêng
+    private void requireDeletable(RubricVersion version) {
+        // Hard delete only while DRAFT; other statuses use the separate Archive function.
         if (version.getStatus() != RubricStatus.DRAFT) {
             throw new IllegalArgumentException("Chỉ có thể xóa phiên bản đang ở trạng thái DRAFT. Vui lòng dùng chức năng Lưu trữ (Archive) nếu phiên bản đã PUBLISHED.");
         }
 
-        // 5. Không xóa khi còn Assessment Policy trỏ vào.
+        // Do not delete while an Assessment Policy still points at the version.
         //
-        // Từ V44 một phiên bản rubric dùng chung được cho nhiều chính sách, nên xóa nhầm không còn
-        // chỉ làm treo một chính sách mà treo cả cụm. Bản thân việc thiếu chốt này đã sai từ trước
-        // (không có khóa ngoại nào canh), chỉ là hậu quả nay lớn hơn nên phải chặn hẳn.
+        // Since V44 one rubric version can be shared by several policies, so a wrong delete no longer
+        // strands a single policy but a whole group of them. The missing guard was already wrong before
+        // (no foreign key watches it); only the consequence is bigger now, so it must be blocked outright.
         if (assessmentPolicyRepository.existsPublishedByRubricVersionId(version.getId())
                 || assessmentPolicyRepository.existsNotPublishedByRubricVersionId(version.getId())) {
             throw new IllegalArgumentException(
                     "Không thể xóa phiên bản này vì đang có Assessment Policy sử dụng. Hãy xóa hoặc lưu trữ các chính sách đó trước.");
         }
-
-        rubricCriterionRepository.deleteByRubricVersionId(version.getId());
-        rubricResultBandRepository.deleteByRubricVersionId(version.getId());
-        rubricVersionRepository.deleteById(version.getId());
-
-        return null;
     }
 }

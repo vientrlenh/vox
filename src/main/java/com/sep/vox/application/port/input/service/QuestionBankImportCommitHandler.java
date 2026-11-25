@@ -51,104 +51,142 @@ public class QuestionBankImportCommitHandler implements ImportCommitHandler {
     public ImportCommitResult commit(ImportSession session, List<ImportRow> rows) {
         UUID schoolId = session.getSchoolId();
         QuestionBankOwnerType ownerType = schoolId == null ? QuestionBankOwnerType.SYSTEM : QuestionBankOwnerType.SCHOOL;
-        Map<String, String> mapping = resolveMapping(session);
+        CommitScope scope = new CommitScope(schoolId, ownerType, resolveMapping(session),
+            loadExistingByCode(ownerType, schoolId), new HashSet<String>(), new ArrayList<QuestionBank>());
 
-        Map<String, QuestionBank> existingByCode = new HashMap<String, QuestionBank>();
-        for (QuestionBank bank : questionBankRepository.findByOwnerScope(ownerType, schoolId)) {
-            existingByCode.putIfAbsent(normalizeCode(bank.getCode()), bank);
-        }
-
-        List<QuestionBank> toSave = new ArrayList<QuestionBank>();
-        Set<String> codesInThisFile = new HashSet<String>();
         long importedCount = 0;
         long invalidCount = 0;
-
         for (ImportRow row : rows) {
             if (row.getStatus() != ImportRowStatus.PENDING) {
                 continue;
             }
-
-            List<Map<String, String>> errors = new ArrayList<Map<String, String>>();
-            try {
-                Map<String, String> mappedData = mapRow(row, mapping);
-                String code = StringNormalization.normalizeCode(mappedData.get("code"));
-                String name = StringNormalization.trimAndCollapseSpaces(mappedData.get("name"));
-                String description = StringNormalization.trimAndCollapseSpaces(mappedData.get("description"));
-                String languageValue = StringNormalization.trimAndCollapseSpaces(mappedData.get("language"));
-
-                if (isBlank(code)) {
-                    errors.add(error("code", "Thiếu mã ngân hàng câu hỏi."));
-                }
-                if (isBlank(name)) {
-                    errors.add(error("name", "Thiếu tên ngân hàng câu hỏi."));
-                }
-                if (errors.isEmpty() && !codesInThisFile.add(normalizeCode(code))) {
-                    errors.add(error("code", "Mã ngân hàng '" + code + "' bị lặp ngay trong file."));
-                }
-
-                QuestionBank existing = errors.isEmpty() ? existingByCode.get(normalizeCode(code)) : null;
-
-                // Ngôn ngữ bắt buộc khi TẠO MỚI (questionBank.languageId không nullable). Khi cập
-                // nhật thì bỏ trống được -- giữ nguyên ngôn ngữ cũ, để file chỉ sửa tên/mô tả
-                // không phải khai lại mọi thứ.
-                java.util.UUID languageId = null;
-                if (errors.isEmpty()) {
-                    if (!isBlank(languageValue)) {
-                        languageId = resolveLanguageId(languageValue);
-                        if (languageId == null) {
-                            errors.add(error("language", "Không tìm thấy ngôn ngữ '" + languageValue + "'."));
-                        }
-                    } else if (existing == null) {
-                        errors.add(error("language", "Thiếu ngôn ngữ (bắt buộc khi tạo ngân hàng mới)."));
-                    }
-                }
-
-                if (!errors.isEmpty()) {
-                    row.setStatus(ImportRowStatus.INVALID);
-                    row.setErrorsJson(jsonSerializationPort.toJson(errors));
-                    invalidCount++;
-                    continue;
-                }
-
-                if (existing != null) {
-                    existing.setName(name);
-                    if (!isBlank(description)) {
-                        existing.setDescription(description);
-                    }
-                    if (languageId != null) {
-                        existing.setLanguageId(languageId);
-                    }
-                    toSave.add(existing);
-                } else {
-                    toSave.add(QuestionBank.create(
-                        languageId,
-                        schoolId,
-                        code,
-                        name,
-                        description,
-                        ownerType
-                    ));
-                }
-
-                row.setStatus(ImportRowStatus.IMPORTED);
-                row.setMappedDataJson(jsonSerializationPort.toJson(mappedData));
+            if (commitRow(row, scope)) {
                 importedCount++;
-            } catch (Exception ex) {
-                errors.add(error("general", "Lỗi xử lý luồng ngầm: " + ex.getMessage()));
-                row.setStatus(ImportRowStatus.INVALID);
-                row.setErrorsJson(jsonSerializationPort.toJson(errors));
+            } else {
                 invalidCount++;
             }
         }
 
-        for (QuestionBank bank : toSave) {
+        for (QuestionBank bank : scope.toSave()) {
             questionBankRepository.save(bank);
         }
         return new ImportCommitResult(importedCount, 0, 0, invalidCount);
     }
 
+    private Map<String, QuestionBank> loadExistingByCode(QuestionBankOwnerType ownerType, UUID schoolId) {
+        Map<String, QuestionBank> existingByCode = new HashMap<String, QuestionBank>();
+        for (QuestionBank bank : questionBankRepository.findByOwnerScope(ownerType, schoolId)) {
+            existingByCode.putIfAbsent(normalizeCode(bank.getCode()), bank);
+        }
+        return existingByCode;
+    }
+
+    private record CommitScope(
+        UUID schoolId,
+        QuestionBankOwnerType ownerType,
+        Map<String, String> mapping,
+        Map<String, QuestionBank> existingByCode,
+        Set<String> codesInThisFile,
+        List<QuestionBank> toSave
+    ) {
+    }
+
+    private record BankFields(String code, String name, String description, String languageValue) {
+    }
+
+    /** Returns true when the row was imported, false when it was marked invalid. */
+    private boolean commitRow(ImportRow row, CommitScope scope) {
+        List<Map<String, String>> errors = new ArrayList<Map<String, String>>();
+        try {
+            Map<String, String> mappedData = mapRow(row, scope.mapping());
+            BankFields fields = readFields(mappedData);
+            validateRequiredFields(fields, scope.codesInThisFile(), errors);
+            QuestionBank existing = errors.isEmpty() ? scope.existingByCode().get(normalizeCode(fields.code())) : null;
+            UUID languageId = resolveLanguageForRow(fields.languageValue(), existing, errors);
+
+            if (!errors.isEmpty()) {
+                markInvalid(row, errors);
+                return false;
+            }
+
+            scope.toSave().add(applyToBank(existing, languageId, fields, scope));
+            row.setStatus(ImportRowStatus.IMPORTED);
+            row.setMappedDataJson(jsonSerializationPort.toJson(mappedData));
+            return true;
+        } catch (Exception ex) {
+            errors.add(error("general", "Lỗi xử lý luồng ngầm: " + ex.getMessage()));
+            markInvalid(row, errors);
+            return false;
+        }
+    }
+
+    private BankFields readFields(Map<String, String> mappedData) {
+        return new BankFields(
+            StringNormalization.normalizeCode(mappedData.get("code")),
+            StringNormalization.trimAndCollapseSpaces(mappedData.get("name")),
+            StringNormalization.trimAndCollapseSpaces(mappedData.get("description")),
+            StringNormalization.trimAndCollapseSpaces(mappedData.get("language"))
+        );
+    }
+
+    private void validateRequiredFields(BankFields fields, Set<String> codesInThisFile, List<Map<String, String>> errors) {
+        if (isBlank(fields.code())) {
+            errors.add(error("code", "Thiếu mã ngân hàng câu hỏi."));
+        }
+        if (isBlank(fields.name())) {
+            errors.add(error("name", "Thiếu tên ngân hàng câu hỏi."));
+        }
+        if (errors.isEmpty() && !codesInThisFile.add(normalizeCode(fields.code()))) {
+            errors.add(error("code", "Mã ngân hàng '" + fields.code() + "' bị lặp ngay trong file."));
+        }
+    }
+
+    // Language is required when CREATING (questionBank.languageId is not nullable). On update it
+    // may be left blank -- the old language is kept, so a file that only edits name/description
+    // does not have to restate everything.
+    private UUID resolveLanguageForRow(String languageValue, QuestionBank existing, List<Map<String, String>> errors) {
+        UUID languageId = null;
+        if (errors.isEmpty()) {
+            if (!isBlank(languageValue)) {
+                languageId = resolveLanguageId(languageValue);
+                if (languageId == null) {
+                    errors.add(error("language", "Không tìm thấy ngôn ngữ '" + languageValue + "'."));
+                }
+            } else if (existing == null) {
+                errors.add(error("language", "Thiếu ngôn ngữ (bắt buộc khi tạo ngân hàng mới)."));
+            }
+        }
+        return languageId;
+    }
+
+    private void markInvalid(ImportRow row, List<Map<String, String>> errors) {
+        row.setStatus(ImportRowStatus.INVALID);
+        row.setErrorsJson(jsonSerializationPort.toJson(errors));
+    }
+
+    private QuestionBank applyToBank(QuestionBank existing, UUID languageId, BankFields fields, CommitScope scope) {
+        if (existing == null) {
+            return QuestionBank.create(
+                languageId,
+                scope.schoolId(),
+                fields.code(),
+                fields.name(),
+                fields.description(),
+                scope.ownerType()
+            );
+        }
+        existing.setName(fields.name());
+        if (!isBlank(fields.description())) {
+            existing.setDescription(fields.description());
+        }
+        if (languageId != null) {
+            existing.setLanguageId(languageId);
+        }
+        return existing;
+    }
+
     /** Nhận cả mã ("en", "vi") lẫn tên đầy đủ, vì người soạn file gõ kiểu nào cũng có. */
-    private java.util.UUID resolveLanguageId(String value) {
+    private UUID resolveLanguageId(String value) {
         return supportedLanguageRepository.findByCode(value)
             .or(() -> supportedLanguageRepository.findByName(value))
             .map(language -> language.getId())

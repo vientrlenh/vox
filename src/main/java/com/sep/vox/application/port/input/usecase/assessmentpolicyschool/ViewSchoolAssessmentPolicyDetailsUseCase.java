@@ -36,11 +36,7 @@ public class ViewSchoolAssessmentPolicyDetailsUseCase implements IUseCase<ViewSc
     @Transactional(readOnly = true)
     public AssessmentPolicyDto execute(ViewSchoolAssessmentPolicyDetailsQuery query) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản bị khóa.");
-        }
+        requireActiveUser(currentUserId);
 
         AssessmentPolicy policy = assessmentPolicyRepository.findById(query.policyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy này."));
@@ -54,12 +50,24 @@ public class ViewSchoolAssessmentPolicyDetailsUseCase implements IUseCase<ViewSc
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền xem Assessment Policy của trường khác.");
         }
 
-        School school = schoolRepository.findById(query.schoolId())
+        requireSchoolActive(query.schoolId());
+
+        return AssessmentPolicyDtoMapper.toDto(policy);
+    }
+
+    private void requireActiveUser(UUID currentUserId) {
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) {
+            throw new UnauthorizedException("Tài khoản bị khóa.");
+        }
+    }
+
+    private void requireSchoolActive(UUID schoolId) {
+        School school = schoolRepository.findById(schoolId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
         if (!school.isActive()) {
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa.");
         }
-
-        return AssessmentPolicyDtoMapper.toDto(policy);
     }
 }

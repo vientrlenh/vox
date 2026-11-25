@@ -23,7 +23,6 @@ import com.sep.vox.application.query.dto.QuestionTopicInfo;
 import com.sep.vox.application.query.repository.PracticeTopicQueryRepository;
 import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticeTopicOffer;
 import com.sep.vox.domain.model.personalization.PracticeTopic;
-import com.sep.vox.domain.service.personalization.TensePolicy;
 import com.sep.vox.domain.repository.LearnerProfileRepository;
 import com.sep.vox.domain.repository.PracticePaperRepository;
 import com.sep.vox.domain.repository.PracticeTopicRepository;
@@ -56,17 +55,36 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
         Set<UUID> excluded = new HashSet<>(
             input.excludeTopicIds() == null ? List.<UUID>of() : input.excludeTopicIds()
         );
+        List<RankedTopic> ranked = rankedTopicsFor(studentId, excluded);
+        List<RankedTopic> selected = withEpsilonExploration(studentId, ranked, input.round());
+        // Do NOT shuffle the order: the client shows `matchPercent` taken from the very `score` used
+        // for ranking, so after a shuffle card #1 would no longer be the highest match -- the user
+        // would see a list that contradicts the number it prints, in a different order on every open.
+        //
+        // Diversity is still there, but in its proper place: the epsilon slot replaces the LAST card
+        // with a topic outside the top 10. That topic ranks lower, so it still sits at the end of the
+        // list and the order by match % stays monotonic.
+        int minutes = enrichmentService.minutesForStudent(studentId);
+        return selected.stream()
+            .map(topic -> toOffer(topic, minutes))
+            .toList();
+    }
+
+    private List<RankedTopic> rankedTopicsFor(UUID studentId, Set<UUID> excluded) {
         String goal = currentGoal(studentId);
-        // `bucket` không còn phân nhánh gì: enum chỉ còn FOR_YOU (xem practice-planning.graphqls).
-        List<RankedTopic> ranked = ("ASSESSMENT_PREP".equals(goal)
+        // `bucket` no longer branches anything: the enum only has FOR_YOU left (see practice-planning.graphqls).
+        return ("ASSESSMENT_PREP".equals(goal)
                 ? assessmentTopicRanked(studentId)
                 : classicRanked(studentId, goal))
             .stream()
             .filter(topic -> !excluded.contains(topic.id()))
             .sorted(Comparator.comparingDouble((RankedTopic topic) -> topic.score()).reversed())
             .toList();
+    }
+
+    private List<RankedTopic> withEpsilonExploration(UUID studentId, List<RankedTopic> ranked, int round) {
         List<RankedTopic> selected = new ArrayList<>(ranked.subList(0, Math.min(4, ranked.size())));
-        double epsilon = input.round() >= 2 ? 0.30 : 0.10;
+        double epsilon = round >= 2 ? 0.30 : 0.10;
         if (selected.size() == 4
                 && ranked.size() > 10
                 && explorationAllowed(studentId)
@@ -77,29 +95,21 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
                 exploratory.get(ThreadLocalRandom.current().nextInt(exploratory.size()))
             );
         }
-        // KHÔNG xáo thứ tự: client hiện `matchPercent` lấy đúng từ `score` vừa dùng để xếp
-        // hạng, nên xáo xong thì thẻ #1 không còn là thẻ khớp cao nhất -- người dùng thấy
-        // danh sách tự mâu thuẫn với chính con số nó in ra, và mỗi lần mở lại một thứ tự.
-        //
-        // Đa dạng vẫn còn nguyên, nhưng ở chỗ đúng của nó: slot epsilon phía trên thay thẻ
-        // CUỐI bằng một chủ đề ngoài top 10. Vì chủ đề đó xếp hạng thấp hơn nên nó vẫn nằm
-        // cuối danh sách, thứ tự theo % khớp giữ được tính đơn điệu.
-        int minutes = enrichmentService.minutesForStudent(studentId);
-        return selected.stream()
-            .map(topic -> {
-                String rationale = rationaleFor(topic);
-                return new PracticeTopicOffer(
-                    topic.id(),
-                    topic.name(),
-                    topic.dimension(),
-                    topic.saved(),
-                    clampPercent(topic.score()),
-                    minutes,
-                    rationale,
-                    List.of(rationale)
-                );
-            })
-            .toList();
+        return selected;
+    }
+
+    private PracticeTopicOffer toOffer(RankedTopic topic, int minutes) {
+        String rationale = rationaleFor(topic);
+        return new PracticeTopicOffer(
+            topic.id(),
+            topic.name(),
+            topic.dimension(),
+            topic.saved(),
+            clampPercent(topic.score()),
+            minutes,
+            rationale,
+            List.of(rationale)
+        );
     }
 
     /** Số thẻ đứng đầu bảng xếp hạng được coi là "trong tầm ngắm" -- chủ đề ngoài ngưỡng này
@@ -191,42 +201,38 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
             return List.of();
         }
         return practiceTopicQueryRepository.findPublishedAssessmentTopics(schoolId, gradeId).stream()
-            .map(row -> {
-                UUID topicId = materializeAssessmentTopic(row);
-                double interest = 0.5;
-                double curriculum = 1.0;
-                double base = scoreFor("ASSESSMENT_PREP", interest, curriculum);
-                return new RankedTopic(
-                    topicId,
-                    row.getName(),
-                    ASSESSMENT_TOPIC_INTEREST_DIMENSION,
-                    false,
-                    base,
-                    interest,
-                    curriculum,
-                    true
-                );
-            })
+            .map(row -> toAssessmentRankedTopic(row))
             .toList();
+    }
+
+    private RankedTopic toAssessmentRankedTopic(QuestionTopicInfo row) {
+        UUID topicId = materializeAssessmentTopic(row);
+        double interest = 0.5;
+        double curriculum = 1.0;
+        double base = scoreFor("ASSESSMENT_PREP", interest, curriculum);
+        return new RankedTopic(
+            topicId,
+            row.getName(),
+            ASSESSMENT_TOPIC_INTEREST_DIMENSION,
+            false,
+            base,
+            interest,
+            curriculum,
+            true
+        );
     }
 
     private UUID materializeAssessmentTopic(QuestionTopicInfo row) {
         return practiceTopicRepository.findBySourceQuestionTopicId(row.getId())
             .map(existing -> existing.getId())
-            .orElseGet(() -> practiceTopicRepository.save(PracticeTopic.builder()
-                .name(row.getName())
-                .normalizedName(TopicSuggestionService.normalize(row.getName()))
-                .description(row.getDescription())
-                .source("ASSESSMENT_QUESTION_BANK")
-                .interestDimension(ASSESSMENT_TOPIC_INTEREST_DIMENSION)
-                .curriculumGroup(ASSESSMENT_TOPIC_CURRICULUM_GROUP)
-                .active(true)
-                .createdAt(Instant.now())
-                .sourceQuestionTopicId(row.getId())
-                // The topic comes from the school's question bank: nobody assigned a tense, and guessing from the
-                // topic name has no basis. MIXED lets the rotating scale spread the tenses itself.
-                .temporalAffordance(TensePolicy.AFFORDANCE_MIXED)
-                .build()).getId());
+            .orElseGet(() -> practiceTopicRepository.save(PracticeTopic.fromAssessmentQuestionTopic(
+                row.getId(),
+                row.getName(),
+                TopicSuggestionService.normalize(row.getName()),
+                row.getDescription(),
+                ASSESSMENT_TOPIC_INTEREST_DIMENSION,
+                ASSESSMENT_TOPIC_CURRICULUM_GROUP,
+                Instant.now())).getId());
     }
 
     private boolean explorationAllowed(UUID studentId) {

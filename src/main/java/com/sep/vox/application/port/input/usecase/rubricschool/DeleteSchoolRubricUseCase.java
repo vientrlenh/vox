@@ -37,7 +37,6 @@ public class DeleteSchoolRubricUseCase implements IUseCase<DeleteSchoolRubricCom
     @Override
     @Transactional
     public Void execute(DeleteSchoolRubricCommand command) {
-        // 1. Xác thực tài khoản
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
@@ -45,29 +44,14 @@ public class DeleteSchoolRubricUseCase implements IUseCase<DeleteSchoolRubricCom
             throw new UnauthorizedException("Tài khoản đã bị khóa.");
         }
 
-        // 2. Lấy Rubric gốc
         Rubric rubric = rubricRepository.findById(command.rubricId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric này."));
+        requireOwnedBySchoolOfUser(rubric, command, currentUserId);
+        requireActiveSchool(command.schoolId());
 
-        // 3. Chốt chặn an ninh: bằng SchoolUser, cùng pattern UpdateSchoolRubricUseCase
-        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
-
-        if (rubric.getOwnerType() != RubricOwnerType.SCHOOL ||
-                !rubric.getSchoolId().equals(command.schoolId()) ||
-                !schoolUser.getSchoolId().equals(rubric.getSchoolId())) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền xóa Rubric của trường khác.");
-        }
-
-        School school = schoolRepository.findById(command.schoolId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
-        if (!school.isActive()) {
-            throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
-        }
-
-        // 4. Chỉ cho xóa cứng khi Rubric chưa có version nào -- RubricCriterion/RubricResultBand luôn
-        // là con của RubricVersion (không gắn thẳng vào Rubric), nên rỗng version đã đủ suy ra rỗng
-        // cả criterion/result-band, không cần query thêm 2 bảng đó.
+        // Hard delete is only allowed while the Rubric has no version: RubricCriterion/RubricResultBand are
+        // always children of a RubricVersion (never attached directly to the Rubric), so having no version
+        // already implies no criterion/result band, and the two tables need no extra query.
         if (!rubricVersionRepository.findByRubricId(rubric.getId()).isEmpty()) {
             throw new IllegalArgumentException(
                 "Không thể xóa Rubric này vì đang có phiên bản (version) bên trong. "
@@ -75,7 +59,25 @@ public class DeleteSchoolRubricUseCase implements IUseCase<DeleteSchoolRubricCom
         }
 
         rubricRepository.deleteById(rubric.getId());
-
         return null;
+    }
+
+    // Security gate through SchoolUser, same pattern as UpdateSchoolRubricUseCase.
+    private void requireOwnedBySchoolOfUser(Rubric rubric, DeleteSchoolRubricCommand command, UUID currentUserId) {
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
+                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
+        if (rubric.getOwnerType() != RubricOwnerType.SCHOOL ||
+                !rubric.getSchoolId().equals(command.schoolId()) ||
+                !schoolUser.getSchoolId().equals(rubric.getSchoolId())) {
+            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền xóa Rubric của trường khác.");
+        }
+    }
+
+    private void requireActiveSchool(UUID schoolId) {
+        School school = schoolRepository.findById(schoolId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
+        if (!school.isActive()) {
+            throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
+        }
     }
 }

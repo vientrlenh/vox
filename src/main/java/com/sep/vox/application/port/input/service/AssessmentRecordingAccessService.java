@@ -42,19 +42,19 @@ public class AssessmentRecordingAccessService {
     private final UserContextPort userContextPort;
 
     /**
-     * Ném nếu người gọi không được xem; trả về phiên thi nếu được.
+     * Throws if the caller may not view; returns the session if they may.
      *
-     * <p>Bốn tầng: phải cùng trường → school admin đi thẳng → giáo viên phải là chủ tịch hội
-     * đồng, HOẶC người được phân công chấm chính bài đó, HOẶC giám thị của đúng ca thi. Vai khác
-     * đều bị chặn, kể cả chính thí sinh: học sinh không được xem lại video buổi thi của mình qua
-     * đường này.
+     * <p>Four tiers: must be in the same school → school admin goes straight through → a teacher must be the
+     * council chair, OR the person assigned to grade that very attempt, OR a proctor of the exact exam slot. Every other role
+     * is blocked, including the candidate themselves: a student may not replay the video of their own exam through
+     * this path.
      *
-     * <p>Tầng "người chấm" là tầng thêm sau, và nó KHÔNG phải nới lỏng cho tiện: hai vòng
-     * {@code SPOT_CHECK} và {@code APPEAL} cố tình giao bài cho giáo viên chưa từng dính tới ca
-     * thi (hậu kiểm mà giao lại đúng người coi thi thì còn gì là hậu kiểm). Nếu quyền xem bản ghi
-     * chỉ đi theo vai coi thi thì đúng những người bắt buộc phải nghe lại bài mới chấm được lại
-     * là những người bị chặn -- mà FE thì nuốt lỗi 403 thành "ca thi không có bản ghi", nên sự cố
-     * này im lặng suốt.
+     * <p>The "grader" tier was added later, and it is NOT a loosening for convenience: the {@code SPOT_CHECK} and
+     * {@code APPEAL} rounds deliberately hand the attempt to teachers who never took part in the exam slot
+     * (a post-check that hands it back to the very proctor is no post-check at all). If recording access
+     * followed only the proctor role, the exact people who must listen to the answer to grade it would be
+     * the ones blocked -- and the frontend swallows the 403 as "this slot has no recording", so the fault
+     * stays silent.
      */
     public AssessmentSession requireCanViewRecordings(UUID assessmentSessionId) {
         UUID userId = userContextPort.getCurrentAuthenticatedUserId();
@@ -78,27 +78,36 @@ public class AssessmentRecordingAccessService {
             throw new ForbiddenException("Vai trò hiện tại của bạn không được phép xem bản ghi thi");
         }
 
+        requireChairGraderOrProctor(session, assessment, userId);
+        return session;
+    }
+
+    private void requireChairGraderOrProctor(AssessmentSession session, Assessment assessment, UUID userId) {
         boolean isChair = assessmentMemberRepository
             .existsByAssessmentIdAndUserIdAndRole(assessment.getId(), userId, AssessmentMemberRole.CHAIR);
-        if (isChair) {
-            return session;
+        if (isChair || isAssignedGrader(session, userId)) {
+            return;
         }
+        requireProctorOfSession(session, userId);
+    }
 
-        // The person assigned to grade this very attempt. Placed BEFORE the proctor branch because on the grading screen this
-        // is the most common case, and letting it fall below costs two extra queries every time an attempt is opened.
-        //
-        // It also counts closed assignment rows: for an appealed attempt, the grader of the previous round is the one
-        // being asked "why did you grade it this way", and by then their row is already COMPLETED. This is the permission to READ evidence,
-        // not the permission to write scores -- every grading action still goes through
-        // AssessmentGradingAccessService.authorizeAssignedTeacher on the row that is actually open.
-        Boolean isAssignedGrader = assessmentCandidateResultRepository.findBySessionId(session.getId())
+    /**
+     * The person assigned to grade this very attempt. Checked BEFORE the proctor branch because on the grading screen this
+     * is the most common case, and letting it fall below costs two extra queries every time an attempt is opened.
+     *
+     * <p>It also counts closed assignment rows: for an appealed attempt, the grader of the previous round is the one
+     * being asked "why did you grade it this way", and by then their row is already COMPLETED. This is the permission to READ evidence,
+     * not the permission to write scores -- every grading action still goes through
+     * AssessmentGradingAccessService.authorizeAssignedTeacher on the row that is actually open.
+     */
+    private boolean isAssignedGrader(AssessmentSession session, UUID userId) {
+        return assessmentCandidateResultRepository.findBySessionId(session.getId())
             .map(result -> assessmentGradingAssignmentRepository
                 .existsByCandidateResultIdAndTeacherId(result.getId(), userId))
             .orElse(false);
-        if (isAssignedGrader) {
-            return session;
-        }
+    }
 
+    private void requireProctorOfSession(AssessmentSession session, UUID userId) {
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(session.getCandidateId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thi sinh"));
         UUID scheduleId = candidate.getScheduleId();
@@ -107,6 +116,5 @@ public class AssessmentRecordingAccessService {
         if (!isProctor) {
             throw new ForbiddenException("Bạn không được phân công để giám sát ca thi này");
         }
-        return session;
     }
 }

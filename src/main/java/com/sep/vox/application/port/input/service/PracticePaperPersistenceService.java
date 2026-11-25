@@ -71,44 +71,34 @@ public class PracticePaperPersistenceService {
             List<UUID> offeredTopicIds,
             List<UUID> previousOfferedTopicIds,
             PracticeQuestion question) {
-        String resolvedOrigin = origin == null ? "SELECTED" : origin;
         Instant now = Instant.now();
-        return paperRepository.save(com.sep.vox.domain.model.personalization.PracticePaper.builder()
-            .studentId(studentId)
-            .practiceTopicId(topicId)
-            .targetFrameworkBandId(targetFrameworkBandId)
-            .origin(resolvedOrigin)
-            .goalAtBuild(currentGoal(studentId))
-            .offeredTopicIdsJson(jsonSerializationPort.toJson(
-                offeredTopicIds == null ? List.of() : offeredTopicIds
-            ))
-            .previousOfferedTopicIdsJson(jsonSerializationPort.toJson(
-                previousOfferedTopicIds == null ? List.of() : previousOfferedTopicIds
-            ))
-            // The old plannedSeconds was preparationTimeSeconds + spokenSeconds; with the preparation column dropped (V11)
-            // the two numbers are equal, so they are merged into one name instead of keeping two names for one value.
-            .plannedSeconds(question.spokenSeconds())
-            .reservedQuotaSeconds(question.spokenSeconds())
+        return paperRepository.save(PracticePaper.reserved(
+            studentId,
+            topicId,
+            targetFrameworkBandId,
+            origin,
+            currentGoal(studentId),
+            jsonSerializationPort.toJson(offeredTopicIds == null ? List.of() : offeredTopicIds),
+            jsonSerializationPort.toJson(previousOfferedTopicIds == null ? List.of() : previousOfferedTopicIds),
+            question.spokenSeconds(),
             // Instant has no plusMinutes -- it is an absolute point that carries no calendar or time zone, so only a
             // Duration can be added. The meaning is unchanged: reserve the quota for 10 minutes.
-            .expiresAt(now.plus(RESERVATION_WINDOW))
-            .status("RESERVED")
-            .createdAt(now)
-            .build());
+            now.plus(RESERVATION_WINDOW),
+            now
+        ));
     }
 
     private void saveItemAndExposure(
             UUID studentId,
             UUID paperId,
             PracticeQuestionSelectionService.NextQuestionSelection selection) {
-        paperItemRepository.save(PracticePaperItem.builder()
-                .practicePaperId(paperId)
-                .practiceQuestionId(selection.question().getId())
-                .slotOrder(selection.slot())
-                .targetCriterionCode(selection.criterion())
-                .targetSubAttribute(selection.subAttribute())
-                .targetDifficultyRank(selection.targetRank())
-                .build());
+        paperItemRepository.save(PracticePaperItem.forSlot(
+                paperId,
+                selection.question().getId(),
+                selection.slot(),
+                selection.criterion(),
+                selection.subAttribute(),
+                selection.targetRank()));
         studentQuestionExposureRepository.recordExposure(studentId, selection.question().getId());
     }
 }

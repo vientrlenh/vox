@@ -56,25 +56,11 @@ public class PreviewQuestionBankImportFromFileUseCase
             throw new IllegalArgumentException("File import không được để trống");
         }
 
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        UUID schoolId = null;
-        if (!userContextPort.isSystemAdmin()) {
-            schoolId = schoolUserRepository.findByUserId(currentUserId)
-                .map(schoolUser -> schoolUser.getSchoolId())
-                .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
-        }
+        UUID schoolId = resolveSessionSchoolId();
 
         ParseImportFileResult parsed = fileProcessingPort.parse(input.file(), ImportType.QUESTION_BANK);
-        Instant now = Instant.now();
-        Instant expiresAt = now.plus(SESSION_EXPIRY_DAYS, ChronoUnit.DAYS);
-        ImportSession savedSession = importSessionRepository.save(ImportSession.previewed(
-            schoolId,
-            ImportType.QUESTION_BANK,
-            safeFileName(input.file().fileName()),
-            jsonSerializationPort.toJson(parsed.originalHeaders()),
-            jsonSerializationPort.toJson(parsed.suggestedMapping()),
-            parsed.totalRows(),
-            expiresAt));
+        Instant expiresAt = Instant.now().plus(SESSION_EXPIRY_DAYS, ChronoUnit.DAYS);
+        ImportSession savedSession = savePreviewedSession(schoolId, input, parsed, expiresAt);
         saveRows(savedSession.getId(), parsed.rows());
 
         return new PreviewImportResponse(
@@ -86,6 +72,32 @@ public class PreviewQuestionBankImportFromFileUseCase
             parsed.totalRows(),
             expiresAt.toString()
         );
+    }
+
+    private UUID resolveSessionSchoolId() {
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        UUID schoolId = null;
+        if (!userContextPort.isSystemAdmin()) {
+            schoolId = schoolUserRepository.findByUserId(currentUserId)
+                .map(schoolUser -> schoolUser.getSchoolId())
+                .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
+        }
+        return schoolId;
+    }
+
+    private ImportSession savePreviewedSession(
+            UUID schoolId,
+            PreviewQuestionBankImportFromFileCommand input,
+            ParseImportFileResult parsed,
+            Instant expiresAt) {
+        return importSessionRepository.save(ImportSession.previewed(
+            schoolId,
+            ImportType.QUESTION_BANK,
+            safeFileName(input.file().fileName()),
+            jsonSerializationPort.toJson(parsed.originalHeaders()),
+            jsonSerializationPort.toJson(parsed.suggestedMapping()),
+            parsed.totalRows(),
+            expiresAt));
     }
 
     private void saveRows(UUID sessionId, List<Map<String, String>> rows) {

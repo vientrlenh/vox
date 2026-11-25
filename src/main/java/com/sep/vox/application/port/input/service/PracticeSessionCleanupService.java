@@ -24,54 +24,75 @@ public class PracticeSessionCleanupService {
     public int cleanupStaleSessions(Instant staleBefore) {
         List<PracticeSession> stale = practiceSessionRepository.findStaleInProgress(staleBefore);
         for (PracticeSession session : stale) {
-            // Phiên rớt mạng là diện DỄ có câu dở nhất -- học sinh không tự bấm kết thúc thì
-            // gần như chắc chắn đang nói dở một câu. Không xả ở đây thì đúng nhóm cần nhất
-            // lại là nhóm mất trắng.
-            gradingFlushService.flush(session.getId());
-            // Cùng phép đo với EndPracticeSessionUseCase: CÓ NÓI hay không, chứ không phải
-            // đã chấm xong hay chưa -- xem chú thích dài ở đó để biết vì sao.
-            //
-            // Riêng ở đây có sắc thái thêm: phiên tới được job dọn nghĩa là học sinh KHÔNG
-            // tự bấm kết thúc (rớt mạng, đóng app). Nhưng nếu em ấy đã nói thật thì công sức
-            // đó vẫn phải được tính -- lượt nói đã ghi, đã chấm, đã vào hồ sơ điểm yếu.
-            boolean spoke = session.getGradedSeconds() > 0;
-            String status = spoke ? "COMPLETED" : "ABANDONED";
-            // UNKNOWN thẳng, KHÔNG gọi SessionDiagnosisPolicy.
-            //
-            // Phiên tới được job dọn nghĩa là client không kịp gửi gì -- ta không có
-            // helpRequestCount lẫn longPauseCount. Bản trước truyền 0/0 vào chính sách chẩn
-            // đoán, mà 0/0 làm hai vế hành vi của luật luôn đúng/luôn sai, nên chính sách
-            // thoái hoá thành "điểm >= 0,65 thì kết luận CHÁN". Học sinh đóng app mà chưa nói
-            // câu nào, điểm buổi TRƯỚC lại cao -> bị ghi là chán chủ đề này.
-            //
-            // Hậu quả không dừng ở một cái nhãn sai: recordSessionOutcome chỉ ghi sự kiện sở
-            // thích cho phiên dở khi diagnosis == BORED, nên mỗi lần đoán nhầm là một lần hạ
-            // điểm quan tâm của chủ đề dựa trên bằng chứng không tồn tại.
-            //
-            // Không biết thì nói không biết. UNKNOWN không sinh sự kiện nào cả.
-            String diagnosis = spoke ? null : "UNKNOWN";
-            practiceSessionRepository.save(session.closedAsStale(
-                status,
-                diagnosis,
-                session.getLastHeartbeatAt()
-            ));
-            // ĐÚNG phần việc mà EndPracticeSessionUseCase làm sau khi đóng phiên. Thiếu ở đây
-            // là thiếu với ĐA SỐ phiên, không phải trường hợp hiếm: đo trên dữ liệu thật, 4
-            // trong 5 phiên gần nhất đi qua chính đường này -- học sinh chỉ đóng app chứ không
-            // bấm "Hoàn tất". Với 4 phiên đó thì điểm quan tâm không cập nhật và không sinh
-            // chủ đề mới, nên luyện bao nhiêu buổi danh sách chủ đề vẫn đứng yên.
-            try {
-                sessionClosedHandler.afterClosed(
-                    session.getStudentId(), session.getId(), status, diagnosis
-                );
-            } catch (RuntimeException exception) {
-                // Bắt ở ĐÂY, ngoài ranh giới transaction REQUIRES_NEW của afterClosed. Bắt bên
-                // trong thì vô tác dụng: Spring vẫn ném UnexpectedRollbackException lúc commit
-                // vì transaction đã bị đánh dấu rollback-only. Đo được thật -- cả job chết,
-                // không phiên nào được đóng, chúng nằm IN_PROGRESS qua nhiều lượt chạy.
-                log.warn("Xử lý sau khi đóng phiên {} thất bại.", session.getId(), exception);
-            }
+            closeStaleSession(session);
         }
         return stale.size();
+    }
+
+    private void closeStaleSession(PracticeSession session) {
+        // A session that dropped the network is the kind MOST likely to have an unfinished question -- a student who does not
+        // press end by themselves is almost certainly in the middle of a question. Not flushing here would make
+        // exactly the group that needs it most lose everything.
+        gradingFlushService.flush(session.getId());
+        boolean spoke = session.getGradedSeconds() > 0;
+        String status = statusForStaleSession(spoke);
+        String diagnosis = diagnosisForStaleSession(spoke);
+        practiceSessionRepository.save(session.closedAsStale(
+            status,
+            diagnosis,
+            session.getLastHeartbeatAt()
+        ));
+        notifySessionClosed(session, status, diagnosis);
+    }
+
+    /**
+     * The same measure as EndPracticeSessionUseCase: whether the student SPOKE, not whether grading has finished --
+     * see the long comment there for why.
+     *
+     * <p>There is an extra nuance here: a session that reaches the cleanup job means the student did NOT press end
+     * by themselves (dropped network, closed the app). But if they really did speak, that effort must still
+     * be counted -- the turns were recorded, graded and entered the weakness profile.
+     */
+    private String statusForStaleSession(boolean spoke) {
+        return spoke ? "COMPLETED" : "ABANDONED";
+    }
+
+    /**
+     * UNKNOWN outright, do NOT call SessionDiagnosisPolicy.
+     *
+     * <p>A session that reaches the cleanup job means the client had no time to send anything -- we have neither
+     * helpRequestCount nor longPauseCount. The previous version passed 0/0 into the diagnosis policy, but 0/0 makes
+     * both behavioural sides of the rule always true / always false, so the policy degenerates into "score >= 0.65
+     * then conclude BORED". A student who closes the app before speaking a single question, with a high score from the
+     * PREVIOUS session, gets recorded as bored of this topic.
+     *
+     * <p>The consequence does not stop at a wrong label: recordSessionOutcome only writes an interest event for an
+     * unfinished session when diagnosis == BORED, so every wrong guess lowers the topic's interest score on
+     * evidence that does not exist.
+     *
+     * <p>If we do not know, say we do not know. UNKNOWN produces no event at all.
+     */
+    private String diagnosisForStaleSession(boolean spoke) {
+        return spoke ? null : "UNKNOWN";
+    }
+
+    /**
+     * EXACTLY the work that EndPracticeSessionUseCase does after closing a session. Missing it here is missing it
+     * for the MAJORITY of sessions, not a rare case: measured on real data, 4 of the 5 most recent sessions go through
+     * this very path -- the student only closes the app and does not press "Finish". For those 4 sessions the interest
+     * score is not updated and no new topic is generated, so however many sessions are practised the topic list stays put.
+     */
+    private void notifySessionClosed(PracticeSession session, String status, String diagnosis) {
+        try {
+            sessionClosedHandler.afterClosed(
+                session.getStudentId(), session.getId(), status, diagnosis
+            );
+        } catch (RuntimeException exception) {
+            // Caught HERE, outside the REQUIRES_NEW transaction boundary of afterClosed. Catching it
+            // inside is useless: Spring still throws UnexpectedRollbackException at commit
+            // because the transaction was already marked rollback-only. Really measured -- the whole job dies,
+            // no session gets closed, and they stay IN_PROGRESS across many runs.
+            log.warn("Xử lý sau khi đóng phiên {} thất bại.", session.getId(), exception);
+        }
     }
 }

@@ -36,8 +36,8 @@ public class SubscriptionPeriodGuardService {
     private final SchoolSubscriptionRepository schoolSubscriptionRepository;
 
     /**
-     * @param openAt  bỏ qua nếu null -- việc bắt buộc nhập thuộc về use case, không phải guard này
-     * @param closeAt bỏ qua nếu null, cùng lý do
+     * @param openAt  skipped when null -- making it mandatory belongs to the use case, not to this guard
+     * @param closeAt skipped when null, same reason
      */
     public void requireWithinSubscriptionPeriod(UUID schoolId, Instant openAt, Instant closeAt) {
         if (schoolId == null || (openAt == null && closeAt == null)) {
@@ -50,12 +50,17 @@ public class SubscriptionPeriodGuardService {
 
         Instant startDate = subscription.getStartDate();
         Instant endDate = subscription.getEndDate();
-        // Gói thiếu ngày là dữ liệu hỏng, không phải "không giới hạn" -- nhưng chặn ở đây sẽ làm cả
-        // trường đứng hình vì một lỗi dữ liệu người dùng cuối không sửa được.
+        // A plan without dates is corrupt data, not "unlimited" -- but blocking here would freeze the whole school
+        // over a data error the end user cannot fix.
         if (startDate == null || endDate == null) {
             return;
         }
 
+        requireInsidePeriod(subscription, startDate, endDate, openAt, closeAt);
+    }
+
+    private void requireInsidePeriod(
+            SchoolSubscription subscription, Instant startDate, Instant endDate, Instant openAt, Instant closeAt) {
         // end_date is an EXCLUSIVE bound, exactly the moment the period ends -- it matches "end_date >
         // CURRENT_TIMESTAMP" in the native queries and "endDate > :at" in findInForceBySchoolId.
         //

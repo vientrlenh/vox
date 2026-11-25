@@ -42,6 +42,14 @@ public class GradingDeadlineReminderJob {
         // The cutoff is fixed ONCE for the whole run: recomputing it per batch would make the window drift and
         // pull in assignments that are not yet due for a reminder.
         Instant threshold = Instant.now().plus(Duration.ofHours(REMIND_BEFORE_HOURS));
+        int total = remindInBatches(threshold);
+
+        if (total > 0) {
+            log.info("Đã gửi nhắc hạn chấm cho {} phân công", total);
+        }
+    }
+
+    private int remindInBatches(Instant threshold) {
         int total = 0;
 
         for (int pass = 0; pass < MAX_PASSES_PER_RUN; pass++) {
@@ -60,8 +68,6 @@ public class GradingDeadlineReminderJob {
             total += reminded;
         }
 
-        if (total > 0) {
-            log.info("Đã gửi nhắc hạn chấm cho {} phân công", total);
-        }
+        return total;
     }
 }

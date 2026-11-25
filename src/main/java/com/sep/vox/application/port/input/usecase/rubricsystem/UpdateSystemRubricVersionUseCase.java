@@ -42,15 +42,46 @@ public class UpdateSystemRubricVersionUseCase
     @Override
     @Transactional
     public UUID execute(UpdateSystemRubricVersionCommand command) {
-        // 1. Authenticate the System Admin account
+        requireActiveCurrentUser();
+        RubricVersion version = loadDraftVersionOfSystemRubric(command.versionId());
+
+        String safeName = normalizeRequiredText(
+                command.name(),
+                "Tên phiên bản Rubric không được để trống."
+        );
+
+        boolean descriptionBlank = isBlankDescription(command.description());
+        boolean descriptionProvided = command.descriptionProvided() && !descriptionBlank;
+        String safeDescription = (command.description() != null && !descriptionBlank)
+                ? StringNormalization.trimAndCollapseSpaces(command.description())
+                : null;
+
+        requireValidEffectivePeriod(command, version);
+        requireValidScoringScale(command, version);
+
+        updateVersionAtomically(command, safeName, safeDescription, descriptionProvided);
+
+        return command.versionId();
+    }
+
+    // Empty (null or blank) is treated as unchanged -- keep the old description (SQL COALESCE),
+    // consistent with UpdateSystemRubricCriterionUseCase/UpdateSystemRubricResultBandUseCase. It used
+    // to use normalizeRequiredText(), which required a description, contradicting the partial update
+    // of the other fields of the version. A blank description keeps the stored one; an explicit null clears it.
+    private boolean isBlankDescription(String description) {
+        return description != null && description.isBlank();
+    }
+
+    private void requireActiveCurrentUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
         }
+    }
 
-        // 2. Load the Rubric Version and check its status
-        RubricVersion version = rubricVersionRepository.findById(command.versionId())
+    private RubricVersion loadDraftVersionOfSystemRubric(UUID versionId) {
+        RubricVersion version = rubricVersionRepository.findById(versionId)
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Không tìm thấy Rubric Version.")
                 );
@@ -61,7 +92,6 @@ public class UpdateSystemRubricVersionUseCase
             );
         }
 
-        // 3. Check that the Rubric belongs to SYSTEM
         Rubric rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc.")
@@ -72,29 +102,13 @@ public class UpdateSystemRubricVersionUseCase
                     "Hành động bị từ chối: Rubric này thuộc về Trường học."
             );
         }
+        return version;
+    }
 
-        // 4. Normalize and validate the data.
-
-
-        String safeName = normalizeRequiredText(
-                command.name(),
-                "Tên phiên bản Rubric không được để trống."
-        );
-
-        // Empty (null or blank) is treated as unchanged -- keep the old description (SQL COALESCE),
-        // consistent with UpdateSystemRubricCriterionUseCase/UpdateSystemRubricResultBandUseCase. It used
-        // to use normalizeRequiredText(), which required a description, contradicting the "partial update"
-        // comment right below for the other fields of the version.
-        // A blank description keeps the stored one; an explicit null clears it.
-        boolean descriptionBlank = command.description() != null && command.description().isBlank();
-        boolean descriptionProvided = command.descriptionProvided() && !descriptionBlank;
-        String safeDescription = (command.description() != null && !descriptionBlank)
-                ? StringNormalization.trimAndCollapseSpaces(command.description())
-                : null;
-
-        // Partial update: any field that is not passed (null) keeps the current value of the version
-        // (updateRubricVersionAtomic uses COALESCE(:param, v.field) at the SQL layer), except effectiveTo,
-        // which is cleared by an explicit null.
+    // Partial update: any field that is not passed (null) keeps the current value of the version
+    // (updateRubricVersionAtomic uses COALESCE(:param, v.field) at the SQL layer), except effectiveTo,
+    // which is cleared by an explicit null.
+    private void requireValidEffectivePeriod(UpdateSystemRubricVersionCommand command, RubricVersion version) {
         Instant finalEffectiveFrom = command.effectiveFrom() != null
                 ? command.effectiveFrom() : version.getEffectiveFrom();
 
@@ -107,7 +121,9 @@ public class UpdateSystemRubricVersionUseCase
                     "Ngày bắt đầu hiệu lực không được lớn hơn ngày kết thúc hiệu lực."
             );
         }
+    }
 
+    private void requireValidScoringScale(UpdateSystemRubricVersionCommand command, RubricVersion version) {
         BigDecimal finalScoreMin = command.scoringScaleMin() != null
                 ? command.scoringScaleMin() : version.getScoringScaleMin();
 
@@ -127,14 +143,16 @@ public class UpdateSystemRubricVersionUseCase
         rubricCriterionRepository.findByRubricVersionId(command.versionId()).forEach(criterion ->
                 ScoreRangeValidator.assertWithinScale(finalScoreMin, finalScoreMax,
                         criterion.getMinScore(), criterion.getMaxScore(), criterion.getName()));
+    }
 
+    // Passes null for the code to keep the old code. For the fields that support partial updates
+    // (effectiveFrom/scoringScaleMin/scoringScaleMax), the original value (possibly null) goes straight from
+    // the command so the SQL COALESCE keeps the value currently in the DB at the time of the update -- this
+    // avoids overwriting with the `version` snapshot read earlier (a lost update when another request updates
+    // these fields concurrently). The merged values are only used to validate business rules.
+    private void updateVersionAtomically(UpdateSystemRubricVersionCommand command, String safeName,
+                                         String safeDescription, boolean descriptionProvided) {
         String safeMethod = command.totalScoreMethod() == null ? null : command.totalScoreMethod().name();
-        // 5. Atomic update: pass null for the code to keep the old code. For the fields that support
-        // partial updates (effectiveFrom/scoringScaleMin/scoringScaleMax), pass the original value
-        // (possibly null) straight from the command so the SQL COALESCE keeps the value currently in the DB at the
-        // time of the update -- this avoids overwriting with the `version` snapshot read earlier (a lost update when
-        // another request updates these fields concurrently). finalEffectiveFrom/finalEffectiveTo/finalScoreMin/
-        // finalScoreMax are still used above to validate business rules against the values after merging.
         try {
             rubricVersionRepository.updateRubricVersionAtomic(
                     command.versionId(),
@@ -154,8 +172,6 @@ public class UpdateSystemRubricVersionUseCase
                     "Không thể cập nhật Rubric Version do dữ liệu bị trùng hoặc không hợp lệ."
             );
         }
-
-        return command.versionId();
     }
 
     private String normalizeRequiredText(String value, String errorMessage) {

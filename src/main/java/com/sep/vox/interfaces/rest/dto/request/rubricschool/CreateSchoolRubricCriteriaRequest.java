@@ -44,7 +44,32 @@ public record CreateSchoolRubricCriteriaRequest(
 
             @NotNull(message = "Cờ bắt buộc (Is Required) không được để trống")
             Boolean isRequired
-    ) {}
+    ) {
+        private CreateSchoolRubricCriteriaCommand.CriterionItemCommand asCriterionItemCommand() {
+            return new CreateSchoolRubricCriteriaCommand.CriterionItemCommand(
+                    frameworkCriterionId,
+                    code,
+                    name,
+                    description,
+                    asExampleCommands(),
+                    weight,
+                    minScore,
+                    maxScore,
+                    order,
+                    isRequired
+            );
+        }
+
+        private List<CreateSchoolRubricCriteriaCommand.CriterionExampleCommand> asExampleCommands() {
+            if (examples == null) {
+                return null;
+            }
+            return examples.stream()
+                    .map(example -> new CreateSchoolRubricCriteriaCommand.CriterionExampleCommand(
+                            example.transcript(), example.explanation(), example.expectedScore()
+                    )).toList();
+        }
+    }
 
     // BỔ SUNG RECORD CHO EXAMPLE
     public record CriterionExampleRequest(
@@ -61,29 +86,8 @@ public record CreateSchoolRubricCriteriaRequest(
     public static CreateSchoolRubricCriteriaCommand toCommand(UUID schoolId, UUID versionId, CreateSchoolRubricCriteriaRequest request) {
 
         List<CreateSchoolRubricCriteriaCommand.CriterionItemCommand> criteriaCommands = request.criteria().stream()
-                .map(c -> {
-                    // Map the list of examples
-                    List<CreateSchoolRubricCriteriaCommand.CriterionExampleCommand> exampleCommands = null;
-                    if (c.examples() != null) {
-                        exampleCommands = c.examples().stream()
-                                .map(ex -> new CreateSchoolRubricCriteriaCommand.CriterionExampleCommand(
-                                        ex.transcript(), ex.explanation(), ex.expectedScore()
-                                )).toList();
-                    }
-
-                    return new CreateSchoolRubricCriteriaCommand.CriterionItemCommand(
-                            c.frameworkCriterionId(),
-                            c.code(),
-                            c.name(),
-                            c.description(),
-                            exampleCommands, // pass the examples in here
-                            c.weight(),
-                            c.minScore(),
-                            c.maxScore(),
-                            c.order(),
-                            c.isRequired()
-                    );
-                }).toList();
+                .map(CriterionItemRequest::asCriterionItemCommand)
+                .toList();
 
         return new CreateSchoolRubricCriteriaCommand(schoolId, versionId, criteriaCommands);
     }

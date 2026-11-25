@@ -66,6 +66,11 @@ public class PreviewSchoolClassImportFromFileUseCase implements IUseCase<Preview
         ImportSession savedSession = importSessionRepository.save(createSession(input, parsed, schoolId, currentUserId, now, expiresAt));
         saveRows(savedSession.getId(), parsed);
 
+        return toPreviewResponse(savedSession, input, parsed, expiresAt);
+    }
+
+    private PreviewSchoolClassImportResponse toPreviewResponse(
+            ImportSession savedSession, PreviewSchoolClassImportFromFileCommand input, ParseImportFileResult parsed, Instant expiresAt) {
         return new PreviewSchoolClassImportResponse(
             savedSession.getId(),
             safeFileName(input.file().fileName()),

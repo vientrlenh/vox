@@ -20,7 +20,6 @@ import com.sep.vox.domain.model.importfile.ImportRowStatus;
 import com.sep.vox.domain.model.importfile.ImportSession;
 import com.sep.vox.domain.model.importfile.ImportType;
 import com.sep.vox.domain.model.question.QuestionTopic;
-import com.sep.vox.domain.model.question.QuestionTopicStatus;
 import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.QuestionTopicRepository;
 
@@ -51,88 +50,111 @@ public class QuestionTopicImportCommitHandler implements ImportCommitHandler {
 
     @Override
     public ImportCommitResult commit(ImportSession session, List<ImportRow> rows) {
+        UUID questionBankId = requirePinnedQuestionBankId(session);
+        // Reject a duplicate code inside the file: two rows with the same code in one save pass would
+        // let the later row silently overwrite the earlier one, and the user would not know data was lost.
+        CommitScope scope = new CommitScope(questionBankId, resolveMapping(session), loadExistingByCode(questionBankId),
+            new HashSet<String>(), new ArrayList<QuestionTopic>());
+
+        long importedCount = 0;
+        long invalidCount = 0;
+        for (ImportRow row : rows) {
+            if (row.getStatus() != ImportRowStatus.PENDING) {
+                continue;
+            }
+            if (commitRow(row, scope)) {
+                importedCount++;
+            } else {
+                invalidCount++;
+            }
+        }
+
+        for (QuestionTopic topic : scope.toSave()) {
+            questionTopicRepository.save(topic);
+        }
+        return new ImportCommitResult(importedCount, 0, 0, invalidCount);
+    }
+
+    private UUID requirePinnedQuestionBankId(ImportSession session) {
         UUID questionBankId = session.getImportedEntityId();
         if (questionBankId == null) {
             throw new ResourceNotFoundException("Phiên import không ghim ngân hàng câu hỏi đích");
         }
         questionBankRepository.findById(questionBankId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi khi xử lý ngầm"));
+        return questionBankId;
+    }
 
-        Map<String, String> mapping = resolveMapping(session);
-
+    private Map<String, QuestionTopic> loadExistingByCode(UUID questionBankId) {
         Map<String, QuestionTopic> existingByCode = new HashMap<String, QuestionTopic>();
         for (QuestionTopic topic : questionTopicRepository.findByQuestionBankId(questionBankId)) {
             existingByCode.putIfAbsent(normalizeCode(topic.getCode()), topic);
         }
+        return existingByCode;
+    }
 
-        List<QuestionTopic> toSave = new ArrayList<QuestionTopic>();
-        // Chặn trùng code ngay TRONG file: hai dòng cùng code mà cùng lượt lưu thì dòng sau ghi đè
-        // dòng trước một cách âm thầm, người dùng không biết mình mất dữ liệu.
-        Set<String> codesInThisFile = new HashSet<String>();
-        long importedCount = 0;
-        long invalidCount = 0;
+    private record CommitScope(
+        UUID questionBankId,
+        Map<String, String> mapping,
+        Map<String, QuestionTopic> existingByCode,
+        Set<String> codesInThisFile,
+        List<QuestionTopic> toSave
+    ) {
+    }
 
-        for (ImportRow row : rows) {
-            if (row.getStatus() != ImportRowStatus.PENDING) {
-                continue;
+    /** Returns true when the row was imported, false when it was marked invalid. */
+    private boolean commitRow(ImportRow row, CommitScope scope) {
+        List<Map<String, String>> errors = new ArrayList<Map<String, String>>();
+        try {
+            Map<String, String> mappedData = mapRow(row, scope.mapping());
+            String code = StringNormalization.normalizeCode(mappedData.get("code"));
+            String name = StringNormalization.trimAndCollapseSpaces(mappedData.get("name"));
+            String description = StringNormalization.trimAndCollapseSpaces(mappedData.get("description"));
+            validateRequiredFields(code, name, scope.codesInThisFile(), errors);
+
+            if (!errors.isEmpty()) {
+                markInvalid(row, errors);
+                return false;
             }
 
-            List<Map<String, String>> errors = new ArrayList<Map<String, String>>();
-            try {
-                Map<String, String> mappedData = mapRow(row, mapping);
-                String code = StringNormalization.normalizeCode(mappedData.get("code"));
-                String name = StringNormalization.trimAndCollapseSpaces(mappedData.get("name"));
-                String description = StringNormalization.trimAndCollapseSpaces(mappedData.get("description"));
-
-                if (isBlank(code)) {
-                    errors.add(error("code", "Thiếu mã chủ đề."));
-                }
-                if (isBlank(name)) {
-                    errors.add(error("name", "Thiếu tên chủ đề."));
-                }
-                if (errors.isEmpty() && !codesInThisFile.add(normalizeCode(code))) {
-                    errors.add(error("code", "Mã chủ đề '" + code + "' bị lặp ngay trong file."));
-                }
-
-                if (!errors.isEmpty()) {
-                    row.setStatus(ImportRowStatus.INVALID);
-                    row.setErrorsJson(jsonSerializationPort.toJson(errors));
-                    invalidCount++;
-                    continue;
-                }
-
-                QuestionTopic existing = existingByCode.get(normalizeCode(code));
-                if (existing != null) {
-                    existing.setName(name);
-                    if (!isBlank(description)) {
-                        existing.setDescription(description);
-                    }
-                    toSave.add(existing);
-                } else {
-                    toSave.add(QuestionTopic.builder()
-                            .questionBankId(questionBankId)
-                            .code(code)
-                            .name(name)
-                            .description(description)
-                            .status(QuestionTopicStatus.DRAFT)
-                            .build());
-                }
-
-                row.setStatus(ImportRowStatus.IMPORTED);
-                row.setMappedDataJson(jsonSerializationPort.toJson(mappedData));
-                importedCount++;
-            } catch (Exception ex) {
-                errors.add(error("general", "Lỗi xử lý luồng ngầm: " + ex.getMessage()));
-                row.setStatus(ImportRowStatus.INVALID);
-                row.setErrorsJson(jsonSerializationPort.toJson(errors));
-                invalidCount++;
-            }
+            scope.toSave().add(applyToTopic(scope, code, name, description));
+            row.setStatus(ImportRowStatus.IMPORTED);
+            row.setMappedDataJson(jsonSerializationPort.toJson(mappedData));
+            return true;
+        } catch (Exception ex) {
+            errors.add(error("general", "Lỗi xử lý luồng ngầm: " + ex.getMessage()));
+            markInvalid(row, errors);
+            return false;
         }
+    }
 
-        for (QuestionTopic topic : toSave) {
-            questionTopicRepository.save(topic);
+    private void validateRequiredFields(String code, String name, Set<String> codesInThisFile, List<Map<String, String>> errors) {
+        if (isBlank(code)) {
+            errors.add(error("code", "Thiếu mã chủ đề."));
         }
-        return new ImportCommitResult(importedCount, 0, 0, invalidCount);
+        if (isBlank(name)) {
+            errors.add(error("name", "Thiếu tên chủ đề."));
+        }
+        if (errors.isEmpty() && !codesInThisFile.add(normalizeCode(code))) {
+            errors.add(error("code", "Mã chủ đề '" + code + "' bị lặp ngay trong file."));
+        }
+    }
+
+    private void markInvalid(ImportRow row, List<Map<String, String>> errors) {
+        row.setStatus(ImportRowStatus.INVALID);
+        row.setErrorsJson(jsonSerializationPort.toJson(errors));
+    }
+
+    private QuestionTopic applyToTopic(CommitScope scope, String code, String name, String description) {
+        QuestionTopic existing = scope.existingByCode().get(normalizeCode(code));
+        if (existing == null) {
+            return QuestionTopic.draft(scope.questionBankId(), code, name, description);
+        }
+        existing.setName(name);
+        if (!isBlank(description)) {
+            existing.setDescription(description);
+        }
+        return existing;
     }
 
     private Map<String, String> resolveMapping(ImportSession session) {

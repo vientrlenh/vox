@@ -14,45 +14,48 @@ import jakarta.persistence.PersistenceContext;
 @Repository
 public class JpaPlatformBusinessHealthQueryRepository implements PlatformBusinessHealthQueryRepository {
 
+    /**
+     * Aggregates to ONE ROW PER SCHOOL first and only then counts, instead of counting straight on the
+     * subscription-period table: a school has several periods in its history, so counting by row both double-counts
+     * and puts a school that is using the service fine into the "expired" group just because last year's period
+     * has ended.
+     *
+     * <p>{@code COALESCE} wraps each {@code BOOL_OR}: this function returns NULL when no row matches the filter,
+     * and {@code NOT NULL} is NULL rather than TRUE -- without it the "lapsed" group silently misses exactly the
+     * schools that never had an ACTIVE period.
+     */
+    private static final String SCHOOL_SUBSCRIPTION_HEALTH_SQL = """
+        WITH school_state AS (
+            SELECT
+                school_id,
+                COALESCE(BOOL_OR(
+                    status IN ('ACTIVE', 'CANCELLED')
+                    AND start_date <= :nowInstant
+                    AND end_date >= :nowInstant
+                ), FALSE) AS covered,
+                COALESCE(BOOL_OR(status = 'SUSPENDED'), FALSE) AS suspended,
+                MIN(end_date) FILTER (WHERE
+                    status IN ('ACTIVE', 'CANCELLED')
+                    AND start_date <= :nowInstant
+                    AND end_date >= :nowInstant
+                ) AS covering_end_date
+            FROM school_subscriptions
+            GROUP BY school_id
+        )
+        SELECT
+            COUNT(*) FILTER (WHERE covered),
+            COUNT(*) FILTER (WHERE covered AND covering_end_date <= :expiringThrough),
+            COUNT(*) FILTER (WHERE NOT covered AND NOT suspended),
+            COUNT(*) FILTER (WHERE NOT covered AND suspended)
+        FROM school_state
+        """;
+
     @PersistenceContext
     private EntityManager em;
 
-    /**
-     * Gộp về MỘT DÒNG MỖI TRƯỜNG trước rồi mới đếm, chứ không đếm thẳng trên bảng kỳ thuê bao: một
-     * trường có nhiều kỳ trong lịch sử, nên đếm theo dòng vừa cộng trùng, vừa xếp trường đang dùng
-     * tốt vào nhóm "hết hạn" chỉ vì kỳ năm ngoái đã hết.
-     *
-     * <p>{@code COALESCE} bọc từng {@code BOOL_OR}: hàm này trả NULL khi không có dòng nào khớp bộ
-     * lọc, và {@code NOT NULL} là NULL chứ không phải TRUE — thiếu nó thì nhóm "lapsed" âm thầm bỏ
-     * sót đúng những trường chưa từng có kỳ ACTIVE nào.
-     */
     @Override
     public SchoolSubscriptionHealthDto countSchoolSubscriptionHealth(Instant now, Instant expiringThrough) {
-        Object[] row = (Object[]) em.createNativeQuery("""
-            WITH school_state AS (
-                SELECT
-                    school_id,
-                    COALESCE(BOOL_OR(
-                        status IN ('ACTIVE', 'CANCELLED')
-                        AND start_date <= :nowInstant
-                        AND end_date >= :nowInstant
-                    ), FALSE) AS covered,
-                    COALESCE(BOOL_OR(status = 'SUSPENDED'), FALSE) AS suspended,
-                    MIN(end_date) FILTER (WHERE
-                        status IN ('ACTIVE', 'CANCELLED')
-                        AND start_date <= :nowInstant
-                        AND end_date >= :nowInstant
-                    ) AS covering_end_date
-                FROM school_subscriptions
-                GROUP BY school_id
-            )
-            SELECT
-                COUNT(*) FILTER (WHERE covered),
-                COUNT(*) FILTER (WHERE covered AND covering_end_date <= :expiringThrough),
-                COUNT(*) FILTER (WHERE NOT covered AND NOT suspended),
-                COUNT(*) FILTER (WHERE NOT covered AND suspended)
-            FROM school_state
-            """)
+        Object[] row = (Object[]) em.createNativeQuery(SCHOOL_SUBSCRIPTION_HEALTH_SQL)
             .setParameter("nowInstant", now)
             .setParameter("expiringThrough", expiringThrough)
             .getSingleResult();
@@ -83,7 +86,7 @@ public class JpaPlatformBusinessHealthQueryRepository implements PlatformBusines
         return total == null ? BigDecimal.ZERO : new BigDecimal(total.toString());
     }
 
-    /** COUNT về đây có thể là {@code Long} hoặc {@code BigInteger} tùy phiên bản driver/Hibernate. */
+    /** COUNT arrives here as either {@code Long} or {@code BigInteger}, depending on the driver/Hibernate version. */
     private static long toLong(Object value) {
         return value == null ? 0L : ((Number) value).longValue();
     }

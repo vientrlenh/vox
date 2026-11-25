@@ -7,6 +7,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.jspecify.annotations.Nullable;
 import org.springframework.kafka.annotation.BackOff;
 import org.springframework.kafka.annotation.DltHandler;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -44,43 +45,14 @@ public class AiUsageRecordedConsumer {
     )
     public void consume(ConsumerRecord<String, Object> record, Acknowledgment ack) {
         try {
-            JsonNode payload = jsonMapper.valueToTree(record.value());
-            AiUsageRecordedEventDto event = jsonMapper.treeToValue(payload, AiUsageRecordedEventDto.class);
+            AiUsageRecordedEventDto event = readEvent(record);
 
-            log.info("Receive AI usage event topic={} partition={} offset={} turnId={}",
-                record.topic(), record.partition(), record.offset(), event == null ? null : event.turnId());
-
-            if (event == null || event.usageEvents() == null || event.usageEvents().isEmpty()) {
-                ack.acknowledge();
-                return;
-            }
-            if (event.eventType() != null && !"AiUsageRecorded".equals(event.eventType())) {
+            if (hasNothingToRecord(event)) {
                 ack.acknowledge();
                 return;
             }
 
-            UUID assessmentSessionId = parseUuid(event.assessmentSessionId(), "assessmentSessionId");
-            UUID turnId = parseUuid(event.turnId(), "turnId");
-
-            for (AiUsageRecordedEventDto.AiUsageEventItemDto item : event.usageEvents()) {
-                AiUsageRecordedEventDto.AiUsageTokensDto usage = item.usage();
-                recordAiUsageUseCase.execute(new RecordAiUsageCommand(
-                    assessmentSessionId,
-                    turnId,
-                    parseUuid(item.usageEventId(), "usageEventId"),
-                    parseUsageType(item.type()),
-                    item.provider(),
-                    item.model(),
-                    usage == null ? null : usage.inputTokens(),
-                    usage == null ? null : usage.outputTokens(),
-                    usage == null ? null : usage.cacheCreationInputTokens(),
-                    usage == null ? null : usage.cacheReadInputTokens(),
-                    item.durationMs(),
-                    item.unitPrice() == null ? "{}" : jsonMapper.writeValueAsString(item.unitPrice()),
-                    item.costUsd(),
-                    parseOccurredAt(item.occurredAt())
-                ));
-            }
+            recordUsageEvents(event);
 
             ack.acknowledge();
         } catch (Exception e) {
@@ -89,6 +61,52 @@ public class AiUsageRecordedConsumer {
                 ? runtimeException
                 : new IllegalStateException("Failed to process AI usage event", e);
         }
+    }
+
+    private @Nullable AiUsageRecordedEventDto readEvent(ConsumerRecord<String, Object> record) {
+        JsonNode payload = jsonMapper.valueToTree(record.value());
+        AiUsageRecordedEventDto event = jsonMapper.treeToValue(payload, AiUsageRecordedEventDto.class);
+
+        log.info("Receive AI usage event topic={} partition={} offset={} turnId={}",
+            record.topic(), record.partition(), record.offset(), event == null ? null : event.turnId());
+        return event;
+    }
+
+    private boolean hasNothingToRecord(@Nullable AiUsageRecordedEventDto event) {
+        if (event == null || event.usageEvents() == null || event.usageEvents().isEmpty()) {
+            return true;
+        }
+        return event.eventType() != null && !"AiUsageRecorded".equals(event.eventType());
+    }
+
+    private void recordUsageEvents(AiUsageRecordedEventDto event) {
+        UUID assessmentSessionId = parseUuid(event.assessmentSessionId(), "assessmentSessionId");
+        UUID turnId = parseUuid(event.turnId(), "turnId");
+
+        for (AiUsageRecordedEventDto.AiUsageEventItemDto item : event.usageEvents()) {
+            recordAiUsageUseCase.execute(toRecordCommand(assessmentSessionId, turnId, item));
+        }
+    }
+
+    private RecordAiUsageCommand toRecordCommand(
+            UUID assessmentSessionId, UUID turnId, AiUsageRecordedEventDto.AiUsageEventItemDto item) {
+        AiUsageRecordedEventDto.AiUsageTokensDto usage = item.usage();
+        return new RecordAiUsageCommand(
+            assessmentSessionId,
+            turnId,
+            parseUuid(item.usageEventId(), "usageEventId"),
+            parseUsageType(item.type()),
+            item.provider(),
+            item.model(),
+            usage == null ? null : usage.inputTokens(),
+            usage == null ? null : usage.outputTokens(),
+            usage == null ? null : usage.cacheCreationInputTokens(),
+            usage == null ? null : usage.cacheReadInputTokens(),
+            item.durationMs(),
+            item.unitPrice() == null ? "{}" : jsonMapper.writeValueAsString(item.unitPrice()),
+            item.costUsd(),
+            parseOccurredAt(item.occurredAt())
+        );
     }
 
     @DltHandler

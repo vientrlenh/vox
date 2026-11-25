@@ -67,6 +67,11 @@ public class UpdateFrameworkCriterionUseCase
         if (!criterion.getFrameworkVersionId().equals(command.versionId()))
             throw new IllegalArgumentException("Tiêu chí không thuộc phiên bản này");
 
+        requireValidUniqueCode(command);
+        requireOrderKeepsSequenceContinuous(command);
+    }
+
+    private void requireValidUniqueCode(UpdateFrameworkCriterionCommand command) {
         String safeCode = StringNormalization.normalizeCode(command.code());
         if (!FrameworkCriterionCode.ALLOWED_CODES.contains(safeCode)) {
             throw new IllegalArgumentException("Mã tiêu chí không hợp lệ: " + safeCode);
@@ -74,7 +79,9 @@ public class UpdateFrameworkCriterionUseCase
         if (frameworkCriterionRepository.existsByFrameworkVersionIdAndCodeAndIdNot(command.versionId(), safeCode, command.criterionId())) {
             throw new IllegalArgumentException("Mã tiêu chí đã tồn tại");
         }
+    }
 
+    private void requireOrderKeepsSequenceContinuous(UpdateFrameworkCriterionCommand command) {
         Set<Integer> otherOrders = frameworkCriterionRepository.findByFrameworkVersionId(command.versionId())
                 .stream()
                 .filter(fc -> !fc.getId().equals(command.criterionId()))

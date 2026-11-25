@@ -20,8 +20,44 @@ import jakarta.persistence.TypedQuery;
 @Repository
 public class JpaAssessmentDirectoryQueryRepository implements AssessmentDirectoryQueryRepository {
 
-    /** Trần size để một client gõ `size: 100000` không kéo cả trường về. */
+    /** Size cap, so a client typing `size: 100000` cannot pull a whole school. */
     private static final int MAX_PAGE_SIZE = 100;
+
+    private static final String SCHOOL_USER_FILTER = """
+        FROM SchoolUserJpaEntity su
+        JOIN UserJpaEntity u
+            ON u.id = su.userId
+        WHERE su.schoolId = :schoolId
+          AND u.status = 'ACTIVE'
+          AND EXISTS (
+              SELECT 1 FROM UserRoleJpaEntity ur
+              JOIN RoleJpaEntity r ON r.id = ur.roleId
+              WHERE ur.userId = u.id AND r.code = :roleCode)
+          AND (:pattern IS NULL
+              OR vn_search_key(u.fullName) LIKE :pattern
+              OR vn_search_key(u.email) LIKE :pattern)
+        """;
+
+    /**
+     * Classes are filtered with EXISTS rather than JOIN: a student enrolled in several classes of the set would be
+     * multiplied by a JOIN, corrupting both the page content and totalElements.
+     */
+    private static final String CLASS_USER_FILTER = """
+        FROM UserJpaEntity u
+        WHERE u.status = 'ACTIVE'
+          AND EXISTS (
+              SELECT 1 FROM SchoolClassUserJpaEntity scu
+              WHERE scu.userId = u.id
+                AND scu.schoolClassId IN :schoolClassIds
+                AND scu.isActive = true)
+          AND EXISTS (
+              SELECT 1 FROM UserRoleJpaEntity ur
+              JOIN RoleJpaEntity r ON r.id = ur.roleId
+              WHERE ur.userId = u.id AND r.code = :roleCode)
+          AND (:pattern IS NULL
+              OR vn_search_key(u.fullName) LIKE :pattern
+              OR vn_search_key(u.email) LIKE :pattern)
+        """;
 
     @PersistenceContext
     private EntityManager em;
@@ -57,30 +93,14 @@ public class JpaAssessmentDirectoryQueryRepository implements AssessmentDirector
             Collection<UUID> excludeUserIds, int page, int size) {
         String pattern = likePattern(search);
         List<UUID> excluded = normalizeExclusions(excludeUserIds);
-        String filter = """
-            FROM SchoolUserJpaEntity su
-            JOIN UserJpaEntity u
-                ON u.id = su.userId
-            WHERE su.schoolId = :schoolId
-              AND u.status = 'ACTIVE'
-              AND EXISTS (
-                  SELECT 1 FROM UserRoleJpaEntity ur
-                  JOIN RoleJpaEntity r ON r.id = ur.roleId
-                  WHERE ur.userId = u.id AND r.code = :roleCode)
-              AND (:pattern IS NULL
-                  OR vn_search_key(u.fullName) LIKE :pattern
-                  OR vn_search_key(u.email) LIKE :pattern)
-            """ + excludeClause(excluded);
+        String filter = SCHOOL_USER_FILTER + excludeClause(excluded);
 
-        TypedQuery<AssessmentDirectoryUserInfo> contentQuery = em.createQuery("""
-            SELECT new com.sep.vox.application.query.dto.AssessmentDirectoryUserInfo(
-                su.userId, u.fullName, u.email, u.status)
-            """ + filter + " ORDER BY u.fullName ASC, u.email ASC", AssessmentDirectoryUserInfo.class)
+        TypedQuery<AssessmentDirectoryUserInfo> contentQuery = userContentQuery("su.userId", filter)
             .setParameter("schoolId", schoolId)
             .setParameter("roleCode", roleCode)
             .setParameter("pattern", pattern);
 
-        TypedQuery<Long> countQuery = em.createQuery("SELECT COUNT(su) " + filter, Long.class)
+        TypedQuery<Long> countQuery = userCountQuery("su", filter)
             .setParameter("schoolId", schoolId)
             .setParameter("roleCode", roleCode)
             .setParameter("pattern", pattern);
@@ -100,40 +120,32 @@ public class JpaAssessmentDirectoryQueryRepository implements AssessmentDirector
 
         String pattern = likePattern(search);
         List<UUID> excluded = normalizeExclusions(excludeUserIds);
-        // Filter classes with EXISTS rather than JOIN: a student enrolled in several classes of the set would be
-        // multiplied by a JOIN, corrupting both the page content and totalElements.
-        String filter = """
-            FROM UserJpaEntity u
-            WHERE u.status = 'ACTIVE'
-              AND EXISTS (
-                  SELECT 1 FROM SchoolClassUserJpaEntity scu
-                  WHERE scu.userId = u.id
-                    AND scu.schoolClassId IN :schoolClassIds
-                    AND scu.isActive = true)
-              AND EXISTS (
-                  SELECT 1 FROM UserRoleJpaEntity ur
-                  JOIN RoleJpaEntity r ON r.id = ur.roleId
-                  WHERE ur.userId = u.id AND r.code = :roleCode)
-              AND (:pattern IS NULL
-                  OR vn_search_key(u.fullName) LIKE :pattern
-                  OR vn_search_key(u.email) LIKE :pattern)
-            """ + excludeClause(excluded);
+        String filter = CLASS_USER_FILTER + excludeClause(excluded);
 
-        TypedQuery<AssessmentDirectoryUserInfo> contentQuery = em.createQuery("""
-            SELECT new com.sep.vox.application.query.dto.AssessmentDirectoryUserInfo(
-                u.id, u.fullName, u.email, u.status)
-            """ + filter + " ORDER BY u.fullName ASC, u.email ASC", AssessmentDirectoryUserInfo.class)
+        TypedQuery<AssessmentDirectoryUserInfo> contentQuery = userContentQuery("u.id", filter)
             .setParameter("schoolClassIds", schoolClassIds)
             .setParameter("roleCode", roleCode)
             .setParameter("pattern", pattern);
 
-        TypedQuery<Long> countQuery = em.createQuery("SELECT COUNT(u) " + filter, Long.class)
+        TypedQuery<Long> countQuery = userCountQuery("u", filter)
             .setParameter("schoolClassIds", schoolClassIds)
             .setParameter("roleCode", roleCode)
             .setParameter("pattern", pattern);
 
         bindExclusions(contentQuery, countQuery, excluded);
         return paginate(contentQuery, countQuery, page, size);
+    }
+
+    private TypedQuery<AssessmentDirectoryUserInfo> userContentQuery(String idExpression, String filter) {
+        return em.createQuery(
+            "SELECT new com.sep.vox.application.query.dto.AssessmentDirectoryUserInfo("
+                + idExpression + ", u.fullName, u.email, u.status) "
+                + filter + " ORDER BY u.fullName ASC, u.email ASC",
+            AssessmentDirectoryUserInfo.class);
+    }
+
+    private TypedQuery<Long> userCountQuery(String alias, String filter) {
+        return em.createQuery("SELECT COUNT(" + alias + ") " + filter, Long.class);
     }
 
     /** `page` arrives here 1-based; setFirstResult is the 0-based one. */
@@ -163,10 +175,10 @@ public class JpaAssessmentDirectoryQueryRepository implements AssessmentDirector
     }
 
     /**
-     * Ghép mệnh đề loại trừ vào ĐÚNG một chuỗi filter mà cả câu lấy dữ liệu lẫn câu COUNT dùng
-     * chung — hai câu lệch điều kiện là nguồn gốc của "trang trống mà số đếm khác 0".
+     * Appends the exclusion clause to the ONE filter string that both the data query and the COUNT query share --
+     * two queries with different conditions are the source of "empty page but the count is not 0".
      *
-     * <p>Tập rỗng thì không ghép gì: {@code IN ()} không hợp lệ ở JPQL.
+     * <p>An empty set appends nothing: {@code IN ()} is not valid in JPQL.
      */
     private static String excludeClause(List<UUID> excluded) {
         return excluded.isEmpty() ? "" : "  AND u.id NOT IN :excludeUserIds\n";
@@ -181,8 +193,8 @@ public class JpaAssessmentDirectoryQueryRepository implements AssessmentDirector
     }
 
     /**
-     * Từ khoá phải bỏ dấu đúng như cột đang được so (hàm SQL {@code vn_search_key}), nếu không thì
-     * gõ không dấu "nguyen van an" sẽ không khớp "Nguyễn Văn An" — xem {@link VnSearchKey}.
+     * The keyword must be stripped of diacritics exactly like the column being compared (the SQL function
+     * {@code vn_search_key}), otherwise typing "nguyen van an" would not match "Nguyễn Văn An" -- see {@link VnSearchKey}.
      */
     private static String likePattern(String search) {
         if (search == null || search.isBlank()) {

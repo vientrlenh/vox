@@ -36,22 +36,29 @@ public class OutboxEventScheduler {
 
     @Scheduled(fixedDelay = 1000, scheduler = "outboxTaskScheduler")
     public void publishPendingEvents() {
-        List<Outbox> events;
-        try {
-            events = outboxRepository.claimPendingEvents(BATCH_SIZE);
-        } catch (Exception e) {
-            log.error("Outbox claim failed", e);
-            return;
-        }
+        List<Outbox> events = claimPendingEvents();
         if (events.isEmpty()) {
             return;
         }
+        publishAndMark(events);
+    }
 
+    /** @return the claimed events, or an empty list when the claim itself failed (the failure is logged). */
+    private List<Outbox> claimPendingEvents() {
+        try {
+            return outboxRepository.claimPendingEvents(BATCH_SIZE);
+        } catch (Exception e) {
+            log.error("Outbox claim failed", e);
+            return List.of();
+        }
+    }
+
+    private void publishAndMark(List<Outbox> events) {
         List<Map.Entry<Outbox, CompletableFuture<Void>>> inFlight = events
             .stream()
             .map(event -> Map.entry(event, eventMessagePublisherPort.publish(event)))
             .toList();
-        
+
         for (Map.Entry<Outbox, CompletableFuture<Void>> entry : inFlight) {
             Outbox event = entry.getKey();
             try {

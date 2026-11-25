@@ -80,6 +80,37 @@ public class FrameworkVersion extends BaseModel {
         this.status = status;
     }
 
+    public static FrameworkVersion draft(UUID frameworkId, String code, String name, String description,
+                                         int version, Instant effectiveFrom, Instant effectiveTo) {
+        return builder()
+                .frameworkId(frameworkId)
+                .code(code)
+                .name(name)
+                .description(description)
+                .version(version)
+                .effectiveFrom(effectiveFrom)
+                .effectiveTo(effectiveTo)
+                .status(FrameworkVersionStatus.DRAFT)
+                .build();
+    }
+
+    public FrameworkVersion withEditableFields(String newCode, String newName, String newDescription,
+                                               Instant newEffectiveFrom, Instant newEffectiveTo) {
+        return builder()
+                .id(getId())
+                .frameworkId(frameworkId)
+                .code(newCode)
+                .name(newName)
+                .description(newDescription)
+                .version(version)
+                .effectiveFrom(newEffectiveFrom)
+                .effectiveTo(newEffectiveTo)
+                .status(status)
+                .createdAt(getCreatedAt())
+                .createdBy(getCreatedBy())
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

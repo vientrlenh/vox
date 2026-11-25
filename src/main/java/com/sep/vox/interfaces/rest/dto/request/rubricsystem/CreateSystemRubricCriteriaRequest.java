@@ -44,7 +44,32 @@ public record CreateSystemRubricCriteriaRequest(
 
                 @NotNull(message = "Cờ bắt buộc (Is Required) không được để trống")
                 Boolean isRequired
-        ) {}
+        ) {
+            private CreateSystemRubricCriteriaCommand.CriterionItemCommand asCriterionItemCommand() {
+                return new CreateSystemRubricCriteriaCommand.CriterionItemCommand(
+                        frameworkCriterionId,
+                        code,
+                        name,
+                        description,
+                        asExampleCommands(),
+                        weight,
+                        minScore,
+                        maxScore,
+                        order,
+                        isRequired
+                );
+            }
+
+            private List<CreateSystemRubricCriteriaCommand.CriterionExampleCommand> asExampleCommands() {
+                if (examples == null) {
+                    return null;
+                }
+                return examples.stream()
+                        .map(example -> new CreateSystemRubricCriteriaCommand.CriterionExampleCommand(
+                                example.transcript(), example.explanation(), example.expectedScore()
+                        )).toList();
+            }
+        }
 
         public record CriterionExampleRequest(
                 @NotBlank(message = "Nội dung ví dụ (transcript) không được để trống")
@@ -60,29 +85,8 @@ public record CreateSystemRubricCriteriaRequest(
     public static CreateSystemRubricCriteriaCommand toCommand(UUID versionId, CreateSystemRubricCriteriaRequest request) {
 
         List<CreateSystemRubricCriteriaCommand.CriterionItemCommand> criteriaCommands = request.criteria().stream()
-                .map(c -> {
-                    // Map the list of examples
-                    List<CreateSystemRubricCriteriaCommand.CriterionExampleCommand> exampleCommands = null;
-                    if (c.examples() != null) {
-                        exampleCommands = c.examples().stream()
-                                .map(ex -> new CreateSystemRubricCriteriaCommand.CriterionExampleCommand(
-                                        ex.transcript(), ex.explanation(), ex.expectedScore()
-                                )).toList();
-                    }
-
-                    return new CreateSystemRubricCriteriaCommand.CriterionItemCommand(
-                            c.frameworkCriterionId(),
-                            c.code(),
-                            c.name(),
-                            c.description(),
-                            exampleCommands, // ADDED: pass the examples in here
-                            c.weight(),
-                            c.minScore(),
-                            c.maxScore(),
-                            c.order(),
-                            c.isRequired()
-                    );
-                }).toList();
+                .map(CriterionItemRequest::asCriterionItemCommand)
+                .toList();
 
         return new CreateSystemRubricCriteriaCommand(versionId, criteriaCommands);
     }

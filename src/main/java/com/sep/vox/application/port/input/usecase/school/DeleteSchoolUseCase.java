@@ -31,14 +31,29 @@ public class DeleteSchoolUseCase implements IUseCase<DeleteSchoolCommand, UUID> 
     // Remember to inject the Grade and Class repositories here as well
 
     @Override
-    @Transactional // Bắt buộc có để Lock dữ liệu
+    @Transactional // Required so the data is locked
     public UUID execute(DeleteSchoolCommand command) {
 
-        // 1. Lock dữ liệu trường học (Tránh đụng độ khi có người đang update)
+        // Lock the school data (avoids a clash when someone is updating it)
         School school = schoolRepository.findById(command.id())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học với ID đã cho."));
 
-        // 2. Validate User & Bảo mật
+        requireActiveCurrentUser();
+
+        if (!school.isActive()) {
+            throw new IllegalArgumentException("Trường học này đã bị vô hiệu hóa (xóa) từ trước rồi.");
+        }
+
+        rejectWhenSchoolHasActiveDependencies(school);
+
+        school.setActive(false);
+
+        schoolRepository.save(school);
+
+        return school.getId();
+    }
+
+    private void requireActiveCurrentUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản của bạn."));
@@ -46,44 +61,22 @@ public class DeleteSchoolUseCase implements IUseCase<DeleteSchoolCommand, UUID> 
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
         }
+    }
 
-//        // Logic check quyền: Nếu user có schoolId (tức là Admin của 1 trường cụ thể)
-//        if (currentUser.getSchoolId() != null && !currentUser.getSchoolId().equals(school.getId())) {
-//            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền xóa trường học của đơn vị khác.");
-//        }
-
-        // 3. Logic Xóa Mềm
-        if (!school.isActive()) {
-            throw new IllegalArgumentException("Trường học này đã bị vô hiệu hóa (xóa) từ trước rồi.");
-        }
-
-        // 4. KIỂM TRA RÀNG BUỘC (Dependencies Check)
-        // check xem có room nào của trường đang activce không
+    private void rejectWhenSchoolHasActiveDependencies(School school) {
         boolean hasActiveRooms = schoolRoomRepository.existsBySchoolIdAndIsActive(school.getId(), true);
         if (hasActiveRooms) {
             throw new IllegalArgumentException("Không thể xóa. Trường này vẫn còn Phòng học đang hoạt động.");
         }
 
-        // Check xem có khối (Grade) nào đang ACTIVE không
         boolean hasActiveGrades = schoolGradeRepository.existsBySchoolIdAndStatus(school.getId(), SchoolGradeStatus.ACTIVE.name());
         if (hasActiveGrades) {
             throw new IllegalArgumentException("Không thể xóa. Trường này vẫn còn Khối/Năm học đang hoạt động.");
         }
 
-        // Check xem có lớp (Class) nào đang ACTIVE không
         boolean hasActiveClasses = schoolClassRepository.existsBySchoolIdAndStatus(school.getId(), SchoolClassStatus.ACTIVE.name());
         if (hasActiveClasses) {
             throw new IllegalArgumentException("Không thể xóa. Trường này vẫn còn Lớp học đang hoạt động.");
         }
-
-
-
-        // 5. THỰC HIỆN XÓA MỀM VÀ LƯU DB
-        school.setActive(false);
-
-        schoolRepository.save(school);
-
-        // 6. Nhả về mỗi ID
-        return school.getId();
     }
 }

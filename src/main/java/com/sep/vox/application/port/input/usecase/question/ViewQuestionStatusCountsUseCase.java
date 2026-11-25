@@ -3,7 +3,6 @@ package com.sep.vox.application.port.input.usecase.question;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
@@ -11,15 +10,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.query.question.ViewQuestionStatusCountsQuery;
+import com.sep.vox.application.port.input.service.QuestionStatusActorResolver;
 import com.sep.vox.application.port.input.usecase.IUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
+import com.sep.vox.domain.service.question.QuestionStatusTransition;
 import com.sep.vox.application.query.dto.QuestionStatusCountInfo;
 import com.sep.vox.application.query.repository.QuestionQueryRepository;
-import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.question.QuestionStatus;
-import com.sep.vox.domain.repository.SchoolUserRepository;
 
 /**
  * Đếm câu hỏi theo status trong phạm vi người gọi được xem.
@@ -34,34 +31,22 @@ public class ViewQuestionStatusCountsUseCase
         implements IUseCase<ViewQuestionStatusCountsQuery, List<QuestionStatusCountInfo>> {
 
     private final QuestionQueryRepository questionQueryRepository;
-    private final UserContextPort userContextPort;
-    private final SchoolUserRepository schoolUserRepository;
-    private final UserRoleQueryRepository userRoleQueryRepository;
+    private final QuestionStatusActorResolver questionStatusActorResolver;
 
     @Override
     @Transactional(readOnly = true)
     public List<QuestionStatusCountInfo> execute(ViewQuestionStatusCountsQuery input) {
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        boolean systemAdmin = userContextPort.isSystemAdmin();
-        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
-            .map(schoolUser -> schoolUser.getSchoolId())
-            .orElse(null);
-        boolean schoolAdmin = !systemAdmin && userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
-
-        if (!systemAdmin && currentSchoolId == null) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
-        }
+        QuestionStatusTransition.Actor actor = questionStatusActorResolver.resolveForListing();
 
         List<QuestionStatusCountInfo> counted = questionQueryRepository.countAccessibleByStatus(
-            currentUserId,
-            currentSchoolId,
-            systemAdmin,
-            schoolAdmin,
+            actor.userId(),
+            actor.schoolId(),
+            actor.systemAdmin(),
+            actor.schoolAdmin(),
             input.questionBankId(),
             input.questionTopicId(),
-            // Chuyển sang LIKE pattern ở đây vì QuestionRepositoryImpl.findAccessible cũng
-            // làm đúng vậy trước khi xuống query -- hai bên phải chuẩn hoá giống nhau.
+            // Convert to a LIKE pattern here because QuestionRepositoryImpl.findAccessible does exactly
+            // the same before going down to the query -- both sides must normalise the same way.
             StringNormalization.toLikePattern(input.topicName()),
             input.type() == null ? null : input.type().name(),
             input.sharing() == null ? null : input.sharing().name(),

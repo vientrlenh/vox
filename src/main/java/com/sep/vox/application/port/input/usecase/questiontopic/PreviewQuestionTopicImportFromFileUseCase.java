@@ -14,9 +14,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.questiontopic.PreviewQuestionTopicImportFromFileCommand;
+import com.sep.vox.application.port.input.service.QuestionBankManageAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.FileProcessingPort;
 import com.sep.vox.application.port.output.JsonSerializationPort;
@@ -29,7 +29,6 @@ import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.repository.ImportRowRepository;
 import com.sep.vox.domain.repository.ImportSessionRepository;
 import com.sep.vox.domain.repository.QuestionBankRepository;
-import com.sep.vox.domain.repository.SchoolUserRepository;
 
 /**
  * Xem trước file import chủ đề vào MỘT ngân hàng câu hỏi.
@@ -50,48 +49,22 @@ public class PreviewQuestionTopicImportFromFileUseCase
     private final ImportRowRepository importRowRepository;
     private final JsonSerializationPort jsonSerializationPort;
     private final UserContextPort userContextPort;
-    private final SchoolUserRepository schoolUserRepository;
+    private final QuestionBankManageAccessService questionBankManageAccessService;
     private final QuestionBankRepository questionBankRepository;
 
     @Override
     @Transactional
     public PreviewImportResponse execute(PreviewQuestionTopicImportFromFileCommand input) {
-        if (input == null || input.file() == null) {
-            throw new IllegalArgumentException("File import không được để trống");
-        }
-        if (input.questionBankId() == null) {
-            throw new IllegalArgumentException("Ngân hàng câu hỏi không được để trống");
-        }
+        validateCommand(input);
 
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         QuestionBank questionBank = questionBankRepository.findById(input.questionBankId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
-
-        if (questionBank.getOwnerType() == QuestionBankOwnerType.SYSTEM) {
-            if (!userContextPort.isSystemAdmin()) {
-                throw new ForbiddenException("Quyền truy cập bị từ chối");
-            }
-        } else {
-            UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
-                .map(schoolUser -> schoolUser.getSchoolId())
-                .orElse(null);
-            if (currentSchoolId == null || !currentSchoolId.equals(questionBank.getSchoolId())) {
-                throw new ForbiddenException("Quyền truy cập bị từ chối");
-            }
-        }
+        questionBankManageAccessService.requireManageAccess(questionBank, currentUserId);
 
         ParseImportFileResult parsed = fileProcessingPort.parse(input.file(), ImportType.QUESTION_TOPIC);
-        Instant now = Instant.now();
-        Instant expiresAt = now.plus(SESSION_EXPIRY_DAYS, ChronoUnit.DAYS);
-        ImportSession savedSession = importSessionRepository.save(ImportSession.previewedForEntity(
-            questionBank.getOwnerType() == QuestionBankOwnerType.SCHOOL ? questionBank.getSchoolId() : null,
-            ImportType.QUESTION_TOPIC,
-            safeFileName(input.file().fileName()),
-            jsonSerializationPort.toJson(parsed.originalHeaders()),
-            jsonSerializationPort.toJson(parsed.suggestedMapping()),
-            parsed.totalRows(),
-            expiresAt,
-            questionBank.getId()));
+        Instant expiresAt = Instant.now().plus(SESSION_EXPIRY_DAYS, ChronoUnit.DAYS);
+        ImportSession savedSession = savePreviewedSession(questionBank, input, parsed, expiresAt);
         saveRows(savedSession.getId(), parsed.rows());
 
         return new PreviewImportResponse(
@@ -103,6 +76,31 @@ public class PreviewQuestionTopicImportFromFileUseCase
             parsed.totalRows(),
             expiresAt.toString()
         );
+    }
+
+    private void validateCommand(PreviewQuestionTopicImportFromFileCommand input) {
+        if (input == null || input.file() == null) {
+            throw new IllegalArgumentException("File import không được để trống");
+        }
+        if (input.questionBankId() == null) {
+            throw new IllegalArgumentException("Ngân hàng câu hỏi không được để trống");
+        }
+    }
+
+    private ImportSession savePreviewedSession(
+            QuestionBank questionBank,
+            PreviewQuestionTopicImportFromFileCommand input,
+            ParseImportFileResult parsed,
+            Instant expiresAt) {
+        return importSessionRepository.save(ImportSession.previewedForEntity(
+            questionBank.getOwnerType() == QuestionBankOwnerType.SCHOOL ? questionBank.getSchoolId() : null,
+            ImportType.QUESTION_TOPIC,
+            safeFileName(input.file().fileName()),
+            jsonSerializationPort.toJson(parsed.originalHeaders()),
+            jsonSerializationPort.toJson(parsed.suggestedMapping()),
+            parsed.totalRows(),
+            expiresAt,
+            questionBank.getId()));
     }
 
     private void saveRows(UUID sessionId, List<Map<String, String>> rows) {

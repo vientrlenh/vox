@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
+import org.jspecify.annotations.Nullable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -151,85 +152,107 @@ public class ConsumeQuotaService {
     }
 
     /**
-     * Chia khoản chi làm hai: phần hạn mức còn lại tiêu nốt cho đầy, phần vượt trừ vào ví tự nạp.
+     * Splits the expense in two: the remaining quota is spent right down to its last dong, the overage is deducted from the
+     * self-topped-up wallet.
      *
-     * <p>Khóa dòng số dư TRƯỚC rồi mới đọc lại hạn mức: đó là đường ghi duy nhất theo javadoc của
-     * {@link SchoolBalanceRepository} (khóa dòng -> tính ở Java -> save + ghi entry, cùng transaction),
-     * và cũng chính khóa đó tuần tự hóa mọi khoản ghi nợ của cùng một trường.
+     * <p>Locks the balance row FIRST and only then re-reads the quota: that is the only write path according to the javadoc of
+     * {@link SchoolBalanceRepository} (lock row -> compute in Java -> save + write entry, same transaction),
+     * and that same lock also serializes every debt write of the same school.
      *
-     * <p>Khóa số dư KHÔNG khóa dòng hạn mức, nên {@code remainingVnd} vẫn có thể lệch nếu có
-     * addAllocation (gia hạn/nạp thêm) chen ngang. Lệch đó vô hại về tiền: tổng trừ luôn đúng bằng
-     * {@code amountVnd} dù chia thế nào, chỉ ranh giới giữa "trừ vào hạn mức" và "trừ vào ví" là xê
-     * dịch. Hai lần kẹp bên dưới giữ cho phần lệch đó không bao giờ đẩy used vượt total.
+     * <p>The balance lock does NOT lock the quota row, so {@code remainingVnd} can still drift if an
+     * addAllocation (renewal/top-up) cuts in. That drift is harmless money-wise: the total deducted always equals
+     * {@code amountVnd} however it is split, only the boundary between "deduct from quota" and "deduct from wallet"
+     * shifts. The two clamps below keep that drift from ever pushing used above total.
      */
     private ChargeSplit chargeOverage(UUID subscriptionId, UUID assessmentSessionId, UUID practiceSessionId,
             QuotaType quotaType, SchoolSubscriptionQuotaRecord quota, BigDecimal amountVnd,
             BigDecimal costUsd, BigDecimal fxRateUsed) {
-
         UUID schoolId = requireSchoolId(subscriptionId);
         Instant now = Instant.now();
         SchoolBalance balance = schoolBalanceRepository.findBySchoolIdForUpdateOrCreate(schoolId, now);
-
         SchoolSubscriptionQuotaRecord current = requireQuota(subscriptionId, quotaType);
-        BigDecimal remainingVnd = current.getTotalAllocatedAmountVnd()
-            .subtract(current.getUsedAmountVnd())
-            .max(BigDecimal.ZERO)
-            .min(amountVnd);
+        BigDecimal remainingVnd = remainingQuotaWithin(current, amountVnd);
         BigDecimal overageVnd = amountVnd.subtract(remainingVnd);
+        consumeRemainingQuota(quota.getId(), subscriptionId, quotaType, current, remainingVnd, now);
 
-        if (remainingVnd.signum() > 0) {
-            schoolSubscriptionQuotaRecordRepository.addUsage(quota.getId(), remainingVnd);
-            checkUsageWarningTransition(subscriptionId, quotaType, current.getTotalAllocatedAmountVnd(),
-                current.getUsedAmountVnd(), current.getUsedAmountVnd().add(remainingVnd), now);
-        }
-
-        // Có addAllocation (gia hạn/nạp thêm) chen vào giữa lúc tryConsume hỏng và lần đọc lại trên,
-        // nên khoản chi lại vừa đủ nằm trong hạn mức. Không có phần vượt thì KHÔNG ghi bút toán:
-        // chk_school_balance_entries_overage_traceable đòi amount_vnd < 0, một dòng 0đ vừa vi phạm
-        // ràng buộc vừa vô nghĩa trên sao kê.
+        // An addAllocation (renewal/top-up) cut in between the failed tryConsume and the re-read above, so the
+        // expense fits within the quota after all. With no overage, do NOT write a ledger entry:
+        // chk_school_balance_entries_overage_traceable demands amount_vnd < 0, so a 0 dong row would both violate the
+        // constraint and mean nothing on the statement.
         if (overageVnd.signum() <= 0) {
             return new ChargeSplit(remainingVnd, BigDecimal.ZERO, balance.getBalanceVnd(), false);
         }
+        OverageCharge charge = new OverageCharge(subscriptionId, schoolId, quotaType, assessmentSessionId,
+            practiceSessionId, amountVnd, costUsd, fxRateUsed, current.getTotalAllocatedAmountVnd(), overageVnd, now);
+        return chargeOverageToBalance(charge, balance, remainingVnd);
+    }
 
+    private BigDecimal remainingQuotaWithin(SchoolSubscriptionQuotaRecord current, BigDecimal amountVnd) {
+        return current.getTotalAllocatedAmountVnd()
+            .subtract(current.getUsedAmountVnd())
+            .max(BigDecimal.ZERO)
+            .min(amountVnd);
+    }
+
+    private void consumeRemainingQuota(UUID quotaId, UUID subscriptionId, QuotaType quotaType,
+            SchoolSubscriptionQuotaRecord current, BigDecimal remainingVnd, Instant now) {
+        if (remainingVnd.signum() > 0) {
+            schoolSubscriptionQuotaRecordRepository.addUsage(quotaId, remainingVnd);
+            checkUsageWarningTransition(subscriptionId, quotaType, current.getTotalAllocatedAmountVnd(),
+                current.getUsedAmountVnd(), current.getUsedAmountVnd().add(remainingVnd), now);
+        }
+    }
+
+    private ChargeSplit chargeOverageToBalance(OverageCharge charge, SchoolBalance balance, BigDecimal remainingVnd) {
         BigDecimal balanceBeforeVnd = balance.getBalanceVnd();
-        BigDecimal balanceAfterVnd = balance.apply(overageVnd.negate(), now);
-        schoolBalanceRepository.save(balance);
-        schoolBalanceEntryRepository.save(assessmentSessionId != null
-            ? SchoolBalanceEntry.forAssessmentOverageCharge(
-                schoolId, subscriptionId, assessmentSessionId, quotaType, overageVnd, balanceAfterVnd,
-                costUsd, fxRateUsed, now)
-            : SchoolBalanceEntry.forPracticeOverageCharge(
-                schoolId, subscriptionId, practiceSessionId, quotaType, overageVnd, balanceAfterVnd,
-                costUsd, fxRateUsed, now));
+        BigDecimal balanceAfterVnd = writeOverageLedgerEntry(charge, balance);
 
         // Pass BOTH sources, exactly like when writing the ledger entry right above. The previous version only passed assessmentSessionId
         // while practiceSessionId was within reach, so every CAP_EXCEEDED row caused by speaking practice
         // lost its trace.
-        checkDebtCapTransition(subscriptionId, schoolId, quotaType, assessmentSessionId, practiceSessionId,
-            overageVnd, current.getTotalAllocatedAmountVnd(), balanceBeforeVnd, balanceAfterVnd, now);
+        checkDebtCapTransition(charge.subscriptionId(), charge.schoolId(), charge.quotaType(),
+            charge.assessmentSessionId(), charge.practiceSessionId(), charge.overageVnd(),
+            charge.totalAllocatedVnd(), balanceBeforeVnd, balanceAfterVnd, charge.now());
 
-        // crossedIntoDebt lấy TRƯỚC/SAU của cùng một dòng đang giữ khóa -- không phải hai lần đọc rời
-        // nhau, nên không thể lệch với những gì vừa thực sự xảy ra ở trên.
+        // crossedIntoDebt takes BEFORE/AFTER of the same row while holding the lock -- not two separate
+        // reads, so it cannot disagree with what really just happened above.
         boolean crossedIntoDebt = balanceBeforeVnd.signum() >= 0 && balanceAfterVnd.signum() < 0;
-
-        // Announces "the school has just been locked" RIGHT HERE rather than leaving it to the caller.
-        //
-        // This used to live in CompleteAssessmentSessionGradingUseCase, i.e. only the ASSESSMENT GRADING path had it --
-        // speaking practice pushes a school into debt just the same without producing any LOCKED row or sending an email to
-        // anyone. The school was still really locked (the guard derives from the sign of the balance, regardless of which source caused it), so
-        // the principal lost the right to open assessment sessions with nowhere to explain why.
-        //
-        // Placed here, every deduction source, present and future, gets announced, and the event row commits in the
-        // SAME transaction as the ledger entry that caused it -- there is no window where one gets recorded and the
-        // other does not.
         if (crossedIntoDebt) {
-            schoolDebtNotificationService.publishSchoolLockedDueToDebt(
-                subscriptionId, schoolId, quotaType, assessmentSessionId, practiceSessionId, amountVnd,
-                current.getTotalAllocatedAmountVnd(), balanceAfterVnd.negate().max(BigDecimal.ZERO), now
-            );
+            publishSchoolLockedDueToDebt(charge, balanceAfterVnd);
         }
 
-        return new ChargeSplit(remainingVnd, overageVnd, balanceAfterVnd, crossedIntoDebt);
+        return new ChargeSplit(remainingVnd, charge.overageVnd(), balanceAfterVnd, crossedIntoDebt);
+    }
+
+    private BigDecimal writeOverageLedgerEntry(OverageCharge charge, SchoolBalance balance) {
+        BigDecimal balanceAfterVnd = balance.apply(charge.overageVnd().negate(), charge.now());
+        schoolBalanceRepository.save(balance);
+        schoolBalanceEntryRepository.save(charge.assessmentSessionId() != null
+            ? SchoolBalanceEntry.forAssessmentOverageCharge(
+                charge.schoolId(), charge.subscriptionId(), charge.assessmentSessionId(), charge.quotaType(),
+                charge.overageVnd(), balanceAfterVnd, charge.costUsd(), charge.fxRateUsed(), charge.now())
+            : SchoolBalanceEntry.forPracticeOverageCharge(
+                charge.schoolId(), charge.subscriptionId(), charge.practiceSessionId(), charge.quotaType(),
+                charge.overageVnd(), balanceAfterVnd, charge.costUsd(), charge.fxRateUsed(), charge.now()));
+        return balanceAfterVnd;
+    }
+
+    // Announces "the school has just been locked" RIGHT HERE rather than leaving it to the caller.
+    //
+    // This used to live in CompleteAssessmentSessionGradingUseCase, i.e. only the ASSESSMENT GRADING path had it --
+    // speaking practice pushes a school into debt just the same without producing any LOCKED row or sending an email to
+    // anyone. The school was still really locked (the guard derives from the sign of the balance, regardless of which source caused it), so
+    // the principal lost the right to open assessment sessions with nowhere to explain why.
+    //
+    // Placed here, every deduction source, present and future, gets announced, and the event row commits in the
+    // SAME transaction as the ledger entry that caused it -- there is no window where one gets recorded and the
+    // other does not.
+    private void publishSchoolLockedDueToDebt(OverageCharge charge, BigDecimal balanceAfterVnd) {
+        schoolDebtNotificationService.publishSchoolLockedDueToDebt(
+            charge.subscriptionId(), charge.schoolId(), charge.quotaType(), charge.assessmentSessionId(),
+            charge.practiceSessionId(), charge.amountVnd(), charge.totalAllocatedVnd(),
+            balanceAfterVnd.negate().max(BigDecimal.ZERO), charge.now()
+        );
     }
 
     /**
@@ -317,6 +340,22 @@ public class ConsumeQuotaService {
         schoolQuotaUsageNotificationService.publishQuotaUsageWarning(
             subscriptionId, requireSchoolId(subscriptionId), quotaType, totalAllocatedVnd, usedAfterVnd, now
         );
+    }
+
+    /** Everything about one overage deduction that the balance-side steps need; {@code totalAllocatedVnd} is the quota total read under the balance lock. */
+    private record OverageCharge(
+        UUID subscriptionId,
+        UUID schoolId,
+        QuotaType quotaType,
+        @Nullable UUID assessmentSessionId,
+        @Nullable UUID practiceSessionId,
+        BigDecimal amountVnd,
+        BigDecimal costUsd,
+        BigDecimal fxRateUsed,
+        BigDecimal totalAllocatedVnd,
+        BigDecimal overageVnd,
+        Instant now
+    ) {
     }
 
     /** Kết quả chia khoản chi giữa ví hạn mức và số dư -- phần nội bộ của {@link ConsumeQuotaResponse}. */

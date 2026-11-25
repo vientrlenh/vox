@@ -35,7 +35,18 @@ public class DeleteSchoolAssessmentPolicyUseCase implements IUseCase<DeleteSchoo
     @Override
     @Transactional
     public Void execute(DeleteSchoolAssessmentPolicyCommand command) {
-        // 1. Kiểm tra tài khoản School Admin
+        requireActiveSchoolAdmin(command.schoolId());
+        AssessmentPolicy policy = loadPolicyOfSchool(command);
+
+        // Only a DRAFT may be hard-deleted; the other statuses use the separate Archive function
+        if (policy.getStatus() != AssessmentPolicyStatus.DRAFT) {
+            throw new IllegalArgumentException("Chỉ có thể xóa Assessment Policy đang ở trạng thái DRAFT. Vui lòng dùng chức năng Lưu trữ (Archive) nếu Policy đã PUBLISHED.");
+        }
+        assessmentPolicyRepository.deleteById(policy.getId());
+        return null;
+    }
+
+    private void requireActiveSchoolAdmin(UUID schoolId) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
@@ -43,31 +54,25 @@ public class DeleteSchoolAssessmentPolicyUseCase implements IUseCase<DeleteSchoo
             throw new UnauthorizedException("Tài khoản đã bị khóa.");
         }
 
-        // 2. Kiểm tra tài khoản thuộc đúng trường học yêu cầu
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được phân bổ vào trường học nào."));
-        if (!schoolUser.getSchoolId().equals(command.schoolId())) {
+        if (!schoolUser.getSchoolId().equals(schoolId)) {
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền can thiệp vào Assessment Policy của trường khác.");
         }
 
-        School school = schoolRepository.findById(command.schoolId())
+        School school = schoolRepository.findById(schoolId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
         if (!school.isActive()) {
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
         }
+    }
 
-        // 3. Kiểm tra Assessment Policy tồn tại và thuộc đúng trường học
+    private AssessmentPolicy loadPolicyOfSchool(DeleteSchoolAssessmentPolicyCommand command) {
         AssessmentPolicy policy = assessmentPolicyRepository.findById(command.policyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
         if (policy.getSchoolId() == null || !policy.getSchoolId().equals(command.schoolId())) {
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền can thiệp vào Assessment Policy của trường khác.");
         }
-
-        // 4. Chỉ được xóa cứng khi đang DRAFT, các trạng thái khác dùng chức năng Lưu trữ (Archive) riêng
-        if (policy.getStatus() != AssessmentPolicyStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ có thể xóa Assessment Policy đang ở trạng thái DRAFT. Vui lòng dùng chức năng Lưu trữ (Archive) nếu Policy đã PUBLISHED.");
-        }
-        assessmentPolicyRepository.deleteById(policy.getId());
-        return null;
+        return policy;
     }
 }

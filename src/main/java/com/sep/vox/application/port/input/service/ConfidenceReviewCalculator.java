@@ -20,7 +20,7 @@ public class ConfidenceReviewCalculator {
     private static final BigDecimal C_REF_SOFT = decimal(0.90);
     private static final BigDecimal C_REF_SOFT_CODESWITCH = decimal(0.85);
     private static final BigDecimal C_REF_HARD = decimal(0.80);
-    // TẮT 2026-08-11 cùng Group D -- xem khối chú thích trong compute().
+    // DISABLED 2026-08-11 together with Group D -- see the javadoc of evaluateAsrAndReferenceSignals().
     // Case (4) -- 3 ngưỡng RIÊNG cho accuracy(1-m)/coverage(c)/timing(1-j), theo ĐÚNG spec
     // (không phải 1 ngưỡng chung áp lên composite min() như bản trước). Áp ngưỡng chung 0.90 lên
     // composite sẽ vô tình ép accuracy phải đạt 0.90 mới qua, xoá mất biên nới Vietnam-adjusted
@@ -106,134 +106,87 @@ public class ConfidenceReviewCalculator {
             BigDecimal codeSwitchingRatio,
             boolean isShortAnswer) {
         ThresholdProfile profile = profile(mode);
-        boolean hasCodeSwitch = codeSwitchingRatio != null
-            && codeSwitchingRatio.compareTo(BigDecimal.ZERO) > 0;
         if (signals == null) {
-            return new Decision(
-                false,
-                "none",
-                List.of(),
-                mode.name(),
-                audioQuality == null ? "UNKNOWN" : "PASS",
-                List.of()
-            );
+            return decisionWithoutSignals(mode, audioQuality);
         }
 
-        List<String> hardReasons = new ArrayList<>();
-        List<String> softReasons = new ArrayList<>();
-        Set<String> hardGroups = new HashSet<>();
-        Set<String> softGroups = new HashSet<>();
+        Findings findings = new Findings();
+        evaluateAudioSignals(signals, audioQuality, profile, findings);
+        evaluateAsrAndReferenceSignals(signals, codeSwitchingRatio, profile, findings);
+        int llmSoftCount = evaluateLlmSignals(signals, profile, isShortAnswer, findings);
 
+        String severity = severityOf(findings, profile, llmSoftCount);
+        return buildDecision(signals, audioQuality, mode, profile, findings, severity);
+    }
+
+    private static Decision decisionWithoutSignals(ConfidenceMode mode, BigDecimal audioQuality) {
+        return new Decision(
+            false,
+            "none",
+            List.of(),
+            mode.name(),
+            audioQuality == null ? "UNKNOWN" : "PASS",
+            List.of()
+        );
+    }
+
+    private static void evaluateAudioSignals(
+            ConfidenceCaseSignals signals,
+            BigDecimal audioQuality,
+            ThresholdProfile profile,
+            Findings findings) {
         if (signals.clippingRatio() != null
                 && signals.clippingRatio().compareTo(profile.clippingHard()) > 0) {
-            addReason(hardReasons, hardGroups, "AUDIO_CLIPPING", "A");
+            findings.addHard("AUDIO_CLIPPING", "A");
         }
         if (signals.qSnr() != null && signals.qSnr().compareTo(BigDecimal.ZERO) <= 0) {
-            addReason(hardReasons, hardGroups, "AUDIO_SNR_TOO_LOW", "A");
+            findings.addHard("AUDIO_SNR_TOO_LOW", "A");
         }
         if (signals.qSpeech() != null && signals.qSpeech().compareTo(BigDecimal.ZERO) <= 0) {
-            addReason(hardReasons, hardGroups, "AUDIO_TOO_MUCH_SILENCE", "A");
+            findings.addHard("AUDIO_TOO_MUCH_SILENCE", "A");
         }
         if (audioQuality != null
                 && audioQuality.compareTo(BigDecimal.ZERO) > 0
                 && audioQuality.compareTo(profile.audioSoft()) < 0) {
-            addReason(softReasons, softGroups, "AUDIO_QUALITY_LOW", "A");
+            findings.addSoft("AUDIO_QUALITY_LOW", "A");
         }
+    }
 
+    /**
+     * Group D (forced alignment, case 4) is deliberately not evaluated here: it was switched off on 2026-08-11.
+     * Python no longer emits c_align* (see utils/confidence_utils.py), and leaving the evaluation out makes
+     * OLD records in the DB, which still carry c_align*, produce no ALIGNMENT_* reason when re-graded.
+     *
+     * <p>Measured on production, these three signals only produced SOFT reasons (ALIGNMENT_COVERAGE_LOW at 0.84,
+     * ALIGNMENT_TIMING_ANOMALY at 0.80, both above the hard threshold), and since reviewSoftSignals = false a
+     * soft reason no longer pushes an attempt to a teacher. They only lengthened the review_reason_code
+     * string: the teacher reads "4 reasons" while the only mandatory culprit is LLM_UNSTABLE_VOCABULARY.
+     */
+    private static void evaluateAsrAndReferenceSignals(
+            ConfidenceCaseSignals signals,
+            BigDecimal codeSwitchingRatio,
+            ThresholdProfile profile,
+            Findings findings) {
+        boolean hasCodeSwitch = codeSwitchingRatio != null
+            && codeSwitchingRatio.compareTo(BigDecimal.ZERO) > 0;
         if (signals.cAsrLog() != null) {
-            evaluateMinimumBound(
-                signals.cAsrLog(),
-                profile.asrLogHard(),
-                profile.asrLogSoft(),
-                "ASR_LOW_CONF",
-                "B",
-                hardReasons,
-                softReasons,
-                hardGroups,
-                softGroups
-            );
+            findings.evaluateMinimumBound(
+                signals.cAsrLog(), profile.asrLogHard(), profile.asrLogSoft(), "ASR_LOW_CONF", "B");
         }
-
         if (signals.cRef() != null) {
             BigDecimal soft = (
                 hasCodeSwitch ? C_REF_SOFT_CODESWITCH : C_REF_SOFT
             ).add(profile.softDelta());
-            evaluateMinimumBound(
-                signals.cRef(),
-                C_REF_HARD.add(profile.hardDelta()),
-                soft,
-                "REFERENCE_DRIFT",
-                "C",
-                hardReasons,
-                softReasons,
-                hardGroups,
-                softGroups
-            );
+            findings.evaluateMinimumBound(
+                signals.cRef(), C_REF_HARD.add(profile.hardDelta()), soft, "REFERENCE_DRIFT", "C");
         }
+    }
 
-        // ==========================================================================================
-        // TẮT 2026-08-11 -- Group D: forced alignment (case 4).
-        //
-        // Python không còn phát ra c_align* nữa (xem utils/confidence_utils.py), nên cả ba chốt
-        // `!= null` bên dưới đã tự động không bao giờ vào. Chú thích hẳn khối này để ý định là rõ
-        // ràng chứ không phải "tình cờ chết vì thiếu dữ liệu", và để bản ghi CŨ trong DB -- vốn
-        // vẫn còn c_align* -- cũng không sinh ra ALIGNMENT_* khi được chấm lại.
-        //
-        // Vì sao tắt: đo trên production, ba tín hiệu này chỉ sinh ra lý do MỀM
-        // (ALIGNMENT_COVERAGE_LOW ở 0.84, ALIGNMENT_TIMING_ANOMALY ở 0.80 -- đều trên ngưỡng
-        // hard), mà từ khi reviewSoftSignals = false thì lý do mềm không còn đẩy được bài sang
-        // giáo viên. Chúng chỉ còn làm dài chuỗi review_reason_code: giáo viên đọc thấy "4 lý do"
-        // trong khi thủ phạm bắt buộc duy nhất là LLM_UNSTABLE_VOCABULARY.
-        //
-        // if (signals.cAlignAccuracy() != null) {
-        //     boolean explainedByCodeSwitch = codeSwitchingRatio != null
-        //         && codeSwitchingRatio.compareTo(BigDecimal.ONE.subtract(signals.cAlignAccuracy())) >= 0;
-        //     if (!explainedByCodeSwitch) {
-        //         evaluateMinimumBound(
-        //             signals.cAlignAccuracy(),
-        //             C_ALIGN_ACCURACY_HARD.add(profile.hardDelta()),
-        //             C_ALIGN_ACCURACY_SOFT.add(profile.softDelta()),
-        //             "ALIGNMENT_MISCUE_HIGH",
-        //             "D",
-        //             hardReasons,
-        //             softReasons,
-        //             hardGroups,
-        //             softGroups
-        //         );
-        //     }
-        // }
-        // if (signals.cAlignCoverage() != null) {
-        //     boolean explainedByCodeSwitch = codeSwitchingRatio != null
-        //         && codeSwitchingRatio.compareTo(BigDecimal.ONE.subtract(signals.cAlignCoverage())) >= 0;
-        //     if (!explainedByCodeSwitch) {
-        //         evaluateMinimumBound(
-        //             signals.cAlignCoverage(),
-        //             C_ALIGN_COVERAGE_HARD.add(profile.hardDelta()),
-        //             C_ALIGN_COVERAGE_SOFT.add(profile.softDelta()),
-        //             "ALIGNMENT_COVERAGE_LOW",
-        //             "D",
-        //             hardReasons,
-        //             softReasons,
-        //             hardGroups,
-        //             softGroups
-        //         );
-        //     }
-        // }
-        // if (signals.cAlignTiming() != null) {
-        //     evaluateMinimumBound(
-        //         signals.cAlignTiming(),
-        //         C_ALIGN_TIMING_HARD.add(profile.hardDelta()),
-        //         C_ALIGN_TIMING_SOFT.add(profile.softDelta()),
-        //         "ALIGNMENT_TIMING_ANOMALY",
-        //         "D",
-        //         hardReasons,
-        //         softReasons,
-        //         hardGroups,
-        //         softGroups
-        //     );
-        // }
-        // ==========================================================================================
-
+    private static int evaluateLlmSignals(
+            ConfidenceCaseSignals signals,
+            ThresholdProfile profile,
+            boolean isShortAnswer,
+            Findings findings) {
         BigDecimal llmSoft = isShortAnswer ? profile.llmSoftShort() : profile.llmSoftLong();
         BigDecimal llmDeltaSoft = isShortAnswer
             ? profile.llmDeltaSoftShort()
@@ -242,77 +195,44 @@ public class ConfidenceReviewCalculator {
             ? profile.llmDeltaHardShort()
             : profile.llmDeltaHardLong();
         int llmSoftCount = 0;
-        llmSoftCount += evaluateLlm(
-            signals.cGrammar(),
-            signals.grammarScoreDelta(),
-            llmSoft,
-            llmDeltaSoft,
-            llmDeltaHard,
-            "LLM_UNSTABLE_GRAMMAR",
-            hardReasons,
-            softReasons,
-            hardGroups,
-            softGroups
-        );
-        llmSoftCount += evaluateLlm(
-            signals.cVocabulary(),
-            signals.vocabularyScoreDelta(),
-            llmSoft,
-            llmDeltaSoft,
-            llmDeltaHard,
-            "LLM_UNSTABLE_VOCABULARY",
-            hardReasons,
-            softReasons,
-            hardGroups,
-            softGroups
-        );
-        BigDecimal llmSoftCoherence = llmSoft.subtract(LLM_COHERENCE_SOFT_RELAXATION);
-        BigDecimal llmDeltaSoftCoherence = llmDeltaSoft.add(
-            LLM_COHERENCE_DELTA_SOFT_RELAXATION
-        );
-        llmSoftCount += evaluateLlm(
-            signals.cCoherence(),
-            signals.coherenceScoreDelta(),
-            llmSoftCoherence,
-            llmDeltaSoftCoherence,
-            llmDeltaHard,
-            "LLM_UNSTABLE_COHERENCE",
-            hardReasons,
-            softReasons,
-            hardGroups,
-            softGroups
-        );
+        llmSoftCount += evaluateLlm(signals.cGrammar(), signals.grammarScoreDelta(),
+            llmSoft, llmDeltaSoft, llmDeltaHard, "LLM_UNSTABLE_GRAMMAR", findings);
+        llmSoftCount += evaluateLlm(signals.cVocabulary(), signals.vocabularyScoreDelta(),
+            llmSoft, llmDeltaSoft, llmDeltaHard, "LLM_UNSTABLE_VOCABULARY", findings);
+        llmSoftCount += evaluateLlm(signals.cCoherence(), signals.coherenceScoreDelta(),
+            llmSoft.subtract(LLM_COHERENCE_SOFT_RELAXATION),
+            llmDeltaSoft.add(LLM_COHERENCE_DELTA_SOFT_RELAXATION),
+            llmDeltaHard, "LLM_UNSTABLE_COHERENCE", findings);
+        return llmSoftCount;
+    }
 
-        String severity;
-        if (!hardGroups.isEmpty()) {
-            severity = "mandatory";
-        } else if (softGroups.size() >= profile.moderateGroupsRequired()
-                || llmSoftCount >= profile.moderateGroupsRequired()) {
-            severity = "recommended";
-        } else if (!softGroups.isEmpty()) {
-            severity = "soft";
-        } else {
-            severity = "none";
+    private static String severityOf(Findings findings, ThresholdProfile profile, int llmSoftCount) {
+        if (!findings.hardGroups.isEmpty()) {
+            return "mandatory";
         }
+        if (findings.softGroups.size() >= profile.moderateGroupsRequired()
+                || llmSoftCount >= profile.moderateGroupsRequired()) {
+            return "recommended";
+        }
+        if (!findings.softGroups.isEmpty()) {
+            return "soft";
+        }
+        return "none";
+    }
 
-        List<String> reasons = new ArrayList<>(hardReasons);
-        reasons.addAll(softReasons);
+    private static Decision buildDecision(
+            ConfidenceCaseSignals signals,
+            BigDecimal audioQuality,
+            ConfidenceMode mode,
+            ThresholdProfile profile,
+            Findings findings,
+            String severity) {
+        List<String> reasons = new ArrayList<>(findings.hardReasons);
+        reasons.addAll(findings.softReasons);
         List<String> audioGateReasons = reasons.stream()
             .filter(reason -> reason.startsWith("AUDIO_"))
             .distinct()
             .toList();
-        boolean hasAudioSignal = audioQuality != null
-            || signals.clippingRatio() != null
-            || signals.qSnr() != null
-            || signals.qSpeech() != null;
-        String audioGateStatus;
-        if (hardGroups.contains("A")) {
-            audioGateStatus = "HARD_FAIL";
-        } else if (softGroups.contains("A")) {
-            audioGateStatus = "SOFT_WARN";
-        } else {
-            audioGateStatus = hasAudioSignal ? "PASS" : "UNKNOWN";
-        }
         boolean requiresHumanReview = "mandatory".equals(severity)
             || (profile.reviewSoftSignals() && !"none".equals(severity));
         return new Decision(
@@ -320,9 +240,26 @@ public class ConfidenceReviewCalculator {
             severity,
             reasons.stream().distinct().toList(),
             mode.name(),
-            audioGateStatus,
+            audioGateStatus(signals, audioQuality, findings),
             audioGateReasons
         );
+    }
+
+    private static String audioGateStatus(
+            ConfidenceCaseSignals signals,
+            BigDecimal audioQuality,
+            Findings findings) {
+        boolean hasAudioSignal = audioQuality != null
+            || signals.clippingRatio() != null
+            || signals.qSnr() != null
+            || signals.qSpeech() != null;
+        if (findings.hardGroups.contains("A")) {
+            return "HARD_FAIL";
+        }
+        if (findings.softGroups.contains("A")) {
+            return "SOFT_WARN";
+        }
+        return hasAudioSignal ? "PASS" : "UNKNOWN";
     }
 
     private static ThresholdProfile profile(ConfidenceMode mode) {
@@ -358,67 +295,87 @@ public class ConfidenceReviewCalculator {
             BigDecimal deltaSoftThreshold,
             BigDecimal deltaHardThreshold,
             String reason,
-            List<String> hardReasons,
-            List<String> softReasons,
-            Set<String> hardGroups,
-            Set<String> softGroups) {
+            Findings findings) {
         if (confidence == null && scoreDelta == null) {
             return 0;
         }
         if (scoreDelta != null) {
-            // Một lượt hợp lệ duy nhất được Python biểu diễn confidence=0, delta=0:
-            // vẫn là hard vì không đủ hai mẫu để đo consistency.
-            boolean insufficientRuns = confidence != null
-                && confidence.compareTo(BigDecimal.ZERO) <= 0
-                && scoreDelta.compareTo(BigDecimal.ZERO) == 0;
-            if (insufficientRuns || scoreDelta.compareTo(deltaHardThreshold) >= 0) {
-                addReason(hardReasons, hardGroups, reason, "E");
-                return 0;
-            }
-            if (scoreDelta.compareTo(deltaSoftThreshold) > 0) {
-                addReason(softReasons, softGroups, reason, "E");
-                return 1;
-            }
+            return evaluateScoreDelta(confidence, scoreDelta, deltaSoftThreshold, deltaHardThreshold, reason, findings);
+        }
+        // Old payload without a score delta: fall back to confidence so historical data stays readable.
+        return evaluateConfidenceFallback(confidence, confidenceSoftThreshold, reason, findings);
+    }
+
+    private static int evaluateScoreDelta(
+            BigDecimal confidence,
+            BigDecimal scoreDelta,
+            BigDecimal deltaSoftThreshold,
+            BigDecimal deltaHardThreshold,
+            String reason,
+            Findings findings) {
+        // A single valid run is represented by Python as confidence=0, delta=0:
+        // still hard, because two samples are needed to measure consistency.
+        boolean insufficientRuns = confidence != null
+            && confidence.compareTo(BigDecimal.ZERO) <= 0
+            && scoreDelta.compareTo(BigDecimal.ZERO) == 0;
+        if (insufficientRuns || scoreDelta.compareTo(deltaHardThreshold) >= 0) {
+            findings.addHard(reason, "E");
             return 0;
         }
-        // Payload cũ chưa có score delta: fallback sang confidence để đọc được dữ liệu lịch sử.
-        if (confidence != null) {
-            if (confidence.compareTo(BigDecimal.ZERO) <= 0) {
-                addReason(hardReasons, hardGroups, reason, "E");
-                return 0;
-            }
-            if (confidence.compareTo(confidenceSoftThreshold) < 0) {
-                addReason(softReasons, softGroups, reason, "E");
-                return 1;
-            }
+        if (scoreDelta.compareTo(deltaSoftThreshold) > 0) {
+            findings.addSoft(reason, "E");
+            return 1;
         }
         return 0;
     }
 
-    private static void evaluateMinimumBound(
-            BigDecimal value,
-            BigDecimal hardThreshold,
-            BigDecimal softThreshold,
+    private static int evaluateConfidenceFallback(
+            BigDecimal confidence,
+            BigDecimal confidenceSoftThreshold,
             String reason,
-            String group,
-            List<String> hardReasons,
-            List<String> softReasons,
-            Set<String> hardGroups,
-            Set<String> softGroups) {
-        if (value.compareTo(hardThreshold) < 0) {
-            addReason(hardReasons, hardGroups, reason, group);
-        } else if (value.compareTo(softThreshold) < 0) {
-            addReason(softReasons, softGroups, reason, group);
+            Findings findings) {
+        if (confidence == null) {
+            return 0;
         }
+        if (confidence.compareTo(BigDecimal.ZERO) <= 0) {
+            findings.addHard(reason, "E");
+            return 0;
+        }
+        if (confidence.compareTo(confidenceSoftThreshold) < 0) {
+            findings.addSoft(reason, "E");
+            return 1;
+        }
+        return 0;
     }
 
-    private static void addReason(
-            List<String> reasons,
-            Set<String> groups,
-            String reason,
-            String group) {
-        reasons.add(reason);
-        groups.add(group);
+    private static final class Findings {
+        private final List<String> hardReasons = new ArrayList<>();
+        private final List<String> softReasons = new ArrayList<>();
+        private final Set<String> hardGroups = new HashSet<>();
+        private final Set<String> softGroups = new HashSet<>();
+
+        private void addHard(String reason, String group) {
+            hardReasons.add(reason);
+            hardGroups.add(group);
+        }
+
+        private void addSoft(String reason, String group) {
+            softReasons.add(reason);
+            softGroups.add(group);
+        }
+
+        private void evaluateMinimumBound(
+                BigDecimal value,
+                BigDecimal hardThreshold,
+                BigDecimal softThreshold,
+                String reason,
+                String group) {
+            if (value.compareTo(hardThreshold) < 0) {
+                addHard(reason, group);
+            } else if (value.compareTo(softThreshold) < 0) {
+                addSoft(reason, group);
+            }
+        }
     }
 
     private static BigDecimal decimal(double value) {

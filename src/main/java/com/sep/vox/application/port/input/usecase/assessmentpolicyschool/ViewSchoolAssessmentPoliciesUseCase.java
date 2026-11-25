@@ -36,24 +36,7 @@ public class ViewSchoolAssessmentPoliciesUseCase implements IUseCase<ViewSchoolA
     @Override
     @Transactional(readOnly = true)
     public PageResult<AssessmentPolicyDto> execute(ViewSchoolAssessmentPoliciesQuery query) {
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản bị khóa.");
-        }
-
-        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
-        if (!schoolUser.getSchoolId().equals(query.schoolId())) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền truy cập dữ liệu của trường khác.");
-        }
-
-        School school = schoolRepository.findById(query.schoolId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
-        if (!school.isActive()) {
-            throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa.");
-        }
+        requireActiveSchoolMember(query.schoolId());
 
         String safeStatus = query.status() == null ? null : query.status().name();
 
@@ -64,5 +47,26 @@ public class ViewSchoolAssessmentPoliciesUseCase implements IUseCase<ViewSchoolA
         PageResult<AssessmentPolicy> policyPage = assessmentPolicyRepository.findAllBySchoolId(query.schoolId(), safeStatus, query.languageId(), query.rubricVersionId(),
                 query.effectiveFrom(), query.effectiveTo(), query.page(), query.size());
         return AssessmentPolicyDtoMapper.toDtoPage(policyPage);
+    }
+
+    private void requireActiveSchoolMember(UUID schoolId) {
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) {
+            throw new UnauthorizedException("Tài khoản bị khóa.");
+        }
+
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
+                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
+        if (!schoolUser.getSchoolId().equals(schoolId)) {
+            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền truy cập dữ liệu của trường khác.");
+        }
+
+        School school = schoolRepository.findById(schoolId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
+        if (!school.isActive()) {
+            throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa.");
+        }
     }
 }

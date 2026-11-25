@@ -45,38 +45,53 @@ public class PreviewSchoolRubricVersionImportFromFileUseCase implements IUseCase
     @Override
     @Transactional
     public PreviewRubricVersionImportResponse execute(PreviewSchoolRubricVersionImportCommand command) {
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
-
-        // Kiểm tra quyền trường học
-        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId).orElseThrow(() -> new ForbiddenException("Không thuộc trường học nào."));
-        if (!schoolUser.getSchoolId().equals(command.schoolId())) throw new ForbiddenException("Hành vi xâm nhập dữ liệu trường học khác bị từ chối.");
-
-        Rubric rubric = rubricRepository.findById(command.rubricId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric yêu cầu."));
-        if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || rubric.getSchoolId() == null || !rubric.getSchoolId().equals(command.schoolId())) {
-            throw new ForbiddenException("Bộ Rubric này không thuộc quyền quản lý của trường bạn.");
-        }
+        requireActiveSchoolMember(command.schoolId());
+        requireSchoolOwnedRubric(command);
 
         ParseImportFileResult parsedResult = fileProcessingPort.parse(command.file(), ImportType.RUBRIC_VERSION);
         if (parsedResult.rows() == null || parsedResult.rows().isEmpty()) {
             throw new IllegalArgumentException("File tải lên trống hoặc không chứa dữ liệu.");
         }
 
-        Instant now = Instant.now();
-        Instant expiresAt = now.plus(1, ChronoUnit.DAYS);
+        Instant expiresAt = Instant.now().plus(1, ChronoUnit.DAYS);
 
-        // Hard-bind the school id to the import session
+        // Hard-bind the school id to the import session.
+        UUID generatedSessionId = saveSessionWithRows(command.schoolId(), ImportType.RUBRIC_VERSION,
+                command.file().fileName(), command.rubricId(), parsedResult, expiresAt);
+
+        return new PreviewRubricVersionImportResponse(
+                generatedSessionId, command.file().fileName(), parsedResult.originalHeaders(),
+                parsedResult.suggestedMapping(), parsedResult.sampleRows(), parsedResult.totalRows(), expiresAt
+        );
+    }
+
+    private void requireActiveSchoolMember(UUID schoolId) {
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
+
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId).orElseThrow(() -> new ForbiddenException("Không thuộc trường học nào."));
+        if (!schoolUser.getSchoolId().equals(schoolId)) throw new ForbiddenException("Hành vi xâm nhập dữ liệu trường học khác bị từ chối.");
+    }
+
+    private void requireSchoolOwnedRubric(PreviewSchoolRubricVersionImportCommand command) {
+        Rubric rubric = rubricRepository.findById(command.rubricId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric yêu cầu."));
+        if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || rubric.getSchoolId() == null || !rubric.getSchoolId().equals(command.schoolId())) {
+            throw new ForbiddenException("Bộ Rubric này không thuộc quyền quản lý của trường bạn.");
+        }
+    }
+
+    private UUID saveSessionWithRows(UUID schoolId, ImportType importType, String fileName, UUID importedEntityId,
+                                     ParseImportFileResult parsedResult, Instant expiresAt) {
         ImportSession session = ImportSession.previewedForEntity(
-            command.schoolId(),
-            ImportType.RUBRIC_VERSION,
-            command.file().fileName(),
+            schoolId,
+            importType,
+            fileName,
             jsonSerializationPort.toJson(parsedResult.originalHeaders()),
             jsonSerializationPort.toJson(parsedResult.suggestedMapping()),
             parsedResult.rows().size(),
             expiresAt,
-            command.rubricId());
-
+            importedEntityId);
         ImportSession savedSession = importSessionRepository.save(session);
         UUID generatedSessionId = savedSession.getId();
 
@@ -85,12 +100,7 @@ public class PreviewSchoolRubricVersionImportFromFileUseCase implements IUseCase
                     generatedSessionId,
                     i + 1,
                     jsonSerializationPort.toJson(parsedResult.rows().get(i)))).toList();
-
         importRowRepository.saveAll(importRows);
-
-        return new PreviewRubricVersionImportResponse(
-                generatedSessionId, command.file().fileName(), parsedResult.originalHeaders(),
-                parsedResult.suggestedMapping(), parsedResult.sampleRows(), parsedResult.totalRows(), expiresAt
-        );
+        return generatedSessionId;
     }
 }

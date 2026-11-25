@@ -7,6 +7,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -54,79 +55,21 @@ public class PracticeQuestionGenerationClient implements PracticeQuestionGenerat
      */
     @Override
     public List<GeneratedQuestion> generate(
-            TopicDetails topic,
-            String criterionCode,
-            String subAttribute,
-            String targetTense,
-            int targetRank,
-            int count,
-            Duration timeout,
-            int bandCount,
-            List<FrameworkResultBand> bandLadder,
-            List<UUID> excludeQuestionIds) {
+            TopicDetails topic, String criterionCode, String subAttribute, String targetTense,
+            int targetRank, int count, Duration timeout, int bandCount,
+            List<FrameworkResultBand> bandLadder, List<UUID> excludeQuestionIds) {
         try {
-            Map<String, Object> payload = new java.util.LinkedHashMap<String, Object>();
-            payload.put("topic_id", topic.id().toString());
-            payload.put("topic_name", topic.name());
-            // SINGULAR. Python declares `interest_dimension: str` with NO default value
-            // (schemas/question_generation.py). If the name is wrong Pydantic silently ignores the unknown field
-            // and then reports a missing required field -- every practice question generation call returns 422, and the student
-            // only sees an "error" when opening a topic that has no questions in the bank yet.
-            payload.put("interest_dimension", topic.interestDimension());
-            payload.put("curriculum_group", topic.curriculumGroup());
-            payload.put("target_criterion_code", criterionCode);
-            payload.put("target_sub_attribute", subAttribute);
-            // The grammatical tense the question must force the student to use. The generation prompt is responsible for setting a TIME MARKER
-            // so that this tense is the only natural answer -- a bare instruction cannot force it.
-            payload.put("target_tense", targetTense);
-            payload.put("target_rank", targetRank);
-            // Send EXACTLY the configured number. There used to be Math.min(3, count) here -- a second cap
-            // that was declared nowhere, silently overriding application.yaml: set 5 and still
-            // only get 3, no log, no error. The real cap already exists on the Python side (DRAFTER_CANDIDATES),
-            // and there it blows up as a readable 422 error instead of cutting silently.
-            payload.put("count", count);
-            payload.put("band_count", bandCount);
-            // Questions that are permanently dead for this very student -- Python excludes them from the duplicate
-            // comparison. If they are not sent, the duplicate gate compares against the whole bank, including questions this student will never
-            // see again, and every new draft is thrown away for being "similar to an existing question".
-            payload.put(
-                "exclude_question_ids",
-                (excludeQuestionIds == null ? List.<UUID>of() : excludeQuestionIds)
-                    .stream().map(id -> id.toString()).toList()
-            );
-            payload.put(
-                "band_ladder",
-                (bandLadder == null ? List.<FrameworkResultBand>of() : bandLadder).stream()
-                    .map(rung -> Map.of(
-                        "order", rung.getOrder(),
-                        "code", rung.getCode() == null ? "" : rung.getCode(),
-                        "description",
-                        rung.getDescription() == null ? "" : rung.getDescription()
-                    ))
-                    .toList()
-            );
-            HttpRequest request = HttpRequest.newBuilder(generationEndpoint)
-                .timeout(timeout)
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(
-                    jsonMapper.writeValueAsString(payload)
-                ))
-                .build();
-            HttpResponse<String> response = httpClient.send(
-                request,
-                HttpResponse.BodyHandlers.ofString()
-            );
+            Map<String, Object> payload = buildGenerationPayload(topic, criterionCode, subAttribute, targetTense,
+                targetRank, count, bandCount, bandLadder, excludeQuestionIds);
+            HttpRequest request = buildGenerationRequest(payload, timeout);
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() / 100 != 2) {
                 throw new IllegalStateException(
                     "Question generation endpoint returned "
                         + response.statusCode() + ": " + response.body()
                 );
             }
-            List<PracticeQuestionGenerationPort.GeneratedQuestion> result = new ArrayList<GeneratedQuestion>();
-            for (JsonNode item : jsonMapper.readTree(response.body()).path("questions")) {
-                result.add(toQuestion(item));
-            }
-            return result;
+            return readQuestions(response.body());
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Question generation interrupted", exception);
@@ -135,18 +78,83 @@ public class PracticeQuestionGenerationClient implements PracticeQuestionGenerat
         }
     }
 
+    private HttpRequest buildGenerationRequest(Map<String, Object> payload, Duration timeout) {
+        return HttpRequest.newBuilder(generationEndpoint)
+            .timeout(timeout)
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(
+                jsonMapper.writeValueAsString(payload)
+            ))
+            .build();
+    }
+
+    private Map<String, Object> buildGenerationPayload(
+            TopicDetails topic, String criterionCode, String subAttribute, String targetTense,
+            int targetRank, int count, int bandCount,
+            List<FrameworkResultBand> bandLadder, List<UUID> excludeQuestionIds) {
+        Map<String, Object> payload =
+            buildTargetPayload(topic, criterionCode, subAttribute, targetTense, targetRank);
+        // Send EXACTLY the configured number. There used to be Math.min(3, count) here -- a second cap
+        // that was declared nowhere, silently overriding application.yaml: set 5 and still
+        // only get 3, no log, no error. The real cap already exists on the Python side (DRAFTER_CANDIDATES),
+        // and there it blows up as a readable 422 error instead of cutting silently.
+        payload.put("count", count);
+        payload.put("band_count", bandCount);
+        // Questions that are permanently dead for this very student -- Python excludes them from the duplicate
+        // comparison. If they are not sent, the duplicate gate compares against the whole bank, including questions this student will never
+        // see again, and every new draft is thrown away for being "similar to an existing question".
+        payload.put(
+            "exclude_question_ids",
+            (excludeQuestionIds == null ? List.<UUID>of() : excludeQuestionIds)
+                .stream().map(id -> id.toString()).toList()
+        );
+        payload.put("band_ladder", toBandLadderPayload(bandLadder));
+        return payload;
+    }
+
+    private Map<String, Object> buildTargetPayload(
+            TopicDetails topic, String criterionCode, String subAttribute, String targetTense, int targetRank) {
+        Map<String, Object> payload = new LinkedHashMap<String, Object>();
+        payload.put("topic_id", topic.id().toString());
+        payload.put("topic_name", topic.name());
+        // SINGULAR. Python declares `interest_dimension: str` with NO default value
+        // (schemas/question_generation.py). If the name is wrong Pydantic silently ignores the unknown field
+        // and then reports a missing required field -- every practice question generation call returns 422, and the student
+        // only sees an "error" when opening a topic that has no questions in the bank yet.
+        payload.put("interest_dimension", topic.interestDimension());
+        payload.put("curriculum_group", topic.curriculumGroup());
+        payload.put("target_criterion_code", criterionCode);
+        payload.put("target_sub_attribute", subAttribute);
+        // The grammatical tense the question must force the student to use. The generation prompt is responsible for setting a TIME MARKER
+        // so that this tense is the only natural answer -- a bare instruction cannot force it.
+        payload.put("target_tense", targetTense);
+        payload.put("target_rank", targetRank);
+        return payload;
+    }
+
+    private List<Map<String, Object>> toBandLadderPayload(List<FrameworkResultBand> bandLadder) {
+        return (bandLadder == null ? List.<FrameworkResultBand>of() : bandLadder).stream()
+            .map(rung -> Map.<String, Object>of(
+                "order", rung.getOrder(),
+                "code", rung.getCode() == null ? "" : rung.getCode(),
+                "description",
+                rung.getDescription() == null ? "" : rung.getDescription()
+            ))
+            .toList();
+    }
+
+    private List<GeneratedQuestion> readQuestions(String responseBody) {
+        List<PracticeQuestionGenerationPort.GeneratedQuestion> result = new ArrayList<GeneratedQuestion>();
+        for (JsonNode item : jsonMapper.readTree(responseBody).path("questions")) {
+            result.add(toQuestion(item));
+        }
+        return result;
+    }
+
     @Override
     public void index(GeneratedQuestion question) {
         try {
-            HttpRequest request = HttpRequest.newBuilder(indexEndpoint)
-                .timeout(Duration.ofSeconds(10))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(
-                    jsonMapper.writeValueAsString(Map.of(
-                        "question", jsonMapper.readTree(question.sourceJson())
-                    ))
-                ))
-                .build();
+            HttpRequest request = buildIndexRequest(question);
             HttpResponse<String> response = httpClient.send(
                 request,
                 HttpResponse.BodyHandlers.ofString()
@@ -162,6 +170,18 @@ public class PracticeQuestionGenerationClient implements PracticeQuestionGenerat
         } catch (IOException | RuntimeException exception) {
             throw new IllegalStateException("Question indexing failed", exception);
         }
+    }
+
+    private HttpRequest buildIndexRequest(GeneratedQuestion question) {
+        return HttpRequest.newBuilder(indexEndpoint)
+            .timeout(Duration.ofSeconds(10))
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(
+                jsonMapper.writeValueAsString(Map.of(
+                    "question", jsonMapper.readTree(question.sourceJson())
+                ))
+            ))
+            .build();
     }
 
     private GeneratedQuestion toQuestion(JsonNode item) {

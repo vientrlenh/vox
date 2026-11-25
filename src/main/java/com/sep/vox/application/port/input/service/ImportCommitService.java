@@ -42,25 +42,32 @@ public class ImportCommitService {
         List<ImportRow> rows = importRowRepository.findBySessionId(sessionId);
         try {
             ImportCommitResult result = auditActorScopePort.callAs(session.getCreatedBy(), () -> handler.commit(session, rows));
-            session.setImportedRows(result.created());
-            session.setSkippedRows(result.skipped());
-            session.setInvalidRows(result.invalid());
-            session.setValidRows(result.created() + result.updated() + result.skipped());
-            session.setTotalRows(rows.size());
-            session.setStatus(ImportSessionStatus.COMPLETED);
+            recordCompleted(session, result, rows.size());
         } catch (Exception e) {
-            log.error("Lỗi khi xử lý phiên import {} (type={})", sessionId, session.getType(), e);
-            session.setStatus(ImportSessionStatus.FAILED);
-            session.setFailureReason(
-                e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()
-            );
+            recordFailed(session, e);
         }
         // Save the row state on BOTH branches: the handler processes each row in its own
         // transaction, so when it fails midway the rows already done must keep their result
         // instead of all going back to PENDING.
         saveRowsQuietly(rows);
         importSessionRepository.save(session);
+    }
 
+    private void recordCompleted(ImportSession session, ImportCommitResult result, int totalRows) {
+        session.setImportedRows(result.created());
+        session.setSkippedRows(result.skipped());
+        session.setInvalidRows(result.invalid());
+        session.setValidRows(result.created() + result.updated() + result.skipped());
+        session.setTotalRows(totalRows);
+        session.setStatus(ImportSessionStatus.COMPLETED);
+    }
+
+    private void recordFailed(ImportSession session, Exception e) {
+        log.error("Lỗi khi xử lý phiên import {} (type={})", session.getId(), session.getType(), e);
+        session.setStatus(ImportSessionStatus.FAILED);
+        session.setFailureReason(
+            e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()
+        );
     }
 
     private void saveRowsQuietly(List<ImportRow> rows) {

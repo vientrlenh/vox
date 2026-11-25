@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -62,51 +63,64 @@ public class BulkUpdateQuestionStatusUseCase
 
         String action = StringNormalization.normalizeCode(input.action());
         String note = StringNormalization.trimAndCollapseSpaces(input.note());
-        // Giữ nguyên thứ tự client gửi lên để response đọc theo được, và bỏ id trùng
-        // để không cập nhật hai lần cùng một câu.
+        // Keep the order the client sent so the response reads naturally, and drop duplicate ids
+        // so the same question is not updated twice.
         Set<UUID> questionIds = new LinkedHashSet<>(input.questionIds());
 
         QuestionStatusTransition.Actor actor = questionStatusActorResolver.resolve();
         Map<UUID, Question> questionsById = questionRepository.findByIdIn(questionIds).stream()
             .collect(Collectors.toMap(question -> question.getId(), question -> question, (first, second) -> first));
-        Map<UUID, QuestionBank> banksById = loadBanks(questionsById);
-        Set<UUID> editableQuestionIds = loadEditableQuestionIds(questionIds, actor.userId());
+        StatusUpdateContext context = new StatusUpdateContext(
+            actor, action, note, loadBanks(questionsById), loadEditableQuestionIds(questionIds, actor.userId()));
 
+        StatusUpdateOutcome outcome = applyTransitions(questionIds, questionsById, context);
+
+        List<QuestionDto> updated = questionRepository.saveAll(outcome.toSave()).stream()
+            .map(QuestionDtoMapper::toQuestionDto)
+            .toList();
+
+        return new BulkUpdateQuestionStatusResponse(List.copyOf(updated), List.copyOf(outcome.failed()));
+    }
+
+    private StatusUpdateOutcome applyTransitions(
+            Set<UUID> questionIds, Map<UUID, Question> questionsById, StatusUpdateContext context) {
         List<BulkUpdateQuestionStatusFailure> failed = new ArrayList<BulkUpdateQuestionStatusFailure>();
         List<Question> toSave = new ArrayList<Question>();
 
         for (UUID questionId : questionIds) {
+            Optional<BulkUpdateQuestionStatusFailure> failure = findFailure(questionId, questionsById, context);
+            if (failure.isPresent()) {
+                failed.add(failure.get());
+                continue;
+            }
             Question question = questionsById.get(questionId);
-            if (question == null) {
-                failed.add(new BulkUpdateQuestionStatusFailure(
-                    questionId, null, null,
-                    RejectionCode.QUESTION_NOT_FOUND.name(),
-                    QuestionStatusTransition.QUESTION_NOT_FOUND));
-                continue;
-            }
-            QuestionBank bank = banksById.get(question.getQuestionBankId());
-            if (bank == null) {
-                failed.add(failure(question, RejectionCode.QUESTION_BANK_NOT_FOUND.name(),
-                    QuestionStatusTransition.QUESTION_BANK_NOT_FOUND));
-                continue;
-            }
-
-            QuestionStatusTransition.Rejection rejection = QuestionStatusTransition.rejectionFor(
-                question, bank, editableQuestionIds.contains(questionId), actor, action, note);
-            if (rejection != null) {
-                failed.add(failure(question, rejection.code().name(), rejection.reason()));
-                continue;
-            }
-
-            QuestionStatusTransition.apply(question, action);
+            QuestionStatusTransition.apply(question, context.action());
             toSave.add(question);
         }
+        return new StatusUpdateOutcome(failed, toSave);
+    }
 
-        List<QuestionDto> updated = questionRepository.saveAll(toSave).stream()
-            .map(QuestionDtoMapper::toQuestionDto)
-            .toList();
-
-        return new BulkUpdateQuestionStatusResponse(List.copyOf(updated), List.copyOf(failed));
+    private Optional<BulkUpdateQuestionStatusFailure> findFailure(
+            UUID questionId, Map<UUID, Question> questionsById, StatusUpdateContext context) {
+        Question question = questionsById.get(questionId);
+        if (question == null) {
+            return Optional.of(new BulkUpdateQuestionStatusFailure(
+                questionId, null, null,
+                RejectionCode.QUESTION_NOT_FOUND.name(),
+                QuestionStatusTransition.QUESTION_NOT_FOUND));
+        }
+        QuestionBank bank = context.banksById().get(question.getQuestionBankId());
+        if (bank == null) {
+            return Optional.of(failure(question, RejectionCode.QUESTION_BANK_NOT_FOUND.name(),
+                QuestionStatusTransition.QUESTION_BANK_NOT_FOUND));
+        }
+        QuestionStatusTransition.Rejection rejection = QuestionStatusTransition.rejectionFor(
+            question, bank, context.editableQuestionIds().contains(questionId),
+            context.actor(), context.action(), context.note());
+        if (rejection != null) {
+            return Optional.of(failure(question, rejection.code().name(), rejection.reason()));
+        }
+        return Optional.empty();
     }
 
     /**
@@ -132,5 +146,16 @@ public class BulkUpdateQuestionStatusUseCase
             .filter(collaborator -> collaborator.getUserId().equals(currentUserId))
             .map(collaborator -> collaborator.getQuestionId())
             .collect(Collectors.toSet());
+    }
+
+    private record StatusUpdateContext(
+            QuestionStatusTransition.Actor actor,
+            String action,
+            String note,
+            Map<UUID, QuestionBank> banksById,
+            Set<UUID> editableQuestionIds) {
+    }
+
+    private record StatusUpdateOutcome(List<BulkUpdateQuestionStatusFailure> failed, List<Question> toSave) {
     }
 }

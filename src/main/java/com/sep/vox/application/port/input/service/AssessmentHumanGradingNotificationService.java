@@ -64,41 +64,55 @@ public class AssessmentHumanGradingNotificationService {
      */
     @Transactional
     public void publishIfPendingReview(Assessment assessment, Instant now) {
-        if (assessment == null) {
+        if (assessment == null || isAlreadyNotified(assessment)) {
             return;
         }
 
-        // Đã nhắc rồi thì thôi. Đây là chốt chống trùng cho CẢ hai đường vào: lượt quét định kỳ
-        // gặp lại đúng bài thi đó ở tick sau, và nhánh đóng bài gọi lại lần nữa cho cùng bài.
-        if (assessment.getHumanGradingNotifiedAt() != null) {
-            return;
-        }
+        long pendingCount = countPendingReview(assessment);
 
-        long pendingCount = assessmentCandidateResultRepository.findByAssessmentId(assessment.getId()).stream()
-            .filter(result -> result.getStatus() == AssessmentCandidateResultStatus.PENDING_REVIEW)
-            .count();
-
-        // Không có bài nào chờ chấm là kết cục BÌNH THƯỜNG, không phải lỗi: AI chấm sạch cả
-        // kỳ thì không ai phải làm gì, và một thông báo "0 bài cần chấm" chỉ gây nhiễu.
+        // No attempt waiting for grading is a NORMAL outcome, not an error: if the AI graded the whole
+        // session, nobody has anything to do, and a "0 attempts to grade" notification is only noise.
         if (pendingCount == 0) {
             return;
         }
 
         List<UUID> recipientIds = recipientsOf(assessment);
         if (recipientIds.isEmpty()) {
-            // Bài trên lớp không có CHAIR, hoặc trường không còn admin nào đang hoạt động.
-            // Bài vẫn nằm trong hàng đợi chấm, chỉ là không có ai để đánh động.
-            log.warn("Bài thi {} còn {} bài chờ chấm tay nhưng không tìm được người nhận thông báo",
-                assessment.getId(), pendingCount);
+            warnNoRecipients(assessment, pendingCount);
             return;
         }
 
+        publishAndStamp(assessment, recipientIds, (int) pendingCount, now);
+    }
+
+    private void warnNoRecipients(Assessment assessment, long pendingCount) {
+        // A class test without a CHAIR, or a school with no active admin left.
+        // The attempts stay in the grading queue, there is just nobody to alert.
+        log.warn("Bài thi {} còn {} bài chờ chấm tay nhưng không tìm được người nhận thông báo",
+            assessment.getId(), pendingCount);
+    }
+
+    /**
+     * Already notified: stop. This is the de-duplication guard for BOTH entry points: the periodic sweep
+     * meets the same assessment again on the next tick, and the closing branch calls again for the same assessment.
+     */
+    private boolean isAlreadyNotified(Assessment assessment) {
+        return assessment.getHumanGradingNotifiedAt() != null;
+    }
+
+    private long countPendingReview(Assessment assessment) {
+        return assessmentCandidateResultRepository.findByAssessmentId(assessment.getId()).stream()
+            .filter(result -> result.getStatus() == AssessmentCandidateResultStatus.PENDING_REVIEW)
+            .count();
+    }
+
+    private void publishAndStamp(Assessment assessment, List<UUID> recipientIds, int pendingCount, Instant now) {
         String payload = jsonSerializationPort.toJson(new AssessmentHumanGradingRequiredPayloadV1(
             recipientIds,
             assessment.getId(),
             assessment.getName(),
             assessment.getKind(),
-            (int) pendingCount
+            pendingCount
         ));
 
         outboxRepository.save(Outbox.create(
@@ -106,8 +120,8 @@ public class AssessmentHumanGradingNotificationService {
             EventTypeConstant.ASSESSMENT_HUMAN_GRADING_REQUIRED, payload, now
         ));
 
-        // Đóng dấu trong CÙNG transaction với outbox: hai thứ này phải cùng sống hoặc cùng chết.
-        // Ghi dấu mà không phát là im lặng mãi mãi; phát mà không ghi dấu là nhắc lại mỗi phút.
+        // Stamp in the SAME transaction as the outbox row: the two must live or die together.
+        // Stamping without publishing is silence forever; publishing without stamping is a reminder every minute.
         assessment.setHumanGradingNotifiedAt(now);
         assessmentRepository.save(assessment);
 

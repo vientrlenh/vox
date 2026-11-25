@@ -74,6 +74,24 @@ public class HandOffGradingToHumanUseCase implements IUseCase<HandOffGradingToHu
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kỳ thi của phiên thi"));
 
         moderationAccessService.authorize(assessment, candidate);
+        requireHandOffable(assessment, session);
+
+        AssessmentCandidateResult existing = assessmentCandidateResultRepository.findBySessionId(session.getId()).orElse(null);
+        if (existing != null) {
+            logAlreadyHasResult(session, existing);
+            return existing.getId();
+        }
+
+        AssessmentCandidateResult saved = assessmentCandidateResultRepository.save(
+            buildPendingReviewResult(session, assessment));
+        log.info(
+            "Phiên {} (AI chấm lỗi) chuyển sang chấm tay: tạo kết quả {} ở PENDING_REVIEW, "
+                + "chờ nhà trường phân công.",
+            session.getId(), saved.getId());
+        return saved.getId();
+    }
+
+    private void requireHandOffable(Assessment assessment, AssessmentSession session) {
         if (assessment.getStatus() == AssessmentStatus.RESULTS_PUBLISHED) {
             throw new IllegalArgumentException("Kỳ thi đã công bố điểm, không thể chuyển sang chấm tay");
         }
@@ -81,33 +99,37 @@ public class HandOffGradingToHumanUseCase implements IUseCase<HandOffGradingToHu
             throw new IllegalArgumentException("Chỉ chuyển sang chấm tay được khi AI chấm lỗi");
         }
 
-        // Không có câu trả lời thì không có gì để người chấm xem. Giao một bài trắng chỉ tạo ra
-        // một việc không làm được: giáo viên mở ra, không thấy gì, và cũng không đóng được phân
-        // công vì không chấm nổi.
+        // With no answers there is nothing for the grader to look at. Assigning a blank attempt only creates a task
+        // that cannot be done: the teacher opens it, sees nothing, and cannot close the assignment either because
+        // there is nothing to grade.
         if (assessmentItemResponseRepository.findBySessionId(session.getId()).isEmpty()) {
             throw new IllegalArgumentException(
                 "Phiên thi này không có câu trả lời nào, không có gì để người chấm xem");
         }
+    }
 
-        AssessmentCandidateResult existing = assessmentCandidateResultRepository.findBySessionId(session.getId()).orElse(null);
-        if (existing != null) {
-            // Đã có kết quả nghĩa là bài đã ở trong vòng đời chấm rồi -- vào hàng đợi hoặc đang
-            // được giao. Tạo thêm là sinh bài trùng; đổi trạng thái của nó là ghi đè quyết định
-            // của người khác.
-            log.info(
-                "Phiên {} đã có kết quả {} ({}), không tạo lại.",
-                session.getId(), existing.getId(), existing.getStatus());
-            return existing.getId();
-        }
+    /**
+     * An existing result means the attempt is already in the grading lifecycle -- in the queue or assigned.
+     * Creating another would produce a duplicate attempt; changing the status of the existing one would overwrite
+     * someone else's decision.
+     */
+    private void logAlreadyHasResult(AssessmentSession session, AssessmentCandidateResult existing) {
+        log.info(
+            "Phiên {} đã có kết quả {} ({}), không tạo lại.",
+            session.getId(), existing.getId(), existing.getStatus());
+    }
 
+    /**
+     * The same set of fields as persistInvalidBlockedResult (SubmitAssessmentSessionUseCase): the rubric and
+     * framework must be fixed RIGHT when it is created, because the grading screen reads the scale and the list of criteria
+     * from the result's own rubricVersionId. If left null the teacher opens it and has no criteria
+     * to enter.
+     */
+    private AssessmentCandidateResult buildPendingReviewResult(AssessmentSession session, Assessment assessment) {
         AssessmentPolicy policy = assessment.getAssessmentPolicyId() == null
             ? null
             : assessmentPolicyRepository.findById(assessment.getAssessmentPolicyId()).orElse(null);
 
-        // The same set of fields as persistInvalidBlockedResult (SubmitAssessmentSessionUseCase): the rubric and
-        // framework must be fixed RIGHT when it is created, because the grading screen reads the scale and the list of criteria
-        // from the result's own rubricVersionId. If left null the teacher opens it and has no criteria
-        // to enter.
         AssessmentCandidateResult result = new AssessmentCandidateResult();
         result.setAssessmentId(session.getAssessmentId());
         result.setCandidateId(session.getCandidateId());
@@ -118,16 +140,10 @@ public class HandOffGradingToHumanUseCase implements IUseCase<HandOffGradingToHu
         result.setFrameworkVersionId(policy == null ? null : policy.getFrameworkVersionId());
         result.setTargetFrameworkBandId(policy == null ? null : policy.getTargetFrameworkBandId());
         result.setRubricResultBandId(null);
-        // Điểm để TRỐNG, không phải 0. Chưa ai chấm thì chưa có điểm, và 0 ở đây sẽ đi thẳng vào
-        // bảng điểm như một con điểm thật.
+        // The score is left EMPTY, not 0. Nobody has graded yet so there is no score, and a 0 here would go straight
+        // into the grade sheet as a real mark.
         result.setTotalScore(null);
         result.setStatus(AssessmentCandidateResultStatus.PENDING_REVIEW);
-
-        AssessmentCandidateResult saved = assessmentCandidateResultRepository.save(result);
-        log.info(
-            "Phiên {} (AI chấm lỗi) chuyển sang chấm tay: tạo kết quả {} ở PENDING_REVIEW, "
-                + "chờ nhà trường phân công.",
-            session.getId(), saved.getId());
-        return saved.getId();
+        return result;
     }
 }

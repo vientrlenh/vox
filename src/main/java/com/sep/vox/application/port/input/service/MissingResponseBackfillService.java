@@ -119,30 +119,7 @@ public class MissingResponseBackfillService {
             if (answeredPaperItemIds.contains(paperItem.getId())) {
                 continue;
             }
-            // The id is left null on purpose: assessment_item_responses.id keeps the answerId the AI service sends
-            // for recorded answers, and generates a version 7 id for a row that has none, like this one. The evaluation
-            // below must use the id of the SAVED response, never one chosen before the save.
-            AssessmentItemResponse response = assessmentItemResponseRepository.save(AssessmentItemResponse.withoutRecording(
-                    sessionId, paperItem.getId(), NO_RECORDING, now));
-            // requiresHumanReview = FALSE. With no recording a score of 0 is correct and nobody needs to
-            // review it again.
-            //
-            // Setting it to true was tried, with the argument "the student may appeal that the machine failed to
-            // record", and dropped: the data CANNOT tell "the student gave no answer" from "the machine broke" -- both
-            // are just a missing response row. Raising the flag would assert something the system does not
-            // know, and flagging every blank question would flood the review queue with results where 0 is
-            // already right, making the flag meaningless.
-            //
-            // The appeal path already exists and is in the right place: when the student files an appeal the
-            // APPEAL round opens, and thanks to this backfill the teacher HAS a question to regrade. That is
-            // the value of the backfill -- it makes the question EXIST, not make someone go and review it.
-            assessmentItemEvaluationRepository.save(AssessmentItemEvaluation.zeroScoredWithoutRecording(
-                    response.getId(),
-                    paperItem.getId(),
-                    GRADED_BY,
-                    NO_RECORDING,
-                    "Không thu được bản ghi cho câu này.",
-                    now));
+            backfillMissingItem(sessionId, paperItem, now);
             created++;
         }
         if (created > 0) {
@@ -150,5 +127,38 @@ public class MissingResponseBackfillService {
                 sessionId, created);
         }
         return created;
+    }
+
+    private void backfillMissingItem(UUID sessionId, AssessmentPaperItem paperItem, Instant now) {
+        // The id is left null on purpose: assessment_item_responses.id keeps the answerId the AI service sends
+        // for recorded answers, and generates a version 7 id for a row that has none, like this one. The evaluation
+        // below must use the id of the SAVED response, never one chosen before the save.
+        AssessmentItemResponse response = assessmentItemResponseRepository.save(AssessmentItemResponse.withoutRecording(
+                sessionId, paperItem.getId(), NO_RECORDING, now));
+        saveZeroScoredEvaluation(response, paperItem, now);
+    }
+
+    /**
+     * requiresHumanReview = FALSE. With no recording a score of 0 is correct and nobody needs to
+     * review it again.
+     *
+     * <p>Setting it to true was tried, with the argument "the student may appeal that the machine failed to
+     * record", and dropped: the data CANNOT tell "the student gave no answer" from "the machine broke" -- both
+     * are just a missing response row. Raising the flag would assert something the system does not
+     * know, and flagging every blank question would flood the review queue with results where 0 is
+     * already right, making the flag meaningless.
+     *
+     * <p>The appeal path already exists and is in the right place: when the student files an appeal the
+     * APPEAL round opens, and thanks to this backfill the teacher HAS a question to regrade. That is
+     * the value of the backfill -- it makes the question EXIST, not make someone go and review it.
+     */
+    private void saveZeroScoredEvaluation(AssessmentItemResponse response, AssessmentPaperItem paperItem, Instant now) {
+        assessmentItemEvaluationRepository.save(AssessmentItemEvaluation.zeroScoredWithoutRecording(
+                response.getId(),
+                paperItem.getId(),
+                GRADED_BY,
+                NO_RECORDING,
+                "Không thu được bản ghi cho câu này.",
+                now));
     }
 }

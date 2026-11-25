@@ -50,25 +50,34 @@ public class DeleteSchoolClassUseCase implements IUseCase<DeleteSchoolClassComma
         validateRequestedSchool(input.schoolId(), schoolId);
         validateSchool(schoolId);
 
-        SchoolClass schoolClass = schoolClassRepository.findById(input.id())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp học"));
-        if (!Objects.equals(schoolClass.getSchoolId(), schoolId)) {
-            throw new ResourceNotFoundException("Không tìm thấy lớp học");
-        }
-
-        // Đã xóa mềm (ARCHIVED) trước đó → coi như không còn tồn tại, tránh archive/deactivate lại.
-        if (schoolClass.getStatus() == SchoolClassStatus.ARCHIVED) {
-            throw new ResourceNotFoundException("Lớp học đã bị xóa trước đó");
-        }
+        SchoolClass schoolClass = findNotYetArchivedClassOfSchool(input.id(), schoolId);
 
         if (!schoolClassDependencyRepository.existsDependencyBySchoolClassId(input.id())) {
             schoolClassRepository.deleteById(input.id());
             return new DeleteSchoolClassResponse(input.id(), HARD_DELETE, null, null);
         }
 
-        // Xóa mềm: archive lớp và deactivate toàn bộ thành viên đang active trong cùng transaction.
+        return archiveClassAndDeactivateMembers(schoolClass);
+    }
+
+    private SchoolClass findNotYetArchivedClassOfSchool(UUID classId, UUID schoolId) {
+        SchoolClass schoolClass = schoolClassRepository.findById(classId)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp học"));
+        if (!Objects.equals(schoolClass.getSchoolId(), schoolId)) {
+            throw new ResourceNotFoundException("Không tìm thấy lớp học");
+        }
+
+        // Already soft-deleted (ARCHIVED) earlier -> treated as non-existent, to avoid archiving/deactivating again.
+        if (schoolClass.getStatus() == SchoolClassStatus.ARCHIVED) {
+            throw new ResourceNotFoundException("Lớp học đã bị xóa trước đó");
+        }
+        return schoolClass;
+    }
+
+    // Soft delete: archive the class and deactivate every active member in the same transaction.
+    private DeleteSchoolClassResponse archiveClassAndDeactivateMembers(SchoolClass schoolClass) {
         Instant now = Instant.now();
-        schoolClassUserRepository.deactivateBySchoolClassId(input.id(), now);
+        schoolClassUserRepository.deactivateBySchoolClassId(schoolClass.getId(), now);
         schoolClass.setStatus(SchoolClassStatus.ARCHIVED);
         SchoolClass saved = schoolClassRepository.save(schoolClass);
         return new DeleteSchoolClassResponse(

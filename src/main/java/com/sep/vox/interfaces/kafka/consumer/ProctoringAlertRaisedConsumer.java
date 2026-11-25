@@ -49,17 +49,7 @@ public class ProctoringAlertRaisedConsumer {
             AlertRaisedEventDto dto = jsonMapper.treeToValue(payload, AlertRaisedEventDto.class);
             Boolean stored = recordProctoringAlertUseCase.execute(ProctoringAlertCommandMapper.toCommand(dto));
 
-            // Log at INFO only when a new row was actually stored. Repeated alerts are normal with Kafka, and
-            // logging every redelivery would turn the monitoring log into noise exactly when it needs to be
-            // read the most -- during an incident.
-            if (Boolean.TRUE.equals(stored)) {
-                log.info(
-                    "Đã lưu cảnh báo giám sát: eventId={} sessionId={} alertType={} capturedAt={}",
-                    dto.eventId(), dto.sessionId(), dto.alertType(), dto.capturedAt()
-                );
-            } else {
-                log.debug("Bỏ qua cảnh báo giám sát trùng hoặc không dùng được: eventId={}", dto.eventId());
-            }
+            logAlertOutcome(stored, dto);
             ack.acknowledge();
         } catch (Exception ex) {
             log.error(
@@ -67,6 +57,20 @@ public class ProctoringAlertRaisedConsumer {
                 record.partition(), record.offset(), record.key(), ex.getMessage(), ex
             );
             throw (RuntimeException) ex;
+        }
+    }
+
+    private void logAlertOutcome(Boolean stored, AlertRaisedEventDto dto) {
+        // Log at INFO only when a new row was actually stored. Repeated alerts are normal with Kafka, and
+        // logging every redelivery would turn the monitoring log into noise exactly when it needs to be
+        // read the most -- during an incident.
+        if (Boolean.TRUE.equals(stored)) {
+            log.info(
+                "Đã lưu cảnh báo giám sát: eventId={} sessionId={} alertType={} capturedAt={}",
+                dto.eventId(), dto.sessionId(), dto.alertType(), dto.capturedAt()
+            );
+        } else {
+            log.debug("Bỏ qua cảnh báo giám sát trùng hoặc không dùng được: eventId={}", dto.eventId());
         }
     }
 

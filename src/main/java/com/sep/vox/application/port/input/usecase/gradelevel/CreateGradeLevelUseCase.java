@@ -8,7 +8,6 @@ import com.sep.vox.application.port.input.command.gradelevel.CreateGradeLevelCom
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.gradelevel.GradeLevel;
-import com.sep.vox.domain.model.gradelevel.GradeLevelStatus;
 import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.repository.GradeLevelRepository;
 import com.sep.vox.domain.repository.UserRepository;
@@ -62,13 +61,11 @@ public class CreateGradeLevelUseCase implements IUseCase<CreateGradeLevelCommand
     }
 
     private UUID saveNewGradeLevel(CreateGradeLevelCommand command, String code, UUID creatorId) {
-        GradeLevel newGradeLevel = GradeLevel.builder()
-            .code(code)
-            .name(StringNormalization.trimAndCollapseSpaces(command.name()))
-            .description(command.description() != null ? StringNormalization.trimAndCollapseSpaces(command.description()) : null)
-            .order(command.order())
-            .status(GradeLevelStatus.ACTIVE)
-            .build();
+        GradeLevel newGradeLevel = GradeLevel.registered(
+            code,
+            StringNormalization.trimAndCollapseSpaces(command.name()),
+            command.description() != null ? StringNormalization.trimAndCollapseSpaces(command.description()) : null,
+            command.order());
         try {
             return gradeLevelRepository.save(newGradeLevel).getId();
         } catch (DataConflictException e) {

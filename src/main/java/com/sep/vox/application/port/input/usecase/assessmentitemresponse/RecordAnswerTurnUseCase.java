@@ -28,6 +28,22 @@ public class RecordAnswerTurnUseCase implements IUseCase<RecordAnswerTurnCommand
     @Override
     @Transactional
     public Void execute(RecordAnswerTurnCommand input) {
+        requireValidTurnInput(input);
+
+        if (!assessmentSessionRepository.existsById(input.sessionId())) {
+            throw new ResourceNotFoundException("Không tìm thấy phiên thi cho turn đã ghi nhận");
+        }
+
+        Instant answeredAt = input.answeredAt() == null ? Instant.now() : input.answeredAt();
+        AssessmentItemResponse response = findOrCreateResponse(input, answeredAt);
+        mergeIntoResponse(response, input, answeredAt);
+        assessmentItemResponseRepository.save(response);
+
+        assessmentItemResponseTurnRepository.upsert(mergeTurn(response, input, answeredAt));
+        return null;
+    }
+
+    private void requireValidTurnInput(RecordAnswerTurnCommand input) {
         if (input.sessionId() == null) {
             throw new IllegalArgumentException("Thiếu sessionId trong dữ liệu turn");
         }
@@ -37,13 +53,10 @@ public class RecordAnswerTurnUseCase implements IUseCase<RecordAnswerTurnCommand
         if (input.turnOrder() <= 0) {
             throw new IllegalArgumentException("turnOrder phải lớn hơn 0");
         }
+    }
 
-        if (!assessmentSessionRepository.existsById(input.sessionId())) {
-            throw new ResourceNotFoundException("Không tìm thấy phiên thi cho turn đã ghi nhận");
-        }
-
-        Instant answeredAt = input.answeredAt() == null ? Instant.now() : input.answeredAt();
-        AssessmentItemResponse response = assessmentItemResponseRepository.findById(input.answerId())
+    private AssessmentItemResponse findOrCreateResponse(RecordAnswerTurnCommand input, Instant answeredAt) {
+        return assessmentItemResponseRepository.findById(input.answerId())
             .orElseGet(() -> AssessmentItemResponse.answered(
                     input.answerId(),
                     input.sessionId(),
@@ -52,20 +65,24 @@ public class RecordAnswerTurnUseCase implements IUseCase<RecordAnswerTurnCommand
                     input.durationSeconds(),
                     input.transcript(),
                     answeredAt));
+    }
 
+    /**
+     * Overwrites conditionally, not unconditionally as before.
+     *
+     * <p>A turn arrives here TWICE (see turn_publisher.publish_turn_if_new): phase 1 right after the follow-up
+     * decision, carrying the Voice Live transcript but no recording yet; phase 2 when the recording arrives,
+     * carrying audio_url while the Azure transcript may be empty -- measured on 2026-08-09: all 3 turns of a real
+     * assessment session were empty.
+     *
+     * <p>With an unconditional assignment, whichever phase arrives later wipes the good part of the earlier one, and
+     * the turn looks as if the candidate said nothing.
+     */
+    private void mergeIntoResponse(AssessmentItemResponse response, RecordAnswerTurnCommand input, Instant answeredAt) {
         response.setSessionId(input.sessionId());
         if (response.getPaperItemId() == null && input.paperItemId() != null) {
             response.setPaperItemId(input.paperItemId());
         }
-        // GHI ĐÈ CÓ ĐIỀU KIỆN, không vô điều kiện như trước.
-        //
-        // Một lượt nói tới đây HAI LẦN (xem turn_publisher.publish_turn_if_new): pha 1 ngay khi
-        // quyết định follow-up xong, mang transcript của Voice Live nhưng chưa có bản ghi âm;
-        // pha 2 khi bản ghi âm về, mang audio_url nhưng transcript Azure thì có thể rỗng --
-        // đo được 2026-08-09: cả 3 lượt của một phiên thi thật đều rỗng.
-        //
-        // Gán vô điều kiện thì pha nào tới sau cũng xoá mất phần tốt của pha trước, và lượt nói
-        // trông như thí sinh chưa nói gì.
         if (isMeaningful(input.audioUrl())) {
             response.setAudioUrl(input.audioUrl());
         }
@@ -78,24 +95,24 @@ public class RecordAnswerTurnUseCase implements IUseCase<RecordAnswerTurnCommand
         if (input.answeredAt() != null || response.getSubmittedAt() == null) {
             response.setSubmittedAt(answeredAt);
         }
-        assessmentItemResponseRepository.save(response);
+    }
 
-        // upsert() replaces the WHOLE row (see AssessmentItemResponseTurnRepositoryImpl: it keeps only the id and
-        // createdAt of the old one), so the merge has to happen HERE before calling it. The semantics of
-        // upsert are not changed because UpdateAssessmentItemResponseTurnUseCase is the path where a teacher edits by hand, where blanking out
-        // a field is intentional.
+    /**
+     * upsert() replaces the WHOLE row (see AssessmentItemResponseTurnRepositoryImpl: it keeps only the id and
+     * createdAt of the old one), so the merge has to happen HERE before calling it. The semantics of
+     * upsert are not changed because UpdateAssessmentItemResponseTurnUseCase is the path where a teacher edits by hand, where blanking out
+     * a field is intentional.
+     */
+    private AssessmentItemResponseTurn mergeTurn(
+        AssessmentItemResponse response, RecordAnswerTurnCommand input, Instant answeredAt) {
         AssessmentItemResponseTurn existingTurn = assessmentItemResponseTurnRepository
             .findByAssessmentItemResponseIdAndTurnOrder(response.getId(), input.turnOrder())
             .orElse(null);
 
-        // normalizeTurnType returns MAIN when the type is missing, so a phase that sends no turnType would downgrade
-        // a FOLLOWUP turn to MAIN -- skewing both the follow-up statistics and how the assessment is displayed.
-        AssessmentItemResponseTurn turn = AssessmentItemResponseTurn.answered(
+        return AssessmentItemResponseTurn.answered(
                 response.getId(),
                 input.turnOrder(),
-                isMeaningful(input.turnType()) || existingTurn == null
-                    ? normalizeTurnType(input.turnType())
-                    : existingTurn.getTurnType(),
+                mergedTurnType(input, existingTurn),
                 keep(input.promptText(), existingTurn == null ? null : existingTurn.getPromptText()),
                 keep(input.audioUrl(), existingTurn == null ? null : existingTurn.getAudioUrl()),
                 keep(input.transcript(), existingTurn == null ? null : existingTurn.getTranscript()),
@@ -108,16 +125,24 @@ public class RecordAnswerTurnUseCase implements IUseCase<RecordAnswerTurnCommand
                 input.answeredAt() != null || existingTurn == null
                     ? answeredAt
                     : existingTurn.getAnsweredAt());
-        assessmentItemResponseTurnRepository.upsert(turn);
-        return null;
     }
 
-    /** Giá trị mới có đáng ghi đè không -- chuỗi rỗng/toàn khoảng trắng thì không. */
+    /**
+     * normalizeTurnType returns MAIN when the type is missing, so a phase that sends no turnType would downgrade
+     * a FOLLOWUP turn to MAIN -- skewing both the follow-up statistics and how the assessment is displayed.
+     */
+    private TurnType mergedTurnType(RecordAnswerTurnCommand input, AssessmentItemResponseTurn existingTurn) {
+        return isMeaningful(input.turnType()) || existingTurn == null
+            ? normalizeTurnType(input.turnType())
+            : existingTurn.getTurnType();
+    }
+
+    /** Whether a new value is worth overwriting with: an empty or whitespace-only string is not. */
     private static boolean isMeaningful(String value) {
         return value != null && !value.isBlank();
     }
 
-    /** Lấy giá trị mới nếu nó có nghĩa, ngược lại giữ nguyên giá trị đang có. */
+    /** Takes the new value if it is meaningful, otherwise keeps the existing one. */
     private static String keep(String incoming, String existing) {
         return isMeaningful(incoming) ? incoming : existing;
     }

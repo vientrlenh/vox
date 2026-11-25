@@ -38,21 +38,14 @@ public class UpdateFrameworkVersionUseCase implements IUseCase<UpdateFrameworkVe
     }
 
     private FrameworkVersion updateVersion(UpdateFrameworkVersionCommand input, FrameworkVersion version) {
-        return FrameworkVersion.builder()
-            .id(version.getId())
-            .frameworkId(version.getFrameworkId())
-            .code(StringNormalization.normalizeCode(input.code()))
-            .name(StringNormalization.trimAndCollapseSpaces(input.name()))
-            .description(input.descriptionProvided()
+        return version.withEditableFields(
+            StringNormalization.normalizeCode(input.code()),
+            StringNormalization.trimAndCollapseSpaces(input.name()),
+            input.descriptionProvided()
                 ? StringNormalization.trimAndCollapseSpaces(input.description())
-                : version.getDescription())
-            .version(version.getVersion())
-            .effectiveFrom(input.effectiveFrom())
-            .effectiveTo(effectiveTo(input, version))
-            .status(version.getStatus())
-            .createdAt(version.getCreatedAt())
-            .createdBy(version.getCreatedBy())
-            .build();
+                : version.getDescription(),
+            input.effectiveFrom(),
+            effectiveTo(input, version));
     }
 
     private void checkValidRequest(UpdateFrameworkVersionCommand input, FrameworkVersion version) {

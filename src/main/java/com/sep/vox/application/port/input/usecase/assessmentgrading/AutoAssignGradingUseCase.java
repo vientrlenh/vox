@@ -60,7 +60,28 @@ public class AutoAssignGradingUseCase implements IUseCase<AutoAssignGradingComma
         UUID currentUserId = assessmentGradingAccessService.requireActiveUserId();
         UUID schoolId = assessmentGradingAccessService.requireCurrentSchoolId(currentUserId);
         assessmentGradingAccessService.authorizeSchoolAdmin(schoolId, currentUserId);
+        requireAssignmentTarget(command);
+        GradingRoundType roundType = requireNotAppealRound(command.roundType());
+        Instant deadlineAt = validateDeadline(command.deadlineAt());
+        List<UUID> teacherIds = requireTeachersOfSchool(command.teacherIds(), schoolId);
+        List<UUID> candidates = findAssignableResultIds(command, schoolId, roundType);
+        if (candidates.isEmpty()) {
+            return List.of();
+        }
+        // The entry by scheduleId does not go through the assessmentId guard above.
+        assessmentGradingAccessService.rejectClassTestCoordination(candidates);
+        List<UUID> selected = selectSample(command, candidates);
+        if (selected.isEmpty()) {
+            return List.of();
+        }
 
+        Instant now = Instant.now();
+        List<AssessmentGradingAssignment> assignments =
+            buildAssignments(selected, teacherIds, roundType, now, currentUserId, deadlineAt);
+        return saveAndNotify(assignments, now);
+    }
+
+    private void requireAssignmentTarget(AutoAssignGradingCommand command) {
         if (command.assessmentId() == null && command.scheduleId() == null) {
             throw new IllegalArgumentException("Phải chọn kỳ thi hoặc ca thi để phân công tự động.");
         }
@@ -70,55 +91,52 @@ public class AutoAssignGradingUseCase implements IUseCase<AutoAssignGradingComma
         if (assessmentGradingAccessService.isClassTestAssessment(command.assessmentId())) {
             throw new ForbiddenException(AssessmentGradingAccessService.CLASS_TEST_COORDINATION_REJECTION);
         }
-        GradingRoundType roundType = requireNotAppealRound(command.roundType());
-        GradingSampleSelectionMode selectionMode = command.selectionMode() == null
-            ? GradingSampleSelectionMode.ALL
-            : command.selectionMode();
-        Instant deadlineAt = validateDeadline(command.deadlineAt());
+    }
 
-        List<UUID> teacherIds = command.teacherIds() == null ? List.<UUID>of() : command.teacherIds();
+    private List<UUID> requireTeachersOfSchool(List<UUID> requestedTeacherIds, UUID schoolId) {
+        List<UUID> teacherIds = requestedTeacherIds == null ? List.<UUID>of() : requestedTeacherIds;
         if (teacherIds.isEmpty()) {
             throw new IllegalArgumentException("Phải chọn ít nhất một giáo viên để phân công.");
         }
         if (new HashSet<>(teacherIds).size() != teacherIds.size()) {
             throw new ResourceDuplicatedException("Không được chọn trùng giáo viên.");
         }
-        // Một query cho cả nhóm thay vì isTeacherOfSchool lặp từng người (N+1).
+        // One query for the whole group instead of repeating isTeacherOfSchool per person (N+1).
         Set<UUID> validTeachers = assessmentGradingQueryRepository.findTeacherIdsInSchool(schoolId, teacherIds);
         if (!validTeachers.containsAll(teacherIds)) {
             throw new IllegalArgumentException("Người chấm phải là giáo viên thuộc cùng trường với bài thi.");
         }
+        return teacherIds;
+    }
 
+    private List<UUID> findAssignableResultIds(
+            AutoAssignGradingCommand command, UUID schoolId, GradingRoundType roundType) {
         List<String> eligibleStatuses = GradingRoundPolicy.assignableStatuses(roundType).stream()
             .map(candidateResultStatus -> candidateResultStatus.name())
             .toList();
-        List<UUID> candidates = assessmentGradingQueryRepository.findAssignableResultIds(
+        return assessmentGradingQueryRepository.findAssignableResultIds(
             schoolId, command.assessmentId(), command.scheduleId(), eligibleStatuses);
-        if (candidates.isEmpty()) {
-            return List.of();
-        }
-        // The entry by scheduleId does not go through the assessmentId guard above.
-        assessmentGradingAccessService.rejectClassTestCoordination(candidates);
+    }
 
-        // Chỉ nạp tín hiệu rủi ro khi chế độ thật sự cần — một query nặng chạy không
-        // công cho ba chế độ còn lại là lãng phí thấy rõ.
+    private List<UUID> selectSample(AutoAssignGradingCommand command, List<UUID> candidates) {
+        GradingSampleSelectionMode selectionMode = command.selectionMode() == null
+            ? GradingSampleSelectionMode.ALL
+            : command.selectionMode();
+        // Load the risk signals only when the mode really needs them -- a heavy query run for nothing
+        // for the other three modes is a clear waste.
         List<GradingRiskInfo> riskInfos = selectionMode == GradingSampleSelectionMode.RISK_BASED
             ? assessmentGradingQueryRepository.findRiskInfos(candidates)
-            : List.<com.sep.vox.application.query.dto.GradingRiskInfo>of();
-        List<UUID> selected = gradingSampleSelector.select(
+            : List.<GradingRiskInfo>of();
+        return gradingSampleSelector.select(
             selectionMode, candidates, command.percent(), command.candidateResultIds(), riskInfos);
-        if (selected.isEmpty()) {
-            return List.of();
-        }
+    }
 
+    private List<AssessmentGradingAssignment> buildAssignments(List<UUID> selected, List<UUID> teacherIds,
+            GradingRoundType roundType, Instant now, UUID currentUserId, Instant deadlineAt) {
         Map<UUID, Long> loads = assessmentGradingQueryRepository.assignedLoadByTeacherIds(teacherIds);
         List<UUID> picked = roundRobinLoadBalancer.distribute(selected, teacherIds, loads);
+        Map<UUID, AssessmentCandidateResult> scoreByResultId = scoreBeforeByResultId(selected);
 
-        // scoreBefore chụp lúc giao, batch một query — mốc đo độ lệch sau khi chấm.
-        Map<UUID, AssessmentCandidateResult> scoreByResultId = assessmentCandidateResultRepository.findByIdIn(selected).stream()
-            .collect(Collectors.toMap(result -> result.getId(), Function.identity(), (left, right) -> left));
-
-        Instant now = Instant.now();
         List<AssessmentGradingAssignment> assignments = new ArrayList<AssessmentGradingAssignment>();
         for (int index = 0; index < selected.size(); index++) {
             UUID candidateResultId = selected.get(index);
@@ -134,7 +152,16 @@ public class AutoAssignGradingUseCase implements IUseCase<AutoAssignGradingComma
                 deadlineAt
             ));
         }
+        return assignments;
+    }
 
+    /** scoreBefore is captured at assignment, in one batch query -- the reference point for measuring the deviation after grading. */
+    private Map<UUID, AssessmentCandidateResult> scoreBeforeByResultId(List<UUID> selected) {
+        return assessmentCandidateResultRepository.findByIdIn(selected).stream()
+            .collect(Collectors.toMap(result -> result.getId(), Function.identity(), (left, right) -> left));
+    }
+
+    private List<UUID> saveAndNotify(List<AssessmentGradingAssignment> assignments, Instant now) {
         List<AssessmentGradingAssignment> saved = assessmentGradingAssignmentRepository.saveAll(assignments);
 
         gradingAssignmentNotificationService.publishAssigned(saved, now);

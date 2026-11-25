@@ -27,17 +27,6 @@ public final class RecordPracticeAttemptEvaluationCommandMapper {
         PracticeAttemptEvaluationCompletedPayloadDto payload = dto.payload();
         ValidityResultDto validity = payload == null ? null : payload.validity();
         EvaluationSignalsDto signals = payload == null ? null : payload.signals();
-        List<PracticeCriterionScoreInput> criteria = payload == null || payload.criteria() == null
-            ? List.<PracticeCriterionScoreInput>of()
-            : payload.criteria().entrySet().stream()
-                // Ignore matchedBandCode even if Python sends it: practice grading compares against EXACTLY the
-                // one band the student chose, so only the score within that band is needed, not a
-                // classification.
-                .map(entry -> new PracticeCriterionScoreInput(
-                    entry.getKey(),
-                    entry.getValue() == null ? null : entry.getValue().score()
-                ))
-                .toList();
         return new RecordPracticeAttemptEvaluationCommand(
             UUID.fromString(dto.practiceResponseId()),
             validity == null || validity.validForScoring() == null || validity.validForScoring(),
@@ -45,7 +34,7 @@ public final class RecordPracticeAttemptEvaluationCommandMapper {
             signals == null ? null : decimalOrNull(signals.audioQuality()),
             signals == null ? null : decimalOrNull(signals.codeSwitchingRatio()),
             signals == null || signals.wordCount() == null ? 0 : signals.wordCount(),
-            criteria,
+            toCriterionScores(payload),
             payload == null ? null : payload.evaluatedAt()
             // rawCriteria/turns/signals are NO LONGER mapped into the command. Those three fields only served
             // deriving weak-point observations (removed) -- the use case does not read them, so keeping them
@@ -54,6 +43,21 @@ public final class RecordPracticeAttemptEvaluationCommandMapper {
             // The Kafka wire DTO STAYS UNCHANGED: Python still emits all fields as before, Java just ignores
             // them. Not touching the payload shape means nothing has to change on the grading side.
         );
+    }
+
+    private static List<PracticeCriterionScoreInput> toCriterionScores(PracticeAttemptEvaluationCompletedPayloadDto payload) {
+        if (payload == null || payload.criteria() == null) {
+            return List.of();
+        }
+        return payload.criteria().entrySet().stream()
+            // Ignore matchedBandCode even if Python sends it: practice grading compares against EXACTLY the
+            // one band the student chose, so only the score within that band is needed, not a
+            // classification.
+            .map(entry -> new PracticeCriterionScoreInput(
+                entry.getKey(),
+                entry.getValue() == null ? null : entry.getValue().score()
+            ))
+            .toList();
     }
 
     private static ConfidenceCaseSignals toConfidenceCase(ConfidenceCaseSignalsDto dto) {

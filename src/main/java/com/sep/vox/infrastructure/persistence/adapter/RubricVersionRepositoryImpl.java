@@ -115,32 +115,14 @@ public class RubricVersionRepositoryImpl implements RubricVersionRepository {
 
     @Override
     public void updateRubricVersionAtomic(
-            UUID id,
-            String code,
-            String name,
-            String description,
-            boolean descriptionProvided,
-            Instant effectiveFrom,
-            Instant effectiveTo,
-            boolean effectiveToProvided,
-            BigDecimal scoringScaleMin,
-            BigDecimal scoringScaleMax,
-            String totalScoreMethod) {
+            UUID id, String code, String name, String description, boolean descriptionProvided,
+            Instant effectiveFrom, Instant effectiveTo, boolean effectiveToProvided,
+            BigDecimal scoringScaleMin, BigDecimal scoringScaleMax, String totalScoreMethod) {
         // SpringDataRubricVersionRepository.updateRubricVersionAtomic declares its parameters in the order (id, name, code, ...)
         DataConflictTranslation.translating(() -> springDataRubricVersionRepository.updateRubricVersionAtomic(
-            id,
-            name,
-            code,
-            description,
-            descriptionProvided,
-            effectiveFrom,
-            effectiveTo,
-            effectiveToProvided,
-            scoringScaleMin,
-            scoringScaleMax,
-            totalScoreMethod,
-            auditStampProvider.currentUpdatedAt(),
-            auditStampProvider.currentUpdatedBy()
+            id, name, code, description, descriptionProvided, effectiveFrom, effectiveTo, effectiveToProvided,
+            scoringScaleMin, scoringScaleMax, totalScoreMethod,
+            auditStampProvider.currentUpdatedAt(), auditStampProvider.currentUpdatedBy()
         ));
     }
 

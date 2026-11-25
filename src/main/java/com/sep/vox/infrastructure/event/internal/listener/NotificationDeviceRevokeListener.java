@@ -49,7 +49,7 @@ public class NotificationDeviceRevokeListener {
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void handle(DeviceSessionRevokedEvent event) {
+    public void removeDevicesOfRevokedSession(DeviceSessionRevokedEvent event) {
         int removed = notificationDeviceRepository.deleteByUserIdAndDeviceId(event.userId(), event.deviceId());
         if (removed > 0) {
             log.info("Đã gỡ {} thiết bị nhận thông báo theo phiên bị thu hồi: sessionId={}, userId={}",

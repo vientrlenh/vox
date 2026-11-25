@@ -63,6 +63,52 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
 
+        requireStreamingAndNoOtp(assessment);
+
+        Instant now = Instant.now();
+        requireCandidateMayEnter(candidate, assessment, now);
+
+        Instant scheduleEndAt = requireScheduleEndInWindow(candidate, now);
+
+        AssessmentSession resumableSession = findResumableSession(candidate.getId());
+        if (resumableSession != null) {
+            return resumeEntryTicket(resumableSession, now, scheduleEndAt, assessment);
+        }
+
+        requireAttemptsLeft(assessment, candidate);
+        return startNewSession(input, candidate, assessment, now, scheduleEndAt);
+    }
+
+    private AssessmentEntryTicketResponse startNewSession(
+            StartClassTestSessionCommand input,
+            AssessmentCandidate candidate,
+            Assessment assessment,
+            Instant now,
+            Instant scheduleEndAt) {
+        // Only block creating a NEW session while the school is in debt -- the resume branch above is not blocked so that a
+        // candidate who is halfway through is not cut off. Does not throw when the school has no active subscription (keeps
+        // the old behaviour for that case, outside the scope of this change).
+        schoolSubscriptionRepository.findActiveBySchoolId(assessment.getSchoolId())
+            .ifPresent(subscription -> schoolSubscriptionDebtGuardService.requireSchoolNotLocked(subscription.getSchoolId()));
+
+        AssessmentSessionResponse session = createAssessmentSessionUseCase.execute(new CreateAssessmentSessionCommand(
+            input.assessmentId(),
+            candidate.getId(),
+            candidate.getAssignedPaperId()
+        ));
+        // The session was just created: no token has been issued yet, so nothing is fixed.
+        return buildEntryTicket(session.id(), now, scheduleEndAt, assessment, null);
+    }
+
+    private Instant requireScheduleEndInWindow(AssessmentCandidate candidate, Instant now) {
+        // Take the session that is inside its time window, with no fallback to the assessment's closeAt: this is exactly the
+        // condition IssueStudentStreamTokenUseCase checks right after when it issues the stream token.
+        AssessmentSchedule schedule = assessmentScheduleRepository.findByIdAndInSchedule(candidate.getScheduleId(), now)
+            .orElseThrow(() -> new ResourceNotFoundException("Ca thi không hợp lệ hoặc đã hết hạn"));
+        return schedule.getEndDate();
+    }
+
+    private void requireStreamingAndNoOtp(Assessment assessment) {
         // Blocked right at the entrance: being able to enter the attempt but not being able to record proctoring data makes the attempt
         // worthless. The same rule as the OTP flow in VerifyAssessmentScheduleOtpUseCase.
         if (assessment.getRequiredStreamType() != null) {
@@ -72,15 +118,16 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
         if (assessment.isRequiresOtp()) {
             throw new IllegalArgumentException("Bài kiểm tra này yêu cầu xác thực OTP, vui lòng dùng luồng xác thực OTP");
         }
+    }
 
-        Instant now = Instant.now();
+    private void requireCandidateMayEnter(AssessmentCandidate candidate, Assessment assessment, Instant now) {
         if (candidate.getBlockedAt() != null) {
             throw new IllegalArgumentException("Bạn đã bị buộc kết thúc bài thi này, không thể vào lại");
         }
         if (AssessmentCandidateStatus.isBlockedForEntry(candidate.getStatus())) {
             throw new IllegalArgumentException("Bạn không đủ điều kiện tham gia kỳ thi này");
         }
-        // Bài trên lớp cũng thi trong phòng có giám khảo, nên phải được điểm danh có mặt mới vào được.
+        // A class test is also taken in a room with a proctor, so the candidate must be marked present before entering.
         if (!AssessmentCandidateStatus.isAttended(candidate.getStatus())) {
             throw new IllegalArgumentException("Bạn chưa được điểm danh có mặt, vui lòng liên hệ giám thị");
         }
@@ -93,48 +140,33 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
         if (candidate.getAssignedPaperId() == null) {
             throw new IllegalArgumentException("Bạn chưa được gán đề bài kiểm tra");
         }
+    }
 
-        // Lấy ca thi đang trong khung giờ, không fallback về closeAt của bài: đây đúng là điều kiện
-        // mà IssueStudentStreamTokenUseCase kiểm tra ngay sau đó khi phát token stream.
-        AssessmentSchedule schedule = assessmentScheduleRepository.findByIdAndInSchedule(candidate.getScheduleId(), now)
-            .orElseThrow(() -> new ResourceNotFoundException("Ca thi không hợp lệ hoặc đã hết hạn"));
-        Instant scheduleEndAt = schedule.getEndDate();
-
-        AssessmentSession resumableSession = findResumableSession(candidate.getId());
-        if (resumableSession != null) {
-            if (resumableSession.getStatus() == AssessmentSessionStatus.INTERRUPTED) {
-                updateAssessmentSessionStatusUseCase.execute(
-                    new UpdateAssessmentSessionStatusCommand(resumableSession.getId(), AssessmentSessionStatus.IN_PROGRESS)
-                );
-                resumableSession = assessmentSessionRepository.findById(resumableSession.getId()).orElse(resumableSession);
-            }
-            // A session in progress: the stream choice may already have been fixed on the earlier entry -- see the doc of
-            // AssessmentEntryTicketResponse.of.
-            return buildEntryTicket(
-                resumableSession.getId(), now, scheduleEndAt, assessment,
-                resumableSession.getChosenStreamType());
+    private AssessmentEntryTicketResponse resumeEntryTicket(
+            AssessmentSession resumableSession,
+            Instant now,
+            Instant scheduleEndAt,
+            Assessment assessment) {
+        if (resumableSession.getStatus() == AssessmentSessionStatus.INTERRUPTED) {
+            updateAssessmentSessionStatusUseCase.execute(
+                new UpdateAssessmentSessionStatusCommand(resumableSession.getId(), AssessmentSessionStatus.IN_PROGRESS)
+            );
+            resumableSession = assessmentSessionRepository.findById(resumableSession.getId()).orElse(resumableSession);
         }
+        // A session in progress: the stream choice may already have been fixed on the earlier entry -- see the doc of
+        // AssessmentEntryTicketResponse.of.
+        return buildEntryTicket(
+            resumableSession.getId(), now, scheduleEndAt, assessment,
+            resumableSession.getChosenStreamType());
+    }
 
+    private void requireAttemptsLeft(Assessment assessment, AssessmentCandidate candidate) {
         if (assessment.getMaxAttempt() != null) {
             long usedAttempts = countUsedAttempts(candidate.getId());
             if (usedAttempts >= assessment.getMaxAttempt()) {
                 throw new ResourceDuplicatedException("Đã hết số lượt làm bài cho phép (" + assessment.getMaxAttempt() + " lượt)");
             }
         }
-
-        // Chỉ chặn tạo phiên MỚI khi trường đang nợ -- không chặn nhánh resume ở trên để không cắt
-        // ngang thí sinh đang thi dở. Không throw nếu trường không có subscription active (giữ
-        // nguyên hành vi cũ cho case đó, ngoài phạm vi sửa lần này).
-        schoolSubscriptionRepository.findActiveBySchoolId(assessment.getSchoolId())
-            .ifPresent(subscription -> schoolSubscriptionDebtGuardService.requireSchoolNotLocked(subscription.getSchoolId()));
-
-        AssessmentSessionResponse session = createAssessmentSessionUseCase.execute(new CreateAssessmentSessionCommand(
-            input.assessmentId(),
-            candidate.getId(),
-            candidate.getAssignedPaperId()
-        ));
-        // Phiên vừa tạo: chưa phát token lần nào nên chưa chốt gì.
-        return buildEntryTicket(session.id(), now, scheduleEndAt, assessment, null);
     }
 
     private AssessmentSession findResumableSession(UUID candidateId) {

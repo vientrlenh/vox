@@ -37,39 +37,36 @@ public class ViewSchoolRubricsUseCase implements IUseCase<ViewSchoolRubricsQuery
     @Override
     @Transactional(readOnly = true)
     public PageResult<RubricDto> execute(ViewSchoolRubricsQuery query) {
-        // 1. Xác thực tài khoản
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
+        requireActiveSchoolMember(query.schoolId());
 
-        if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản bị khóa.");
-        }
-
-        // 2. Chốt chặn an ninh bằng SchoolUser
-        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
-
-        if (!schoolUser.getSchoolId().equals(query.schoolId())) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền truy cập dữ liệu của trường khác.");
-        }
-
-        // 3. Kiểm tra trường học có đang hoạt động không
-        School school = schoolRepository.findById(query.schoolId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
-        if (!school.isActive()) {
-            throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa.");
-        }
-
-        // 4. Lấy dữ liệu phân trang từ Database (Lọc theo SCHOOL và SchoolId)
+        // Filtered by SCHOOL owner type and schoolId.
         PageResult<Rubric> rubricPage = rubricRepository.findAllByOwnerTypeAndSchoolId(
                 RubricOwnerType.SCHOOL,
                 query.schoolId(),
                 query.page(),
                 query.size()
         );
-
-        // 5. Map sang DTO
         return RubricDtoMapper.toRubricPage(rubricPage);
+    }
+
+    private void requireActiveSchoolMember(UUID schoolId) {
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) {
+            throw new UnauthorizedException("Tài khoản bị khóa.");
+        }
+
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
+                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
+        if (!schoolUser.getSchoolId().equals(schoolId)) {
+            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền truy cập dữ liệu của trường khác.");
+        }
+
+        School school = schoolRepository.findById(schoolId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
+        if (!school.isActive()) {
+            throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa.");
+        }
     }
 }

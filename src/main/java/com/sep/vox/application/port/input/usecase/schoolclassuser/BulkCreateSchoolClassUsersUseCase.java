@@ -68,57 +68,82 @@ public class BulkCreateSchoolClassUsersUseCase
         validateSchool(schoolId);
         validateSchoolClass(input.classId(), schoolId);
 
-        // Nạp theo lô để số truy vấn không tăng theo số người dùng được chọn.
+        RequestedUserLookups lookups = loadLookups(requestedUserIds, input.classId());
+        MembershipOutcome outcome = decideMemberships(
+            requestedUserIds, lookups, schoolId, input.classId(), now, currentUserId);
+
+        saveMemberships(outcome.toSave());
+
+        return new BulkCreateSchoolClassUsersResponse(List.copyOf(outcome.addedUserIds()), List.copyOf(outcome.failed()));
+    }
+
+    // Loaded in bulk so the number of queries does not grow with the number of selected users.
+    private RequestedUserLookups loadLookups(List<UUID> requestedUserIds, UUID classId) {
         Map<UUID, User> usersById = userRepository.findByIdIn(requestedUserIds).stream()
             .collect(Collectors.toMap(user -> user.getId(), user -> user, (first, second) -> first));
         Map<UUID, UUID> schoolIdsByUserId = schoolUserRepository.findByUserIdIn(requestedUserIds).stream()
             .collect(Collectors.toMap(
                 schoolUser -> schoolUser.getUserId(), schoolUser -> schoolUser.getSchoolId(), (first, second) -> first));
         Map<UUID, SchoolClassUser> membershipsByUserId = schoolClassUserRepository
-            .findByUserIdInAndSchoolClassIdIn(requestedUserIds, List.of(input.classId())).stream()
+            .findByUserIdInAndSchoolClassIdIn(requestedUserIds, List.of(classId)).stream()
             .collect(Collectors.toMap(
                 membership -> membership.getUserId(), membership -> membership, (first, second) -> first));
+        return new RequestedUserLookups(usersById, schoolIdsByUserId, membershipsByUserId);
+    }
 
+    private MembershipOutcome decideMemberships(List<UUID> requestedUserIds, RequestedUserLookups lookups,
+            UUID schoolId, UUID classId, Instant now, UUID currentUserId) {
         List<UUID> addedUserIds = new ArrayList<UUID>();
         List<BulkCreateSchoolClassUserFailure> failed = new ArrayList<BulkCreateSchoolClassUserFailure>();
         List<SchoolClassUser> toSave = new ArrayList<SchoolClassUser>();
 
         for (UUID userId : requestedUserIds) {
-            String reason = rejectionReason(userId, usersById, schoolIdsByUserId, membershipsByUserId, schoolId);
+            String reason = rejectionReason(
+                userId, lookups.usersById(), lookups.schoolIdsByUserId(), lookups.membershipsByUserId(), schoolId);
             if (reason != null) {
                 failed.add(new BulkCreateSchoolClassUserFailure(userId, reason));
                 continue;
             }
 
-            // Thêm thành viên = join hoặc re-join: học sinh đã rời lớp được kích hoạt lại
-            // thay vì tạo bản ghi mới, vì (userId, classId) là duy nhất.
-            SchoolClassUser existing = membershipsByUserId.get(userId);
-            if (existing != null) {
-                existing.activate();
-                toSave.add(existing);
-            } else {
-                toSave.add(SchoolClassUser.builder()
-                    .userId(userId)
-                    .schoolClassId(input.classId())
-                    .active(true)
-                    .joinedAt(now)
-                    .leftAt(null)
-                    .assignedBy(currentUserId)
-                    .build());
-            }
+            toSave.add(joinOrRejoin(lookups.membershipsByUserId().get(userId), userId, classId, now, currentUserId));
             addedUserIds.add(userId);
         }
+        return new MembershipOutcome(addedUserIds, failed, toSave);
+    }
 
-        if (!toSave.isEmpty()) {
-            try {
-                schoolClassUserRepository.saveAll(toSave);
-            } catch (DataConflictException e) {
-                // Race-condition guard: another request just added the same member and hit the unique index.
-                throw new ResourceDuplicatedException("Một số người dùng đã thuộc lớp học");
-            }
+    // Adding a member = join or re-join: a student who left the class is reactivated instead of getting
+    // a new row, because (userId, classId) is unique.
+    private SchoolClassUser joinOrRejoin(
+            SchoolClassUser existing, UUID userId, UUID classId, Instant now, UUID currentUserId) {
+        if (existing == null) {
+            return SchoolClassUser.joined(userId, classId, now, currentUserId);
         }
+        existing.activate();
+        return existing;
+    }
 
-        return new BulkCreateSchoolClassUsersResponse(List.copyOf(addedUserIds), List.copyOf(failed));
+    private void saveMemberships(List<SchoolClassUser> toSave) {
+        if (toSave.isEmpty()) {
+            return;
+        }
+        try {
+            schoolClassUserRepository.saveAll(toSave);
+        } catch (DataConflictException e) {
+            // Race-condition guard: another request just added the same member and hit the unique index.
+            throw new ResourceDuplicatedException("Một số người dùng đã thuộc lớp học");
+        }
+    }
+
+    private record RequestedUserLookups(
+            Map<UUID, User> usersById,
+            Map<UUID, UUID> schoolIdsByUserId,
+            Map<UUID, SchoolClassUser> membershipsByUserId) {
+    }
+
+    private record MembershipOutcome(
+            List<UUID> addedUserIds,
+            List<BulkCreateSchoolClassUserFailure> failed,
+            List<SchoolClassUser> toSave) {
     }
 
     private String rejectionReason(

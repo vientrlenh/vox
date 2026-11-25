@@ -12,11 +12,7 @@ public final class AssessmentItemEvaluationMapper {
     }
 
     public static AssessmentItemEvaluation toDomain(AssessmentItemEvaluationJpaEntity jpa) {
-        EvaluationSignals signals = jpa.getSignals() == null
-            ? null
-            : JsonValueObjectMapper.fromJson(jpa.getSignals(), EvaluationSignals.class);
-
-        return AssessmentItemEvaluation.builder()
+        AssessmentItemEvaluation.Builder builder = AssessmentItemEvaluation.builder()
                 .id(jpa.getId())
                 .responseId(jpa.getResponseId())
                 .paperItemId(jpa.getPaperItemId())
@@ -26,23 +22,32 @@ public final class AssessmentItemEvaluationMapper {
                 .reviewerId(jpa.getReviewerId())
                 .rawItemScore(jpa.getRawItemScore())
                 .itemScore(jpa.getItemScore())
-                .overallConfidence(jpa.getOverallConfidence())
+                .overallConfidence(jpa.getOverallConfidence());
+        applyReviewAndFeedbackFields(builder, jpa);
+        return builder.build();
+    }
+
+    private static void applyReviewAndFeedbackFields(AssessmentItemEvaluation.Builder builder, AssessmentItemEvaluationJpaEntity jpa) {
+        builder
                 .requiresHumanReview(jpa.isRequiresHumanReview())
                 .reviewReasonCode(jpa.getReviewReasonCode())
                 .markedInvalid(jpa.isMarkedInvalid())
                 .requiresRetake(jpa.isRequiresRetake())
-                .signals(signals)
+                .signals(signalsFromJson(jpa.getSignals()))
                 .validityJson(jpa.getValidityJson())
                 .feedbackSummary(jpa.getFeedbackSummary())
                 .suggestionsJson(jpa.getSuggestions())
                 .promptVersion(jpa.getPromptVersion())
                 .status(AssessmentItemEvaluationStatus.valueOf(jpa.getStatus()))
-                .evaluatedAt(jpa.getEvaluatedAt())
-                .build();
+                .evaluatedAt(jpa.getEvaluatedAt());
+    }
+
+    private static EvaluationSignals signalsFromJson(String signalsJson) {
+        return signalsJson == null ? null : JsonValueObjectMapper.fromJson(signalsJson, EvaluationSignals.class);
     }
 
     public static AssessmentItemEvaluationJpaEntity toJpa(AssessmentItemEvaluation domain) {
-        return AssessmentItemEvaluationJpaEntity.builder()
+        AssessmentItemEvaluationJpaEntity entity = AssessmentItemEvaluationJpaEntity.builder()
                 .id(domain.getId())
                 .responseId(domain.getResponseId())
                 .paperItemId(domain.getPaperItemId())
@@ -53,17 +58,22 @@ public final class AssessmentItemEvaluationMapper {
                 .rawItemScore(domain.getRawItemScore())
                 .itemScore(domain.getItemScore())
                 .overallConfidence(domain.getOverallConfidence())
-                .requiresHumanReview(domain.isRequiresHumanReview())
-                .reviewReasonCode(domain.getReviewReasonCode())
-                .markedInvalid(domain.isMarkedInvalid())
-                .requiresRetake(domain.isRequiresRetake())
-                .signals(domain.getSignals() == null ? null : JsonValueObjectMapper.toJson(domain.getSignals()))
-                .validityJson(domain.getValidityJson())
-                .feedbackSummary(domain.getFeedbackSummary())
-                .suggestions(domain.getSuggestionsJson())
-                .promptVersion(domain.getPromptVersion())
-                .status(domain.getStatus().name())
-                .evaluatedAt(domain.getEvaluatedAt())
                 .build();
+        copyReviewAndFeedbackFields(entity, domain);
+        return entity;
+    }
+
+    private static void copyReviewAndFeedbackFields(AssessmentItemEvaluationJpaEntity entity, AssessmentItemEvaluation domain) {
+        entity.setRequiresHumanReview(domain.isRequiresHumanReview());
+        entity.setReviewReasonCode(domain.getReviewReasonCode());
+        entity.setMarkedInvalid(domain.isMarkedInvalid());
+        entity.setRequiresRetake(domain.isRequiresRetake());
+        entity.setSignals(domain.getSignals() == null ? null : JsonValueObjectMapper.toJson(domain.getSignals()));
+        entity.setValidityJson(domain.getValidityJson());
+        entity.setFeedbackSummary(domain.getFeedbackSummary());
+        entity.setSuggestions(domain.getSuggestionsJson());
+        entity.setPromptVersion(domain.getPromptVersion());
+        entity.setStatus(domain.getStatus().name());
+        entity.setEvaluatedAt(domain.getEvaluatedAt());
     }
 }

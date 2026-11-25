@@ -30,79 +30,92 @@ public class ChangeSchoolRubricVersionStatusUseCase implements IUseCase<ChangeSc
     private final AssessmentPolicyRepository assessmentPolicyRepository;
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
-    private final SchoolUserRepository schoolUserRepository; // Uses the new repository
+    private final SchoolUserRepository schoolUserRepository;
 
     @Override
     @Transactional
     public UUID execute(ChangeSchoolRubricVersionStatusCommand command) {
-        // 1. Kiểm tra tài khoản School Admin
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Lỗi tài khoản."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
 
-        // 2. Lấy Version ra kiểm tra
+        RubricVersion version = loadVersionToChange(command);
+        Rubric rubric = loadRubricOwnedBySchool(version, command, currentUserId);
+        requireTransitionAllowed(command.status(), version, rubric);
+
+        version.setStatus(command.status());
+
+        rubricVersionRepository.save(version);
+        return version.getId();
+    }
+
+    private RubricVersion loadVersionToChange(ChangeSchoolRubricVersionStatusCommand command) {
         RubricVersion version = rubricVersionRepository.findById(command.versionId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản Rubric."));
 
         if (version.getStatus() == command.status()) {
             throw new IllegalArgumentException("Phiên bản đã đang ở trạng thái " + command.status() + ".");
         }
+        return version;
+    }
 
-        // 3. KIỂM TRA BẢO MẬT SCHOOL OWNERSHIP (Sử dụng bảng SchoolUser mới)
+    private Rubric loadRubricOwnedBySchool(RubricVersion version, ChangeSchoolRubricVersionStatusCommand command, UUID currentUserId) {
         Rubric rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric gốc."));
 
-        // Lấy thông tin mapping trường học của User hiện tại
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
 
-        // Xác thực quyền can thiệp
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL ||
                 !rubric.getSchoolId().equals(command.schoolId()) ||
                 !schoolUser.getSchoolId().equals(rubric.getSchoolId())) {
             throw new ForbiddenException("Hành động bị từ chối: Không thể chuyển trạng thái Rubric của trường khác.");
         }
+        return rubric;
+    }
 
-        // 4. XỬ LÝ LOGIC MÁY TRẠNG THÁI (STATE MACHINE) CHẶT CHẼ
-        if (command.status() == RubricStatus.PUBLISHED) {
-
-            if (version.getStatus() != RubricStatus.DRAFT) {
-                throw new IllegalArgumentException("Chỉ có thể ban hành (PUBLISH) phiên bản đang ở trạng thái Nháp (DRAFT).");
-            }
-
-            // KIỂM TRA VERSION KHÔNG ĐƯỢC RỖNG -- version không có tiêu chí/thang điểm thì không dùng
-            // để chấm bài được, publish xong sẽ vô dụng và không thể sửa nữa (ngoại trừ archive)
-            if (rubricCriterionRepository.findByRubricVersionId(version.getId()).isEmpty()) {
-                throw new IllegalArgumentException("Không thể ban hành phiên bản này vì chưa có tiêu chí (Criterion) nào.");
-            }
-
-            Framework framework = frameworkRepository.findById(rubric.getFrameworkId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Khung tiêu chuẩn (Framework) liên kết."));
-            if (!framework.isActive()) {
-                throw new IllegalArgumentException("Không thể ban hành Rubric này vì Khung tiêu chuẩn (Framework) gốc đang bị vô hiệu hóa.");
-            }
-
-            // KIỂM TRA ASSESSMENT POLICY LIÊN KẾT ĐÃ ĐƯỢC PUBLISHED HAY CHƯA
-            if (!assessmentPolicyRepository.existsPublishedByRubricVersionId(version.getId())) {
-                throw new IllegalArgumentException("Không thể ban hành Rubric này vì chưa có Assessment Policy nào liên kết đang ở trạng thái PUBLISHED.");
-            }
-
-            RubricScoringConsistencyValidator.assertPublishable(
-                    version.getTotalScoreMethod(),
-                    version.getScoringScaleMin(),
-                    version.getScoringScaleMax(),
-                    rubricCriterionRepository.findByRubricVersionId(version.getId()));
-
-        } else if (command.status() == RubricStatus.ARCHIVED) {
-            throw new IllegalArgumentException("Hành động bị từ chối: Vui lòng dùng chức năng Lưu trữ (Archive) riêng để chuyển phiên bản sang ARCHIVED.");
-        } else if (command.status() == RubricStatus.DRAFT) {
-            throw new IllegalArgumentException("Hành động bị từ chối: Không thể chuyển một phiên bản đã Ban hành/Lưu trữ quay ngược lại trạng thái Nháp (DRAFT). Vui lòng tạo phiên bản mới.");
+    private void requireDraftWithCriteria(RubricVersion version) {
+        if (version.getStatus() != RubricStatus.DRAFT) {
+            throw new IllegalArgumentException("Chỉ có thể ban hành (PUBLISH) phiên bản đang ở trạng thái Nháp (DRAFT).");
         }
 
-        // 5. Lưu xuống DB
-        version.setStatus(command.status());
+        // A version without criteria or a scoring scale cannot grade anything: once published it would be
+        // useless and could no longer be edited (only archived).
+        if (rubricCriterionRepository.findByRubricVersionId(version.getId()).isEmpty()) {
+            throw new IllegalArgumentException("Không thể ban hành phiên bản này vì chưa có tiêu chí (Criterion) nào.");
+        }
+    }
 
-        rubricVersionRepository.save(version);
-        return version.getId();
+    private void requireActiveFramework(Rubric rubric) {
+        Framework framework = frameworkRepository.findById(rubric.getFrameworkId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Khung tiêu chuẩn (Framework) liên kết."));
+        if (!framework.isActive()) {
+            throw new IllegalArgumentException("Không thể ban hành Rubric này vì Khung tiêu chuẩn (Framework) gốc đang bị vô hiệu hóa.");
+        }
+    }
+
+    private void requireTransitionAllowed(RubricStatus targetStatus, RubricVersion version, Rubric rubric) {
+        if (targetStatus == RubricStatus.PUBLISHED) {
+            requirePublishable(version, rubric);
+        } else if (targetStatus == RubricStatus.ARCHIVED) {
+            throw new IllegalArgumentException("Hành động bị từ chối: Vui lòng dùng chức năng Lưu trữ (Archive) riêng để chuyển phiên bản sang ARCHIVED.");
+        } else if (targetStatus == RubricStatus.DRAFT) {
+            throw new IllegalArgumentException("Hành động bị từ chối: Không thể chuyển một phiên bản đã Ban hành/Lưu trữ quay ngược lại trạng thái Nháp (DRAFT). Vui lòng tạo phiên bản mới.");
+        }
+    }
+
+    private void requirePublishable(RubricVersion version, Rubric rubric) {
+        requireDraftWithCriteria(version);
+        requireActiveFramework(rubric);
+
+        if (!assessmentPolicyRepository.existsPublishedByRubricVersionId(version.getId())) {
+            throw new IllegalArgumentException("Không thể ban hành Rubric này vì chưa có Assessment Policy nào liên kết đang ở trạng thái PUBLISHED.");
+        }
+
+        RubricScoringConsistencyValidator.assertPublishable(
+                version.getTotalScoreMethod(),
+                version.getScoringScaleMin(),
+                version.getScoringScaleMax(),
+                rubricCriterionRepository.findByRubricVersionId(version.getId()));
     }
 }

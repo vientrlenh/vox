@@ -24,20 +24,21 @@ import jakarta.persistence.Query;
 public class JpaSchoolsAtRiskQueryRepository implements SchoolsAtRiskQueryRepository {
 
     /**
-     * Một dòng mỗi TRƯỜNG, kèm sẵn kỳ liên quan và lý do đình chỉ.
+     * One row per SCHOOL, with the relevant period and the suspension reason already attached.
      *
-     * <p>Gộp trước rồi mới lọc, chứ không lọc thẳng trên bảng kỳ thuê bao: một trường có nhiều kỳ
-     * trong lịch sử, nên lọc theo dòng vừa trả trùng trường, vừa xếp một trường đang dùng tốt vào
-     * nhóm "hết hạn" chỉ vì kỳ năm ngoái của nó đã kết thúc.
+     * <p>Aggregated first and filtered afterwards, instead of filtering straight on the subscription-period table:
+     * a school has several periods in its history, so filtering by row both returns a school twice and puts a
+     * school that is using the service fine into the "expired" group just because its last year's period has ended.
      *
-     * <p>{@code COALESCE} bọc từng {@code BOOL_OR} vì hàm này trả NULL khi không dòng nào khớp bộ
-     * lọc, và {@code NOT NULL} là NULL chứ không phải TRUE — thiếu nó thì nhóm "lapsed" âm thầm bỏ
-     * sót đúng những trường chưa từng có kỳ ACTIVE nào. Cùng cái bẫy đã ghi ở
+     * <p>{@code COALESCE} wraps each {@code BOOL_OR} because this function returns NULL when no row matches the
+     * filter, and {@code NOT NULL} is NULL rather than TRUE -- without it the "lapsed" group silently misses
+     * exactly the schools that never had an ACTIVE period. The same trap is noted in
      * {@code JpaPlatformBusinessHealthQueryRepository}.
      *
-     * <p>{@code array_agg(...)[1]} chọn ĐÚNG MỘT kỳ đại diện: kỳ đang phủ sớm hết nhất nếu trường
-     * còn gói (cùng kỳ mà {@code MIN(end_date)} dùng để xét "sắp hết hạn", nên tên gói và ngày hết
-     * hạn trên màn hình luôn thuộc về cùng một kỳ), còn không thì kỳ kết thúc gần đây nhất.
+     * <p>{@code array_agg(...)[1]} picks EXACTLY ONE representative period: the one covering that ends soonest if
+     * the school still has a plan (the same period {@code MIN(end_date)} uses to judge "expiring soon", so the plan
+     * name and the expiry date on the screen always belong to the same period), otherwise the period that ended
+     * most recently.
      */
     private static final String SCHOOL_STATE_CTE = """
         WITH sub AS (
@@ -71,12 +72,12 @@ public class JpaSchoolsAtRiskQueryRepository implements SchoolsAtRiskQueryReposi
         """;
 
     /**
-     * Đi từ {@code schools} rồi LEFT JOIN cả hai phía, để một câu duy nhất phục vụ được cả bốn nhóm.
+     * Starts from {@code schools} and LEFT JOINs both sides, so a single statement serves all four groups.
      *
-     * <p>NULL tự loại trường đúng như phép đếm: trường chưa từng mua gói không có dòng trong
-     * {@code school_state}, nên {@code NOT st.covered} ra NULL và nó rơi khỏi ba nhóm đầu — giống
-     * hệt việc nó không tồn tại trong CTE của câu đếm. Trường chưa từng nạp ví không có dòng số dư,
-     * nên {@code bal.balance_vnd < 0} cũng ra NULL và nó rơi khỏi nhóm nợ.
+     * <p>NULL excludes a school exactly like the count does: a school that never bought a plan has no row in
+     * {@code school_state}, so {@code NOT st.covered} gives NULL and it falls out of the first three groups --
+     * exactly like not existing in the CTE of the count statement. A school that never topped up its wallet has no
+     * balance row, so {@code bal.balance_vnd < 0} also gives NULL and it falls out of the debt group.
      */
     private static final String FROM_CLAUSE = """
         FROM schools sc
@@ -84,17 +85,24 @@ public class JpaSchoolsAtRiskQueryRepository implements SchoolsAtRiskQueryReposi
         LEFT JOIN school_balances bal ON bal.school_id = sc.id
         """;
 
+    private static final String SCHOOL_ROWS_SELECT = """
+        SELECT
+            sc.id,
+            sc.name,
+            sc.code,
+            COALESCE(st.covering_plan_name, st.last_plan_name),
+            COALESCE(st.covering_end_date, st.last_end_date),
+            st.suspended_reason,
+            COALESCE(bal.balance_vnd, 0)
+        """;
+
     @PersistenceContext
     private EntityManager em;
 
     @Override
-    @SuppressWarnings("unchecked")
     public PageResult<SchoolAtRiskDto> findByBucket(
             SchoolRiskBucket bucket, Instant now, Instant expiringThrough, String keyword, int page, int size) {
-        // The trailing line break is REQUIRED: this clause may end with a named parameter
-        // (:expiringThrough), and concatenating it directly with the "ORDER BY" right after would produce the parameter name
-        // ":expiringThroughORDER" -- Hibernate reports "no parameter named" instead of an SQL syntax error.
-        String where = " WHERE " + bucketPredicate(bucket) + keywordPredicate(keyword) + "\n";
+        String where = bucketWhere(bucket, keyword);
 
         long total = toLong(bind(
             em.createNativeQuery(SCHOOL_STATE_CTE + "SELECT COUNT(*)" + FROM_CLAUSE + where),
@@ -104,41 +112,51 @@ public class JpaSchoolsAtRiskQueryRepository implements SchoolsAtRiskQueryReposi
             return new PageResult<>(List.of(), page, size, 0, 0);
         }
 
-        List<Object[]> rows = bind(em.createNativeQuery(SCHOOL_STATE_CTE + """
-            SELECT
-                sc.id,
-                sc.name,
-                sc.code,
-                COALESCE(st.covering_plan_name, st.last_plan_name),
-                COALESCE(st.covering_end_date, st.last_end_date),
-                st.suspended_reason,
-                COALESCE(bal.balance_vnd, 0)
-            """ + FROM_CLAUSE + where + """
-            ORDER BY COALESCE(st.covering_end_date, st.last_end_date) ASC NULLS LAST, sc.id ASC
-            LIMIT :pageSize OFFSET :offset
-            """), bucket, now, expiringThrough, keyword)
-            .setParameter("pageSize", size)
-            .setParameter("offset", OneBasedPaging.toOffset(page, size))
-            .getResultList();
-
-        List<SchoolAtRiskDto> content = rows.stream()
-            .map(row -> new SchoolAtRiskDto(
-                (UUID) row[0],
-                (String) row[1],
-                (String) row[2],
-                (String) row[3],
-                toInstant(row[4]),
-                (String) row[5],
-                row[6] == null ? BigDecimal.ZERO : new BigDecimal(row[6].toString())))
+        List<SchoolAtRiskDto> content = findSchoolRows(bucket, now, expiringThrough, keyword, where, page, size)
+            .stream()
+            .map(JpaSchoolsAtRiskQueryRepository::toSchoolAtRisk)
             .toList();
 
         return new PageResult<>(content, page, size, total, (int) Math.ceil((double) total / size));
     }
 
     /**
-     * Bản sao đúng từng chữ của bốn phép {@code COUNT(*) FILTER} ở
-     * {@code JpaPlatformBusinessHealthQueryRepository}. Lệch một chi tiết là thẻ ghi một số còn danh
-     * sách sau khi bấm vào lại ra số khác.
+     * The trailing line break is REQUIRED: this clause may end with a named parameter
+     * (:expiringThrough), and concatenating it directly with the "ORDER BY" right after would produce the parameter
+     * name ":expiringThroughORDER" -- Hibernate reports "no parameter named" instead of an SQL syntax error.
+     */
+    private static String bucketWhere(SchoolRiskBucket bucket, String keyword) {
+        return " WHERE " + bucketPredicate(bucket) + keywordPredicate(keyword) + "\n";
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Object[]> findSchoolRows(
+            SchoolRiskBucket bucket, Instant now, Instant expiringThrough, String keyword, String where,
+            int page, int size) {
+        return bind(em.createNativeQuery(SCHOOL_STATE_CTE + SCHOOL_ROWS_SELECT + FROM_CLAUSE + where + """
+            ORDER BY COALESCE(st.covering_end_date, st.last_end_date) ASC NULLS LAST, sc.id ASC
+            LIMIT :pageSize OFFSET :offset
+            """), bucket, now, expiringThrough, keyword)
+            .setParameter("pageSize", size)
+            .setParameter("offset", OneBasedPaging.toOffset(page, size))
+            .getResultList();
+    }
+
+    private static SchoolAtRiskDto toSchoolAtRisk(Object[] row) {
+        return new SchoolAtRiskDto(
+            (UUID) row[0],
+            (String) row[1],
+            (String) row[2],
+            (String) row[3],
+            toInstant(row[4]),
+            (String) row[5],
+            row[6] == null ? BigDecimal.ZERO : new BigDecimal(row[6].toString()));
+    }
+
+    /**
+     * A verbatim copy of the four {@code COUNT(*) FILTER} expressions in
+     * {@code JpaPlatformBusinessHealthQueryRepository}. Drifting by one detail makes the card show one number while
+     * the list behind it shows another.
      */
     private static String bucketPredicate(SchoolRiskBucket bucket) {
         return switch (bucket) {
@@ -149,7 +167,7 @@ public class JpaSchoolsAtRiskQueryRepository implements SchoolsAtRiskQueryReposi
         };
     }
 
-    /** Tìm theo tên hoặc mã trường — hai thứ duy nhất người vận hành có trong tay khi nhận một cuộc gọi. */
+    /** Search by school name or code -- the only two things the operator has at hand when taking a call. */
     private static String keywordPredicate(String keyword) {
         return keyword == null || keyword.isBlank()
             ? ""

@@ -73,11 +73,28 @@ public class GradingActionSupport {
     @Transactional(propagation = Propagation.MANDATORY)
     public PreparedAction prepare(UUID assignmentId, GradingOutcome outcome, String reason) {
         UUID currentUserId = assessmentGradingAccessService.requireActiveUserId();
-        // Khoá ngay từ đây: mọi kiểm tra bên dưới đều đọc-rồi-quyết-định, nên chúng chỉ
-        // đúng nếu không ai chen vào giữa lúc đọc và lúc finish() ghi.
+        // Lock from here: every check below reads and then decides, so they are only
+        // correct if nobody slips in between the read and the write in finish().
         AssessmentGradingAccessService.GradingContext context = assessmentGradingAccessService.loadForUpdate(assignmentId);
         assessmentGradingAccessService.authorizeAssignedTeacher(context, currentUserId);
 
+        GradingRoundType roundType = requireActionableRound(context, outcome);
+        String normalizedReason = reason == null || reason.isBlank() ? null : reason.trim();
+        if (GradingRoundPolicy.requiresReason(outcome) && normalizedReason == null) {
+            throw new IllegalArgumentException("Phải nhập lý do cho quyết định này.");
+        }
+
+        return new PreparedAction(
+            context,
+            currentUserId,
+            roundType,
+            outcome,
+            normalizedReason,
+            resultStatusHistoryRecorder.snapshot(context.candidateResult())
+        );
+    }
+
+    private GradingRoundType requireActionableRound(GradingContext context, GradingOutcome outcome) {
         AssessmentGradingAssignment assignment = context.assignment();
         if (assignment.isCompleted()) {
             throw new IllegalArgumentException("Bạn đã chốt kết quả cho bài thi này.");
@@ -94,60 +111,21 @@ public class GradingActionSupport {
         if (!GradingRoundPolicy.isAssignable(roundType, context.candidateResult().getStatus())) {
             throw new IllegalArgumentException("Bài thi này không còn ở trạng thái xử lý được của vòng chấm.");
         }
-        String normalizedReason = reason == null || reason.isBlank() ? null : reason.trim();
-        if (GradingRoundPolicy.requiresReason(outcome) && normalizedReason == null) {
-            throw new IllegalArgumentException("Phải nhập lý do cho quyết định này.");
-        }
-
-        return new PreparedAction(
-            context,
-            currentUserId,
-            roundType,
-            outcome,
-            normalizedReason,
-            resultStatusHistoryRecorder.snapshot(context.candidateResult())
-        );
+        return roundType;
     }
 
     /**
-     * Đóng phân công, đổi trạng thái bài theo ma trận vòng × hành động, ghi audit và
-     * phát sự kiện. Gọi SAU khi phần riêng của từng hành động đã ghi xong dữ liệu.
+     * Closes the assignment, changes the result status according to the round x action matrix, writes the audit
+     * and publishes the events. Call AFTER the action-specific part has finished writing its data.
      *
-     * @param result kết quả đã được use case cập nhật (điểm mới sau khi tính lại), hoặc
-     *               chính {@code context.candidateResult()} khi hành động không đổi điểm
+     * @param result the result already updated by the use case (new score after recalculation), or
+     *               {@code context.candidateResult()} itself when the action does not change the score
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public void finish(PreparedAction prepared, AssessmentCandidateResult result) {
         Instant now = Instant.now();
-        AssessmentCandidateResultStatus targetStatus = GradingRoundPolicy.resultStatusAfter(prepared.roundType(), prepared.outcome());
-
-        if (targetStatus != null && result.getStatus() != targetStatus) {
-            result.setStatus(targetStatus);
-            if (targetStatus == AssessmentCandidateResultStatus.RELEASED && result.getReleasedAt() == null) {
-                result.setReleasedAt(now);
-            }
-            if (targetStatus == AssessmentCandidateResultStatus.INVALID) {
-                result.setFinalizedAt(now);
-            }
-            // Gỡ vô hiệu kéo bài về PENDING_REVIEW: mốc "đã chốt" của lần vô hiệu
-            // trước không còn đúng nữa. Để lại thì tồn tại bài PENDING_REVIEW mang
-            // finalized_at — một cái bẫy cho người đọc sau.
-            if (targetStatus == AssessmentCandidateResultStatus.PENDING_REVIEW) {
-                result.setFinalizedAt(null);
-            }
-            assessmentCandidateResultRepository.save(result);
-        }
-
-        // Quyết định "giữ nguyên" ở REMEDIATION (xác nhận vi phạm) và việc trả lại
-        // phân công đều phải để lại dấu vết dù trạng thái đứng yên.
-        ResultStatusChangeSource source = ResultStatusChangeSource.ofRound(prepared.roundType());
-        if (prepared.outcome() == GradingOutcome.UPHELD || prepared.outcome() == GradingOutcome.DECLINED) {
-            resultStatusHistoryRecorder.recordAlways(
-                prepared.before(), result, source, prepared.currentUserId(), prepared.reason());
-        } else {
-            resultStatusHistoryRecorder.record(
-                prepared.before(), result, source, prepared.currentUserId(), prepared.reason());
-        }
+        applyTargetStatus(prepared, result, now);
+        recordStatusHistory(prepared, result);
 
         AssessmentGradingAssignment assignment = prepared.context().assignment();
         assignment.complete(prepared.outcome(), prepared.reason(), now);
@@ -159,13 +137,47 @@ public class GradingActionSupport {
         publishScoreEvents(prepared, result, now);
     }
 
+    private void applyTargetStatus(PreparedAction prepared, AssessmentCandidateResult result, Instant now) {
+        AssessmentCandidateResultStatus targetStatus = GradingRoundPolicy.resultStatusAfter(prepared.roundType(), prepared.outcome());
+        if (targetStatus == null || result.getStatus() == targetStatus) {
+            return;
+        }
+        result.setStatus(targetStatus);
+        if (targetStatus == AssessmentCandidateResultStatus.RELEASED && result.getReleasedAt() == null) {
+            result.setReleasedAt(now);
+        }
+        if (targetStatus == AssessmentCandidateResultStatus.INVALID) {
+            result.setFinalizedAt(now);
+        }
+        // Un-invalidating pulls the result back to PENDING_REVIEW: the "finalized" mark of the earlier
+        // invalidation is no longer true. Leaving it would create a PENDING_REVIEW result that carries
+        // finalized_at -- a trap for the next reader.
+        if (targetStatus == AssessmentCandidateResultStatus.PENDING_REVIEW) {
+            result.setFinalizedAt(null);
+        }
+        assessmentCandidateResultRepository.save(result);
+    }
+
+    private void recordStatusHistory(PreparedAction prepared, AssessmentCandidateResult result) {
+        // The "keep as is" decision at REMEDIATION (confirming a violation) and handing an assignment back
+        // must both leave a trace even though the status stays put.
+        ResultStatusChangeSource source = ResultStatusChangeSource.ofRound(prepared.roundType());
+        if (prepared.outcome() == GradingOutcome.UPHELD || prepared.outcome() == GradingOutcome.DECLINED) {
+            resultStatusHistoryRecorder.recordAlways(
+                prepared.before(), result, source, prepared.currentUserId(), prepared.reason());
+        } else {
+            resultStatusHistoryRecorder.record(
+                prepared.before(), result, source, prepared.currentUserId(), prepared.reason());
+        }
+    }
+
     /**
-     * Giáo viên nộp là ĐƠN ĐƯỢC CÔNG BỐ luôn — không còn bước admin đối chiếu rồi
-     * publish. Đây là chỗ duy nhất đóng đơn phúc khảo, nên nó nằm cạnh chỗ đóng phân
-     * công thay vì rải vào từng use case hành động.
+     * What the teacher submits is published immediately -- there is no longer an admin step that cross-checks and then
+     * publishes. This is the only place that closes an appeal, so it sits next to where the assignment is closed instead of
+     * being scattered across the action use cases.
      *
-     * <p>{@code DECLINED} không công bố gì: giáo viên trả bài lại thì đơn vẫn đang chờ
-     * người khác, chỉ lùi về {@code APPROVED} để admin giao lại.
+     * <p>{@code DECLINED} publishes nothing: when the teacher hands the attempt back the appeal is still waiting for
+     * someone else, and only steps back to {@code APPROVED} so the admin can reassign it.
      */
     private void publishAppeal(PreparedAction prepared, AssessmentCandidateResult result, Instant now) {
         UUID appealId = prepared.context().assignment().getAppealId();
@@ -188,77 +200,95 @@ public class GradingActionSupport {
         appeal.setDecisionNote(prepared.reason());
         assessmentResultAppealRepository.save(appeal);
 
+        saveAppealPublishedEvent(appeal, prepared, result, now);
+    }
+
+    private void saveAppealPublishedEvent(
+            AssessmentResultAppeal appeal, PreparedAction prepared, AssessmentCandidateResult result, Instant now) {
         UUID studentId = resolveStudentId(result);
-        if (studentId != null) {
-            saveOutbox(
-                AggregateTypeConstant.ASSESSMENT_RESULT_APPEAL,
-                appeal.getId(),
-                EventTypeConstant.ASSESSMENT_APPEAL_PUBLISHED,
-                new AssessmentAppealPublishedPayloadV1(
-                    appeal.getId(),
-                    studentId,
-                    prepared.context().assessmentName(),
-                    appeal.getScoreBefore(),
-                    result.getTotalScore()
-                ),
-                now
-            );
+        if (studentId == null) {
+            return;
         }
+        saveOutbox(
+            AggregateTypeConstant.ASSESSMENT_RESULT_APPEAL,
+            appeal.getId(),
+            EventTypeConstant.ASSESSMENT_APPEAL_PUBLISHED,
+            new AssessmentAppealPublishedPayloadV1(
+                appeal.getId(),
+                studentId,
+                prepared.context().assessmentName(),
+                appeal.getScoreBefore(),
+                result.getTotalScore()
+            ),
+            now
+        );
     }
 
     /**
-     * Hai mail khác nhau cho hai tình huống khác nhau: lần đầu có điểm, và điểm đã
-     * công bố nay đổi. Hậu kiểm giữ nguyên điểm thì KHÔNG phát gì — làm phiền học sinh
-     * bằng thông báo "điểm vừa thay đổi" trong khi nó không đổi là sai.
+     * Two different mails for two different situations: the score appears for the first time, and an already
+     * published score now changes. A spot-check that keeps the score publishes NOTHING -- bothering the student
+     * with a "your score just changed" notice when it did not change is wrong.
      */
     private void publishScoreEvents(PreparedAction prepared, AssessmentCandidateResult result, Instant now) {
         UUID studentId = resolveStudentId(result);
         if (studentId == null) {
             return;
         }
-        String assessmentName = prepared.context().assessmentName();
         boolean wasPublished = prepared.before().status() != AssessmentCandidateResultStatus.PENDING_REVIEW;
         boolean nowPublished = result.getStatus() == AssessmentCandidateResultStatus.RELEASED;
 
         if (nowPublished && !wasPublished) {
-            saveOutbox(
-                AggregateTypeConstant.ASSESSMENT_CANDIDATE_RESULT,
-                result.getId(),
-                EventTypeConstant.ASSESSMENT_RESULT_RELEASED,
-                new AssessmentResultReleasedPayloadV1(
-                    result.getId(), studentId, assessmentName, result.getTotalScore(),
-                    result.getSessionId(), prepared.context().assessmentKind()),
-                now
-            );
+            saveResultReleasedEvent(prepared, result, studentId, now);
             return;
         }
-        boolean scoreChanged = prepared.before().totalScore() == null
-            ? result.getTotalScore() != null
-            : result.getTotalScore() != null
-                && prepared.before().totalScore().compareTo(result.getTotalScore()) != 0;
-        if (wasPublished && scoreChanged) {
-            saveOutbox(
-                AggregateTypeConstant.ASSESSMENT_CANDIDATE_RESULT,
-                result.getId(),
-                EventTypeConstant.ASSESSMENT_RESULT_REGRADED,
-                new AssessmentResultRegradedPayloadV1(
-                    result.getId(),
-                    studentId,
-                    assessmentName,
-                    prepared.roundType().name(),
-                    prepared.before().totalScore(),
-                    result.getTotalScore(),
-                    result.getSessionId(),
-                    prepared.context().assessmentKind()
-                ),
-                now
-            );
+        if (wasPublished && hasScoreChanged(prepared, result)) {
+            saveResultRegradedEvent(prepared, result, studentId, now);
         }
     }
 
+    private boolean hasScoreChanged(PreparedAction prepared, AssessmentCandidateResult result) {
+        return prepared.before().totalScore() == null
+            ? result.getTotalScore() != null
+            : result.getTotalScore() != null
+                && prepared.before().totalScore().compareTo(result.getTotalScore()) != 0;
+    }
+
+    private void saveResultReleasedEvent(
+            PreparedAction prepared, AssessmentCandidateResult result, UUID studentId, Instant now) {
+        saveOutbox(
+            AggregateTypeConstant.ASSESSMENT_CANDIDATE_RESULT,
+            result.getId(),
+            EventTypeConstant.ASSESSMENT_RESULT_RELEASED,
+            new AssessmentResultReleasedPayloadV1(
+                result.getId(), studentId, prepared.context().assessmentName(), result.getTotalScore(),
+                result.getSessionId(), prepared.context().assessmentKind()),
+            now
+        );
+    }
+
+    private void saveResultRegradedEvent(
+            PreparedAction prepared, AssessmentCandidateResult result, UUID studentId, Instant now) {
+        saveOutbox(
+            AggregateTypeConstant.ASSESSMENT_CANDIDATE_RESULT,
+            result.getId(),
+            EventTypeConstant.ASSESSMENT_RESULT_REGRADED,
+            new AssessmentResultRegradedPayloadV1(
+                result.getId(),
+                studentId,
+                prepared.context().assessmentName(),
+                prepared.roundType().name(),
+                prepared.before().totalScore(),
+                result.getTotalScore(),
+                result.getSessionId(),
+                prepared.context().assessmentKind()
+            ),
+            now
+        );
+    }
+
     /**
-     * Ghi vào outbox trong CHÍNH transaction đang đổi trạng thái bài: mail và dữ liệu
-     * cùng sống hoặc cùng chết, không còn cảnh commit xong rồi mất mail vì SMTP lỗi.
+     * Writes to the outbox in the SAME transaction that changes the result status: the mail and the data
+     * live or die together, with no more "committed, then the mail was lost because SMTP failed".
      */
     private void saveOutbox(String aggregateType, UUID aggregateId, String eventType, Object payload, Instant now) {
         outboxRepository.save(Outbox.create(
@@ -280,7 +310,7 @@ public class GradingActionSupport {
             .orElse(null);
     }
 
-    /** Bắt buộc phải có, dùng khi thiếu học sinh là lỗi dữ liệu chứ không phải ca biên. */
+    /** Required: used when a missing student is a data fault, not an edge case. */
     public UUID requireStudentId(AssessmentCandidateResult result) {
         UUID studentId = resolveStudentId(result);
         if (studentId == null) {

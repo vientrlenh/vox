@@ -80,6 +80,34 @@ public class InterestDimension {
         this.updatedAt = updatedAt;
     }
 
+    public static InterestDimension defined(String code, String label, String description, boolean active,
+                                            boolean quizEligible, int displayOrder) {
+        return builder()
+                .code(code)
+                .label(label)
+                .description(description)
+                .active(active)
+                .quizEligible(quizEligible)
+                .displayOrder(displayOrder)
+                .createdAt(null)
+                .updatedAt(null)
+                .build();
+    }
+
+    public InterestDimension withEditableFields(String newLabel, String newDescription, boolean newActive,
+                                                boolean newQuizEligible, int newDisplayOrder) {
+        return builder()
+                .code(code)
+                .label(newLabel)
+                .description(newDescription)
+                .active(newActive)
+                .quizEligible(newQuizEligible)
+                .displayOrder(newDisplayOrder)
+                .createdAt(createdAt)
+                .updatedAt(null)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

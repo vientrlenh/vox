@@ -53,18 +53,7 @@ public class GetAssessmentRecordingPlaybackUseCase
         AssessmentSession session = accessService.requireCanViewRecordings(input.assessmentSessionId());
         List<AssessmentRecording> records = assessmentRecordingRepository.findByAssessmentSessionId(session.getId());
 
-        // Giữ nguyên cách chọn bản chuẩn của đường giám thị: mỗi nguồn ingest có hàng riêng nên
-        // một streamType có thể có nhiều bản. Trả HẾT và chỉ đánh dấu bản nên mở trước, thay vì
-        // lọc bớt -- bản WebRTC là bản duy nhất không đi qua máy thí sinh, nên khi có tranh chấp
-        // nó phải với tới được. Người chấm tự chọn giữa chúng.
-        Set<UUID> canonicalIds = records.stream()
-            .collect(Collectors.groupingBy(
-                (AssessmentRecording recording) -> recording.getStreamType(),
-                Collectors.maxBy(RecordingPrecedence.CANONICAL_ORDER)))
-            .values().stream()
-            .flatMap(canonical -> canonical.stream())
-            .map(recording -> recording.getId())
-            .collect(Collectors.toSet());
+        Set<UUID> canonicalIds = canonicalRecordingIds(records);
 
         return records.stream()
             .map(recording -> new AssessmentRecordingPlaybackResponse(
@@ -79,15 +68,31 @@ public class GetAssessmentRecordingPlaybackUseCase
             .toList();
     }
 
+    // Keeps the proctor path way of choosing the canonical recording: each ingest source has its own row, so
+    // one streamType can have several recordings. Return ALL of them and only mark the one to open first, instead
+    // of filtering -- the WebRTC recording is the only one that does not pass through the candidate machine, so it
+    // must stay reachable in a dispute. The grader chooses between them.
+    private Set<UUID> canonicalRecordingIds(List<AssessmentRecording> records) {
+        return records.stream()
+            .collect(Collectors.groupingBy(
+                (AssessmentRecording recording) -> recording.getStreamType(),
+                Collectors.maxBy(RecordingPrecedence.CANONICAL_ORDER)))
+            .values().stream()
+            .flatMap(canonical -> canonical.stream())
+            .map(recording -> recording.getId())
+            .collect(Collectors.toSet());
+    }
+
     /**
-     * Link phát, hoặc null khi chưa có gì để phát.
+     * The playback link, or null when there is nothing to play yet.
      *
-     * <p>Ba trường hợp trả null, cả ba đều BÌNH THƯỜNG chứ không phải lỗi: bản ghi đang
-     * PROCESSING nên chưa có object key; nguồn ingest chết giữa chừng (FAILED/ABANDONED); hoặc
-     * hàng cũ lưu từ trước khi {@code RECORDING_S3_BUCKET} được cấu hình nên bucket rỗng.
+     * <p>Three cases return null, and all three are NORMAL, not errors: the recording is still
+     * PROCESSING so it has no object key yet; the ingest source died midway (FAILED/ABANDONED); or
+     * an old row was stored before {@code RECORDING_S3_BUCKET} was configured, so its bucket is empty.
      *
-     * <p>Ném ở đây sẽ làm hỏng cả danh sách vì một bản ghi hỏng -- trong khi bản của nguồn khác
-     * cùng phiên thi có thể vẫn xem tốt. Trả null để client hiện "chưa sẵn sàng" đúng ô đó.
+     * <p>Throwing here would break the whole list because of one bad recording -- while the recording of another
+     * source in the same session may still play fine. Returning null lets the client show "not ready" in that
+     * cell only.
      */
     private String playbackUrlFor(AssessmentRecording recording) {
         String bucket = recording.getBucket();

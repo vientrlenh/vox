@@ -68,6 +68,11 @@ public class PreviewSchoolGradeImportFromFileUseCase
         ImportSession savedSession = importSessionRepository.save(createSession(input, parsed, schoolId, currentUserId, now, expiresAt));
         saveRows(savedSession.getId(), parsed);
 
+        return toPreviewResponse(savedSession, input, parsed, expiresAt);
+    }
+
+    private PreviewSchoolGradeImportResponse toPreviewResponse(
+            ImportSession savedSession, PreviewSchoolGradeImportFromFileCommand input, ParseImportFileResult parsed, Instant expiresAt) {
         return new PreviewSchoolGradeImportResponse(
             savedSession.getId(),
             safeFileName(input.file().fileName()),

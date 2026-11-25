@@ -37,7 +37,22 @@ public class CreateSchoolRubricUseCase implements IUseCase<CreateSchoolRubricCom
     @Override
     @Transactional
     public UUID execute(CreateSchoolRubricCommand command) {
-        // 1. Kiểm tra tài khoản School Admin
+        requireActiveSchoolMember(command);
+        requireActiveLanguageAndFramework(command);
+
+        String safeCode = StringNormalization.trimAndCollapseSpaces(command.code());
+        String safeName = StringNormalization.trimAndCollapseSpaces(command.name());
+        String safeDesc = command.description() != null ? StringNormalization.trimAndCollapseSpaces(command.description()) : null;
+
+        requireCodeNotTaken(command, safeCode);
+
+        Rubric newRubric = Rubric.forSchool(
+                command.languageId(), command.frameworkId(), safeCode, safeName, safeDesc, command.schoolId());
+        Rubric savedRubric = rubricRepository.save(newRubric);
+        return savedRubric.getId();
+    }
+
+    private void requireActiveSchoolMember(CreateSchoolRubricCommand command) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
@@ -45,7 +60,7 @@ public class CreateSchoolRubricUseCase implements IUseCase<CreateSchoolRubricCom
             throw new UnauthorizedException("Tài khoản đã bị khóa.");
         }
 
-        // 2. Kiểm tra mối liên kết trường học chặt chẽ nhằm chống leak/cross-tenant data
+        // Strict school membership check to prevent cross-tenant data leaks.
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được phân bổ vào trường học nào."));
         if (!schoolUser.getSchoolId().equals(command.schoolId())) {
@@ -57,35 +72,35 @@ public class CreateSchoolRubricUseCase implements IUseCase<CreateSchoolRubricCom
         if (!school.isActive()) {
             throw new IllegalArgumentException("Trường học đang bị khóa, không thể thực hiện thao tác này.");
         }
+    }
 
-        // 3. Khảo sát ngôn ngữ và khung tiêu chuẩn
+    private void requireActiveLanguageAndFramework(CreateSchoolRubricCommand command) {
         if (!languageRepository.existsById(command.languageId())) {
             throw new ResourceNotFoundException("Ngôn ngữ chỉ định không tồn tại trên hệ thống.");
         }
-
         Framework framework = frameworkRepository.findById(command.frameworkId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Khung tiêu chuẩn (Framework)."));
         if (!framework.isActive()) {
             throw new IllegalArgumentException("Khung tiêu chuẩn (Framework) này đã bị vô hiệu hóa.");
         }
+    }
 
-        String safeCode = StringNormalization.trimAndCollapseSpaces(command.code());
-        String safeName = StringNormalization.trimAndCollapseSpaces(command.name());
-        String safeDesc = command.description() != null ? StringNormalization.trimAndCollapseSpaces(command.description()) : null;
-
-        // 4. Chặn trùng MÃ trong cùng phạm vi (trường + ngôn ngữ + khung năng lực).
-        //
-        // Bỏ 2026-08-14 luật cũ "mỗi trường chỉ một bộ tiêu chí cho mỗi ngôn ngữ". Luật đó ép khối
-        // 10/11/12 phải dùng chung một bộ, nên khối chỉ còn cách mã hoá bằng SỐ HIỆU PHIÊN BẢN
-        // (khối 10 = v1, khối 11 = v2, khối 12 = v3). Lúc đó `version` mất nghĩa "lần sửa đổi" và
-        // không còn cách nào diễn tả "sang năm sửa lại tiêu chí của riêng khối 10".
-        //
-        // Nay mỗi khối có một BỘ riêng, phân biệt bằng mã (VD ENG-K10, ENG-K11), và mỗi bộ tự đánh
-        // số phiên bản từ 1. Không có gì phía dưới dựa vào tính duy nhất cũ: chính sách đánh giá
-        // trỏ thẳng rubricVersionId chứ không tra bộ theo trường+ngôn ngữ, và phía SYSTEM vốn đã
-        // không có luật này (CreateSystemRubricUseCase). Ràng buộc thật nằm ở unique index
-        // (owner_type, school_id, language_id, framework_id, code) -- kiểm ở đây để báo lỗi tử tế
-        // thay vì để DB ném constraint violation thô.
+    /**
+     * Rejects a duplicate CODE within the same scope (school + language + framework).
+     *
+     * <p>Removed 2026-08-14: the old rule "a school has only one rubric per language". That rule forced
+     * grades 10/11/12 to share one rubric, so a grade could only be encoded as a VERSION NUMBER (grade 10 =
+     * v1, grade 11 = v2, grade 12 = v3). Then {@code version} lost its meaning of "a revision" and there was
+     * no way to say "next year grade 10's own criteria are revised".
+     *
+     * <p>Now every grade has its own rubric, told apart by code (e.g. ENG-K10, ENG-K11), and each rubric
+     * numbers its versions from 1. Nothing below relied on the old uniqueness: assessment policies point
+     * straight at rubricVersionId instead of looking up a rubric by school + language, and the SYSTEM side
+     * never had this rule (CreateSystemRubricUseCase). The real constraint is the unique index
+     * (owner_type, school_id, language_id, framework_id, code); it is checked here to report a proper
+     * error instead of letting the database throw a raw constraint violation.
+     */
+    private void requireCodeNotTaken(CreateSchoolRubricCommand command, String safeCode) {
         boolean isCodeTaken = rubricRepository.existsByOwnerTypeAndSchoolIdAndLanguageIdAndFrameworkIdAndCode(
                 RubricOwnerType.SCHOOL.toString(), command.schoolId(), command.languageId(),
                 command.frameworkId(), safeCode);
@@ -94,12 +109,5 @@ public class CreateSchoolRubricUseCase implements IUseCase<CreateSchoolRubricCom
                     + safeCode + "' cho ngôn ngữ và khung năng lực này. Hãy dùng mã khác"
                     + " (ví dụ đặt theo khối: ENG-K10, ENG-K11).");
         }
-
-        // 5. Build thực thể Rubric gắn chặt schoolId
-        Rubric newRubric = Rubric.forSchool(
-                command.languageId(), command.frameworkId(), safeCode, safeName, safeDesc, command.schoolId());
-
-        Rubric savedRubric = rubricRepository.save(newRubric);
-        return savedRubric.getId();
     }
 }

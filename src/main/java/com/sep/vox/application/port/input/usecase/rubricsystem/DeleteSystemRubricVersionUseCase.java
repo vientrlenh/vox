@@ -34,40 +34,49 @@ public class DeleteSystemRubricVersionUseCase implements IUseCase<DeleteSystemRu
     @Override
     @Transactional
     public Void execute(DeleteSystemRubricVersionCommand command) {
+        requireActiveCurrentUser();
+        RubricVersion version = loadDraftVersionOfSystemRubric(command.versionId());
+
+        rubricCriterionRepository.deleteByRubricVersionId(version.getId());
+        rubricResultBandRepository.deleteByRubricVersionId(version.getId());
+        requireNoAssessmentPolicyUsing(version);
+
+        rubricVersionRepository.deleteById(version.getId());
+        return null;
+    }
+
+    private void requireActiveCurrentUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
+    }
 
-        RubricVersion version = rubricVersionRepository.findById(command.versionId())
+    private RubricVersion loadDraftVersionOfSystemRubric(UUID versionId) {
+        RubricVersion version = rubricVersionRepository.findById(versionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản."));
 
         Rubric rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric."));
 
-        // CHECK QUYỀN SYSTEM
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             throw new ForbiddenException("Không thể can thiệp vào phiên bản của trường học.");
         }
 
-        // Chỉ được xóa cứng khi đang DRAFT, các trạng thái khác dùng chức năng Lưu trữ (Archive) riêng
+        // Hard delete is only allowed for DRAFT; other statuses use the separate Archive function.
         if (version.getStatus() != RubricStatus.DRAFT) {
             throw new IllegalArgumentException("Chỉ có thể xóa phiên bản đang ở trạng thái DRAFT. Vui lòng dùng chức năng Lưu trữ (Archive) nếu phiên bản đã PUBLISHED.");
         }
+        return version;
+    }
 
-        rubricCriterionRepository.deleteByRubricVersionId(version.getId());
-        rubricResultBandRepository.deleteByRubricVersionId(version.getId());
-        // 5. Không xóa khi còn Assessment Policy trỏ vào.
-        //
-        // Từ V44 một phiên bản rubric dùng chung được cho nhiều chính sách, nên xóa nhầm không còn
-        // chỉ làm treo một chính sách mà treo cả cụm. Bản thân việc thiếu chốt này đã sai từ trước
-        // (không có khóa ngoại nào canh), chỉ là hậu quả nay lớn hơn nên phải chặn hẳn.
+    // Since V44 one rubric version is shared by many policies, so a wrong delete no longer leaves a single
+    // policy dangling but a whole group. The missing guard was already wrong before (no foreign key watches
+    // it); the consequence is now bigger, so the delete is blocked outright.
+    private void requireNoAssessmentPolicyUsing(RubricVersion version) {
         if (assessmentPolicyRepository.existsPublishedByRubricVersionId(version.getId())
                 || assessmentPolicyRepository.existsNotPublishedByRubricVersionId(version.getId())) {
             throw new IllegalArgumentException(
                     "Không thể xóa phiên bản này vì đang có Assessment Policy sử dụng. Hãy xóa hoặc lưu trữ các chính sách đó trước.");
         }
-
-        rubricVersionRepository.deleteById(version.getId());
-        return null;
     }
 }

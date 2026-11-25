@@ -40,12 +40,7 @@ public class PreviewSystemAssessmentPolicyImportFromFileUseCase implements IUseC
     @Override
     @Transactional
     public PreviewAssessmentPolicyImportResponse execute(PreviewSystemAssessmentPolicyImportFromFileCommand command) {
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
-        }
+        requireActiveUser();
 
         ParseImportFileResult parsedResult = fileProcessingPort.parse(command.file(), ImportType.ASSESSMENT_POLICY);
         if (parsedResult.rows() == null || parsedResult.rows().isEmpty()) {
@@ -55,25 +50,8 @@ public class PreviewSystemAssessmentPolicyImportFromFileUseCase implements IUseC
         Instant now = Instant.now();
         Instant expiresAt = now.plus(1, ChronoUnit.DAYS);
 
-        ImportSession session = ImportSession.previewed(
-            null,
-            ImportType.ASSESSMENT_POLICY,
-            command.file().fileName(),
-            jsonSerializationPort.toJson(parsedResult.originalHeaders()),
-            jsonSerializationPort.toJson(parsedResult.suggestedMapping()),
-            parsedResult.rows().size(),
-            expiresAt);
-
-        ImportSession savedSession = importSessionRepository.save(session);
-        UUID generatedSessionId = savedSession.getId();
-
-        List<ImportRow> importRows = IntStream.range(0, parsedResult.rows().size())
-                .mapToObj(i -> ImportRow.pending(
-                    generatedSessionId,
-                    i + 1,
-                    jsonSerializationPort.toJson(parsedResult.rows().get(i)))).toList();
-
-        importRowRepository.saveAll(importRows);
+        UUID generatedSessionId = savePreviewedSession(command, parsedResult, expiresAt);
+        savePendingRows(generatedSessionId, parsedResult);
 
         return new PreviewAssessmentPolicyImportResponse(
                 generatedSessionId,
@@ -84,5 +62,39 @@ public class PreviewSystemAssessmentPolicyImportFromFileUseCase implements IUseC
                 parsedResult.totalRows(),
                 expiresAt
         );
+    }
+
+    private void requireActiveUser() {
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) {
+            throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
+        }
+    }
+
+    private UUID savePreviewedSession(
+            PreviewSystemAssessmentPolicyImportFromFileCommand command, ParseImportFileResult parsedResult, Instant expiresAt) {
+        ImportSession session = ImportSession.previewed(
+            null,
+            ImportType.ASSESSMENT_POLICY,
+            command.file().fileName(),
+            jsonSerializationPort.toJson(parsedResult.originalHeaders()),
+            jsonSerializationPort.toJson(parsedResult.suggestedMapping()),
+            parsedResult.rows().size(),
+            expiresAt);
+
+        ImportSession savedSession = importSessionRepository.save(session);
+        return savedSession.getId();
+    }
+
+    private void savePendingRows(UUID generatedSessionId, ParseImportFileResult parsedResult) {
+        List<ImportRow> importRows = IntStream.range(0, parsedResult.rows().size())
+                .mapToObj(i -> ImportRow.pending(
+                    generatedSessionId,
+                    i + 1,
+                    jsonSerializationPort.toJson(parsedResult.rows().get(i)))).toList();
+
+        importRowRepository.saveAll(importRows);
     }
 }

@@ -103,14 +103,7 @@ public class GraphQLPracticeController {
     @MutationMapping
     @PreAuthorize("hasRole('STUDENT')")
     public LearnerProfile submitInterestQuiz(@Argument("input") SubmitInterestQuizInput input) {
-        List<QuizAnswer> answers = input.answers().stream()
-            .map(answer -> QuizAnswer.builder()
-                    .itemId(answer.itemId())
-                    .mostStatementIndex(answer.mostStatementIndex())
-                    .leastStatementIndex(answer.leastStatementIndex())
-                    .build())
-            .toList();
-        LearnerProfile profile = submitInterestQuizUseCase.execute(new SubmitInterestQuizCommand(answers));
+        LearnerProfile profile = submitInterestQuizUseCase.execute(new SubmitInterestQuizCommand(toQuizAnswers(input)));
 
         // Generate topics RIGHT AFTER the quiz is submitted, in the background, WITHOUT blocking the response.
         //
@@ -129,6 +122,16 @@ public class GraphQLPracticeController {
         // A duplicate call costs nothing extra: backfillAsync has an in-flight lock per studentId.
         topicOfferBackfillService.backfillAsync(userContextPort.getCurrentAuthenticatedUserId());
         return profile;
+    }
+
+    private List<QuizAnswer> toQuizAnswers(SubmitInterestQuizInput input) {
+        return input.answers().stream()
+            .map(answer -> QuizAnswer.builder()
+                    .itemId(answer.itemId())
+                    .mostStatementIndex(answer.mostStatementIndex())
+                    .leastStatementIndex(answer.leastStatementIndex())
+                    .build())
+            .toList();
     }
 
     /**

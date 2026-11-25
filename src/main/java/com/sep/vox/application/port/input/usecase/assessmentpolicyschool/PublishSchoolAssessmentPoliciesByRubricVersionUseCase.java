@@ -45,42 +45,10 @@ public class PublishSchoolAssessmentPoliciesByRubricVersionUseCase
     @Override
     @Transactional
     public List<UUID> execute(PublishSchoolAssessmentPoliciesByRubricVersionCommand command) {
-        // 1. Kiểm tra tài khoản School Admin
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản đã bị khóa.");
-        }
+        requireActiveSchoolAdmin(command.schoolId());
+        List<AssessmentPolicy> draftPolicies = loadDraftPolicies(command);
 
-        // 2. Kiểm tra tài khoản thuộc đúng trường học yêu cầu
-        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được phân bổ vào trường học nào."));
-        if (!schoolUser.getSchoolId().equals(command.schoolId())) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền can thiệp vào Assessment Policy của trường khác.");
-        }
-
-        School school = schoolRepository.findById(command.schoolId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
-        if (!school.isActive()) {
-            throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
-        }
-
-        // 3. Kiểm tra Rubric Version phải tồn tại và đang ở trạng thái DRAFT
-        RubricVersion rubricVersion = rubricVersionRepository.findById(command.rubricVersionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Rubric."));
-        if (rubricVersion.getStatus() != RubricStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ có thể publish hàng loạt Assessment Policy khi Rubric Version liên kết đang ở trạng thái DRAFT.");
-        }
-
-        // 4. Lấy toàn bộ Assessment Policy của trường đang DRAFT liên kết với Rubric Version này
-        List<AssessmentPolicy> draftPolicies = assessmentPolicyRepository
-                .findDraftBySchoolIdAndRubricVersionId(command.schoolId(), command.rubricVersionId());
-        if (draftPolicies.isEmpty()) {
-            throw new ResourceNotFoundException("Không có Assessment Policy nào của trường học đang ở trạng thái DRAFT liên kết với Rubric Version này.");
-        }
-
-        // 5. Validate and publish each policy (roll everything back if one policy is invalid)
+        // Validate and publish each policy (roll everything back if one policy is invalid)
         for (AssessmentPolicy policy : draftPolicies) {
             FrameworkVersion frameworkVersion = frameworkVersionRepository.findById(policy.getFrameworkVersionId())
                     .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Khung tiêu chuẩn (Framework Version) liên kết."));
@@ -94,5 +62,41 @@ public class PublishSchoolAssessmentPoliciesByRubricVersionUseCase
 
         return assessmentPolicyRepository.saveAll(draftPolicies)
                 .stream().map(ap -> ap.getId()).toList();
+    }
+
+    private void requireActiveSchoolAdmin(UUID schoolId) {
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) {
+            throw new UnauthorizedException("Tài khoản đã bị khóa.");
+        }
+
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
+                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được phân bổ vào trường học nào."));
+        if (!schoolUser.getSchoolId().equals(schoolId)) {
+            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền can thiệp vào Assessment Policy của trường khác.");
+        }
+
+        School school = schoolRepository.findById(schoolId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
+        if (!school.isActive()) {
+            throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
+        }
+    }
+
+    private List<AssessmentPolicy> loadDraftPolicies(PublishSchoolAssessmentPoliciesByRubricVersionCommand command) {
+        RubricVersion rubricVersion = rubricVersionRepository.findById(command.rubricVersionId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Rubric."));
+        if (rubricVersion.getStatus() != RubricStatus.DRAFT) {
+            throw new IllegalArgumentException("Chỉ có thể publish hàng loạt Assessment Policy khi Rubric Version liên kết đang ở trạng thái DRAFT.");
+        }
+
+        List<AssessmentPolicy> draftPolicies = assessmentPolicyRepository
+                .findDraftBySchoolIdAndRubricVersionId(command.schoolId(), command.rubricVersionId());
+        if (draftPolicies.isEmpty()) {
+            throw new ResourceNotFoundException("Không có Assessment Policy nào của trường học đang ở trạng thái DRAFT liên kết với Rubric Version này.");
+        }
+        return draftPolicies;
     }
 }

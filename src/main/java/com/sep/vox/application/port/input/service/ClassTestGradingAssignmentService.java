@@ -72,18 +72,18 @@ public class ClassTestGradingAssignmentService {
     }
 
     /**
-     * Quét bù toàn bộ bài {@code PENDING_REVIEW} của một bài kiểm tra trên lớp. Dùng
-     * lúc đóng bài, nơi vẫn còn kết quả sinh muộn ngoài luồng thường: bài do job chấm
-     * trễ, bài vừa được gỡ vô hiệu.
+     * Catch-up sweep over every {@code PENDING_REVIEW} attempt of one class test. Used when
+     * closing the assessment, where results produced late outside the normal flow still exist: attempts
+     * from the late-grading job, attempts that were just un-invalidated.
      *
-     * <p>Bài KHÔNG ở {@code PENDING_REVIEW} cố ý nằm ngoài lượt quét này: bài AI chấm
-     * sạch và bài vắng/trống cho điểm 0 đều đi thẳng sang {@code RELEASED}, mở phân công
-     * tự động cho chúng là nhét vào hàng đợi hàng loạt bài không ai cần chấm. Giáo viên
-     * vẫn thấy và nhận chấm được chúng ở màn danh sách bài
-     * ({@code classTestGradingResults} → {@code ClaimClassTestGradingUseCase}), qua vòng
-     * hậu kiểm thay vì vòng đầu.
+     * <p>Attempts NOT in {@code PENDING_REVIEW} are deliberately outside this sweep: attempts the AI graded
+     * cleanly and absent/empty attempts given a score of 0 all go straight to {@code RELEASED}, and opening assignments
+     * automatically for them would stuff the queue with a mass of attempts nobody needs to grade. The teacher
+     * can still see and claim them on the attempt list screen
+     * ({@code classTestGradingResults} → {@code ClaimClassTestGradingUseCase}), through the
+     * spot-check round instead of the initial round.
      *
-     * @return số phân công vừa mở
+     * @return the number of assignments just opened
      */
     @Transactional
     public int ensureAssignmentsForAssessment(UUID assessmentId) {
@@ -100,8 +100,11 @@ public class ClassTestGradingAssignmentService {
         if (pending.isEmpty()) {
             return 0;
         }
+        return openMissingAssignments(pending, chairId);
+    }
 
-        // Một query cho cả lô thay vì hỏi từng bài — số bài bằng sĩ số lớp.
+    private int openMissingAssignments(List<AssessmentCandidateResult> pending, UUID chairId) {
+        // One query for the whole batch instead of asking per attempt -- the attempt count equals the class size.
         Set<UUID> alreadyOpen = assessmentGradingAssignmentRepository
             .findOpenByCandidateResultIdIn(pending.stream().map(result -> result.getId()).toList()).stream()
             .map(assignment -> assignment.getCandidateResultId())

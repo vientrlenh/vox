@@ -33,7 +33,23 @@ public class CreateSystemRubricUseCase implements IUseCase<CreateSystemRubricCom
     @Override
     @Transactional
     public UUID execute(CreateSystemRubricCommand command) {
-        // 1. Kiểm tra tài khoản và quyền SYSTEM_ADMIN
+        requireActiveCurrentUser();
+        requireExistingLanguage(command.languageId());
+        requireActiveFramework(command.frameworkId());
+
+        String safeCode = StringNormalization.trimAndCollapseSpaces(command.code());
+        String safeName = StringNormalization.trimAndCollapseSpaces(command.name());
+        String safeDesc = command.description() != null ? StringNormalization.trimAndCollapseSpaces(command.description()) : null;
+
+        Rubric newRubric = Rubric.forSystem(
+                command.languageId(), command.frameworkId(), safeCode, safeName, safeDesc);
+
+        Rubric savedRubric = rubricRepository.save(newRubric);
+
+        return savedRubric.getId();
+    }
+
+    private void requireActiveCurrentUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
@@ -41,33 +57,19 @@ public class CreateSystemRubricUseCase implements IUseCase<CreateSystemRubricCom
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("Tài khoản đã bị khóa.");
         }
+    }
 
-        // 2. Validate hệ thống
-        if (!languageRepository.existsById(command.languageId())) {
+    private void requireExistingLanguage(UUID languageId) {
+        if (!languageRepository.existsById(languageId)) {
             throw new ResourceNotFoundException("Ngôn ngữ không tồn tại.");
         }
+    }
 
-        // Kiểm tra Framework gốc
-        Framework framework = frameworkRepository.findById(command.frameworkId())
+    private void requireActiveFramework(UUID frameworkId) {
+        Framework framework = frameworkRepository.findById(frameworkId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Khung tiêu chuẩn (Framework)."));
         if (!framework.isActive() ) {
             throw new IllegalArgumentException("Không thể sử dụng Khung tiêu chuẩn (Framework) này vì nó đang bị vô hiệu hóa.");
         }
-
-
-
-        // ĐÃ XÓA TOÀN BỘ LOGIC RÀNG BUỘC VÀ TẠO RUBRIC VERSION Ở ĐÂY
-
-        String safeCode = StringNormalization.trimAndCollapseSpaces(command.code());
-        String safeName = StringNormalization.trimAndCollapseSpaces(command.name());
-        String safeDesc = command.description() != null ? StringNormalization.trimAndCollapseSpaces(command.description()) : null;
-
-        // 3. TẠO RUBRIC SYSTEM (Vỏ bọc)
-        Rubric newRubric = Rubric.forSystem(
-                command.languageId(), command.frameworkId(), safeCode, safeName, safeDesc);
-
-        Rubric savedRubric = rubricRepository.save(newRubric);
-
-        return savedRubric.getId(); // Trả về ID của vỏ Rubric vừa tạo
     }
 }

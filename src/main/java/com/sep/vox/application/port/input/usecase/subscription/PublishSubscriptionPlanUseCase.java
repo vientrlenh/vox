@@ -29,28 +29,9 @@ public class PublishSubscriptionPlanUseCase implements IUseCase<PublishSubscript
         SubscriptionPlan plan = subscriptionPlanRepository.findById(input.subscriptionPlanId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói"));
 
-        // ACTIVE means it was already sold, and ARCHIVED means selling stopped PERMANENTLY -- allowing a publish of an ARCHIVED
-        // plan would resurrect a plan whose replacedByPlanId points elsewhere, giving two live plans on one replacement chain.
-        // To sell again, create a new plan.
-        if (plan.getStatus() != SubscriptionPlanStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ có thể xuất bản gói đang ở trạng thái nháp.");
-        }
-
-        // The last gate before the plan can be sold to schools. No database constraint forces a plan to have at least one quota
-        // row -- CreateSubscriptionPlanUseCase and UpdateSubscriptionPlanUseCase both check it at the application level, so any
-        // path that does not go through those two use cases (seed, scripts, a later import) can still produce an empty plan.
-        // Publish is the only moment left that can still block it: a plan without quota leaves the paying school unable to use
-        // anything, and the error only shows up when grading.
-        if (subscriptionPlanQuotaRepository.findBySubscriptionPlanId(plan.getId()).isEmpty()) {
-            throw new IllegalArgumentException("Gói phải có ít nhất một hạn mức trước khi xuất bản.");
-        }
-
-        // Whether this plan is currently the replacement (replacedByPlanId) of any other plan -- if so, this is the moment it
-        // REALLY takes on that role (schools will be moved to this plan on renewal, with no chance to refuse). It must meet the
-        // same standard as the manual archive flow before it is allowed to go live.
-        for (SubscriptionPlan replacedPlan : subscriptionPlanRepository.findByReplacedByPlanId(plan.getId())) {
-            replacementValidator.requireCompatibleTerms(plan, replacedPlan);
-        }
+        requireDraft(plan);
+        requireAtLeastOneQuota(plan);
+        requireCompatibleWithReplacedPlans(plan);
 
         plan.setStatus(SubscriptionPlanStatus.ACTIVE);
         // The version is not incremented by hand: the version column is managed by Hibernate through @Version -- see
@@ -58,5 +39,34 @@ public class PublishSubscriptionPlanUseCase implements IUseCase<PublishSubscript
         SubscriptionPlan savedPlan = subscriptionPlanRepository.save(plan);
 
         return savedPlan.getId();
+    }
+
+    // ACTIVE means it was already sold, and ARCHIVED means selling stopped PERMANENTLY -- allowing a publish of an ARCHIVED
+    // plan would resurrect a plan whose replacedByPlanId points elsewhere, giving two live plans on one replacement chain.
+    // To sell again, create a new plan.
+    private void requireDraft(SubscriptionPlan plan) {
+        if (plan.getStatus() != SubscriptionPlanStatus.DRAFT) {
+            throw new IllegalArgumentException("Chỉ có thể xuất bản gói đang ở trạng thái nháp.");
+        }
+    }
+
+    // The last gate before the plan can be sold to schools. No database constraint forces a plan to have at least one quota
+    // row -- CreateSubscriptionPlanUseCase and UpdateSubscriptionPlanUseCase both check it at the application level, so any
+    // path that does not go through those two use cases (seed, scripts, a later import) can still produce an empty plan.
+    // Publish is the only moment left that can still block it: a plan without quota leaves the paying school unable to use
+    // anything, and the error only shows up when grading.
+    private void requireAtLeastOneQuota(SubscriptionPlan plan) {
+        if (subscriptionPlanQuotaRepository.findBySubscriptionPlanId(plan.getId()).isEmpty()) {
+            throw new IllegalArgumentException("Gói phải có ít nhất một hạn mức trước khi xuất bản.");
+        }
+    }
+
+    // Whether this plan is currently the replacement (replacedByPlanId) of any other plan -- if so, this is the moment it
+    // REALLY takes on that role (schools will be moved to this plan on renewal, with no chance to refuse). It must meet the
+    // same standard as the manual archive flow before it is allowed to go live.
+    private void requireCompatibleWithReplacedPlans(SubscriptionPlan plan) {
+        for (SubscriptionPlan replacedPlan : subscriptionPlanRepository.findByReplacedByPlanId(plan.getId())) {
+            replacementValidator.requireCompatibleTerms(plan, replacedPlan);
+        }
     }
 }

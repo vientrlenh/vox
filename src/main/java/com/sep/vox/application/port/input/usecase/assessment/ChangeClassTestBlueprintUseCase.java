@@ -75,6 +75,28 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
 
+        requireBlueprintChangeAllowed(input, assessment, currentUserId);
+        if (input.blueprintId() != null) {
+            validateExistingBlueprintDuration(input, assessment);
+        }
+
+        AssessmentPaper paper = requireSinglePaper(assessment);
+        clearExistingPaperContent(paper, currentUserId);
+
+        if (input.blueprintId() != null) {
+            switchToExistingBlueprint(input, assessment, paper, currentUserId);
+        } else {
+            // Detaching the blueprint leaves it fully empty and creates no hidden blueprint: the assessment goes back to free direct-question mode.
+            assessment.setBlueprintId(null);
+            assessment.setBlueprintVersionId(null);
+        }
+
+        Assessment saved = assessmentRepository.save(assessment);
+        recalculateAssessmentTimeDurationService.recalculate(assessment.getId());
+        return AssessmentDtoMapper.toDto(saved);
+    }
+
+    private void requireBlueprintChangeAllowed(ChangeClassTestBlueprintCommand input, Assessment assessment, UUID currentUserId) {
         if (assessment.getKind() != AssessmentKind.CLASS_TEST) {
             throw new ForbiddenException("Chỉ áp dụng cho bài kiểm tra trên lớp");
         }
@@ -91,37 +113,35 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
             throw new IllegalArgumentException(
                 "Phải cung cấp đầy đủ blueprintId và blueprintVersionId, hoặc để trống cả hai để gỡ blueprint");
         }
-        if (input.blueprintId() != null) {
-            validateExistingBlueprintDuration(input, assessment);
-        }
+    }
 
-        // Đổi blueprint viết lại toàn bộ nội dung của mã đề. Bài có nhiều mã đề thì không có mã đề
-        // nào là "mã đề của blueprint" cả — chặn hẳn thay vì âm thầm ghi đè mã đề đầu tiên.
+    /**
+     * Changing the blueprint rewrites the whole content of the paper. An assessment with several papers has no
+     * paper that is "the blueprint's paper", so it is rejected instead of silently overwriting the first paper.
+     */
+    private AssessmentPaper requireSinglePaper(Assessment assessment) {
         List<AssessmentPaper> papers = assessmentPaperRepository.findByAssessmentId(assessment.getId());
         if (papers.size() > 1) {
             throw new IllegalArgumentException(
                 "Bài có nhiều mã đề, hãy xoá bớt chỉ còn một mã đề trước khi đổi blueprint");
         }
-        AssessmentPaper paper = papers.stream()
+        return papers.stream()
             .findFirst()
             .orElseThrow(() -> new ResourceNotFoundException("Bài kiểm tra chưa có mã đề nào"));
-
-        clearExistingPaperContent(paper, currentUserId);
-
-        if (input.blueprintId() != null) {
-            switchToExistingBlueprint(input, assessment, paper, currentUserId);
-        } else {
-            // Gỡ blueprint: để trống hoàn toàn, không tạo blueprint ẩn nào — bài trở về chế độ câu hỏi trực tiếp tự do.
-            assessment.setBlueprintId(null);
-            assessment.setBlueprintVersionId(null);
-        }
-
-        Assessment saved = assessmentRepository.save(assessment);
-        recalculateAssessmentTimeDurationService.recalculate(assessment.getId());
-        return AssessmentDtoMapper.toDto(saved);
     }
 
     private void validateExistingBlueprintDuration(ChangeClassTestBlueprintCommand input, Assessment assessment) {
+        AssessmentBlueprintVersion version = requirePublishedVersionOfSchoolBlueprint(input, assessment);
+        assessmentTimeQuotaGuardService.requireWithinPlan(
+            assessment.getSchoolId(),
+            version.getTotalTimeLimitSeconds(),
+            "Phiên bản blueprint " + version.getCode()
+        );
+    }
+
+    private AssessmentBlueprintVersion requirePublishedVersionOfSchoolBlueprint(
+            ChangeClassTestBlueprintCommand input,
+            Assessment assessment) {
         AssessmentBlueprint blueprint = assessmentBlueprintRepository.findById(input.blueprintId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy blueprint"));
         if (!blueprint.getSchoolId().equals(assessment.getSchoolId())) {
@@ -135,11 +155,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
         if (version.getStatus() != AssessmentBlueprintVersionStatus.PUBLISHED) {
             throw new IllegalArgumentException("Chỉ được dùng version đã PUBLISHED");
         }
-        assessmentTimeQuotaGuardService.requireWithinPlan(
-            assessment.getSchoolId(),
-            version.getTotalTimeLimitSeconds(),
-            "Phiên bản blueprint " + version.getCode()
-        );
+        return version;
     }
 
     private void clearExistingPaperContent(AssessmentPaper paper, UUID currentUserId) {
@@ -159,62 +175,75 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
             Assessment assessment,
             AssessmentPaper paper,
             UUID currentUserId) {
-        AssessmentBlueprint blueprint = assessmentBlueprintRepository.findById(input.blueprintId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy blueprint"));
-        if (!blueprint.getSchoolId().equals(assessment.getSchoolId())) {
-            throw new IllegalArgumentException("Blueprint không thuộc trường của giáo viên");
-        }
-        AssessmentBlueprintVersion version = assessmentBlueprintVersionRepository.findById(input.blueprintVersionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy version blueprint"));
-        if (!version.getBlueprintId().equals(blueprint.getId())) {
-            throw new IllegalArgumentException("Version không thuộc blueprint đã chọn");
-        }
-        if (version.getStatus() != AssessmentBlueprintVersionStatus.PUBLISHED) {
-            throw new IllegalArgumentException("Chỉ được dùng version đã PUBLISHED");
-        }
+        AssessmentBlueprintVersion version = requirePublishedVersionOfSchoolBlueprint(input, assessment);
 
-        List<AssessmentBlueprintSection> sections = assessmentBlueprintSectionRepository.findByBlueprintVersionId(version.getId()).stream()
-            .sorted(Comparator.comparingInt(section -> section.getOrder()))
-            .toList();
-        if (sections.isEmpty()) {
-            throw new IllegalArgumentException("Blueprint version không có section nào");
-        }
+        List<AssessmentBlueprintSection> sections = requireSortedSections(version);
         Map<UUID, List<AssessmentBlueprintSlot>> slotsBySectionId = assessmentBlueprintSlotRepository.findByBlueprintVersionId(version.getId()).stream()
             .collect(Collectors.groupingBy(slot -> slot.getSectionId()));
         validateVersionWeights(sections, slotsBySectionId);
         validateReusableSlots(slotsBySectionId.values().stream().flatMap(list -> list.stream()).toList());
 
-        assessment.setBlueprintId(blueprint.getId());
+        assessment.setBlueprintId(input.blueprintId());
         assessment.setBlueprintVersionId(version.getId());
 
         for (AssessmentBlueprintSection section : sections) {
             List<AssessmentBlueprintSlot> slots = slotsBySectionId.getOrDefault(section.getId(), List.of()).stream()
                 .sorted(Comparator.comparingInt(slot -> slot.getOrder()))
                 .toList();
-            AssessmentPaperSection paperSection = assessmentPaperSectionRepository.save(
-                AssessmentPaperSection.fromBlueprintSection(paper.getId(), section));
-            for (AssessmentBlueprintSlot slot : slots) {
-                UUID questionId = slot.getSlotType() == AssessmentBlueprintSlotType.FIXED ? slot.getFixedQuestionId() : null;
-                if (questionId != null) {
-                    Question fixedQuestion = questionRepository.findById(questionId)
-                        .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi cố định trong blueprint"));
-                    if (fixedQuestion.getStatus() != QuestionStatus.PUBLISHED) {
-                        // The fixed question was archived after the blueprint was published: leave this slot empty, the CHAIR picks another question through the picker.
-                        assessmentPaperItemRepository.save(
-                            AssessmentPaperItem.emptySlot(paperSection.getId(), paper.getId(), slot));
-                        continue;
-                    }
-                }
-                AssessmentPaperItem item = AssessmentPaperItem.forBlueprintSlot(
-                    paperSection.getId(), paper.getId(), slot, questionId);
-                assessmentPaperItemRepository.save(item);
-                if (questionId != null) {
-                    assessmentQuestionSecureLockService.lockQuestionForAssessment(
-                        questionId, assessment.getId(), AssessmentSecurePoolReleaseMode.AUTO_AFTER_CLOSE, currentUserId
-                    );
-                }
-            }
+            copySectionIntoPaper(section, slots, paper, assessment, currentUserId);
         }
+    }
+
+    private List<AssessmentBlueprintSection> requireSortedSections(AssessmentBlueprintVersion version) {
+        List<AssessmentBlueprintSection> sections = assessmentBlueprintSectionRepository.findByBlueprintVersionId(version.getId()).stream()
+            .sorted(Comparator.comparingInt(section -> section.getOrder()))
+            .toList();
+        if (sections.isEmpty()) {
+            throw new IllegalArgumentException("Blueprint version không có section nào");
+        }
+        return sections;
+    }
+
+    private void copySectionIntoPaper(
+            AssessmentBlueprintSection section,
+            List<AssessmentBlueprintSlot> slots,
+            AssessmentPaper paper,
+            Assessment assessment,
+            UUID currentUserId) {
+        AssessmentPaperSection paperSection = assessmentPaperSectionRepository.save(
+            AssessmentPaperSection.fromBlueprintSection(paper.getId(), section));
+        for (AssessmentBlueprintSlot slot : slots) {
+            copySlotIntoPaper(slot, paperSection, paper, assessment, currentUserId);
+        }
+    }
+
+    private void copySlotIntoPaper(
+            AssessmentBlueprintSlot slot,
+            AssessmentPaperSection paperSection,
+            AssessmentPaper paper,
+            Assessment assessment,
+            UUID currentUserId) {
+        UUID questionId = slot.getSlotType() == AssessmentBlueprintSlotType.FIXED ? slot.getFixedQuestionId() : null;
+        if (questionId != null && !isFixedQuestionPublished(questionId)) {
+            // The fixed question was archived after the blueprint was published: leave this slot empty, the CHAIR picks another question through the picker.
+            assessmentPaperItemRepository.save(
+                AssessmentPaperItem.emptySlot(paperSection.getId(), paper.getId(), slot));
+            return;
+        }
+        AssessmentPaperItem item = AssessmentPaperItem.forBlueprintSlot(
+            paperSection.getId(), paper.getId(), slot, questionId);
+        assessmentPaperItemRepository.save(item);
+        if (questionId != null) {
+            assessmentQuestionSecureLockService.lockQuestionForAssessment(
+                questionId, assessment.getId(), AssessmentSecurePoolReleaseMode.AUTO_AFTER_CLOSE, currentUserId
+            );
+        }
+    }
+
+    private boolean isFixedQuestionPublished(UUID questionId) {
+        Question fixedQuestion = questionRepository.findById(questionId)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi cố định trong blueprint"));
+        return fixedQuestion.getStatus() == QuestionStatus.PUBLISHED;
     }
 
     private void validateVersionWeights(List<AssessmentBlueprintSection> sections, Map<UUID, List<AssessmentBlueprintSlot>> slotsBySectionId) {

@@ -36,38 +36,37 @@ public class ViewSchoolRubricDetailsUseCase implements IUseCase<ViewSchoolRubric
     @Override
     @Transactional(readOnly = true)
     public RubricDto execute(ViewSchoolRubricDetailsQuery query) {
-        // 1. Xác thực tài khoản
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
-
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("Tài khoản bị khóa.");
         }
 
-        // 2. Lấy bộ Rubric
         Rubric rubric = rubricRepository.findById(query.rubricId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric này."));
+        requireOwnedBySchoolOfUser(rubric, query, currentUserId);
+        requireActiveSchool(query.schoolId());
 
-        // 3. Security gate based on SchoolUser
+        return RubricDtoMapper.toRubricDto(rubric);
+    }
+
+    // Security gate based on SchoolUser.
+    private void requireOwnedBySchoolOfUser(Rubric rubric, ViewSchoolRubricDetailsQuery query, UUID currentUserId) {
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
-
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL ||
                 !rubric.getSchoolId().equals(query.schoolId()) ||
                 !schoolUser.getSchoolId().equals(rubric.getSchoolId())) {
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền xem Rubric của trường khác.");
         }
+    }
 
-        // 4. Kiểm tra trạng thái trường học
-        School school = schoolRepository.findById(query.schoolId())
+    private void requireActiveSchool(UUID schoolId) {
+        School school = schoolRepository.findById(schoolId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
-
         if (!school.isActive()) {
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa.");
         }
-
-        // 5. Map sang Domain DTO
-        return RubricDtoMapper.toRubricDto(rubric);
     }
 }

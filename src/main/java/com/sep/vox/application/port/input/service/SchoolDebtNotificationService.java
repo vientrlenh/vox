@@ -142,19 +142,9 @@ public class SchoolDebtNotificationService {
             UUID schoolId, UUID subscriptionId, SchoolDebtEventType eventType, QuotaType quotaType,
             UUID triggerAssessmentSessionId, UUID triggerPracticeSessionId, BigDecimal triggerAmountVnd,
             BigDecimal totalAllocatedVnd, BigDecimal usedAmountVnd, BigDecimal overageVnd, Instant now) {
-        schoolDebtEventRepository.save(SchoolDebtEvent.builder()
-            .schoolId(schoolId)
-            .subscriptionId(subscriptionId)
-            .eventType(eventType)
-            .quotaType(quotaType)
-            .triggerAssessmentSessionId(triggerAssessmentSessionId)
-            .triggerPracticeSessionId(triggerPracticeSessionId)
-            .triggerAmountVnd(triggerAmountVnd)
-            .totalAllocatedVnd(totalAllocatedVnd)
-            .usedAmountVnd(usedAmountVnd)
-            .overageVnd(overageVnd)
-            .occurredAt(now)
-            .build());
+        schoolDebtEventRepository.save(SchoolDebtEvent.recorded(
+            schoolId, subscriptionId, eventType, quotaType, triggerAssessmentSessionId, triggerPracticeSessionId,
+            triggerAmountVnd, totalAllocatedVnd, usedAmountVnd, overageVnd, now));
     }
 
     private List<UUID> schoolAdminIdsOf(UUID schoolId) {

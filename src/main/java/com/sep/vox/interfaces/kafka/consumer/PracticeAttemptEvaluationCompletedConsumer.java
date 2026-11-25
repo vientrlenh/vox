@@ -47,32 +47,7 @@ public class PracticeAttemptEvaluationCompletedConsumer {
             record.partition(), record.offset(), record.key()
         );
         try {
-            JsonNode payload = jsonMapper.valueToTree(record.value());
-            String eventType = payload.path("eventType").asString();
-
-            if ("PracticeAttemptEvaluationCompleted".equals(eventType)) {
-                PracticeAttemptEvaluationCompletedEventDto dto = jsonMapper.treeToValue(payload, PracticeAttemptEvaluationCompletedEventDto.class);
-                recordPracticeAttemptEvaluationUseCase.execute(
-                    RecordPracticeAttemptEvaluationCommandMapper.toCommand(dto)
-                );
-                log.info("Recorded practice evaluation for practiceResponseId={}", dto.practiceResponseId());
-            } else if ("PracticeAttemptEvaluationFailed".equals(eventType)) {
-                // Before 2026-08-12 this branch did not exist: a failed event fell into "Skip unknown", so Java
-                // never learned that grading had failed. That question stayed "no grading result" forever, the
-                // sweep job re-fired every 5 minutes and failed again -- an infinite loop, and the student
-                // watching the summary screen waited forever for a result that would never arrive.
-                PracticeAttemptEvaluationFailedEventDto failed = jsonMapper.treeToValue(payload, PracticeAttemptEvaluationFailedEventDto.class);
-                practiceItemResponseRepository.markGradingFailed(
-                    UUID.fromString(failed.practiceResponseId())
-                );
-                log.warn(
-                    "Chấm luyện tập hỏng practiceResponseId={} lỗi={}",
-                    failed.practiceResponseId(),
-                    failed.payload() == null ? null : failed.payload().error()
-                );
-            } else {
-                log.info("Skip unknown practice evaluation event type={}", eventType);
-            }
+            processEvent(jsonMapper.valueToTree(record.value()));
 
             ack.acknowledge();
         } catch (Exception ex) {
@@ -81,6 +56,42 @@ public class PracticeAttemptEvaluationCompletedConsumer {
                 ? runtimeException
                 : new IllegalStateException("Failed to process practice evaluation event", ex);
         }
+    }
+
+    private void processEvent(JsonNode payload) {
+        String eventType = payload.path("eventType").asString();
+
+        if ("PracticeAttemptEvaluationCompleted".equals(eventType)) {
+            recordCompletedEvaluation(payload);
+        } else if ("PracticeAttemptEvaluationFailed".equals(eventType)) {
+            markGradingFailed(payload);
+        } else {
+            log.info("Skip unknown practice evaluation event type={}", eventType);
+        }
+    }
+
+    private void recordCompletedEvaluation(JsonNode payload) {
+        PracticeAttemptEvaluationCompletedEventDto dto = jsonMapper.treeToValue(payload, PracticeAttemptEvaluationCompletedEventDto.class);
+        recordPracticeAttemptEvaluationUseCase.execute(
+            RecordPracticeAttemptEvaluationCommandMapper.toCommand(dto)
+        );
+        log.info("Recorded practice evaluation for practiceResponseId={}", dto.practiceResponseId());
+    }
+
+    private void markGradingFailed(JsonNode payload) {
+        // Before 2026-08-12 this branch did not exist: a failed event fell into "Skip unknown", so Java
+        // never learned that grading had failed. That question stayed "no grading result" forever, the
+        // sweep job re-fired every 5 minutes and failed again -- an infinite loop, and the student
+        // watching the summary screen waited forever for a result that would never arrive.
+        PracticeAttemptEvaluationFailedEventDto failed = jsonMapper.treeToValue(payload, PracticeAttemptEvaluationFailedEventDto.class);
+        practiceItemResponseRepository.markGradingFailed(
+            UUID.fromString(failed.practiceResponseId())
+        );
+        log.warn(
+            "Chấm luyện tập hỏng practiceResponseId={} lỗi={}",
+            failed.practiceResponseId(),
+            failed.payload() == null ? null : failed.payload().error()
+        );
     }
 
     @DltHandler

@@ -11,18 +11,20 @@ import com.sep.vox.domain.model.question.QuestionStatus;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.Query;
+import jakarta.persistence.TypedQuery;
 
 @Repository
 public class JpaQuestionQueryRepository implements QuestionQueryRepository {
 
     /**
-     * Khối điều kiện dưới đây là BẢN SAO NGUYÊN VĂN phần WHERE của
-     * {@code SpringDataQuestionRepository.findAccessible}, chỉ bỏ đúng hai thứ: bộ lọc
-     * {@code :status} (vì status là chiều đang nhóm) và {@code ORDER BY} (vô nghĩa khi
-     * gộp). Sửa một bên mà quên bên kia là con số trên biểu đồ lệch khỏi danh sách người
-     * dùng bấm vào -- kiểu sai không ai báo, chỉ âm thầm cho ra tổng khác.
+     * The conditions below are a VERBATIM COPY of the WHERE part of
+     * {@code SpringDataQuestionRepository.findAccessible}, dropping exactly two things: the
+     * {@code :status} filter (because status is the dimension being grouped) and {@code ORDER BY} (meaningless
+     * when aggregating). Changing one side and forgetting the other makes the number on the chart drift from the
+     * list the user clicks into -- the kind of error nobody reports, it just silently gives a different total.
      *
-     * <p>Vì vậy tuyệt đối không "tối ưu" riêng khối này cho gọn.
+     * <p>So never "optimize" this block on its own to make it shorter.
      */
     private static final String ACCESSIBLE_QUESTIONS_JPQL = """
         SELECT q.status, COUNT(q)
@@ -150,28 +152,43 @@ public class JpaQuestionQueryRepository implements QuestionQueryRepository {
             String sharing,
             String scope,
             String keywordPattern) {
-        // SELECT new ... cannot be used: the status column of QuestionJpaEntity is a String (see the
-        // @Column on the entity, constrained by a CHECK rather than @Enumerated), so a constructor
-        // taking QuestionStatus would not match. Converting String -> enum here is the right place: this is
-        // the only place that knows how the entity stores it.
-        List<Object[]> rows = em.createQuery(ACCESSIBLE_QUESTIONS_JPQL, Object[].class)
-            .setParameter("currentUserId", currentUserId)
+        TypedQuery<Object[]> query = em.createQuery(ACCESSIBLE_QUESTIONS_JPQL, Object[].class);
+        bindCaller(query, currentUserId, currentSchoolId, systemAdmin, schoolAdmin);
+        bindFilters(query, questionBankId, questionTopicId, topicNamePattern, type, sharing, scope, keywordPattern);
+        return query.getResultList().stream()
+            .map(JpaQuestionQueryRepository::toStatusCount)
+            .toList();
+    }
+
+    private static void bindCaller(
+            Query query, UUID currentUserId, UUID currentSchoolId, boolean systemAdmin, boolean schoolAdmin) {
+        query.setParameter("currentUserId", currentUserId)
             .setParameter("currentSchoolId", currentSchoolId)
             .setParameter("systemAdmin", systemAdmin)
-            .setParameter("schoolAdmin", schoolAdmin)
-            .setParameter("questionBankId", questionBankId)
+            .setParameter("schoolAdmin", schoolAdmin);
+    }
+
+    private static void bindFilters(
+            Query query, UUID questionBankId, UUID questionTopicId, String topicNamePattern, String type,
+            String sharing, String scope, String keywordPattern) {
+        query.setParameter("questionBankId", questionBankId)
             .setParameter("questionTopicId", questionTopicId)
             .setParameter("topicNamePattern", topicNamePattern)
             .setParameter("type", type)
             .setParameter("sharing", sharing)
             .setParameter("scope", scope)
-            .setParameter("keywordPattern", keywordPattern)
-            .getResultList();
+            .setParameter("keywordPattern", keywordPattern);
+    }
 
-        return rows.stream()
-            .map(row -> new QuestionStatusCountInfo(
-                QuestionStatus.valueOf((String) row[0]),
-                ((Number) row[1]).longValue()))
-            .toList();
+    /**
+     * SELECT new ... cannot be used: the status column of QuestionJpaEntity is a String (see the
+     * @Column on the entity, constrained by a CHECK rather than @Enumerated), so a constructor
+     * taking QuestionStatus would not match. Converting String -> enum here is the right place: this is
+     * the only place that knows how the entity stores it.
+     */
+    private static QuestionStatusCountInfo toStatusCount(Object[] row) {
+        return new QuestionStatusCountInfo(
+            QuestionStatus.valueOf((String) row[0]),
+            ((Number) row[1]).longValue());
     }
 }

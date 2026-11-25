@@ -18,7 +18,6 @@ import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.questiontopic.CreateQuestionTopicResponse;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.model.question.QuestionTopic;
-import com.sep.vox.domain.model.question.QuestionTopicStatus;
 import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.QuestionTopicRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -46,7 +45,15 @@ public class CreateQuestionTopicUseCase implements IUseCase<CreateQuestionTopicC
 
         QuestionBank questionBank = questionBankRepository.findById(command.questionBankId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+        requireCreateAccess(questionBank, schoolAdmin, currentSchoolId);
 
+        QuestionTopic topic = QuestionTopic.draft(
+                command.questionBankId(), command.code(), command.name(), command.description());
+        QuestionTopic saved = questionTopicRepository.save(topic);
+        return CreateQuestionTopicResponseMapper.toResponse(saved.getId());
+    }
+
+    private void requireCreateAccess(QuestionBank questionBank, boolean schoolAdmin, UUID currentSchoolId) {
         if (questionBank.getOwnerType() == QuestionBankOwnerType.SYSTEM) {
             if (!userContextPort.isSystemAdmin()) {
                 throw new ForbiddenException("Quyền truy cập bị từ chối");
@@ -54,16 +61,6 @@ public class CreateQuestionTopicUseCase implements IUseCase<CreateQuestionTopicC
         } else if (!schoolAdmin || currentSchoolId == null || !currentSchoolId.equals(questionBank.getSchoolId())) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
-
-        QuestionTopic topic = QuestionTopic.builder()
-                .questionBankId(command.questionBankId())
-                .code(command.code())
-                .name(command.name())
-                .description(command.description())
-                .status(QuestionTopicStatus.DRAFT)
-                .build();
-        QuestionTopic saved = questionTopicRepository.save(topic);
-        return CreateQuestionTopicResponseMapper.toResponse(saved.getId());
     }
 
     private CreateQuestionTopicCommand normalize(CreateQuestionTopicCommand input) {

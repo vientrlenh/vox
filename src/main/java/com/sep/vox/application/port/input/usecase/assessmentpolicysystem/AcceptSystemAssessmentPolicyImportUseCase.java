@@ -32,19 +32,8 @@ public class AcceptSystemAssessmentPolicyImportUseCase implements IUseCase<Accep
     @Override
     @Transactional
     public AcceptAssessmentPolicyImportResponse execute(AcceptSystemAssessmentPolicyImportCommand command) {
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
-
-        ImportSession session = importSessionRepository.findById(command.sessionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên làm việc Import (Session ID không hợp lệ)."));
-
-        if (session.getType() != ImportType.ASSESSMENT_POLICY || session.getSchoolId() != null) {
-            throw new IllegalArgumentException("Phiên làm việc này không phải là Import Assessment Policy hệ thống.");
-        }
-        if (session.getStatus() != ImportSessionStatus.PREVIEWED) {
-            throw new IllegalArgumentException("Chỉ có thể Accept những phiên làm việc đang ở trạng thái PREVIEWED.");
-        }
+        requireActiveUser();
+        ImportSession session = loadPreviewedSystemSession(command);
 
         if (command.confirmedMapping() != null) {
             String mappingJson = jsonSerializationPort.toJson(command.confirmedMapping());
@@ -62,5 +51,24 @@ public class AcceptSystemAssessmentPolicyImportUseCase implements IUseCase<Accep
                 0, 0, 0,
                 session.getStatus().name()
         );
+    }
+
+    private void requireActiveUser() {
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
+    }
+
+    private ImportSession loadPreviewedSystemSession(AcceptSystemAssessmentPolicyImportCommand command) {
+        ImportSession session = importSessionRepository.findById(command.sessionId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên làm việc Import (Session ID không hợp lệ)."));
+
+        if (session.getType() != ImportType.ASSESSMENT_POLICY || session.getSchoolId() != null) {
+            throw new IllegalArgumentException("Phiên làm việc này không phải là Import Assessment Policy hệ thống.");
+        }
+        if (session.getStatus() != ImportSessionStatus.PREVIEWED) {
+            throw new IllegalArgumentException("Chỉ có thể Accept những phiên làm việc đang ở trạng thái PREVIEWED.");
+        }
+        return session;
     }
 }

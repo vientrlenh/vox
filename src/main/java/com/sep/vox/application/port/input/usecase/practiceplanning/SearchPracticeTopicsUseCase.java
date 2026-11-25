@@ -32,8 +32,21 @@ public class SearchPracticeTopicsUseCase implements IUseCase<SearchPracticeTopic
         if (normalized.isBlank()) {
             return new TopicSearchResult(List.of(), false);
         }
+        // ALWAYS offer AI drafting, not only when nothing was found.
+        //
+        // The old condition was `topics.isEmpty()`: finding 3 SIMILAR topics made the button disappear,
+        // forcing the student to settle for an approximation. The weekly limit of 3 requests was
+        // removed (2026-08-07), so there is no saving left that would justify keeping that gate.
+        //
+        // Duplicates are not a worry: two layers block them downstream -- tokenSimilarity >= 0.90 on
+        // the Java side and TopicDedupeNode on the Chroma side. Asking to draft something that already
+        // exists returns the old topic (MATCHED_EXISTING), no copy is created.
+        return new TopicSearchResult(findMatchingOffers(studentId, normalized), true);
+    }
+
+    private List<PracticePlanningResponses.PracticeTopicOffer> findMatchingOffers(UUID studentId, String normalized) {
         int minutes = enrichmentService.minutesForStudent(studentId);
-        List<PracticePlanningResponses.PracticeTopicOffer> topics = practiceTopicQueryRepository
+        return practiceTopicQueryRepository
             .searchTopics(studentId, "%" + normalized + "%", normalized)
             .stream()
             .map(row -> new PracticeTopicOffer(
@@ -47,15 +60,5 @@ public class SearchPracticeTopicsUseCase implements IUseCase<SearchPracticeTopic
                 List.of()
             ))
             .toList();
-        // LUÔN cho nhờ AI soạn, không chỉ khi tìm không ra.
-        //
-        // Bản cũ là `topics.isEmpty()`: tìm ra 3 chủ đề GẦN GIỐNG là nút biến mất, tức bắt học
-        // sinh chấp nhận thứ gần đúng. Mà hạn mức 3 lượt/tuần đã gỡ (2026-08-07) nên cũng không
-        // còn lý do tiết kiệm nào để giữ chốt này.
-        //
-        // Không sợ sinh trùng: đã có hai lớp chặn phía sau -- tokenSimilarity >= 0.90 bên Java
-        // và TopicDedupeNode bên Chroma. Nhờ soạn thứ đã tồn tại thì trả về chủ đề cũ
-        // (MATCHED_EXISTING), không tạo bản sao.
-        return new TopicSearchResult(topics, true);
     }
 }

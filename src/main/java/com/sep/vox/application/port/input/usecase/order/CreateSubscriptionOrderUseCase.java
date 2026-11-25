@@ -17,7 +17,6 @@ import com.sep.vox.application.port.output.ServiceFeePort;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.model.order.Order;
 import com.sep.vox.domain.model.order.OrderItem;
-import com.sep.vox.domain.model.order.OrderItemType;
 import com.sep.vox.domain.model.order.OrderType;
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionStatus;
@@ -51,70 +50,77 @@ public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscripti
     @Override
     @Transactional
     public UUID execute(CreateSubscriptionOrderCommand input) {
-        // Quyền đã chặn ở @PreAuthorize("hasRole('SCHOOL_ADMIN')"); ở đây chỉ còn lấy xem là trường
-        // NÀO -- và lấy từ token nên không có đường nào đặt đơn hộ trường khác.
+        // Permission is already blocked at @PreAuthorize("hasRole('SCHOOL_ADMIN')"); all that is left here is to get WHICH
+        // school -- and it comes from the token, so there is no path to place an order on behalf of another school.
         UUID schoolId = userContextPort.getCurrentSchoolId();
 
-        // Trường đang bị System Admin cưỡng chế đình chỉ (gian lận...) thì không cho đặt đơn mới cho
-        // tới khi được gỡ đình chỉ tường minh: settlement sẽ tạo một subscription ACTIVE mới mà không
-        // đụng tới bản ghi SUSPENDED, tức là đi vòng qua UnsuspendSubscriptionUseCase.
-        //
-        // Soi TOÀN BỘ lịch sử là cố ý -- không được lách bằng cách đợi kỳ bị đình chỉ trôi qua. Chế
-        // tài vẫn có điểm dừng: SubscriptionExpiryJob chuyển kỳ SUSPENDED đã qua endDate sang EXPIRED
-        // (xem SpringDataSchoolSubscriptionRepository.expireOverdue), nên cửa này khóa tối đa tới hết
-        // kỳ đã trả tiền chứ không khóa vĩnh viễn.
-        boolean hasSuspended = schoolSubscriptionRepository.findBySchoolId(schoolId).stream()
-            .anyMatch(subscription -> subscription.getStatus() == SchoolSubscriptionStatus.SUSPENDED);
-        if (hasSuspended) {
-            throw new IllegalArgumentException("Gói đăng ký của trường đang bị đình chỉ, không thể đặt đơn mới.");
-        }
-
-        SubscriptionPlan plan = subscriptionPlanRepository.findById(input.subscriptionPlanId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói"));
-        // Luồng cũ chỉ kiểm gói CÓ TỒN TẠI -- gap thật: đơn trỏ vào gói DRAFT (chưa chốt giá, admin
-        // còn sửa được) hoặc ARCHIVED (đã ngừng bán) vẫn tạo được, và tới lúc settlement thì trường
-        // đã trả tiền cho một gói lẽ ra không bán.
-        if (plan.getStatus() != SubscriptionPlanStatus.ACTIVE) {
-            throw new IllegalArgumentException("Gói này hiện không được mở bán.");
-        }
-
-        // Block BEFORE the database does, to give a readable message. If skipped, uq_orders_one_open_subscription_order still
-        // blocks but as a DataIntegrityViolationException -- the school gets a 500 error instead of learning that it has an
-        // unfinished order to pay or cancel.
-        if (orderRepository.findOpenSubscriptionOrderBySchoolId(schoolId).isPresent()) {
-            throw new IllegalArgumentException(
-                "Trường đang có một đơn đăng ký chờ thanh toán, hãy hoàn tất hoặc hủy đơn đó trước khi đặt đơn mới.");
-        }
+        requireNoSuspendedSubscription(schoolId);
+        SubscriptionPlan plan = requirePlanOnSale(input.subscriptionPlanId());
+        requireNoOpenSubscriptionOrder(schoolId);
 
         Instant now = Instant.now();
-
-        // At most ONE period may be queued. Early renewal is not blocked -- a school can still buy ahead on the very first day,
-        // which is what it needs to do when budget has to be spent within the financial year -- only stacking several periods is
-        // blocked.
-        //
-        // DELIBERATELY not a threshold like "must use 80% before renewal is allowed": that threshold aims at the wrong target. It
-        // does not prevent stacking (it can still be stacked, just later) yet it blocks exactly the schools that have money and
-        // want to pay early. Blocking by the NUMBER OF WAITING PERIODS is what really needs blocking: it keeps the price-lock
-        // risk to exactly one period.
-        if (hasQueuedPeriod(schoolId, now)) {
-            throw new IllegalArgumentException(
-                "Trường đã có một kỳ đã thanh toán đang chờ tới ngày chạy, hãy đợi kỳ đó bắt đầu rồi mới mua tiếp.");
-        }
+        requireNoQueuedPeriod(schoolId, now);
 
         Order savedOrder = orderRepository.save(buildOrder(schoolId, plan, now));
 
         // A subscription order always has EXACTLY ONE line: each order buys one period of one plan. This line is the ONLY place
         // that records which plan was bought (orders has no plan_id column), so settlement reads it to know what to grant.
-        orderItemRepository.save(OrderItem.builder()
-            .orderId(savedOrder.getId())
-            .type(OrderItemType.SUBSCRIPTION)
-            .itemId(plan.getId())
-            .unitPriceVnd(plan.getPriceVnd())
-            .amountVnd(plan.getPriceVnd())
-            .quantity(1)
-            .build());
+        orderItemRepository.save(OrderItem.forSubscriptionPlan(savedOrder.getId(), plan.getId(), plan.getPriceVnd()));
 
         return savedOrder.getId();
+    }
+
+    // A school that the System Admin has force-suspended (fraud, ...) is not allowed to place a new order until it is
+    // explicitly unsuspended: settlement would create a new ACTIVE subscription without touching the SUSPENDED record,
+    // i.e. walk around UnsuspendSubscriptionUseCase.
+    //
+    // Looking at the WHOLE history is deliberate -- it must not be dodged by waiting for the suspended period to pass.
+    // The sanction still has an end: SubscriptionExpiryJob moves a SUSPENDED period past its endDate to EXPIRED (see
+    // SpringDataSchoolSubscriptionRepository.expireOverdue), so this gate locks at most until the end of the paid
+    // period, not forever.
+    private void requireNoSuspendedSubscription(UUID schoolId) {
+        boolean hasSuspended = schoolSubscriptionRepository.findBySchoolId(schoolId).stream()
+            .anyMatch(subscription -> subscription.getStatus() == SchoolSubscriptionStatus.SUSPENDED);
+        if (hasSuspended) {
+            throw new IllegalArgumentException("Gói đăng ký của trường đang bị đình chỉ, không thể đặt đơn mới.");
+        }
+    }
+
+    private SubscriptionPlan requirePlanOnSale(UUID subscriptionPlanId) {
+        SubscriptionPlan plan = subscriptionPlanRepository.findById(subscriptionPlanId)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói"));
+        // The old flow only checked the plan EXISTS -- a real gap: an order pointing at a DRAFT plan (price not
+        // finalised, admin can still edit) or an ARCHIVED one (no longer sold) could still be created, and by
+        // settlement the school had already paid for a plan that should not be on sale.
+        if (plan.getStatus() != SubscriptionPlanStatus.ACTIVE) {
+            throw new IllegalArgumentException("Gói này hiện không được mở bán.");
+        }
+        return plan;
+    }
+
+    // Block BEFORE the database does, to give a readable message. If skipped, uq_orders_one_open_subscription_order still
+    // blocks but as a DataIntegrityViolationException -- the school gets a 500 error instead of learning that it has an
+    // unfinished order to pay or cancel.
+    private void requireNoOpenSubscriptionOrder(UUID schoolId) {
+        if (orderRepository.findOpenSubscriptionOrderBySchoolId(schoolId).isPresent()) {
+            throw new IllegalArgumentException(
+                "Trường đang có một đơn đăng ký chờ thanh toán, hãy hoàn tất hoặc hủy đơn đó trước khi đặt đơn mới.");
+        }
+    }
+
+    // At most ONE period may be queued. Early renewal is not blocked -- a school can still buy ahead on the very first day,
+    // which is what it needs to do when budget has to be spent within the financial year -- only stacking several periods is
+    // blocked.
+    //
+    // DELIBERATELY not a threshold like "must use 80% before renewal is allowed": that threshold aims at the wrong target. It
+    // does not prevent stacking (it can still be stacked, just later) yet it blocks exactly the schools that have money and
+    // want to pay early. Blocking by the NUMBER OF WAITING PERIODS is what really needs blocking: it keeps the price-lock
+    // risk to exactly one period.
+    private void requireNoQueuedPeriod(UUID schoolId, Instant now) {
+        if (hasQueuedPeriod(schoolId, now)) {
+            throw new IllegalArgumentException(
+                "Trường đã có một kỳ đã thanh toán đang chờ tới ngày chạy, hãy đợi kỳ đó bắt đầu rồi mới mua tiếp.");
+        }
     }
 
     /**

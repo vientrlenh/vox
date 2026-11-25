@@ -31,39 +31,38 @@ public class UpdateSchoolStatusUseCase implements IUseCase<UpdateSchoolStatusCom
     @Override
     @Transactional
     public UUID execute(UpdateSchoolStatusCommand command) {
-        // 1. Kiểm tra trường học có tồn tại không
         School school = schoolRepository.findById(command.id())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học với ID đã cho."));
 
-        // 2. Validate User & Bảo mật
+        requireCallerMayChangeStatusOf(school);
+
+        // Avoid a redundant update
+        if (school.isActive() == command.isActive()) {
+            throw new IllegalArgumentException("Trường học này đã ở trạng thái " + (command.isActive() ? "Hoạt động" : "Vô hiệu hóa") + ". Không cần cập nhật.");
+        }
+
+        school.setActive(command.isActive());
+
+        School updatedSchool = schoolRepository.save(school);
+
+        return updatedSchool.getId();
+    }
+
+    private void requireCallerMayChangeStatusOf(School school) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Tài khoản của bạn không tồn tại hoặc đã bị khóa.");
         }
 
-        // VÒNG BẢO MẬT: KIỂM TRA BẰNG SCHOOL USER
+        // SECURITY GUARD: checked through the SchoolUser link
         Optional<SchoolUser> schoolUserOpt = schoolUserRepository.findByUserId(currentUserId);
 
-        // Nếu user có liên kết với một trường học (tức là School Admin)
+        // A user linked to a school (a School Admin) may only change the status of their own school
         if (schoolUserOpt.isPresent()) {
             SchoolUser schoolUser = schoolUserOpt.get();
             if (!schoolUser.getSchoolId().equals(school.getId())) {
                 throw new ForbiddenException("BẢO MẬT: Bạn không có quyền cập nhật trạng thái trường học của đơn vị khác.");
             }
         }
-
-        // 3. Validate Logic: Tránh cập nhật thừa
-        if (school.isActive() == command.isActive()) {
-            throw new IllegalArgumentException("Trường học này đã ở trạng thái " + (command.isActive() ? "Hoạt động" : "Vô hiệu hóa") + ". Không cần cập nhật.");
-        }
-
-        // 4. Thay đổi trạng thái
-        school.setActive(command.isActive());
-
-        // 5. Lưu DB
-        School updatedSchool = schoolRepository.save(school);
-
-        // 6. Map sang Response
-        return updatedSchool.getId();
     }
 }

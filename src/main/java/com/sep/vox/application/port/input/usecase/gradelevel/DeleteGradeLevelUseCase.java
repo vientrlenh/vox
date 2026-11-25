@@ -31,6 +31,28 @@ public class DeleteGradeLevelUseCase implements IUseCase<DeleteGradeLevelCommand
     @Override
     @Transactional
     public Void execute(DeleteGradeLevelCommand command) {
+        requireActiveSystemAdmin();
+
+        GradeLevel gradeLevel = gradeLevelRepository.findById(command.id())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Khối học sinh với ID đã cho."));
+
+        // A grade level that was already soft-deleted (INACTIVE) counts as non-existent.
+        // Do NOT deleteById here: this runs inside @Transactional, so the throw rolls back
+        // and the hard delete would never really happen (an old bug).
+        if (gradeLevel.getStatus() != GradeLevelStatus.ACTIVE) {
+            throw new ResourceNotFoundException("Không tìm thấy khối học.");
+        }
+
+        rejectWhenUsedBySchools(gradeLevel);
+
+        // Soft delete: switch to INACTIVE.
+        gradeLevel.setStatus(GradeLevelStatus.INACTIVE);
+        gradeLevelRepository.save(gradeLevel);
+
+        return null;
+    }
+
+    private void requireActiveSystemAdmin() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Tài khoản không tồn tại hoặc đã bị khóa.");
@@ -38,29 +60,15 @@ public class DeleteGradeLevelUseCase implements IUseCase<DeleteGradeLevelCommand
         if (!userContextPort.isSystemAdmin()) {
             throw new ForbiddenException("Chỉ quản trị hệ thống mới được xóa khối học.");
         }
+    }
 
-        GradeLevel gradeLevel = gradeLevelRepository.findById(command.id())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Khối học sinh với ID đã cho."));
-
-        // Nếu Khối đã bị xóa mềm trước đó (INACTIVE) thì coi như không còn tồn tại.
-        // KHÔNG deleteById ở đây: cùng nằm trong @Transactional nên throw sẽ rollback
-        // và xóa cứng không bao giờ thực sự xảy ra (bug cũ).
-        if (gradeLevel.getStatus() != GradeLevelStatus.ACTIVE) {
-            throw new ResourceNotFoundException("Không tìm thấy khối học.");
-        }
-
-        // Chặn xóa khi còn Năm học CHƯA bị xóa mềm. Catalog giờ dùng chung nên phép kiểm tra này
-        // quét MỌI trường -- một trường còn dùng là đủ để chặn.
+    // Blocks deletion while any school grade that is not archived still uses the level. The catalog is shared,
+    // so the check scans every school: one school still using it is enough to block.
+    private void rejectWhenUsedBySchools(GradeLevel gradeLevel) {
         boolean isUsed = schoolGradeRepository.existsByGradeLevelIdAndStatusNot(
                 gradeLevel.getId(), SchoolGradeStatus.ARCHIVED.name());
         if (isUsed) {
             throw new IllegalArgumentException("Không thể xóa vì Khối này đang được các trường sử dụng.");
         }
-
-        // Soft delete: switch to INACTIVE.
-        gradeLevel.setStatus(GradeLevelStatus.INACTIVE);
-        gradeLevelRepository.save(gradeLevel);
-
-        return null;
     }
 }

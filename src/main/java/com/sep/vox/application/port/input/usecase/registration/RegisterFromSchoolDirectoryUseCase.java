@@ -15,6 +15,7 @@ import com.sep.vox.application.event.RegisterVerificationOtpRequestedPayloadV1;
 import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.registration.RegisterFromSchoolDirectoryCommand;
+import com.sep.vox.application.port.input.service.RegistrationContactDuplicateGuardService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.CacheManagerPort;
 import com.sep.vox.application.port.output.JsonSerializationPort;
@@ -32,7 +33,6 @@ import com.sep.vox.domain.repository.RegisterFormDocumentRepository;
 import com.sep.vox.domain.repository.RegisterFormRepository;
 import com.sep.vox.domain.repository.SchoolDirectoryRepository;
 import com.sep.vox.domain.repository.SchoolRepository;
-import com.sep.vox.domain.repository.UserRepository;
 
 
 @Service
@@ -43,10 +43,10 @@ public class RegisterFromSchoolDirectoryUseCase implements IUseCase<RegisterFrom
     private final RegisterFormDocumentRepository registerFormDocumentRepository;
     private final SchoolRepository schoolRepository;
     private final SchoolDirectoryRepository schoolDirectoryRepository;
-    private final UserRepository userRepository;
     private final CacheManagerPort cacheManagerPort;
     private final OutboxRepository outboxRepository;
     private final JsonSerializationPort jsonSerializationPort;
+    private final RegistrationContactDuplicateGuardService registrationContactDuplicateGuardService;
 
     private static final List<RegisterFormStatus> blockingFormStatuses = List.of(
         RegisterFormStatus.APPROVED, 
@@ -64,26 +64,9 @@ public class RegisterFromSchoolDirectoryUseCase implements IUseCase<RegisterFrom
 
         SchoolDirectory schoolDirectory = schoolDirectoryRepository.findById(command.schoolDirectoryId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục trường theo yêu cầu"));
-        
-        if (schoolRepository.existsByCode(schoolDirectory.getCode())) {
-            throw new ResourceDuplicatedException("Trường này đã được đăng ký");
-        }
 
-        if (registerFormRepository.existsBySchoolDirectoryIdAndStatusIn(command.schoolDirectoryId(), blockingFormStatuses)) {
-            throw new ResourceDuplicatedException("Hiện đang có đơn đăng ký đang chờ phê duyệt cho danh mục trường này");
-        }
-
-        boolean formAlreadyPendingByContactInfo = registerFormRepository.existsByContactEmailAndStatus(command.contactEmail(), RegisterFormStatus.PENDING) || registerFormRepository.existsByContactPhoneAndStatus(command.contactPhone(), RegisterFormStatus.PENDING);
-
-        if (formAlreadyPendingByContactInfo) {
-            throw new ResourceDuplicatedException("Thông tin yêu cầu đang tồn tại đơn đăng ký cần được phê duyệt");
-        }
-
-        boolean alreadyUser = userRepository.existsByEmail(command.contactEmail()) || userRepository.existsByPhone(command.contactPhone());
-
-        if (alreadyUser) {
-            throw new ResourceDuplicatedException("Email hoặc số điện thoại yêu cầu đã được đăng ký");
-        }
+        rejectAlreadyRegisteredSchool(schoolDirectory, command);
+        registrationContactDuplicateGuardService.requireContactNotInUse(command.contactEmail(), command.contactPhone());
 
         RegisterFormVerificationMethod method = getVerificationMethod(schoolDirectory, command);
         if (method == RegisterFormVerificationMethod.DOMAIN_OTP) {
@@ -98,6 +81,16 @@ public class RegisterFromSchoolDirectoryUseCase implements IUseCase<RegisterFrom
         return new RegisterFromSchoolDirectoryResponse("Vui lòng đợi quản trị viên xác thực");
     }
     
+    private void rejectAlreadyRegisteredSchool(SchoolDirectory schoolDirectory, RegisterFromSchoolDirectoryCommand command) {
+        if (schoolRepository.existsByCode(schoolDirectory.getCode())) {
+            throw new ResourceDuplicatedException("Trường này đã được đăng ký");
+        }
+
+        if (registerFormRepository.existsBySchoolDirectoryIdAndStatusIn(command.schoolDirectoryId(), blockingFormStatuses)) {
+            throw new ResourceDuplicatedException("Hiện đang có đơn đăng ký đang chờ phê duyệt cho danh mục trường này");
+        }
+    }
+
     private RegisterFromSchoolDirectoryCommand normalize(RegisterFromSchoolDirectoryCommand input) {
         return new RegisterFromSchoolDirectoryCommand(
             input.schoolDirectoryId(),
@@ -132,28 +125,14 @@ public class RegisterFromSchoolDirectoryUseCase implements IUseCase<RegisterFrom
 
 
     /**
-     * Chỉ ghi hồ sơ đăng ký vào cache rồi phát sự kiện. OTP KHÔNG sinh ở đây nữa:
-     * {@code RegisterVerificationOtpEmailConsumer} sinh mã ngay trước lúc gửi mail rồi chèn
-     * bản hash vào chính dòng cache này, để credential không đi qua outbox hay Kafka.
+     * Only writes the register form into the cache and then publishes the event. The OTP is NO LONGER generated
+     * here: {@code RegisterVerificationOtpEmailConsumer} generates the code right before sending the mail and
+     * inserts its hash into this same cache row, so the credential never passes through the outbox or Kafka.
      */
     private void saveAndSendRegisterVerificationOtp(SchoolDirectory schoolDir, RegisterFromSchoolDirectoryCommand command) {
         String registerVerificationKey = CacheKey.registerVerificationKey(command.contactEmail());
 
-        CachePayload.RegisterVerificationPayload payload = new CachePayload.RegisterVerificationPayload(
-            null,
-            command.contactEmail(), 
-            command.schoolDirectoryId(), 
-            command.contactFullName(), 
-            command.identityNumber(), 
-            command.contactPhone(), 
-            command.dateOfBirth(), 
-            command.contactAddress(), 
-            command.postalCode(), 
-            command.position(), 
-            command.studentCount()
-        );
-
-        cacheManagerPort.save(registerVerificationKey, payload, TTL);
+        cacheManagerPort.save(registerVerificationKey, toVerificationPayload(command), TTL);
 
         outboxRepository.save(Outbox.create(
             AggregateTypeConstant.REGISTER_FORM,
@@ -163,6 +142,22 @@ public class RegisterFromSchoolDirectoryUseCase implements IUseCase<RegisterFrom
                 new RegisterVerificationOtpRequestedPayloadV1(command.contactEmail())),
             Instant.now()
         ));
+    }
+
+    private CachePayload.RegisterVerificationPayload toVerificationPayload(RegisterFromSchoolDirectoryCommand command) {
+        return new CachePayload.RegisterVerificationPayload(
+            null,
+            command.contactEmail(),
+            command.schoolDirectoryId(),
+            command.contactFullName(),
+            command.identityNumber(),
+            command.contactPhone(),
+            command.dateOfBirth(),
+            command.contactAddress(),
+            command.postalCode(),
+            command.position(),
+            command.studentCount()
+        );
     }
 
     private void saveRegisterFormWithDocuments(RegisterFromSchoolDirectoryCommand command, RegisterFormVerificationMethod method) {

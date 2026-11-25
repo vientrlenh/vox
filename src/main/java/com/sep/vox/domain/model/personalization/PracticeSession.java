@@ -167,47 +167,11 @@ public class PracticeSession {
     }
 
     public PracticeSession withLastHeartbeatAt(Instant newLastHeartbeatAt) {
-        return PracticeSession.builder()
-                .id(id)
-                .studentId(studentId)
-                .practicePaperId(practicePaperId)
-                .targetFrameworkBandId(targetFrameworkBandId)
-                .chosenPracticeTopicId(chosenPracticeTopicId)
-                .targetSubAttributesJson(targetSubAttributesJson)
-                .origin(origin)
-                .offeredTopicIdsJson(offeredTopicIdsJson)
-                .overallScore(overallScore)
-                .startedAt(startedAt)
-                .endedAt(endedAt)
-                .lastHeartbeatAt(newLastHeartbeatAt)
-                .gradedSeconds(gradedSeconds)
-                .status(status)
-                .abandonDiagnosis(abandonDiagnosis)
-                .helpRequestCount(helpRequestCount)
-                .longPauseCount(longPauseCount)
-                .build();
+        return copyBuilder().lastHeartbeatAt(newLastHeartbeatAt).build();
     }
 
     public PracticeSession withGradedSecondsAndHeartbeat(int newGradedSeconds, Instant newLastHeartbeatAt) {
-        return PracticeSession.builder()
-                .id(id)
-                .studentId(studentId)
-                .practicePaperId(practicePaperId)
-                .targetFrameworkBandId(targetFrameworkBandId)
-                .chosenPracticeTopicId(chosenPracticeTopicId)
-                .targetSubAttributesJson(targetSubAttributesJson)
-                .origin(origin)
-                .offeredTopicIdsJson(offeredTopicIdsJson)
-                .overallScore(overallScore)
-                .startedAt(startedAt)
-                .endedAt(endedAt)
-                .lastHeartbeatAt(newLastHeartbeatAt)
-                .gradedSeconds(newGradedSeconds)
-                .status(status)
-                .abandonDiagnosis(abandonDiagnosis)
-                .helpRequestCount(helpRequestCount)
-                .longPauseCount(longPauseCount)
-                .build();
+        return copyBuilder().lastHeartbeatAt(newLastHeartbeatAt).gradedSeconds(newGradedSeconds).build();
     }
 
     public PracticeSession ended(
@@ -217,20 +181,9 @@ public class PracticeSession {
             int newLongPauseCount,
             Instant newEndedAt,
             BigDecimal newOverallScore) {
-        return PracticeSession.builder()
-                .id(id)
-                .studentId(studentId)
-                .practicePaperId(practicePaperId)
-                .targetFrameworkBandId(targetFrameworkBandId)
-                .chosenPracticeTopicId(chosenPracticeTopicId)
-                .targetSubAttributesJson(targetSubAttributesJson)
-                .origin(origin)
-                .offeredTopicIdsJson(offeredTopicIdsJson)
+        return copyBuilder()
                 .overallScore(newOverallScore)
-                .startedAt(startedAt)
                 .endedAt(newEndedAt)
-                .lastHeartbeatAt(lastHeartbeatAt)
-                .gradedSeconds(gradedSeconds)
                 .status(newStatus)
                 .abandonDiagnosis(newAbandonDiagnosis)
                 .helpRequestCount(newHelpRequestCount)
@@ -239,6 +192,10 @@ public class PracticeSession {
     }
 
     public PracticeSession closedAsStale(String newStatus, String newAbandonDiagnosis, Instant newEndedAt) {
+        return copyBuilder().endedAt(newEndedAt).status(newStatus).abandonDiagnosis(newAbandonDiagnosis).build();
+    }
+
+    private Builder copyBuilder() {
         return PracticeSession.builder()
                 .id(id)
                 .studentId(studentId)
@@ -250,13 +207,32 @@ public class PracticeSession {
                 .offeredTopicIdsJson(offeredTopicIdsJson)
                 .overallScore(overallScore)
                 .startedAt(startedAt)
-                .endedAt(newEndedAt)
+                .endedAt(endedAt)
                 .lastHeartbeatAt(lastHeartbeatAt)
                 .gradedSeconds(gradedSeconds)
-                .status(newStatus)
-                .abandonDiagnosis(newAbandonDiagnosis)
+                .status(status)
+                .abandonDiagnosis(abandonDiagnosis)
                 .helpRequestCount(helpRequestCount)
-                .longPauseCount(longPauseCount)
+                .longPauseCount(longPauseCount);
+    }
+
+    public static PracticeSession started(UUID studentId, UUID practicePaperId, UUID targetFrameworkBandId,
+                                          UUID chosenPracticeTopicId, String origin, String offeredTopicIdsJson,
+                                          Instant startedAt) {
+        return builder()
+                .studentId(studentId)
+                .practicePaperId(practicePaperId)
+                .targetFrameworkBandId(targetFrameworkBandId)
+                .chosenPracticeTopicId(chosenPracticeTopicId)
+                .targetSubAttributesJson("[]")
+                .origin(origin)
+                .offeredTopicIdsJson(offeredTopicIdsJson)
+                .startedAt(startedAt)
+                .lastHeartbeatAt(startedAt)
+                .gradedSeconds(0)
+                .status("IN_PROGRESS")
+                .helpRequestCount(0)
+                .longPauseCount(0)
                 .build();
     }
 

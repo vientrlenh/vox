@@ -42,39 +42,44 @@ public class RubricCloneService {
      */
     @Transactional
     public RubricVersion cloneToSchoolAsDraft(
-            Rubric sourceRubric,
-            RubricVersion sourceVersion,
-            UUID schoolId,
-            String code,
-            String name,
-            String description,
-            RubricTotalScoreMethod targetMethod,
-            UUID currentUserId) {
+            Rubric sourceRubric, RubricVersion sourceVersion, UUID schoolId, String code, String name,
+            String description, RubricTotalScoreMethod targetMethod, UUID currentUserId) {
 
         Instant now = Instant.now();
 
-        // languageId and frameworkId follow the template and must NOT be chosen again: the criteria
-        // below point to the frameworkCriterionId of the source framework, so changing the framework
-        // would leave all of those references dangling.
-        Rubric clonedRubric = rubricRepository.save(Rubric.forSchool(
-                sourceRubric.getLanguageId(), sourceRubric.getFrameworkId(), code, name, description, schoolId));
-
-        // A new rubric always restarts versioning at 1. The version number is the TIME axis within
-        // one rubric, not something inherited from the template -- a clone of "template v3" is
-        // still the school's first version.
-        // DRAFT is mandatory, not a convention: CreateSchoolAssessmentPolicyUseCase rejects
-        // attaching a policy to an already PUBLISHED version, so a clone created directly as
-        // PUBLISHED would be one the school can never attach any policy to -- i.e. useless.
-        RubricVersion clonedVersion = RubricVersion.draft(
-                clonedRubric.getId(), 1, code, name, description, now, null,
-                sourceVersion.getScoringScaleMin(), sourceVersion.getScoringScaleMax(), targetMethod);
-        clonedVersion.setSourceRubricVersionId(sourceVersion.getId());
-        RubricVersion savedVersion = rubricVersionRepository.save(clonedVersion);
+        RubricVersion savedVersion = saveClonedRubricWithDraftVersion(
+            sourceRubric, sourceVersion, schoolId, code, name, description, targetMethod, now);
 
         cloneCriteria(sourceVersion.getId(), savedVersion.getId(), targetMethod, currentUserId, now);
         cloneResultBands(sourceVersion.getId(), savedVersion.getId(), currentUserId, now);
 
         return savedVersion;
+    }
+
+    /**
+     * languageId and frameworkId follow the template and must NOT be chosen again: the criteria
+     * cloned afterwards point to the frameworkCriterionId of the source framework, so changing the framework
+     * would leave all of those references dangling.
+     *
+     * <p>A new rubric always restarts versioning at 1. The version number is the TIME axis within
+     * one rubric, not something inherited from the template -- a clone of "template v3" is
+     * still the school's first version.
+     *
+     * <p>DRAFT is mandatory, not a convention: CreateSchoolAssessmentPolicyUseCase rejects
+     * attaching a policy to an already PUBLISHED version, so a clone created directly as
+     * PUBLISHED would be one the school can never attach any policy to -- i.e. useless.
+     */
+    private RubricVersion saveClonedRubricWithDraftVersion(
+            Rubric sourceRubric, RubricVersion sourceVersion, UUID schoolId, String code, String name,
+            String description, RubricTotalScoreMethod targetMethod, Instant now) {
+        Rubric clonedRubric = rubricRepository.save(Rubric.forSchool(
+                sourceRubric.getLanguageId(), sourceRubric.getFrameworkId(), code, name, description, schoolId));
+
+        RubricVersion clonedVersion = RubricVersion.draft(
+                clonedRubric.getId(), 1, code, name, description, now, null,
+                sourceVersion.getScoringScaleMin(), sourceVersion.getScoringScaleMax(), targetMethod);
+        clonedVersion.setSourceRubricVersionId(sourceVersion.getId());
+        return rubricVersionRepository.save(clonedVersion);
     }
 
     private void cloneCriteria(

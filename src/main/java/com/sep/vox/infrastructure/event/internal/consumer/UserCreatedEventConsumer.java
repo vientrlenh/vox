@@ -74,33 +74,46 @@ public class UserCreatedEventConsumer {
             return;
         }
 
-        UserCreatedPayloadV1 payload;
+        UserCreatedPayloadV1 payload = parsePayload(record.value(), eventId);
+        String rawToken = createPasswordSetUpToken(payload, eventId);
+        sendPasswordSetUpMail(payload, rawToken, eventId);
+        markProcessed(eventId);
+
+        log.info("Password set up mail sent: eventId={}, to={}, userType={}",
+            eventId, payload.to(), payload.userType());
+        ack.acknowledge();
+    }
+
+    private UserCreatedPayloadV1 parsePayload(String value, UUID eventId) {
         try {
-            payload = jsonMapper.readValue(record.value(), UserCreatedPayloadV1.class);
+            return jsonMapper.readValue(value, UserCreatedPayloadV1.class);
         } catch (Exception e) {
-            log.error("Invalid payload: eventId={}, value={}", eventId, record.value(), e);
+            log.error("Invalid payload: eventId={}, value={}", eventId, value, e);
             throw new IllegalStateException("Payload user-created không hợp lệ, eventId=" + eventId, e);
         }
+    }
 
-        // Generate the token HERE instead of in the producer: the token is a credential and must not be in the
-        // outbox/Kafka payload. It must be saved (committed) before the mail is sent, otherwise a user
-        // who clicks the link right away may hit a token that does not exist in the DB yet.
-        //
-        // A retry generates a new token -- the old one cannot be reused because the DB only keeps the hash.
-        // The old token stays valid until it expires after 48h; acceptable, and the number of retries is capped.
-        String rawToken;
+    // Generate the token HERE instead of in the producer: the token is a credential and must not be in the
+    // outbox/Kafka payload. It must be saved (committed) before the mail is sent, otherwise a user
+    // who clicks the link right away may hit a token that does not exist in the DB yet.
+    //
+    // A retry generates a new token -- the old one cannot be reused because the DB only keeps the hash.
+    // The old token stays valid until it expires after 48h; acceptable, and the number of retries is capped.
+    private String createPasswordSetUpToken(UserCreatedPayloadV1 payload, UUID eventId) {
         try {
             GeneratedPasswordSetUpToken generatedToken = passwordSetUpTokenPort.generateToken();
             passwordSetUpTokenRepository.save(
                 PasswordSetUpToken.create(payload.userId(), generatedToken.hashedToken()));
-            rawToken = generatedToken.rawToken();
+            return generatedToken.rawToken();
         } catch (Exception e) {
             log.error("Generate password set up token failed: eventId={}, userId={}",
                 eventId, payload.userId(), e);
             throw new IllegalStateException(
                 "Sinh token đặt mật khẩu thất bại: eventId=" + eventId, e);
         }
+    }
 
+    private void sendPasswordSetUpMail(UserCreatedPayloadV1 payload, String rawToken, UUID eventId) {
         try {
             String setupUrl = buildPasswordSetupUrl(payload.userId(), rawToken);
             String html = renderEmail(payload, setupUrl);
@@ -109,12 +122,6 @@ public class UserCreatedEventConsumer {
             log.error("Send mail error: eventId={}, to={}", eventId, payload.to(), e);
             throw new IllegalStateException("Gửi mail thiết lập mật khẩu thất bại: eventId=" + eventId, e);
         }
-
-        markProcessed(eventId);
-
-        log.info("Password set up mail sent: eventId={}, to={}, userType={}",
-            eventId, payload.to(), payload.userType());
-        ack.acknowledge();
     }
 
     private String renderEmail(UserCreatedPayloadV1 payload, String setupUrl) {
@@ -140,7 +147,7 @@ public class UserCreatedEventConsumer {
     }
 
     @DltHandler
-    public void handleDlt(ConsumerRecord<String, String> record) {
+    public void logDeadLetteredRecord(ConsumerRecord<String, String> record) {
         UUID eventId = KafkaEventHeaders.readEventIdOrNull(record);
         log.error("user-created event sent to DLT: eventId={}, topic={}, partition={}, offset={}, payload={}",
             eventId, record.topic(), record.partition(), record.offset(), record.value());

@@ -42,6 +42,23 @@ public class CreateFrameworkCriterionBandsUseCase
         FrameworkVersion version = getVersion(command);
         FrameworkCriterion criterion = getCriterion(command);
 
+        Map<String, UUID> resultBandCodeToId = resolveResultBandIdsByCode(command);
+
+        checkValidRequest(command, version, criterion, resultBandCodeToId);
+
+        List<FrameworkCriterionBand> bandsToCreate = buildBandsToCreate(command, resultBandCodeToId);
+
+        try {
+            return frameworkCriterionBandRepository.saveAll(bandsToCreate)
+                    .stream()
+                    .map(fcb -> fcb.getId())
+                    .collect(Collectors.toList());
+        } catch (DataConflictException e) {
+            throw new IllegalArgumentException("Mã kết quả đã được gán mức đánh giá cho tiêu chí này", e);
+        }
+    }
+
+    private Map<String, UUID> resolveResultBandIdsByCode(CreateFrameworkCriterionBandsCommand command) {
         Set<String> requestedCodes = command.bands().stream()
                 .map(b -> StringNormalization.normalizeCode(b.resultBandCode()))
                 .collect(Collectors.toSet());
@@ -54,30 +71,21 @@ public class CreateFrameworkCriterionBandsUseCase
         if (existingBands.size() != requestedCodes.size())
             throw new IllegalArgumentException("Một hoặc nhiều mã kết quả không tồn tại trong phiên bản này");
 
-        Map<String, UUID> resultBandCodeToId = existingBands.stream()
+        return existingBands.stream()
                         .collect(Collectors.toMap(frb -> frb.getCode(), frb -> frb.getId()));
+    }
 
-        checkValidRequest(command, version, criterion, resultBandCodeToId);
-
-        List<FrameworkCriterionBand> bandsToCreate = command.bands().stream().map(bandCmd -> {
+    private List<FrameworkCriterionBand> buildBandsToCreate(CreateFrameworkCriterionBandsCommand command,
+                                                            Map<String, UUID> resultBandCodeToId) {
+        return command.bands().stream().map(bandCmd -> {
             String safeCode = StringNormalization.normalizeCode(bandCmd.resultBandCode());
-            return FrameworkCriterionBand.builder()
-                .frameworkCriterionId(command.criterionId())
-                .frameworkResultBandId(resultBandCodeToId.get(safeCode))
-                .descriptor(StringNormalization.trimAndCollapseSpaces(bandCmd.descriptor()))
-                .positiveSignals(bandCmd.positiveSignals())
-                .negativeSignals(bandCmd.negativeSignals())
-                .build();
+            return FrameworkCriterionBand.forCriterion(
+                command.criterionId(),
+                resultBandCodeToId.get(safeCode),
+                StringNormalization.trimAndCollapseSpaces(bandCmd.descriptor()),
+                bandCmd.positiveSignals(),
+                bandCmd.negativeSignals());
             }).collect(Collectors.toList());
-
-        try {
-            return frameworkCriterionBandRepository.saveAll(bandsToCreate)
-                    .stream()
-                    .map(fcb -> fcb.getId())
-                    .collect(Collectors.toList());
-        } catch (DataConflictException e) {
-            throw new IllegalArgumentException("Mã kết quả đã được gán mức đánh giá cho tiêu chí này", e);
-        }
     }
 
     private FrameworkVersion getVersion(CreateFrameworkCriterionBandsCommand command) {

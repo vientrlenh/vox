@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.service;
 
 import com.sep.vox.domain.model.personalization.PracticeSession;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import lombok.RequiredArgsConstructor;
@@ -83,16 +84,50 @@ public class ResolveNextPracticeQuestionClaimService {
 
     @Transactional
     public Claim claim(UUID sessionId) {
-        // FOR UPDATE: chỉ còn cần bảo vệ đúng đoạn đọc/kiểm tra ngắn này -- khoá JVM ở
-        // ResolveNextPracticeQuestionUseCase mới là thứ serialize xuyên suốt cuộc gọi ngoài chậm.
+        PracticeSession session = lockInProgressSession(sessionId);
+        Progress progress = measureProgress(session);
+
+        List<UUID> alreadyChosenIds = paperItemRepository.findQuestionIdsForPaper(session.getPracticePaperId());
+        Optional<Claim> idempotentClaim = findIdempotentClaim(session, progress, alreadyChosenIds);
+        if (idempotentClaim.isPresent()) {
+            return idempotentClaim.get();
+        }
+
+        if (isBudgetExhausted(progress)) {
+            return claimOf(session, progress, null, null, null, null, 0, "budget_exhausted");
+        }
+
+        PracticeTopic topic = topicRepository.findTopicById(session.getChosenPracticeTopicId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chủ đề luyện tập."));
+        PracticeFocusInfo focus = selectionService.resolveFocus(session.getStudentId(), null);
+        List<PracticeQuestion> alreadyChosen = questionRepository.findByIds(alreadyChosenIds);
+
+        return claimOf(session, progress, topic, focus, alreadyChosen, null, 0, null);
+    }
+
+    /**
+     * FOR UPDATE: it now only has to protect this short read/check section -- the JVM lock in
+     * ResolveNextPracticeQuestionUseCase is what serializes the whole slow external call.
+     */
+    private PracticeSession lockInProgressSession(UUID sessionId) {
         PracticeSession session = practiceSessionRepository.findByIdForUpdate(sessionId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên luyện."));
         if (!"IN_PROGRESS".equals(session.getStatus())) {
             throw new IllegalArgumentException("Phiên luyện không còn hoạt động.");
         }
+        return session;
+    }
 
-        // Tính SỚM, trước cả nhánh idempotent: mọi nhánh trả về đều phải mang được cặp số cho
-        // thanh tiến độ, kể cả nhánh trả lại nguyên câu cũ sau một lần gọi bị timeout.
+    private record Progress(
+        int spokenSeconds, int budgetSeconds, int targetBandOrder, int targetBandCount,
+        UUID targetFrameworkVersionId) {
+    }
+
+    /**
+     * Computed EARLY, even before the idempotent branch: every returned branch must carry the pair of numbers for the
+     * progress bar, including the branch that returns the old question unchanged after a call that timed out.
+     */
+    private Progress measureProgress(PracticeSession session) {
         int spokenSeconds = session.getGradedSeconds();
         int targetBandOrder = enrichmentService.bandOrder(session.getTargetFrameworkBandId());
         int targetBandCount = enrichmentService.frameworkBandCountOfBand(session.getTargetFrameworkBandId());
@@ -101,52 +136,53 @@ public class ResolveNextPracticeQuestionClaimService {
         int budgetSeconds = enrichmentService.sessionBudgetSeconds(
             session.getStudentId(), targetBandOrder
         );
+        return new Progress(spokenSeconds, budgetSeconds, targetBandOrder, targetBandCount, targetFrameworkVersionId);
+    }
 
-        List<UUID> alreadyChosenIds = paperItemRepository.findQuestionIdsForPaper(session.getPracticePaperId());
-        if (!alreadyChosenIds.isEmpty()) {
-            UUID latestQuestionId = alreadyChosenIds.getLast();
-            if (!practiceItemResponseRepository.existsResponse(sessionId, latestQuestionId)) {
-                PracticeQuestion latestQuestion = questionRepository.findById(latestQuestionId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi luyện."));
-                return new Claim(
-                    session.getStudentId(), session.getPracticePaperId(), null, null, null,
-                    latestQuestion, alreadyChosenIds.size(), null,
-                    spokenSeconds, budgetSeconds, targetBandOrder, targetBandCount, targetFrameworkVersionId
-                );
-            }
+    private Optional<Claim> findIdempotentClaim(PracticeSession session, Progress progress, List<UUID> alreadyChosenIds) {
+        if (alreadyChosenIds.isEmpty()) {
+            return Optional.empty();
         }
-
-        // Còn đủ chỗ cho một lượt nói có nghĩa không? Đo bằng giây NÓI THẬT, không phải
-        // ngân sách dự trù của các câu đã phát.
-        //
-        // Bản trước so sumPlannedSecondsForPaper (tổng max_response_seconds) với trần.
-        // Trên dữ liệu thật dự trù cao hơn thực tế 40-70% (60 vs 29, 45 vs 27), nên phiên
-        // báo hết ngân sách khi quota còn dư gần nửa. Mà quota thì trừ theo chi phí THẬT của
-        // lượt đã nói (SubmitPracticeTurnUseCase quy turnCostUsd sang VND rồi đưa cho
-        // ConsumeQuotaService), tức tỉ lệ với thời gian nói thật chứ không với ngân sách dự
-        // trù -- hai đồng hồ đo hai đại lượng khác nhau thì sớm muộn cũng lệch.
-        //
-        // Chốt này nằm TRƯỚC lúc chọn/sinh câu, và đó là điểm chính: bản trước kiểm SAU
-        // khi resolveNextQuestion đã chạy, tức có thể trả 10-40 giây gọi LLM để sinh ra
-        // một câu rồi vứt đi vì hết ngân sách.
-        //
-        // Nói vượt ngưỡng giữa chừng không sao: cờ quotaExhausted lo phần đó -- lượt vẫn
-        // được ghi và chấm, phiên đóng tử tế sau khi trả kết quả.
-        if (spokenSeconds + MINIMUM_USEFUL_TURN_SECONDS > budgetSeconds) {
-            return new Claim(
-                session.getStudentId(), session.getPracticePaperId(), null, null, null,
-                null, 0, "budget_exhausted", spokenSeconds, budgetSeconds, targetBandOrder, targetBandCount, targetFrameworkVersionId
-            );
+        UUID latestQuestionId = alreadyChosenIds.getLast();
+        if (practiceItemResponseRepository.existsResponse(session.getId(), latestQuestionId)) {
+            return Optional.empty();
         }
+        PracticeQuestion latestQuestion = questionRepository.findById(latestQuestionId)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi luyện."));
+        return Optional.of(claimOf(session, progress, null, null, null, latestQuestion, alreadyChosenIds.size(), null));
+    }
 
-        PracticeTopic topic = topicRepository.findTopicById(session.getChosenPracticeTopicId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chủ đề luyện tập."));
-        PracticeFocusInfo focus = selectionService.resolveFocus(session.getStudentId(), null);
-        List<PracticeQuestion> alreadyChosen = questionRepository.findByIds(alreadyChosenIds);
+    /**
+     * Is there still room for a meaningful speaking turn? Measured in seconds ACTUALLY SPOKEN, not the planned
+     * budget of the questions already issued.
+     *
+     * <p>The previous version compared sumPlannedSecondsForPaper (the total of max_response_seconds) with the ceiling.
+     * On real data the plan is 40-70% higher than reality (60 vs 29, 45 vs 27), so a session
+     * reported the budget as exhausted while nearly half the quota was left. And quota is charged by the REAL cost of the
+     * turns spoken (SubmitPracticeTurnUseCase converts turnCostUsd to VND and hands it to
+     * ConsumeQuotaService), i.e. proportional to the real speaking time and not to the planned budget --
+     * two clocks measuring two different quantities will sooner or later drift apart.
+     *
+     * <p>This check comes BEFORE choosing/generating the question, and that is the main point: the previous version checked AFTER
+     * resolveNextQuestion had run, so it could pay 10-40 seconds of LLM calls to generate a question and then throw it
+     * away because the budget was exhausted.
+     *
+     * <p>Speaking past the threshold midway is fine: the quotaExhausted flag takes care of that -- the turn is still
+     * recorded and graded, and the session closes properly after the result is returned.
+     */
+    private boolean isBudgetExhausted(Progress progress) {
+        return progress.spokenSeconds() + MINIMUM_USEFUL_TURN_SECONDS > progress.budgetSeconds();
+    }
 
+    private Claim claimOf(
+            PracticeSession session, Progress progress, PracticeTopic topic, PracticeFocusInfo focus,
+            List<PracticeQuestion> alreadyChosen, PracticeQuestion idempotentQuestion, int idempotentSlot,
+            String earlyExitReason) {
         return new Claim(
             session.getStudentId(), session.getPracticePaperId(), topic, focus, alreadyChosen,
-            null, 0, null, spokenSeconds, budgetSeconds, targetBandOrder, targetBandCount, targetFrameworkVersionId
+            idempotentQuestion, idempotentSlot, earlyExitReason,
+            progress.spokenSeconds(), progress.budgetSeconds(), progress.targetBandOrder(),
+            progress.targetBandCount(), progress.targetFrameworkVersionId()
         );
     }
 

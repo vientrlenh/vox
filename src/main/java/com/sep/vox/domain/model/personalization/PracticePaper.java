@@ -145,6 +145,28 @@ public class PracticePaper {
                 .build();
     }
 
+    public static PracticePaper reserved(UUID studentId, UUID practiceTopicId, UUID targetFrameworkBandId,
+                                         String origin, String goalAtBuild, String offeredTopicIdsJson,
+                                         String previousOfferedTopicIdsJson, int spokenSeconds, Instant expiresAt,
+                                         Instant createdAt) {
+        return builder()
+                .studentId(studentId)
+                .practiceTopicId(practiceTopicId)
+                .targetFrameworkBandId(targetFrameworkBandId)
+                .origin(origin == null ? "SELECTED" : origin)
+                .goalAtBuild(goalAtBuild)
+                .offeredTopicIdsJson(offeredTopicIdsJson)
+                .previousOfferedTopicIdsJson(previousOfferedTopicIdsJson)
+                // The old plannedSeconds was preparationTimeSeconds + spokenSeconds; with the preparation column dropped (V11)
+                // the two numbers are equal, so they are merged into one name instead of keeping two names for one value.
+                .plannedSeconds(spokenSeconds)
+                .reservedQuotaSeconds(spokenSeconds)
+                .expiresAt(expiresAt)
+                .status("RESERVED")
+                .createdAt(createdAt)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

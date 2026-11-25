@@ -28,6 +28,10 @@ import com.sep.vox.infrastructure.persistence.repository.SpringDataSchoolClassRe
 @RequiredArgsConstructor
 public class SchoolClassRepositoryImpl implements SchoolClassRepository {
 
+    private static final Sort NEWEST_FIRST =
+        Sort.by(Sort.Direction.DESC, (SchoolClassJpaEntity entity) -> entity.getCreatedAt())
+            .and(Sort.by(Sort.Direction.ASC, (SchoolClassJpaEntity entity) -> entity.getId()));
+
     private final SpringDataSchoolClassRepository springDataSchoolClassRepository;
     private final AuditStampProvider auditStampProvider;
 
@@ -57,37 +61,15 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
     @Override
     public PageResult<SchoolClass> findBySchoolId(UUID schoolId, String search, SchoolClassStatus status,
             UUID languageId, UUID schoolGradeId, int pageNumber, int size) {
-        PageRequest pageable = OneBasedPaging.toPageRequest(
-            pageNumber,
-            size,
-            Sort.by(Sort.Direction.DESC, (SchoolClassJpaEntity entity) -> entity.getCreatedAt()).and(Sort.by(Sort.Direction.ASC, (SchoolClassJpaEntity entity) -> entity.getId()))
-        );
+        PageRequest pageable = OneBasedPaging.toPageRequest(pageNumber, size, NEWEST_FIRST);
         String normalizedSearch = blankToNull(search);
         Page<SchoolClassJpaEntity> page = normalizedSearch == null
             ? springDataSchoolClassRepository.findBySchoolIdWithFilters(
-                schoolId,
-                valueOf(status),
-                languageId,
-                schoolGradeId,
-                pageable
-            )
+                schoolId, valueOf(status), languageId, schoolGradeId, pageable)
             : springDataSchoolClassRepository.findBySchoolIdWithSearchAndFilters(
-                schoolId,
-                "%" + normalizedSearch.toLowerCase() + "%",
-                valueOf(status),
-                languageId,
-                schoolGradeId,
-                pageable
-            );
-        return new PageResult<>(
-            page.getContent().stream()
-                .map(SchoolClassMapper::toDomain)
-                .toList(),
-            pageNumber,
-            size,
-            page.getTotalElements(),
-            page.getTotalPages()
-        );
+                schoolId, "%" + normalizedSearch.toLowerCase() + "%", valueOf(status), languageId, schoolGradeId,
+                pageable);
+        return toPageResult(page, pageNumber, size);
     }
 
     @Override
@@ -98,30 +80,13 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
     @Override
     public PageResult<SchoolClass> findByUserId(UUID schoolId, UUID userId, String search, SchoolClassStatus status,
             int pageNumber, int size) {
-        PageRequest pageable = OneBasedPaging.toPageRequest(
-            pageNumber,
-            size,
-            Sort.by(Sort.Direction.DESC, (SchoolClassJpaEntity entity) -> entity.getCreatedAt()).and(Sort.by(Sort.Direction.ASC, (SchoolClassJpaEntity entity) -> entity.getId()))
-        );
+        PageRequest pageable = OneBasedPaging.toPageRequest(pageNumber, size, NEWEST_FIRST);
         String normalizedSearch = blankToNull(search);
         Page<SchoolClassJpaEntity> page = normalizedSearch == null
             ? springDataSchoolClassRepository.findByUserId(schoolId, userId, valueOf(status), pageable)
             : springDataSchoolClassRepository.findByUserIdWithSearch(
-                schoolId,
-                userId,
-                "%" + normalizedSearch.toLowerCase() + "%",
-                valueOf(status),
-                pageable
-            );
-        return new PageResult<>(
-            page.getContent().stream()
-                .map(SchoolClassMapper::toDomain)
-                .toList(),
-            pageNumber,
-            size,
-            page.getTotalElements(),
-            page.getTotalPages()
-        );
+                schoolId, userId, "%" + normalizedSearch.toLowerCase() + "%", valueOf(status), pageable);
+        return toPageResult(page, pageNumber, size);
     }
 
     @Override
@@ -173,6 +138,18 @@ public class SchoolClassRepositoryImpl implements SchoolClassRepository {
             statusProvided,
             auditStampProvider.currentUpdatedAt(),
             auditStampProvider.currentUpdatedBy()
+        );
+    }
+
+    private static PageResult<SchoolClass> toPageResult(Page<SchoolClassJpaEntity> page, int pageNumber, int size) {
+        return new PageResult<>(
+            page.getContent().stream()
+                .map(SchoolClassMapper::toDomain)
+                .toList(),
+            pageNumber,
+            size,
+            page.getTotalElements(),
+            page.getTotalPages()
         );
     }
 

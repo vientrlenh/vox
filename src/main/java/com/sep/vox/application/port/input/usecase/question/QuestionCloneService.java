@@ -7,10 +7,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionAsset;
-import com.sep.vox.domain.model.question.QuestionEvaluationGuide;
-import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.repository.QuestionAssetRepository;
 import com.sep.vox.domain.repository.QuestionEvaluationGuideRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
@@ -25,31 +24,20 @@ public class QuestionCloneService {
 
     @Transactional
     public Question cloneAsDraftWithDetails(Question source, UUID currentUserId) {
-        Question clonedQuestion = Question.builder()
-                .questionBankId(source.getQuestionBankId())
-                .questionTopicId(source.getQuestionTopicId())
-                .code(cloneCodeOf(source.getCode()))
-                .instructionText(source.getInstructionText())
-                .questionText(source.getQuestionText())
-                .promptText(source.getPromptText())
-                .preparationText(source.getPreparationText())
-                .type(source.getType())
-                .preparationTimeSeconds(source.getPreparationTimeSeconds())
-                .minResponseSeconds(source.getMinResponseSeconds())
-                .maxResponseSeconds(source.getMaxResponseSeconds())
-                .sharing(source.getSharing())
-                .sourceQuestionId(source.getId())
-                .locked(false)
-                .confidentiality(source.getConfidentiality())
-                .securePoolId(source.getSecurePoolId())
-                .status(QuestionStatus.DRAFT)
-                .build();
+        Question clonedQuestion = source.draftCopyWithCode(cloneCodeOf(source.getCode()));
         Question savedQuestion = questionRepository.save(clonedQuestion);
 
         cloneAssets(source.getId(), savedQuestion.getId());
         cloneEvaluationGuide(source.getId(), savedQuestion.getId());
 
         return savedQuestion;
+    }
+
+    public QuestionAsset findClonedAsset(UUID clonedQuestionId, int order) {
+        return questionAssetRepository.findByQuestionId(clonedQuestionId).stream()
+            .filter(asset -> asset.getOrder() == order)
+            .findFirst()
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài nguyên câu hỏi trong bản nháp mới"));
     }
 
     private void cloneAssets(UUID sourceQuestionId, UUID targetQuestionId) {
@@ -59,32 +47,14 @@ public class QuestionCloneService {
         }
 
         List<QuestionAsset> clonedAssets = sourceAssets.stream()
-            .map(asset -> QuestionAsset.builder()
-                    .questionId(targetQuestionId)
-                    .title(asset.getTitle())
-                    .durationSeconds(asset.getDurationSeconds())
-                    .altText(asset.getAltText())
-                    .type(asset.getType())
-                    .url(asset.getUrl())
-                    .transcript(asset.getTranscript())
-                    .description(asset.getDescription())
-                    .order(asset.getOrder())
-                    .build())
+            .map(asset -> asset.copyTo(targetQuestionId))
             .toList();
         questionAssetRepository.saveAll(clonedAssets);
     }
 
     private void cloneEvaluationGuide(UUID sourceQuestionId, UUID targetQuestionId) {
         questionEvaluationGuideRepository.findByQuestionId(sourceQuestionId)
-            .map(guide -> QuestionEvaluationGuide.builder()
-                    .questionId(targetQuestionId)
-                    .expectedContent(guide.getExpectedContent())
-                    .keyPoints(guide.getKeyPoints())
-                    .acceptableResponses(guide.getAcceptableResponses())
-                    .offTopicExamples(guide.getOffTopicExamples())
-                    .scoringHints(guide.getScoringHints())
-                    .commonMistakes(guide.getCommonMistakes())
-                    .build())
+            .map(guide -> guide.copyTo(targetQuestionId))
             .ifPresent(questionEvaluationGuideRepository::save);
     }
 

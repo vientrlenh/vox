@@ -70,15 +70,43 @@ public class UpdateAssessmentUseCase implements IUseCase<UpdateAssessmentCommand
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
 
         authorizeMutation(assessment.getId(), assessment.getSchoolId(), assessment.getKind(), currentUserId, currentSchoolId, schoolAdmin);
+        requireEditableForCurrentStatus(assessment);
+
+        applyAndValidateChanges(assessment, command);
+        Instant now = Instant.now();
+        if (assessment.getKind() == AssessmentKind.CLASS_TEST && (command.openAt() != null || command.closeAt() != null)) {
+            syncClassTestDraftSchedules(assessment, currentUserId, now);
+        }
+        return AssessmentDtoMapper.toDto(assessmentRepository.save(assessment));
+    }
+
+    private void applyAndValidateChanges(Assessment assessment, UpdateAssessmentCommand command) {
+        applyBasicFields(assessment, command);
+        applyPolicyAndAttemptFields(assessment, command);
+        if (assessment.getStatus() == AssessmentStatus.SCHEDULED
+                && (command.maxAttempt() != null || command.assessmentTimeDurationSecond() != null)) {
+            requireTokenQuotaStillWithinPlan(assessment);
+        }
+        applyGradingAndProctoringFields(assessment, command);
+        requireWindowStillValid(assessment, command);
+        // Checked against the school of the assessment itself, not the caller's school -- same reason as in the
+        // assessmentPolicy branch of applyPolicyAndAttemptFields.
+        subscriptionPeriodGuardService.requireWithinSubscriptionPeriod(
+            assessment.getSchoolId(), assessment.getOpenAt(), assessment.getCloseAt());
+    }
+
+    private void requireEditableForCurrentStatus(Assessment assessment) {
         if (assessment.getKind() == AssessmentKind.CLASS_TEST
                 && assessment.getStatus() != AssessmentStatus.DRAFT
                 && assessment.getStatus() != AssessmentStatus.SCHEDULED) {
             throw new IllegalArgumentException("Chỉ được cập nhật bài kiểm tra trên lớp khi chưa bắt đầu");
         }
-        // Kỳ thi thường: thí sinh đã vào phòng thi nên mọi thay đổi thông tin đều làm lệch dữ liệu
-        // đang chạy (khung giờ, thời gian làm bài, cách chốt điểm).
+        // Regular assessment: candidates are already in the exam room, so any change to the information would put the running data
+        // out of step (time window, attempt time, how the score is decided).
         AssessmentEditingGuard.requireAssessmentEditable(assessment);
+    }
 
+    private void applyBasicFields(Assessment assessment, UpdateAssessmentCommand command) {
         if (command.name() != null) {
             assessment.setName(command.name());
         }
@@ -91,9 +119,12 @@ public class UpdateAssessmentUseCase implements IUseCase<UpdateAssessmentCommand
         if (command.closeAt() != null) {
             assessment.setCloseAt(command.closeAt());
         }
+    }
+
+    private void applyPolicyAndAttemptFields(Assessment assessment, UpdateAssessmentCommand command) {
         if (command.assessmentPolicyId() != null) {
-            // Kiểm theo trường của chính bài kiểm tra, không phải trường người gọi: bài đã tồn tại nên
-            // schoolId của nó mới là phạm vi đúng.
+            // Checked against the school of the assessment itself, not the caller's school: the assessment already exists,
+            // so its schoolId is the right scope.
             assessmentPolicyValidator.validateIfPresent(command.assessmentPolicyId(), assessment.getSchoolId());
             assessment.setAssessmentPolicyId(command.assessmentPolicyId());
         }
@@ -103,19 +134,24 @@ public class UpdateAssessmentUseCase implements IUseCase<UpdateAssessmentCommand
         if (command.assessmentTimeDurationSecond() != null) {
             assessment.setAssessmentTimeDurationSecond(command.assessmentTimeDurationSecond());
         }
-        // A published (SCHEDULED) assessment -- centralized or class test -- can still have its
-        // duration/maxAttempt edited -- if it is edited without re-checking, the token estimate checked at publish time
-        // (UpdateAssessmentStatusUseCase.validatePlanLimits) becomes meaningless, so exactly the same guard
-        // has to run again here, not only for CLASS_TEST.
-        //
-        // Note: since the cost-generating seconds were separated from the assessment duration (see PaperTimeCalculator),
-        // the estimate NO LONGER reads assessmentTimeDurationSecond but walks the paper variants itself, so only maxAttempt
-        // really changes it. It is still re-checked when the duration changes because it is cheap, and because the REST path that writes that
-        // column by hand may diverge from the real paper variants.
-        if (assessment.getStatus() == AssessmentStatus.SCHEDULED
-                && (command.maxAttempt() != null || command.assessmentTimeDurationSecond() != null)) {
-            classTestTokenQuotaGuardService.requireWithinTokenQuota(assessment);
-        }
+    }
+
+    /**
+     * A published (SCHEDULED) assessment -- centralized or class test -- can still have its duration/maxAttempt edited. If it is
+     * edited without re-checking, the token estimate checked at publish time
+     * ({@code UpdateAssessmentStatusUseCase.validatePlanLimits}) becomes meaningless, so exactly the same guard has to run
+     * again here, not only for CLASS_TEST.
+     *
+     * <p>Since the cost-generating seconds were separated from the assessment duration (see PaperTimeCalculator),
+     * the estimate NO LONGER reads assessmentTimeDurationSecond but walks the paper variants itself, so only maxAttempt
+     * really changes it. It is still re-checked when the duration changes because it is cheap, and because the REST path that writes that
+     * column by hand may diverge from the real paper variants.
+     */
+    private void requireTokenQuotaStillWithinPlan(Assessment assessment) {
+        classTestTokenQuotaGuardService.requireWithinTokenQuota(assessment);
+    }
+
+    private void applyGradingAndProctoringFields(Assessment assessment, UpdateAssessmentCommand command) {
         if (command.resultDecisionMethod() != null) {
             assessment.setResultDecisionMethod(command.resultDecisionMethod());
         }
@@ -125,35 +161,28 @@ public class UpdateAssessmentUseCase implements IUseCase<UpdateAssessmentCommand
         if (command.aiConfidenceThresholdPercent() != null) {
             assessment.setAiConfidenceThresholdPercent(command.aiConfidenceThresholdPercent());
         }
-        // null = giữ nguyên (patch semantics như mọi trường khác); danh sách RỖNG = tắt giám sát.
-        // Phân biệt này là bắt buộc: lúc tạo, null nghĩa là "không giám sát", còn ở đây null phải
-        // mang nghĩa "không đụng tới" thì sửa tên mới không vô tình xoá cấu hình giám sát.
+        // null = keep as is (patch semantics like every other field); an EMPTY list = proctoring off.
+        // The distinction is required: at creation null means "no proctoring", but here null must mean "do not touch",
+        // otherwise renaming an assessment would silently wipe its proctoring configuration.
         if (command.requiredStreamTypes() != null) {
             AssessmentStreamConfigResolver.StreamConfig streamConfig = assessmentStreamConfigResolver.resolve(
                 command.requiredStreamTypes(), command.streamTypePermission());
             assessment.setRequiredStreamType(streamConfig.requiredStreamType());
             assessment.setStreamTypePermission(streamConfig.streamTypePermission());
         }
+    }
+
+    private void requireWindowStillValid(Assessment assessment, UpdateAssessmentCommand command) {
+        requireAssessmentWindow(assessment.getOpenAt(), assessment.getCloseAt(), assessment.getKind());
         if (assessment.getKind() == AssessmentKind.CLASS_TEST) {
-            requireAssessmentWindow(assessment.getOpenAt(), assessment.getCloseAt(), assessment.getKind());
-            // Khung mở/đóng sẽ được đồng bộ thẳng xuống ca thi ở dưới, nên phải đủ dài cho bài làm.
+            // The open/close window is synced straight down to the session below, so it must be long enough for the attempt.
             if (touchesScheduleTiming(command)
                     && assessment.isScheduleWindowShorterThanAssessmentTime(assessment.getOpenAt(), assessment.getCloseAt())) {
                 throw new IllegalArgumentException(AssessmentScheduleWindowMessages.schedulesNoLongerFit(1, assessment));
             }
         } else {
-            requireAssessmentWindow(assessment.getOpenAt(), assessment.getCloseAt(), assessment.getKind());
             requireExistingSchedulesStillFit(assessment, command);
         }
-        // Soi theo trường của chính bài kiểm tra, không phải trường người gọi -- cùng lý do đã ghi ở
-        // nhánh assessmentPolicy phía trên.
-        subscriptionPeriodGuardService.requireWithinSubscriptionPeriod(
-            assessment.getSchoolId(), assessment.getOpenAt(), assessment.getCloseAt());
-        Instant now = Instant.now();
-        if (assessment.getKind() == AssessmentKind.CLASS_TEST && (command.openAt() != null || command.closeAt() != null)) {
-            syncClassTestDraftSchedules(assessment, currentUserId, now);
-        }
-        return AssessmentDtoMapper.toDto(assessmentRepository.save(assessment));
     }
 
     /**

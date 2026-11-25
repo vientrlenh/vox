@@ -54,75 +54,22 @@ public class CreateSchoolScoringRuleUseCase implements IUseCase<CreateSchoolScor
     @Override
     @Transactional
     public UUID execute(CreateSchoolScoringRuleCommand command) {
-        // 1. Kiểm tra tài khoản School Admin
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản đã bị khóa.");
-        }
+        requireActiveSchoolAdminOf(command.schoolId());
+        AssessmentPolicy policy = requirePolicyOfSchool(command.policyId(), command.schoolId());
+        requireDraftPolicy(policy);
 
-        // 2. Kiểm tra tài khoản thuộc đúng trường học yêu cầu
-        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được phân bổ vào trường học nào."));
-        if (!schoolUser.getSchoolId().equals(command.schoolId())) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền can thiệp vào Assessment Policy của trường khác.");
-        }
-
-        School school = schoolRepository.findById(command.schoolId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
-        if (!school.isActive()) {
-            throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
-        }
-
-        // 3. Kiểm tra Assessment Policy tồn tại và thuộc đúng trường học
-        AssessmentPolicy policy = assessmentPolicyRepository.findById(command.policyId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
-        if (policy.getSchoolId() == null || !policy.getSchoolId().equals(command.schoolId())) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền can thiệp vào Assessment Policy của trường khác.");
-        }
-
-        // 4. Chỉ được thêm Scoring Rule khi Policy còn DRAFT (giống hệt lý do bên System:
-        // tránh thay đổi luật chấm điểm ngầm khi Policy đã PUBLISHED đang chấm bài thi thật)
-        if (policy.getStatus() != AssessmentPolicyStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ được thêm Scoring Rule khi Assessment Policy đang ở trạng thái DRAFT.");
-        }
-
-        // 5. Kiểm tra trùng mã Code trong phạm vi Policy này
         String safeCode = command.code().strip();
-        if (scoringRuleRepository.existsByPolicyIdAndCode(command.policyId(), safeCode)) {
-            throw new IllegalArgumentException("Mã Scoring Rule (code) '" + safeCode + "' đã tồn tại trong Assessment Policy này.");
-        }
+        requireCodeUnused(command.policyId(), safeCode);
+        requirePositivePriority(command.priority());
 
-        // 6. Validate priority (khớp check constraint DB: priority > 0)
-        if (command.priority() <= 0) {
-            throw new IllegalArgumentException("Độ ưu tiên (priority) phải lớn hơn 0.");
-        }
-
-        // 7. Convert the raw JSON Map -> the concrete Value Object matching the chosen conditionType/actionType
+        // Convert the raw JSON Map -> the concrete Value Object matching the chosen conditionType/actionType
         ScoringRuleConditionParams conditionParams = scoringRuleParamsMapper.toConditionParams(command.conditionType(), command.conditionParams());
         ScoringRuleActionParams actionParams = scoringRuleParamsMapper.toActionParams(command.actionType(), command.actionParams());
 
-        // 7b. Check that criterionCode/bandCode (if present) really exist in the Policy's Rubric Version
+        // Check that criterionCode/bandCode (if present) really exist in the Policy's Rubric Version
         validateCriterionReferences(policy.getRubricVersionId(), policy.getFrameworkVersionId(), conditionParams, actionParams);
 
-        // 8. Create and save
-        ScoringRule rule = ScoringRule.builder()
-            .policyId(command.policyId())
-            .code(safeCode)
-            .name(command.name().strip())
-            .description(command.description())
-            .conditionType(command.conditionType())
-            .conditionParams(conditionParams)
-            .actionType(command.actionType())
-            .actionParams(actionParams)
-            .priority(command.priority())
-            .severity(command.severity())
-            .stopProcessing(command.stopProcessing())
-            .active(command.isActive())
-            .build();
-
-        return scoringRuleRepository.save(rule).getId();
+        return scoringRuleRepository.save(toNewRule(command, safeCode, conditionParams, actionParams)).getId();
     }
 
     // Kiểm tra criterionCode/bandCode (điền dạng code, không phải UUID) trong conditionParams/actionParams
@@ -161,4 +108,72 @@ public class CreateSchoolScoringRuleUseCase implements IUseCase<CreateSchoolScor
                     "Framework Result Band '" + frameworkResultBandId + "' không thuộc Framework Version của Assessment Policy này.");
         }
     }
+
+    private void requireActiveSchoolAdminOf(UUID schoolId) {
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) {
+            throw new UnauthorizedException("Tài khoản đã bị khóa.");
+        }
+
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
+                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được phân bổ vào trường học nào."));
+        if (!schoolUser.getSchoolId().equals(schoolId)) {
+            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền can thiệp vào Assessment Policy của trường khác.");
+        }
+
+        School school = schoolRepository.findById(schoolId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
+        if (!school.isActive()) {
+            throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
+        }
+    }
+
+    private AssessmentPolicy requirePolicyOfSchool(UUID policyId, UUID schoolId) {
+        AssessmentPolicy policy = assessmentPolicyRepository.findById(policyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
+        if (policy.getSchoolId() == null || !policy.getSchoolId().equals(schoolId)) {
+            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền can thiệp vào Assessment Policy của trường khác.");
+        }
+        return policy;
+    }
+
+    private void requireDraftPolicy(AssessmentPolicy policy) {
+        // A Scoring Rule can only be added while the Policy is still DRAFT (same reason as on the System side:
+        // avoid silently changing the scoring rules under a PUBLISHED Policy that is grading real exams)
+        if (policy.getStatus() != AssessmentPolicyStatus.DRAFT) {
+            throw new IllegalArgumentException("Chỉ được thêm Scoring Rule khi Assessment Policy đang ở trạng thái DRAFT.");
+        }
+    }
+
+    private void requireCodeUnused(UUID policyId, String safeCode) {
+        if (scoringRuleRepository.existsByPolicyIdAndCode(policyId, safeCode)) {
+            throw new IllegalArgumentException("Mã Scoring Rule (code) '" + safeCode + "' đã tồn tại trong Assessment Policy này.");
+        }
+    }
+
+    private void requirePositivePriority(int priority) {
+        if (priority <= 0) {
+            throw new IllegalArgumentException("Độ ưu tiên (priority) phải lớn hơn 0.");
+        }
+    }
+
+    private ScoringRule toNewRule(CreateSchoolScoringRuleCommand command, String safeCode,
+            ScoringRuleConditionParams conditionParams, ScoringRuleActionParams actionParams) {
+        return ScoringRule.forPolicy(
+            command.policyId(),
+            safeCode,
+            command.name().strip(),
+            command.description(),
+            command.conditionType(),
+            conditionParams,
+            command.actionType(),
+            actionParams,
+            command.priority(),
+            command.severity(),
+            command.stopProcessing(),
+            command.isActive());
+    }
+
 }

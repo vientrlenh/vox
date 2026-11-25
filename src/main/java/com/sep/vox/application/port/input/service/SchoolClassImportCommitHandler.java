@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.service;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -49,7 +50,7 @@ public class SchoolClassImportCommitHandler implements ImportCommitHandler {
         UUID schoolId = session.getSchoolId();
         Map<String, String> mapping = jsonSerializationPort.toStringMap(session.getConfirmedMappingJson());
         validateMappingKeys(rows, mapping);
-        return processRows(rows, mapping, schoolId);
+        return commitRowsAndCountOutcomes(rows, mapping, schoolId);
     }
 
 
@@ -73,16 +74,36 @@ public class SchoolClassImportCommitHandler implements ImportCommitHandler {
         }
     }
 
-    private ImportCommitResult processRows(List<ImportRow> rows, Map<String, String> confirmedMapping, UUID schoolId) {
-        long createdRows = 0L;
-        long updatedRows = 0L;
-        long invalidRows = 0L;
-        Set<String> seenCodes = new HashSet<String>();
-        List<RowContext> rowContexts = new ArrayList<RowContext>();
+    private ImportCommitResult commitRowsAndCountOutcomes(List<ImportRow> rows, Map<String, String> confirmedMapping,
+            UUID schoolId) {
         Set<String> classCodes = new HashSet<String>();
         Set<String> languageCodes = new HashSet<String>();
         Set<String> schoolGradeCodes = new HashSet<String>();
+        List<RowContext> rowContexts = prepareRowContexts(rows, confirmedMapping, classCodes, languageCodes, schoolGradeCodes);
 
+        RowLookups lookups = new RowLookups(schoolId,
+                findExistingClassesByCode(schoolId, classCodes),
+                findLanguagesByCode(languageCodes),
+                findGradesByCode(schoolId, schoolGradeCodes),
+                new HashSet<String>());
+        Map<RowOutcome, Long> outcomeCounts = new EnumMap<RowOutcome, Long>(RowOutcome.class);
+        for (RowContext rowContext : rowContexts) {
+            outcomeCounts.merge(commitRow(rowContext, lookups), 1L, Long::sum);
+        }
+        return toResult(outcomeCounts);
+    }
+
+    private ImportCommitResult toResult(Map<RowOutcome, Long> outcomeCounts) {
+        return new ImportCommitResult(
+                outcomeCounts.getOrDefault(RowOutcome.CREATED, 0L),
+                outcomeCounts.getOrDefault(RowOutcome.UPDATED, 0L),
+                0L,
+                outcomeCounts.getOrDefault(RowOutcome.INVALID, 0L));
+    }
+
+    private List<RowContext> prepareRowContexts(List<ImportRow> rows, Map<String, String> confirmedMapping,
+            Set<String> classCodes, Set<String> languageCodes, Set<String> schoolGradeCodes) {
+        List<RowContext> rowContexts = new ArrayList<RowContext>();
         for (ImportRow row : rows) {
             Map<String, String> rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
             Map<String, String> mappedData = mapRawData(rawData, confirmedMapping);
@@ -94,49 +115,45 @@ public class SchoolClassImportCommitHandler implements ImportCommitHandler {
             addIfPresent(languageCodes, normalized.get("languageCode"));
             addIfPresent(schoolGradeCodes, normalized.get("schoolGradeCode"));
         }
+        return rowContexts;
+    }
 
-        Map<String, SchoolClass> existingClassesByCode = findExistingClassesByCode(schoolId, classCodes);
-        Map<String, SupportedLanguage> languagesByCode = findLanguagesByCode(languageCodes);
-        Map<String, SchoolGrade> gradesByCode = findGradesByCode(schoolId, schoolGradeCodes);
+    private RowOutcome commitRow(RowContext rowContext, RowLookups lookups) {
+        ImportRow row = rowContext.row();
+        Map<String, String> normalized = rowContext.normalized();
+        List<Map<String, String>> errors = validateRow(normalized, lookups.seenCodes(),
+                lookups.languagesByCode(), lookups.gradesByCode());
 
-        for (RowContext rowContext : rowContexts) {
-            ImportRow row = rowContext.row();
-            Map<String, String> normalized = rowContext.normalized();
-            List<Map<String, String>> errors = validateRow(normalized, seenCodes, languagesByCode, gradesByCode);
-
-            if (!errors.isEmpty()) {
-                row.setErrorsJson(jsonSerializationPort.toJson(errors));
-                row.setStatus(ImportRowStatus.INVALID);
-                invalidRows++;
-                continue;
-            }
-
-            SupportedLanguage language = languagesByCode.get(normalized.get("languageCode"));
-            SchoolGrade schoolGrade = gradesByCode.get(normalized.get("schoolGradeCode"));
-            SchoolClass existingClass = existingClassesByCode.get(normalized.get("code"));
-
-            try {
-                if (existingClass != null) {
-                    requiresNewTransactionPort.runInNewTransaction(() ->
-                            updateClass(existingClass, normalized, language.getId(), schoolGrade.getId()));
-                    updatedRows++;
-                } else {
-                    requiresNewTransactionPort.runInNewTransaction(() ->
-                            createClass(normalized, schoolId, language.getId(), schoolGrade.getId()));
-                    createdRows++;
-                }
-            } catch (DataConflictException | IllegalArgumentException exception) {
-                row.setErrorsJson(jsonSerializationPort.toJson(List.of(error("code", "Mã lớp đã tồn tại hoặc không hợp lệ"))));
-                row.setStatus(ImportRowStatus.FAILED);
-                invalidRows++;
-                continue;
-            }
-
-            row.setErrorsJson(null);
-            row.setStatus(ImportRowStatus.IMPORTED);
+        if (!errors.isEmpty()) {
+            row.setErrorsJson(jsonSerializationPort.toJson(errors));
+            row.setStatus(ImportRowStatus.INVALID);
+            return RowOutcome.INVALID;
         }
 
-        return new ImportCommitResult(createdRows, updatedRows, 0L, invalidRows);
+        try {
+            RowOutcome outcome = saveInNewTransaction(normalized, lookups);
+            row.setErrorsJson(null);
+            row.setStatus(ImportRowStatus.IMPORTED);
+            return outcome;
+        } catch (DataConflictException | IllegalArgumentException exception) {
+            row.setErrorsJson(jsonSerializationPort.toJson(List.of(error("code", "Mã lớp đã tồn tại hoặc không hợp lệ"))));
+            row.setStatus(ImportRowStatus.FAILED);
+            return RowOutcome.INVALID;
+        }
+    }
+
+    private RowOutcome saveInNewTransaction(Map<String, String> normalized, RowLookups lookups) {
+        SupportedLanguage language = lookups.languagesByCode().get(normalized.get("languageCode"));
+        SchoolGrade schoolGrade = lookups.gradesByCode().get(normalized.get("schoolGradeCode"));
+        SchoolClass existingClass = lookups.existingClassesByCode().get(normalized.get("code"));
+        if (existingClass != null) {
+            requiresNewTransactionPort.runInNewTransaction(() ->
+                    updateClass(existingClass, normalized, language.getId(), schoolGrade.getId()));
+            return RowOutcome.UPDATED;
+        }
+        requiresNewTransactionPort.runInNewTransaction(() ->
+                createClass(normalized, lookups.schoolId(), language.getId(), schoolGrade.getId()));
+        return RowOutcome.CREATED;
     }
 
     private void createClass(Map<String, String> data, UUID schoolId, UUID languageId, UUID schoolGradeId) {
@@ -216,27 +233,35 @@ public class SchoolClassImportCommitHandler implements ImportCommitHandler {
             errors.add(error("code", "Mã lớp bị trùng trong file import"));
         }
 
-        String languageCode = mappedData.get("languageCode");
-        if (isPresent(languageCode)) {
-            SupportedLanguage language = languagesByCode.get(languageCode);
-            if (language == null) {
-                errors.add(error("languageCode", "Không tìm thấy ngôn ngữ"));
-            } else if (!language.isActive()) {
-                errors.add(error("languageCode", "Ngôn ngữ không hoạt động"));
-            }
-        }
-
-        String schoolGradeCode = mappedData.get("schoolGradeCode");
-        if (isPresent(schoolGradeCode)) {
-            SchoolGrade schoolGrade = gradesByCode.get(schoolGradeCode);
-            if (schoolGrade == null) {
-                errors.add(error("schoolGradeCode", "Không tìm thấy khối học"));
-            } else if (schoolGrade.getStatus() != SchoolGradeStatus.ACTIVE) {
-                errors.add(error("schoolGradeCode", "Khối học không hoạt động"));
-            }
-        }
-
+        addLanguageErrors(errors, mappedData.get("languageCode"), languagesByCode);
+        addSchoolGradeErrors(errors, mappedData.get("schoolGradeCode"), gradesByCode);
         return errors;
+    }
+
+    private void addLanguageErrors(List<Map<String, String>> errors, String languageCode,
+            Map<String, SupportedLanguage> languagesByCode) {
+        if (!isPresent(languageCode)) {
+            return;
+        }
+        SupportedLanguage language = languagesByCode.get(languageCode);
+        if (language == null) {
+            errors.add(error("languageCode", "Không tìm thấy ngôn ngữ"));
+        } else if (!language.isActive()) {
+            errors.add(error("languageCode", "Ngôn ngữ không hoạt động"));
+        }
+    }
+
+    private void addSchoolGradeErrors(List<Map<String, String>> errors, String schoolGradeCode,
+            Map<String, SchoolGrade> gradesByCode) {
+        if (!isPresent(schoolGradeCode)) {
+            return;
+        }
+        SchoolGrade schoolGrade = gradesByCode.get(schoolGradeCode);
+        if (schoolGrade == null) {
+            errors.add(error("schoolGradeCode", "Không tìm thấy khối học"));
+        } else if (schoolGrade.getStatus() != SchoolGradeStatus.ACTIVE) {
+            errors.add(error("schoolGradeCode", "Khối học không hoạt động"));
+        }
     }
 
     private void addMissingError(List<Map<String, String>> errors, Map<String, String> mappedData, String field, String message) {
@@ -257,6 +282,16 @@ public class SchoolClassImportCommitHandler implements ImportCommitHandler {
 
     private Map<String, String> error(String field, String message) {
         return Map.of("field", field, "message", message);
+    }
+
+    private enum RowOutcome { CREATED, UPDATED, INVALID }
+
+    private record RowLookups(
+            UUID schoolId,
+            Map<String, SchoolClass> existingClassesByCode,
+            Map<String, SupportedLanguage> languagesByCode,
+            Map<String, SchoolGrade> gradesByCode,
+            Set<String> seenCodes) {
     }
 
     private record RowContext(ImportRow row, Map<String, String> normalized) {

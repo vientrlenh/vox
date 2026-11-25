@@ -50,7 +50,23 @@ public class PracticeSessionDetailAssemblyService {
     public TeacherPracticeSessionDetail assemble(UUID sessionId) {
         SessionRowInfo summary = practiceSessionQueryRepository.findSessionRowById(sessionId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên luyện."));
-        List<TeacherPracticeTurnViewDto> turns = practiceResponseTurnRepository.findBySessionIdOrderByTurnOrder(sessionId).stream()
+        List<TeacherPracticeTurnViewDto> turns = loadTurnViews(sessionId);
+        List<PracticeCriterionScoreDto> scores = practiceCriterionScoreRepository.findScoresBySessionId(sessionId);
+        int itemCount = practiceItemEvaluationRepository.countCompletedBySessionId(sessionId);
+        int duration = summary.getEndedAt() == null
+            ? 0
+            : (int) Duration.between(summary.getStartedAt(), summary.getEndedAt()).toSeconds();
+        return PracticeSessionResponseMapper.toResponse(new TeacherPracticeSessionDetailDto(
+            sessionId, summary.getTopicName(), summary.getStartedAt(), duration, itemCount,
+            summary.getOverallScore(), scores, "COMPLETED".equals(summary.getStatus()),
+            practiceItemResponseRepository.countAwaitingEvaluation(sessionId), countGaveUpAnswers(sessionId),
+            practiceItemResponseRepository.findAverageDifficultyRank(sessionId), turns,
+            summary.getScoreScaleMin(), summary.getScoreScaleMax()
+        ));
+    }
+
+    private List<TeacherPracticeTurnViewDto> loadTurnViews(UUID sessionId) {
+        return practiceResponseTurnRepository.findBySessionIdOrderByTurnOrder(sessionId).stream()
             .map(turn -> new TeacherPracticeTurnViewDto(
                 turn.turnOrder(),
                 turn.transcript(),
@@ -60,31 +76,16 @@ public class PracticeSessionDetailAssemblyService {
                 turnCorrectionRepository.findByTurnIdOrderById(turn.id())
             ))
             .toList();
-        List<PracticeCriterionScoreDto> scores = practiceCriterionScoreRepository.findScoresBySessionId(sessionId);
-        int itemCount = practiceItemEvaluationRepository.countCompletedBySessionId(sessionId);
-        int duration = summary.getEndedAt() == null
-            ? 0
-            : (int) Duration.between(summary.getStartedAt(), summary.getEndedAt()).toSeconds();
-        return PracticeSessionResponseMapper.toResponse(new TeacherPracticeSessionDetailDto(
-            sessionId,
-            summary.getTopicName(),
-            summary.getStartedAt(),
-            duration,
-            itemCount,
-            summary.getOverallScore(),
-            scores,
-            "COMPLETED".equals(summary.getStatus()),
-            practiceItemResponseRepository.countAwaitingEvaluation(sessionId),
-            // Count of answers that were GIVEN UP on. Kept apart from "awaiting" because the two are very
-            // different: a waiting answer will get a result eventually, a given-up one never will. Merging
-            // them would make the student wait in a loop for a result that will not arrive.
-            practiceItemResponseRepository.countGradingGaveUp(
-                sessionId, PracticeGradingFlushService.MAX_GRADING_ATTEMPTS
-            ),
-            practiceItemResponseRepository.findAverageDifficultyRank(sessionId),
-            turns,
-            summary.getScoreScaleMin(),
-            summary.getScoreScaleMax()
-        ));
+    }
+
+    /**
+     * Count of answers that were GIVEN UP on. Kept apart from "awaiting" because the two are very
+     * different: a waiting answer will get a result eventually, a given-up one never will. Merging
+     * them would make the student wait in a loop for a result that will not arrive.
+     */
+    private int countGaveUpAnswers(UUID sessionId) {
+        return practiceItemResponseRepository.countGradingGaveUp(
+            sessionId, PracticeGradingFlushService.MAX_GRADING_ATTEMPTS
+        );
     }
 }

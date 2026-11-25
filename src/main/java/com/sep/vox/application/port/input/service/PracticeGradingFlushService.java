@@ -84,28 +84,35 @@ public class PracticeGradingFlushService {
         );
         int flushed = 0;
         for (PendingEvaluationResponse row : pending) {
-            try {
-                eventPublisher.publish(evaluationRequestFactory.build(
-                    sessionId, row.getResponseId(), row.getQuestionId()
-                ));
-                // Đóng dấu SAU khi publish thành công: đánh dấu trước rồi publish hỏng thì câu
-                // đó bị khoá ngoài diện quét suốt cả cửa sổ nguội, tức mất hẳn một chu kỳ cứu.
-                practiceItemResponseRepository.markGradingRequested(
-                    row.getResponseId(), Instant.now()
-                );
+            if (flushOne(sessionId, row)) {
                 flushed++;
-            } catch (RuntimeException exception) {
-                // Một câu hỏng không được kéo theo cả việc đóng phiên: đóng phiên là hành động
-                // của học sinh, còn xả chấm là việc dọn dẹp của hệ thống.
-                log.warn(
-                    "Không xả được chấm cho câu {} của phiên {}.",
-                    row.getQuestionId(), sessionId, exception
-                );
             }
         }
         if (flushed > 0) {
             log.info("Đã xả chấm {} câu dở dang của phiên {}.", flushed, sessionId);
         }
         return flushed;
+    }
+
+    private boolean flushOne(UUID sessionId, PendingEvaluationResponse row) {
+        try {
+            eventPublisher.publish(evaluationRequestFactory.build(
+                sessionId, row.getResponseId(), row.getQuestionId()
+            ));
+            // Stamp AFTER the publish succeeds: stamping first and then failing to publish would lock
+            // that question out of the sweep for the whole cooldown window, losing a rescue cycle outright.
+            practiceItemResponseRepository.markGradingRequested(
+                row.getResponseId(), Instant.now()
+            );
+            return true;
+        } catch (RuntimeException exception) {
+            // One failing question must not drag down the session close with it: closing the session is the
+            // student's action, while flushing the grading is the system's housekeeping.
+            log.warn(
+                "Không xả được chấm cho câu {} của phiên {}.",
+                row.getQuestionId(), sessionId, exception
+            );
+            return false;
+        }
     }
 }

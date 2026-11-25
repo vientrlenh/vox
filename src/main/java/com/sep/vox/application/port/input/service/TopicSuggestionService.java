@@ -1,7 +1,6 @@
 package com.sep.vox.application.port.input.service;
 
 import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses;
-import java.math.BigDecimal;
 import java.text.Normalizer;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -27,7 +26,6 @@ import com.sep.vox.domain.repository.InterestDimensionRepository;
 import com.sep.vox.domain.repository.LearnerProfileRepository;
 import com.sep.vox.domain.repository.PracticeTopicRepository;
 import com.sep.vox.domain.repository.TopicSuggestionRepository;
-import com.sep.vox.domain.service.personalization.TensePolicy;
 
 /**
  * Đề xuất / tạo / khớp chủ đề luyện tập -- gộp từ TopicSuggestionRepositoryImpl vì đây là thuật
@@ -60,6 +58,19 @@ public class TopicSuggestionService {
     // Python agents service; see PracticeQuestionGenerationService.generateAndStore for the
     // same fix + rationale (HikariCP connection-pool starvation under load). Each repository
     // call here self-transacts via Spring Data's proxy.
+    /**
+     * There is NO quota of 3 requests/week here any more (removed 2026-08-07). The old condition was
+     * `weeklyRequestCount(studentId) >= 3 || unsuitable(normalized)`.
+     *
+     * <p>It counted EVERY row that has a keyword in the calendar week, without filtering by result -- but
+     * recordKeywordRequest writes a row in all four branches, so the three branches that cost NO LLM call
+     * (MATCHED_EXISTING, REJECTED_UNSUITABLE, OUT_OF_ASSESSMENT_SCOPE) were still charged against the quota. A student
+     * who typed a keyword pointing exactly at an existing topic also lost one of the three requests.
+     *
+     * <p>The real cost already has its proper place of control: the PRACTICE quota is computed by speaking seconds
+     * (SubmitPracticeTurnUseCase -> ConsumeQuotaService). Blocking here as well tightens the same
+     * pocket of money twice, by an unrelated unit.
+     */
     public TopicFromKeywordResult generateFromKeyword(UUID studentId, String keyword) {
         String normalized = normalize(keyword);
         if (normalized.isBlank()) {
@@ -67,43 +78,39 @@ public class TopicSuggestionService {
         }
         TopicNameCard existingTopic = findNearExistingTopic(normalized);
         if (existingTopic != null) {
-            recordKeywordRequest(studentId, keyword, "MATCHED_EXISTING");
-            return new TopicFromKeywordResult(
-                offerFor(
-                    studentId, existingTopic.id(), existingTopic.name(),
-                    existingTopic.interestDimension(), false, null, null
-                ),
-                "MATCHED_EXISTING"
-            );
+            return matchedExisting(studentId, keyword, existingTopic);
         }
-        // REMOVED the quota of 3 requests/week (2026-08-07). The old condition was
-        // `weeklyRequestCount(studentId) >= 3 || unsuitable(normalized)`.
-        //
-        // It counted EVERY row that has a keyword in the calendar week, without filtering by result -- but
-        // recordKeywordRequest writes a row in all four branches, so the three branches that cost NO LLM call
-        // (MATCHED_EXISTING, REJECTED_UNSUITABLE, OUT_OF_ASSESSMENT_SCOPE) were still charged against the quota. A student
-        // who typed a keyword pointing exactly at an existing topic also lost one of the three requests.
-        //
-        // The real cost already has its proper place of control: the PRACTICE quota is computed by speaking seconds
-        // (SubmitPracticeTurnUseCase -> ConsumeQuotaService). Blocking here as well tightens the same
-        // pocket of money twice, by an unrelated unit.
         if (unsuitable(normalized)) {
             recordKeywordRequest(studentId, keyword, "REJECTED_UNSUITABLE");
             return new TopicFromKeywordResult(null, "REJECTED_UNSUITABLE");
         }
-        String goal = currentGoal(studentId);
-        if ("ASSESSMENT_PREP".equals(goal)) {
+        if ("ASSESSMENT_PREP".equals(currentGoal(studentId))) {
             // ASSESSMENT_PREP only practices on topics taken from the question bank (question_bank/
             // question_topic) of exactly the school + grade -- it does not let the AI generate new topics from
             // free keywords, and keeps the result code OUT_OF_ASSESSMENT_SCOPE (the meaning is still correct).
             recordKeywordRequest(studentId, keyword, "OUT_OF_ASSESSMENT_SCOPE");
             return new TopicFromKeywordResult(null, "OUT_OF_ASSESSMENT_SCOPE");
         }
+        return proposeAndCreateTopic(studentId, keyword);
+    }
+
+    private TopicFromKeywordResult matchedExisting(UUID studentId, String keyword, TopicNameCard topic) {
+        recordKeywordRequest(studentId, keyword, "MATCHED_EXISTING");
+        return new TopicFromKeywordResult(
+            offerFor(
+                studentId, topic.id(), topic.name(),
+                topic.interestDimension(), false, null, null
+            ),
+            "MATCHED_EXISTING"
+        );
+    }
+
+    private TopicFromKeywordResult proposeAndCreateTopic(UUID studentId, String keyword) {
         List<TopicGenerationPort.TopicProposal> proposals = topicGenerationPort.propose(
             studentId,
             List.of(new KeywordEvidence(keyword, 1)),
             interestScores(studentId),
-            List.of(),   // xem ghi chu o cho go rejectedTopicNames
+            List.of(),   // see the note at the removed rejectedTopicNames
             practiceTopicRepository.findExhaustedTopicNames(studentId),
             true,
             1,
@@ -116,19 +123,18 @@ public class TopicSuggestionService {
         TopicGenerationPort.TopicProposal proposal = proposals.get(0);
         TopicNameCard duplicateTopic = findNearExistingTopic(normalize(proposal.name()));
         if (duplicateTopic != null) {
-            recordKeywordRequest(studentId, keyword, "MATCHED_EXISTING");
-            return new TopicFromKeywordResult(
-                offerFor(
-                    studentId, duplicateTopic.id(), duplicateTopic.name(),
-                    duplicateTopic.interestDimension(), false, null, null
-                ),
-                "MATCHED_EXISTING"
-            );
+            return matchedExisting(studentId, keyword, duplicateTopic);
         }
-        // Tạo topic + ghi dòng nhật ký yêu cầu phải atomic với nhau -- tách sang bean
-        // riêng có @Transactional (xem KeywordTopicPersistenceService), KHÔNG bọc
-        // transaction quanh cả hàm này vì generationClient.propose() ở trên là
-        // cuộc gọi LLM chậm.
+        return createTopicFromProposal(studentId, keyword, proposal);
+    }
+
+    /**
+     * Creating the topic + writing the request-log row must be atomic together -- split into a separate bean
+     * with @Transactional (see KeywordTopicPersistenceService), and NO transaction wraps the whole of
+     * generateFromKeyword because generationClient.propose() above is a slow LLM call.
+     */
+    private TopicFromKeywordResult createTopicFromProposal(
+            UUID studentId, String keyword, TopicGenerationPort.TopicProposal proposal) {
         UUID topicId = keywordTopicPersistenceService.createTopicAndRecordRequest(
             studentId,
             keyword,
@@ -168,44 +174,21 @@ public class TopicSuggestionService {
     // Not @Transactional -- same reason as generateFromKeyword above. This one is the hottest
     // path (called synchronously from practiceTopicOffers whenever ranked offers are thin), so
     // it's the most load-bearing fix of the three.
-    // GỠ 2026-08-11: MAX_PROPOSALS_PER_RUN = 8. Số đề xuất xin LLM nay là `requestedCount` --
-    // đúng số cần, do TopicOfferBackfillService tính từ kích thước kho (8 khi đang xây, 2 khi đã
-    // ổn định). Xem chú thích tại lời gọi propose().
-
+    // REMOVED 2026-08-11: MAX_PROPOSALS_PER_RUN = 8. The number of proposals requested from the LLM is now
+    // `requestedCount` -- exactly the number needed, computed by TopicOfferBackfillService from the bank size
+    // (8 while building, 2 when steady). See the comment at the propose() call.
+    /**
+     * The candidates are loaded ONCE for the whole loop. The old version called findNearExistingTopic() inside the
+     * loop, and that function loads the whole table itself -- i.e. up to MAX_PROPOSALS_PER_RUN loads + re-tokenizing
+     * every topic name, on every generation run.
+     */
     public List<PracticeTopicOffer> synchronousOffers(UUID studentId, int requestedCount) {
         if (requestedCount <= 0 || "ASSESSMENT_PREP".equals(currentGoal(studentId))) {
             return List.of();
         }
-        List<TopicGenerationPort.TopicProposal> proposals = topicGenerationPort.propose(
-            studentId,
-            List.of(),
-            interestScores(studentId),
-            List.of(),   // xem ghi chu o cho go rejectedTopicNames
-            practiceTopicRepository.findExhaustedTopicNames(studentId),
-            false,
-            // Xin ĐÚNG số cần, không xin dư nữa.
-            //
-            // Bản trước cứng MAX_PROPOSALS_PER_RUN = 8 với lý do "bộ lọc trùng-gần cắt rất mạnh,
-            // xin đúng số cần thì mỗi lượt chỉ ra được 1 chủ đề". Lý do đó đúng ở thời điểm ấy,
-            // nhưng nó bù bằng cách trả tiền TRƯỚC cho phần có thể bị vứt: ở chế độ ổn định
-            // (kho >= POOL_TARGET) requestedCount chỉ là 2, nên 6 đề xuất được sinh, được NHÚNG
-            // ở TopicDedupeNode, rồi bỏ -- mỗi phiên.
-            //
-            // Nay Python có vòng đề xuất lại (MAX_PROPOSAL_ROUNDS): va chạm không còn bị vứt im
-            // lặng mà quay lại thành prompt kèm đúng tên chủ đề vừa đâm vào. Nên chỉ trả thêm
-            // KHI THẬT SỰ va chạm, thay vì trả trước cho mọi lượt.
-            //
-            // Vẫn phải <= MAX_TOPIC_PROPOSALS bên Python (schemas/topic_generation.py), không thì
-            // 422 ngay ở cửa -- requestedCount lớn nhất là BACKFILL_COUNT_BUILDING = 8, vẫn nằm trong.
-            requestedCount,
-            dimensionCodes()
-        );
+        List<TopicGenerationPort.TopicProposal> proposals = proposeFromInterests(studentId, requestedCount);
         List<PracticePlanningResponses.PracticeTopicOffer> result = new ArrayList<PracticeTopicOffer>();
-        // Nạp ứng viên MỘT lần cho cả vòng lặp. Bản cũ gọi findNearExistingTopic() ngay trong
-        // vòng, mà hàm đó tự nạp toàn bộ bảng -- tức tối đa MAX_PROPOSALS_PER_RUN lượt nạp + tokenize
-        // lại mọi tên chủ đề, mỗi lượt sinh.
         List<TopicNameCard> candidates = activeNameCards();
-        // Sổ kế toán một lượt sinh -- xem log cuối hàm để biết vì sao cần.
         List<String> collidedWith = new ArrayList<String>();
         int skippedOverQuota = 0;
         for (TopicGenerationPort.TopicProposal proposal : proposals) {
@@ -218,41 +201,84 @@ public class TopicSuggestionService {
                 collidedWith.add(proposal.name() + " ~ " + duplicate.name());
                 continue;
             }
-            UUID topicId = createTopic(
-                proposal.name(), proposal.interestDimension(), proposal.curriculumGroup(),
-                "AI_SUGGESTED", proposal.temporalAffordance()
-            );
-            // BẮT BUỘC: nối chủ đề vừa tạo vào danh sách ứng viên. Bản cũ nạp lại DB mỗi vòng nên
-            // tự nhiên thấy được cái vừa tạo; nâng ra ngoài mà quên bước này là mất khả năng chống
-            // trùng TRONG CÙNG MỘT LƯỢT -- đúng tình huống chú thích ở lời gọi propose() mô tả:
-            // LLM hay đề xuất cụm chủ đề gần nhau, nên cái thứ 2-3 phải được so với cái thứ 1 vừa
-            // tạo xong.
-            candidates.add(new TopicNameCard(
-                topicId, proposal.name(), proposal.interestDimension()
-            ));
-            topicGenerationPort.index(
-                topicId.toString(), proposal.name(), proposal.reasonText(), true, null, "ACTIVE"
-            );
-            result.add(offerFor(
-                studentId, topicId, proposal.name(), proposal.interestDimension(), false,
-                (int) Math.round(proposal.confidence() * 100), proposal.reasonText()
-            ));
+            result.add(createOffer(studentId, proposal, candidates));
         }
-        // Sổ kế toán một lượt sinh. Trước đây năng suất bằng 0 bị NUỐT IM LẶNG:
-        // backfillAsync chỉ log số tạo được, còn "xin 8 mà 8 cái đều trùng" thì không phân biệt
-        // được với "kho đã đủ nên không cần tạo". Chạy vài ngày với dòng này là trả lời được ba
-        // câu: vòng phản hồi va chạm có đáng làm không, MAX_ROUNDS nên là mấy, và hạ
-        // vòng đề xuất lại bên Python có đang cứu được va chạm không.
-        //
-        // `proposals.size()` đã là số CÒN LẠI sau khi TopicDedupeNode bên Python lọc bằng Chroma
-        // (ngưỡng cosine 0.90), nên chênh lệch so với số xin chính là phần Python đã cắt.
+        logGenerationRun(studentId, requestedCount, proposals.size(), collidedWith, skippedOverQuota, result.size());
+        return result;
+    }
+
+    /**
+     * Ask for EXACTLY the number needed, no more.
+     *
+     * <p>The previous version hard-coded MAX_PROPOSALS_PER_RUN = 8 with the reason "the near-duplicate filter cuts very
+     * hard, asking for exactly the number needed yields only 1 topic per run". That reason was right at the time,
+     * but it compensated by paying UP FRONT for the part that may be thrown away: in steady mode
+     * (bank >= POOL_TARGET) requestedCount is only 2, so 6 proposals were generated, EMBEDDED
+     * in TopicDedupeNode, then dropped -- every session.
+     *
+     * <p>Now Python has a re-proposal loop (MAX_PROPOSAL_ROUNDS): a collision is no longer thrown away silently but
+     * comes back as a prompt carrying exactly the topic name it just collided with. So we only pay extra
+     * WHEN a collision really happens, instead of paying up front on every run.
+     *
+     * <p>It must still be <= MAX_TOPIC_PROPOSALS on the Python side (schemas/topic_generation.py), otherwise
+     * a 422 right at the door -- the largest requestedCount is BACKFILL_COUNT_BUILDING = 8, still within it.
+     */
+    private List<TopicGenerationPort.TopicProposal> proposeFromInterests(UUID studentId, int requestedCount) {
+        return topicGenerationPort.propose(
+            studentId,
+            List.of(),
+            interestScores(studentId),
+            List.of(),   // see the note at the removed rejectedTopicNames
+            practiceTopicRepository.findExhaustedTopicNames(studentId),
+            false,
+            requestedCount,
+            dimensionCodes()
+        );
+    }
+
+    /**
+     * MANDATORY: append the just-created topic to the candidate list. The old version reloaded the DB on every iteration so it
+     * naturally saw what had just been created; hoisting the load out and forgetting this step loses the duplicate guard WITHIN
+     * THE SAME RUN -- exactly the situation described at the propose() call: the LLM likes to propose clusters of nearby
+     * topics, so the 2nd-3rd one must be compared against the 1st one that was just created.
+     */
+    private PracticeTopicOffer createOffer(
+            UUID studentId, TopicGenerationPort.TopicProposal proposal, List<TopicNameCard> candidates) {
+        UUID topicId = createTopic(
+            proposal.name(), proposal.interestDimension(), proposal.curriculumGroup(),
+            "AI_SUGGESTED", proposal.temporalAffordance()
+        );
+        candidates.add(new TopicNameCard(
+            topicId, proposal.name(), proposal.interestDimension()
+        ));
+        topicGenerationPort.index(
+            topicId.toString(), proposal.name(), proposal.reasonText(), true, null, "ACTIVE"
+        );
+        return offerFor(
+            studentId, topicId, proposal.name(), proposal.interestDimension(), false,
+            (int) Math.round(proposal.confidence() * 100), proposal.reasonText()
+        );
+    }
+
+    /**
+     * Accounting for one generation run. Before this, zero productivity was SWALLOWED SILENTLY:
+     * backfillAsync only logs the number created, and "asked for 8 and all 8 were duplicates" cannot be told
+     * apart from "the bank is full so nothing needed creating". Running a few days with this line answers three
+     * questions: is the collision feedback loop worth doing, what MAX_ROUNDS should be, and whether lowering the
+     * re-proposal rounds on the Python side is actually rescuing collisions.
+     *
+     * <p>`proposalCount` is already the number LEFT after TopicDedupeNode on the Python side filtered with Chroma
+     * (cosine threshold 0.90), so the difference from the number requested is exactly the part Python cut.
+     */
+    private void logGenerationRun(
+            UUID studentId, int requestedCount, int proposalCount, List<String> collidedWith,
+            int skippedOverQuota, int createdCount) {
         log.info(
             "[topic-gen] học sinh={} xin={} python_trả={} java_chặn_trùng={} vượt_hạn_mức={} tạo_được={}{}",
-            studentId, requestedCount, proposals.size(), collidedWith.size(),
-            skippedOverQuota, result.size(),
+            studentId, requestedCount, proposalCount, collidedWith.size(),
+            skippedOverQuota, createdCount,
             collidedWith.isEmpty() ? "" : " | va chạm: " + String.join(" ; ", collidedWith)
         );
-        return result;
     }
 
     /**
@@ -351,37 +377,19 @@ public class TopicSuggestionService {
             String curriculumGroup,
             String source,
             String temporalAffordance) {
-        PracticeTopic saved = practiceTopicRepository.save(PracticeTopic.builder()
-                .id(null)
-                .name(name)
-                .normalizedName(normalize(name))
-                .description(name)
-                .source(source)
-                .interestDimension(dimension)
-                .curriculumGroup(curriculumGroup == null ? "OUT_OF_CURRICULUM" : curriculumGroup)
-                .active(true)
-                .createdAt(Instant.now())
-                .sourceQuestionTopicId(null)
-                .temporalAffordance(temporalAffordance == null ? TensePolicy.AFFORDANCE_MIXED : temporalAffordance)
-                .build());
+        PracticeTopic saved = practiceTopicRepository.save(PracticeTopic.generatedFromName(
+                source,
+                name,
+                normalize(name),
+                dimension,
+                curriculumGroup,
+                temporalAffordance,
+                Instant.now()));
         return saved.getId();
     }
 
     private void recordKeywordRequest(UUID studentId, String keyword, String outcome) {
-        topicSuggestionRepository.save(TopicSuggestion.builder()
-                .id(null)
-                .studentId(studentId)
-                .suggestedTopicName(keyword)
-                .keyword(keyword)
-                .interestDimension("UNKNOWN")
-                .curriculumGroup(null)
-                .confidence(BigDecimal.ZERO)
-                .reasonText(outcome)
-                .evidenceJson("{}")
-                .status("REQUESTED")
-                .createdAt(Instant.now())
-                .respondedAt(null)
-                .build());
+        topicSuggestionRepository.save(TopicSuggestion.keywordRequested(studentId, keyword, outcome, Instant.now()));
     }
 
     // GỠ 2026-08-11: topicNames(). Nó nạp toàn bộ chủ đề đang hoạt động chỉ để lấy tên, rồi gửi

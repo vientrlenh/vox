@@ -52,6 +52,16 @@ public class QuestionBankGrade {
         this.attachedBy = attachedBy;
     }
 
+    public static QuestionBankGrade attached(UUID questionBankId, UUID schoolGradeId, Instant attachedAt,
+                                             UUID attachedBy) {
+        return builder()
+                .questionBankId(questionBankId)
+                .schoolGradeId(schoolGradeId)
+                .attachedAt(attachedAt)
+                .attachedBy(attachedBy)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

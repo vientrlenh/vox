@@ -2,6 +2,7 @@ package com.sep.vox.application.port.input.service;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -58,7 +59,7 @@ public class SchoolClassUserImportCommitHandler implements ImportCommitHandler {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng hiện tại"));
         Map<String, String> mapping = jsonSerializationPort.toStringMap(session.getConfirmedMappingJson());
         validateMappingKeys(rows, mapping);
-        return processRows(rows, mapping, schoolId, currentUserId);
+        return commitRowsAndCountOutcomes(rows, mapping, schoolId, currentUserId);
     }
 
     private void validateMappingKeys(List<ImportRow> rows, Map<String, String> confirmedMapping) {
@@ -81,15 +82,36 @@ public class SchoolClassUserImportCommitHandler implements ImportCommitHandler {
         }
     }
 
-    private ImportCommitResult processRows(List<ImportRow> rows, Map<String, String> confirmedMapping, UUID schoolId, UUID currentUserId) {
-        long createdRows = 0L;
-        long updatedRows = 0L;
-        long invalidRows = 0L;
-        Set<MembershipKey> seenMemberships = new HashSet<MembershipKey>();
-        List<RowContext> rowContexts = new ArrayList<RowContext>();
+    private ImportCommitResult commitRowsAndCountOutcomes(List<ImportRow> rows, Map<String, String> confirmedMapping,
+            UUID schoolId, UUID currentUserId) {
         Set<String> emails = new HashSet<String>();
         Set<String> classCodes = new HashSet<String>();
+        List<RowContext> rowContexts = prepareRowContexts(rows, confirmedMapping, emails, classCodes);
 
+        Map<String, User> usersByEmail = findUsersByEmail(emails);
+        Map<String, SchoolClass> classesByCode = findClassesByCode(schoolId, classCodes);
+        RowLookups lookups = new RowLookups(schoolId, currentUserId, usersByEmail, classesByCode,
+                findSchoolUsersByUserId(usersByEmail.values()),
+                findExistingMembershipsByPair(usersByEmail.values(), classesByCode.values()),
+                new HashSet<MembershipKey>());
+        Map<RowOutcome, Long> outcomeCounts = new EnumMap<RowOutcome, Long>(RowOutcome.class);
+        for (RowContext rowContext : rowContexts) {
+            outcomeCounts.merge(commitRow(rowContext, lookups), 1L, Long::sum);
+        }
+        return toResult(outcomeCounts);
+    }
+
+    private ImportCommitResult toResult(Map<RowOutcome, Long> outcomeCounts) {
+        return new ImportCommitResult(
+                outcomeCounts.getOrDefault(RowOutcome.CREATED, 0L),
+                outcomeCounts.getOrDefault(RowOutcome.UPDATED, 0L),
+                0L,
+                outcomeCounts.getOrDefault(RowOutcome.INVALID, 0L));
+    }
+
+    private List<RowContext> prepareRowContexts(List<ImportRow> rows, Map<String, String> confirmedMapping,
+            Set<String> emails, Set<String> classCodes) {
+        List<RowContext> rowContexts = new ArrayList<RowContext>();
         for (ImportRow row : rows) {
             Map<String, String> rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
             Map<String, String> mappedData = mapRawData(rawData, confirmedMapping);
@@ -100,62 +122,48 @@ public class SchoolClassUserImportCommitHandler implements ImportCommitHandler {
             addIfPresent(emails, normalized.get("email"));
             addIfPresent(classCodes, normalized.get("classCode"));
         }
+        return rowContexts;
+    }
 
-        Map<String, User> usersByEmail = findUsersByEmail(emails);
-        Map<String, SchoolClass> classesByCode = findClassesByCode(schoolId, classCodes);
-        Map<UUID, SchoolUser> schoolUsersByUserId = findSchoolUsersByUserId(usersByEmail.values());
-        Map<String, SchoolClassUser> existingMembershipsByPair = findExistingMembershipsByPair(usersByEmail.values(), classesByCode.values());
+    private RowOutcome commitRow(RowContext rowContext, RowLookups lookups) {
+        ImportRow row = rowContext.row();
+        RowValidation validation = validateRow(rowContext.normalized(), lookups.schoolId(), lookups.seenMemberships(),
+                lookups.usersByEmail(), lookups.classesByCode(), lookups.schoolUsersByUserId());
 
-        for (RowContext rowContext : rowContexts) {
-            ImportRow row = rowContext.row();
-            Map<String, String> normalized = rowContext.normalized();
-            RowValidation validation = validateRow(normalized, schoolId, seenMemberships, usersByEmail, classesByCode, schoolUsersByUserId);
-
-            if (!validation.errors().isEmpty()) {
-                row.setErrorsJson(jsonSerializationPort.toJson(validation.errors()));
-                row.setStatus(ImportRowStatus.INVALID);
-                invalidRows++;
-                continue;
-            }
-
-            Instant now = Instant.now();
-            User user = validation.user();
-            SchoolClass schoolClass = validation.schoolClass();
-            String key = membershipKey(user.getId(), schoolClass.getId());
-            SchoolClassUser existing = existingMembershipsByPair.get(key);
-
-            try {
-                if (existing != null) {
-                    requiresNewTransactionPort.runInNewTransaction(() -> {
-                        existing.activate();
-                        existing.setAssignedBy(currentUserId);
-                        schoolClassUserRepository.save(existing);
-                    });
-                    updatedRows++;
-                } else {
-                    requiresNewTransactionPort.runInNewTransaction(() ->
-                        schoolClassUserRepository.save(SchoolClassUser.builder()
-                            .userId(user.getId())
-                            .schoolClassId(schoolClass.getId())
-                            .active(true)
-                            .joinedAt(now)
-                            .leftAt(null)
-                            .assignedBy(currentUserId)
-                            .build()));
-                    createdRows++;
-                }
-            } catch (DataConflictException | IllegalArgumentException exception) {
-                row.setErrorsJson(jsonSerializationPort.toJson(List.of(error("email", "Thành viên lớp học đã tồn tại hoặc không hợp lệ"))));
-                row.setStatus(ImportRowStatus.FAILED);
-                invalidRows++;
-                continue;
-            }
-
-            row.setErrorsJson(null);
-            row.setStatus(ImportRowStatus.IMPORTED);
+        if (!validation.errors().isEmpty()) {
+            row.setErrorsJson(jsonSerializationPort.toJson(validation.errors()));
+            row.setStatus(ImportRowStatus.INVALID);
+            return RowOutcome.INVALID;
         }
 
-        return new ImportCommitResult(createdRows, updatedRows, 0L, invalidRows);
+        try {
+            RowOutcome outcome = saveInNewTransaction(validation.user(), validation.schoolClass(), lookups);
+            row.setErrorsJson(null);
+            row.setStatus(ImportRowStatus.IMPORTED);
+            return outcome;
+        } catch (DataConflictException | IllegalArgumentException exception) {
+            row.setErrorsJson(jsonSerializationPort.toJson(List.of(error("email", "Thành viên lớp học đã tồn tại hoặc không hợp lệ"))));
+            row.setStatus(ImportRowStatus.FAILED);
+            return RowOutcome.INVALID;
+        }
+    }
+
+    private RowOutcome saveInNewTransaction(User user, SchoolClass schoolClass, RowLookups lookups) {
+        Instant now = Instant.now();
+        UUID currentUserId = lookups.currentUserId();
+        SchoolClassUser existing = lookups.existingMembershipsByPair().get(membershipKey(user.getId(), schoolClass.getId()));
+        if (existing != null) {
+            requiresNewTransactionPort.runInNewTransaction(() -> {
+                existing.activate();
+                existing.setAssignedBy(currentUserId);
+                schoolClassUserRepository.save(existing);
+            });
+            return RowOutcome.UPDATED;
+        }
+        requiresNewTransactionPort.runInNewTransaction(() ->
+            schoolClassUserRepository.save(
+                SchoolClassUser.joined(user.getId(), schoolClass.getId(), now, currentUserId)));
+        return RowOutcome.CREATED;
     }
 
     private Map<String, User> findUsersByEmail(Set<String> emails) {
@@ -230,33 +238,43 @@ public class SchoolClassUserImportCommitHandler implements ImportCommitHandler {
             errors.add(error("email", "Người dùng và lớp học bị trùng trong file import"));
         }
 
-        User user = null;
-        if (isPresent(email)) {
-            user = usersByEmail.get(email);
-            if (user == null) {
-                errors.add(error("email", "Không tìm thấy người dùng"));
-            } else {
-                if (!user.canBeAssignedToSchoolClass()) {
-                    errors.add(error("email", "Người dùng đã bị khoá hoặc vô hiệu hoá"));
-                }
-                SchoolUser schoolUser = schoolUsersByUserId.get(user.getId());
-                if (schoolUser == null || !Objects.equals(schoolUser.getSchoolId(), schoolId)) {
-                    errors.add(error("email", "Người dùng không thuộc trường hiện tại"));
-                }
-            }
-        }
-
-        SchoolClass schoolClass = null;
-        if (isPresent(classCode)) {
-            schoolClass = classesByCode.get(classCode);
-            if (schoolClass == null) {
-                errors.add(error("classCode", "Không tìm thấy lớp học"));
-            } else if (schoolClass.getStatus() != SchoolClassStatus.ACTIVE) {
-                errors.add(error("classCode", "Lớp học không hoạt động"));
-            }
-        }
-
+        User user = resolveUser(email, schoolId, usersByEmail, schoolUsersByUserId, errors);
+        SchoolClass schoolClass = resolveSchoolClass(classCode, classesByCode, errors);
         return new RowValidation(user, schoolClass, errors);
+    }
+
+    private User resolveUser(String email, UUID schoolId, Map<String, User> usersByEmail,
+            Map<UUID, SchoolUser> schoolUsersByUserId, List<Map<String, String>> errors) {
+        if (!isPresent(email)) {
+            return null;
+        }
+        User user = usersByEmail.get(email);
+        if (user == null) {
+            errors.add(error("email", "Không tìm thấy người dùng"));
+            return null;
+        }
+        if (!user.canBeAssignedToSchoolClass()) {
+            errors.add(error("email", "Người dùng đã bị khoá hoặc vô hiệu hoá"));
+        }
+        SchoolUser schoolUser = schoolUsersByUserId.get(user.getId());
+        if (schoolUser == null || !Objects.equals(schoolUser.getSchoolId(), schoolId)) {
+            errors.add(error("email", "Người dùng không thuộc trường hiện tại"));
+        }
+        return user;
+    }
+
+    private SchoolClass resolveSchoolClass(String classCode, Map<String, SchoolClass> classesByCode,
+            List<Map<String, String>> errors) {
+        if (!isPresent(classCode)) {
+            return null;
+        }
+        SchoolClass schoolClass = classesByCode.get(classCode);
+        if (schoolClass == null) {
+            errors.add(error("classCode", "Không tìm thấy lớp học"));
+        } else if (schoolClass.getStatus() != SchoolClassStatus.ACTIVE) {
+            errors.add(error("classCode", "Lớp học không hoạt động"));
+        }
+        return schoolClass;
     }
 
     private void addMissingError(List<Map<String, String>> errors, Map<String, String> mappedData, String field, String message) {
@@ -281,6 +299,18 @@ public class SchoolClassUserImportCommitHandler implements ImportCommitHandler {
 
     private Map<String, String> error(String field, String message) {
         return Map.of("field", field, "message", message);
+    }
+
+    private enum RowOutcome { CREATED, UPDATED, INVALID }
+
+    private record RowLookups(
+            UUID schoolId,
+            UUID currentUserId,
+            Map<String, User> usersByEmail,
+            Map<String, SchoolClass> classesByCode,
+            Map<UUID, SchoolUser> schoolUsersByUserId,
+            Map<String, SchoolClassUser> existingMembershipsByPair,
+            Set<MembershipKey> seenMemberships) {
     }
 
     private record RowContext(ImportRow row, Map<String, String> normalized) {

@@ -40,16 +40,7 @@ public class PracticeItemResponseRepositoryImpl implements PracticeItemResponseR
             .findByPracticeSessionIdAndPracticeQuestionId(sessionId, questionId)
             .orElse(null);
         if (existing != null) {
-            existing.setAudioUrl(audioUrl != null ? audioUrl : existing.getAudioUrl());
-            existing.setTranscript(
-                (existing.getTranscript() == null ? "" : existing.getTranscript())
-                    + " " + (transcript == null ? "" : transcript)
-            );
-            // Only moves ONE way, false -> true. A finished question stays finished; a resubmission
-            // (network retry) carrying questionComplete=false must not reopen it, otherwise the
-            // question would fall back into the "not graded yet" set and be graded a second time.
-            existing.setQuestionComplete(existing.isQuestionComplete() || questionComplete);
-            return repository.save(existing).getId();
+            return repository.save(mergeResubmission(existing, audioUrl, transcript, questionComplete)).getId();
         }
         PracticeItemResponseJpaEntity saved = repository.save(PracticeItemResponseJpaEntity.builder()
                 .practiceSessionId(sessionId)
@@ -59,6 +50,23 @@ public class PracticeItemResponseRepositoryImpl implements PracticeItemResponseR
                 .questionComplete(questionComplete)
                 .build());
         return saved.getId();
+    }
+
+    private PracticeItemResponseJpaEntity mergeResubmission(
+            PracticeItemResponseJpaEntity existing,
+            String audioUrl,
+            String transcript,
+            boolean questionComplete) {
+        existing.setAudioUrl(audioUrl != null ? audioUrl : existing.getAudioUrl());
+        existing.setTranscript(
+            (existing.getTranscript() == null ? "" : existing.getTranscript())
+                + " " + (transcript == null ? "" : transcript)
+        );
+        // Only moves ONE way, false -> true. A finished question stays finished; a resubmission
+        // (network retry) carrying questionComplete=false must not reopen it, otherwise the
+        // question would fall back into the "not graded yet" set and be graded a second time.
+        existing.setQuestionComplete(existing.isQuestionComplete() || questionComplete);
+        return existing;
     }
 
     @Override

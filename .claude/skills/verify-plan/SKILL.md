@@ -103,8 +103,18 @@ Rules:
    Database, Testing, Scope, Coding rules, and Ask first. Do not skip a section because it seems unrelated; skip it
    only after you confirm the diff does not touch what it covers.
 4. For each violation, quote the line and cite the rule's section in `AGENTS.md`.
-5. Confirm no "Ask first" action happened without the user's approval.
-6. Confirm nothing in the diff leaks secrets, tokens, OTPs, or student recordings/PII.
+5. Check the code quality rules on every added or edited line, even when no architecture test covers them:
+   - **Imports, no inline packages.** Search the diff for fully qualified names used in code (for example
+     `git diff -U0 | grep -nE '^\+.*\b(java|javax|jakarta|org|com)\.[a-z0-9_.]+\.[A-Z]' | grep -v '^\S*\+import '`).
+     Every type must be imported and used by its simple name. Only a clash of two same-named types may be qualified.
+   - **Null type safety.** For each changed class, read the nullness of every parameter, return value, field and local
+     that can be null (`@Nullable` from `org.jspecify.annotations`). Look for a dereference, unboxing or argument pass
+     of a nullable value without a check, `null` returned from a method not marked `@Nullable`, a `@Nullable` that
+     does not match what the code really does, and `@SuppressWarnings("null")` or a blind `Objects.requireNonNull`
+     used to hide a warning. If the VS Code or Eclipse null analysis is available, run it or read its problems for
+     the changed files and report each new warning; if it is not available, say so under "Not run / not verified".
+6. Confirm no "Ask first" action happened without the user's approval.
+7. Confirm nothing in the diff leaks secrets, tokens, OTPs, or student recordings/PII.
 
 Rules enforced by an architecture test (`src/test/.../architecture`) are already covered by Step 5. Do not loosen
 those tests to get green.

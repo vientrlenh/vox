@@ -35,24 +35,10 @@ public class SearchSystemRubricVersionsUseCase implements IUseCase<SearchSystemR
     @Override
     @Transactional(readOnly = true)
     public PageResult<RubricVersionDto> execute(SearchSystemRubricVersionsQuery query) {
-        // 1. Authenticate the System Admin account
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+        requireActiveCurrentUser();
+        requireSystemOwnedRubric(query.rubricId());
 
-        if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
-        }
-
-        // 2. System security checkpoint: prevent cross-viewing school Rubrics
-        Rubric rubric = rubricRepository.findById(query.rubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric yêu cầu."));
-
-        if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
-            throw new ForbiddenException("BẢO MẬT: Bộ Rubric này thuộc về Trường học. System Admin không được quyền tìm kiếm các phiên bản của nó.");
-        }
-
-        // 3. Call the database for the paged search (SHARED REPO FUNCTION)
+        // Shared repository search function.
         PageResult<RubricVersion> pageResult = rubricVersionRepository.searchRubricVersions(
                 query.rubricId(),
                 query.keyword(),
@@ -61,7 +47,6 @@ public class SearchSystemRubricVersionsUseCase implements IUseCase<SearchSystemR
                 query.size()
         );
 
-        // 4. Map back to DTOs to return to the caller
         return new PageResult<>(
                 pageResult.content().stream()
                         .map(RubricVersionDtoMapper::toRubricVersionDto)
@@ -71,5 +56,25 @@ public class SearchSystemRubricVersionsUseCase implements IUseCase<SearchSystemR
                 pageResult.totalElements(),
                 pageResult.totalPages()
         );
+    }
+
+    private void requireActiveCurrentUser() {
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+
+        if (currentUser.getStatus() != UserStatus.ACTIVE) {
+            throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
+        }
+    }
+
+    // Security checkpoint: prevent cross-viewing school Rubrics.
+    private void requireSystemOwnedRubric(UUID rubricId) {
+        Rubric rubric = rubricRepository.findById(rubricId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric yêu cầu."));
+
+        if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
+            throw new ForbiddenException("BẢO MẬT: Bộ Rubric này thuộc về Trường học. System Admin không được quyền tìm kiếm các phiên bản của nó.");
+        }
     }
 }

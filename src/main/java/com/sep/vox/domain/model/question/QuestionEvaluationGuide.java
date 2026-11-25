@@ -79,6 +79,29 @@ public class QuestionEvaluationGuide {
         this.commonMistakes = commonMistakes;
     }
 
+    public static QuestionEvaluationGuide forQuestion(UUID questionId, String expectedContent, String keyPoints,
+                                                      String acceptableResponses, String offTopicExamples,
+                                                      String scoringHints, String commonMistakes) {
+        return builder()
+                .questionId(questionId)
+                .expectedContent(expectedContent)
+                .keyPoints(keyPoints)
+                .acceptableResponses(acceptableResponses)
+                .offTopicExamples(offTopicExamples)
+                .scoringHints(scoringHints)
+                .commonMistakes(commonMistakes)
+                .build();
+    }
+
+    public static QuestionEvaluationGuide emptyFor(UUID questionId) {
+        return forQuestion(questionId, null, null, null, null, null, null);
+    }
+
+    public QuestionEvaluationGuide copyTo(UUID targetQuestionId) {
+        return forQuestion(targetQuestionId, expectedContent, keyPoints, acceptableResponses, offTopicExamples,
+                scoringHints, commonMistakes);
+    }
+
     public static Builder builder() {
         return new Builder();
     }

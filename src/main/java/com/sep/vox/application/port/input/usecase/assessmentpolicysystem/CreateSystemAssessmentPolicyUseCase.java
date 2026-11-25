@@ -59,114 +59,146 @@ public class CreateSystemAssessmentPolicyUseCase implements IUseCase<List<Create
             throw new IllegalArgumentException("Danh sách Assessment Policy cần tạo không được để trống.");
         }
 
-        // 1. Validate System Admin
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản đã bị khóa.");
+        requireActiveSystemAdmin();
 
         List<AssessmentPolicy> policiesToSave = new ArrayList<>();
         Map<VersionScopeKey, Integer> nextVersionByScope = new HashMap<>();
         Set<VersionScopeKey> scopeClaimsInBatch = new HashSet<>();
 
         for (CreateAssessmentPolicyCommand command : commands) {
-            // 2. Validate Framework & Language
-            FrameworkVersion frameworkVersion = frameworkVersionRepository.findById(command.frameworkVersionId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Khung tiêu chuẩn."));
-            if (frameworkVersion.getStatus() != FrameworkVersionStatus.PUBLISHED) {
-                throw new IllegalArgumentException("Chỉ có thể tạo Policy trên Framework đã PUBLISHED.");
-            }
-            if (!languageRepository.existsById(command.languageId())) {
-                throw new ResourceNotFoundException("Ngôn ngữ không tồn tại.");
-            }
-
-            // 2b. Khối (tùy chọn). Luồng SYSTEM không có trường nên KHÔNG nhận niên khóa/lớp --
-            //     hai thứ đó thuộc về một trường cụ thể. Chỉ Khối là khái niệm toàn hệ thống.
-            if (command.schoolGradeId() != null || command.schoolClassId() != null) {
-                throw new IllegalArgumentException(
-                        "Chính sách hệ thống chỉ giới hạn được tới cấp Khối; Niên khóa và Lớp thuộc phạm vi của từng trường.");
-            }
-            if (command.gradeLevelId() != null
-                    && gradeLevelRepository.findById(command.gradeLevelId()).isEmpty()) {
-                throw new ResourceNotFoundException("Không tìm thấy Khối.");
-            }
-
-            // 3. Validate Band
-            FrameworkResultBand targetBand = frameworkResultBandRepository.findById(command.targetFrameworkBandId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Band mục tiêu."));
-            if (!targetBand.getFrameworkVersionId().equals(command.frameworkVersionId())) {
-                throw new IllegalArgumentException("Band mục tiêu phải thuộc Khung năng lực đang chọn.");
-            }
-
-            // 4. Validate Date
-            if (command.effectiveFrom() == null) throw new IllegalArgumentException("Ngày bắt đầu không được để trống.");
-            if (command.effectiveTo() != null && command.effectiveFrom().isAfter(command.effectiveTo())) {
-                throw new IllegalArgumentException("Ngày kết thúc không được trước ngày bắt đầu.");
-            }
-
-            AssessmentPolicyStrictness strictness = command.strictness() != null ? command.strictness() : AssessmentPolicyStrictness.STANDARD;
-
-            // Mỗi Policy tạo mới trong batch sẽ chiếm 1 số version riêng cho cùng scope (ngôn ngữ + framework),
-            // vì DB chỉ unique theo scope+version, không phân biệt theo Rubric Version
-            VersionScopeKey versionScopeKey = new VersionScopeKey(command.languageId(), command.frameworkVersionId(),
-                    command.gradeLevelId());
-
-            // 5. Mỗi phạm vi (ngôn ngữ + framework version) chỉ được ĐÚNG MỘT chính sách còn hiệu
-            // lực. Bổ sung 2026-08-14: trước đó luồng SYSTEM không có phép kiểm trùng nào cả --
-            // không chặn trong batch, cũng không hỏi DB -- nên policy hệ thống chồng lên nhau tự do
-            // trong khi findActivePolicy chỉ dùng được một bản. Xem lý do đầy đủ ở
-            // CreateSchoolAssessmentPolicyUseCase.
-            if (!scopeClaimsInBatch.add(versionScopeKey)) {
-                throw new ResourceDuplicatedException(
-                        "Trong cùng một lần tạo có hai Assessment Policy trùng ngôn ngữ và Khung"
-                                + " tiêu chuẩn. Mỗi phạm vi chỉ được một chính sách.");
-            }
-            if (assessmentPolicyRepository.existsActiveForScopeAnyRubricVersion(
-                    null, command.languageId(), command.frameworkVersionId(),
-                    command.gradeLevelId(), null, null)) {
-                throw new ResourceDuplicatedException("Phạm vi này đã có một Assessment Policy hệ thống còn"
-                        + " hiệu lực (DRAFT hoặc PUBLISHED). Hãy Archive bản cũ trước khi tạo bản mới.");
-            }
-
-            UUID rubricVersionId = command.rubricVersionId();
-            RubricVersion rubricVersion = rubricVersionRepository.findById(rubricVersionId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Rubric ID: " + rubricVersionId));
-            Rubric rubric = rubricRepository.findById(rubricVersion.getRubricId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric gốc của version ID: " + rubricVersionId));
-
-            if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
-                throw new IllegalArgumentException("Chỉ được dùng Rubric SYSTEM cho luồng System Admin.");
-            }
-            // Chặn ARCHIVED, KHÔNG chặn PUBLISHED -- xem lý do đầy đủ ở
-            // CreateSchoolAssessmentPolicyUseCase. Hai luồng phải hiểu luật này giống nhau, nếu không
-            // bản mẫu hệ thống và bản sao của trường sẽ có hai vòng đời khác nhau.
-            if (rubricVersion.getStatus() == RubricStatus.ARCHIVED) {
-                throw new IllegalArgumentException(
-                        "Không gán được Policy vào Phiên bản Rubric đã lưu trữ (ARCHIVED).");
-            }
-            if (!rubric.getFrameworkId().equals(frameworkVersion.getFrameworkId())) {
-                throw new IllegalArgumentException("Phiên bản Rubric và Khung năng lực không khớp nhau.");
-            }
-
-            // Nhiều chính sách ĐƯỢC PHÉP dùng chung 1 Phiên bản Rubric (V44 gỡ ràng buộc 1-1 của
-            // V38): lớp chuyên và lớp thường cùng khối cần chính sách riêng theo phạm vi Lớp nhưng
-            // vẫn chấm bằng cùng một bộ tiêu chí. Cái phải giữ duy nhất là "mỗi phạm vi chỉ một
-            // chính sách còn hiệu lực" -- đã kiểm ở ScopeClaimKey và existsActiveForScopeAnyRubricVersion
-            // bên trên.
-
-            int nextVersion = nextVersionByScope.computeIfAbsent(versionScopeKey, key ->
-                    assessmentPolicyRepository.findMaxVersionForScope(
-                            null, key.languageId(), key.frameworkVersionId(),
-                            key.gradeLevelId(), null, null) + 1);
-            nextVersionByScope.put(versionScopeKey, nextVersion + 1);
-
-            AssessmentPolicy newPolicy = AssessmentPolicy.draftSystemWide(command.gradeLevelId(), command.languageId(),
-                command.frameworkVersionId(), rubricVersionId, command.targetFrameworkBandId(), command.passingScore(),
-                strictness, nextVersion, command.effectiveFrom(), command.effectiveTo());
-            policiesToSave.add(newPolicy);
+            policiesToSave.add(buildDraftPolicy(command, nextVersionByScope, scopeClaimsInBatch));
         }
 
-        // 6. Save to the DB in one go
         List<AssessmentPolicy> savedPolicies = assessmentPolicyRepository.saveAll(policiesToSave);
         return savedPolicies.stream().map(ap -> ap.getId()).toList();
+    }
+
+    private void requireActiveSystemAdmin() {
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản đã bị khóa.");
+    }
+
+    private AssessmentPolicy buildDraftPolicy(
+            CreateAssessmentPolicyCommand command,
+            Map<VersionScopeKey, Integer> nextVersionByScope,
+            Set<VersionScopeKey> scopeClaimsInBatch) {
+        FrameworkVersion frameworkVersion = requirePublishedFrameworkAndLanguage(command);
+        requireSystemWideScope(command);
+        requireTargetBand(command);
+        requireValidEffectivePeriod(command);
+
+        AssessmentPolicyStrictness strictness = command.strictness() != null ? command.strictness() : AssessmentPolicyStrictness.STANDARD;
+
+        // Each new Policy in the batch takes its own version number within the same scope (language + framework),
+        // because the DB is only unique by scope+version and does not distinguish by Rubric Version
+        VersionScopeKey versionScopeKey = new VersionScopeKey(command.languageId(), command.frameworkVersionId(),
+                command.gradeLevelId());
+
+        claimScopeOnce(command, versionScopeKey, scopeClaimsInBatch);
+        requireUsableRubricVersion(command, frameworkVersion);
+        int nextVersion = nextVersionFor(versionScopeKey, nextVersionByScope);
+
+        return AssessmentPolicy.draftSystemWide(command.gradeLevelId(), command.languageId(),
+            command.frameworkVersionId(), command.rubricVersionId(), command.targetFrameworkBandId(), command.passingScore(),
+            strictness, nextVersion, command.effectiveFrom(), command.effectiveTo());
+    }
+
+    private FrameworkVersion requirePublishedFrameworkAndLanguage(CreateAssessmentPolicyCommand command) {
+        FrameworkVersion frameworkVersion = frameworkVersionRepository.findById(command.frameworkVersionId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Khung tiêu chuẩn."));
+        if (frameworkVersion.getStatus() != FrameworkVersionStatus.PUBLISHED) {
+            throw new IllegalArgumentException("Chỉ có thể tạo Policy trên Framework đã PUBLISHED.");
+        }
+        if (!languageRepository.existsById(command.languageId())) {
+            throw new ResourceNotFoundException("Ngôn ngữ không tồn tại.");
+        }
+        return frameworkVersion;
+    }
+
+    private void requireSystemWideScope(CreateAssessmentPolicyCommand command) {
+        // Grade level (optional). The SYSTEM flow has no school so it does NOT accept a school year / class --
+        // those belong to one specific school. Only the Grade level is a system-wide concept.
+        if (command.schoolGradeId() != null || command.schoolClassId() != null) {
+            throw new IllegalArgumentException(
+                    "Chính sách hệ thống chỉ giới hạn được tới cấp Khối; Niên khóa và Lớp thuộc phạm vi của từng trường.");
+        }
+        if (command.gradeLevelId() != null
+                && gradeLevelRepository.findById(command.gradeLevelId()).isEmpty()) {
+            throw new ResourceNotFoundException("Không tìm thấy Khối.");
+        }
+    }
+
+    private void requireTargetBand(CreateAssessmentPolicyCommand command) {
+        FrameworkResultBand targetBand = frameworkResultBandRepository.findById(command.targetFrameworkBandId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Band mục tiêu."));
+        if (!targetBand.getFrameworkVersionId().equals(command.frameworkVersionId())) {
+            throw new IllegalArgumentException("Band mục tiêu phải thuộc Khung năng lực đang chọn.");
+        }
+    }
+
+    private void requireValidEffectivePeriod(CreateAssessmentPolicyCommand command) {
+        if (command.effectiveFrom() == null) throw new IllegalArgumentException("Ngày bắt đầu không được để trống.");
+        if (command.effectiveTo() != null && command.effectiveFrom().isAfter(command.effectiveTo())) {
+            throw new IllegalArgumentException("Ngày kết thúc không được trước ngày bắt đầu.");
+        }
+    }
+
+    /**
+     * Each scope (language + framework version) may have EXACTLY ONE policy in effect.
+     *
+     * <p>Added 2026-08-14: before that the SYSTEM flow had no duplicate check at all -- neither inside the batch nor
+     * against the DB -- so system policies overlapped freely while findActivePolicy could use only one of them.
+     * See CreateSchoolAssessmentPolicyUseCase for the full reason.
+     */
+    private void claimScopeOnce(CreateAssessmentPolicyCommand command, VersionScopeKey versionScopeKey, Set<VersionScopeKey> scopeClaimsInBatch) {
+        if (!scopeClaimsInBatch.add(versionScopeKey)) {
+            throw new ResourceDuplicatedException(
+                    "Trong cùng một lần tạo có hai Assessment Policy trùng ngôn ngữ và Khung"
+                            + " tiêu chuẩn. Mỗi phạm vi chỉ được một chính sách.");
+        }
+        if (assessmentPolicyRepository.existsActiveForScopeAnyRubricVersion(
+                null, command.languageId(), command.frameworkVersionId(),
+                command.gradeLevelId(), null, null)) {
+            throw new ResourceDuplicatedException("Phạm vi này đã có một Assessment Policy hệ thống còn"
+                    + " hiệu lực (DRAFT hoặc PUBLISHED). Hãy Archive bản cũ trước khi tạo bản mới.");
+        }
+    }
+
+    /**
+     * Several policies ARE ALLOWED to share one Rubric Version (V44 dropped the 1-1 constraint of V38): a specialised
+     * class and a regular class of the same grade level need separate policies at Class scope but still grade with
+     * the same set of criteria. What must stay unique is "each scope has only one policy in effect" -- checked
+     * by the scope claim and by existsActiveForScopeAnyRubricVersion in {@link #claimScopeOnce}.
+     */
+    private void requireUsableRubricVersion(CreateAssessmentPolicyCommand command, FrameworkVersion frameworkVersion) {
+        UUID rubricVersionId = command.rubricVersionId();
+        RubricVersion rubricVersion = rubricVersionRepository.findById(rubricVersionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Rubric ID: " + rubricVersionId));
+        Rubric rubric = rubricRepository.findById(rubricVersion.getRubricId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric gốc của version ID: " + rubricVersionId));
+
+        if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
+            throw new IllegalArgumentException("Chỉ được dùng Rubric SYSTEM cho luồng System Admin.");
+        }
+        // Blocks ARCHIVED, does NOT block PUBLISHED -- see CreateSchoolAssessmentPolicyUseCase for the full reason.
+        // Both flows must read this rule the same way, otherwise the system template and the school's copy
+        // would have two different lifecycles.
+        if (rubricVersion.getStatus() == RubricStatus.ARCHIVED) {
+            throw new IllegalArgumentException(
+                    "Không gán được Policy vào Phiên bản Rubric đã lưu trữ (ARCHIVED).");
+        }
+        if (!rubric.getFrameworkId().equals(frameworkVersion.getFrameworkId())) {
+            throw new IllegalArgumentException("Phiên bản Rubric và Khung năng lực không khớp nhau.");
+        }
+    }
+
+    private int nextVersionFor(VersionScopeKey versionScopeKey, Map<VersionScopeKey, Integer> nextVersionByScope) {
+        int nextVersion = nextVersionByScope.computeIfAbsent(versionScopeKey, key ->
+                assessmentPolicyRepository.findMaxVersionForScope(
+                        null, key.languageId(), key.frameworkVersionId(),
+                        key.gradeLevelId(), null, null) + 1);
+        nextVersionByScope.put(versionScopeKey, nextVersion + 1);
+        return nextVersion;
     }
 }

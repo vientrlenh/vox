@@ -27,7 +27,6 @@ public class TopicInterestEventRepositoryImpl
             String eventType,
             double signal) {
         repository.save(TopicInterestEventJpaEntity.builder()
-                .id(UUID.randomUUID())
                 .studentId(studentId)
                 .practiceTopicId(topicId)
                 .practiceSessionId(sessionId)

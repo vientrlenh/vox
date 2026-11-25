@@ -249,9 +249,8 @@ class GradingTaskDetailQueryTests {
             .questionId(UUID.randomUUID()).order(order).weight(BigDecimal.ONE).build()).getId();
     }
 
-    // Hai entity dưới đây có khoá do ứng dụng gán (cột id insertable), khác với phần
-    // còn lại của fixture vốn để Postgres sinh uuidv7() — gán null vào đây sẽ nổ
-    // IdentifierGenerationException.
+    // The AI service sends the id of a response, and AssignedOrUuidVersion7 keeps it, so this fixture
+    // presets an id as production does. A null id would also work: Hibernate would generate a version 7.
     private UUID response(UUID sessionId, UUID paperItemId) {
         return persist(AssessmentItemResponseJpaEntity.builder()
                 .id(UUID.randomUUID())
@@ -293,7 +292,7 @@ class GradingTaskDetailQueryTests {
 
     private void turn(UUID evaluationId) {
         persist(AssessmentItemEvaluationTurnJpaEntity.builder()
-                .id(UUID.randomUUID())
+                .id(null)
                 .evaluationId(evaluationId)
                 .turnOrder(1)
                 .turnType("MAIN")

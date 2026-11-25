@@ -33,8 +33,6 @@ public class AssessmentItemResponseTurnRepositoryImpl implements AssessmentItemR
             if (turn.getCreatedAt() == null) {
                 turn.setCreatedAt(existing.getCreatedAt());
             }
-        } else if (turn.getId() == null) {
-            turn.setId(UUID.randomUUID());
         }
 
         if (turn.getCreatedAt() == null) {

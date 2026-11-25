@@ -35,9 +35,7 @@ public class StartPracticeSessionPersistenceService {
             .orElseThrow(() -> new ResourceNotFoundException(
                 "Đề luyện không tồn tại hoặc đã hết thời gian giữ chỗ."
             ));
-        UUID sessionId = UUID.randomUUID();
-        practiceSessionRepository.save(com.sep.vox.domain.model.personalization.PracticeSession.builder()
-            .id(sessionId)
+        com.sep.vox.domain.model.personalization.PracticeSession savedSession = practiceSessionRepository.save(com.sep.vox.domain.model.personalization.PracticeSession.builder()
             .studentId(studentId)
             .practicePaperId(paper.getId())
             // There is no rubric and no assessment policy lookup: practice is graded on a fixed 0-100 scale.
@@ -61,7 +59,7 @@ public class StartPracticeSessionPersistenceService {
         practicePaperRepository.save(paper.withStatus("STARTED"));
         return PracticeSessionResponseMapper.toResponse(
             SessionRowMapper.toDto(
-                practiceSessionQueryRepository.findSessionRow(sessionId, studentId).orElse(null)
+                practiceSessionQueryRepository.findSessionRow(savedSession.getId(), studentId).orElse(null)
             )
         );
     }

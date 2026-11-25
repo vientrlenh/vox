@@ -29,7 +29,6 @@ public class PracticeItemEvaluationRepositoryImpl implements PracticeItemEvaluat
         BigDecimal scoreValue = BigDecimal.valueOf(itemScore);
         if (existing == null) {
             PracticeItemEvaluationJpaEntity saved = repository.save(PracticeItemEvaluationJpaEntity.builder()
-                    .id(UUID.randomUUID())
                     .practiceResponseId(practiceResponseId)
                     .itemScore(scoreValue)
                     .markedInvalid(markedInvalid)

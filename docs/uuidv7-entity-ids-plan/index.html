@@ -80,7 +80,7 @@
 <div class="meta">
   Repository: <code>vox</code> &middot; Base: <code>default</code> (<code>ad7e632c</code>) &middot; Work branch: <code>refactor/uuidv7-entity-ids</code> from <code>eac02cd4</code> &middot; Written 2026-11-24 &middot;
   Priority: runs <strong>before</strong> <code>model-methods-and-method-rules-plan</code> (paused after its phase 7) &middot;
-  Plan status: <span class="status approved" id="plan-status" data-plan-status="approved">Approved</span>
+  Plan status: <span class="status done" id="plan-status" data-plan-status="done">Done</span>
 </div>
 
 <p>16 JPA entities declare <code>@Id</code> with no generator, so the application invents their ids with
@@ -284,190 +284,190 @@ Only the backfill path (<code>withoutRecording</code>, rows for unanswered quest
 <h2 id="phases">3. Phases</h2>
 <p>Each phase is independently reviewable and leaves the build green. In phases 3 to 6 a job always changes an entity together with every site that makes its id (section 1.4); the jobs are ordered by the layer they touch inside a phase. The migration comes first because it is only a safety net and cannot change behaviour.</p>
 
-<div class="phase" id="phase-1" data-status="todo">
+<div class="phase" id="phase-1" data-status="done">
   <h3><span class="title">Phase 1 &ndash; Prepare the branch and take a baseline</span>
     <span class="tag">small &middot; mechanical &middot; needs D4</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> start from a clean tree, know the test counts, and record that the paused plan waits. <strong>Depends on:</strong> D4.</p>
   <ul class="jobs">
-    <li class="job" id="job-1-1" data-status="todo">
-      <span class="title">1.1 Start from a clean tree on the work branch</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-1-1" data-status="done">
+      <span class="title">1.1 Start from a clean tree on the work branch</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>git branch --show-current</code> prints <code>refactor/uuidv7-entity-ids</code>, <code>git merge-base --is-ancestor eac02cd4 HEAD</code> exits 0 (the branch starts from your phase 7 commit) and <code>git status --short</code> prints nothing. The branch is created with <code>git switch -c</code>; this job never commits.
          <strong>Files:</strong> none (git only)</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; CHANGED: <code>eac02cd4</code> no longer exists because the paused plan's phase 7 was squash-merged into <code>default</code> as <code>9f856ff7</code> (#115); the branch <code>refactor/uuidv7-entity-ids</code> already exists at that commit, so the merge-base check is replaced by that fact. <code>git branch --show-current</code> = refactor/uuidv7-entity-ids; <code>git status --short</code> empty.</li></ul>
     </li>
-    <li class="job" id="job-1-2" data-status="todo">
-      <span class="title">1.2 Record the baseline test counts</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-1-2" data-status="done">
+      <span class="title">1.2 Record the baseline test counts</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> the pass counts of <code>./gradlew test</code>, <code>./gradlew integrationTest</code> and <code>./gradlew test --tests '*Practice*' --tests '*Quota*'</code> are written in the Implementation notes, with any failure that already exists.
          <strong>Files:</strong> this plan (notes only)</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; baseline recorded in Implementation notes. <code>./gradlew test</code> 2764 passed, <code>integrationTest</code> 444 passed, practice/quota subset 126 passed.</li></ul>
     </li>
-    <li class="job" id="job-1-3" data-status="todo">
-      <span class="title">1.3 Note on the paused plan that it waits behind this one</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-1-3" data-status="done">
+      <span class="title">1.3 Note on the paused plan that it waits behind this one</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> the <code>#notes-list</code> of <code>docs/model-methods-and-method-rules-plan/index.html</code> has an entry saying it is paused after phase 7 on 2026-11-24 behind <code>uuidv7-entity-ids-plan</code> and resumes at phase 8 once this plan is merged; no status in that file changes.
          <strong>Files:</strong> <code>docs/model-methods-and-method-rules-plan/index.html</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; entry added to <code>#notes-list</code> of the paused plan, no status changed. <code>grep -c "uuidv7-entity-ids-plan"</code> = 1.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>grep -c "uuidv7-entity-ids-plan" docs/model-methods-and-method-rules-plan/index.html</code> prints 1 or more</p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-25 &middot; Done &middot; all three jobs done; <code>./gradlew compileJava compileTestJava</code> passes.</li></ul>
 </div>
 
-<div class="phase" id="phase-2" data-status="todo">
+<div class="phase" id="phase-2" data-status="done">
   <h3><span class="title">Phase 2 &ndash; Safety-net default <code>uuidv7()</code> on the 16 tables</span>
     <span class="tag">small &middot; mechanical</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> match the AGENTS.md convention that tables keep <code>DEFAULT uuidv7()</code>, so a row inserted outside Hibernate still gets a v7 id. <strong>Depends on:</strong> Phase 1. It changes no behaviour of the application code.</p>
   <ul class="jobs">
-    <li class="job" id="job-2-1" data-status="todo">
-      <span class="title">2.1 Add <code>V23</code> and a test that reads the defaults</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-2-1" data-status="done">
+      <span class="title">2.1 Add <code>V23</code> and a test that reads the defaults</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> Flyway applies the new migration on <code>postgres:18</code> and <code>information_schema.columns</code> reports <code>uuidv7()</code> as <code>column_default</code> of <code>id</code> in all 16 tables; <code>SchemaMigrationTests</code> still starts the context with <code>ddl-auto=validate</code>. The migration holds 16 <code>ALTER TABLE &hellip; ALTER COLUMN id SET DEFAULT uuidv7();</code> statements and edits no existing migration.
          <strong>Files:</strong> <code>src/main/resources/db/migration/V23__uuidv7_default_for_entity_ids.sql</code>, <code>src/test/java/com/sep/vox/infrastructure/migration/Uuidv7IdDefaultMigrationTests.java</code> (Flyway on its own container, <code>@Tag("integration")</code>, in the style of <code>RenameExamToAssessmentMigrationTests</code>)</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; V23 sets DEFAULT uuidv7() on id of the 16 tables. Uuidv7IdDefaultMigrationTests (1 test) and SchemaMigrationTests (1 test) pass via ./gradlew integrationTest.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew integrationTest --tests '*Uuidv7IdDefaultMigrationTests' --tests '*SchemaMigrationTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-25 &middot; Done &middot; job 2.1 done; ./gradlew compileJava compileTestJava passes and the phase verify integrationTest run is green.</li></ul>
 </div>
 
-<div class="phase" id="phase-3" data-status="todo">
+<div class="phase" id="phase-3" data-status="done">
   <h3><span class="title">Phase 3 &ndash; Practice papers, paper items and sessions</span>
     <span class="tag">medium &middot; quota-adjacent &middot; needs D1, D5</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> <code>PracticePaper</code>, <code>PracticePaperItem</code> and <code>PracticeSession</code> get Hibernate v7 ids and the three application services stop making ids. <strong>Depends on:</strong> Phase 1, D1, D5 (answered A).</p>
   <ul class="jobs">
-    <li class="job" id="job-3-1" data-status="todo">
-      <span class="title">3.1 Paper and paper item</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-3-1" data-status="done">
+      <span class="title">3.1 Paper and paper item</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> a <code>@RepositoryTest</code> saves a <code>PracticePaper</code> and a <code>PracticePaperItem</code> with null ids through their adapters and both stored ids have <code>version() == 7</code>, the item's <code>practicePaperId</code> equals the paper's id.
       <code>PracticePaperPersistenceService.createPaper</code> and <code>saveItemAndExposure</code>, and <code>ResolveNextPracticeQuestionPersistenceService.persist</code>, no longer call <code>.id(UUID.randomUUID())</code>; <code>persist</code> keeps using the id of the saved paper. The Vietnamese comments inside the edited methods are translated, comments that only restate code are removed.
          <strong>Files:</strong> <code>PracticePaperJpaEntity</code>, <code>PracticePaperItemJpaEntity</code>, <code>PracticePaperPersistenceService</code>, <code>ResolveNextPracticeQuestionPersistenceService</code>, new <code>src/test/java/com/sep/vox/infrastructure/persistence/adapter/PracticePaperIdTests.java</code> (<code>@RepositoryTest</code> importing the two adapters and mappers)</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; @UuidGenerator on PracticePaperJpaEntity and PracticePaperItemJpaEntity; the two <code>.id(UUID.randomUUID())</code> lines removed from PracticePaperPersistenceService and one from ResolveNextPracticeQuestionPersistenceService. PracticePaperIdTests (1 test) passes via integrationTest. No Vietnamese comment sat inside the edited methods.</li></ul>
     </li>
-    <li class="job" id="job-3-2" data-status="todo">
-      <span class="title">3.2 Session</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-3-2" data-status="done">
+      <span class="title">3.2 Session</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>StartPracticeSessionPersistenceService.persist</code> reads the session row back with the id of the session returned by <code>PracticeSessionRepository.save</code>, shown by a Mockito test where <code>save</code> returns a session with a known id and <code>findSessionRow</code> is verified with that id (it fails against the old local <code>sessionId</code>); a <code>@RepositoryTest</code> shows a saved session's id has <code>version() == 7</code>. No new line is added to <code>method-size-exemptions.txt</code>; remove the <code>persist</code> entry only if the method drops to 25 lines.
          <strong>Files:</strong> <code>PracticeSessionJpaEntity</code>, <code>StartPracticeSessionPersistenceService</code>, new <code>src/test/java/com/sep/vox/application/usecase/practicesession/StartPracticeSessionPersistenceServiceTests.java</code> and <code>src/test/java/com/sep/vox/infrastructure/persistence/adapter/PracticeSessionIdTests.java</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; @UuidGenerator on PracticeSessionJpaEntity; StartPracticeSessionPersistenceService.persist reads the row back with the id returned by save. StartPracticeSessionPersistenceServiceTests (1) and PracticeSessionIdTests (1) pass. persist stays over 25 lines, so its method-size exemption stays.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew integrationTest --tests '*PracticePaperIdTests' --tests '*PracticeSessionIdTests'</code>, <code>./gradlew test --tests '*StartPracticeSessionPersistenceServiceTests' --tests '*Practice*' --tests '*Quota*'</code> (same pass count as job 1.2), <code>./gradlew test --tests '*LayeredArchitectureTests' --tests '*MethodSizeConventionTests' --tests '*ModelCreationConventionTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-25 &middot; Done &middot; compileJava compileTestJava, integrationTest PracticePaperIdTests and PracticeSessionIdTests, LayeredArchitecture/MethodSize/ModelCreation tests pass. *Practice* + *Quota* subset 127 passed = baseline 126 + 1 new test, 0 failed.</li></ul>
 </div>
 
-<div class="phase" id="phase-4" data-status="todo">
+<div class="phase" id="phase-4" data-status="done">
   <h3><span class="title">Phase 4 &ndash; Practice answer rows</span>
     <span class="tag">small &middot; mechanical &middot; needs D1</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> the five entities written while a student answers get v7 ids. <strong>Depends on:</strong> Phase 1, D1.</p>
   <ul class="jobs">
-    <li class="job" id="job-4-1" data-status="todo">
-      <span class="title">4.1 Response, evaluation and turn (the adapters that return ids)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-4-1" data-status="done">
+      <span class="title">4.1 Response, evaluation and turn (the adapters that return ids)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> a <code>@RepositoryTest</code> shows that <code>PracticeItemResponseRepositoryImpl.upsertResponse</code>, <code>PracticeItemEvaluationRepositoryImpl.upsert</code> and <code>PracticeResponseTurnRepositoryImpl.save</code> return an id with <code>version() == 7</code> for a new row, and the same id again for a repeated call with the same natural key; none of the three adapters mentions <code>UUID.randomUUID()</code>.
          <strong>Files:</strong> <code>PracticeItemResponseJpaEntity</code>, <code>PracticeItemEvaluationJpaEntity</code>, <code>PracticeResponseTurnJpaEntity</code>, the three adapters, new <code>src/test/java/com/sep/vox/infrastructure/persistence/adapter/PracticeAnswerRowIdTests.java</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; @UuidGenerator on PracticeItemResponse, PracticeItemEvaluation and PracticeResponseTurn entities; <code>.id(UUID.randomUUID())</code> removed from the three adapters. PracticeAnswerRowIdTests (3 tests) pass via integrationTest.</li></ul>
     </li>
-    <li class="job" id="job-4-2" data-status="todo">
-      <span class="title">4.2 Criterion score and turn correction</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-4-2" data-status="done">
+      <span class="title">4.2 Criterion score and turn correction</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> rows saved through <code>PracticeCriterionScoreRepositoryImpl.upsertByCode</code> and <code>TurnCorrectionRepositoryImpl.save</code> have ids with <code>version() == 7</code>, and three corrections saved one after another for one turn come back from <code>findByTurnIdOrderById</code> in the order they were saved (the order was random with v4).
          <strong>Files:</strong> <code>PracticeCriterionScoreJpaEntity</code>, <code>TurnCorrectionJpaEntity</code>, the two adapters, new <code>src/test/java/com/sep/vox/infrastructure/persistence/adapter/PracticeScoreAndCorrectionIdTests.java</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; @UuidGenerator on PracticeCriterionScore and TurnCorrection entities; id lines removed from the two adapters. PracticeScoreAndCorrectionIdTests (2 tests, including save-order of three corrections) pass via integrationTest.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew integrationTest --tests '*PracticeAnswerRowIdTests' --tests '*PracticeScoreAndCorrectionIdTests'</code>, <code>./gradlew test --tests '*Practice*'</code>, <code>./gradlew test --tests '*LayeredArchitectureTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-25 &middot; Done &middot; compileJava compileTestJava, integrationTest PracticeAnswerRowIdTests + PracticeScoreAndCorrectionIdTests, test *Practice* *Quota* LayeredArchitectureTests ModelAndEntityConventionTests all pass.</li></ul>
 </div>
 
-<div class="phase" id="phase-5" data-status="todo">
+<div class="phase" id="phase-5" data-status="done">
   <h3><span class="title">Phase 5 &ndash; Interest, exposure and suggestion rows, and the native upsert</span>
     <span class="tag">medium &middot; one native SQL change &middot; needs D1</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> the remaining personalization entities get v7 ids and the native <code>dimension_interest_scores</code> upsert stops sending a random id. <strong>Depends on:</strong> Phase 1, D1; job 5.3 relies on the table default that already exists.</p>
   <ul class="jobs">
-    <li class="job" id="job-5-1" data-status="todo">
-      <span class="title">5.1 Saved topic, interest event, interest score and question exposure</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-5-1" data-status="done">
+      <span class="title">5.1 Saved topic, interest event, interest score and question exposure</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> a <code>@RepositoryTest</code> shows ids with <code>version() == 7</code> for rows written by <code>SavedTopicRepositoryImpl.save</code>, <code>TopicInterestEventRepositoryImpl.save</code>, <code>TopicInterestScoreRepositoryImpl.replaceForStudent</code> and <code>StudentQuestionExposureRepositoryImpl.recordExposure</code>, and that calling <code>replaceForStudent</code> twice for one student still succeeds (the flush-before-insert behaviour its comment protects is unchanged).
          <strong>Files:</strong> the four entities, the four adapters, new <code>src/test/java/com/sep/vox/infrastructure/persistence/adapter/InterestRowIdTests.java</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; @UuidGenerator on SavedTopic, TopicInterestEvent, TopicInterestScore, StudentQuestionExposure entities; id lines removed from the four adapters. InterestRowIdTests (4 tests, incl. replaceForStudent twice) pass via integrationTest.</li></ul>
     </li>
-    <li class="job" id="job-5-2" data-status="todo">
-      <span class="title">5.2 Topic suggestion</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-5-2" data-status="done">
+      <span class="title">5.2 Topic suggestion</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>TopicSuggestionRepositoryImpl.save</code> of a suggestion with a null id stores a row whose id has <code>version() == 7</code>, and <code>TopicSuggestionMapper.toJpa</code> passes <code>suggestion.getId()</code> straight through; the mapper comment that explains the missing generator (now false) is removed.
          <strong>Files:</strong> <code>TopicSuggestionJpaEntity</code>, <code>TopicSuggestionMapper</code>, new <code>src/test/java/com/sep/vox/infrastructure/persistence/adapter/TopicSuggestionIdTests.java</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; @UuidGenerator on TopicSuggestionJpaEntity; TopicSuggestionMapper.toJpa passes suggestion.getId() and the false comment is removed. TopicSuggestionIdTests passes via integrationTest.</li></ul>
     </li>
-    <li class="job" id="job-5-3" data-status="todo">
-      <span class="title">5.3 Native upsert of dimension interest scores</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-5-3" data-status="done">
+      <span class="title">5.3 Native upsert of dimension interest scores</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>SpringDataDimensionInterestScoreRepository.upsertScore</code> has no <code>:id</code> parameter (the <code>INSERT</code> lets the table default fill <code>id</code>), <code>DimensionInterestScoreRepositoryImpl.upsertScore</code> no longer calls <code>UUID.randomUUID()</code>, and a test on a Flyway-built schema shows the first call inserts a row with <code>version() == 7</code> and a second call updates the score and keeps the same id. The test needs its own <code>postgres:18</code> container with Flyway on (as in <code>SchemaMigrationTests</code>) because the <code>create-drop</code> schema of <code>@RepositoryTest</code> has no column default. Callers: <code>InterestVectorService:192</code> only.
          <strong>Files:</strong> <code>SpringDataDimensionInterestScoreRepository</code>, <code>DimensionInterestScoreRepositoryImpl</code>, new <code>src/test/java/com/sep/vox/infrastructure/persistence/adapter/DimensionInterestScoreUpsertTests.java</code> (<code>@Tag("integration")</code>)</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; upsertScore has no :id parameter and the adapter no longer calls UUID.randomUUID(). DimensionInterestScoreUpsertTests (own postgres:18 + Flyway) shows v7 id kept across the second call.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew integrationTest --tests '*InterestRowIdTests' --tests '*TopicSuggestionIdTests' --tests '*DimensionInterestScore*'</code>, <code>./gradlew test --tests '*TopicSuggestion*' --tests '*InterestVector*'</code>, <code>./gradlew test --tests '*LayeredArchitectureTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-25 &middot; Done &middot; compileJava compileTestJava; integrationTest InterestRowIdTests TopicSuggestionIdTests DimensionInterestScoreUpsertTests; test *TopicSuggestion* *InterestVector* LayeredArchitectureTests ModelAndEntityConventionTests all pass.</li></ul>
 </div>
 
-<div class="phase" id="phase-6" data-status="todo">
+<div class="phase" id="phase-6" data-status="done">
   <h3><span class="title">Phase 6 &ndash; Assessment grading rows</span>
     <span class="tag">medium &middot; touches files of the paused plan &middot; needs D1, D2, D4</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> <code>AssessmentItemEvaluationTurn</code> and <code>AssessmentItemResponseTurn</code> get v7 ids, and <code>AssessmentItemResponse</code> keeps any id the AI service sends and gets a v7 for the rows Vox creates (D2). <strong>Depends on:</strong> Phase 1, D1, D2, D4 (written for the D4 answer, so the domain factories from phase 7 of the paused plan exist).</p>
   <ul class="jobs">
-    <li class="job" id="job-6-1" data-status="todo">
-      <span class="title">6.1 Evaluation turn</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-6-1" data-status="done">
+      <span class="title">6.1 Evaluation turn</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>AssessmentItemEvaluationTurn.recorded</code> leaves the id null, <code>AssessmentItemEvaluationTurnTests.recordedGeneratesADifferentIdForEachTurn</code> is replaced by a test that a recorded turn has a null id, a <code>@RepositoryTest</code> shows <code>AssessmentItemEvaluationTurnRepositoryImpl.saveAll</code> of turns with null ids returns ids with <code>version() == 7</code>, and the <code>turn()</code> fixture of <code>GradingTaskDetailQueryTests</code> uses <code>.id(null)</code> (its stale comment about application-assigned ids is updated to name only the response fixture, or removed).
          <strong>Files:</strong> <code>AssessmentItemEvaluationTurnJpaEntity</code>, <code>domain/model/assessment/AssessmentItemEvaluationTurn</code>, <code>AssessmentItemEvaluationTurnTests</code>, <code>GradingTaskDetailQueryTests</code>, new <code>src/test/java/com/sep/vox/infrastructure/persistence/adapter/AssessmentItemEvaluationTurnIdTests.java</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; AssessmentItemEvaluationTurn.recorded leaves the id null; AssessmentItemEvaluationTurnJpaEntity has @UuidGenerator VERSION_7. AssessmentItemEvaluationTurnTests.recordedLeavesTheIdNullSoPersistenceCanGenerateIt, AssessmentItemEvaluationTurnIdTests (version 7), GradingTaskDetailQueryTests turn() uses .id(null) and its comment names only the response fixture. Applies D1.</li></ul>
     </li>
-    <li class="job" id="job-6-2" data-status="todo">
-      <span class="title">6.2 Response turn</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-6-2" data-status="done">
+      <span class="title">6.2 Response turn</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>AssessmentItemResponseTurnRepositoryImpl.upsert</code> no longer assigns a random id when no row exists, still reuses the id of an existing row for the same response and turn order, and a <code>@RepositoryTest</code> shows a new turn gets <code>version() == 7</code> while a second <code>upsert</code> of the same (response, turn order) keeps that id.
          <strong>Files:</strong> <code>AssessmentItemResponseTurnJpaEntity</code>, <code>AssessmentItemResponseTurnRepositoryImpl</code>, new <code>src/test/java/com/sep/vox/infrastructure/persistence/adapter/AssessmentItemResponseTurnIdTests.java</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; AssessmentItemResponseTurnRepositoryImpl.upsert no longer assigns a random id; entity has @UuidGenerator VERSION_7. AssessmentItemResponseTurnIdTests: new turn is version 7, second upsert keeps the id.</li></ul>
     </li>
-    <li class="job" id="job-6-3" data-status="todo">
-      <span class="title">6.3 Id generator that keeps the id the AI service sends</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-6-3" data-status="done">
+      <span class="title">6.3 Id generator that keeps the id the AI service sends</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> a <code>@RepositoryTest</code> shows that, on <code>AssessmentItemResponseJpaEntity</code> annotated with the new <code>@AssignedOrUuidVersion7</code>, <code>save()</code> of a new row with a preset id stores exactly that id (a v5 and a v7 are both tried) and <code>save()</code> of a new row with a null id stores an id with <code>version() == 7</code>. The generator returns the preset id when the entity carries one (<code>allowAssignedIdentifiers()</code> is true; in Hibernate 7.4.1 <code>AbstractSaveEventListener.generateId</code> then passes it as <code>currentValue</code>) and otherwise delegates to <code>UuidVersion7Strategy.INSTANCE</code>. Start by reading the Hibernate 7.4 <code>@IdGeneratorType</code> and <code>BeforeExecutionGenerator</code> documentation; if the test cannot pass, stop and report instead of changing the design.
          <strong>Files:</strong> new <code>infrastructure/persistence/id/AssignedOrUuidVersion7.java</code> and <code>infrastructure/persistence/id/AssignedOrUuidVersion7Generator.java</code> (the two files D2 approved), <code>AssessmentItemResponseJpaEntity</code>, new <code>src/test/java/com/sep/vox/infrastructure/persistence/adapter/AssessmentItemResponseIdTests.java</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; New infrastructure/persistence/id/AssignedOrUuidVersion7 and AssignedOrUuidVersion7Generator on AssessmentItemResponseJpaEntity. AssessmentItemResponseIdTests: v5 and v7 preset ids kept through the adapter save (merge path), null id gets version 7. Applies D2.</li></ul>
     </li>
-    <li class="job" id="job-6-4" data-status="todo">
-      <span class="title">6.4 Backfill stops making ids</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-6-4" data-status="done">
+      <span class="title">6.4 Backfill stops making ids</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>AssessmentItemResponse.withoutRecording</code> leaves the id null, <code>AssessmentItemResponseTests</code> says so, <code>MissingResponseBackfillService</code> uses the saved response's id for the evaluation it creates (it already does) and its comment that says the id &ldquo;must be generated at creation&rdquo; is replaced by one that matches the new generator, and the response fixture of <code>GradingTaskDetailQueryTests</code> passes (if the new generator rejects <code>persist()</code> with a preset id, the fixture uses <code>.id(null)</code> like the evaluation fixtures).
          <strong>Files:</strong> <code>domain/model/assessment/AssessmentItemResponse</code>, <code>MissingResponseBackfillService</code>, <code>AssessmentItemResponseTests</code>, <code>GradingTaskDetailQueryTests</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; AssessmentItemResponse.withoutRecording leaves the id null (AssessmentItemResponseTests), MissingResponseBackfillService comment replaced to match the generator, GradingTaskDetailQueryTests response fixture passes with its preset id. Applies D2, D4.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew integrationTest --tests '*AssessmentItemEvaluationTurnIdTests' --tests '*AssessmentItemResponseTurnIdTests' --tests '*AssessmentItemResponseIdTests' --tests '*GradingTaskDetailQueryTests'</code>, <code>./gradlew test --tests '*AssessmentItem*' --tests '*RecordAssessmentAttemptEvaluation*' --tests '*RecordAnswerTurn*'</code>, <code>./gradlew test --tests '*LayeredArchitectureTests' --tests '*ModelCreationConventionTests' --tests '*MethodSizeConventionTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-25 &middot; Done &middot; compileJava compileTestJava; integrationTest *AssessmentItemEvaluationTurnIdTests *AssessmentItemResponseTurnIdTests *AssessmentItemResponseIdTests *GradingTaskDetailQueryTests; test *AssessmentItem* *RecordAssessmentAttemptEvaluation* *RecordAnswerTurn* *MissingResponseBackfill* LayeredArchitectureTests ModelCreationConventionTests MethodSizeConventionTests ModelAndEntityConventionTests LombokUsageConventionTests all pass.</li></ul>
 </div>
 
-<div class="phase" id="phase-7" data-status="todo">
+<div class="phase" id="phase-7" data-status="done">
   <h3><span class="title">Phase 7 &ndash; Guard, AGENTS.md and final run</span>
     <span class="tag">small &middot; needs D3</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> a new entity or a new <code>UUID.randomUUID()</code> row id cannot reappear unnoticed, and the tracked rules match the code. <strong>Depends on:</strong> Phases 3 to 6, D3 (answered A).</p>
   <ul class="jobs">
-    <li class="job" id="job-7-1" data-status="todo">
-      <span class="title">7.1 Two rules in <code>ModelAndEntityConventionTests</code></span> <span class="status todo">Not started</span>
+    <li class="job" id="job-7-1" data-status="done">
+      <span class="title">7.1 Two rules in <code>ModelAndEntityConventionTests</code></span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> the test class has (a) a rule that every entity file that is not <code>BaseEntity</code> and declares a <code>UUID</code> <code>@Id</code> also declares <code>@UuidGenerator(style = UuidGenerator.Style.VERSION_7)</code> or <code>@AssignedOrUuidVersion7</code>, and (b) a rule that no file under <code>src/main/java</code> matches <code>\.(?:id|setId)\(\s*UUID\.randomUUID\(\)</code>; both pass on the converted code, each has a self-test with a violating snippet (as <code>ModelCreationConventionTests</code> does) and a stale-exemption check. The exemption set is empty (D2 and D5 left no exemption).
          <strong>Files:</strong> <code>src/test/java/com/sep/vox/architecture/ModelAndEntityConventionTests.java</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; In progress &middot; started.</li><li>2026-11-25 &middot; Done &middot; CHANGED: rule (b) pattern is <code>\.(?:id|setId)\(\s*UUID\.randomUUID\(\)\s*\)</code> (closing paren required) so <code>JwtStreamTokenProvider</code>&rsquo;s JWT id <code>.id(UUID.randomUUID().toString())</code> is not flagged. <code>ModelAndEntityConventionTests</code>: 3 new tests (2 rules + self-test), exemption set empty, passes.</li></ul>
     </li>
-    <li class="job" id="job-7-2" data-status="todo">
-      <span class="title">7.2 Update AGENTS.md</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-7-2" data-status="done">
+      <span class="title">7.2 Update AGENTS.md</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>git diff AGENTS.md</code> shows only: the Database sentence about application-assigned ids replaced by &ldquo;every entity gets its id from <code>BaseEntity</code>, <code>@UuidGenerator(style = VERSION_7)</code> or, when another system supplies the id, <code>@AssignedOrUuidVersion7</code>; never call <code>UUID.randomUUID()</code> to make a row id&rdquo;, the safety-net default now covering all tables, and the two new rules added to the <code>ModelAndEntityConventionTests</code> bullet.
          <strong>Files:</strong> <code>AGENTS.md</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; Database id sentence replaced, safety-net default now covers all tables, two guard rules added to the test bullet. <code>git diff --stat AGENTS.md</code>: 6 insertions, 4 deletions.</li></ul>
     </li>
-    <li class="job" id="job-7-3" data-status="todo">
-      <span class="title">7.3 Full run and public-contract check</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-7-3" data-status="done">
+      <span class="title">7.3 Full run and public-contract check</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>./gradlew test</code> and <code>./gradlew integrationTest</code> pass with at least the baseline counts of job 1.2 plus the new tests, and <code>git diff --stat default</code> lists no GraphQL schema, REST request record, <code>.proto</code> or event payload file and only <code>V23</code> under <code>src/main/resources</code>.
          <strong>Files:</strong> none</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; In progress &middot; contract check: <code>git diff --name-only default</code> shows no graphqls, proto, request record or event payload; only V23 under resources. Running suites.</li><li>2026-11-25 &middot; Done &middot; <code>./gradlew test</code> 2768 passed (baseline 2764), <code>./gradlew integrationTest</code> 464 passed (baseline 444), 0 failed. No graphqls, proto, request record or event payload changed; only V23 under resources.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests '*ModelAndEntityConventionTests'</code>, <code>./gradlew test</code>, <code>./gradlew integrationTest</code>; then run the <code>verify-plan</code> skill</p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-25 &middot; Done &middot; ModelAndEntityConventionTests, full test and integrationTest pass (see jobs 7.1 to 7.3).</li></ul>
 </div>
 
 <h2 id="risks">4. Risks</h2>
@@ -523,7 +523,7 @@ Only the backfill path (<code>withoutRecording</code>, rows for unanswered quest
 <h2 id="notes">8. Implementation notes</h2>
 <p>Filled in by <code>implement-plan</code>: deviations from the plan, results of <code>verify-plan</code>, and
 problems noticed but not fixed.</p>
-<ul id="notes-list"></ul>
+<ul id="notes-list"><li>Phase 1, job 1.1: CHANGED. Commit <code>eac02cd4</code> is gone because phase 7 of the paused plan was squash-merged into <code>default</code> as <code>9f856ff7</code> (#115); the work branch already existed at that commit.</li><li>Phase 1, job 1.2 baseline (2026-11-25, HEAD 9f856ff7, no existing failure): <code>./gradlew test</code> 2764 tests, 0 failed; <code>./gradlew integrationTest</code> 444 tests, 0 failed; <code>./gradlew test --tests '*Practice*' --tests '*Quota*'</code> 126 tests, 0 failed. Phase 3 must show 126 again.</li></ul>
 
 </div>
 <script>

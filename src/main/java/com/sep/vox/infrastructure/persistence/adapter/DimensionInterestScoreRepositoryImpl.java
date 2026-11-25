@@ -45,7 +45,6 @@ public class DimensionInterestScoreRepositoryImpl
             String dimension,
             double score) {
         repository.upsertScore(
-            UUID.randomUUID(),
             learnerProfileId,
             dimension,
             BigDecimal.valueOf(score).setScale(4, RoundingMode.HALF_UP)

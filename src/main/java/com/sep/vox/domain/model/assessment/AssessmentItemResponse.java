@@ -95,7 +95,6 @@ public class AssessmentItemResponse {
     public static AssessmentItemResponse withoutRecording(UUID sessionId, UUID paperItemId,
                                                           String terminationReason, Instant submittedAt) {
         return builder()
-                .id(UUID.randomUUID())
                 .sessionId(sessionId)
                 .paperItemId(paperItemId)
                 .durationSeconds(0)

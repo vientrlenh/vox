@@ -3,6 +3,8 @@ package com.sep.vox.infrastructure.persistence.entity.assessment;
 import java.time.Instant;
 import java.util.UUID;
 
+import org.hibernate.annotations.UuidGenerator;
+
 import jakarta.persistence.CheckConstraint;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -37,6 +39,7 @@ import lombok.experimental.SuperBuilder;
 public class AssessmentItemResponseTurnJpaEntity {
 
     @Id
+    @UuidGenerator(style = UuidGenerator.Style.VERSION_7)
     @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
 

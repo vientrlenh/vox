@@ -26,7 +26,6 @@ public class TurnCorrectionRepositoryImpl implements TurnCorrectionRepository {
             String explanation,
             String correctAudioUrl) {
         repository.save(TurnCorrectionJpaEntity.builder()
-                .id(UUID.randomUUID())
                 .turnId(turnId)
                 .category(category)
                 .originalText(originalText)

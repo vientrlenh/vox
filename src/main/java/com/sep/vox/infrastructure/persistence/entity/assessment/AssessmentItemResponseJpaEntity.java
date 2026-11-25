@@ -3,6 +3,8 @@ package com.sep.vox.infrastructure.persistence.entity.assessment;
 import java.time.Instant;
 import java.util.UUID;
 
+import com.sep.vox.infrastructure.persistence.id.AssignedOrUuidVersion7;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -22,6 +24,7 @@ import lombok.experimental.SuperBuilder;
 public class AssessmentItemResponseJpaEntity {
 
     @Id
+    @AssignedOrUuidVersion7
     @Column(
         name = "id", 
         nullable = false, 

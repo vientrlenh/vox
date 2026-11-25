@@ -30,14 +30,14 @@ class AssessmentItemResponseTests {
     }
 
     @Test
-    void withoutRecordingGeneratesAnIdAndHasNoAudioTranscriptOrDuration() {
+    void withoutRecordingLeavesTheIdNullAndHasNoAudioTranscriptOrDuration() {
         UUID sessionId = UUID.randomUUID();
         UUID paperItemId = UUID.randomUUID();
 
         AssessmentItemResponse response = AssessmentItemResponse.withoutRecording(
                 sessionId, paperItemId, "NO_RECORDING", SUBMITTED_AT);
 
-        assertThat(response.getId()).isNotNull();
+        assertThat(response.getId()).isNull();
         assertThat(response.getSessionId()).isEqualTo(sessionId);
         assertThat(response.getPaperItemId()).isEqualTo(paperItemId);
         assertThat(response.getAudioUrl()).isNull();

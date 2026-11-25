@@ -120,7 +120,6 @@ public class AssessmentItemEvaluationTurn {
                                                         int wordCount, Integer durationSeconds, Double asrConfidence,
                                                         String pronunciationOverallJson, String wordFeedbackJson) {
         return builder()
-                .id(UUID.randomUUID())
                 .evaluationId(evaluationId)
                 .turnOrder(turnOrder)
                 .turnType(turnType)
